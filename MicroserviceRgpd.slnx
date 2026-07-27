@@ -1,0 +1,31 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/MicroserviceRgpd.Core/MicroserviceRgpd.Core.csproj" />
+    <Project Path="src/MicroserviceRgpd.Infrastructure/MicroserviceRgpd.Infrastructure.csproj" />
+    <Project Path="src/MicroserviceRgpd.UseCases/MicroserviceRgpd.UseCases.csproj" />
+    <Project Path="src/MicroserviceRgpd.Web/MicroserviceRgpd.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/_aspire/">
+    <Project Path="src/MicroserviceRgpd.AspireHost/MicroserviceRgpd.AspireHost.csproj" />
+    <Project Path="src/MicroserviceRgpd.ServiceDefaults/MicroserviceRgpd.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MicroserviceRgpd.FunctionalTests/MicroserviceRgpd.FunctionalTests.csproj">
+      <BuildDependency Project="src/MicroserviceRgpd.Web/MicroserviceRgpd.Web.csproj" />
+    </Project>
+    <Project Path="tests/MicroserviceRgpd.IntegrationTests/MicroserviceRgpd.IntegrationTests.csproj">
+      <BuildDependency Project="src/MicroserviceRgpd.Infrastructure/MicroserviceRgpd.Infrastructure.csproj" />
+    </Project>
+    <Project Path="tests/MicroserviceRgpd.UnitTests/MicroserviceRgpd.UnitTests.csproj" />
+  </Folder>
+</Solution>
