@@ -50,6 +50,36 @@ _Avoid_ : opposition, refus, retrait du consentement, désinscription
 Le verdict rendu quand aucun des six droits n'est reconnu dans le texte. Exclusif : il ne se combine jamais avec un droit. Il couvre aussi bien un texte étranger au RGPD qu'une demande relevant d'un droit resté hors de la taxonomie — déréférencement, droit à l'information, décision individuelle automatisée (art. 22).
 _Avoid_ : hors sujet, inconnu, non classé, None, Unknown
 
+### L'entrecontrôle des deux moteurs
+
+**QualificationOpinion** :
+L'avis rendu par un seul moteur sur un `RightsRequestText` : une `Qualification`, accompagnée de la `DeclaredConfidence` du moteur lorsqu'il sait en produire une.
+_Avoid_ : prédiction, résultat, réponse, sortie du modèle
+
+**DeclaredConfidence** :
+L'échelle ordinale à trois degrés — `High`, `Medium`, `Low` — par laquelle un moteur dit à quel point il doute de sa propre `QualificationOpinion`. Un moteur peut n'en produire aucune, et le lexique est dans ce cas.
+_Avoid_ : certitude, probabilité, score de confiance, fiabilité
+
+**WitnessOpinion** :
+La `QualificationOpinion` du lexique. Elle sert exclusivement à corroborer ou contester celle du LLM ; elle ne contribue jamais à la `Qualification` rendue.
+_Avoid_ : second avis, avis secondaire, vote, contre-expertise
+
+**ReviewSignal** :
+Ce que le service dit à l'opérateur humain de l'urgence à relire la `Qualification`, déduit de la comparaison des deux `QualificationOpinion`. Il priorise la relecture, il ne la déclenche pas — un humain valide de toute façon chaque qualification.
+_Avoid_ : alerte, statut, drapeau, score global
+
+**Contested** :
+Les deux moteurs divergent. Signal le plus fort, parce qu'il est le seul à ne rien devoir à l'auto-évaluation du LLM — il l'emporte donc quand la confiance est basse par ailleurs.
+_Avoid_ : conflit, désaccord, litige
+
+**NeedsReview** :
+Les deux moteurs s'accordent, mais la `DeclaredConfidence` du LLM n'est pas `High`.
+_Avoid_ : incertain, à vérifier, douteux
+
+**Corroborated** :
+Les deux moteurs s'accordent et la `DeclaredConfidence` du LLM est `High`.
+_Avoid_ : validé, confirmé, certain
+
 ### Ce que le service ne fait pas
 
 **Aide à la décision** :
