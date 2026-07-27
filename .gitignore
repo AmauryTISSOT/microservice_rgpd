@@ -63,3 +63,6 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Skills (liens générés par "npx skills" vers .agents/skills)
+.claude/skills/
