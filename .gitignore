@@ -50,6 +50,7 @@ ScaffoldingReadMe.txt
 ~$*
 *~
 CodeCoverage/
+*.stackdump
 
 # MSBuild Binary and Structured Log
 *.binlog
