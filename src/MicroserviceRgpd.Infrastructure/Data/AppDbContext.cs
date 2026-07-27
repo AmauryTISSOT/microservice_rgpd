@@ -1,9 +1,7 @@
-﻿using MicroserviceRgpd.Core.ContributorAggregate;
-
 namespace MicroserviceRgpd.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-  public DbSet<Contributor> Contributors => Set<Contributor>();
+  // Declarer ici un DbSet par agregat, ex. : public DbSet<Subject> Subjects => Set<Subject>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

@@ -73,15 +73,11 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
           // SQLite fallback: EnsureCreated is used because the migrations use SQL Server syntax
           db.Database.EnsureCreated();
         }
-
-        // Seed the database with test data only if it has not been seeded yet.
-        // This is safe for container reuse across test runs and multiple fixture instances.
-        SeedData.InitializeAsync(db).Wait();
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "An error occurred seeding the " +
-                            "database with test messages. Error: {exceptionMessage}", ex.Message);
+        logger.LogError(ex, "An error occurred creating the " +
+                            "test database. Error: {exceptionMessage}", ex.Message);
       }
     }
 

@@ -1,7 +1,5 @@
 ﻿global using System.Runtime.CompilerServices;
 global using Ardalis.SharedKernel;
-global using MicroserviceRgpd.Core.ContributorAggregate;
-global using MicroserviceRgpd.UseCases.Contributors.Create;
 global using Shouldly;
 global using Mediator;
 global using Microsoft.Extensions.Logging;

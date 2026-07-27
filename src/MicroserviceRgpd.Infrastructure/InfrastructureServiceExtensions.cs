@@ -1,8 +1,4 @@
-﻿using MicroserviceRgpd.Core.Interfaces;
-using MicroserviceRgpd.Core.Services;
-using MicroserviceRgpd.Infrastructure.Data;
-using MicroserviceRgpd.Infrastructure.Data.Queries;
-using MicroserviceRgpd.UseCases.Contributors.List;
+﻿using MicroserviceRgpd.Infrastructure.Data;
 
 namespace MicroserviceRgpd.Infrastructure;
 public static class InfrastructureServiceExtensions
@@ -46,9 +42,7 @@ public static class InfrastructureServiceExtensions
     });
 
     services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>))
-           .AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>))
-           .AddScoped<IListContributorsQueryService, ListContributorsQueryService>()
-           .AddScoped<IDeleteContributorService, DeleteContributorService>();
+           .AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
 
     logger.LogInformation("{Project} services registered", "Infrastructure");
 

@@ -1,7 +1,5 @@
 ﻿using Ardalis.SharedKernel;
-using MicroserviceRgpd.Core.ContributorAggregate;
 using MicroserviceRgpd.Infrastructure;
-using MicroserviceRgpd.UseCases.Contributors.Create;
 
 namespace MicroserviceRgpd.Web.Configurations;
 
@@ -18,10 +16,11 @@ public static class MediatorConfig
       options.ServiceLifetime = ServiceLifetime.Scoped;
 
       // Supply any TYPE from each assembly you want scanned (the generator finds the assembly from the type)
+      // Core et UseCases ne sont pas listes : tant qu'ils ne contiennent ni message ni handler, le
+      // compilateur n'emet pas leur reference a Mediator.Abstractions et le generateur les rejette.
+      // Les remettre (typeof(IEmailSender), typeof(Constants)) des le premier handler.
       options.Assemblies =
       [
-        typeof(Contributor),                       // Core
-        typeof(CreateContributorCommand),         // UseCases
         typeof(InfrastructureServiceExtensions), // Infrastructure
         typeof(MediatorConfig)                  // Web
       ];
