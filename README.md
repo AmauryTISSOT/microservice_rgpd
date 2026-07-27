@@ -7,7 +7,7 @@ Généré depuis [ardalis/CleanArchitecture](https://github.com/ardalis/CleanArc
 ## Architecture
 
 Clean Architecture aux frontières (règle de dépendance vers l'intérieur), organisation en vertical slices
-dans la couche `UseCases` (un dossier par feature : `Create/`, `Delete/`, `Get/`, `List/`, `Update/`).
+dans la couche `UseCases` : un dossier par feature.
 
 ```
 src/
@@ -24,8 +24,12 @@ tests/
   MicroserviceRgpd.AspireTests/       # Orchestration
 ```
 
-L'agrégat `Contributor` livré par le template est un **exemple de référence** : il sert de modèle pour
-le premier agrégat métier réel, puis doit être supprimé.
+L'agrégat de démonstration du template a été supprimé : le service n'expose pour l'instant que
+`GET /hello`. Le premier agrégat métier est à créer.
+
+La base est **PostgreSQL**, fournie en container par Aspire. Un repli SQLite existe pour travailler
+sans Docker, mais les migrations étant générées pour PostgreSQL, il passe par `EnsureCreated` et ne
+reflète pas fidèlement le schéma cible.
 
 ## Stack
 
@@ -33,7 +37,7 @@ le premier agrégat métier réel, puis doit être supprimé.
 | ---------------- | -------------------------------------------- |
 | Médiation / CQRS | Mediator (martinothamar, source-generated)   |
 | HTTP             | FastEndpoints 7.1 (REPR) + Scalar            |
-| Données          | EF Core 10 (SQL Server / SQLite)             |
+| Données          | EF Core 10 + Npgsql (PostgreSQL)             |
 | Result pattern   | Ardalis.Result                               |
 | Value objects    | Vogen (source generator)                     |
 | Specifications   | Ardalis.Specification                        |

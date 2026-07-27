@@ -8,16 +8,14 @@ public static class InfrastructureServiceExtensions
     ConfigurationManager config,
     ILogger logger)
   {
-    // Try to get connection strings in order of priority:
-    // 1. "cleanarchitecture" - provided by Aspire when using .WithReference(cleanArchDb)
-    // 2. "DefaultConnection" - SQL Server (Windows only by default, can be forced with USE_SQL_SERVER=true)
-    // 3. "SqliteConnection" - fallback to SQLite
-    bool isWindows = OperatingSystem.IsWindows();
-    bool forceSqlServer = Environment.GetEnvironmentVariable("USE_SQL_SERVER") == "true";
-    
-    string? connectionString = config.GetConnectionString("cleanarchitecture")
-                               ?? ((isWindows || forceSqlServer) ? config.GetConnectionString("DefaultConnection") : null)
-                               ?? config.GetConnectionString("SqliteConnection");
+    // Chaines de connexion, par ordre de priorite :
+    // 1. "cleanarchitecture" - fournie par Aspire via .WithReference(cleanArchDb) -> PostgreSQL
+    // 2. "DefaultConnection" - PostgreSQL local, hors Aspire
+    // 3. "SqliteConnection"  - repli local sans Docker
+    string? postgresConnection = config.GetConnectionString("cleanarchitecture")
+                                 ?? config.GetConnectionString("DefaultConnection");
+
+    string? connectionString = postgresConnection ?? config.GetConnectionString("SqliteConnection");
     Guard.Against.Null(connectionString);
 
     services.AddScoped<EventDispatchInterceptor>();
@@ -26,18 +24,16 @@ public static class InfrastructureServiceExtensions
     services.AddDbContext<AppDbContext>((provider, options) =>
     {
       var eventDispatchInterceptor = provider.GetRequiredService<EventDispatchInterceptor>();
-      
-      // Use SQL Server if Aspire or DefaultConnection (on Windows or forced) is available, otherwise use SQLite
-      if (config.GetConnectionString("cleanarchitecture") != null || 
-          ((isWindows || forceSqlServer) && config.GetConnectionString("DefaultConnection") != null))
+
+      if (postgresConnection is not null)
       {
-        options.UseSqlServer(connectionString);
+        options.UseNpgsql(postgresConnection);
       }
       else
       {
         options.UseSqlite(connectionString);
       }
-      
+
       options.AddInterceptors(eventDispatchInterceptor);
     });
 

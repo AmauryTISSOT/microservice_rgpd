@@ -1,11 +1,12 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Add SQL Server container
-var sqlServer = builder.AddSqlServer("sqlserver")
-  .WithLifetime(ContainerLifetime.Persistent);
+// Add PostgreSQL container
+var postgres = builder.AddPostgres("postgres")
+  .WithLifetime(ContainerLifetime.Persistent)
+  .WithDataVolume();
 
 // Add the database
-var cleanArchDb = sqlServer.AddDatabase("cleanarchitecture");
+var cleanArchDb = postgres.AddDatabase("cleanarchitecture");
 
 // Add the web project with the database connection
 builder.AddProject<Projects.MicroserviceRgpd_Web>("web")

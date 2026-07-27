@@ -2,8 +2,8 @@ using MicroserviceRgpd.Web.Hello;
 
 namespace MicroserviceRgpd.FunctionalTests.ApiEndpoints;
 
-[Collection("Sequential")]
-public class HelloGet(CustomWebApplicationFactory<Program> factory) : IClassFixture<CustomWebApplicationFactory<Program>>
+[Collection(WebCollection.Name)]
+public class HelloGet(CustomWebApplicationFactory<Program> factory)
 {
   private readonly HttpClient _client = factory.CreateClient();
 

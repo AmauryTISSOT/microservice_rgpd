@@ -1,25 +1,28 @@
-﻿using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Testcontainers.MsSql;
+using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.FunctionalTests;
 
 public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProgram>, IAsyncLifetime where TProgram : class
 {
-  private MsSqlContainer? _dbContainer;
+  private PostgreSqlContainer? _dbContainer;
+
+  /// <summary>
+  /// False quand Docker est indisponible : les tests tournent alors sur le repli SQLite,
+  /// qui ne couvre pas les specificites PostgreSQL.
+  /// </summary>
+  public bool UsesPostgres => _dbContainer is not null;
 
   public async Task InitializeAsync()
   {
     try
     {
-      _dbContainer = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
-        .WithPassword("Your_password123!")
-        .Build();
+      _dbContainer = new PostgreSqlBuilder("postgres:18-alpine").Build();
       await _dbContainer.StartAsync();
     }
-    catch (ArgumentException)
+    catch (Exception)
     {
       // Docker is not available; fall back to SQLite (configured via appsettings.Testing.json)
       _dbContainer = null;
@@ -28,8 +31,6 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
   public new async Task DisposeAsync()
   {
-    // Clean up environment variable
-    Environment.SetEnvironmentVariable("USE_SQL_SERVER", null);
     if (_dbContainer != null)
     {
       await _dbContainer.DisposeAsync();
@@ -65,12 +66,12 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
       {
         if (_dbContainer != null)
         {
-          // SQL Server via Testcontainers: apply migrations to create the schema
+          // PostgreSQL via Testcontainers: apply migrations to create the schema
           db.Database.Migrate();
         }
         else
         {
-          // SQLite fallback: EnsureCreated is used because the migrations use SQL Server syntax
+          // SQLite fallback: EnsureCreated is used because the migrations use PostgreSQL syntax
           db.Database.EnsureCreated();
         }
       }
@@ -86,12 +87,6 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
   protected override void ConfigureWebHost(IWebHostBuilder builder)
   {
-    if (_dbContainer != null)
-    {
-      // Force SQL Server mode even on non-Windows platforms for functional tests
-      Environment.SetEnvironmentVariable("USE_SQL_SERVER", "true");
-    }
-
     builder
         .ConfigureAppConfiguration((context, config) =>
         {
@@ -119,10 +114,10 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
               services.Remove(descriptor);
             }
 
-            // Add ApplicationDbContext using the Testcontainers SQL Server instance
+            // Add ApplicationDbContext using the Testcontainers PostgreSQL instance
             services.AddDbContext<AppDbContext>((provider, options) =>
             {
-              options.UseSqlServer(_dbContainer.GetConnectionString());
+              options.UseNpgsql(_dbContainer.GetConnectionString());
               var interceptor = provider.GetRequiredService<EventDispatchInterceptor>();
               options.AddInterceptors(interceptor);
             });
