@@ -29,17 +29,17 @@ le premier agrégat métier réel, puis doit être supprimé.
 
 ## Stack
 
-| Rôle | Choix |
-|---|---|
-| Médiation / CQRS | Mediator (martinothamar, source-generated) |
-| HTTP | FastEndpoints 7.1 (REPR) + Scalar |
-| Données | EF Core 10 (SQL Server / SQLite) |
-| Result pattern | Ardalis.Result |
-| Value objects | Vogen (source generator) |
-| Specifications | Ardalis.Specification |
-| Logs | Serilog + sink OpenTelemetry |
-| Observabilité | OpenTelemetry 1.17 via ServiceDefaults |
-| Tests | xUnit, NSubstitute, Shouldly, Testcontainers |
+| Rôle             | Choix                                        |
+| ---------------- | -------------------------------------------- |
+| Médiation / CQRS | Mediator (martinothamar, source-generated)   |
+| HTTP             | FastEndpoints 7.1 (REPR) + Scalar            |
+| Données          | EF Core 10 (SQL Server / SQLite)             |
+| Result pattern   | Ardalis.Result                               |
+| Value objects    | Vogen (source generator)                     |
+| Specifications   | Ardalis.Specification                        |
+| Logs             | Serilog + sink OpenTelemetry                 |
+| Observabilité    | OpenTelemetry 1.17 via ServiceDefaults       |
+| Tests            | xUnit, NSubstitute, Shouldly, Testcontainers |
 
 ## Démarrer
 
@@ -64,21 +64,6 @@ Les tests d'intégration et fonctionnels utilisent Testcontainers : **Docker doi
 dotnet ef migrations add <Nom> --project src/MicroserviceRgpd.Infrastructure --startup-project src/MicroserviceRgpd.Web
 dotnet ef database update      --project src/MicroserviceRgpd.Infrastructure --startup-project src/MicroserviceRgpd.Web
 ```
-
-## Conformité RGPD — décisions à prendre avant le premier agrégat métier
-
-Ces choix conditionnent le modèle de données et coûtent cher à rattraper :
-
-- **Crypto-shredding** plutôt que soft/hard delete. Une clé AES par sujet de données, stockée hors base
-  (Key Vault / Vault). L'effacement (art. 17) détruit la clé, pas la ligne — la piste d'audit (art. 5§2)
-  est préservée et l'effacement se propage partout à la fois (backups, caches, réplicas).
-  Le soft delete seul **n'est pas conforme** : la donnée reste lisible en base.
-- **Implémentation EF Core** : `ISaveChangesInterceptor` pour chiffrer à l'écriture (après assignation
-  des IDs, sinon `Guid.Empty`) + `IMaterializationInterceptor` pour déchiffrer, `null` si la clé a disparu.
-- **Journal d'effacement en deux phases** : intention avant destruction de la clé, confirmation après,
-  dans un log immuable non supprimable.
-- **Aucune PII dans les logs ni les traces OpenTelemetry** — prévoir un processeur de redaction.
-- **Rétention et purge automatiques**, export machine-readable (art. 20), journal de consentement horodaté.
 
 ## Conventions
 
