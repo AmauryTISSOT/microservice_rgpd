@@ -14,12 +14,14 @@ In this case using `Microsoft.Extensions.DependencyInjection` and extension meth
 
 ## Database Support
 
-This project supports both **SQL Server** and **SQLite**:
+**PostgreSQL** is the only supported provider (EF Core + Npgsql). There is no local fallback, so Docker is required.
 
-- **SQL Server**: When running through .NET Aspire (AspireHost project), a SQL Server container is automatically provisioned and the connection string is provided via Aspire service discovery (using the "DefaultConnection" key).
-- **SQLite**: When running the Web project standalone, it uses the SQLite connection from appsettings.json as a fallback.
+`InfrastructureServiceExtensions.AddInfrastructureServices()` resolves the connection string in this order:
 
-The `InfrastructureServiceExtensions.AddInfrastructureServices()` method automatically detects which connection string is available and configures the appropriate database provider.
+- **`cleanarchitecture`**: injected by .NET Aspire (AspireHost project), which provisions the PostgreSQL container.
+- **`DefaultConnection`**: a local PostgreSQL instance, when running the Web project standalone.
+
+Startup fails fast if neither is configured.
 
 Need help? Check out the larger sample here:
 https://github.com/ardalis/CleanArchitecture/tree/main/sample

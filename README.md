@@ -27,9 +27,9 @@ tests/
 L'agrégat de démonstration du template a été supprimé : le service n'expose pour l'instant que
 `GET /hello`. Le premier agrégat métier est à créer.
 
-La base est **PostgreSQL**, fournie en container par Aspire. Un repli SQLite existe pour travailler
-sans Docker, mais les migrations étant générées pour PostgreSQL, il passe par `EnsureCreated` et ne
-reflète pas fidèlement le schéma cible.
+La base est **PostgreSQL**, fournie en container par Aspire (`microservice_rgpd_bdd`). C'est le seul
+provider supporté : il n'existe pas de repli local, Docker est donc requis pour lancer le service
+comme pour exécuter les tests fonctionnels.
 
 ## Stack
 

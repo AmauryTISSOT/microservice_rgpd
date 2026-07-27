@@ -8,15 +8,13 @@ public static class InfrastructureServiceExtensions
     ConfigurationManager config,
     ILogger logger)
   {
-    // Chaines de connexion, par ordre de priorite :
-    // 1. "cleanarchitecture" - fournie par Aspire via .WithReference(cleanArchDb) -> PostgreSQL
+    // PostgreSQL est le seul provider supporte. Chaines de connexion, par ordre de priorite :
+    // 1. "cleanarchitecture" - fournie par Aspire via .WithReference(cleanArchDb)
     // 2. "DefaultConnection" - PostgreSQL local, hors Aspire
-    // 3. "SqliteConnection"  - repli local sans Docker
-    string? postgresConnection = config.GetConnectionString("cleanarchitecture")
-                                 ?? config.GetConnectionString("DefaultConnection");
-
-    string? connectionString = postgresConnection ?? config.GetConnectionString("SqliteConnection");
-    Guard.Against.Null(connectionString);
+    string? connectionString = config.GetConnectionString("cleanarchitecture")
+                               ?? config.GetConnectionString("DefaultConnection");
+    Guard.Against.NullOrEmpty(connectionString, nameof(connectionString),
+      "Aucune chaine de connexion PostgreSQL configuree : lancer l AppHost Aspire, ou renseigner ConnectionStrings:DefaultConnection.");
 
     services.AddScoped<EventDispatchInterceptor>();
     services.AddScoped<IDomainEventDispatcher, MediatorDomainEventDispatcher>();
@@ -25,15 +23,7 @@ public static class InfrastructureServiceExtensions
     {
       var eventDispatchInterceptor = provider.GetRequiredService<EventDispatchInterceptor>();
 
-      if (postgresConnection is not null)
-      {
-        options.UseNpgsql(postgresConnection);
-      }
-      else
-      {
-        options.UseSqlite(connectionString);
-      }
-
+      options.UseNpgsql(connectionString);
       options.AddInterceptors(eventDispatchInterceptor);
     });
 

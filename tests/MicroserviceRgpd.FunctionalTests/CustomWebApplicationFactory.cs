@@ -7,35 +7,19 @@ namespace MicroserviceRgpd.FunctionalTests;
 
 public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProgram>, IAsyncLifetime where TProgram : class
 {
-  private PostgreSqlContainer? _dbContainer;
-
-  /// <summary>
-  /// False quand Docker est indisponible : les tests tournent alors sur le repli SQLite,
-  /// qui ne couvre pas les specificites PostgreSQL.
-  /// </summary>
-  public bool UsesPostgres => _dbContainer is not null;
+  // Docker est requis : PostgreSQL est le seul provider supporte, il n existe plus de repli local.
+  private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:18-alpine").Build();
 
   public async Task InitializeAsync()
   {
-    try
-    {
-      _dbContainer = new PostgreSqlBuilder("postgres:18-alpine").Build();
-      await _dbContainer.StartAsync();
-    }
-    catch (Exception)
-    {
-      // Docker is not available; fall back to SQLite (configured via appsettings.Testing.json)
-      _dbContainer = null;
-    }
+    await _dbContainer.StartAsync();
+
+    // Le ConfigurationManager de Program est construit avant tout ConfigureAppConfiguration :
+    // la variable d environnement est le seul moyen de fournir la chaine assez tot.
+    Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _dbContainer.GetConnectionString());
   }
 
-  public new async Task DisposeAsync()
-  {
-    if (_dbContainer != null)
-    {
-      await _dbContainer.DisposeAsync();
-    }
-  }
+  public new Task DisposeAsync() => _dbContainer.DisposeAsync().AsTask();
 
   /// <summary>
   /// Overriding CreateHost to avoid creating a separate ServiceProvider per this thread:
@@ -64,16 +48,8 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
       try
       {
-        if (_dbContainer != null)
-        {
-          // PostgreSQL via Testcontainers: apply migrations to create the schema
-          db.Database.Migrate();
-        }
-        else
-        {
-          // SQLite fallback: EnsureCreated is used because the migrations use PostgreSQL syntax
-          db.Database.EnsureCreated();
-        }
+        // PostgreSQL via Testcontainers: apply migrations to create the schema
+        db.Database.Migrate();
       }
       catch (Exception ex)
       {
@@ -85,43 +61,6 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
     return host;
   }
 
-  protected override void ConfigureWebHost(IWebHostBuilder builder)
-  {
-    builder
-        .ConfigureAppConfiguration((context, config) =>
-        {
-          if (_dbContainer != null)
-          {
-            // Set the connection string to use the Testcontainer
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-              ["ConnectionStrings:DefaultConnection"] = _dbContainer.GetConnectionString()
-            });
-          }
-        })
-        .ConfigureServices(services =>
-        {
-          if (_dbContainer != null)
-          {
-            // Remove the app's ApplicationDbContext registration
-            var descriptors = services.Where(
-              d => d.ServiceType == typeof(AppDbContext) ||
-                   d.ServiceType == typeof(DbContextOptions<AppDbContext>))
-                  .ToList();
-
-            foreach (var descriptor in descriptors)
-            {
-              services.Remove(descriptor);
-            }
-
-            // Add ApplicationDbContext using the Testcontainers PostgreSQL instance
-            services.AddDbContext<AppDbContext>((provider, options) =>
-            {
-              options.UseNpgsql(_dbContainer.GetConnectionString());
-              var interceptor = provider.GetRequiredService<EventDispatchInterceptor>();
-              options.AddInterceptors(interceptor);
-            });
-          }
-        });
-  }
+  // Aucun override de ConfigureWebHost : l application resout elle-meme sa chaine de connexion
+  // depuis ConnectionStrings:DefaultConnection, exactement comme hors tests.
 }
