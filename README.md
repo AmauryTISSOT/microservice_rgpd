@@ -29,19 +29,17 @@ le premier agrégat métier réel, puis doit être supprimé.
 
 ## Stack
 
-| Rôle | Choix | Licence |
-|---|---|---|
-| Médiation / CQRS | Mediator (martinothamar, source-generated) | MIT |
-| HTTP | FastEndpoints 7.1 (REPR) + Scalar | Apache 2.0 / MIT |
-| Données | EF Core 10 (SQL Server / SQLite) | MIT |
-| Result pattern | Ardalis.Result | MIT |
-| Value objects | Vogen (source generator) | MIT |
-| Specifications | Ardalis.Specification | MIT |
-| Logs | Serilog + sink OpenTelemetry | Apache 2.0 |
-| Observabilité | OpenTelemetry 1.17 via ServiceDefaults | Apache 2.0 |
-| Tests | xUnit, NSubstitute, Shouldly, Testcontainers | MIT / BSD |
-
-Aucune dépendance sous licence commerciale : ni MediatR, ni AutoMapper, ni FluentAssertions 8+, ni MassTransit 9.
+| Rôle | Choix |
+|---|---|
+| Médiation / CQRS | Mediator (martinothamar, source-generated) |
+| HTTP | FastEndpoints 7.1 (REPR) + Scalar |
+| Données | EF Core 10 (SQL Server / SQLite) |
+| Result pattern | Ardalis.Result |
+| Value objects | Vogen (source generator) |
+| Specifications | Ardalis.Specification |
+| Logs | Serilog + sink OpenTelemetry |
+| Observabilité | OpenTelemetry 1.17 via ServiceDefaults |
+| Tests | xUnit, NSubstitute, Shouldly, Testcontainers |
 
 ## Démarrer
 
