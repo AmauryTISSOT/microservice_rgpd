@@ -1,8 +1,8 @@
 """Ce que le moteur LLM sait avant de lire le texte : sa consigne, et la forme qu'il doit rendre.
 
-Le prompt vient de `prototypes/qualification/prompt_llm.md`, dont il est désormais **la copie qui
-fait foi** : le dossier des prototypes est jetable, et un moteur en production ne peut pas lire sa
-consigne dans un dossier qu'on a le droit de supprimer.
+Le prompt vient du prototype `prototypes/qualification/prompt_llm.md`, dont il est **la copie qui
+fait foi** : le dossier des prototypes était jetable — il a depuis été supprimé du dépôt — et un
+moteur en production ne peut pas lire sa consigne dans un dossier qu'on a le droit de supprimer.
 
 Il parle français au modèle, et le modèle lui répond en français : slugs français, justification
 française. **Le français s'arrête ici.** La traduction vers les noms canoniques du fil se fait à la

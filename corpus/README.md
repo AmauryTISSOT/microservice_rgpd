@@ -13,7 +13,7 @@ Vérité terrain servant à **choisir** puis à **évaluer** le moteur de qualif
 Pourquoi ce choix :
 
 - **JSONL plutôt que JSON, CSV ou Markdown** — une ligne par exemple, donc un diff Git lisible exemple par exemple ; pas d'échappement de retours à la ligne ni de virgules dans les textes libres, contrairement au CSV ; lecture en flux, sans charger tout le fichier.
-- **`corpus/` à la racine plutôt que sous `src/` ou `tests/`** — l'actif est consommé par au moins deux mondes : les prototypes jetables du ticket [#6](https://github.com/AmauryTISSOT/microservice_rgpd/issues/6), qui vivent hors de la solution, et plus tard les tests d'évaluation. Le rattacher à un projet .NET précis maintenant présumerait d'une décision qui n'est pas prise.
+- **`corpus/` à la racine plutôt que sous `src/` ou `tests/`** — l'actif est consommé par au moins deux mondes : les prototypes jetables du ticket [#6](https://github.com/AmauryTISSOT/microservice_rgpd/issues/6), qui vivaient hors de la solution et ont depuis été supprimés, et plus tard les tests d'évaluation. Le rattacher à un projet .NET précis maintenant présumerait d'une décision qui n'est pas prise.
 - **Nom `demandes-rgpd.fr.jsonl`** — le suffixe de langue laisse la place à d'autres corpus si le périmètre linguistique s'élargit un jour.
 
 ## Schéma
