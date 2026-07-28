@@ -14,7 +14,10 @@ import pytest
 
 from qualification_sidecar import llm
 from qualification_sidecar.opinion import DeclaredConfidence, EngineFailure
+from tests.upstream import FakeModel
 
+#: Une configuration **autre** que celle de `conftest`, pour que les assertions portent sur ce que
+#: le code a lu et non sur ce qu'il aurait pu deviner : les deux jeux ne coïncident nulle part.
 SETTINGS = {
     "QUALIFICATION_LLM_BASE_URL": "http://ailleurs.invalid/v1",
     "QUALIFICATION_LLM_MODEL": "un-autre-modele:3b",
@@ -30,20 +33,6 @@ VALID_VERDICT = {
     "justification": "Le texte demande une copie des données et leur suppression.",
     "confiance": "haute",
 }
-
-
-class FakeModel:
-    """Un amont qui rend ce qu'on lui a dit de rendre, et note ce qu'on lui a demandé."""
-
-    def __init__(self, content, served_model="modele-servi:7b"):
-        self._content = content if isinstance(content, str) else json.dumps(content)
-        self._served_model = served_model
-        self.system = None
-        self.user = None
-
-    async def answer(self, *, system, user):
-        self.system, self.user = system, user
-        return llm.ModelAnswer(content=self._content, served_model=self._served_model)
 
 
 def qualify(content, served_model="modele-servi:7b", text="Supprimez mes données."):
@@ -149,18 +138,52 @@ def test_the_configured_model_temperature_and_seed_are_what_travels(monkeypatch)
     assert json.loads(answer.content) == VALID_VERDICT
 
 
+def _status_error(status):
+    """Une erreur de statut du SDK — un amont qui **a répondu**, fût-ce pour se plaindre."""
+    return openai.APIStatusError(
+        message="refus",
+        response=httpx.Response(
+            status, request=httpx.Request("POST", "http://x"), json={"error": "refus"}
+        ),
+        body=None,
+    )
+
+
+def _not_found():
+    return openai.NotFoundError(
+        message="model not found",
+        response=httpx.Response(
+            404, request=httpx.Request("POST", "http://x"), json={"error": "model not found"}
+        ),
+        body=None,
+    )
+
+
 @pytest.mark.parametrize(
-    ("raised", "named"),
+    ("failure", "raised", "named"),
     [
-        (openai.APITimeoutError(request=httpx.Request("POST", "http://x")), llm.ModelTooSlow),
         (
+            "échéance passée",
+            openai.APITimeoutError(request=httpx.Request("POST", "http://x")),
+            llm.ModelTooSlow,
+        ),
+        (
+            "connexion refusée",
             openai.APIConnectionError(message="refusée", request=httpx.Request("POST", "http://x")),
             llm.ModelUnreachable,
         ),
+        ("modèle inconnu de l'amont", _not_found(), llm.ModelUnreachable),
+        ("l'amont s'est plaint", _status_error(400), llm.UnusableCompletion),
+        ("l'amont a lui-même échoué", _status_error(500), llm.UnusableCompletion),
     ],
 )
-def test_a_slow_upstream_and_an_absent_one_are_two_different_failures(monkeypatch, raised, named):
-    """`APITimeoutError` dérivant d'`APIConnectionError`, l'ordre des `except` fait la distinction."""
+def test_each_way_the_upstream_can_fail_gets_its_own_name(monkeypatch, failure, raised, named):
+    """Trois noms, trois codes — et l'ordre des `except` est ce qui les tient séparés.
+
+    `APITimeoutError` dérive d'`APIConnectionError`, et `NotFoundError` d'`APIStatusError` : un
+    `except` trop large en premier ferait ressortir un dépassement d'échéance sous le code d'un
+    serveur éteint, ou un modèle absent sous celui d'une réponse inexploitable.
+    """
     model = llm.OpenAiCompatibleModel(llm.LlmSettings.from_environment(SETTINGS))
 
     async def create(**kwargs):
@@ -172,7 +195,8 @@ def test_a_slow_upstream_and_an_absent_one_are_two_different_failures(monkeypatc
         asyncio.run(model.answer(system="consigne", user="texte"))
 
 
-def test_a_completion_without_content_is_an_absent_upstream(monkeypatch):
+def test_a_completion_without_content_is_an_unusable_one_not_an_absent_upstream(monkeypatch):
+    """L'amont a répondu : l'envoyer redémarrer un serveur qui tourne serait un faux diagnostic."""
     model = llm.OpenAiCompatibleModel(llm.LlmSettings.from_environment(SETTINGS))
 
     async def create(**kwargs):
@@ -188,7 +212,7 @@ def test_a_completion_without_content_is_an_absent_upstream(monkeypatch):
 
     monkeypatch.setattr(model._client.chat.completions, "create", create)
 
-    with pytest.raises(llm.ModelUnreachable):
+    with pytest.raises(llm.UnusableCompletion):
         asyncio.run(model.answer(system="consigne", user="texte"))
 
 
@@ -230,10 +254,6 @@ def test_the_model_receives_the_prompt_and_the_text_it_must_qualify():
         ("droits non textuels", {"droits": [15], "justification": "j", "confiance": "haute"}),
         ("confiance absente", {"droits": ["acces"], "justification": "j"}),
         (
-            "confiance hors échelle",
-            {"droits": ["acces"], "justification": "j", "confiance": "certaine"},
-        ),
-        (
             "confiance chiffrée",
             {"droits": ["acces"], "justification": "j", "confiance": 0.9},
         ),
@@ -252,7 +272,20 @@ def test_anything_that_is_not_an_opinion_is_an_engine_failure(failure, content):
 def test_a_failure_names_what_the_model_rendered():
     """Le diagnostic doit dire *quoi*, sinon il envoie relire un prompt de cent lignes au hasard."""
     with pytest.raises(EngineFailure, match="confiance"):
-        qualify({"droits": ["acces"], "justification": "j", "confiance": "certaine"})
+        qualify({"droits": ["acces"], "justification": "j", "confiance": 0.9})
+
+
+def test_a_degree_outside_the_scale_is_read_then_refused_at_translation():
+    """Un seul gardien de l'échelle, comme `to_canonical` est le seul gardien de la taxonomie.
+
+    La lecture ne vérifie que la forme ; deux gardiens d'une même règle finiraient par diverger.
+    """
+    verdict = qualify({"droits": ["acces"], "justification": "j", "confiance": "certaine"})
+
+    assert verdict.confidence_slug == "certaine"
+
+    with pytest.raises(EngineFailure):
+        llm.to_canonical_confidence(verdict.confidence_slug)
 
 
 # --------------------------------------------------------------------------

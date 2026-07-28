@@ -15,7 +15,7 @@ var cleanArchDb = postgres.AddDatabase("cleanarchitecture");
 var ollama = builder.AddOllama("ollama")
   .WithContainerName("microservice_rgpd_ollama")
   .WithLifetime(ContainerLifetime.Persistent)
-  .WithDataVolume("microservice_rgpd_ollama_modeles");
+  .WithDataVolume("microservice_rgpd_ollama_models");
 
 // Le modèle est tiré par Aspire au démarrage, et non par une procédure manuelle à côté.
 var qualificationModel = ollama.AddModel("qualification-model", RequiredSetting("Llm:Model"));
@@ -44,6 +44,8 @@ builder.AddUvicornApp("qualification-sidecar", "../sidecar", "qualification_side
   // Les deux échéances voyagent ensemble parce que c'est leur *écart* qui compte : le sidecar
   // abandonne le premier, et la lenteur arrive donc nommée jusqu'à .NET plutôt qu'anonyme. Le
   // sidecar refuse de démarrer si l'inégalité stricte n'est pas tenue.
+  // Le client HTTP .NET vers le sidecar n'existe pas encore ; quand il naîtra, il lira
+  // `Llm:CallerDeadlineSeconds` **ici même**, et non un second chiffre à tenir en accord de tête.
   .WithEnvironment("QUALIFICATION_LLM_DEADLINE_SECONDS", RequiredSetting("Llm:SidecarDeadlineSeconds"))
   .WithEnvironment("QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS", RequiredSetting("Llm:CallerDeadlineSeconds"))
   // Le sidecar attend que le modèle soit tiré : sans cela, le premier appel manuel après un

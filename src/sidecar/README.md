@@ -54,6 +54,13 @@ servi, et non celui qu'on lui a demandé — suivi de la version de la consigne
 relèvent de quel modèle ; sans la seconde, deux verdicts du même modèle sous deux prompts différents
 passeraient pour comparables.
 
+> **Le tag, pas l'empreinte.** `docs/spec/qualification.md` § 5.7 illustre cette version par
+> `qwen3:8b@sha256:…`. L'empreinte n'est pas lisible par le protocole compatible OpenAI : l'obtenir
+> demanderait un appel à l'API propre d'Ollama, donc de graver le fournisseur dans le moteur —
+> exactement ce que « basculer ne demande que `base_url` et nom de modèle » interdit. Le tag est
+> retenu, et sa limite est assumée : deux jeux de poids repoussés sous le même tag porteront la même
+> version.
+
 **Aucun identifiant maison.** La corrélation avec l'appelant passe par l'en-tête `traceparent`, que
 `ServiceDefaults` propage déjà. Les erreurs sortent en `application/problem+json`.
 
@@ -73,7 +80,15 @@ déraille de l'autre.
 **La lenteur doit arriver nommée.** L'échéance du sidecar vers l'amont est tenue *strictement plus
 courte* que celle de l'appelant .NET, et le sidecar **refuse de démarrer** si la configuration ne
 respecte pas cette inégalité : si l'appelant abandonnait le premier, il n'aurait qu'une échéance
-anonyme à rapporter, là où le sidecar sait dire lequel des deux échecs il a subi.
+anonyme à rapporter, là où le sidecar sait dire lequel des trois échecs il a subi.
+
+> **Ce que cette garde vaut aujourd'hui, et ce qui lui manque.** Les deux échéances viennent d'une
+> même section de configuration de l'`AppHost` — `Llm:SidecarDeadlineSeconds` et
+> `Llm:CallerDeadlineSeconds` —, et le client .NET, quand il naîtra, lira la seconde au même
+> endroit. Tant qu'il n'existe pas, l'inégalité est **vérifiée mais pas encore exercée** : rien ne
+> peut prouver ici que 150 s sont bien appliquées en face. La garde reste préférable au commentaire
+> qu'elle remplace — elle transforme un chiffre qu'on aurait pu changer par distraction en un
+> démarrage qui échoue.
 
 **Aucune reprise n'est tentée.** Température à zéro et seed fixe font d'une requête rejouée une
 opération nulle : elle rendrait le même avis en payant une seconde fois un GPU que 8 Go de VRAM

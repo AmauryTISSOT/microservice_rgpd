@@ -1,8 +1,9 @@
 """Le point d'entrée d'avis LLM, vu de l'appelant .NET.
 
 Palette plus riche que celle du lexique, et c'est encore ce qu'achètent deux points d'entrée
-séparés : ce moteur a un amont, donc deux échecs de plus — et surtout **deux codes distincts** pour
-eux, parce qu'un serveur absent et un serveur lent ne se réparent pas de la même façon.
+séparés : ce moteur a un amont, donc trois échecs de plus — et **trois codes distincts** pour eux,
+parce qu'une réponse inexploitable, un serveur éteint et un serveur lent ne se réparent pas au même
+endroit.
 
 **Aucun test n'appelle Ollama** : l'amont est toujours un faux.
 """
@@ -18,47 +19,14 @@ from fastapi.testclient import TestClient
 from qualification_sidecar import app as app_module
 from qualification_sidecar import llm
 from qualification_sidecar.app import app
+from tests.upstream import VALID_VERDICT
 
 PROBLEM_JSON = "application/problem+json"
-
-VALID_VERDICT = {
-    "droits": ["acces"],
-    "justification": "Le texte réclame une copie des données détenues.",
-    "confiance": "moyenne",
-}
-
-
-class FakeModel:
-    """Un amont docile : il rend le contenu qu'on lui a confié, ou lève ce qu'on lui a confié."""
-
-    def __init__(self, content=None, served_model="modele-servi:7b", raises=None):
-        # Une chaîne passe telle quelle : c'est ce qui permet de lui faire rendre autre chose que
-        # du JSON, ce qu'un dictionnaire ne saurait pas exprimer.
-        self._content = content if isinstance(content, str) else json.dumps(content)
-        self._served_model = served_model
-        self._raises = raises
-
-    async def answer(self, *, system, user):
-        if self._raises is not None:
-            raise self._raises
-        return llm.ModelAnswer(content=self._content, served_model=self._served_model)
 
 
 @pytest.fixture
 def client():
     return TestClient(app)
-
-
-@pytest.fixture
-def upstream(monkeypatch):
-    """Substitue l'amont, et rend de quoi le régler test par test."""
-
-    def substitute(**kwargs):
-        model = FakeModel(**kwargs)
-        monkeypatch.setattr(app_module, "LLM_MODEL", model)
-        return model
-
-    return substitute
 
 
 # --------------------------------------------------------------------------
@@ -206,7 +174,7 @@ def test_a_broken_model_and_a_broken_lexicon_do_not_send_to_the_same_place(clien
 
 
 # --------------------------------------------------------------------------
-# Les deux pannes de l'amont, et leurs deux codes
+# Les trois échecs de l'amont, et leurs trois codes
 # --------------------------------------------------------------------------
 
 

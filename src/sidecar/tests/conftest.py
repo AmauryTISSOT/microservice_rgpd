@@ -9,7 +9,7 @@ passerait avec les vraies valeurs de production sans les lire ne prouverait rien
 avec celles-ci prouve que la configuration a bien été traversée.
 
 Aucun de ces réglages n'ouvre de connexion : l'amont réel n'est jamais joint, chaque test qui a
-besoin d'un modèle lui en substituant un faux.
+besoin d'un modèle lui substituant le faux de [`upstream.py`](upstream.py).
 """
 
 import os
@@ -21,3 +21,22 @@ os.environ.setdefault("QUALIFICATION_LLM_TEMPERATURE", "0")
 os.environ.setdefault("QUALIFICATION_LLM_SEED", "1789")
 os.environ.setdefault("QUALIFICATION_LLM_DEADLINE_SECONDS", "20")
 os.environ.setdefault("QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS", "30")
+
+# Importés *après* la configuration ci-dessus : `llm` la lit à l'import, et la suite serait sinon
+# la première à se heurter au refus de démarrer qu'elle est précisément là pour vérifier.
+import pytest  # noqa: E402
+
+from tests.upstream import FakeModel  # noqa: E402
+
+
+@pytest.fixture
+def upstream(monkeypatch):
+    """Substitue l'amont du point d'entrée LLM, et rend de quoi le régler test par test."""
+    from qualification_sidecar import app as app_module
+
+    def substitute(**kwargs):
+        model = FakeModel(**kwargs)
+        monkeypatch.setattr(app_module, "LLM_MODEL", model)
+        return model
+
+    return substitute

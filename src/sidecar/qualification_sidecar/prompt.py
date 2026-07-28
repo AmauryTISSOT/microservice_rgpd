@@ -18,21 +18,17 @@ from __future__ import annotations
 
 from typing import Final
 
+from qualification_sidecar.taxonomy import CANONICAL_NAME_BY_SLUG
+
 #: La version de la consigne ci-dessous. Elle entre dans la version du moteur : deux qualifications
 #: rendues par le même modèle sous deux consignes différentes ne sont pas comparables.
 PROMPT_VERSION: Final = "1.0.0"
 
-#: Les slugs français que le modèle a le droit de rendre. Ce sont ceux du corpus et du prototype ;
-#: `taxonomy.CANONICAL_NAME_BY_SLUG` les traduit, et refuse tout le reste.
-RIGHT_SLUGS: Final[tuple[str, ...]] = (
-    "acces",
-    "rectification",
-    "effacement",
-    "limitation",
-    "portabilite",
-    "opposition",
-    "hors-perimetre",
-)
+#: Les slugs français que le modèle a le droit de rendre — **lus** dans la table de correspondance,
+#: jamais recopiés. Le sidecar ne garde aucune seconde énumération de la taxonomie : une liste
+#: recopiée ici finirait par autoriser au modèle un slug que la traduction refuse ensuite, ou par
+#: lui en interdire un qui existe.
+RIGHT_SLUGS: Final[tuple[str, ...]] = tuple(CANONICAL_NAME_BY_SLUG)
 
 #: Les trois degrés de confiance, dits en français au modèle.
 CONFIDENCE_SLUGS: Final[tuple[str, ...]] = ("haute", "moyenne", "basse")

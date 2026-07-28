@@ -2,9 +2,14 @@
 
 Ce moteur a ce que le lexique n'a pas — une **confiance déclarée** et une **justification en
 français** — et il a ce que le lexique n'a pas non plus : un **amont**. C'est cet amont qui lui vaut
-une palette de codes plus riche, et deux pannes qu'il faut surtout ne pas confondre. Un serveur
-absent se répare en le démarrant ; un modèle trop lent se répare en changeant de modèle ou de
-matériel. Les rendre sous le même code obligerait l'exploitant à deviner lequel des deux.
+une palette de codes plus riche, et **trois** pannes qu'il faut surtout ne pas confondre, parce
+qu'elles ne se réparent pas au même endroit :
+
+- l'amont a répondu autre chose qu'un avis → revoir le modèle ou la consigne ;
+- l'amont n'est pas en état de servir → démarrer ou réparer le serveur ;
+- l'amont est trop lent → changer de modèle, ou de matériel.
+
+Les rendre sous un code commun obligerait l'exploitant à deviner laquelle des trois.
 
 **Aucune reprise.** Température à zéro et seed fixe font d'une requête rejouée une opération nulle :
 elle rendrait le même avis, en payant une seconde fois un GPU que 8 Go de VRAM sérialisent déjà. Une
@@ -68,10 +73,11 @@ class UnusableCompletion(EngineFailure):
 
 
 class ModelUnreachable(RuntimeError):
-    """L'amont est injoignable, ou son modèle n'est pas chargé.
+    """L'amont est injoignable, ou ne connaît pas le modèle demandé.
 
-    Panne de l'amont, et **pas la même que la précédente** : celle-ci se répare en démarrant un
-    serveur, l'autre en changeant de modèle ou de consigne.
+    Panne de l'amont, et **pas la même que la précédente** : celle-ci se répare en démarrant ou en
+    réparant un serveur, l'autre en changeant de modèle ou de consigne. Un amont qui a bien répondu,
+    fût-ce une bêtise, n'est jamais injoignable.
     """
 
 
@@ -192,7 +198,7 @@ class StructuredModel(Protocol):
 class OpenAiCompatibleModel:
     """L'amont réel, derrière le protocole compatible OpenAI — et rien de ce protocole ne fuit plus loin.
 
-    Les échecs du client y sont traduits en les deux pannes que le domaine distingue : au-delà de
+    Les échecs du client y sont traduits en les trois pannes que le domaine distingue : au-delà de
     cette classe, plus personne n'a à connaître la taxonomie d'erreurs d'un SDK.
     """
 
@@ -226,26 +232,43 @@ class OpenAiCompatibleModel:
                     },
                 },
             )
-        # `APITimeoutError` dérive d'`APIConnectionError` : le dépassement d'échéance se rattrape
-        # donc en premier, sans quoi il sortirait sous le code d'une panne d'amont.
+        # Les trois `except` suivent l'ordre de la hiérarchie du SDK, du plus précis au plus large,
+        # parce que c'est là que se joue la distinction des codes. `APITimeoutError` dérive
+        # d'`APIConnectionError`, qui dérive d'`APIError` : rattraper large en premier ferait
+        # ressortir un dépassement d'échéance sous le code d'un serveur éteint.
         except openai.APITimeoutError as timeout:
             raise ModelTooSlow(
                 f"L'amont n'a pas répondu en {self._settings.deadline_seconds} s."
             ) from timeout
-        except openai.OpenAIError as failure:
-            raise ModelUnreachable(f"L'amont n'a pas rendu de complétion : {failure}") from failure
+        # Injoignable au sens du domaine : soit personne ne répond, soit l'amont répond qu'il ne
+        # connaît pas ce modèle. Dans les deux cas il n'est pas en état de servir, et c'est
+        # l'installation qu'on va corriger, jamais la consigne.
+        except (openai.APIConnectionError, openai.NotFoundError) as unreachable:
+            raise ModelUnreachable(
+                f"L'amont n'est pas en état de servir « {self._settings.model} » : {unreachable}"
+            ) from unreachable
+        # Tout le reste — statut d'erreur, contexte dépassé, `response_format` non supporté — est un
+        # amont **qui a bien répondu**, mais autre chose qu'un avis. Le confondre avec l'injoignable
+        # enverrait redémarrer un serveur qui tourne.
+        except openai.OpenAIError as unusable:
+            raise UnusableCompletion(
+                f"L'amont a répondu autre chose qu'une complétion : {unusable}"
+            ) from unusable
 
+        # Le modèle absent du serveur ressort ici en statut d'erreur, donc en `502` : Ollama a
+        # répondu pour dire qu'il ne connaît pas ce modèle, ce qui n'est pas la même chose que ne
+        # pas répondre.
         content = completion.choices[0].message.content if completion.choices else None
 
         if not content:
-            raise ModelUnreachable("L'amont a rendu une complétion sans contenu.")
+            raise UnusableCompletion("L'amont a rendu une complétion sans contenu.")
 
         # Le modèle déclaré par l'amont prime sur celui demandé : c'est celui qui a réellement parlé.
         return ModelAnswer(content=content, served_model=completion.model or self._settings.model)
 
 
 @dataclass(frozen=True, slots=True)
-class FrenchVerdict:
+class UntranslatedOpinion:
     """Le verdict tel que le modèle l'a rendu : en français, non traduit, non validé au-delà de sa forme.
 
     Il ne quitte jamais le sidecar sous cette forme. La traduction en noms de fil a lieu à la
@@ -258,7 +281,7 @@ class FrenchVerdict:
     served_model: str
 
 
-async def qualify(text: str, model: StructuredModel) -> FrenchVerdict:
+async def qualify(text: str, model: StructuredModel) -> UntranslatedOpinion:
     """Demande son avis au modèle et vérifie qu'il en a rendu un, sans encore le traduire.
 
     Tout écart à la forme attendue lève `UnusableCompletion` : **un avis à moitié valide n'est pas
@@ -280,7 +303,7 @@ async def qualify(text: str, model: StructuredModel) -> FrenchVerdict:
             f"Le modèle a rendu un {type(verdict).__name__} là où le schéma exige un objet."
         )
 
-    return FrenchVerdict(
+    return UntranslatedOpinion(
         slugs=_read_slugs(verdict),
         confidence_slug=_read_confidence(verdict),
         justification=_read_justification(verdict),
@@ -309,12 +332,17 @@ def _read_slugs(verdict: Mapping[str, object]) -> tuple[str, ...]:
 
 
 def _read_confidence(verdict: Mapping[str, object]) -> str:
+    """Ne vérifie que la *forme*, jamais l'appartenance à l'échelle.
+
+    Symétrique des droits, dont l'appartenance à la taxonomie est refusée par `to_canonical` et par
+    lui seul : un degré hors échelle est refusé par `to_canonical_confidence`, et par lui seul.
+    Vérifier ici *aussi* ferait deux gardiens d'une même règle, dont l'un finirait par diverger.
+    """
     confidence = verdict.get("confiance")
 
-    if not isinstance(confidence, str) or confidence not in CANONICAL_CONFIDENCE_BY_SLUG:
+    if not isinstance(confidence, str):
         raise UnusableCompletion(
-            f"Le modèle a rendu la confiance {confidence!r}, hors de l'échelle à trois degrés "
-            f"({', '.join(CANONICAL_CONFIDENCE_BY_SLUG)})."
+            f"Le modèle a rendu la confiance {confidence!r}, là où le schéma exige une chaîne."
         )
 
     return confidence
