@@ -12,8 +12,9 @@ l'appelant .NET, qui ne demandera jamais « cet avis est-il bien formé ? ».
 from __future__ import annotations
 
 from collections.abc import Sequence
+from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from qualification_sidecar.taxonomy import OUT_OF_SCOPE, PROJECTED_RIGHTS
 
@@ -50,6 +51,49 @@ class Opinion(BaseModel):
 
     @model_validator(mode="after")
     def _honour_the_domain_invariants(self) -> Opinion:
+        ensure_valid_qualification(self.rights)
+        return self
+
+
+class DeclaredConfidence(StrEnum):
+    """L'échelle **ordinale à trois degrés** par laquelle un moteur dit à quel point il doute de lui.
+
+    Ordinale, donc fermée : trois degrés nommés, et surtout pas un nombre. Un pourcentage inviterait
+    à des seuils fins que rien ne fonde, là où le service n'a besoin que de trier une file de
+    relecture. Les noms sont ceux du fil — anglais canoniques —, le moteur traduisant les siens
+    juste avant de répondre.
+    """
+
+    HIGH = "High"
+    MEDIUM = "Medium"
+    LOW = "Low"
+
+
+class ReasonedOpinion(BaseModel):
+    """L'avis d'un moteur qui sait douter de lui-même et dire pourquoi il a tranché.
+
+    Distinct d'`Opinion`, et pas une version enrichie de celle-ci : la confiance et la
+    justification sont **obligatoires ici et interdites là-bas**. Les fondre en un seul type à
+    champs optionnels rendrait exprimable un avis lexical assorti d'une confiance — exactement ce
+    que le domaine interdit.
+
+    La justification est en français : c'est l'unique texte du sidecar destiné à un humain, et
+    l'opérateur qui relit la qualification lit le français. Le fil reste anglais pour tout le
+    reste — les noms de champs comme les droits.
+
+    Elle fait partie du contrat **du LLM seulement** : le lexique n'en rend pas, sa « raison » étant
+    une table de scores, qui est du diagnostic et non de l'aide à la décision.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    rights: tuple[str, ...]
+    confidence: DeclaredConfidence
+    justification: str = Field(min_length=1)
+    engine: Engine
+
+    @model_validator(mode="after")
+    def _honour_the_domain_invariants(self) -> ReasonedOpinion:
         ensure_valid_qualification(self.rights)
         return self
 
