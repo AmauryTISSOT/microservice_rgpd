@@ -1,5 +1,3 @@
-﻿using System.Net.Http.Json;
-using System.Text.Json;
 using MicroserviceRgpd.Core.Qualifications;
 
 namespace MicroserviceRgpd.Infrastructure.Qualifications;
@@ -27,46 +25,20 @@ public sealed class LexiconQualificationEngine(HttpClient client) : IQualificati
   /// <summary>Le point d'entrée du seul moteur qui n'a aucun amont — donc aucune panne d'amont.</summary>
   private const string Endpoint = "opinions/lexicon";
 
-  /// <summary>
-  /// Le fil parle <c>camelCase</c> des deux côtés. Les droits, eux, se lisent par le convertisseur
-  /// attaché à la taxonomie : un nom hors des sept est refusé à la lecture, pas plus tard.
-  /// </summary>
-  private static readonly JsonSerializerOptions WireFormat = JsonSerializerOptions.Web;
+  /// <summary>Le nom sous lequel ce moteur se déclare en panne, pour que l'exploitant sache où réparer.</summary>
+  private const string Engine = "Le moteur lexical";
 
   /// <inheritdoc />
   public async Task<QualificationOpinion> QualifyAsync(
     RightsRequestText text,
     CancellationToken cancellationToken = default)
   {
-    // Le texte, et rien d'autre : pas d'identifiant — la corrélation passe par `traceparent`,
-    // propagé par ServiceDefaults — et pas de langue, le français étant la seule option.
-    using var response = await client.PostAsJsonAsync(
-      Endpoint,
-      new LexiconOpinionRequest(text.Value),
-      WireFormat,
-      cancellationToken);
+    var opinion = await SidecarExchange.AskAsync<LexiconOpinionResponse>(
+      client, Endpoint, Engine, text, cancellationToken);
 
-    if (!response.IsSuccessStatusCode)
+    if (opinion.Rights is null)
     {
-      throw new QualificationEngineFailure(
-        $"Le moteur lexical a répondu {(int)response.StatusCode} au lieu de rendre un avis.");
-    }
-
-    LexiconOpinionResponse? opinion;
-
-    try
-    {
-      opinion = await response.Content.ReadFromJsonAsync<LexiconOpinionResponse>(WireFormat, cancellationToken);
-    }
-    catch (JsonException illegible)
-    {
-      throw new QualificationEngineFailure(
-        "Le moteur lexical a répondu autre chose qu'un avis lisible.", illegible);
-    }
-
-    if (opinion?.Rights is null)
-    {
-      throw new QualificationEngineFailure("Le moteur lexical a répondu sans aucun droit : ce n'est pas un avis.");
+      throw new QualificationEngineFailure($"{Engine} a répondu sans aucun droit : ce n'est pas un avis.");
     }
 
     try
@@ -79,12 +51,9 @@ public sealed class LexiconQualificationEngine(HttpClient client) : IQualificati
     catch (ArgumentException invalid)
     {
       throw new QualificationEngineFailure(
-        $"Le moteur lexical a rendu un avis que le domaine refuse : {invalid.Message}", invalid);
+        $"{Engine} a rendu un avis que le domaine refuse : {invalid.Message}", invalid);
     }
   }
-
-  /// <summary>Le texte, seul champ du contrat interne — qui se resserre plutôt qu'il ne tolère.</summary>
-  private sealed record LexiconOpinionRequest(string Text);
 
   /// <summary>
   /// L'avis tel qu'il arrive. L'identité du moteur voyage aussi sur le fil ; elle n'est pas lue ici

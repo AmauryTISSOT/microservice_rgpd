@@ -22,10 +22,16 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// Vrai quand le service n'était pas entier — un moteur n'ayant pas rendu d'avis. Toujours présent :
 /// un booléen facultatif obligerait chaque appelant à traiter trois états là où le domaine en a deux.
 /// </param>
+/// <param name="Justification">
+/// La phrase que le moteur principal oppose à l'opérateur humain, quand il en a rendu une. Absente
+/// en repli sur le témoin : celui-ci ne justifie rien, et lui fabriquer une phrase mentirait à
+/// l'opérateur au moment précis où le service se trompe le plus.
+/// </param>
 /// <param name="CallerReference">La référence de l'appelant, rendue verbatim, ou absente si elle ne fut pas fournie.</param>
 public sealed record QualificationOutcome(
   Guid QualificationId,
   Qualification Qualification,
   ReviewSignal ReviewSignal,
   bool Degraded,
+  string? Justification,
   string? CallerReference);

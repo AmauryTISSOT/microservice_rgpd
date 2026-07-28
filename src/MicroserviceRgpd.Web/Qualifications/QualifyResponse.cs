@@ -41,12 +41,18 @@ namespace MicroserviceRgpd.Web.Qualifications;
 /// et distinct du signal de relecture : celui-ci dit « avec quelle attention relire ? », celui-là
 /// dit « le service était-il entier ? ». Les fondre ferait perdre l'un pour lire l'autre.
 /// </param>
+/// <param name="Justification">
+/// La phrase, en français, qu'un opérateur humain lit pour comprendre le verdict. <b>Facultative
+/// par contrat</b> : elle est absente en mode dégradé, où le service se tait plutôt que d'inventer
+/// une raison, et un client doit donc la typer comme pouvant manquer.
+/// </param>
 public sealed record QualifyResponse(
   Guid QualificationId,
   string? CallerReference,
   IReadOnlyCollection<DataSubjectRight> Rights,
   ReviewSignal ReviewSignal,
-  bool Degraded)
+  bool Degraded,
+  string? Justification)
 {
   /// <summary>
   /// Projette sur le fil ce que le service a rendu.
@@ -66,6 +72,7 @@ public sealed record QualifyResponse(
       outcome.CallerReference,
       [.. outcome.Qualification.Rights.OrderBy(right => right.Value)],
       outcome.ReviewSignal,
-      outcome.Degraded);
+      outcome.Degraded,
+      outcome.Justification);
   }
 }

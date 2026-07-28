@@ -56,9 +56,10 @@ public class Qualify(IMediator mediator) : Endpoint<QualifyRequest, QualifyRespo
 
     if (result.Status != ResultStatus.Ok)
     {
-      // Inatteignable tant que le seul moteur du service est le témoin lexical : les statuts
-      // d'échec arriveront avec les échéances et la trace d'audit. Le refuser plutôt que le
-      // supposer évite qu'un statut ajouté plus tard sorte en 200 avec un corps vide.
+      // Inatteignable tant qu'un seul des deux moteurs suffit à qualifier : les statuts d'échec
+      // arriveront avec les échéances, les deux codes de double panne et la trace d'audit. Le
+      // refuser plutôt que le supposer évite qu'un statut ajouté plus tard sorte en 200 avec un
+      // corps vide.
       throw new InvalidOperationException(
         $"La qualification a rendu un statut que l'endpoint ne sait pas traduire : {result.Status}.");
     }
