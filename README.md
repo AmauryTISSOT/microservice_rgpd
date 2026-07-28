@@ -52,25 +52,6 @@ dotnet build MicroserviceRgpd.slnx
 dotnet test  MicroserviceRgpd.slnx
 ```
 
-## Avant d'ouvrir une PR
-
-**La commande à passer au vert**, depuis la racine du dépôt :
-
-```sh
-dotnet test MicroserviceRgpd.slnx && pytest
-```
-
-Elle couvre les deux moitiés du service : les tests .NET de la solution, puis les tests `pytest`
-du sidecar de qualification. Docker doit être démarré — les tests d'intégration et fonctionnels
-montent un PostgreSQL en container.
-
-> Le sidecar Python n'est pas encore dans le dépôt : jusqu'à son arrivée, seule la première
-> moitié de la commande a de quoi s'exécuter.
-
-**Il n'y a ni CI ni hook git, et c'est délibéré.** Les tests à container coûtent une dizaine de
-secondes de démarrage ; un `pre-commit` qui les lance serait désactivé dans la semaine, et un
-garde-fou désactivé est pire qu'absent — il donne l'illusion d'une protection.
-
 ```sh
 # API seule
 dotnet run --project src/MicroserviceRgpd.Web
@@ -87,6 +68,23 @@ Les tests d'intégration et fonctionnels utilisent Testcontainers : **Docker doi
 dotnet ef migrations add <Nom> --project src/MicroserviceRgpd.Infrastructure --startup-project src/MicroserviceRgpd.Web
 dotnet ef database update      --project src/MicroserviceRgpd.Infrastructure --startup-project src/MicroserviceRgpd.Web
 ```
+
+## Avant d'ouvrir une PR
+
+**La porte à passer au vert**, depuis la racine du dépôt — les deux moitiés du service, les tests
+.NET de la solution puis les tests `pytest` du sidecar de qualification :
+
+```sh
+dotnet test MicroserviceRgpd.slnx
+pytest
+```
+
+> Le sidecar Python n'est pas encore dans le dépôt : jusqu'à son arrivée, seule la première
+> ligne a de quoi s'exécuter.
+
+**Il n'y a ni CI ni hook git, et c'est délibéré.** Les tests à container coûtent une dizaine de
+secondes de démarrage ; un `pre-commit` qui les lance serait désactivé dans la semaine, et un
+garde-fou désactivé est pire qu'absent — il donne l'illusion d'une protection.
 
 ## Conventions
 

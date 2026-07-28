@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Interfaces;
+﻿using MicroserviceRgpd.Core.Interfaces;
 using MicroserviceRgpd.Infrastructure.Email;
 
 namespace MicroserviceRgpd.UnitTests.Infrastructure.Email;
@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Email;
 public class FakeEmailSenderTests
 {
   [Fact]
-  public async Task NEnvoieRienEtJournaliseLEnvoiSimule()
+  public async Task LogsInsteadOfSendingAnything()
   {
     var logger = Substitute.For<ILogger<FakeEmailSender>>();
     IEmailSender sender = new FakeEmailSender(logger);

@@ -13,8 +13,9 @@ public static class MiddlewareConfig
     // (format maison ErrorResponse) ne conviennent : chacune ferait une seconde forme d'erreur.
     app.UseExceptionHandler();
 
-    // Les codes que la plateforme rend sans passer par l'application — 404, 405, 413, 415 —
-    // sortent dans la même forme plutôt qu'avec un corps vide.
+    // Les codes que la plateforme rend sans jamais atteindre l'application — route inconnue,
+    // méthode non supportée, type de contenu refusé — sortent dans la même forme plutôt
+    // qu'avec un corps vide.
     app.UseStatusCodePages();
 
     if (app.Environment.IsDevelopment())

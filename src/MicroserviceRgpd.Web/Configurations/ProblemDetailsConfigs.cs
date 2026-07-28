@@ -1,13 +1,12 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace MicroserviceRgpd.Web.Configurations;
 
 /// <summary>
 /// L'API n'a qu'une seule forme d'erreur : <c>application/problem+json</c> conforme RFC 9457.
 /// Ce que la plateforme produit avant l'application — route inconnue, méthode non supportée,
-/// corps trop grand, type de contenu refusé, exception non gérée — passe par ici ; ce que
-/// FastEndpoints produit passe par <c>Errors.UseProblemDetails()</c>, posé au moment
-/// d'installer le middleware.
+/// type de contenu refusé, exception non gérée — passe par ici ; ce que FastEndpoints produit
+/// passe par <c>Errors.UseProblemDetails()</c>, posé au moment d'installer le middleware.
 /// </summary>
 public static class ProblemDetailsConfigs
 {
