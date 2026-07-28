@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Text;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Infrastructure.Qualifications;
@@ -110,39 +109,11 @@ public class LexiconQualificationEngineTests
 
   private static LexiconQualificationEngine Engine(SidecarDouble sidecar)
   {
-    return new LexiconQualificationEngine(new HttpClient(sidecar)
-    {
-      BaseAddress = new Uri("http://qualification-sidecar"),
-    });
+    return new LexiconQualificationEngine(sidecar.Client());
   }
 
   private static SidecarDouble RespondingWith(string body, HttpStatusCode status = HttpStatusCode.OK)
   {
-    return new SidecarDouble(status, body);
-  }
-
-  /// <summary>Le sidecar réduit à ce que l'adaptateur en voit : une réponse, et la requête reçue.</summary>
-  private sealed class SidecarDouble(HttpStatusCode status, string body) : HttpMessageHandler
-  {
-    public HttpRequestMessage? LastRequest { get; private set; }
-
-    public string? LastRequestBody { get; private set; }
-
-    protected override async Task<HttpResponseMessage> SendAsync(
-      HttpRequestMessage request,
-      CancellationToken cancellationToken)
-    {
-      cancellationToken.ThrowIfCancellationRequested();
-
-      LastRequest = request;
-      LastRequestBody = request.Content is null
-        ? null
-        : await request.Content.ReadAsStringAsync(cancellationToken);
-
-      return new HttpResponseMessage(status)
-      {
-        Content = new StringContent(body, Encoding.UTF8, "application/json"),
-      };
-    }
+    return SidecarDouble.RespondingWith(body, status);
   }
 }

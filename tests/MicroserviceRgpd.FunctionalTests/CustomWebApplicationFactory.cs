@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Infrastructure.Data;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +14,16 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:18-alpine").Build();
 
   /// <summary>
-  /// Le moteur de qualification, substitue. La doublure se pose <b>sur le port du domaine</b>, et
-  /// non sur le fil HTTP : aucun test .NET n appelle le sidecar reel, et aucun n approche un GPU.
+  /// Le moteur dont l avis fait verdict, substitue. La doublure se pose <b>sur le port du domaine</b>,
+  /// et non sur le fil HTTP : aucun test .NET n appelle le sidecar reel, et aucun n approche un GPU.
   /// Un test qui exigerait un GPU ne tournerait jamais, et un test qui ne tourne jamais ment.
   /// </summary>
-  public WitnessDouble Witness { get; } = new();
+  public QualificationEngineDouble Verdict { get; } = new(
+    Core.Qualifications.DeclaredConfidence.High,
+    "Le texte demande la suppression des donnees.");
+
+  /// <summary>Le moteur temoin, substitue lui aussi : ni confiance, ni justification.</summary>
+  public QualificationEngineDouble Witness { get; } = new();
 
   public async Task InitializeAsync()
   {
@@ -72,16 +77,20 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   }
 
   /// <summary>
-  /// La seule chose substituee est le moteur. Tout le reste est l application telle quelle : elle
-  /// resout elle-meme sa chaine de connexion depuis <c>ConnectionStrings:DefaultConnection</c>,
-  /// exactement comme hors tests.
+  /// Les seules choses substituees sont les deux moteurs, chacun sous le role par lequel
+  /// l application le demande. Tout le reste est l application telle quelle : elle resout elle-meme
+  /// sa chaine de connexion depuis <c>ConnectionStrings:DefaultConnection</c>, exactement comme
+  /// hors tests.
   /// </summary>
   protected override void ConfigureWebHost(IWebHostBuilder builder)
   {
     builder.ConfigureTestServices(services =>
     {
-      services.RemoveAll<IQualificationEngine>();
-      services.AddSingleton<IQualificationEngine>(Witness);
+      services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Verdict);
+      services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Witness);
+
+      services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Verdict, Verdict);
+      services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Witness, Witness);
     });
   }
 }
