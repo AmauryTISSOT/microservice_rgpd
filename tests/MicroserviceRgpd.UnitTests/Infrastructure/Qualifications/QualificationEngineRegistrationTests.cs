@@ -57,6 +57,8 @@ public class QualificationEngineRegistrationTests
       .AddInMemoryCollection(new Dictionary<string, string?>
       {
         ["Qualification:SidecarBaseAddress"] = "http://qualification-sidecar",
+        ["Qualification:LlmDeadlineSeconds"] = "150",
+        ["Qualification:LexiconDeadlineSeconds"] = "5",
       })
       .Build();
 

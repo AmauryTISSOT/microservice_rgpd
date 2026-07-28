@@ -24,8 +24,9 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// <para>
 /// <b>Un moteur muet n'est pas une panne du service.</b> Quelle que soit la raison de son silence,
 /// son avis manque, et c'est tout ce que le domaine a besoin d'en savoir. Les deux muets, en
-/// revanche, ne laissent rien à qualifier : la panne du moteur principal ressort alors telle quelle,
-/// puisque c'est son mode de défaillance qui décidera du code rendu à l'appelant.
+/// revanche, ne laissent rien à qualifier : la panne du moteur principal ressort alors en
+/// <see cref="QualificationEngineFailure"/>, puisque c'est son mode de défaillance qui décidera du
+/// code rendu à l'appelant.
 /// </para>
 /// </remarks>
 /// <param name="verdictEngine">Le moteur dont l'avis fait verdict, déclaré par le port et par son rôle.</param>
@@ -74,7 +75,19 @@ public sealed class QualifyHandler(
     {
       // La panne du moteur principal prime : le service suit le mode de défaillance de celui dont
       // l'avis aurait fait verdict, et non celui du témoin qui n'a fait que tomber en même temps.
-      ExceptionDispatchInfo.Throw(verdict.Failure ?? witness.Failure!);
+      var failure = verdict.Failure ?? witness.Failure!;
+
+      if (failure is QualificationEngineFailure named)
+      {
+        ExceptionDispatchInfo.Throw(named);
+      }
+
+      // Un moteur peut se taire pour une raison que personne n'a prévue. Le domaine n'a pas à la
+      // connaître, mais la double panne doit rester une double panne : la nommer ici évite qu'une
+      // cause inattendue ne ressorte en erreur interne, alors que le service sait exactement ce qui
+      // lui manque.
+      throw new QualificationEngineFailure(
+        "Aucun des deux moteurs n'a rendu d'avis : il ne reste rien à qualifier.", failure);
     }
 
     return Corroboration.Between(verdict.Opinion, witness.Opinion);

@@ -131,6 +131,37 @@ public class QualifyHandlerTests
   }
 
   /// <summary>
+  /// Le dépassement d'échéance du moteur principal traverse <b>avec son type</b> : c'est lui, et lui
+  /// seul, qui distingue le code rendu à l'appelant de celui d'une panne ordinaire.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheDeadlineFailureOfThePrincipalEngineDistinctFromAnyOtherFailure()
+  {
+    GiveThePrincipalEngine(new QualificationEngineDeadlineExceeded("Le moteur LLM a dépassé son échéance."));
+    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+
+    await Should.ThrowAsync<QualificationEngineDeadlineExceeded>(() => HandleAsync());
+  }
+
+  /// <summary>
+  /// Un moteur peut se taire pour une raison que personne n'a prévue. Cela reste une double panne :
+  /// le handler la <b>nomme</b>, plutôt que de laisser une cause inattendue ressortir en erreur
+  /// interne, et il garde la cause d'origine attachée pour l'exploitant.
+  /// </summary>
+  [Fact]
+  public async Task NamesTheDoubleFailureEvenWhenNeitherEngineFailedInAWayItKnows()
+  {
+    var unforeseen = new InvalidOperationException("Le socle HTTP n'a jamais laissé partir l'appel.");
+    GiveThePrincipalEngine(unforeseen);
+    GiveTheWitness(new TimeoutException("Le témoin non plus."));
+
+    var failure = await Should.ThrowAsync<QualificationEngineFailure>(() => HandleAsync());
+
+    failure.ShouldNotBeOfType<QualificationEngineDeadlineExceeded>();
+    failure.InnerException.ShouldBeSameAs(unforeseen);
+  }
+
+  /// <summary>
   /// L'annulation de l'appelant n'est pas une panne de moteur : elle ressort telle quelle, et ne se
   /// déguise ni en verdict dégradé ni en repli. Un appelant parti ne reçoit rien.
   /// </summary>

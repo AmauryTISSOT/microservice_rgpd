@@ -1,4 +1,6 @@
-﻿using MicroserviceRgpd.Web.Configurations;
+﻿using MicroserviceRgpd.Infrastructure.Qualifications;
+using MicroserviceRgpd.Web.Configurations;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +11,14 @@ using var loggerFactory = LoggerFactory.Create(config => config.AddConsole());
 var startupLogger = loggerFactory.CreateLogger<Program>();
 
 startupLogger.LogInformation("Starting web host");
+
+// Les deux appels sortants vers les moteurs se tracent sous une source à eux, en plus de
+// l'instrumentation HTTP que ServiceDefaults pose déjà : les deux moteurs partagent une adresse et
+// ne diffèrent que par leur chemin, si bien qu'une trace de transport seule obligerait à lire une
+// URL pour savoir lequel des deux a échoué. C'est le seul canal qui comptera ces échecs — la trace
+// d'audit, par construction, n'enregistre que les verdicts rendus.
+builder.Services.AddOpenTelemetry()
+       .WithTracing(tracing => tracing.AddSource(QualificationTelemetry.SourceName));
 
 // Le second garde-fou d'entrée, et celui qui protège réellement : il agit au transport, avant
 // toute désérialisation, là où le plafond de 10 000 caractères ne joue qu'une fois le corps lu.

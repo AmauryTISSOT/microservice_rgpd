@@ -34,9 +34,16 @@ public sealed class LlmQualificationEngine(HttpClient client) : IQualificationEn
     RightsRequestText text,
     CancellationToken cancellationToken = default)
   {
-    var opinion = await SidecarExchange.AskAsync<LlmOpinionResponse>(
-      client, Endpoint, Engine, text, cancellationToken);
+    return await SidecarExchange.AskAsync<LlmOpinionResponse>(
+      client, Endpoint, Engine, text, Read, cancellationToken);
+  }
 
+  /// <summary>
+  /// Fait de l'avis arrivé un avis du domaine, ou nomme ce qui manque — les deux exigences que ce
+  /// moteur porte en propre.
+  /// </summary>
+  private static QualificationOpinion Read(LlmOpinionResponse opinion)
+  {
     // Un degré absent ne se replie pas sur « basse » : un repli inventerait une auto-évaluation que
     // le modèle n'a pas rendue, et c'est précisément sur elle que l'opérateur trie sa relecture.
     // Un degré hors de l'échelle, lui, a déjà été refusé à la lecture du fil.
