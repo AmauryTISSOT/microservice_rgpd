@@ -60,6 +60,7 @@ public sealed class QualificationAuditRowConfiguration : IEntityTypeConfiguratio
     builder.Property(row => row.VerdictEngineVersion).HasColumnName("verdict_engine_version");
 
     builder.Property(row => row.WitnessRights).HasColumnName("witness_rights");
+    builder.Property(row => row.WitnessDeclaredConfidence).HasColumnName("witness_declared_confidence");
     builder.Property(row => row.WitnessEngineName).HasColumnName("witness_engine_name");
     builder.Property(row => row.WitnessEngineVersion).HasColumnName("witness_engine_version");
 

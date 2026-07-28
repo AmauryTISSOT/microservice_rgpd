@@ -26,6 +26,8 @@ public sealed class QualificationEngineDouble(
   string? justification = null,
   QualificationEngineIdentity? engine = null) : IQualificationEngine
 {
+  private static readonly QualificationEngineIdentity Anonymous = new("double", "1.0.0");
+
   private readonly DeclaredConfidence? _confidence = confidence;
   private readonly string? _justification = justification;
 
@@ -45,7 +47,7 @@ public sealed class QualificationEngineDouble(
   public Exception? Silence { get; set; }
 
   /// <summary>L identite que le moteur joint a son avis.</summary>
-  public QualificationEngineIdentity Engine { get; set; } = engine ?? new QualificationEngineIdentity("double", "1.0.0");
+  public QualificationEngineIdentity Engine { get; set; } = engine ?? Anonymous;
 
   /// <summary>Le texte tel que le moteur l a recu — ce qui permet de verifier ce que la frontiere en a fait.</summary>
   public RightsRequestText? ReceivedText { get; private set; }
@@ -64,7 +66,7 @@ public sealed class QualificationEngineDouble(
     DeclaredConfidence = _confidence;
     Justification = _justification;
     Silence = null;
-    Engine = engine ?? new QualificationEngineIdentity("double", "1.0.0");
+    Engine = engine ?? Anonymous;
     ReceivedText = null;
     CallCount = 0;
   }

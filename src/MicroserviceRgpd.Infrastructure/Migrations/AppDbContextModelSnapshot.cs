@@ -86,6 +86,10 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("verdict_rights");
 
+                    b.Property<string>("WitnessDeclaredConfidence")
+                        .HasColumnType("text")
+                        .HasColumnName("witness_declared_confidence");
+
                     b.Property<string>("WitnessEngineName")
                         .HasColumnType("text")
                         .HasColumnName("witness_engine_name");

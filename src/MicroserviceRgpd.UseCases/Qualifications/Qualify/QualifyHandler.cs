@@ -59,6 +59,9 @@ public sealed class QualifyHandler(
   {
     ArgumentNullException.ThrowIfNull(command);
 
+    // L'instant de l'acte est celui où il commence, et non celui où on l'écrit : lu après coup, il
+    // ne se raccorderait pas à la latence totale, qui court depuis ici.
+    var occurredAt = clock.GetUtcNow();
     var started = clock.GetTimestamp();
 
     var verdictAnswer = AskAsync(verdictEngine, QualificationEngineRole.Verdict, command.Text, cancellationToken);
@@ -83,7 +86,7 @@ public sealed class QualifyHandler(
     // quand la qualification elle-même l'était. Une base indisponible est une panne du service, pas
     // un mode dégradé.
     await auditTrail.RecordAsync(
-      EntryOf(command, outcome, verdictAnswer.Result, witnessAnswer.Result, clock.GetElapsedTime(started)),
+      EntryOf(command, outcome, occurredAt, verdictAnswer.Result, witnessAnswer.Result, clock.GetElapsedTime(started)),
       cancellationToken);
 
     return outcome;
@@ -98,16 +101,17 @@ public sealed class QualifyHandler(
   /// l'enregistre — en distinguant le repli lexical du lexique absent, que le booléen public
   /// recouvre.
   /// </remarks>
-  private QualificationAuditEntry EntryOf(
+  private static QualificationAuditEntry EntryOf(
     QualifyCommand command,
     QualificationOutcome outcome,
+    DateTimeOffset occurredAt,
     EngineAnswer verdict,
     EngineAnswer witness,
     TimeSpan totalLatency)
   {
     return new QualificationAuditEntry(
       outcome.QualificationId,
-      clock.GetUtcNow(),
+      occurredAt,
       command.Text,
       outcome.Qualification,
       outcome.ReviewSignal,

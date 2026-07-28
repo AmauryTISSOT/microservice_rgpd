@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MicroserviceRgpd.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260728133231_CreateQualificationAuditEntries")]
+    [Migration("20260728134713_CreateQualificationAuditEntries")]
     partial class CreateQualificationAuditEntries
     {
         /// <inheritdoc />
@@ -88,6 +88,10 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.PrimitiveCollection<string[]>("VerdictRights")
                         .HasColumnType("text[]")
                         .HasColumnName("verdict_rights");
+
+                    b.Property<string>("WitnessDeclaredConfidence")
+                        .HasColumnType("text")
+                        .HasColumnName("witness_declared_confidence");
 
                     b.Property<string>("WitnessEngineName")
                         .HasColumnType("text")

@@ -59,6 +59,13 @@ public sealed class QualificationAuditRow
   /// <summary>L'avis du moteur témoin, ou <c>null</c> — et c'est un verdict resté sans contrôle.</summary>
   public string[]? WitnessRights { get; init; }
 
+  /// <summary>
+  /// La confiance que le moteur témoin a déclarée, s'il en déclare une — le lexique n'en déclare
+  /// aucune, mais la colonne existe parce que rien dans le domaine n'interdit à un témoin d'en
+  /// avoir : la perdre en silence le jour où les rôles changent priverait la trace d'une prémisse.
+  /// </summary>
+  public string? WitnessDeclaredConfidence { get; init; }
+
   /// <summary>Le nom du moteur qui a tenu le rôle de témoin.</summary>
   public string? WitnessEngineName { get; init; }
 

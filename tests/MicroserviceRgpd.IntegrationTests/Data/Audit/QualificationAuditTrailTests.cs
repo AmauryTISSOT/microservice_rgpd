@@ -18,8 +18,8 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
   private static readonly RightsRequestText Text =
     RightsRequestText.From("Supprimez toutes les données que vous avez sur moi.");
 
-  private static readonly QualificationEngineIdentity Reasoning = new("llm", "qwen3:8b+prompt.1");
-  private static readonly QualificationEngineIdentity Lexical = new("lexicon", "1.0.0");
+  private static readonly QualificationEngineIdentity HoldingTheVerdict = new("llm", "qwen3:8b+prompt.1");
+  private static readonly QualificationEngineIdentity HoldingTheWitness = new("lexicon", "1.0.0");
 
   /// <summary>
   /// La ligne conserve le verdict <b>et ses prémisses</b> : les deux avis bruts, avec le nom et la
@@ -41,6 +41,9 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
     row.VerdictEngineName.ShouldBe("llm");
     row.VerdictEngineVersion.ShouldBe("qwen3:8b+prompt.1");
     row.WitnessRights.ShouldBe(["Access", "Erasure"]);
+    // Le témoin n'en déclare aucune : la colonne reste nulle plutôt que de porter une confiance
+    // constante, que le domaine refuse d'inventer pour lui.
+    row.WitnessDeclaredConfidence.ShouldBeNull();
     row.WitnessEngineName.ShouldBe("lexicon");
     row.WitnessEngineVersion.ShouldBe("1.0.0");
     row.Justification.ShouldBe("Le texte demande la suppression des données.");
@@ -90,6 +93,7 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
 
     var uncontrolledRow = await RowOfAsync(uncontrolled.QualificationId);
     uncontrolledRow.WitnessRights.ShouldBeNull();
+    uncontrolledRow.WitnessDeclaredConfidence.ShouldBeNull();
     uncontrolledRow.WitnessEngineName.ShouldBeNull();
     uncontrolledRow.WitnessEngineVersion.ShouldBeNull();
     uncontrolledRow.WitnessLatencyMs.ShouldBeNull();
@@ -150,12 +154,12 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
       ReviewSignal.Corroborated,
       new QualificationOpinion(
         Qualification.Of([DataSubjectRight.Erasure]),
-        Reasoning,
+        HoldingTheVerdict,
         DeclaredConfidence.High,
         "Le texte demande la suppression des données."),
       new QualificationOpinion(
         Qualification.Of([DataSubjectRight.Erasure, DataSubjectRight.Access]),
-        Lexical),
+        HoldingTheWitness),
       "Le texte demande la suppression des données.",
       "DSAR-8871",
       "4bf92f3577b34da6a3ce929d0e0e4736",

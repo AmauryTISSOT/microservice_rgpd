@@ -50,6 +50,7 @@ public sealed class QualificationAuditTrail(AppDbContext dbContext) : IQualifica
       VerdictEngineName = entry.VerdictOpinion?.Engine.Name,
       VerdictEngineVersion = entry.VerdictOpinion?.Engine.Version,
       WitnessRights = entry.WitnessOpinion is null ? null : NamesOf(entry.WitnessOpinion.Qualification),
+      WitnessDeclaredConfidence = entry.WitnessOpinion?.DeclaredConfidence?.ToString(),
       WitnessEngineName = entry.WitnessOpinion?.Engine.Name,
       WitnessEngineVersion = entry.WitnessOpinion?.Engine.Version,
       Justification = entry.Justification,

@@ -77,6 +77,10 @@ public class QualificationsPostAuditTrail
     var response = await _client.PostAsJsonAsync("/qualifications", new { text = "Supprimez mes donnees." });
 
     response.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+
+    // La panne se presente dans la meme forme que les autres refus, et porte le traceId : aucune
+    // qualification n a eu lieu, il n y a donc rien a referencer dans l audit.
+    response.Content.Headers.ContentType!.MediaType.ShouldBe("application/problem+json");
   }
 
   /// <summary>

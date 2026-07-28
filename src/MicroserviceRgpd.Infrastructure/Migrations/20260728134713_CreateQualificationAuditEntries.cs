@@ -25,6 +25,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     verdict_engine_name = table.Column<string>(type: "text", nullable: true),
                     verdict_engine_version = table.Column<string>(type: "text", nullable: true),
                     witness_rights = table.Column<string[]>(type: "text[]", nullable: true),
+                    witness_declared_confidence = table.Column<string>(type: "text", nullable: true),
                     witness_engine_name = table.Column<string>(type: "text", nullable: true),
                     witness_engine_version = table.Column<string>(type: "text", nullable: true),
                     justification = table.Column<string>(type: "text", nullable: true),

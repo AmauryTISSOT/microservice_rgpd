@@ -50,11 +50,11 @@ public class QualifyHandlerTests
   {
     var principal = new GatedEngine(new QualificationOpinion(
       Qualification.Of([DataSubjectRight.Erasure]),
-      AnEngine.Reasoning,
+      AnEngine.HoldingTheVerdict,
       DeclaredConfidence.High,
       "Suppression demandée."));
     var witness = new GatedEngine(
-      new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.Lexical));
+      new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.HoldingTheWitness));
 
     principal.AnswerOnce(witness.Called);
     witness.AnswerOnce(principal.Called);
@@ -244,9 +244,9 @@ public class QualifyHandlerTests
     entry.ReviewSignal.ShouldBe(ReviewSignal.Corroborated);
     entry.CallerReference.ShouldBe("DSAR-8871");
 
-    entry.VerdictOpinion!.Engine.ShouldBe(AnEngine.Reasoning);
+    entry.VerdictOpinion!.Engine.ShouldBe(AnEngine.HoldingTheVerdict);
     entry.VerdictOpinion.DeclaredConfidence.ShouldBe(DeclaredConfidence.High);
-    entry.WitnessOpinion!.Engine.ShouldBe(AnEngine.Lexical);
+    entry.WitnessOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
   }
 
   /// <summary>
@@ -335,7 +335,7 @@ public class QualifyHandlerTests
       .QualifyAsync(Text, Arg.Any<CancellationToken>())
       .Returns(new QualificationOpinion(
         Qualification.Of([verdict]),
-        AnEngine.Reasoning,
+        AnEngine.HoldingTheVerdict,
         confidence,
         "Le texte demande la suppression des données."));
   }
@@ -353,7 +353,7 @@ public class QualifyHandlerTests
     // atteignable en test un état que le vrai moteur n'atteint jamais.
     _witness
       .QualifyAsync(Text, Arg.Any<CancellationToken>())
-      .Returns(new QualificationOpinion(Qualification.Of([verdict]), AnEngine.Lexical));
+      .Returns(new QualificationOpinion(Qualification.Of([verdict]), AnEngine.HoldingTheWitness));
   }
 
   private void GiveTheWitness(Exception failure)

@@ -39,6 +39,7 @@ public class QualificationAuditSchemaTests(PostgreSqlFixture postgres)
       "verdict_engine_version",
       "verdict_latency_ms",
       "verdict_rights",
+      "witness_declared_confidence",
       "witness_engine_name",
       "witness_engine_version",
       "witness_latency_ms",
@@ -68,6 +69,7 @@ public class QualificationAuditSchemaTests(PostgreSqlFixture postgres)
     columns["verdict_engine_name"].Nullable.ShouldBeTrue();
     columns["verdict_engine_version"].Nullable.ShouldBeTrue();
     columns["witness_rights"].Nullable.ShouldBeTrue();
+    columns["witness_declared_confidence"].Nullable.ShouldBeTrue();
     columns["witness_engine_name"].Nullable.ShouldBeTrue();
     columns["witness_engine_version"].Nullable.ShouldBeTrue();
 

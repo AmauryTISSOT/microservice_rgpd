@@ -13,13 +13,13 @@ public class QualificationOpinionTests
   {
     var verdict = Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]);
 
-    new QualificationOpinion(verdict, AnEngine.Lexical).Qualification.ShouldBe(verdict);
+    new QualificationOpinion(verdict, AnEngine.HoldingTheWitness).Qualification.ShouldBe(verdict);
   }
 
   [Fact]
   public void LeavesConfidenceAndJustificationAbsentWhenTheEngineDeclaresNeither()
   {
-    var opinion = new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.Lexical);
+    var opinion = new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.HoldingTheWitness);
 
     opinion.DeclaredConfidence.ShouldBeNull();
     opinion.Justification.ShouldBeNull();
@@ -30,7 +30,7 @@ public class QualificationOpinionTests
   {
     var opinion = new QualificationOpinion(
       Qualification.Of([DataSubjectRight.Access]),
-      AnEngine.Reasoning,
+      AnEngine.HoldingTheVerdict,
       DeclaredConfidence.High,
       "Savoir ce qui est détenu : art. 15.");
 
@@ -46,9 +46,9 @@ public class QualificationOpinionTests
   public void EqualsAnotherOpinionCarryingTheSameVerdictInAnyOrder()
   {
     var one = new QualificationOpinion(
-      Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]), AnEngine.Lexical);
+      Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]), AnEngine.HoldingTheWitness);
     var other = new QualificationOpinion(
-      Qualification.Of([DataSubjectRight.Erasure, DataSubjectRight.Access]), AnEngine.Lexical);
+      Qualification.Of([DataSubjectRight.Erasure, DataSubjectRight.Access]), AnEngine.HoldingTheWitness);
 
     one.ShouldBe(other);
   }
