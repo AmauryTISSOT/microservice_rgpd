@@ -3,13 +3,21 @@
 Deux points d'entrée séparés rendent l'indépendance des avis **structurelle** — un point d'entrée
 unique pourrait un jour faire dépendre un avis de l'autre sans que .NET le sache. Ils gardent aussi
 les modes de panne séparés, et autorisent les palettes de codes à diverger : le lexique n'ayant
-aucun amont, la sienne est courte.
+aucun amont, la sienne est courte, là où le LLM en a un et doit dire lequel de ses deux échecs il
+subit.
 
-| Code | Cas |
-| --- | --- |
-| `200` | un avis valide |
-| `400` | requête malformée — texte absent ou vide après nettoyage |
-| `500` | le moteur a produit autre chose qu'un avis : c'est une panne, pas un avis faible |
+| Code | Lexique | LLM |
+| --- | --- | --- |
+| `200` | un avis valide | un avis valide |
+| `400` | requête malformée — texte absent ou vide après nettoyage | idem |
+| `500` | le moteur a produit autre chose qu'un avis : une panne, pas un avis faible | — |
+| `502` | — | l'amont a répondu, mais sa réponse n'est pas un avis |
+| `503` | — | l'amont est injoignable, ou son modèle n'est pas chargé |
+| `504` | — | l'échéance vers l'amont est passée : **la lenteur arrive nommée** |
+
+Le `500` du lexique et le `502` du LLM disent la même chose du domaine — un moteur en panne — et
+diffèrent par le seul fait qui compte pour l'exploitant : **qui est à réparer**. Un bogue Python
+d'un côté, un modèle qui déraille de l'autre.
 
 La corrélation avec l'appelant passe par l'en-tête `traceparent` que `ServiceDefaults` propage
 déjà. **Le sidecar n'invente aucun identifiant** : un identifiant maison créerait un second
@@ -19,6 +27,7 @@ vocabulaire de corrélation, que personne ne rapprocherait du premier.
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Awaitable, Callable
 from typing import Annotated
 
@@ -28,8 +37,8 @@ from fastapi.responses import JSONResponse
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from qualification_sidecar import lexicon
-from qualification_sidecar.opinion import Engine, EngineFailure, Opinion
+from qualification_sidecar import lexicon, llm
+from qualification_sidecar.opinion import Engine, EngineFailure, Opinion, ReasonedOpinion
 from qualification_sidecar.taxonomy import WireTaxonomyDivergence, to_canonical
 
 PROBLEM_JSON = "application/problem+json"
@@ -40,6 +49,15 @@ PROBLEM_JSON = "application/problem+json"
 API_VERSION = "1.0.0"
 
 logger = logging.getLogger("qualification_sidecar")
+
+#: La configuration du moteur LLM, lue **au démarrage**. Une variable absente empêche le sidecar de
+#: démarrer, comme le fait déjà une divergence de taxonomie : un moteur qui devine son amont ne rend
+#: pas des avis un peu faux, il en rend d'inexploitables.
+LLM_SETTINGS = llm.LlmSettings.from_environment(os.environ)
+
+#: L'amont réel. Remplaçable en test — c'est le seul objet à écarter pour que la suite entière
+#: tourne sans GPU.
+LLM_MODEL: llm.StructuredModel = llm.OpenAiCompatibleModel(LLM_SETTINGS)
 
 
 def _not_blank(text: str) -> str:
@@ -121,9 +139,51 @@ def lexicon_opinion(request: OpinionRequest) -> Opinion:
     )
 
 
+@app.post(
+    "/opinions/llm",
+    response_model=ReasonedOpinion,
+    summary="Rend l'avis du moteur LLM sur un texte, avec sa confiance et sa justification.",
+)
+async def llm_opinion(request: OpinionRequest) -> ReasonedOpinion:
+    """Qualifie le texte par le LLM local, en noms canoniques anglais et confiance à trois degrés.
+
+    `async` sans négociation : un appel au modèle dure des secondes, et le tenir sur un fil de
+    travail affamerait le lexique, dont le double rôle exige qu'il réponde même quand le LLM peine.
+
+    Le modèle raisonne et justifie en français ; la traduction a lieu ici, juste avant de répondre,
+    comme pour le lexique. La justification, elle, **reste en français** : c'est le seul texte du
+    sidecar qu'un humain lira.
+    """
+    verdict = await llm.qualify(request.text, LLM_MODEL)
+
+    # Sur ce chemin, toute panne de moteur est imputable à l'amont : la requalifier ici évite que
+    # deux causes identiques — un slug hors taxonomie, une exclusivité violée — sortent tantôt en
+    # `500`, tantôt en `502`, selon l'étape qui les a repérées.
+    try:
+        rights = tuple(to_canonical(slug) for slug in verdict.slugs)
+
+        return ReasonedOpinion(
+            rights=rights,
+            confidence=llm.to_canonical_confidence(verdict.confidence_slug),
+            justification=verdict.justification,
+            engine=Engine(
+                name=llm.ENGINE_NAME,
+                version=llm.engine_version(verdict.served_model),
+            ),
+        )
+    except llm.UnusableCompletion:
+        raise
+    except (EngineFailure, WireTaxonomyDivergence) as unusable:
+        raise llm.UnusableCompletion(str(unusable)) from unusable
+
+
 @app.get("/health", summary="Dit si le sidecar est en état de rendre un avis.")
 def health() -> dict[str, str]:
-    """Le sidecar ayant vérifié sa taxonomie à l'import, être démarré suffit à être en état."""
+    """Le sidecar ayant vérifié sa taxonomie et sa configuration à l'import, être démarré suffit.
+
+    Rien n'est demandé à l'amont du LLM : une sonde qui l'interrogerait ferait déclarer le sidecar
+    malade alors que son moteur lexical, lui, répond parfaitement.
+    """
     return {"status": "healthy"}
 
 
@@ -160,9 +220,14 @@ async def http_error(request: Request, exception: StarletteHTTPException) -> JSO
 
 @app.exception_handler(EngineFailure)
 async def engine_failure(request: Request, exception: EngineFailure) -> JSONResponse:
-    """Le moteur a produit autre chose qu'un avis : le sidecar le déclare en panne, sans rien rendre."""
+    """Le moteur a produit autre chose qu'un avis : le sidecar le déclare en panne, sans rien rendre.
+
+    Vaut pour les deux moteurs : le chemin appelé dit déjà lequel a parlé, et distinguer les codes
+    ferait passer pour une différence de nature ce qui n'est qu'une différence d'expéditeur.
+    """
     logger.error(
-        "Le moteur lexical est en panne : %s",
+        "Un moteur est en panne sur %s : %s",
+        request.url.path,
         exception,
         extra={"traceparent": request.headers.get("traceparent")},
     )
@@ -170,5 +235,61 @@ async def engine_failure(request: Request, exception: EngineFailure) -> JSONResp
     return _problem(
         status=500,
         title="Le moteur n'a pas rendu d'avis valide",
+        detail=str(exception),
+    )
+
+
+@app.exception_handler(llm.UnusableCompletion)
+async def unusable_completion(request: Request, exception: llm.UnusableCompletion) -> JSONResponse:
+    """L'amont a répondu, mais pas un avis. Panne du moteur, comme le `500` du lexique — autre fautif.
+
+    Ce gestionnaire est plus spécifique que celui d'`EngineFailure`, dont `UnusableCompletion`
+    dérive ; Starlette remonte la hiérarchie de l'exception et retient donc celui-ci.
+    """
+    logger.error(
+        "Le modèle a rendu autre chose qu'un avis : %s",
+        exception,
+        extra={"traceparent": request.headers.get("traceparent")},
+    )
+
+    return _problem(
+        status=502,
+        title="Le serveur de modèles n'a pas rendu d'avis valide",
+        detail=str(exception),
+    )
+
+
+@app.exception_handler(llm.ModelUnreachable)
+async def model_unreachable(request: Request, exception: llm.ModelUnreachable) -> JSONResponse:
+    """L'amont est injoignable ou son modèle n'est pas chargé — ce n'est pas une panne du sidecar."""
+    logger.error(
+        "L'amont du moteur LLM est injoignable : %s",
+        exception,
+        extra={"traceparent": request.headers.get("traceparent")},
+    )
+
+    return _problem(
+        status=503,
+        title="Le serveur de modèles est injoignable",
+        detail=str(exception),
+    )
+
+
+@app.exception_handler(llm.ModelTooSlow)
+async def model_too_slow(request: Request, exception: llm.ModelTooSlow) -> JSONResponse:
+    """L'échéance vers l'amont est passée. **Un code à elle seule** : la lenteur arrive nommée.
+
+    Aucune reprise n'est tentée avant d'en arriver là : la requête étant déterministe, la rejouer
+    rendrait le même avis en dépassant l'échéance de l'appelant .NET par-dessus le marché.
+    """
+    logger.error(
+        "Le moteur LLM a dépassé son échéance : %s",
+        exception,
+        extra={"traceparent": request.headers.get("traceparent")},
+    )
+
+    return _problem(
+        status=504,
+        title="Le serveur de modèles n'a pas répondu dans l'échéance",
         detail=str(exception),
     )

@@ -5,6 +5,10 @@ description = "Sidecar de qualification RGPD : les moteurs, derrière un point d
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
+    # Le client compatible OpenAI par lequel le moteur LLM parle à son amont. Il n'engage pas le
+    # fournisseur : `base_url` et nom de modèle sont le point de bascule vers un autre serveur
+    # parlant le même protocole, sans toucher une ligne de logique de qualification.
+    "openai>=2.49.0",
     # Importé directement — les schémas de requête et d'avis en dépendent, ce n'est pas une
     # dépendance transitive de FastAPI qu'on subirait.
     "pydantic>=2.9",
