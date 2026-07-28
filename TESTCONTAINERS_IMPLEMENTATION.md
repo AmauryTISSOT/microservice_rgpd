@@ -1,85 +1,88 @@
-# Testcontainers Implementation for Functional Tests
+# Les tests à container
 
-## Summary
+Deux des trois projets de test montent une **base PostgreSQL réelle** via
+[Testcontainers](https://dotnet.testcontainers.org/) : `IntegrationTests` et `FunctionalTests`.
+Image **`postgres:18-alpine`**, schéma posé par les **migrations du dépôt**.
 
-Successfully migrated functional tests from in-memory database to **Testcontainers** with SQL Server 2022. This provides a more realistic testing environment that matches production database behavior.
+> Ce document décrivait auparavant une pile SQL Server. Elle n'a jamais existé dans le dépôt tel
+> qu'il est aujourd'hui : **PostgreSQL est le seul provider supporté**, il n'existe aucun repli en
+> mémoire ni aucun repli local.
 
-## Changes Made
+## Prérequis
 
-### 1. Package References
+**Docker doit être démarré.** Sans lui, `IntegrationTests` et `FunctionalTests` échouent au
+démarrage — ce n'est pas contournable par une option de configuration, et c'est délibéré : une base
+en mémoire ne partage ni les types (`text[]`, `timestamptz`), ni les contraintes de nullité, ni la
+génération de clés de Npgsql, c'est-à-dire précisément ce que ces tests sont là pour tenir.
 
-**Added to `Directory.Packages.props`:**
+Le premier lancement télécharge l'image — une centaine de mégaoctets, la variante Alpine étant
+choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de secondes.
+
+## Qui monte quoi
+
+| Projet | Container | Schéma | Portée |
+| --- | --- | --- | --- |
+| `UnitTests` | **aucun** | — | domaine, handlers, adaptateurs HTTP moqués |
+| `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **la persistance de la trace d'audit, et rien d'autre** |
+| `FunctionalTests` | un par fabrique d'application | `Migrate()` | l'endpoint public de bout en bout |
+| `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les trois |
+
+### `IntegrationTests`
+
+`PostgreSqlFixture` monte **un seul container pour toute la suite**, partagé par une
+`ICollectionFixture` : en monter un par classe coûterait des dizaines de secondes pour vérifier la
+même migration. Le schéma vient de `MigrateAsync()`, jamais d'`EnsureCreated()` — ce sont les
+migrations du dépôt que ces tests vérifient, pas le modèle dont elles sont issues.
+
+Ce projet a **un seul rôle** : la persistance de la trace d'audit. Ce qui le sauve de la
+suppression est une conséquence du contrat public — sans `GET`, la trace est inatteignable depuis
+l'endpoint, donc aucun test fonctionnel ne peut la voir.
+
+### `FunctionalTests`
+
+`CustomWebApplicationFactory` monte son propre container, pose la chaîne de connexion dans
+`ConnectionStrings__DefaultConnection` — variable d'environnement, seul moyen de la fournir assez
+tôt, le `ConfigurationManager` de `Program` étant construit avant tout `ConfigureAppConfiguration`
+— puis applique `Migrate()`.
+
+**Les deux moteurs de qualification y sont substitués**, sur le port `IQualificationEngine` du
+domaine. La trace d'audit, elle, **n'est pas substituée** : elle écrit dans le vrai PostgreSQL, et
+c'est ce qui donne du sens à « qualifier, écrire, répondre ».
+
+### `AspireTests`
+
+Volontairement vide, et à garder vide. Tout test démarrant l'`AppHost` démarrerait aussi le sidecar
+de qualification **et le container Ollama** : il exigerait un GPU, ne tournerait donc jamais — et un
+test qui ne tourne jamais ment. Le `.csproj` porte cette raison en commentaire ; ni référence à
+l'`AppHost`, ni `Aspire.Hosting.Testing`.
+
+## Aucun test n'appelle Ollama
+
+La frontière est posée sur **`IQualificationEngine`**, doublé dans `UnitTests` et `FunctionalTests`.
+Pas sur le fil HTTP, pas sur des réponses enregistrées, pas sur un vrai sidecar marqué et exclu :
+les enregistrements pourrissent en silence et rendent indiscernable une régression de code d'une
+montée de version de modèle.
+
+Les adaptateurs HTTP vers le sidecar sont couverts dans `UnitTests` avec un `HttpMessageHandler`
+moqué — c'est là que la palette de codes du sidecar, les dépassements d'échéance et les branches
+`503`/`504` publiques sont atteints délibérément.
+
+## Lancer les tests
+
+```sh
+dotnet test MicroserviceRgpd.slnx
+```
+
+Les containers sont créés et détruits par le cycle de vie xUnit (`IAsyncLifetime`), y compris
+lorsque des tests échouent.
+
+## Paquets
+
+Versions centralisées dans `Directory.Packages.props` :
+
 ```xml
-<PackageVersion Include="Testcontainers" Version="4.3.0" />
-<PackageVersion Include="Testcontainers.MsSql" Version="4.3.0" />
+<PackageVersion Include="Testcontainers" Version="4.13.0" />
+<PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
 ```
 
-**Updated `tests\MicroserviceRgpd.FunctionalTests\MicroserviceRgpd.FunctionalTests.csproj`:**
-- Removed: `Microsoft.EntityFrameworkCore.InMemory`
-- Added: `Testcontainers` and `Testcontainers.MsSql`
-
-### 2. CustomWebApplicationFactory
-
-**File:** `tests\MicroserviceRgpd.FunctionalTests\CustomWebApplicationFactory.cs`
-
-Key changes:
-- Implements `IAsyncLifetime` for proper async initialization/cleanup
-- Creates a SQL Server container using `MsSqlBuilder`
-- Uses SQL Server 2022 image: `mcr.microsoft.com/mssql/server:2022-latest`
-- Applies EF Core migrations instead of `EnsureCreated()`
-- Each test run gets a fresh containerized SQL Server instance
-
-```csharp
-private readonly MsSqlContainer _dbContainer = new MsSqlBuilder()
-  .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
-  .WithPassword("Your_password123!")
-  .Build();
-```
-
-### 3. Test Configuration
-
-Tests now:
-- Use real SQL Server running in Docker containers
-- Apply actual EF Core migrations (matches production)
-- Run against isolated database instances (parallel test safety)
-- Clean up containers automatically after tests complete
-
-## Benefits
-
-? **Realistic Testing**: Tests run against actual SQL Server, not in-memory provider  
-? **Migration Testing**: Validates that migrations work correctly  
-? **Production Parity**: Database behavior matches production environment  
-? **Isolation**: Each test class gets its own containerized database  
-? **Automatic Cleanup**: Containers are disposed after tests complete
-
-## Requirements
-
-- **Docker Desktop** must be running on the development machine
-- Tests take slightly longer (~10-13 seconds vs instant with in-memory)
-- First run downloads SQL Server 2022 Docker image (~1.5 GB)
-
-## Test Results
-
-All 18 tests passing:
-- ? Unit Tests: 15 tests
-- ? Functional Tests: 3 tests
-- ? Total Duration: ~12 seconds
-
-## Usage
-
-Run tests normally:
-```bash
-dotnet test
-```
-
-Or specifically for functional tests:
-```bash
-dotnet test tests\MicroserviceRgpd.FunctionalTests\MicroserviceRgpd.FunctionalTests.csproj
-```
-
-## Notes
-
-- Tests use the "Testing" environment configuration
-- SQL Server password: `Your_password123!` (only for test containers)
-- Container lifecycle managed by xUnit's `IAsyncLifetime`
-- Containers are automatically cleaned up even if tests fail
+Référencés sans version par `IntegrationTests` et `FunctionalTests`.

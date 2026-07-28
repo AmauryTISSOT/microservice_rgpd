@@ -52,7 +52,12 @@ public class Qualify(IMediator mediator, IProblemDetailsService problemDetails)
       summary.Summary = "Qualifie un texte au regard des droits RGPD";
       summary.Description =
         "Reçoit un texte libre en français et rend, dans le même échange, les droits que ce texte " +
-        "est jugé exercer. C'est une aide à la décision : un humain valide ou corrige le verdict.";
+        "est jugé exercer. C'est une aide à la décision : un humain valide ou corrige le verdict.\n\n" +
+        "Aucun texte n'est refusé pour son contenu : le bruit, y compris adverse, reçoit un verdict " +
+        "et non un 400. Le pire qu'un texte cherchant à détourner le moteur puisse produire est un " +
+        "verdict faux parmi sept valeurs — ni exécution arbitraire, ni fuite : la sortie est validée " +
+        "contre la taxonomie fermée, le second moteur est lexical donc insensible à toute injection " +
+        "et divergera, et un humain valide chaque qualification.";
       summary.Responses[200] = "Qualification rendue";
       summary.Responses[400] = "Texte absent, vide ou trop long, ou référence appelante invalide";
       summary.Responses[500] = "Défaillance interne, y compris l'échec d'écriture de la trace d'audit";
