@@ -30,9 +30,14 @@ qui rend une qualification RGPD **dans le même échange**, et `GET /hello` en e
 Il n'existe **aucun `GET`** sur la ressource de qualification : c'est un acte dont on repart avec
 le résultat, jamais une ressource qu'on relit.
 
-Tant que le seul moteur du service est le lexique témoin, la réponse est **en permanence dégradée** :
-`degraded` vaut `true`, `reviewSignal` vaut `NeedsReview`, et aucune justification n'est rendue.
-C'est le comportement de repli spécifié, livré avant le mode nominal.
+**Le contrat public est documenté dans [`docs/api/qualifications.md`](docs/api/qualifications.md)** :
+requête, réponse, codes d'erreur, règle d'évolution et avertissements d'exploitation. Un intégrateur
+n'a besoin que de ce document.
+
+Deux moteurs qualifient le texte. Celui dont l'avis fait verdict est un LLM auto-hébergé ; le second
+est un lexique déterministe, qui ne vote pas mais **corrobore ou conteste** — c'est de leur
+comparaison que sort le `reviewSignal`. Si l'un des deux se tait, le service rend quand même un
+verdict avec `degraded: true` ; si les deux se taisent, il rend un `503` ou un `504`.
 
 La base est **PostgreSQL**, fournie en container par Aspire (`microservice_rgpd_bdd`). C'est le seul
 provider supporté : il n'existe pas de repli local, Docker est donc requis pour lancer le service
@@ -68,11 +73,16 @@ dotnet run --project src/MicroserviceRgpd.Web
 dotnet run --project src/MicroserviceRgpd.AspireHost
 ```
 
-L'orchestration Aspire démarre aussi le **sidecar de qualification** (`src/sidecar`) : la pile
-entière part d'une seule commande. [`uv`](https://docs.astral.sh/uv/) doit être installé — Aspire
-lui délègue la création de l'environnement virtuel et l'installation des dépendances.
+L'orchestration Aspire démarre aussi le **sidecar de qualification** (`src/sidecar`) et le container
+**Ollama** qui sert le modèle : la pile entière part d'une seule commande.
+[`uv`](https://docs.astral.sh/uv/) doit être installé — Aspire lui délègue la création de
+l'environnement virtuel et l'installation des dépendances. Le modèle est tiré au premier démarrage
+et conservé dans un volume nommé ; comptez plusieurs gigaoctets, et un GPU pour que les temps de
+réponse aient un sens.
 
 Les tests d'intégration et fonctionnels utilisent Testcontainers : **Docker doit être démarré**.
+Voir [`TESTCONTAINERS_IMPLEMENTATION.md`](TESTCONTAINERS_IMPLEMENTATION.md). **Aucun test ne
+démarre Ollama, ni ne s'approche d'un GPU.**
 
 ### Migrations EF Core
 
