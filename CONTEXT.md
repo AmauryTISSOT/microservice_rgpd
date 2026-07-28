@@ -61,11 +61,11 @@ L'échelle ordinale à trois degrés — `High`, `Medium`, `Low` — par laquell
 _Avoid_ : certitude, probabilité, score de confiance, fiabilité
 
 **WitnessOpinion** :
-La `QualificationOpinion` du lexique. Elle sert exclusivement à corroborer ou contester celle du LLM ; elle ne contribue jamais à la `Qualification` rendue.
+La `QualificationOpinion` du lexique. En marche nominale elle sert exclusivement à corroborer ou contester celle du LLM, sans jamais contribuer à la `Qualification` rendue. Elle ne devient elle-même la `Qualification` qu'en `Mode dégradé`, quand le LLM n'a rendu aucun avis. Les deux rôles ne coexistent jamais : elle ne vote pas aux côtés du LLM, l'union de deux avis étant indéfinissable puisque `OutOfScope` est exclusif.
 _Avoid_ : second avis, avis secondaire, vote, contre-expertise
 
 **ReviewSignal** :
-Ce que le service dit à l'opérateur humain de l'urgence à relire la `Qualification`, déduit de la comparaison des deux `QualificationOpinion`. Il priorise la relecture, il ne la déclenche pas — un humain valide de toute façon chaque qualification.
+Ce que le service dit à l'opérateur humain de l'urgence à relire la `Qualification`, déduit de la comparaison des deux `QualificationOpinion` lorsque les deux existent. Il priorise la relecture, il ne la déclenche pas — un humain valide de toute façon chaque qualification.
 _Avoid_ : alerte, statut, drapeau, score global
 
 **Contested** :
@@ -73,12 +73,16 @@ Les deux moteurs divergent. Signal le plus fort, parce qu'il est le seul à ne r
 _Avoid_ : conflit, désaccord, litige
 
 **NeedsReview** :
-Les deux moteurs s'accordent, mais la `DeclaredConfidence` du LLM n'est pas `High`.
+Le verdict n'a pas reçu de contrôle indépendant favorable assorti d'une confiance haute. Deux situations le produisent : les deux moteurs s'accordent mais la `DeclaredConfidence` du LLM n'est pas `High`, ou bien le contrôle n'a pas pu avoir lieu faute d'un moteur — le `Mode dégradé`, où c'est donc le seul signal possible.
 _Avoid_ : incertain, à vérifier, douteux
 
 **Corroborated** :
-Les deux moteurs s'accordent et la `DeclaredConfidence` du LLM est `High`.
+Les deux moteurs s'accordent et la `DeclaredConfidence` du LLM est `High`. Inatteignable en `Mode dégradé`.
 _Avoid_ : validé, confirmé, certain
+
+**Mode dégradé** :
+L'état d'une `Qualification` rendue alors que le service n'était pas entier — un des deux moteurs n'ayant pas produit d'avis. Il recouvre deux situations que le contrat public ne distingue pas, le booléen `degraded` étant sa seule expression vers l'appelant : le LLM absent, auquel cas la `WitnessOpinion` tient lieu de `Qualification` et rien n'est justifié ; ou le lexique absent, auquel cas le verdict est normal mais sans contrôle. La `Trace d'audit` les distingue, elle, par la nullité de l'avis manquant. Ne couvre que la défaillance des moteurs : une base de données indisponible est une panne du service, pas un mode dégradé.
+_Avoid_ : mode secours, repli, fallback, panne partielle
 
 ### Ce que le service ne fait pas
 
