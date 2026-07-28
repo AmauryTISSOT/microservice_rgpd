@@ -45,6 +45,17 @@ public class RightsRequestTextTests
     RightsRequestText.From(text).Value.ShouldBe(text);
   }
 
+  /// <summary>
+  /// Le plafond se mesure sur le texte nettoyé, celui qui sera conservé : un texte de 10 000
+  /// caractères entouré d'espaces reste recevable. La spec énonce les deux règles sans les
+  /// ordonner ; c'est cet ordre-ci qui est retenu, et ce test le fixe.
+  /// </summary>
+  [Fact]
+  public void MeasuresTheCapOnTheTrimmedTextNotOnItsBorders()
+  {
+    RightsRequestText.From("   " + new string('a', 10_000) + "   ").Value.Length.ShouldBe(10_000);
+  }
+
   [Fact]
   public void TrimsTheBordersItValidatesOn()
   {

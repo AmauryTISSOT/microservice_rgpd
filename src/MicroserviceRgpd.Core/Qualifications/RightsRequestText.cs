@@ -31,12 +31,20 @@ public readonly partial struct RightsRequestText
   /// Les espaces de bordure sont retirés avant validation <b>et</b> avant stockage : deux textes
   /// qui ne diffèrent que par leurs bordures sont la même demande.
   /// </summary>
-  private static string NormalizeInput(string input) => input?.Trim() ?? string.Empty;
-
-  private static Validation Validate(string value) => value.Length switch
+  private static string NormalizeInput(string? input)
   {
-    0 => Validation.Invalid("Le texte de la demande est absent ou vide."),
-    > MaxLength => Validation.Invalid($"Le texte de la demande dépasse {MaxLength} caractères."),
-    _ => Validation.Ok,
-  };
+    return input?.Trim() ?? string.Empty;
+  }
+
+  private static Validation Validate(string value)
+  {
+    // Le plafond se mesure après nettoyage des bordures, sur le texte qui sera effectivement
+    // conservé : c'est ce texte-là, et non ses espaces, qui occupe le contexte du moteur.
+    return value.Length switch
+    {
+      0 => Validation.Invalid("Le texte de la demande est absent ou vide."),
+      > MaxLength => Validation.Invalid($"Le texte de la demande dépasse {MaxLength} caractères."),
+      _ => Validation.Ok,
+    };
+  }
 }

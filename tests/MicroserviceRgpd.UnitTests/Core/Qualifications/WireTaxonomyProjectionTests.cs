@@ -42,7 +42,10 @@ public class WireTaxonomyProjectionTests
   [Fact]
   public void ProjectsEachNameExactlyOnce()
   {
-    ReadProjectedNames().Length.ShouldBe(DomainNames.Length);
+    var projected = ReadProjectedNames();
+
+    projected.Distinct().Count().ShouldBe(projected.Length, $"{FileName} projette un nom en double.");
+    projected.Length.ShouldBe(DomainNames.Length);
   }
 
   /// <summary>
@@ -60,8 +63,10 @@ public class WireTaxonomyProjectionTests
     comment.ShouldContain("DataSubjectRight");
   }
 
-  private static string[] ReadProjectedNames() =>
-    [.. ReadProjection().GetProperty("rights").EnumerateArray().Select(name => name.GetString()!)];
+  private static string[] ReadProjectedNames()
+  {
+    return [.. ReadProjection().GetProperty("rights").EnumerateArray().Select(name => name.GetString()!)];
+  }
 
   private static JsonElement ReadProjection()
   {

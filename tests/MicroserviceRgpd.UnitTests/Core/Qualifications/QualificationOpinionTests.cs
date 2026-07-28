@@ -9,17 +9,17 @@ namespace MicroserviceRgpd.UnitTests.Core.Qualifications;
 public class QualificationOpinionTests
 {
   [Fact]
-  public void CarriesTheRightsItRecognised()
+  public void CarriesTheQualificationItsEngineRendered()
   {
-    var opinion = new QualificationOpinion([DataSubjectRight.Access, DataSubjectRight.Erasure]);
+    var verdict = Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]);
 
-    opinion.Rights.ShouldBe([DataSubjectRight.Access, DataSubjectRight.Erasure]);
+    new QualificationOpinion(verdict).Qualification.ShouldBe(verdict);
   }
 
   [Fact]
   public void LeavesConfidenceAndJustificationAbsentWhenTheEngineDeclaresNeither()
   {
-    var opinion = new QualificationOpinion([DataSubjectRight.Erasure]);
+    var opinion = new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]));
 
     opinion.DeclaredConfidence.ShouldBeNull();
     opinion.Justification.ShouldBeNull();
@@ -29,12 +29,25 @@ public class QualificationOpinionTests
   public void CarriesConfidenceAndJustificationWhenTheEngineDeclaresThem()
   {
     var opinion = new QualificationOpinion(
-      [DataSubjectRight.Access],
+      Qualification.Of([DataSubjectRight.Access]),
       DeclaredConfidence.High,
       "Savoir ce qui est détenu : art. 15.");
 
     opinion.DeclaredConfidence.ShouldBe(DeclaredConfidence.High);
     opinion.Justification.ShouldBe("Savoir ce qui est détenu : art. 15.");
+  }
+
+  /// <summary>
+  /// Deux avis portant le même verdict sont le même avis, quel que soit l'ordre dans lequel les
+  /// droits ont été énoncés : sans quoi la règle de corroboration comparerait des références.
+  /// </summary>
+  [Fact]
+  public void EqualsAnotherOpinionCarryingTheSameVerdictInAnyOrder()
+  {
+    var one = new QualificationOpinion(Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]));
+    var other = new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure, DataSubjectRight.Access]));
+
+    one.ShouldBe(other);
   }
 
   /// <summary>
