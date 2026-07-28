@@ -17,7 +17,7 @@
 /// <c>HttpRequestException</c> au milieu du domaine.
 /// </para>
 /// </remarks>
-public sealed class QualificationEngineFailure : Exception
+public class QualificationEngineFailure : Exception
 {
   /// <inheritdoc />
   public QualificationEngineFailure()

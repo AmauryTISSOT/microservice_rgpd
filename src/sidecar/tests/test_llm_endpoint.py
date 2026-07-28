@@ -15,6 +15,7 @@ import logging
 import httpx2
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from qualification_sidecar import app as app_module
 from qualification_sidecar import llm
@@ -241,6 +242,64 @@ def test_the_upstream_failure_is_correlated_with_the_callers_trace(client, upstr
         )
 
     assert [r for r in caplog.records if getattr(r, "traceparent", None) == traceparent]
+
+
+# --------------------------------------------------------------------------
+# L'appelant qui s'en va
+# --------------------------------------------------------------------------
+
+
+def test_the_generation_stops_when_the_caller_leaves(client, monkeypatch):
+    """Le départ de l'appelant **interrompt la génération**, jusqu'ici et pas seulement dans .NET.
+
+    La raison est matérielle : le GPU sérialise, donc une génération orpheline ne gaspille pas
+    seulement du calcul, elle bloque la file de l'appelant resté. Le serveur ASGI signale le départ
+    mais n'interrompt rien de lui-même — c'est ce câblage-ci qui le fait.
+    """
+    started = asyncio.Event()
+    interrupted = []
+
+    class AbandonedModel:
+        async def answer(self, *, system, user):
+            started.set()
+
+            try:
+                await asyncio.sleep(30)
+            except asyncio.CancelledError:
+                interrupted.append(True)
+                raise
+
+            return llm.ModelAnswer(content=json.dumps(VALID_VERDICT), served_model="jamais:0b")
+
+    monkeypatch.setattr(app_module, "LLM_MODEL", AbandonedModel())
+
+    # L'appelant s'en va dès que le modèle a commencé à travailler : c'est la seule façon d'observer
+    # une interruption, un modèle instantané n'en laissant jamais l'occasion.
+    async def gone(self):
+        return started.is_set()
+
+    monkeypatch.setattr(Request, "is_disconnected", gone)
+
+    response = client.post("/opinions/llm", json={"text": "Mes données ?"})
+
+    assert interrupted, "la génération a été menée à son terme pour un appelant qui était parti"
+    assert response.status_code == 499
+    assert "rights" not in response.json()
+
+
+def test_a_caller_who_stayed_receives_the_opinion(client, upstream, monkeypatch):
+    """Symétrie : la veille du départ ne doit jamais couper un appel dont l'appelant est là."""
+    upstream(content=VALID_VERDICT)
+
+    async def still_here(self):
+        return False
+
+    monkeypatch.setattr(Request, "is_disconnected", still_here)
+
+    response = client.post("/opinions/llm", json={"text": "Mes données ?"})
+
+    assert response.status_code == 200
+    assert response.json()["rights"] == ["Access"]
 
 
 # --------------------------------------------------------------------------

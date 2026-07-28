@@ -118,6 +118,41 @@ public class LlmQualificationEngineTests
   }
 
   /// <summary>
+  /// Le sidecar a renoncé à attendre son amont et le dit par un code à lui : <b>la lenteur arrive
+  /// nommée</b>, plutôt que confondue avec un serveur éteint. C'est ce que l'ordre strict des deux
+  /// échéances achète, et c'est de cette distinction que dépendra le code rendu à l'appelant le jour
+  /// où le témoin tombera en même temps.
+  /// </summary>
+  [Fact]
+  public async Task NamesTheDeadlineTheSidecarAlreadyGaveUpOnRatherThanACommonFailure()
+  {
+    var sidecar = RespondingWith(
+      """{"title":"Le serveur de modèles n'a pas répondu dans l'échéance"}""",
+      HttpStatusCode.GatewayTimeout);
+
+    await Should.ThrowAsync<QualificationEngineDeadlineExceeded>(
+      () => Engine(sidecar).QualifyAsync(Text, CancellationToken.None));
+  }
+
+  /// <summary>
+  /// Les autres pannes de l'amont ne se déguisent pas en lenteur : un serveur éteint et un serveur
+  /// lent ne se réparent pas au même endroit, et le code rendu à l'appelant suit cette distinction.
+  /// </summary>
+  [Theory]
+  [InlineData(HttpStatusCode.BadGateway)]
+  [InlineData(HttpStatusCode.ServiceUnavailable)]
+  [InlineData(HttpStatusCode.InternalServerError)]
+  public async Task NeverCallsAnythingButALateAnswerADeadline(HttpStatusCode status)
+  {
+    var sidecar = RespondingWith("""{"title":"panne"}""", status);
+
+    var silence = await Should.ThrowAsync<QualificationEngineFailure>(
+      () => Engine(sidecar).QualifyAsync(Text, CancellationToken.None));
+
+    silence.ShouldNotBeOfType<QualificationEngineDeadlineExceeded>();
+  }
+
+  /// <summary>
   /// L'annulation de l'appelant atteint le sidecar, et ressort telle quelle : ce n'est pas une panne
   /// du moteur, c'est un appelant qui est parti — et le GPU sérialisant les appels, une génération
   /// orpheline bloquerait la file de celui qui est resté.

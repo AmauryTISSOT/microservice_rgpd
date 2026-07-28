@@ -46,6 +46,24 @@ public sealed class QualificationEngineDouble(
   public int CallCount { get; private set; }
 
   /// <summary>
+  /// Ce que le moteur fait durer avant de repondre. Une seule chose l exige : verifier qu une
+  /// annulation de l appelant interrompt un travail <b>en cours</b>, ce qu un moteur instantane ne
+  /// laisse jamais observer.
+  /// </summary>
+  public TimeSpan Delay { get; set; } = TimeSpan.Zero;
+
+  /// <summary>Signale que le moteur a commence a travailler, avant meme d avoir repondu.</summary>
+  public Task Started => _started.Task;
+
+  /// <summary>
+  /// Vrai si le travail de ce moteur a ete interrompu par l annulation de l appelant. C est la seule
+  /// facon de distinguer un travail reellement arrete d une reponse simplement ignoree.
+  /// </summary>
+  public bool Interrupted { get; private set; }
+
+  private TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+  /// <summary>
   /// Ramene la doublure a son etat de depart. La fabrique est partagee par toute la collection de
   /// tests : sans cela, un test qui omettrait de dicter son avis heriterait de celui du precedent,
   /// et passerait — ou echouerait — pour une raison qui ne le regarde pas.
@@ -58,20 +76,40 @@ public sealed class QualificationEngineDouble(
     Silence = null;
     ReceivedText = null;
     CallCount = 0;
+    Delay = TimeSpan.Zero;
+    Interrupted = false;
+    _started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
   }
 
-  public Task<QualificationOpinion> QualifyAsync(
+  public async Task<QualificationOpinion> QualifyAsync(
     RightsRequestText text,
     CancellationToken cancellationToken = default)
   {
     ReceivedText = text;
     CallCount++;
+    _started.TrySetResult();
+
+    if (Delay > TimeSpan.Zero)
+    {
+      try
+      {
+        await Task.Delay(Delay, cancellationToken);
+      }
+      catch (OperationCanceledException)
+      {
+        // Le travail en cours s arrete vraiment : c est ce que le GPU exige, une generation
+        // orpheline prenant la place de celui qui est reste.
+        Interrupted = true;
+
+        throw;
+      }
+    }
 
     if (Silence is not null)
     {
-      return Task.FromException<QualificationOpinion>(Silence);
+      throw Silence;
     }
 
-    return Task.FromResult(new QualificationOpinion(Qualification, DeclaredConfidence, Justification));
+    return new QualificationOpinion(Qualification, DeclaredConfidence, Justification);
   }
 }
