@@ -64,5 +64,11 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
+# Python (prototypes et futur sidecar de qualification)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
 # Skills (liens générés par "npx skills" vers .agents/skills)
 .claude/skills/
