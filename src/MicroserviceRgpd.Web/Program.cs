@@ -10,6 +10,11 @@ var startupLogger = loggerFactory.CreateLogger<Program>();
 
 startupLogger.LogInformation("Starting web host");
 
+// Le second garde-fou d'entrée, et celui qui protège réellement : il agit au transport, avant
+// toute désérialisation, là où le plafond de 10 000 caractères ne joue qu'une fois le corps lu.
+// Au-delà, Kestrel rend un 413 sans que l'application soit atteinte.
+builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxRequestBodySize = 64 * 1024);
+
 builder.Services.AddOptionConfigs(builder.Configuration, startupLogger, builder);
 builder.Services.AddServiceConfigs(startupLogger, builder);
 

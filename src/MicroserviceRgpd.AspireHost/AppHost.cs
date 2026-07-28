@@ -14,15 +14,19 @@ var cleanArchDb = postgres.AddDatabase("cleanarchitecture");
 // une procédure à part finit par n'être démontré par personne.
 // `uv sync` est joué avant le démarrage — l'environnement virtuel n'est donc pas un prérequis
 // manuel, et la version des dépendances est celle du fichier de verrouillage versionné.
-builder.AddUvicornApp("qualification-sidecar", "../sidecar", "qualification_sidecar.app:app")
+var sidecar = builder.AddUvicornApp("qualification-sidecar", "../sidecar", "qualification_sidecar.app:app")
   .WithUv()
   .WithHttpHealthCheck("/health");
 
 // Add the web project with the database connection
+// La référence au sidecar est ce qui fait résoudre « http://qualification-sidecar » : le service
+// .NET ne connaît que ce nom, jamais un hôte ni un port.
 builder.AddProject<Projects.MicroserviceRgpd_Web>("web")
   .WithReference(cleanArchDb)
+  .WithReference(sidecar)
   .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
-  .WaitFor(cleanArchDb);
+  .WaitFor(cleanArchDb)
+  .WaitFor(sidecar);
 
 builder
   .Build()

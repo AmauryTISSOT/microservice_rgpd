@@ -1,6 +1,9 @@
+using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Infrastructure.Data;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.FunctionalTests;
@@ -9,6 +12,13 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 {
   // Docker est requis : PostgreSQL est le seul provider supporte, il n existe plus de repli local.
   private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:18-alpine").Build();
+
+  /// <summary>
+  /// Le moteur de qualification, substitue. La doublure se pose <b>sur le port du domaine</b>, et
+  /// non sur le fil HTTP : aucun test .NET n appelle le sidecar reel, et aucun n approche un GPU.
+  /// Un test qui exigerait un GPU ne tournerait jamais, et un test qui ne tourne jamais ment.
+  /// </summary>
+  public WitnessDouble Witness { get; } = new();
 
   public async Task InitializeAsync()
   {
@@ -61,6 +71,17 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
     return host;
   }
 
-  // Aucun override de ConfigureWebHost : l application resout elle-meme sa chaine de connexion
-  // depuis ConnectionStrings:DefaultConnection, exactement comme hors tests.
+  /// <summary>
+  /// La seule chose substituee est le moteur. Tout le reste est l application telle quelle : elle
+  /// resout elle-meme sa chaine de connexion depuis <c>ConnectionStrings:DefaultConnection</c>,
+  /// exactement comme hors tests.
+  /// </summary>
+  protected override void ConfigureWebHost(IWebHostBuilder builder)
+  {
+    builder.ConfigureTestServices(services =>
+    {
+      services.RemoveAll<IQualificationEngine>();
+      services.AddSingleton<IQualificationEngine>(Witness);
+    });
+  }
 }
