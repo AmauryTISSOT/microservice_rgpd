@@ -5,12 +5,17 @@ description = "Sidecar de qualification RGPD : les moteurs, derrière un point d
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
+    # Importé directement — les schémas de requête et d'avis en dépendent, ce n'est pas une
+    # dépendance transitive de FastAPI qu'on subirait.
+    "pydantic>=2.9",
     "uvicorn[standard]>=0.34",
 ]
 
 [dependency-groups]
 dev = [
-    "httpx2>=0.28",
+    # `starlette.testclient` importe `httpx2` en premier et déprécie `httpx` ; suivre son choix
+    # évite un avertissement à chaque exécution de la suite.
+    "httpx2>=2.0",
     "pytest>=8.3",
 ]
 

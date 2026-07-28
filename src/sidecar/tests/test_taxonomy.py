@@ -92,14 +92,14 @@ def test_a_projection_diverging_from_the_sidecar_stops_the_start_up(repository):
 def test_an_absent_projection_stops_the_start_up(repository):
     _fake_repository(repository, projection=None)
 
-    with pytest.raises(taxonomy.WireTaxonomyDivergence):
+    with pytest.raises(taxonomy.WireTaxonomyUnavailable):
         _start_up()
 
 
 def test_a_projection_repeating_a_name_stops_the_start_up(repository):
     _fake_repository(repository, projection=[*taxonomy.PROJECTED_RIGHTS, "Access"])
 
-    with pytest.raises(taxonomy.WireTaxonomyDivergence):
+    with pytest.raises(taxonomy.WireTaxonomyUnavailable):
         _start_up()
 
 

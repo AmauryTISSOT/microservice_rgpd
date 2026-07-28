@@ -24,11 +24,23 @@ WIRE_TAXONOMY_FILE: Final = "data-subject-rights.wire.json"
 REPOSITORY_MARKER: Final = "MicroserviceRgpd.slnx"
 
 
-class WireTaxonomyDivergence(RuntimeError):
-    """La taxonomie du sidecar et celle de la projection ne coïncident pas.
+class WireTaxonomyError(RuntimeError):
+    """Le sidecar n'est pas en état de parler la taxonomie du service.
 
     Levée à l'import — donc au démarrage —, jamais rattrapée pour rendre un avis quand même.
     """
+
+
+class WireTaxonomyUnavailable(WireTaxonomyError):
+    """La projection est illisible : dépôt introuvable, fichier absent, contenu incohérent.
+
+    Ce n'est pas un désaccord sur la taxonomie, c'est l'impossibilité d'en constater un — et les
+    confondre ferait chercher une divergence là où c'est l'installation qui est en cause.
+    """
+
+
+class WireTaxonomyDivergence(WireTaxonomyError):
+    """La taxonomie du sidecar et celle de la projection ne coïncident pas."""
 
 
 #: Le nom canonique anglais de chaque slug français des moteurs. Les slugs sont ceux du corpus et
@@ -57,7 +69,7 @@ def repository_root() -> Path:
         if (directory / REPOSITORY_MARKER).is_file():
             return directory
 
-    raise WireTaxonomyDivergence(
+    raise WireTaxonomyUnavailable(
         f"Racine du dépôt introuvable depuis {__file__} : "
         f"aucun {REPOSITORY_MARKER} en remontant, donc aucune projection à lire."
     )
@@ -68,12 +80,12 @@ def read_projection() -> frozenset[str]:
     path = repository_root() / WIRE_TAXONOMY_FILE
 
     if not path.is_file():
-        raise WireTaxonomyDivergence(f"Le fichier de projection est introuvable : {path}")
+        raise WireTaxonomyUnavailable(f"Le fichier de projection est introuvable : {path}")
 
     names = json.loads(path.read_text(encoding="utf-8"))["rights"]
 
     if len(set(names)) != len(names):
-        raise WireTaxonomyDivergence(f"{WIRE_TAXONOMY_FILE} projette un nom en double : {names}")
+        raise WireTaxonomyUnavailable(f"{WIRE_TAXONOMY_FILE} projette un nom en double : {names}")
 
     return frozenset(names)
 

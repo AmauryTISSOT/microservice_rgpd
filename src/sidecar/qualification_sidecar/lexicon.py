@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Final
+from typing import Final, NamedTuple
 
 #: Le nom du moteur, tel qu'il figure dans chaque avis.
 ENGINE_NAME: Final = "lexicon"
@@ -223,8 +223,20 @@ LEXICONS: dict[str, list[tuple[str, int, bool]]] = {
     ],
 }
 
-COMPILED_LEXICONS = {
-    right: [(re.compile(pattern), weight, sensitive) for pattern, weight, sensitive in patterns]
+class Marker(NamedTuple):
+    """Un motif du lexique, une fois compilé : ce qu'il cherche, ce qu'il vaut, ce qui l'annule.
+
+    Le triplet voyageait ensemble depuis la déclaration jusqu'au calcul du score ; lui donner un
+    nom évite d'avoir à se rappeler l'ordre des champs à chaque lecture.
+    """
+
+    pattern: re.Pattern[str]
+    weight: int
+    negation_sensitive: bool
+
+
+COMPILED_LEXICONS: dict[str, list[Marker]] = {
+    right: [Marker(re.compile(pattern), weight, sensitive) for pattern, weight, sensitive in patterns]
     for right, patterns in LEXICONS.items()
 }
 
@@ -351,10 +363,10 @@ FALLBACK_THRESHOLD: Final = 2
 def _score(normalised: str, right: str) -> int:
     """Somme des poids des motifs déclenchés, hors portée de négation."""
     total = 0
-    for pattern, weight, sensitive in COMPILED_LEXICONS[right]:
-        for match in pattern.finditer(normalised):
-            penalised = sensitive and under_negation(normalised, match.start())
-            total += -weight if penalised else weight
+    for marker in COMPILED_LEXICONS[right]:
+        for match in marker.pattern.finditer(normalised):
+            penalised = marker.negation_sensitive and under_negation(normalised, match.start())
+            total += -marker.weight if penalised else marker.weight
     return total
 
 
@@ -364,45 +376,45 @@ def qualify(text: str) -> list[str]:
     C'est le seul point d'entrée du moteur. Les scores restent internes : ils sont du diagnostic,
     pas de l'aide à la décision, et les publier inviterait à leur donner un sens qu'ils n'ont pas.
     """
-    t = normalise(text)
+    normalised = normalise(text)
 
-    scores = {right: _score(t, right) for right in RIGHTS}
+    scores = {right: _score(normalised, right) for right in RIGHTS}
 
     # --- Discriminants : ils corrigent les scores avant le seuillage. --------
 
     # Rectification contre effacement — une valeur de remplacement tranche l'art. 16.
-    if REPLACEMENT_VALUE.search(t) and scores[RECTIFICATION] > 0:
+    if REPLACEMENT_VALUE.search(normalised) and scores[RECTIFICATION] > 0:
         scores[RECTIFICATION] += 4
-        if not TOTALITY.search(t):
+        if not TOTALITY.search(normalised):
             scores[ERASURE] -= 3
 
     # Limitation — la double instruction « ne plus utiliser / ne pas supprimer » est le marqueur
     # le plus discriminant (CNIL).
-    if KEEP_WITHOUT_USING.search(t):
+    if KEEP_WITHOUT_USING.search(normalised):
         scores[RESTRICTION] += 5
         scores[ERASURE] -= 4
-    if DURATION_OR_CONDITION.search(t) and scores[RESTRICTION] > 0:
+    if DURATION_OR_CONDITION.search(normalised) and scores[RESTRICTION] > 0:
         scores[RESTRICTION] += 2
 
     # Accès contre portabilité — réutilisation ailleurs ou format machine → art. 20 ; intention de
     # vérification → art. 15.
-    if REUSE_ELSEWHERE.search(t) and scores[PORTABILITY] > 0:
+    if REUSE_ELSEWHERE.search(normalised) and scores[PORTABILITY] > 0:
         scores[PORTABILITY] += 3
-    if VERIFICATION_INTENT.search(t) and scores[ACCESS] > 0:
+    if VERIFICATION_INTENT.search(normalised) and scores[ACCESS] > 0:
         scores[ACCESS] += 2
 
     # Opposition contre effacement — une finalité nommée vise l'usage (art. 21) ; la totalité sans
     # finalité vise l'existence (art. 17).
-    if NAMED_PURPOSE.search(t):
+    if NAMED_PURPOSE.search(normalised):
         scores[OBJECTION] += 3
-        if not TOTALITY.search(t):
+        if not TOTALITY.search(normalised):
             scores[ERASURE] -= 2
-    elif TOTALITY.search(t) and scores[ERASURE] > 0:
+    elif TOTALITY.search(normalised) and scores[ERASURE] > 0:
         scores[ERASURE] += 2
 
     # Retrait de consentement — art. 7 §3, déclenche l'effacement par l'art. 17 §1 b), et n'est
     # *pas* une opposition.
-    if CONSENT_WITHDRAWAL.search(t):
+    if CONSENT_WITHDRAWAL.search(normalised):
         scores[ERASURE] += 4
         scores[OBJECTION] -= 3
 
@@ -413,8 +425,8 @@ def qualify(text: str) -> list[str]:
     # La garde ne s'applique pas quand le texte porte par ailleurs un marqueur RGPD explicite ou
     # un score fort : « supprimez mon compte, et par ailleurs résiliez mon abonnement » reste une
     # demande d'effacement.
-    exercise = EXPLICIT_EXERCISE.search(t) is not None
-    out_of_scope_hint = any(pattern.search(t) for pattern in OUT_OF_SCOPE_PATTERNS)
+    exercise = EXPLICIT_EXERCISE.search(normalised) is not None
+    out_of_scope_hint = any(pattern.search(normalised) for pattern in OUT_OF_SCOPE_PATTERNS)
 
     if out_of_scope_hint and not exercise and best < STRONG_THRESHOLD:
         return [OUT_OF_SCOPE]

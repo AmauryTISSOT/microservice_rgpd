@@ -79,3 +79,7 @@ uv run python tests/witness/regenerate.py   # puis incrémenter lexicon.ENGINE_V
 
 La qualité de la qualification est **explicitement hors périmètre** : le seul chiffre disponible
 serait emprunté à un autre moteur que celui qui sera servi.
+
+Une propriété reste **à couvrir quand le second moteur arrivera** : le sidecar doit servir ses deux
+points d'entrée *concurremment*, sans qu'un appel LLM en cours affame le lexique. Elle ne se teste
+pas avec un seul point d'entrée, et part donc avec le ticket qui en ajoute un second.

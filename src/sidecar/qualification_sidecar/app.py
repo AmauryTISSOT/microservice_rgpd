@@ -34,6 +34,11 @@ from qualification_sidecar.taxonomy import WireTaxonomyDivergence, to_canonical
 
 PROBLEM_JSON = "application/problem+json"
 
+#: La version du **contrat HTTP** du sidecar, jamais celle d'un moteur. Les deux bougent pour des
+#: raisons sans rapport : le LLM versionnera le modèle qu'il sert, le lexique ses règles, et faire
+#: porter à l'API la version de l'un des deux ferait mentir l'autre.
+API_VERSION = "1.0.0"
+
 logger = logging.getLogger("qualification_sidecar")
 
 
@@ -64,7 +69,7 @@ class OpinionRequest(BaseModel):
 
 app = FastAPI(
     title="Sidecar de qualification RGPD",
-    version=lexicon.ENGINE_VERSION,
+    version=API_VERSION,
     description=__doc__,
 )
 
