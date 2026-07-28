@@ -530,24 +530,26 @@ Le chemin explique la forme. Une **empreinte HMAC-SHA256 à clé** avec texte en
 | `text` | `varchar(10000)` | miroir du plafond du § 4.2 |
 | `rights` | `text[]` | **non nullable** — le verdict rendu |
 | `review_signal` | `text` | par son **nom**, jamais un entier |
-| `llm_rights` | `text[]` | **nullable** |
-| `llm_declared_confidence` | `text` | **nullable**, par son nom |
-| `llm_engine_name` | `text` | **nullable** |
-| `llm_engine_version` | `text` | **nullable** |
-| `lexicon_rights` | `text[]` | **nullable** |
-| `lexicon_engine_name` | `text` | **nullable** |
-| `lexicon_engine_version` | `text` | **nullable** |
+| `verdict_rights` | `text[]` | **nullable** |
+| `verdict_declared_confidence` | `text` | **nullable**, par son nom |
+| `verdict_engine_name` | `text` | **nullable** |
+| `verdict_engine_version` | `text` | **nullable** |
+| `witness_rights` | `text[]` | **nullable** |
+| `witness_declared_confidence` | `text` | **nullable**, par son nom |
+| `witness_engine_name` | `text` | **nullable** |
+| `witness_engine_version` | `text` | **nullable** |
 | `justification` | `text` | **nullable** |
 | `caller_reference` | `varchar(64)` | **nullable** |
 | `trace_id` | `varchar(64)` | **nullable** |
 | `total_latency_ms` | `integer` | |
-| `llm_latency_ms` | `integer` | **nullable** |
-| `lexicon_latency_ms` | `integer` | **nullable** |
+| `verdict_latency_ms` | `integer` | **nullable** |
+| `witness_latency_ms` | `integer` | **nullable** |
 
 Trois de ces choix portent plus que de la technique :
 
 - **Les deux avis bruts sont stockés, alors que le contrat public les refuse à l'appelant.** La logique s'inverse parce que la trace est **interne** : les avis sont ce qui *explique* le `review_signal` ; sans eux la trace enregistrerait une conclusion sans ses prémisses.
 - **Nom et version des deux moteurs figurent sur chaque ligne.** La trace permet donc de savoir quelles qualifications relèvent de quelle version de `qwen3:8b` ou du lexique.
+- **Les colonnes d'avis nomment un rôle, jamais une technologie** — révision de la première rédaction, qui les nommait `llm_*` et `lexicon_*`. Le rôle tenu par chaque moteur est une décision d'enregistrement de services ([#26](https://github.com/AmauryTISSOT/microservice_rgpd/issues/26)) : un nommage par technologie ferait mentir la table le jour où les rôles s'échangent. Rien n'est perdu, puisque `verdict_engine_name` et `witness_engine_name` disent sur chaque ligne *qui* a parlé.
 - **`caller_reference` est conservée en clair.** C'est la clé de corrélation de l'appelant ; sans elle il ne retrouve pas son propre appel et la redevabilité tombe. Mais elle est *opaque* : rien n'empêche l'application tierce d'y placer un identifiant de personne. **Contrainte de documentation, explicitement inapplicable techniquement** (§ 4.2) — elle pèse sur le responsable de traitement.
 
 La `justification` paraphrase le texte en le citant ; elle avait été rangée en éphémère avec lui. Sans purge, la question tombe : elle est conservée comme le reste.
@@ -558,9 +560,9 @@ La `justification` paraphrase le texte en le citant ; elle avait été rangée e
 
 | Configuration | Ce qu'elle signe |
 | --- | --- |
-| `llm_*` renseigné, `lexicon_*` renseigné | marche nominale |
-| `llm_*` **nul**, `lexicon_*` renseigné | **repli lexical** |
-| `llm_*` renseigné, `lexicon_*` **nul** | **lexique absent** |
+| `verdict_*` renseigné, `witness_*` renseigné | marche nominale |
+| `verdict_*` **nul**, `witness_*` renseigné | **repli lexical** |
+| `verdict_*` renseigné, `witness_*` **nul** | **lexique absent** |
 
 C'est exactement la distinction que le booléen `degraded` abandonne (§ 7.2) : elle existe, au bon endroit — **à l'intérieur**.
 

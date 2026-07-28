@@ -157,6 +157,7 @@ public class CorroborationTests
   {
     return new QualificationOpinion(
       Qualification.Of(rights),
+      AnEngine.HoldingTheVerdict,
       confidence,
       "Le texte demande la suppression des données.");
   }
@@ -164,6 +165,6 @@ public class CorroborationTests
   /// <summary>Le témoin tel qu'il est réellement : des droits, et pas un mot de plus.</summary>
   private static QualificationOpinion Witness(params DataSubjectRight[] rights)
   {
-    return new QualificationOpinion(Qualification.Of(rights));
+    return new QualificationOpinion(Qualification.Of(rights), AnEngine.HoldingTheWitness);
   }
 }

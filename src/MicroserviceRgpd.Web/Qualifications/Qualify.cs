@@ -55,6 +55,7 @@ public class Qualify(IMediator mediator, IProblemDetailsService problemDetails)
         "est jugé exercer. C'est une aide à la décision : un humain valide ou corrige le verdict.";
       summary.Responses[200] = "Qualification rendue";
       summary.Responses[400] = "Texte absent, vide ou trop long, ou référence appelante invalide";
+      summary.Responses[500] = "Défaillance interne, y compris l'échec d'écriture de la trace d'audit";
       summary.Responses[ServiceUnavailable] =
         "Qualification indisponible : les deux moteurs sont restés muets. La cause réaliste n'est " +
         "pas qu'un serveur de modèles soit éteint — ce cas rend un 200 dégradé — mais que le " +
@@ -97,9 +98,11 @@ public class Qualify(IMediator mediator, IProblemDetailsService problemDetails)
 
     if (result.Status != ResultStatus.Ok)
     {
-      // Inatteignable tant qu'un seul des deux moteurs suffit à qualifier : les statuts d'échec
-      // arriveront avec la trace d'audit. Le refuser plutôt que le supposer évite qu'un statut
-      // ajouté plus tard sorte en 200 avec un corps vide.
+      // Inatteignable tant qu'un seul des deux moteurs suffit à qualifier : aucun des échecs connus
+      // ne passe par un statut. La double panne lève et se traduit plus haut, et l'échec d'écriture
+      // de la trace lève aussi — il sort en 500, sans jamais devenir un 200 dégradé. Refuser un
+      // statut inconnu plutôt que le supposer évite qu'un statut ajouté plus tard sorte en 200 avec
+      // un corps vide.
       throw new InvalidOperationException(
         $"La qualification a rendu un statut que l'endpoint ne sait pas traduire : {result.Status}.");
     }

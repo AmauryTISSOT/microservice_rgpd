@@ -1,5 +1,7 @@
-﻿using System.Runtime.ExceptionServices;
+﻿using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.Qualifications.Audit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -31,6 +33,14 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// </remarks>
 /// <param name="verdictEngine">Le moteur dont l'avis fait verdict, déclaré par le port et par son rôle.</param>
 /// <param name="witness">Le moteur qui contrôle le verdict, déclaré par le même port et l'autre rôle.</param>
+/// <param name="auditTrail">
+/// L'écrit de l'acte. Il est demandé <b>avant</b> de répondre, jamais après : un verdict rendu sans
+/// trace serait un verdict dont plus personne ne pourrait répondre.
+/// </param>
+/// <param name="clock">
+/// L'horloge, injectée pour que l'instant de l'acte se dicte en test plutôt que d'être lu sur la
+/// machine qui l'exécute.
+/// </param>
 /// <param name="logger">
 /// Le seul endroit où le silence d'un moteur laisse une trace lisible : le booléen de dégradation
 /// dit à l'appelant que le service n'était pas entier, il ne dit pas à l'exploitant pourquoi.
@@ -38,6 +48,8 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 public sealed class QualifyHandler(
   [FromKeyedServices(QualificationEngineRole.Verdict)] IQualificationEngine verdictEngine,
   [FromKeyedServices(QualificationEngineRole.Witness)] IQualificationEngine witness,
+  IQualificationAuditTrail auditTrail,
+  TimeProvider clock,
   ILogger<QualifyHandler> logger)
   : ICommandHandler<QualifyCommand, Result<QualificationOutcome>>
 {
@@ -48,6 +60,11 @@ public sealed class QualifyHandler(
   {
     ArgumentNullException.ThrowIfNull(command);
 
+    // L'instant de l'acte est celui où il commence, et non celui où on l'écrit : lu après coup, il
+    // ne se raccorderait pas à la latence totale, qui court depuis ici.
+    var occurredAt = clock.GetUtcNow();
+    var started = clock.GetTimestamp();
+
     var verdictAnswer = AskAsync(verdictEngine, QualificationEngineRole.Verdict, command.Text, cancellationToken);
     var witnessAnswer = AskAsync(witness, QualificationEngineRole.Witness, command.Text, cancellationToken);
 
@@ -55,15 +72,62 @@ public sealed class QualifyHandler(
 
     var corroboration = Corroborate(verdictAnswer.Result, witnessAnswer.Result);
 
-    return new QualificationOutcome(
-      // Ordonné dans le temps, donc sans fragmentation d'index le jour où la trace d'audit
-      // l'utilisera comme clé primaire.
+    var outcome = new QualificationOutcome(
+      // Ordonné dans le temps, donc sans fragmentation d'index puisque la trace d'audit en fait sa
+      // clé primaire.
       QualificationId: Guid.CreateVersion7(),
       Qualification: corroboration.Qualification,
       ReviewSignal: corroboration.ReviewSignal,
       Degraded: corroboration.Degraded,
       Justification: corroboration.Justification,
       CallerReference: command.CallerReference);
+
+    // Qualifier, écrire, répondre — dans cet ordre, et sans rattrapage. Un échec d'écriture remonte
+    // tel quel : il n'y a pas de `200` dégradé pour une trace qui ne s'est pas écrite, y compris
+    // quand la qualification elle-même l'était. Une base indisponible est une panne du service, pas
+    // un mode dégradé.
+    await auditTrail.RecordAsync(
+      EntryOf(command, outcome, occurredAt, verdictAnswer.Result, witnessAnswer.Result, clock.GetElapsedTime(started)),
+      cancellationToken);
+
+    return outcome;
+  }
+
+  /// <summary>
+  /// Met par écrit ce qui vient d'avoir lieu : le verdict rendu, <b>et les deux avis dont il est
+  /// tiré</b>, chacun avec le moteur qui l'a rendu.
+  /// </summary>
+  /// <remarks>
+  /// Rien n'y nomme le mode dégradé : un avis manquant entre nul, et c'est cette nullité qui
+  /// l'enregistre — en distinguant le repli lexical du lexique absent, que le booléen public
+  /// recouvre.
+  /// </remarks>
+  private static QualificationAuditEntry EntryOf(
+    QualifyCommand command,
+    QualificationOutcome outcome,
+    DateTimeOffset occurredAt,
+    EngineAnswer verdict,
+    EngineAnswer witness,
+    TimeSpan totalLatency)
+  {
+    return new QualificationAuditEntry(
+      outcome.QualificationId,
+      occurredAt,
+      command.Text,
+      outcome.Qualification,
+      outcome.ReviewSignal,
+      verdict.Opinion,
+      witness.Opinion,
+      outcome.Justification,
+      outcome.CallerReference,
+      // La trace de télémétrie est prise telle qu'elle est, et jamais fabriquée : son absence dit
+      // que la propagation est cassée en amont, ce qu'un identifiant de repli masquerait.
+      Activity.Current?.TraceId.ToString(),
+      totalLatency,
+      // La latence d'un moteur muet reste nulle, comme son avis : mesurer le temps qu'il a mis à ne
+      // rien rendre ferait passer une panne pour une lenteur.
+      verdict.Opinion is null ? null : verdict.Latency,
+      witness.Opinion is null ? null : witness.Latency);
   }
 
   /// <summary>
@@ -107,9 +171,15 @@ public sealed class QualifyHandler(
     RightsRequestText text,
     CancellationToken cancellationToken)
   {
+    // La mesure est prise par moteur, et non autour des deux : appelés en parallèle, leurs durées se
+    // recouvrent, et une mesure commune ne dirait plus lequel a coûté le temps de la réponse.
+    var started = clock.GetTimestamp();
+
     try
     {
-      return new EngineAnswer(await engine.QualifyAsync(text, cancellationToken), null);
+      var opinion = await engine.QualifyAsync(text, cancellationToken);
+
+      return new EngineAnswer(opinion, null, clock.GetElapsedTime(started));
     }
     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
     {
@@ -122,10 +192,13 @@ public sealed class QualifyHandler(
       // service entier. Elle est journalisée ici pour ne pas disparaître avec l'exception.
       logger.LogWarning(silence, "Le moteur tenant le rôle {Role} n'a rendu aucun avis.", role);
 
-      return new EngineAnswer(null, silence);
+      return new EngineAnswer(null, silence, clock.GetElapsedTime(started));
     }
   }
 
-  /// <summary>Ce qu'un moteur a rendu : un avis, ou la raison de son silence — jamais les deux.</summary>
-  private sealed record EngineAnswer(QualificationOpinion? Opinion, Exception? Failure);
+  /// <summary>
+  /// Ce qu'un moteur a rendu : un avis, ou la raison de son silence — jamais les deux —, et le temps
+  /// qu'il y a mis.
+  /// </summary>
+  private sealed record EngineAnswer(QualificationOpinion? Opinion, Exception? Failure, TimeSpan Latency);
 }

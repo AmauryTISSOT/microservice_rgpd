@@ -61,16 +61,18 @@ public sealed class LlmQualificationEngine(HttpClient client) : IQualificationEn
 
     return new QualificationOpinion(
       SidecarExchange.VerdictOf(opinion.Rights, Engine),
+      SidecarExchange.IdentityOf(opinion.Engine, Engine),
       opinion.Confidence,
       opinion.Justification);
   }
 
   /// <summary>
-  /// L'avis tel qu'il arrive. L'identité du moteur voyage aussi sur le fil ; elle n'est pas lue ici
-  /// parce qu'il n'existe encore rien qui la conserve — la trace d'audit lui donnera sa place.
+  /// L'avis tel qu'il arrive, <b>avec le moteur qui l'a rendu</b>. C'est ici que la version compte le
+  /// plus : elle dit de quel modèle servi relève une qualification, et la trace d'audit la conserve.
   /// </summary>
   private sealed record LlmOpinionResponse(
     IReadOnlyList<DataSubjectRight>? Rights,
     DeclaredConfidence? Confidence,
-    string? Justification);
+    string? Justification,
+    SidecarExchange.EngineResponse? Engine);
 }

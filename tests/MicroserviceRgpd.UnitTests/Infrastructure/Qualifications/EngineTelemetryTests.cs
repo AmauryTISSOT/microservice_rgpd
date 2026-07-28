@@ -16,11 +16,16 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Qualifications;
 /// </remarks>
 public class EngineTelemetryTests : IDisposable
 {
+  // L'identité du moteur fait partie de ce qu'un avis complet porte : sans elle, l'avis est refusé
+  // avant même d'atteindre ce que ces tests observent.
   private const string ValidLlmOpinion = """
-    {"rights":["Erasure"],"confidence":"High","justification":"Le texte demande la suppression."}
+    {"rights":["Erasure"],"confidence":"High","justification":"Le texte demande la suppression.",
+     "engine":{"name":"llm","version":"qwen3:8b"}}
     """;
 
-  private const string ValidLexiconOpinion = """{"rights":["Erasure"]}""";
+  private const string ValidLexiconOpinion = """
+    {"rights":["Erasure"],"engine":{"name":"lexicon","version":"1.0.0"}}
+    """;
 
   private static readonly RightsRequestText Text =
     RightsRequestText.From("Supprimez toutes les données que vous avez sur moi.");

@@ -45,7 +45,8 @@ public class LlmQualificationEngineTests
   public async Task ReadsTheCanonicalNamesBackIntoTheTaxonomy()
   {
     var sidecar = RespondingWith("""
-      {"rights":["Access","Portability"],"confidence":"Medium","justification":"Copie et transfert."}
+      {"rights":["Access","Portability"],"confidence":"Medium","justification":"Copie et transfert.",
+       "engine":{"name":"llm","version":"qwen3:8b+prompt.1"}}
       """);
 
     var opinion = await Engine(sidecar).QualifyAsync(Text, CancellationToken.None);
@@ -65,14 +66,29 @@ public class LlmQualificationEngineTests
     string wire,
     DeclaredConfidence expected)
   {
-    var sidecar = RespondingWith($$"""
-      {"rights":["Erasure"],"confidence":"{{wire}}","justification":"Le texte demande la suppression."}
+    var sidecar = RespondingWith($$$"""
+      {"rights":["Erasure"],"confidence":"{{{wire}}}","justification":"Le texte demande la suppression.",
+       "engine":{"name":"llm","version":"qwen3:8b+prompt.1"}}
       """);
 
     var opinion = await Engine(sidecar).QualifyAsync(Text, CancellationToken.None);
 
     opinion.DeclaredConfidence.ShouldBe(expected);
     opinion.Justification.ShouldBe("Le texte demande la suppression.");
+  }
+
+  /// <summary>
+  /// L'identité du moteur traverse jusqu'au domaine. Elle ne sert qu'à la trace d'audit — c'est elle
+  /// qui dira de quelle version de modèle relève une qualification, le jour où l'on en répondra.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheEngineIdentityBackToTheDomain()
+  {
+    var sidecar = RespondingWith(ValidOpinion);
+
+    var opinion = await Engine(sidecar).QualifyAsync(Text, CancellationToken.None);
+
+    opinion.Engine.ShouldBe(new QualificationEngineIdentity("llm", "qwen3:8b+prompt.1"));
   }
 
   [Theory]
@@ -108,6 +124,13 @@ public class LlmQualificationEngineTests
   [InlineData("""{"rights":["Erasure"],"confidence":2,"justification":"…"}""")]
   [InlineData("""{"rights":["Erasure"],"confidence":"High"}""")]
   [InlineData("""{"rights":["Erasure"],"confidence":"High","justification":"   "}""")]
+  // Un moteur anonyme n'est pas un moteur discret : la trace d'audit conserve les avis avec le
+  // moteur qui les a rendus, et ne saurait pas de quelle version relève celui-ci.
+  [InlineData("""{"rights":["Erasure"],"confidence":"High","justification":"…"}""")]
+  [InlineData("""{"rights":["Erasure"],"confidence":"High","justification":"…","engine":null}""")]
+  [InlineData("""{"rights":["Erasure"],"confidence":"High","justification":"…","engine":{"name":"llm"}}""")]
+  [InlineData("""{"rights":["Erasure"],"confidence":"High","justification":"…","engine":{"version":"1"}}""")]
+  [InlineData("""{"rights":["Erasure"],"confidence":"High","justification":"…","engine":{"name":" ","version":"1"}}""")]
   [InlineData("ceci n'est pas du JSON")]
   public async Task TreatsAnythingThatIsNotAValidOpinionAsAFailureOfTheEngine(string body)
   {

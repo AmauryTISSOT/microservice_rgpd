@@ -15,6 +15,10 @@
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="xunit" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <!-- La persistance se verifie contre un vrai PostgreSQL : types, contraintes et text[] ne sont
+         pas simulables, et c est precisement ce que ce projet est la pour couvrir. -->
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
   </ItemGroup>
 
   <ItemGroup>

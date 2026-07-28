@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.UseCases.Qualifications.Qualify;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -20,6 +21,7 @@ public class QualifyHandlerTests
 
   private readonly IQualificationEngine _verdictEngine = Substitute.For<IQualificationEngine>();
   private readonly IQualificationEngine _witness = Substitute.For<IQualificationEngine>();
+  private readonly RecordingAuditTrail _auditTrail = new();
 
   /// <summary>
   /// Le témoin est <b>détecteur, jamais contributeur</b> en marche nominale : les droits rendus sont
@@ -47,13 +49,18 @@ public class QualifyHandlerTests
   public async Task AsksBothEnginesAtOnceRatherThanOneAfterTheOther()
   {
     var principal = new GatedEngine(new QualificationOpinion(
-      Qualification.Of([DataSubjectRight.Erasure]), DeclaredConfidence.High, "Suppression demandée."));
-    var witness = new GatedEngine(new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure])));
+      Qualification.Of([DataSubjectRight.Erasure]),
+      AnEngine.HoldingTheVerdict,
+      DeclaredConfidence.High,
+      "Suppression demandée."));
+    var witness = new GatedEngine(
+      new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.HoldingTheWitness));
 
     principal.AnswerOnce(witness.Called);
     witness.AnswerOnce(principal.Called);
 
-    var handling = new QualifyHandler(principal, witness, NullLogger<QualifyHandler>.Instance)
+    var handling = new QualifyHandler(
+        principal, witness, _auditTrail, TimeProvider.System, NullLogger<QualifyHandler>.Instance)
       .Handle(new QualifyCommand(Text, null), CancellationToken.None)
       .AsTask();
 
@@ -128,6 +135,10 @@ public class QualifyHandlerTests
     var failure = await Should.ThrowAsync<QualificationEngineFailure>(() => HandleAsync());
 
     failure.Message.ShouldContain("504");
+
+    // La trace enregistre les verdicts, jamais les tentatives : une double panne n'a rien qualifié,
+    // et il n'y a aucun verdict dont répondre.
+    _auditTrail.Entries.ShouldBeEmpty();
   }
 
   /// <summary>
@@ -178,6 +189,10 @@ public class QualifyHandlerTests
 
     await Should.ThrowAsync<OperationCanceledException>(
       () => Handler().Handle(new QualifyCommand(Text, null), cancellation.Token).AsTask());
+
+    // Un appelant parti ne reçoit rien, et ne laisse rien : aucune ligne pour un acte qui n'a pas eu
+    // lieu.
+    _auditTrail.Entries.ShouldBeEmpty();
   }
 
   /// <summary>
@@ -240,9 +255,100 @@ public class QualifyHandlerTests
     second.QualificationId.ShouldNotBe(first.QualificationId);
   }
 
+  /// <summary>
+  /// La trace conserve le verdict <b>et ses prémisses</b> : les deux avis bruts, chacun avec le
+  /// moteur qui l'a rendu. Enregistrer une conclusion sans ses prémisses ne permettrait de répondre
+  /// de rien.
+  /// </summary>
+  [Fact]
+  public async Task WritesTheVerdictAndBothRawOpinionsToTheTrace()
+  {
+    GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
+    GiveTheWitness(DataSubjectRight.Erasure);
+
+    var outcome = await HandleAsync(callerReference: "DSAR-8871");
+
+    var entry = _auditTrail.Entries.ShouldHaveSingleItem();
+    entry.QualificationId.ShouldBe(outcome.QualificationId);
+    entry.Text.ShouldBe(Text);
+    entry.Qualification.ShouldBe(Qualification.Of([DataSubjectRight.Erasure]));
+    entry.ReviewSignal.ShouldBe(ReviewSignal.Corroborated);
+    entry.CallerReference.ShouldBe("DSAR-8871");
+
+    entry.VerdictOpinion!.Engine.ShouldBe(AnEngine.HoldingTheVerdict);
+    entry.VerdictOpinion.DeclaredConfidence.ShouldBe(DeclaredConfidence.High);
+    entry.WitnessOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
+  }
+
+  /// <summary>
+  /// Un repli lexical et un lexique absent produisent <b>deux formes de ligne distinguables</b>, et
+  /// c'est la nullité de l'avis manquant qui les distingue — jamais un champ nommant la dégradation.
+  /// </summary>
+  [Fact]
+  public async Task RecordsTheFallbackByTheAbsenceOfTheVerdictOpinion()
+  {
+    GiveThePrincipalEngine(new QualificationEngineFailure("Le moteur LLM a répondu 503."));
+    GiveTheWitness(DataSubjectRight.Erasure);
+
+    await HandleAsync();
+
+    var entry = _auditTrail.Entries.ShouldHaveSingleItem();
+    entry.VerdictOpinion.ShouldBeNull();
+    entry.VerdictLatency.ShouldBeNull();
+    entry.WitnessOpinion.ShouldNotBeNull();
+  }
+
+  /// <summary>
+  /// L'autre forme de dégradation : le verdict est normal, mais il n'a reçu aucun contrôle. Le
+  /// booléen public recouvre les deux situations ; la trace les sépare.
+  /// </summary>
+  [Fact]
+  public async Task RecordsTheMissingWitnessByTheAbsenceOfTheWitnessOpinion()
+  {
+    GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
+    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+
+    await HandleAsync();
+
+    var entry = _auditTrail.Entries.ShouldHaveSingleItem();
+    entry.WitnessOpinion.ShouldBeNull();
+    entry.WitnessLatency.ShouldBeNull();
+    entry.VerdictOpinion.ShouldNotBeNull();
+  }
+
+  /// <summary>
+  /// <b>Qualifier, écrire, répondre.</b> Un échec d'écriture est une panne du service : il remonte,
+  /// et rien n'est rendu à l'appelant.
+  /// </summary>
+  [Fact]
+  public async Task FailsWhenTheTraceCannotBeWritten()
+  {
+    GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
+    GiveTheWitness(DataSubjectRight.Erasure);
+    _auditTrail.Refuse(new InvalidOperationException("La base est indisponible."));
+
+    await Should.ThrowAsync<InvalidOperationException>(() => HandleAsync());
+  }
+
+  /// <summary>
+  /// Et il remonte <b>aussi quand la qualification était dégradée</b> : la dégradation d'un moteur ne
+  /// survit pas à une panne de base, et aucun identifiant de qualification creux ne doit circuler,
+  /// sous peine de vider de sens tous les autres.
+  /// </summary>
+  [Fact]
+  public async Task FailsWhenTheTraceCannotBeWrittenEvenForADegradedQualification()
+  {
+    GiveThePrincipalEngine(new QualificationEngineFailure("Le moteur LLM a répondu 503."));
+    GiveTheWitness(DataSubjectRight.Erasure);
+    _auditTrail.Refuse(new InvalidOperationException("La base est indisponible."));
+
+    await Should.ThrowAsync<InvalidOperationException>(() => HandleAsync());
+  }
+
   private QualifyHandler Handler()
   {
-    return new QualifyHandler(_verdictEngine, _witness, NullLogger<QualifyHandler>.Instance);
+    return new QualifyHandler(
+      _verdictEngine, _witness, _auditTrail, TimeProvider.System, NullLogger<QualifyHandler>.Instance);
   }
 
   private async Task<QualificationOutcome> HandleAsync(string? callerReference = null)
@@ -259,7 +365,10 @@ public class QualifyHandlerTests
     _verdictEngine
       .QualifyAsync(Text, Arg.Any<CancellationToken>())
       .Returns(new QualificationOpinion(
-        Qualification.Of([verdict]), confidence, "Le texte demande la suppression des données."));
+        Qualification.Of([verdict]),
+        AnEngine.HoldingTheVerdict,
+        confidence,
+        "Le texte demande la suppression des données."));
   }
 
   private void GiveThePrincipalEngine(Exception failure)
@@ -275,7 +384,7 @@ public class QualifyHandlerTests
     // atteignable en test un état que le vrai moteur n'atteint jamais.
     _witness
       .QualifyAsync(Text, Arg.Any<CancellationToken>())
-      .Returns(new QualificationOpinion(Qualification.Of([verdict])));
+      .Returns(new QualificationOpinion(Qualification.Of([verdict]), AnEngine.HoldingTheWitness));
   }
 
   private void GiveTheWitness(Exception failure)
@@ -283,6 +392,33 @@ public class QualifyHandlerTests
     _witness
       .QualifyAsync(Text, Arg.Any<CancellationToken>())
       .Returns(Task.FromException<QualificationOpinion>(failure));
+  }
+
+  /// <summary>
+  /// Une trace d'audit réduite à ce qu'un test du handler a besoin d'en savoir : ce qu'on lui a
+  /// demandé d'écrire, et la panne qu'on lui dicte.
+  /// </summary>
+  private sealed class RecordingAuditTrail : IQualificationAuditTrail
+  {
+    private Exception? _refusal;
+
+    /// <summary>Les entrées écrites, dans l'ordre. Vide dit qu'aucun acte n'a laissé de ligne.</summary>
+    public List<QualificationAuditEntry> Entries { get; } = [];
+
+    /// <summary>Fait échouer la prochaine écriture, comme le ferait une base indisponible.</summary>
+    public void Refuse(Exception refusal) => _refusal = refusal;
+
+    public Task RecordAsync(QualificationAuditEntry entry, CancellationToken cancellationToken = default)
+    {
+      if (_refusal is not null)
+      {
+        return Task.FromException(_refusal);
+      }
+
+      Entries.Add(entry);
+
+      return Task.CompletedTask;
+    }
   }
 
   /// <summary>

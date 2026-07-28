@@ -60,6 +60,10 @@ _Avoid_ : prédiction, résultat, réponse, sortie du modèle
 L'échelle ordinale à trois degrés — `High`, `Medium`, `Low` — par laquelle un moteur dit à quel point il doute de sa propre `QualificationOpinion`. Un moteur peut n'en produire aucune, et le lexique est dans ce cas.
 _Avoid_ : certitude, probabilité, score de confiance, fiabilité
 
+**QualificationEngineIdentity** :
+Le nom et la version qu'un moteur joint à sa `QualificationOpinion` — celle de ses règles pour un lexique, celle du modèle servi pour un LLM. Elle ne sert qu'à la `Trace d'audit`, qui conserve les avis avec le moteur dont ils relèvent ; le domaine ne l'interprète jamais et aucune réponse publique ne la porte.
+_Avoid_ : modèle, moteur, provenance, signature
+
 **WitnessOpinion** :
 La `QualificationOpinion` du lexique. En marche nominale elle sert exclusivement à corroborer ou contester celle du LLM, sans jamais contribuer à la `Qualification` rendue. Elle ne devient elle-même la `Qualification` qu'en `Mode dégradé`, quand le LLM n'a rendu aucun avis. Les deux rôles ne coexistent jamais : elle ne vote pas aux côtés du LLM, l'union de deux avis étant indéfinissable puisque `OutOfScope` est exclusif.
 _Avoid_ : second avis, avis secondaire, vote, contre-expertise

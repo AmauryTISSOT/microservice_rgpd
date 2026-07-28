@@ -38,14 +38,19 @@ public sealed class LexiconQualificationEngine(HttpClient client) : IQualificati
       text,
       // Aucune confiance, aucune justification : le lexique n'a pas d'avis sur sa propre fiabilité,
       // et une constante lui en donnerait l'apparence — quelqu'un finirait par écrire une règle qui
-      // la consomme.
-      opinion => new QualificationOpinion(SidecarExchange.VerdictOf(opinion.Rights, Engine)),
+      // la consomme. L'identité, elle, est exigée : la trace d'audit conserve l'avis avec la version
+      // qui l'a rendu, et un moteur anonyme est une panne comme une autre.
+      opinion => new QualificationOpinion(
+        SidecarExchange.VerdictOf(opinion.Rights, Engine),
+        SidecarExchange.IdentityOf(opinion.Engine, Engine)),
       cancellationToken);
   }
 
   /// <summary>
-  /// L'avis tel qu'il arrive. L'identité du moteur voyage aussi sur le fil ; elle n'est pas lue ici
-  /// parce qu'il n'existe encore rien qui la conserve — la trace d'audit lui donnera sa place.
+  /// L'avis tel qu'il arrive, <b>avec le moteur qui l'a rendu</b> : c'est la trace d'audit qui
+  /// conserve cette identité, et elle seule — aucune réponse publique ne la porte.
   /// </summary>
-  private sealed record LexiconOpinionResponse(IReadOnlyList<DataSubjectRight>? Rights);
+  private sealed record LexiconOpinionResponse(
+    IReadOnlyList<DataSubjectRight>? Rights,
+    SidecarExchange.EngineResponse? Engine);
 }
