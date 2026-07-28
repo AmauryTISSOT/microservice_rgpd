@@ -1,0 +1,120 @@
+{"id": "acc-01", "rights": ["Access"]}
+{"id": "acc-02", "rights": ["Access"]}
+{"id": "acc-03", "rights": ["Access"]}
+{"id": "acc-04", "rights": ["Access"]}
+{"id": "acc-05", "rights": ["Access"]}
+{"id": "acc-06", "rights": ["Access"]}
+{"id": "acc-07", "rights": ["Access"]}
+{"id": "acc-08", "rights": ["Access"]}
+{"id": "acc-09", "rights": ["Access"]}
+{"id": "acc-10", "rights": ["Access"]}
+{"id": "rec-01", "rights": ["Rectification"]}
+{"id": "rec-02", "rights": ["Rectification"]}
+{"id": "rec-03", "rights": ["Rectification"]}
+{"id": "rec-04", "rights": ["Rectification"]}
+{"id": "rec-05", "rights": ["Rectification"]}
+{"id": "rec-06", "rights": ["Rectification"]}
+{"id": "rec-07", "rights": ["Rectification"]}
+{"id": "rec-08", "rights": ["Rectification"]}
+{"id": "rec-09", "rights": ["Rectification"]}
+{"id": "eff-01", "rights": ["Erasure"]}
+{"id": "eff-02", "rights": ["Erasure"]}
+{"id": "eff-03", "rights": ["Erasure", "Objection"]}
+{"id": "eff-04", "rights": ["Access", "Erasure"]}
+{"id": "eff-05", "rights": ["Erasure"]}
+{"id": "eff-06", "rights": ["Erasure", "Objection"]}
+{"id": "eff-07", "rights": ["Erasure"]}
+{"id": "eff-08", "rights": ["Erasure"]}
+{"id": "eff-09", "rights": ["Access", "Erasure"]}
+{"id": "eff-10", "rights": ["Erasure"]}
+{"id": "lim-01", "rights": ["Restriction"]}
+{"id": "lim-02", "rights": ["Restriction"]}
+{"id": "lim-03", "rights": ["Restriction"]}
+{"id": "lim-04", "rights": ["Restriction"]}
+{"id": "lim-05", "rights": ["Restriction"]}
+{"id": "lim-06", "rights": ["Objection", "Restriction"]}
+{"id": "lim-07", "rights": ["Restriction"]}
+{"id": "lim-08", "rights": ["Restriction"]}
+{"id": "lim-09", "rights": ["Objection", "Restriction"]}
+{"id": "por-01", "rights": ["Portability"]}
+{"id": "por-02", "rights": ["Portability"]}
+{"id": "por-03", "rights": ["Portability"]}
+{"id": "por-04", "rights": ["Portability"]}
+{"id": "por-05", "rights": ["Portability"]}
+{"id": "por-06", "rights": ["Portability"]}
+{"id": "por-07", "rights": ["Portability"]}
+{"id": "por-08", "rights": ["Portability"]}
+{"id": "por-09", "rights": ["Portability"]}
+{"id": "opp-01", "rights": ["Objection"]}
+{"id": "opp-02", "rights": ["OutOfScope"]}
+{"id": "opp-03", "rights": ["Objection"]}
+{"id": "opp-04", "rights": ["Objection"]}
+{"id": "opp-05", "rights": ["Objection"]}
+{"id": "opp-06", "rights": ["Objection"]}
+{"id": "opp-07", "rights": ["OutOfScope"]}
+{"id": "opp-08", "rights": ["Objection"]}
+{"id": "opp-09", "rights": ["Objection"]}
+{"id": "opp-10", "rights": ["Objection"]}
+{"id": "mul-01", "rights": ["Objection"]}
+{"id": "mul-02", "rights": ["Access"]}
+{"id": "mul-03", "rights": ["Erasure", "Portability"]}
+{"id": "mul-04", "rights": ["Rectification", "Restriction"]}
+{"id": "mul-05", "rights": ["Objection", "Restriction"]}
+{"id": "mul-06", "rights": ["Rectification"]}
+{"id": "mul-07", "rights": ["Access"]}
+{"id": "mul-08", "rights": ["Access", "Erasure", "Objection"]}
+{"id": "mul-09", "rights": ["Access", "Objection"]}
+{"id": "mul-10", "rights": ["Erasure", "Rectification"]}
+{"id": "mul-11", "rights": ["Restriction"]}
+{"id": "mul-12", "rights": ["Access", "Portability"]}
+{"id": "mul-13", "rights": ["Access", "Erasure", "Objection"]}
+{"id": "mul-14", "rights": ["Erasure", "Objection"]}
+{"id": "mul-15", "rights": ["Objection", "Rectification"]}
+{"id": "mul-16", "rights": ["Access", "Erasure", "Objection"]}
+{"id": "hop-01", "rights": ["OutOfScope"]}
+{"id": "hop-02", "rights": ["OutOfScope"]}
+{"id": "hop-03", "rights": ["OutOfScope"]}
+{"id": "hop-04", "rights": ["OutOfScope"]}
+{"id": "hop-05", "rights": ["OutOfScope"]}
+{"id": "hop-06", "rights": ["OutOfScope"]}
+{"id": "hop-07", "rights": ["OutOfScope"]}
+{"id": "hop-08", "rights": ["OutOfScope"]}
+{"id": "hop-09", "rights": ["OutOfScope"]}
+{"id": "hop-10", "rights": ["OutOfScope"]}
+{"id": "hop-11", "rights": ["OutOfScope"]}
+{"id": "hop-12", "rights": ["OutOfScope"]}
+{"id": "hop-13", "rights": ["OutOfScope"]}
+{"id": "hop-14", "rights": ["Access"]}
+{"id": "hop-15", "rights": ["OutOfScope"]}
+{"id": "hop-16", "rights": ["OutOfScope"]}
+{"id": "hop-17", "rights": ["OutOfScope"]}
+{"id": "hop-18", "rights": ["OutOfScope"]}
+{"id": "hop-19", "rights": ["OutOfScope"]}
+{"id": "hop-20", "rights": ["OutOfScope"]}
+{"id": "hop-21", "rights": ["OutOfScope"]}
+{"id": "hop-22", "rights": ["OutOfScope"]}
+{"id": "hop-23", "rights": ["OutOfScope"]}
+{"id": "hop-24", "rights": ["OutOfScope"]}
+{"id": "hop-25", "rights": ["OutOfScope"]}
+{"id": "edg-01", "rights": ["Erasure"]}
+{"id": "edg-02", "rights": ["OutOfScope"]}
+{"id": "edg-03", "rights": ["Access"]}
+{"id": "edg-04", "rights": ["Erasure"]}
+{"id": "edg-05", "rights": ["Erasure"]}
+{"id": "edg-06", "rights": ["Erasure", "Objection"]}
+{"id": "edg-07", "rights": ["OutOfScope"]}
+{"id": "edg-08", "rights": ["Erasure", "Rectification"]}
+{"id": "edg-09", "rights": ["OutOfScope"]}
+{"id": "edg-10", "rights": ["OutOfScope"]}
+{"id": "edg-11", "rights": ["OutOfScope"]}
+{"id": "edg-12", "rights": ["Restriction"]}
+{"id": "edg-13", "rights": ["Erasure", "Rectification"]}
+{"id": "edg-14", "rights": ["Erasure", "Rectification"]}
+{"id": "edg-15", "rights": ["Access", "Erasure"]}
+{"id": "edg-16", "rights": ["Access", "Erasure"]}
+{"id": "edg-17", "rights": ["Erasure", "Objection"]}
+{"id": "edg-18", "rights": ["Restriction"]}
+{"id": "edg-19", "rights": ["Objection"]}
+{"id": "edg-20", "rights": ["OutOfScope"]}
+{"id": "edg-21", "rights": ["OutOfScope"]}
+{"id": "edg-22", "rights": ["OutOfScope"]}
