@@ -37,12 +37,16 @@ public sealed class LexiconQualificationEngine(HttpClient client) : IQualificati
     // Aucune confiance, aucune justification : le lexique n'a pas d'avis sur sa propre fiabilité, et
     // une constante lui en donnerait l'apparence — quelqu'un finirait par écrire une règle qui la
     // consomme.
-    return new QualificationOpinion(SidecarExchange.VerdictOf(opinion.Rights, Engine));
+    return new QualificationOpinion(
+      SidecarExchange.VerdictOf(opinion.Rights, Engine),
+      SidecarExchange.IdentityOf(opinion.Engine, Engine));
   }
 
   /// <summary>
-  /// L'avis tel qu'il arrive. L'identité du moteur voyage aussi sur le fil ; elle n'est pas lue ici
-  /// parce qu'il n'existe encore rien qui la conserve — la trace d'audit lui donnera sa place.
+  /// L'avis tel qu'il arrive, <b>avec le moteur qui l'a rendu</b> : c'est la trace d'audit qui
+  /// conserve cette identité, et elle seule — aucune réponse publique ne la porte.
   /// </summary>
-  private sealed record LexiconOpinionResponse(IReadOnlyList<DataSubjectRight>? Rights);
+  private sealed record LexiconOpinionResponse(
+    IReadOnlyList<DataSubjectRight>? Rights,
+    SidecarExchange.EngineResponse? Engine);
 }

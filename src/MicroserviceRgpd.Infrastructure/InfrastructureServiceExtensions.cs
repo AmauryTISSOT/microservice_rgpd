@@ -1,5 +1,8 @@
-﻿using MicroserviceRgpd.Infrastructure.Data;
+﻿using MicroserviceRgpd.Core.Qualifications.Audit;
+using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.Infrastructure.Qualifications;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MicroserviceRgpd.Infrastructure;
 public static class InfrastructureServiceExtensions
@@ -30,6 +33,14 @@ public static class InfrastructureServiceExtensions
 
     services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>))
            .AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
+
+    // La trace d'audit ne passe pas par le dépôt générique ci-dessus : celui-ci est contraint aux
+    // agrégats racines, et l'emprunter aurait déclaré agrégat ce qui n'est que l'écrit d'un acte.
+    services.AddScoped<IQualificationAuditTrail, QualificationAuditTrail>();
+
+    // L'horloge est injectée pour que l'instant de l'acte se dicte en test, plutôt que d'être lu
+    // sur la machine qui l'exécute.
+    services.TryAddSingleton(TimeProvider.System);
 
     services.AddQualificationEngines(config);
 

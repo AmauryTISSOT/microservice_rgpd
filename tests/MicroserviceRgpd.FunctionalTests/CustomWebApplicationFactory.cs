@@ -1,5 +1,7 @@
 ﻿using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.Infrastructure.Data.Audit;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,6 +26,12 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
   /// <summary>Le moteur temoin, substitue lui aussi : ni confiance, ni justification.</summary>
   public QualificationEngineDouble Witness { get; } = new();
+
+  /// <summary>
+  /// De quoi faire echouer l ecriture de la trace. La trace elle-meme n est pas substituee : elle
+  /// ecrit dans le vrai PostgreSQL, et c est ce qui donne du sens a « qualifier, ecrire, repondre ».
+  /// </summary>
+  public AuditTrailControl AuditTrail { get; } = new();
 
   public async Task InitializeAsync()
   {
@@ -91,6 +99,11 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
       services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Verdict, Verdict);
       services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Witness, Witness);
+
+      // L adaptateur reel reste au bout de la chaine : la surveillance n intercepte que pour lui
+      // dicter une panne, jamais pour se substituer a l ecriture.
+      services.AddScoped<IQualificationAuditTrail>(provider => new SupervisedAuditTrail(
+        new QualificationAuditTrail(provider.GetRequiredService<AppDbContext>()), AuditTrail));
     });
   }
 }

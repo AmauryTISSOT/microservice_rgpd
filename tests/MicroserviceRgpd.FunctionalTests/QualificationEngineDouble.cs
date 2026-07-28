@@ -17,9 +17,14 @@ namespace MicroserviceRgpd.FunctionalTests;
 /// vrai moteur n atteint jamais.
 /// </param>
 /// <param name="justification">La phrase que ce moteur justifie par defaut, ou rien s il ne justifie pas.</param>
+/// <param name="engine">
+/// L identite sous laquelle ce moteur se declare. Toujours presente : un avis dont on ignore de quel
+/// moteur il releve est un avis dont la trace d audit ne pourrait plus repondre.
+/// </param>
 public sealed class QualificationEngineDouble(
   DeclaredConfidence? confidence = null,
-  string? justification = null) : IQualificationEngine
+  string? justification = null,
+  QualificationEngineIdentity? engine = null) : IQualificationEngine
 {
   private readonly DeclaredConfidence? _confidence = confidence;
   private readonly string? _justification = justification;
@@ -39,6 +44,9 @@ public sealed class QualificationEngineDouble(
   /// </summary>
   public Exception? Silence { get; set; }
 
+  /// <summary>L identite que le moteur joint a son avis.</summary>
+  public QualificationEngineIdentity Engine { get; set; } = engine ?? new QualificationEngineIdentity("double", "1.0.0");
+
   /// <summary>Le texte tel que le moteur l a recu — ce qui permet de verifier ce que la frontiere en a fait.</summary>
   public RightsRequestText? ReceivedText { get; private set; }
 
@@ -56,6 +64,7 @@ public sealed class QualificationEngineDouble(
     DeclaredConfidence = _confidence;
     Justification = _justification;
     Silence = null;
+    Engine = engine ?? new QualificationEngineIdentity("double", "1.0.0");
     ReceivedText = null;
     CallCount = 0;
   }
@@ -72,6 +81,6 @@ public sealed class QualificationEngineDouble(
       return Task.FromException<QualificationOpinion>(Silence);
     }
 
-    return Task.FromResult(new QualificationOpinion(Qualification, DeclaredConfidence, Justification));
+    return Task.FromResult(new QualificationOpinion(Qualification, Engine, DeclaredConfidence, Justification));
   }
 }

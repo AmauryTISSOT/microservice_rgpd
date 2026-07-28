@@ -59,6 +59,20 @@ public class LexiconQualificationEngineTests
     opinion.Justification.ShouldBeNull();
   }
 
+  /// <summary>
+  /// L'identité du moteur traverse jusqu'au domaine — la version de ses règles comprise, pour que la
+  /// trace d'audit sache de laquelle relèvent les qualifications qu'elle conserve.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheEngineIdentityBackToTheDomain()
+  {
+    var sidecar = RespondingWith("""{"rights":["Erasure"],"engine":{"name":"lexicon","version":"1.0.0"}}""");
+
+    var opinion = await Engine(sidecar).QualifyAsync(Text, CancellationToken.None);
+
+    opinion.Engine.ShouldBe(new QualificationEngineIdentity("lexicon", "1.0.0"));
+  }
+
   [Theory]
   [InlineData(HttpStatusCode.BadRequest)]
   [InlineData(HttpStatusCode.InternalServerError)]
@@ -82,6 +96,12 @@ public class LexiconQualificationEngineTests
   [InlineData("""{"rights":["Deletion"]}""")]
   [InlineData("""{"rights":null}""")]
   [InlineData("""{"engine":{"name":"lexicon","version":"1.0.0"}}""")]
+  // Un moteur anonyme n'est pas un moteur discret : la trace d'audit conserve les avis avec le
+  // moteur qui les a rendus, et ne saurait pas de quelle version relève celui-ci.
+  [InlineData("""{"rights":["Erasure"]}""")]
+  [InlineData("""{"rights":["Erasure"],"engine":null}""")]
+  [InlineData("""{"rights":["Erasure"],"engine":{"name":"lexicon"}}""")]
+  [InlineData("""{"rights":["Erasure"],"engine":{"version":"1.0.0"}}""")]
   [InlineData("ceci n'est pas du JSON")]
   public async Task TreatsAnythingThatIsNotAValidOpinionAsAFailureOfTheEngine(string body)
   {
@@ -101,7 +121,8 @@ public class LexiconQualificationEngineTests
     using var cancellation = new CancellationTokenSource();
     await cancellation.CancelAsync();
 
-    var sidecar = RespondingWith("""{"rights":["Erasure"]}""");
+    var sidecar = RespondingWith(
+      """{"rights":["Erasure"],"engine":{"name":"lexicon","version":"1.0.0"}}""");
 
     await Should.ThrowAsync<OperationCanceledException>(
       () => Engine(sidecar).QualifyAsync(Text, cancellation.Token));

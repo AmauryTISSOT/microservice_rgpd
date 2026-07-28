@@ -110,6 +110,36 @@ internal static class SidecarExchange
     }
   }
 
+  /// <summary>
+  /// Fait de l'identité arrivée sur le fil celle que le domaine conserve, ou nomme la panne du moteur.
+  /// </summary>
+  /// <remarks>
+  /// Un moteur anonyme n'est pas un moteur discret : la trace d'audit conserve les avis <b>avec le
+  /// moteur qui les a rendus</b>, et une ligne qui porterait un avis sans savoir de quelle version il
+  /// relève ne permettrait plus d'en répondre. L'exigence est donc la même que celle qui porte sur
+  /// les droits — un avis complet, ou rien.
+  /// </remarks>
+  /// <exception cref="QualificationEngineFailure">
+  /// Le moteur n'a pas dit qui il est, ou a laissé son nom ou sa version vides.
+  /// </exception>
+  internal static QualificationEngineIdentity IdentityOf(EngineResponse? declared, string engine)
+  {
+    if (declared is null || string.IsNullOrWhiteSpace(declared.Name) || string.IsNullOrWhiteSpace(declared.Version))
+    {
+      throw new QualificationEngineFailure(
+        $"{engine} a rendu un avis sans dire qui il est : la trace d'audit ne saurait pas de quelle " +
+        "version il relève.");
+    }
+
+    return new QualificationEngineIdentity(declared.Name, declared.Version);
+  }
+
   /// <summary>Le texte, seul champ du contrat interne — qui se resserre plutôt qu'il ne tolère.</summary>
   private sealed record OpinionRequest(string Text);
+
+  /// <summary>
+  /// L'identité telle qu'elle arrive : deux chaînes que le service enregistre sans jamais les
+  /// interpréter. Partagée par les deux moteurs, qui la déclarent de la même façon.
+  /// </summary>
+  internal sealed record EngineResponse(string? Name, string? Version);
 }
