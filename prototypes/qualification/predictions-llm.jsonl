@@ -1,0 +1,120 @@
+{"id":"t-001","droits":["acces","portabilite"],"confiance":"basse","justification":"Demande de transmission sans indice de réutilisation ni de vérification : règle 5, les deux."}
+{"id":"t-002","droits":["acces","effacement"],"confiance":"haute","justification":"Savoir ce qui est détenu puis tout supprimer : art. 15 puis art. 17."}
+{"id":"t-003","droits":["hors-perimetre"],"confiance":"haute","justification":"Litige de livraison et demande de remboursement, aucun droit exercé."}
+{"id":"t-004","droits":["opposition"],"confiance":"moyenne","justification":"Finalité nommée (newsletter) : la suppression des coordonnées est l'effet de l'opposition, art. 21 §2."}
+{"id":"t-005","droits":["hors-perimetre"],"confiance":"haute","justification":"Demande commerciale de devis."}
+{"id":"t-006","droits":["hors-perimetre"],"confiance":"haute","justification":"Réclamation auprès de la CNIL (art. 77), pas une demande au responsable."}
+{"id":"t-007","droits":["limitation"],"confiance":"haute","justification":"Double instruction ne plus utiliser / conserver, avec condition de fin."}
+{"id":"t-008","droits":["acces","opposition"],"confiance":"haute","justification":"Question sur les données utilisées, puis opposition à la finalité publicitaire."}
+{"id":"t-009","droits":["effacement"],"confiance":"haute","justification":"Totalité des données, aucune finalité nommée : art. 17."}
+{"id":"t-010","droits":["hors-perimetre"],"confiance":"haute","justification":"Intervention humaine sur décision automatisée : art. 22, hors taxonomie."}
+{"id":"t-011","droits":["effacement"],"confiance":"haute","justification":"Impératif de suppression totale."}
+{"id":"t-012","droits":["effacement"],"confiance":"haute","justification":"Traitement illicite invoqué, effacement demandé : art. 17 §1 d)."}
+{"id":"t-013","droits":["acces"],"confiance":"haute","justification":"Origine des données : art. 15 §1 g)."}
+{"id":"t-014","droits":["opposition"],"confiance":"haute","justification":"Opposition ordinaire pour situation particulière, traitement fondé sur l'intérêt légitime."}
+{"id":"t-015","droits":["effacement"],"confiance":"haute","justification":"Retrait de consentement puis effacement : art. 7 §3 et art. 17 §1 b), pas une opposition."}
+{"id":"t-016","droits":["opposition"],"confiance":"haute","justification":"Article 21.2 cité, prospection commerciale."}
+{"id":"t-017","droits":["acces"],"confiance":"haute","justification":"Liste des destinataires : art. 15 §1 c)."}
+{"id":"t-018","droits":["limitation"],"confiance":"haute","justification":"Double instruction ne plus utiliser / ne pas supprimer."}
+{"id":"t-019","droits":["portabilite"],"confiance":"haute","justification":"Changement d'opérateur et réimport ailleurs : réutilisation, art. 20."}
+{"id":"t-020","droits":["hors-perimetre"],"confiance":"haute","justification":"Information générale sur l'organisme et son DPO, sans lien avec des données personnelles."}
+{"id":"t-021","droits":["portabilite"],"confiance":"haute","justification":"Récupération pour un autre site, format tableur nommé."}
+{"id":"t-022","droits":["limitation"],"confiance":"haute","justification":"Ne pas supprimer mais ne plus toucher, condition de fin contentieuse."}
+{"id":"t-023","droits":["opposition"],"confiance":"haute","justification":"Cession à des tiers à des fins commerciales : art. 21 §2."}
+{"id":"t-024","droits":["acces","effacement"],"confiance":"haute","justification":"Copie puis suppression totale : combinaison attestée par la CNIL."}
+{"id":"t-025","droits":["opposition","limitation"],"confiance":"haute","justification":"Opposition art. 21 §1 et gel pendant la vérification : art. 18 §1 d)."}
+{"id":"t-026","droits":["acces"],"confiance":"haute","justification":"Malgré les précautions oratoires, demande de la liste des informations conservées."}
+{"id":"t-027","droits":["portabilite","effacement"],"confiance":"haute","justification":"Format CSV nommé puis suppression du compte : art. 20 et art. 17, indépendants (cons. 68)."}
+{"id":"t-028","droits":["acces"],"confiance":"basse","justification":"Deux mots ; interprétés largement comme une demande d'accès, mais aucun verbe n'est exprimé."}
+{"id":"t-029","droits":["rectification"],"confiance":"haute","justification":"Valeur de remplacement fournie : art. 16."}
+{"id":"t-030","droits":["portabilite"],"confiance":"haute","justification":"Migration vers un autre service, données saisies par la personne."}
+{"id":"t-031","droits":["hors-perimetre"],"confiance":"haute","justification":"Changement d'offre commerciale."}
+{"id":"t-032","droits":["effacement"],"confiance":"haute","justification":"Données plus nécessaires au regard des finalités : art. 17 §1 a)."}
+{"id":"t-033","droits":["portabilite"],"confiance":"haute","justification":"Contenus déposés par la personne, format exploitable ailleurs."}
+{"id":"t-034","droits":["rectification"],"confiance":"haute","justification":"Donnée inexacte avec valeur correcte implicite (particulier)."}
+{"id":"t-035","droits":["opposition"],"confiance":"haute","justification":"Arrêt du démarchage : art. 21 §2."}
+{"id":"t-036","droits":["hors-perimetre"],"confiance":"haute","justification":"Contestation de facture."}
+{"id":"t-037","droits":["acces"],"confiance":"moyenne","justification":"Copie des données : art. 15 §3 ; aucun indice de réutilisation ailleurs."}
+{"id":"t-038","droits":["opposition","effacement"],"confiance":"haute","justification":"Arrêt des courriels (finalité nommée) et effacement de la totalité."}
+{"id":"t-039","droits":["limitation"],"confiance":"haute","justification":"Exactitude contestée, gel pendant vérification, sans effacement : art. 18 §1 a)."}
+{"id":"t-040","droits":["opposition"],"confiance":"haute","justification":"Finalité marketing nommée, relation client maintenue."}
+{"id":"t-041","droits":["hors-perimetre"],"confiance":"haute","justification":"Question sur l'existence du droit, pas son exercice."}
+{"id":"t-042","droits":["rectification"],"confiance":"haute","justification":"Deux branches de l'art. 16 : inexactitude et incomplétude."}
+{"id":"t-043","droits":["limitation"],"confiance":"haute","justification":"Double instruction canonique de l'art. 18."}
+{"id":"t-044","droits":["hors-perimetre"],"confiance":"haute","justification":"Résiliation de contrat, pas une demande RGPD."}
+{"id":"t-045","droits":["portabilite"],"confiance":"haute","justification":"Format lisible par machine et réutilisation dans un logiciel tiers."}
+{"id":"t-046","droits":["acces"],"confiance":"haute","justification":"Droit nommé explicitement."}
+{"id":"t-047","droits":["hors-perimetre"],"confiance":"haute","justification":"Candidature spontanée."}
+{"id":"t-048","droits":["acces"],"confiance":"haute","justification":"Registre familier, intention de vérification de ce qui est stocké."}
+{"id":"t-049","droits":["hors-perimetre"],"confiance":"haute","justification":"Suivi de livraison."}
+{"id":"t-050","droits":["acces"],"confiance":"haute","justification":"Consultation du dossier, registre maladroit."}
+{"id":"t-051","droits":["hors-perimetre"],"confiance":"haute","justification":"Litige commercial long, remboursement et médiateur ; aucun droit RGPD exercé."}
+{"id":"t-052","droits":["rectification"],"confiance":"haute","justification":"Donnée devenue inexacte, valeur correcte fournie."}
+{"id":"t-053","droits":["opposition"],"confiance":"haute","justification":"Finalité de recommandation personnalisée nommée."}
+{"id":"t-054","droits":["hors-perimetre"],"confiance":"haute","justification":"Demande portant sur les données d'un tiers."}
+{"id":"t-055","droits":["hors-perimetre"],"confiance":"haute","justification":"Problème technique de connexion."}
+{"id":"t-056","droits":["opposition","effacement"],"confiance":"haute","justification":"Refus de toute réception et refus de la détention : les deux, sans repli par défaut."}
+{"id":"t-057","droits":["effacement"],"confiance":"haute","justification":"Données collectées auprès d'un mineur : art. 17 §1 f)."}
+{"id":"t-058","droits":["hors-perimetre"],"confiance":"haute","justification":"Accusé de réception, aucune demande."}
+{"id":"t-059","droits":["opposition","effacement"],"confiance":"haute","justification":"Arrêt de la publicité et suppression du compte, registre maladroit."}
+{"id":"t-060","droits":["effacement"],"confiance":"basse","justification":"Retrait de consentement seul : rattaché à l'art. 17 §1 b) par la règle 7, mais aucun effacement n'est demandé explicitement."}
+{"id":"t-061","droits":["effacement"],"confiance":"haute","justification":"Suppression demandée, forme interrogative de politesse."}
+{"id":"t-062","droits":["acces"],"confiance":"haute","justification":"Article 17 mal cité ; le contenu (copie des données) prime : art. 15."}
+{"id":"t-063","droits":["rectification"],"confiance":"haute","justification":"Valeur fausse et valeur correcte explicitement opposées."}
+{"id":"t-064","droits":["effacement"],"confiance":"haute","justification":"Suppression du compte et des données ; texte en anglais mais qualification inchangée."}
+{"id":"t-065","droits":["portabilite"],"confiance":"haute","justification":"Transmission directe à un autre responsable : art. 20 §2."}
+{"id":"t-066","droits":["acces"],"confiance":"haute","justification":"Liste des informations détenues."}
+{"id":"t-067","droits":["portabilite","acces"],"confiance":"haute","justification":"Données fournies au format machine (art. 20) et profils déduits (art. 15, données inférées exclues de la portabilité)."}
+{"id":"t-068","droits":["hors-perimetre"],"confiance":"haute","justification":"Propos injurieux, aucune demande."}
+{"id":"t-069","droits":["hors-perimetre"],"confiance":"haute","justification":"Réinitialisation de mot de passe, support technique."}
+{"id":"t-070","droits":["rectification","opposition"],"confiance":"haute","justification":"Valeur de remplacement fournie, et refus des offres commerciales."}
+{"id":"t-071","droits":["acces"],"confiance":"haute","justification":"Finalité et base légale : art. 15 §1 a)."}
+{"id":"t-072","droits":["acces"],"confiance":"haute","justification":"Droit d'accès nommé, origine et durée de conservation."}
+{"id":"t-073","droits":["acces"],"confiance":"haute","justification":"Score inféré et logique sous-jacente : art. 15 §1 h), exclu de la portabilité."}
+{"id":"t-074","droits":["hors-perimetre"],"confiance":"haute","justification":"FICOBA : la demande passe par impots.gouv.fr, pas par le responsable."}
+{"id":"t-075","droits":["limitation"],"confiance":"haute","justification":"Traitement illicite mais opposition à l'effacement : art. 18 §1 b), littéral."}
+{"id":"t-076","droits":["limitation","acces"],"confiance":"moyenne","justification":"Suspension avec condition de fin, et question sur l'origine des données."}
+{"id":"t-077","droits":["rectification","effacement"],"confiance":"haute","justification":"Valeur de remplacement pour l'adresse, effacement distinct des données d'un contrat clos."}
+{"id":"t-078","droits":["limitation"],"confiance":"haute","justification":"Nécessaires à la défense de droits en justice, ne pas effacer mais ne plus exploiter : art. 18 §1 c)."}
+{"id":"t-079","droits":["acces","effacement"],"confiance":"haute","justification":"Origine et copie, puis suppression."}
+{"id":"t-080","droits":["opposition"],"confiance":"haute","justification":"Effacement explicitement écarté, finalité publicitaire nommée."}
+{"id":"t-081","droits":["rectification"],"confiance":"haute","justification":"Valeur de remplacement fournie : art. 16 malgré le verbe supprimer."}
+{"id":"t-082","droits":["acces","limitation"],"confiance":"haute","justification":"Communication des données et gel pendant la vérification d'exactitude."}
+{"id":"t-083","droits":["opposition"],"confiance":"haute","justification":"Ciblage publicitaire nommé."}
+{"id":"t-084","droits":["portabilite"],"confiance":"haute","justification":"Format JSON nommé et reprise chez un concurrent."}
+{"id":"t-085","droits":["hors-perimetre"],"confiance":"haute","justification":"Fichier de police : exercice indirect via la CNIL."}
+{"id":"t-086","droits":["hors-perimetre"],"confiance":"haute","justification":"Politesse, aucune demande."}
+{"id":"t-087","droits":["effacement"],"confiance":"haute","justification":"Suppression du compte et des données rattachées."}
+{"id":"t-088","droits":["rectification"],"confiance":"haute","justification":"Ancienne et nouvelle adresse électronique opposées."}
+{"id":"t-089","droits":["limitation"],"confiance":"haute","justification":"Mise en pause avec conservation explicite, registre familier."}
+{"id":"t-090","droits":["rectification"],"confiance":"haute","justification":"Mise à jour avec valeur de remplacement, registre maladroit."}
+{"id":"t-091","droits":["portabilite"],"confiance":"haute","justification":"Article 20 cité, formulation littérale du texte."}
+{"id":"t-092","droits":["portabilite"],"confiance":"haute","justification":"Format CSV nommé."}
+{"id":"t-093","droits":["hors-perimetre"],"confiance":"haute","justification":"Émoji seul, aucune demande."}
+{"id":"t-094","droits":["hors-perimetre"],"confiance":"haute","justification":"Question commerciale sur une offre."}
+{"id":"t-095","droits":["rectification"],"confiance":"haute","justification":"Orthographe fausse et correcte opposées."}
+{"id":"t-096","droits":["limitation"],"confiance":"moyenne","justification":"Article 18 cité, exactitude contestée pendant vérification ; aucune rectification n'est demandée."}
+{"id":"t-097","droits":["rectification","limitation"],"confiance":"haute","justification":"Correction demandée et gel pendant son exécution : art. 16 et art. 18 §1 a)."}
+{"id":"t-098","droits":["hors-perimetre"],"confiance":"haute","justification":"Fondée exclusivement sur le code de la santé publique."}
+{"id":"t-099","droits":["hors-perimetre"],"confiance":"haute","justification":"Pourriel publicitaire."}
+{"id":"t-100","droits":["hors-perimetre"],"confiance":"haute","justification":"Garantie légale de conformité."}
+{"id":"t-101","droits":["opposition"],"confiance":"haute","justification":"Retrait des listes publicitaires, registre maladroit."}
+{"id":"t-102","droits":["effacement"],"confiance":"moyenne","justification":"Aucune valeur de remplacement : la règle 6 fait basculer vers l'art. 17."}
+{"id":"t-103","droits":["opposition"],"confiance":"haute","justification":"Prospection nommée, compte explicitement conservé."}
+{"id":"t-104","droits":["effacement"],"confiance":"haute","justification":"Effacement demandé sous réserve des obligations légales de conservation."}
+{"id":"t-105","droits":["effacement"],"confiance":"haute","justification":"Objet précis (photo de profil), pas le compte."}
+{"id":"t-106","droits":["rectification"],"confiance":"haute","justification":"Article 16 cité, adresse exacte fournie."}
+{"id":"t-107","droits":["acces","rectification"],"confiance":"haute","justification":"Communication de l'ensemble des données et correction avec valeur de remplacement."}
+{"id":"t-108","droits":["hors-perimetre"],"confiance":"haute","justification":"Déréférencement auprès d'un moteur de recherche : hors taxonomie."}
+{"id":"t-109","droits":["hors-perimetre"],"confiance":"haute","justification":"Résiliation contractuelle."}
+{"id":"t-110","droits":["acces"],"confiance":"haute","justification":"Copie du dossier client, y compris annotations internes."}
+{"id":"t-111","droits":["effacement"],"confiance":"moyenne","justification":"Retrait de la totalité des fichiers, aucune finalité nommée."}
+{"id":"t-112","droits":["effacement"],"confiance":"haute","justification":"Article 17 cité, effacement chez les sous-traitants (art. 19)."}
+{"id":"t-113","droits":["opposition"],"confiance":"haute","justification":"Profilage publicitaire nommé, service maintenu."}
+{"id":"t-114","droits":["hors-perimetre"],"confiance":"haute","justification":"Information générale sur l'organisme, sans donnée personnelle."}
+{"id":"t-115","droits":["limitation"],"confiance":"haute","justification":"Gel avec condition de fin (résultat de la réclamation)."}
+{"id":"t-116","droits":["acces","opposition","effacement"],"confiance":"haute","justification":"Trois demandes distinctes énumérées."}
+{"id":"t-117","droits":["acces"],"confiance":"haute","justification":"Article 15 cité, copie, finalités et destinataires."}
+{"id":"t-118","droits":["effacement"],"confiance":"haute","justification":"Effacement total, registre maladroit."}
+{"id":"t-119","droits":["opposition"],"confiance":"haute","justification":"Article 21.6, opposition au traitement à des fins de recherche statistique."}
+{"id":"t-120","droits":["hors-perimetre"],"confiance":"haute","justification":"Prise de rendez-vous commercial."}
