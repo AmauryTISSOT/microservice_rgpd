@@ -17,6 +17,7 @@ src/
   MicroserviceRgpd.Web/             # Endpoints FastEndpoints (REPR), composition racine
   MicroserviceRgpd.AspireHost/      # Orchestration locale des dépendances
   MicroserviceRgpd.ServiceDefaults/ # OpenTelemetry, health checks, résilience HTTP, service discovery
+  sidecar/                          # Sidecar Python : les moteurs de qualification et leur suite pytest
 tests/
   MicroserviceRgpd.UnitTests/         # Domaine, handlers et adaptateurs, isolés
   MicroserviceRgpd.IntegrationTests/  # Persistance sur un vrai PostgreSQL (Testcontainers)
@@ -43,7 +44,8 @@ comme pour exécuter les tests fonctionnels.
 | Specifications   | Ardalis.Specification                        |
 | Logs             | Serilog + sink OpenTelemetry                 |
 | Observabilité    | OpenTelemetry 1.17 via ServiceDefaults       |
-| Tests            | xUnit, NSubstitute, Shouldly, Testcontainers |
+| Qualification    | Sidecar Python (FastAPI / uvicorn), lancé par Aspire |
+| Tests            | xUnit, NSubstitute, Shouldly, Testcontainers ; `pytest` côté sidecar |
 
 ## Démarrer
 
@@ -59,6 +61,10 @@ dotnet run --project src/MicroserviceRgpd.Web
 # Avec orchestration Aspire (dépendances en containers + dashboard)
 dotnet run --project src/MicroserviceRgpd.AspireHost
 ```
+
+L'orchestration Aspire démarre aussi le **sidecar de qualification** (`src/sidecar`) : la pile
+entière part d'une seule commande. [`uv`](https://docs.astral.sh/uv/) doit être installé — Aspire
+lui délègue la création de l'environnement virtuel et l'installation des dépendances.
 
 Les tests d'intégration et fonctionnels utilisent Testcontainers : **Docker doit être démarré**.
 
@@ -76,11 +82,12 @@ dotnet ef database update      --project src/MicroserviceRgpd.Infrastructure --s
 
 ```sh
 dotnet test MicroserviceRgpd.slnx
-pytest
+uv run --project src/sidecar pytest
 ```
 
-> Le sidecar Python n'est pas encore dans le dépôt : jusqu'à son arrivée, seule la première
-> ligne a de quoi s'exécuter.
+La suite du sidecar ne demande **ni réseau sortant, ni GPU, ni clé d'API** : elle n'exerce que le
+lexique déterministe et la frontière HTTP du sidecar. `uv` crée l'environnement virtuel et installe
+les dépendances verrouillées à la première exécution.
 
 **Il n'y a ni CI ni hook git, et c'est délibéré.** Les tests à container coûtent une dizaine de
 secondes de démarrage ; un `pre-commit` qui les lance serait désactivé dans la semaine, et un
