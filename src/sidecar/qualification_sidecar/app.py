@@ -14,6 +14,7 @@ subit.
 | `502` | — | l'amont a répondu, mais sa réponse n'est pas un avis |
 | `503` | — | l'amont est injoignable, ou son modèle n'est pas chargé |
 | `504` | — | l'échéance vers l'amont est passée : **la lenteur arrive nommée** |
+| `499` | — | l'appelant est parti : la génération a été interrompue, personne ne lit ce corps |
 
 Le `500` du lexique et le `502` du LLM disent la même chose du domaine — un moteur en panne — et
 diffèrent par le seul fait qui compte pour l'exploitant : **qui est à réparer**. Un bogue Python
@@ -37,7 +38,8 @@ from fastapi.responses import JSONResponse
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from qualification_sidecar import lexicon, llm
+from qualification_sidecar import departure, lexicon, llm
+from qualification_sidecar.departure import CallerGone
 from qualification_sidecar.opinion import Engine, EngineFailure, Opinion, ReasonedOpinion
 from qualification_sidecar.taxonomy import WireTaxonomyDivergence, to_canonical
 
@@ -144,17 +146,23 @@ def lexicon_opinion(request: OpinionRequest) -> Opinion:
     response_model=ReasonedOpinion,
     summary="Rend l'avis du moteur LLM sur un texte, avec sa confiance et sa justification.",
 )
-async def llm_opinion(request: OpinionRequest) -> ReasonedOpinion:
+async def llm_opinion(opinion: OpinionRequest, request: Request) -> ReasonedOpinion:
     """Qualifie le texte par le LLM local, en noms canoniques anglais et confiance à trois degrés.
 
     `async` sans négociation : un appel au modèle dure des secondes, et le tenir sur un fil de
     travail affamerait le lexique, dont le double rôle exige qu'il réponde même quand le LLM peine.
 
+    **La génération s'arrête au départ de l'appelant.** Le serveur ASGI signale ce départ, mais
+    n'interrompt rien de lui-même : sans cette course, la génération irait à son terme sur un GPU
+    qui sérialise, et bloquerait la file de l'appelant resté. Le lexique n'en a pas besoin — il
+    répond en une fraction de milliseconde, et l'interrompre coûterait plus que de le laisser finir.
+
     Le modèle raisonne et justifie en français ; la traduction a lieu ici, juste avant de répondre,
     comme pour le lexique. La justification, elle, **reste en français** : c'est le seul texte du
     sidecar qu'un humain lira.
     """
-    verdict = await llm.qualify(request.text, LLM_MODEL)
+    verdict = await departure.serve_until_the_caller_leaves(
+        request, llm.qualify(opinion.text, LLM_MODEL))
 
     # Sur ce chemin, toute panne de moteur est imputable à l'amont : la requalifier ici évite que
     # deux causes identiques — un slug hors taxonomie, une exclusivité violée — sortent tantôt en
@@ -271,6 +279,29 @@ async def model_unreachable(request: Request, exception: llm.ModelUnreachable) -
     return _problem(
         status=503,
         title="Le serveur de modèles est injoignable",
+        detail=str(exception),
+    )
+
+
+@app.exception_handler(CallerGone)
+async def caller_gone(request: Request, exception: CallerGone) -> JSONResponse:
+    """L'appelant est parti : la génération a été interrompue, et **rien n'est rendu à personne**.
+
+    Ce corps ne sera lu par personne — le canal est fermé —, et c'est justement pourquoi il existe :
+    sans lui, le départ ressortirait en exception non gérée, donc en `500` dans les journaux, et un
+    exploitant chercherait une panne là où il n'y a qu'un appelant qui a raccroché. `499` est le code
+    par lequel les serveurs frontaux nomment déjà cette situation ; aucune RFC ne le définit, et il
+    n'engage rien puisque personne ne le reçoit.
+    """
+    logger.info(
+        "L'appelant est parti avant la fin de la génération : %s",
+        exception,
+        extra={"traceparent": request.headers.get("traceparent")},
+    )
+
+    return _problem(
+        status=499,
+        title="L'appelant est parti avant la fin de la qualification",
         detail=str(exception),
     )
 

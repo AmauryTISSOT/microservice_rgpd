@@ -31,15 +31,19 @@ public sealed class LexiconQualificationEngine(HttpClient client) : IQualificati
     RightsRequestText text,
     CancellationToken cancellationToken = default)
   {
-    var opinion = await SidecarExchange.AskAsync<LexiconOpinionResponse>(
-      client, Endpoint, Engine, text, cancellationToken);
-
-    // Aucune confiance, aucune justification : le lexique n'a pas d'avis sur sa propre fiabilité, et
-    // une constante lui en donnerait l'apparence — quelqu'un finirait par écrire une règle qui la
-    // consomme.
-    return new QualificationOpinion(
-      SidecarExchange.VerdictOf(opinion.Rights, Engine),
-      SidecarExchange.IdentityOf(opinion.Engine, Engine));
+    return await SidecarExchange.AskAsync<LexiconOpinionResponse>(
+      client,
+      Endpoint,
+      Engine,
+      text,
+      // Aucune confiance, aucune justification : le lexique n'a pas d'avis sur sa propre fiabilité,
+      // et une constante lui en donnerait l'apparence — quelqu'un finirait par écrire une règle qui
+      // la consomme. L'identité, elle, est exigée : la trace d'audit conserve l'avis avec la version
+      // qui l'a rendu, et un moteur anonyme est une panne comme une autre.
+      opinion => new QualificationOpinion(
+        SidecarExchange.VerdictOf(opinion.Rights, Engine),
+        SidecarExchange.IdentityOf(opinion.Engine, Engine)),
+      cancellationToken);
   }
 
   /// <summary>

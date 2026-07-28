@@ -11,6 +11,9 @@
                       ExcludeAssets="contentFiles" PrivateAssets="all" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <!-- Le pipeline de resilience explicite des deux clients de moteur, qui remplace le pipeline
+         standard applique par defaut a tous les clients HTTP du depot. -->
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="NimblePros.Metronome" />

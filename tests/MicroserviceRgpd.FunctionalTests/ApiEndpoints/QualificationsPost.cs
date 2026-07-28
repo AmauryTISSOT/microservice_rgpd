@@ -205,6 +205,105 @@ public class QualificationsPost
   }
 
   /// <summary>
+  /// La <b>double panne</b> dont le moteur principal a dépassé son échéance : le service rend un
+  /// dépassement, et lui seul. Le code suit le mode de panne du moteur dont l'avis aurait fait
+  /// verdict ; celle du témoin n'a fait que priver le service de son filet.
+  /// </summary>
+  /// <remarks>
+  /// <b>Branche délibérée.</b> Elle est inatteignable en usage normal — sa seconde condition ne peut
+  /// venir que d'un bogue du lexique ou d'une famine du sidecar —, et c'est précisément pour cela
+  /// qu'aucun autre test ne la traverserait par accident.
+  /// </remarks>
+  [Fact]
+  public async Task RendersADeadlineExceededWhenBothEnginesFellSilentAndThePrincipalOneWasTooSlow()
+  {
+    factory.Verdict.Silence = new QualificationEngineDeadlineExceeded("Le moteur LLM a répondu 504.");
+    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+
+    var response = await PostAsync(new { text = "Supprimez mes données." });
+
+    await ShouldBeProblemDetailsAsync(response, HttpStatusCode.GatewayTimeout);
+  }
+
+  /// <summary>
+  /// Toute autre double panne rend une indisponibilité. La cause réaliste n'est pas qu'un serveur de
+  /// modèles soit éteint — ce cas rend un <c>200</c> dégradé — mais que le sidecar entier soit mort.
+  /// </summary>
+  [Fact]
+  public async Task RendersAnUnavailabilityForEveryOtherDoubleFailure()
+  {
+    factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a répondu 503.");
+    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+
+    var response = await PostAsync(new { text = "Supprimez mes données." });
+
+    await ShouldBeProblemDetailsAsync(response, HttpStatusCode.ServiceUnavailable);
+  }
+
+  /// <summary>
+  /// Le code suit le moteur <b>principal</b>, jamais le témoin : un témoin trop lent alors que le
+  /// moteur principal est tombé pour une autre raison rend une indisponibilité, et non un
+  /// dépassement d'échéance qui enverrait l'exploitant chercher une lenteur là où il n'y en a pas.
+  /// </summary>
+  [Fact]
+  public async Task NeverLetsTheWitnessDecideTheCodeOfADoubleFailure()
+  {
+    factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a répondu 502.");
+    factory.Witness.Silence = new QualificationEngineDeadlineExceeded("Le moteur lexical a dépassé son échéance.");
+
+    var response = await PostAsync(new { text = "Supprimez mes données." });
+
+    await ShouldBeProblemDetailsAsync(response, HttpStatusCode.ServiceUnavailable);
+  }
+
+  /// <summary>
+  /// Une double panne ne dit à l'appelant <b>ni quel moteur</b> s'est tu, ni qu'il en existe deux :
+  /// l'identité des moteurs est l'une des trois choses qui ne franchissent jamais cette frontière.
+  /// Ce qu'elle lui donne est la référence de diagnostic, par laquelle un humain rejoindra la trace.
+  /// </summary>
+  [Fact]
+  public async Task NeverNamesTheEnginesInADoubleFailure()
+  {
+    factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a répondu 503.");
+    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+
+    var response = await PostAsync(new { text = "Supprimez mes données." });
+    var body = await response.Content.ReadAsStringAsync();
+
+    body.ShouldNotContain("LLM");
+    body.ShouldNotContain("lexical");
+  }
+
+  /// <summary>
+  /// L'annulation de l'appelant <b>interrompt réellement le travail en cours</b>, jusque dans les
+  /// deux moteurs. La raison est matérielle : le GPU sérialise, donc une génération poursuivie pour
+  /// quelqu'un qui est parti ne gaspille pas seulement, elle bloque la file de celui qui est resté.
+  /// </summary>
+  [Fact]
+  public async Task InterruptsTheWorkOfBothEnginesWhenTheCallerLeaves()
+  {
+    factory.Verdict.Delay = TimeSpan.FromSeconds(30);
+    factory.Witness.Delay = TimeSpan.FromSeconds(30);
+
+    using var departure = new CancellationTokenSource();
+
+    var qualifying = _client.PostAsJsonAsync(
+      "/qualifications",
+      new { text = "Supprimez mes données." },
+      departure.Token);
+
+    await factory.Verdict.Started.WaitAsync(TimeSpan.FromSeconds(10));
+    await factory.Witness.Started.WaitAsync(TimeSpan.FromSeconds(10));
+
+    await departure.CancelAsync();
+
+    await Should.ThrowAsync<OperationCanceledException>(() => qualifying);
+
+    // Les deux moteurs ont vu leur travail s'arrêter, et non leur réponse être ignorée.
+    await WaitUntilAsync(() => factory.Verdict.Interrupted && factory.Witness.Interrupted);
+  }
+
+  /// <summary>
   /// Trois choses circulent à l'intérieur du service et ne franchissent <b>jamais</b> cette
   /// frontière : les avis bruts de chaque moteur, la confiance déclarée, et l'identité des moteurs.
   /// Les publier graverait l'architecture dans le contrat public et inviterait l'appelant à
@@ -417,6 +516,22 @@ public class QualificationsPost
   private Task<HttpResponseMessage> PostAsync(object payload)
   {
     return _client.PostAsJsonAsync("/qualifications", payload);
+  }
+
+  /// <summary>
+  /// Attend qu'une conséquence de l'annulation soit visible : elle se propage à travers le serveur
+  /// après que l'appelant a rendu la main, et l'observer trop tôt ne prouverait rien.
+  /// </summary>
+  private static async Task WaitUntilAsync(Func<bool> observed)
+  {
+    var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+
+    while (!observed() && DateTime.UtcNow < deadline)
+    {
+      await Task.Delay(20);
+    }
+
+    observed().ShouldBeTrue();
   }
 
   private static string[] Rights(JsonElement body)

@@ -44,8 +44,8 @@ var sidecar = builder.AddUvicornApp("qualification-sidecar", "../sidecar", "qual
   // Les deux échéances voyagent ensemble parce que c'est leur *écart* qui compte : le sidecar
   // abandonne le premier, et la lenteur arrive donc nommée jusqu'à .NET plutôt qu'anonyme. Le
   // sidecar refuse de démarrer si l'inégalité stricte n'est pas tenue.
-  // Le client HTTP .NET vers le sidecar n'existe pas encore ; quand il naîtra, il lira
-  // `Llm:CallerDeadlineSeconds` **ici même**, et non un second chiffre à tenir en accord de tête.
+  // Le client HTTP .NET vers le sidecar lit `Llm:CallerDeadlineSeconds` **ici même**, quelques
+  // lignes plus bas, et non un second chiffre à tenir en accord de tête.
   .WithEnvironment("QUALIFICATION_LLM_DEADLINE_SECONDS", RequiredSetting("Llm:SidecarDeadlineSeconds"))
   .WithEnvironment("QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS", RequiredSetting("Llm:CallerDeadlineSeconds"))
   // Le sidecar attend que le modèle soit tiré : sans cela, le premier appel manuel après un
@@ -59,6 +59,14 @@ builder.AddProject<Projects.MicroserviceRgpd_Web>("web")
   .WithReference(cleanArchDb)
   .WithReference(sidecar)
   .WithEnvironment("ASPNETCORE_ENVIRONMENT", builder.Environment.EnvironmentName)
+  // L'échéance du client LLM est **le même chiffre** que celui donné au sidecar comme échéance de
+  // son appelant : les faire lire au même réglage est ce qui empêche les deux moitiés de l'inégalité
+  // de diverger en silence. Le sidecar refuse de démarrer si l'ordre strict n'est pas tenu — encore
+  // faut-il qu'il parle du chiffre réellement appliqué ici.
+  .WithEnvironment("Qualification__LlmDeadlineSeconds", RequiredSetting("Llm:CallerDeadlineSeconds"))
+  // Le lexique n'a aucun amont, donc aucune échéance imbriquée : la sienne ne répond qu'à une
+  // propriété, ne jamais rallonger le temps de réponse du service.
+  .WithEnvironment("Qualification__LexiconDeadlineSeconds", RequiredSetting("Qualification:LexiconDeadlineSeconds"))
   .WaitFor(cleanArchDb)
   .WaitFor(sidecar);
 
