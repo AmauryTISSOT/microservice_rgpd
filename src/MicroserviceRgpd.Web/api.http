@@ -2,42 +2,48 @@
 @host=https://localhost
 @port=57679
 
-// List all contributors
-GET {{host}}:{{port}}/Contributors
-
-###
-
-// Get a specific contributor
-@id_to_get=1
-GET {{host}}:{{port}}/Contributors/{{id_to_get}}
-
-###
-
-// Add a new contributor
-POST {{host}}:{{port}}/Contributors
+// Qualifier un texte. Reponse synchrone : aucun GET ne permet de la relire ensuite.
+POST {{host}}:{{port}}/qualifications
 Content-Type: application/json
 
 {
-  "name": "John Doe 3",
-  "email": "test@test.com",
-  "phoneNumber": "1234567890"
+  "text": "Je souhaite obtenir une copie de mes donnees puis les faire supprimer.",
+  "callerReference": "DSAR-8871"
 }
 
 ###
 
-// Update a contributor
-@id_to_update=3
-PUT {{host}}:{{port}}/Contributors/{{id_to_update}}
+// La reference appelante est facultative, et n est jamais une cle d idempotence :
+// rejouer cette requete produit une seconde qualification, avec un second identifiant.
+POST {{host}}:{{port}}/qualifications
 Content-Type: application/json
 
 {
-  "id": {{id_to_update}},
-  "name": "ardalis2"
+  "text": "Ne m envoyez plus de publicites."
 }
 
 ###
 
-// Delete a contributor
-@id_to_delete=1
-DELETE {{host}}:{{port}}/Contributors/{{id_to_delete}}
+// Aucun plancher de longueur : un emoji seul est un texte valide, et recoit
+// « OutOfScope » — un verdict, jamais un 400.
+POST {{host}}:{{port}}/qualifications
+Content-Type: application/json
 
+{
+  "text": "🙂"
+}
+
+###
+
+// Un texte vide une fois ses bordures nettoyees est refuse : 400 en application/problem+json.
+POST {{host}}:{{port}}/qualifications
+Content-Type: application/json
+
+{
+  "text": "   "
+}
+
+###
+
+// Endpoint de fumee : confirme que l API repond, sans toucher a la base.
+GET {{host}}:{{port}}/hello

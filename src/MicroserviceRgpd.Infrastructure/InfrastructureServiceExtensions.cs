@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.Infrastructure.Qualifications;
 
 namespace MicroserviceRgpd.Infrastructure;
 public static class InfrastructureServiceExtensions
@@ -29,6 +30,8 @@ public static class InfrastructureServiceExtensions
 
     services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>))
            .AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
+
+    services.AddQualificationEngines(config);
 
     logger.LogInformation("{Project} services registered", "Infrastructure");
 

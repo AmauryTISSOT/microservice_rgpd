@@ -1,4 +1,6 @@
-﻿namespace MicroserviceRgpd.Core.Qualifications;
+﻿using System.Text.Json.Serialization;
+
+namespace MicroserviceRgpd.Core.Qualifications;
 
 /// <summary>
 /// La taxonomie fermée de sept valeurs dans laquelle une qualification puise : six droits ouverts
@@ -12,7 +14,12 @@
 /// extension : un appelant ayant écrit un <c>switch</c> exhaustif sur sept droits casse à la
 /// huitième. La taxonomie est fermée par décision ; son extension est un événement de niveau ADR.
 /// </para>
+/// <para>
+/// Sur tout fil JSON — contrat public comme sidecar — un droit s'écrit sous son <b>nom canonique
+/// anglais</b>, jamais sous son ordinal : voir <see cref="DataSubjectRightJsonConverter"/>.
+/// </para>
 /// </summary>
+[JsonConverter(typeof(DataSubjectRightJsonConverter))]
 public sealed class DataSubjectRight : SmartEnum<DataSubjectRight>
 {
   /// <summary>Le droit d'obtenir communication des données traitées et des informations sur leur traitement.</summary>

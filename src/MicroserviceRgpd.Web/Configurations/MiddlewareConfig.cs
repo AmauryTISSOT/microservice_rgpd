@@ -1,4 +1,5 @@
-﻿using Ardalis.ListStartupServices;
+﻿using System.Text.Json.Serialization;
+using Ardalis.ListStartupServices;
 using MicroserviceRgpd.Infrastructure.Data;
 using Scalar.AspNetCore;
 
@@ -29,7 +30,19 @@ public static class MiddlewareConfig
 
     // Sans ce réglage explicite, les échecs de validation sortiraient dans le format maison
     // ErrorResponse de FastEndpoints et deux formes d'erreur coexisteraient dans la même API.
-    app.UseFastEndpoints(c => c.Errors.UseProblemDetails());
+    app.UseFastEndpoints(c =>
+    {
+      c.Errors.UseProblemDetails();
+
+      // Les noms de champs sont en camelCase — c'est le défaut de FastEndpoints —, les valeurs de
+      // taxonomie en PascalCase. Une énumération sortie en entier ferait de son ordre de
+      // déclaration un élément du contrat public, et le premier réordonnancement mentirait.
+      c.Serializer.Options.Converters.Add(new JsonStringEnumConverter());
+
+      // Un champ facultatif absent, jamais présent et nul : le contrat distingue « rendu » de
+      // « non fourni », et un `null` explicite forcerait l'appelant à traiter trois états.
+      c.Serializer.Options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
 
     if (app.Environment.IsDevelopment())
     {
