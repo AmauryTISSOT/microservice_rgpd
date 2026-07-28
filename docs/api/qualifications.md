@@ -6,7 +6,7 @@ tourner, et ce qu'il ne faut surtout pas supposer. Il se lit seul, sans avoir su
 La spec complète — avec le *pourquoi* de chaque décision — vit dans
 [`docs/spec/qualification.md`](../spec/qualification.md) ; le vocabulaire du domaine dans
 [`CONTEXT.md`](../../CONTEXT.md). Les deux s'adressent au mainteneur. Ce fichier-ci s'adresse à
-l'appelant, et les deux dernières sections au mainteneur.
+l'appelant, sauf la section 7 qui s'adresse au mainteneur.
 
 ---
 
@@ -67,9 +67,9 @@ Deux champs, dont un seul obligatoire. **Aucun champ de langue** : le français 
   seul, la réponse correcte est `OutOfScope` — un **verdict** —, pas un `400`. Rejeter un texte
   parce qu'il est court reviendrait à confondre « je n'y reconnais aucun droit » avec « ta requête
   est malformée ».
-- **Aucune détection de langue, aucune détection de bruit.** Un texte hors sujet, dans une autre
-  langue, ou incohérent n'est pas une erreur d'entrée : il ressort qualifié, généralement en
-  `OutOfScope`, souvent avec un `reviewSignal` élevé.
+- **Aucune détection de langue, aucune détection de bruit.** Un texte étranger au RGPD, rédigé dans
+  une autre langue, ou incohérent n'est pas une erreur d'entrée : il ressort qualifié, généralement
+  en `OutOfScope`, souvent avec un `reviewSignal` élevé.
 
 ### 2.2 `callerReference` — facultative
 
@@ -104,6 +104,25 @@ n'atteindrait aucun moteur et serait donc collecté pour être seulement stocké
 service de conformité ne devrait pas faire ; le contexte de la relation n'entre pas dans cette
 version. Les envoyer n'a aucun effet : ils sont ignorés.
 
+### 2.4 Combien de temps un appel peut durer
+
+> ⚠️ **Réglez le délai d'attente de votre client HTTP en conséquence : un appel peut légitimement
+> durer plus de deux minutes.**
+
+La qualification est **synchrone**, et le moteur qui rend le verdict est un LLM auto-hébergé qui
+génère du texte sur un GPU **sérialisant les requêtes**. L'échéance que le service s'impose vers ce
+moteur est de **150 secondes** ; au-delà, il abandonne. Un client réglé sur les 30 ou 100 secondes
+usuelles par défaut **coupera des appels parfaitement légitimes**, et le service n'aura aucun moyen
+de le lui dire.
+
+Ces valeurs sont en configuration, **arbitraires et assumées** — elles n'ont jamais été mesurées
+sous charge et bougeront le jour où elles le seront. Un appel typique est très inférieur à cette
+borne ; c'est la borne qui compte pour régler un client.
+
+**L'annulation est propagée.** Si l'appelant se déconnecte ou annule, le travail en cours est
+réellement interrompu jusqu'au moteur — la file ne reste pas encombrée d'une génération orpheline.
+La contrepartie : un appel annulé **ne laisse aucune trace**, ni réponse, ni ligne d'audit.
+
 ---
 
 ## 3. Réponse `200`
@@ -132,13 +151,14 @@ version. Les envoyer n'a aucun effet : ils sont ignorés.
 dont la rétention et l'échantillonnage échappent au service.
 
 > **`justification` est facultative par contrat, et doit être typée comme pouvant manquer.** Elle
-> est absente en mode dégradé, où le service se tait plutôt que d'inventer une raison. Un
-> désérialiseur qui l'exige cassera le jour où le service tournera dégradé — c'est-à-dire un jour
-> où il répond parfaitement bien.
+> est absente lorsque le moteur qui la rédige n'a pas répondu et que le verdict vient de l'autre :
+> le service se tait alors plutôt que d'inventer une raison. Un désérialiseur qui l'exige cassera
+> ce jour-là — c'est-à-dire un jour où le service répond parfaitement bien, avec `degraded: true`.
 
 Deux mises en garde sur la justification : elle est **persuasive indépendamment de sa justesse**
-(une phrase bien tournée emporte l'adhésion), et elle **paraphrase le texte reçu**, donc son
-contenu — sans conséquence vers l'appelant, qui vient d'envoyer ce texte.
+(une phrase bien tournée emporte l'adhésion), et elle **paraphrase le texte reçu**, donc des
+**données personnelles** — sans conséquence vers l'appelant, qui vient d'envoyer ce texte, mais qui
+pèse sur ce qu'il en fait ensuite.
 
 ### 3.1 `rights` — la taxonomie fermée de sept valeurs
 
@@ -174,16 +194,16 @@ toute façon chaque qualification, `Corroborated` compris.
 | --- | --- |
 | `Corroborated` | le verdict a reçu un contrôle indépendant favorable, assorti d'une confiance haute |
 | `NeedsReview` | le verdict n'a pas reçu ce contrôle favorable — soit la confiance n'était pas haute, soit le contrôle n'a pas pu avoir lieu |
-| `Contested` | **le signal le plus fort** : deux évaluations indépendantes du même texte divergent |
+| `Contested` | **le signal le plus fort** : deux avis indépendants sur le même texte divergent |
 
-Le service ne publie ni les évaluations qui produisent ce signal, ni la confiance dont elles
+Le service ne publie ni les avis bruts qui produisent ce signal, ni la confiance dont ils
 s'accompagnent : le `reviewSignal` est la conclusion, et publier ses prémisses inviterait chaque
 appelant à recalculer sa propre règle hors de tout test.
 
 ### 3.3 `degraded` — le service était-il entier
 
-`true` quand le service n'était pas entier au moment de rendre ce verdict : une des deux évaluations
-n'a pas pu être produite. Le verdict rendu reste un verdict, il est simplement moins bien étayé.
+`true` quand le service n'était pas entier au moment de rendre ce verdict : l'un des deux avis n'a
+pas pu être produit. Le verdict rendu reste un verdict, il est simplement moins bien étayé.
 
 **`degraded` est distinct de `reviewSignal`, et les deux doivent être lus.** L'un dit « avec quelle
 attention relire ? », l'autre dit « le service était-il entier ? ». Quand `degraded` vaut `true`,
@@ -191,7 +211,7 @@ attention relire ? », l'autre dit « le service était-il entier ? ». Quand `d
 
 ### 3.4 Ce que la réponse tait délibérément
 
-Ni le texte en écho, ni horodatage, ni les évaluations brutes, ni la confiance déclarée, ni
+Ni le texte en écho, ni horodatage, ni les avis bruts, ni la confiance déclarée, ni
 l'identité ou la version des moteurs de qualification. Ces informations circulent à l'intérieur du
 service sans franchir cette frontière : les publier graverait l'architecture interne dans le
 contrat public.
@@ -205,6 +225,36 @@ conforme à la **RFC 9457**. Sans exception — validation d'entrée, exception 
 rendus par la plateforme avant que l'application ne soit atteinte. Un appelant n'a donc qu'un seul
 format d'erreur à savoir lire.
 
+**`traceId` est toujours présent** : en erreur, aucune qualification n'a eu lieu, il n'y a donc
+aucun `qualificationId` à citer, et le `traceId` est la seule identité qui vaille pour un ticket de
+support.
+
+### 4.1 Un refus de validation — `400`
+
+Le cas le plus fréquent. Une extension **`errors`** énumère les champs refusés, un objet par
+règle violée, avec le **nom du champ fautif** et une **raison en français** :
+
+```json
+{
+  "type": "https://www.rfc-editor.org/rfc/rfc7231#section-6.5.1",
+  "title": "Bad Request",
+  "status": 400,
+  "instance": "/qualifications",
+  "traceId": "0HNNCMONTBLQM",
+  "errors": [
+    { "name": "text", "reason": "Le texte de la demande est absent ou vide." },
+    { "name": "callerReference", "reason": "La référence appelante dépasse 64 caractères." }
+  ]
+}
+```
+
+`errors` n'est présent que sur les refus de validation. Un JSON malformé rend le même `400`, sans
+`errors` : le service n'a pas pu lire le corps assez loin pour désigner un champ.
+
+### 4.2 Une panne — `503`, `504`, `500`
+
+Pas d'extension `errors` : aucun champ n'est en cause. `title` et `detail` portent le message.
+
 ```json
 {
   "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
@@ -215,9 +265,13 @@ format d'erreur à savoir lire.
 }
 ```
 
-`title` et `detail` sont en **français** ; les noms de champs en anglais. **`traceId` est toujours
-présent** : en erreur, aucune qualification n'a eu lieu, il n'y a donc aucun `qualificationId` à
-citer et le `traceId` est la seule identité qui vaille pour un ticket de support.
+**Sur la langue, ne vous fiez qu'à ce que le service rédige.** Les noms de champs sont en anglais.
+Les messages que le service écrit lui-même — `title` et `detail` des `503`/`504`, et chaque `reason`
+de validation — sont en **français**. Les `title` que la plateforme HTTP produit gardent en revanche
+leur libellé standard anglais : `Bad Request`, `Not Found`, `Method Not Allowed`. **N'affichez aucun
+`title` tel quel à un utilisateur final** : lisez `status`, et pour un `400` les `reason`.
+
+### 4.3 La palette complète
 
 | Code | Cas | Réaction attendue de l'appelant |
 | --- | --- | --- |
@@ -227,8 +281,8 @@ citer et le `traceId` est la seule identité qui vaille pour un ticket de suppor
 | `413` | corps au-delà de **64 Ko** — rendu par le serveur HTTP, avant l'application | tronquer avant d'appeler |
 | `415` | `Content-Type` autre qu'`application/json` — rendu avant l'application | corriger l'en-tête |
 | `500` | défaillance interne, **y compris l'échec d'écriture de la trace d'audit** | ouvrir un ticket avec le `traceId` |
-| `503` | qualification indisponible : **aucune** évaluation n'a pu être produite | voir ci-dessous |
-| `504` | même situation, l'évaluation principale ayant en outre dépassé son échéance | voir ci-dessous |
+| `503` | qualification indisponible : **aucun** avis n'a pu être produit | voir ci-dessous |
+| `504` | même situation, le moteur principal ayant en outre dépassé son échéance | voir ci-dessous |
 
 **`413` et `415` sont produits par la plateforme HTTP, pas par le code du service.** Ils sont
 documentés parce qu'un appelant les rencontrera ; ils ne sont couverts par aucun test et ne font
@@ -238,7 +292,7 @@ l'objet d'aucune implémentation propre. Ils sortent néanmoins dans la forme un
 >
 > **La cause réaliste d'un `503` n'est pas « le serveur de modèles est éteint »** — ce cas rend un
 > `200` avec `degraded: true`, et c'est tout le sens du mode dégradé. Un `503` signifie que **le
-> composant de qualification entier est mort** : aucune des deux évaluations n'a pu être produite.
+> composant de qualification entier est mort** : aucun des deux avis n'a pu être produit.
 > C'est une panne d'exploitation, pas une variation de charge.
 >
 > **Un `504` ne doit pas être réessayé en boucle.** Il dit que le travail a commencé sans aboutir,
@@ -250,7 +304,7 @@ l'objet d'aucune implémentation propre. Ils sortent néanmoins dans la forme un
 > Un `503` peut, lui, être réessayé plus tard — c'est la différence que les deux codes portent.
 
 **Aucune de ces erreurs ne laisse de trace d'audit** : la trace enregistre les verdicts, jamais les
-tentatives (§ 6.3).
+tentatives (§ 7.3).
 
 ---
 
@@ -269,9 +323,27 @@ Les valeurs sont **sensibles à la casse**.
 
 ---
 
-## 6. Pour le mainteneur
+## 6. Le bruit adverse : ce qu'il peut, et ce qu'il ne peut pas
 
-### 6.1 Règle d'évolution — ce qui est une rupture
+Le service accepte n'importe quel texte, y compris un texte écrit pour détourner le moteur. La
+question a une réponse bornée, et elle est écrite ici pour ne pas revenir sous forme d'inquiétude
+sans réponse.
+
+> **Le pire résultat atteignable par un texte adverse est un verdict faux parmi sept valeurs.** Ni
+> exécution arbitraire, ni fuite de données, ni évasion du format : la sortie du moteur est validée
+> contre la taxonomie fermée — sept valeurs, non vide, `OutOfScope` exclusif — avant d'atteindre
+> quoi que ce soit d'autre. Une réponse hors taxonomie est refusée, pas transmise.
+
+Deux amortisseurs s'ajoutent : le second avis est produit par un moteur **lexical, donc insensible à
+toute injection de prompt** — il divergera, et le verdict sortira en `Contested` ; et **un humain
+valide chaque qualification**. L'authentification étant hors périmètre et le réseau supposé de
+confiance, rien de plus n'est fait dans cette version.
+
+---
+
+## 7. Pour le mainteneur
+
+### 7.1 Règle d'évolution — ce qui est une rupture
 
 **Rétro-compatible :**
 
@@ -292,7 +364,7 @@ service ne le lui dira. La projection sur le fil vit dans
 [`data-subject-rights.wire.json`](../../data-subject-rights.wire.json), gardée par un test dans les
 deux sens — ce test n'est pas là pour être fait taire.
 
-### 6.2 Dette : il n'y a pas de segment de version, et sa porte de sortie
+### 7.2 Dette : il n'y a pas de segment de version, et sa porte de sortie
 
 **Le chemin est `POST /qualifications`, sans `/v1`.** C'est la seule décision du contrat prise
 contre la recommandation, et **la seule qu'on ne pouvait pas différer sans coût** : tous les autres
@@ -304,7 +376,7 @@ seconde version arrive, **`POST /qualifications` devient l'alias permanent de la
 segment de version n'est exigé que des nouveaux appelants. Cette atténuation fait partie de la
 décision initiale ; ce n'est pas un rattrapage à improviser le jour venu.
 
-### 6.3 Trois avertissements d'exploitation
+### 7.3 Trois avertissements d'exploitation
 
 > **1. Le texte reçu est conservé intégral, en clair, sans aucune purge.** La trace d'audit garde le
 > `text` tel quel, ainsi que la `callerReference` et la `justification` qui paraphrase le texte. Il
@@ -326,26 +398,35 @@ décision initiale ; ce n'est pas un rattrapage à improviser le jour venu.
 > l'échantillonnage lui échappent. Le trou est assumé en POC, et à réexaminer avec le bloc
 > rétention.
 
-### 6.4 Le bruit adverse : ce qu'il peut, et ce qu'il ne peut pas
-
-Le service accepte n'importe quel texte, y compris un texte écrit pour détourner le moteur. La
-question a une réponse bornée, et elle est écrite ici pour ne pas revenir sous forme d'inquiétude
-sans réponse.
-
-> **Le pire résultat atteignable par un texte adverse est un verdict faux parmi sept valeurs.** Ni
-> exécution arbitraire, ni fuite de données, ni évasion du format : la sortie du moteur est validée
-> contre la taxonomie fermée — sept valeurs, non vide, `OutOfScope` exclusif — avant d'atteindre
-> quoi que ce soit d'autre. Une réponse hors taxonomie est refusée, pas transmise.
-
-Deux amortisseurs s'ajoutent : la seconde évaluation est **lexicale, donc insensible à toute
-injection de prompt** — elle divergera, et le verdict sortira en `Contested` ; et **un humain valide
-chaque qualification**. L'authentification étant hors périmètre et le réseau supposé de confiance,
-rien de plus n'est fait dans cette version.
-
 ---
 
-## 7. Exemples
+## 8. Exemples exécutables
 
-Des requêtes exécutables — succès, référence absente, texte d'un caractère, texte refusé — vivent
-dans [`src/MicroserviceRgpd.Web/api.http`](../../src/MicroserviceRgpd.Web/api.http). Le service
-expose par ailleurs son OpenAPI, explorable via Scalar quand il tourne en développement.
+L'adresse du service n'est pas fixée par ce contrat : il écoute là où on le déploie. En
+développement, l'orchestration Aspire l'expose en HTTPS sur un port local — celui que porte
+[`src/MicroserviceRgpd.Web/api.http`](../../src/MicroserviceRgpd.Web/api.http), qui contient déjà
+quatre requêtes prêtes à jouer : succès, référence absente, texte d'un seul caractère, texte refusé.
+
+```sh
+curl -sS -X POST "$BASE_URL/qualifications" \
+  -H 'Content-Type: application/json' \
+  --max-time 180 \
+  -d '{
+        "text": "Je souhaite obtenir une copie de mes données puis les faire supprimer.",
+        "callerReference": "DSAR-8871"
+      }'
+```
+
+```json
+{
+  "qualificationId": "0198f3a2-7c41-7b3e-9a2d-1f5c8e6b4d90",
+  "callerReference": "DSAR-8871",
+  "rights": ["Access", "Erasure"],
+  "reviewSignal": "NeedsReview",
+  "degraded": false,
+  "justification": "Savoir ce qui est détenu puis tout supprimer : art. 15 puis art. 17."
+}
+```
+
+Le `--max-time 180` n'est pas décoratif : voir § 2.4. Le service expose par ailleurs son OpenAPI,
+explorable via Scalar quand il tourne en développement.

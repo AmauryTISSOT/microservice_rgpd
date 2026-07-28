@@ -1,6 +1,6 @@
 # Les tests à container
 
-Deux des quatre projets de test montent une **base PostgreSQL réelle** via
+Deux des trois projets de test montent une **base PostgreSQL réelle** via
 [Testcontainers](https://dotnet.testcontainers.org/) : `IntegrationTests` et `FunctionalTests`.
 Image **`postgres:18-alpine`**, schéma posé par les **migrations du dépôt**.
 
@@ -15,8 +15,8 @@ démarrage — ce n'est pas contournable par une option de configuration, et c'e
 en mémoire ne partage ni les types (`text[]`, `timestamptz`), ni les contraintes de nullité, ni la
 génération de clés de Npgsql, c'est-à-dire précisément ce que ces tests sont là pour tenir.
 
-Le premier lancement télécharge l'image (quelques dizaines de mégaoctets) ; le démarrage d'un
-container coûte ensuite une poignée de secondes.
+Le premier lancement télécharge l'image — une centaine de mégaoctets, la variante Alpine étant
+choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de secondes.
 
 ## Qui monte quoi
 
@@ -25,7 +25,7 @@ container coûte ensuite une poignée de secondes.
 | `UnitTests` | **aucun** | — | domaine, handlers, adaptateurs HTTP moqués |
 | `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **la persistance de la trace d'audit, et rien d'autre** |
 | `FunctionalTests` | un par fabrique d'application | `Migrate()` | l'endpoint public de bout en bout |
-| `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide |
+| `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les trois |
 
 ### `IntegrationTests`
 

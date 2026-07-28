@@ -62,8 +62,10 @@ comme pour exécuter les tests fonctionnels.
 
 ```sh
 dotnet build MicroserviceRgpd.slnx
-dotnet test  MicroserviceRgpd.slnx
 ```
+
+Pour les tests, la porte à passer avant PR est plus bas — elle a **deux moitiés**, et lancer la
+seule solution .NET laisserait le sidecar Python hors du filet.
 
 ```sh
 # API seule
