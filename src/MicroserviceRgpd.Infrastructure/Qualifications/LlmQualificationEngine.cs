@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.Qualifications;
 
 namespace MicroserviceRgpd.Infrastructure.Qualifications;
 
@@ -13,8 +13,9 @@ namespace MicroserviceRgpd.Infrastructure.Qualifications;
 /// décision — la corroboration, le repli — vit dans le domaine, hors d'atteinte de HTTP.
 /// </para>
 /// <para>
-/// Il <b>re-porte les invariants</b> que le sidecar tient déjà, et deux de plus qui n'appartiennent
-/// qu'à ce moteur : la confiance et la justification sont <b>obligatoires ici</b>. Un avis sans
+/// Il <b>re-porte les invariants</b> que le sidecar tient déjà — par le chemin que les deux moteurs
+/// partagent — et deux de plus qui n'appartiennent qu'à lui : la confiance et la justification sont
+/// <b>obligatoires ici</b>. Un avis sans
 /// confiance rendrait la corroboration aveugle au seul bit qu'elle lit d'elle ; un avis sans
 /// justification priverait l'opérateur du seul texte sur lequel il relit. Ni l'un ni l'autre n'est
 /// un avis faible : c'est une panne du moteur, et elle se présente comme telle.
@@ -36,11 +37,6 @@ public sealed class LlmQualificationEngine(HttpClient client) : IQualificationEn
     var opinion = await SidecarExchange.AskAsync<LlmOpinionResponse>(
       client, Endpoint, Engine, text, cancellationToken);
 
-    if (opinion.Rights is null)
-    {
-      throw new QualificationEngineFailure($"{Engine} a répondu sans aucun droit : ce n'est pas un avis.");
-    }
-
     // Un degré absent ne se replie pas sur « basse » : un repli inventerait une auto-évaluation que
     // le modèle n'a pas rendue, et c'est précisément sur elle que l'opérateur trie sa relecture.
     // Un degré hors de l'échelle, lui, a déjà été refusé à la lecture du fil.
@@ -56,18 +52,10 @@ public sealed class LlmQualificationEngine(HttpClient client) : IQualificationEn
         $"{Engine} a rendu un avis sans justification, alors que c'est ce qu'il apporte de plus que le lexique.");
     }
 
-    try
-    {
-      return new QualificationOpinion(
-        Qualification.Of(opinion.Rights),
-        opinion.Confidence,
-        opinion.Justification);
-    }
-    catch (ArgumentException invalid)
-    {
-      throw new QualificationEngineFailure(
-        $"{Engine} a rendu un avis que le domaine refuse : {invalid.Message}", invalid);
-    }
+    return new QualificationOpinion(
+      SidecarExchange.VerdictOf(opinion.Rights, Engine),
+      opinion.Confidence,
+      opinion.Justification);
   }
 
   /// <summary>

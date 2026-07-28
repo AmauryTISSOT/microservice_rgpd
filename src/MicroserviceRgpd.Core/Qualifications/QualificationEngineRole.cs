@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Qualifications;
+﻿namespace MicroserviceRgpd.Core.Qualifications;
 
 /// <summary>
 /// Les deux rôles que tient un <see cref="IQualificationEngine"/>, et par lesquels le service

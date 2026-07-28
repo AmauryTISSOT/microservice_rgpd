@@ -1,19 +1,22 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using MicroserviceRgpd.Core.Qualifications;
 
 namespace MicroserviceRgpd.Infrastructure.Qualifications;
 
 /// <summary>
-/// L'échange HTTP que les deux adaptateurs de moteur ont en commun : porter un texte jusqu'à un
-/// point d'entrée du sidecar, et en rapporter une réponse lisible — ou une panne nommée.
+/// Ce que les deux adaptateurs de moteur ont en commun : porter un texte jusqu'à un point d'entrée
+/// du sidecar, en rapporter une réponse lisible, et faire de ses droits un verdict du domaine — ou
+/// une panne nommée.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Ce qui est mis en commun est le <b>transport, et lui seul</b>. Ce que chaque moteur promet de
-/// plus — des droits pour le lexique, une confiance et une justification en sus pour le LLM — reste
-/// dans son adaptateur : c'est là que les invariants du domaine sont re-portés, et les y fondre
-/// ferait un gardien unique de deux contrats qui n'ont pas la même forme.
+/// Est mis en commun ce que <b>les deux moteurs promettent pareillement</b> : le transport, et des
+/// droits qui satisfont les invariants du domaine. Ce que le seul moteur LLM promet en plus — une
+/// confiance déclarée, une justification — reste dans son adaptateur : l'y faire entrer ferait un
+/// gardien unique de deux contrats qui n'ont pas la même forme, et rendrait exprimable un avis
+/// lexical assorti d'une confiance, que le domaine interdit.
 /// </para>
 /// <para>
 /// Le nom du moteur voyage en paramètre pour que la panne dise <b>qui</b> n'a pas rendu d'avis.
@@ -30,7 +33,10 @@ internal static class SidecarExchange
   /// </summary>
   private static readonly JsonSerializerOptions WireFormat = new(JsonSerializerOptions.Web)
   {
-    Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
+    // `allowIntegerValues: false` n'est pas un durcissement décoratif : sans lui, un `2` sur le fil
+    // vaudrait « haute », et le contrat interne dépendrait de l'ordre de déclaration d'un `enum`
+    // que personne des deux côtés ne pense à tenir stable.
+    Converters = { new JsonStringEnumConverter(namingPolicy: null, allowIntegerValues: false) },
   };
 
   /// <summary>
@@ -72,6 +78,36 @@ internal static class SidecarExchange
     }
 
     return opinion ?? throw new QualificationEngineFailure($"{engine} a répondu un corps vide, qui n'est pas un avis.");
+  }
+
+  /// <summary>
+  /// Fait des droits arrivés sur le fil un verdict du domaine, ou nomme la panne du moteur.
+  /// </summary>
+  /// <remarks>
+  /// Les invariants sont <b>re-portés de ce côté-ci de la frontière</b>. Ce n'est pas de la défiance
+  /// gratuite : le sidecar les tient déjà, mais un adaptateur qui leur ferait confiance laisserait
+  /// passer un avis boiteux le jour où l'autre bout se tromperait — et c'est ce qui garantit la
+  /// promesse du port, un avis ou rien.
+  /// </remarks>
+  /// <exception cref="QualificationEngineFailure">
+  /// Aucun droit n'est arrivé, ou ceux qui sont arrivés ne font pas un verdict que le domaine accepte.
+  /// </exception>
+  internal static Qualification VerdictOf(IReadOnlyList<DataSubjectRight>? rights, string engine)
+  {
+    if (rights is null)
+    {
+      throw new QualificationEngineFailure($"{engine} a répondu sans aucun droit : ce n'est pas un avis.");
+    }
+
+    try
+    {
+      return Qualification.Of(rights);
+    }
+    catch (ArgumentException invalid)
+    {
+      throw new QualificationEngineFailure(
+        $"{engine} a rendu un avis que le domaine refuse : {invalid.Message}", invalid);
+    }
   }
 
   /// <summary>Le texte, seul champ du contrat interne — qui se resserre plutôt qu'il ne tolère.</summary>

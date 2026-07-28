@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.UseCases.Qualifications.Qualify;
 using Microsoft.Extensions.Logging.Abstractions;
 

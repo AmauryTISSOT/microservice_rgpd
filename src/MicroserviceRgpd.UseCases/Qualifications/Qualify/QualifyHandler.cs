@@ -1,4 +1,4 @@
-using System.Runtime.ExceptionServices;
+﻿using System.Runtime.ExceptionServices;
 using MicroserviceRgpd.Core.Qualifications;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -47,12 +47,12 @@ public sealed class QualifyHandler(
   {
     ArgumentNullException.ThrowIfNull(command);
 
-    var verdict = AskAsync(verdictEngine, QualificationEngineRole.Verdict, command.Text, cancellationToken);
-    var control = AskAsync(witness, QualificationEngineRole.Witness, command.Text, cancellationToken);
+    var verdictAnswer = AskAsync(verdictEngine, QualificationEngineRole.Verdict, command.Text, cancellationToken);
+    var witnessAnswer = AskAsync(witness, QualificationEngineRole.Witness, command.Text, cancellationToken);
 
-    await Task.WhenAll(verdict, control);
+    await Task.WhenAll(verdictAnswer, witnessAnswer);
 
-    var corroboration = Corroborate(verdict.Result, control.Result);
+    var corroboration = Corroborate(verdictAnswer.Result, witnessAnswer.Result);
 
     return new QualificationOutcome(
       // Ordonné dans le temps, donc sans fragmentation d'index le jour où la trace d'audit
@@ -68,16 +68,16 @@ public sealed class QualifyHandler(
   /// <summary>
   /// Confronte les deux réponses, ou présente la panne du moteur principal quand aucune n'est un avis.
   /// </summary>
-  private static Corroboration Corroborate(EngineAnswer verdict, EngineAnswer control)
+  private static Corroboration Corroborate(EngineAnswer verdict, EngineAnswer witness)
   {
-    if (verdict.Opinion is null && control.Opinion is null)
+    if (verdict.Opinion is null && witness.Opinion is null)
     {
       // La panne du moteur principal prime : le service suit le mode de défaillance de celui dont
       // l'avis aurait fait verdict, et non celui du témoin qui n'a fait que tomber en même temps.
-      ExceptionDispatchInfo.Throw(verdict.Failure ?? control.Failure!);
+      ExceptionDispatchInfo.Throw(verdict.Failure ?? witness.Failure!);
     }
 
-    return Corroboration.Between(verdict.Opinion, control.Opinion);
+    return Corroboration.Between(verdict.Opinion, witness.Opinion);
   }
 
   /// <summary>

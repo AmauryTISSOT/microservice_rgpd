@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.Qualifications;
 
 namespace MicroserviceRgpd.Infrastructure.Qualifications;
 
@@ -13,11 +13,9 @@ namespace MicroserviceRgpd.Infrastructure.Qualifications;
 /// décision vit dans le domaine, hors d'atteinte de HTTP.
 /// </para>
 /// <para>
-/// Il <b>re-porte les invariants</b> que le sidecar tient déjà. Ce n'est pas de la défiance
-/// gratuite : c'est ce qui garantit la promesse du port — un avis, ou rien — même le jour où
-/// l'autre bout se trompera. Ce qui n'est pas un avis valide ressort en
-/// <see cref="QualificationEngineFailure"/>, jamais en verdict boiteux qu'un appelant devrait
-/// deviner.
+/// Il <b>re-porte les invariants</b> que le sidecar tient déjà — par le chemin que les deux moteurs
+/// partagent. Ce qui n'est pas un avis valide ressort en <see cref="QualificationEngineFailure"/>,
+/// jamais en verdict boiteux qu'un appelant devrait deviner.
 /// </para>
 /// </remarks>
 public sealed class LexiconQualificationEngine(HttpClient client) : IQualificationEngine
@@ -36,23 +34,10 @@ public sealed class LexiconQualificationEngine(HttpClient client) : IQualificati
     var opinion = await SidecarExchange.AskAsync<LexiconOpinionResponse>(
       client, Endpoint, Engine, text, cancellationToken);
 
-    if (opinion.Rights is null)
-    {
-      throw new QualificationEngineFailure($"{Engine} a répondu sans aucun droit : ce n'est pas un avis.");
-    }
-
-    try
-    {
-      // Aucune confiance, aucune justification : le lexique n'a pas d'avis sur sa propre fiabilité,
-      // et une constante lui en donnerait l'apparence — quelqu'un finirait par écrire une règle
-      // qui la consomme.
-      return new QualificationOpinion(Qualification.Of(opinion.Rights));
-    }
-    catch (ArgumentException invalid)
-    {
-      throw new QualificationEngineFailure(
-        $"{Engine} a rendu un avis que le domaine refuse : {invalid.Message}", invalid);
-    }
+    // Aucune confiance, aucune justification : le lexique n'a pas d'avis sur sa propre fiabilité, et
+    // une constante lui en donnerait l'apparence — quelqu'un finirait par écrire une règle qui la
+    // consomme.
+    return new QualificationOpinion(SidecarExchange.VerdictOf(opinion.Rights, Engine));
   }
 
   /// <summary>

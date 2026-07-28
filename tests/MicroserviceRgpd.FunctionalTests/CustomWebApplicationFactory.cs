@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Infrastructure.Data;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
