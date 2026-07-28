@@ -1,7 +1,8 @@
 namespace MicroserviceRgpd.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-  // Declarer ici un DbSet par agregat, ex. : public DbSet<Subject> Subjects => Set<Subject>();
+  // Déclarer ici un DbSet par table persistée. Toutes ne sont pas des agrégats : la trace
+  // d'audit est un écrit, pas une entité instruite dans le temps.
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

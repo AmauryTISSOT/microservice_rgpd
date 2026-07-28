@@ -32,6 +32,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MicroserviceRgpd.Core\MicroserviceRgpd.Core.csproj" />
     <ProjectReference Include="..\..\src\MicroserviceRgpd.UseCases\MicroserviceRgpd.UseCases.csproj" />
+    <!-- Les adaptateurs HTTP du sidecar vivent dans Infrastructure et se testent unitairement,
+         avec un HttpMessageHandler double : aucun test .NET n'appelle Ollama. -->
+    <ProjectReference Include="..\..\src\MicroserviceRgpd.Infrastructure\MicroserviceRgpd.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,29 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    Projet volontairement vide, et il doit le rester.
+
+    Tout test démarrant l'AppHost démarrerait aussi le sidecar de qualification et le container
+    Ollama : il exigerait un GPU, ne tournerait donc jamais sur la machine du développeur ni en
+    CI — et un test qui ne tourne jamais ment. La frontière est posée sur IQualificationEngine,
+    doublé avec NSubstitute dans UnitTests et FunctionalTests.
+
+    Ni référence à l'AppHost, ni Aspire.Hosting.Testing : les rétablir rouvrirait le piège.
+    Une vérification d'orchestration complète, si elle voit le jour, sera un dispositif manuel
+    séparé et une décision à part.
+  -->
+
   <PropertyGroup>
     <!-- TargetFramework, ImplicitUsings et Nullable viennent de Directory.Build.props -->
     <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Testing"/>
-    <PackageReference Include="coverlet.collector"/>
-    <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-    <PackageReference Include="xunit"/>
-    <PackageReference Include="xunit.runner.visualstudio"/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="System.Net" />
-    <Using Include="Microsoft.Extensions.DependencyInjection" />
-    <Using Include="Aspire.Hosting.ApplicationModel" />
-    <Using Include="Aspire.Hosting.Testing" />
-    <Using Include="Xunit" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\MicroserviceRgpd.AspireHost\MicroserviceRgpd.AspireHost.csproj" />
-  </ItemGroup>
 
 </Project>

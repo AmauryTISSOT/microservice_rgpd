@@ -8,18 +8,28 @@ public static class MiddlewareConfig
 {
   public static async Task<IApplicationBuilder> UseAppMiddlewareAndSeedDatabase(this WebApplication app)
   {
+    // Une exception non gérée sort en problem+json, dans tous les environnements. Ni la page
+    // d'exception de développement (HTML) ni UseDefaultExceptionHandler de FastEndpoints
+    // (format maison ErrorResponse) ne conviennent : chacune ferait une seconde forme d'erreur.
+    app.UseExceptionHandler();
+
+    // Les codes que la plateforme rend sans jamais atteindre l'application — route inconnue,
+    // méthode non supportée, type de contenu refusé — sortent dans la même forme plutôt
+    // qu'avec un corps vide.
+    app.UseStatusCodePages();
+
     if (app.Environment.IsDevelopment())
     {
-      app.UseDeveloperExceptionPage();
       app.UseShowAllServicesMiddleware(); // see https://github.com/ardalis/AspNetCoreStartupServices
     }
     else
-    {   
-      app.UseDefaultExceptionHandler(); // from FastEndpoints
+    {
       app.UseHsts();
     }
 
-    app.UseFastEndpoints();
+    // Sans ce réglage explicite, les échecs de validation sortiraient dans le format maison
+    // ErrorResponse de FastEndpoints et deux formes d'erreur coexisteraient dans la même API.
+    app.UseFastEndpoints(c => c.Errors.UseProblemDetails());
 
     if (app.Environment.IsDevelopment())
     {
