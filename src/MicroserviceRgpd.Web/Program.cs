@@ -13,6 +13,8 @@ startupLogger.LogInformation("Starting web host");
 builder.Services.AddOptionConfigs(builder.Configuration, startupLogger, builder);
 builder.Services.AddServiceConfigs(startupLogger, builder);
 
+builder.Services.AddProblemDetailsConfigs();
+
 builder.Services.AddFastEndpoints()
                 .SwaggerDocument(o =>
                 {
