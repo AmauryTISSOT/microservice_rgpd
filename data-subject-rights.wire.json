@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "PROJECTION SUR LE FIL DE LA TAXONOMIE — LE DOMAINE COMMANDE, CE FICHIER SUIT.",
+    "",
+    "La source de vérité est le SmartEnum DataSubjectRight, dans",
+    "src/MicroserviceRgpd.Core/Qualifications/DataSubjectRight.cs. C'est lui qui porte l'article",
+    "du RGPD et le libellé français. Ce fichier n'est que sa projection sur le fil : les sept noms",
+    "canoniques anglais que le service .NET et le sidecar Python échangent, rien d'autre.",
+    "",
+    "Le sidecar Python lit ce fichier à l'import ; il n'en garde aucune copie, il ne peut donc pas",
+    "dériver. Un seul écart reste possible — domaine contre fichier — et un test unitaire .NET le",
+    "garde, dans les deux sens.",
+    "",
+    "SI CE TEST ÉCHOUE, N'ÉDITEZ PAS CE FICHIER POUR LE FAIRE TAIRE. Corrigez le domaine, puis",
+    "reportez ici. Et sachez ce que vous faites : ajouter une valeur à la taxonomie est une RUPTURE",
+    "du contrat public, pas une extension — un événement de niveau ADR."
+  ],
+  "rights": [
+    "Access",
+    "Rectification",
+    "Erasure",
+    "Restriction",
+    "Portability",
+    "Objection",
+    "OutOfScope"
+  ]
+}
