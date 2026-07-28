@@ -8,22 +8,24 @@ namespace MicroserviceRgpd.Infrastructure.Qualifications;
 public static class QualificationEngineServiceExtensions
 {
   /// <summary>
-  /// L'adresse par défaut est le <b>nom du service</b>, non une machine : Aspire le résout, et le
-  /// jour où le sidecar déménage, rien de ce qui est écrit ici ne bouge.
-  /// </summary>
-  private const string DefaultSidecarBaseAddress = "http://qualification-sidecar";
-
-  /// <summary>
   /// Enregistre le moteur témoin. Il est déclaré <b>par son port</b> : le use case qui le consomme
   /// ne doit pas pouvoir apprendre qu'un sidecar Python existe.
   /// </summary>
+  /// <remarks>
+  /// L'adresse vit <b>en configuration seule</b>, sans repli codé en dur. Un repli ferait exister
+  /// deux vérités qui finiraient par diverger, et surtout il transformerait une configuration
+  /// oubliée en pannes de qualification au premier appel, là où elle doit arrêter le démarrage —
+  /// exactement le traitement que reçoit déjà la chaîne de connexion.
+  /// </remarks>
   public static IServiceCollection AddQualificationEngines(
     this IServiceCollection services,
     IConfiguration configuration)
   {
     ArgumentNullException.ThrowIfNull(configuration);
 
-    var sidecar = configuration["Qualification:SidecarBaseAddress"] ?? DefaultSidecarBaseAddress;
+    var sidecar = configuration["Qualification:SidecarBaseAddress"];
+    Guard.Against.NullOrEmpty(sidecar, nameof(sidecar),
+      "Aucune adresse de sidecar de qualification configuree : renseigner Qualification:SidecarBaseAddress.");
 
     services.AddHttpClient<IQualificationEngine, LexiconQualificationEngine>(client =>
     {

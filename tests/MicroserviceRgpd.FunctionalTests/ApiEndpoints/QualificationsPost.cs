@@ -17,9 +17,20 @@ namespace MicroserviceRgpd.FunctionalTests.ApiEndpoints;
 /// </para>
 /// </summary>
 [Collection(WebCollection.Name)]
-public class QualificationsPost(CustomWebApplicationFactory<Program> factory)
+public class QualificationsPost
 {
-  private readonly HttpClient _client = factory.CreateClient();
+  private readonly CustomWebApplicationFactory<Program> factory;
+  private readonly HttpClient _client;
+
+  public QualificationsPost(CustomWebApplicationFactory<Program> factory)
+  {
+    this.factory = factory;
+    _client = factory.CreateClient();
+
+    // xUnit construit la classe pour chaque test ; la fabrique, elle, est partagee par toute la
+    // collection. La doublure repart donc d un etat connu, plutot que de celui du test precedent.
+    factory.Witness.Reset();
+  }
 
   [Fact]
   public async Task RendersTheQualificationInTheSameExchange()
@@ -127,6 +138,32 @@ public class QualificationsPost(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// Vide une fois nettoyée <b>vaut absente</b> : rendre une chaîne vide ferait croire à l'appelant
+  /// qu'il a fourni quelque chose.
+  /// </summary>
+  [Theory]
+  [InlineData("")]
+  [InlineData("   ")]
+  public async Task TreatsACallerReferenceEmptyOnceTrimmedAsNoneAtAll(string reference)
+  {
+    var body = await QualifyAsync(new { text = "Supprimez mes données.", callerReference = reference });
+
+    body.TryGetProperty("callerReference", out _).ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Les bordures sont nettoyées, pas refusées : un retour chariot final est précisément ce que le
+  /// nettoyage absorbe, et il ne doit pas être confondu avec un caractère de contrôle interdit.
+  /// </summary>
+  [Fact]
+  public async Task CleansTheBordersOfACallerReferenceRatherThanRefusingThem()
+  {
+    var body = await QualifyAsync(new { text = "Supprimez mes données.", callerReference = "  DSAR-8871\n" });
+
+    body.GetProperty("callerReference").GetString().ShouldBe("DSAR-8871");
+  }
+
+  /// <summary>
   /// La référence <b>n'est pas une clé d'idempotence</b> : deux requêtes qui la partagent sont deux
   /// qualifications, et l'API doit le montrer plutôt que de le documenter seule.
   /// </summary>
@@ -189,6 +226,22 @@ public class QualificationsPost(CustomWebApplicationFactory<Program> factory)
     var response = await PostAsync(new { text = new string('a', RightsRequestText.MaxLength + 1) });
 
     await ShouldBeProblemDetailsAsync(response, HttpStatusCode.BadRequest);
+  }
+
+  /// <summary>
+  /// Un corps que le service ne sait pas lire est refusé <b>dans la même forme</b> que le reste —
+  /// sans quoi l'appelant aurait deux formes d'erreur à lire selon l'endroit où il s'est trompé —
+  /// et sans qu'aucun moteur ne soit dérangé.
+  /// </summary>
+  [Fact]
+  public async Task RefusesAMalformedBodyInTheSameShapeAsEverythingElse()
+  {
+    var response = await _client.PostAsync(
+      "/qualifications",
+      new StringContent("""{"text": "Supprimez""", Encoding.UTF8, "application/json"));
+
+    await ShouldBeProblemDetailsAsync(response, HttpStatusCode.BadRequest);
+    factory.Witness.CallCount.ShouldBe(0);
   }
 
   /// <summary>
