@@ -72,3 +72,6 @@ __pycache__/
 
 # Skills (liens générés par "npx skills" vers .agents/skills)
 .claude/skills/
+
+# Jupyter (notebook d'exploration)
+.ipynb_checkpoints/
