@@ -12,9 +12,14 @@ var cleanArchDb = postgres.AddDatabase("cleanarchitecture");
 // Le serveur de modèles du moteur LLM. Son volume de modèles est nommé et persistant : le modèle
 // pèse plusieurs gigaoctets, et le retélécharger à chaque démarrage ferait du « la pile entière
 // démarre d'une seule commande » une promesse que personne ne tiendrait deux fois.
+// Sans le GPU, Ollama replie l'inférence sur le processeur — la qualification passe alors de
+// quelques secondes à plusieurs dizaines, et un moteur qu'on n'a pas la patience d'attendre est un
+// moteur qu'on cesse d'essayer. Le prérequis est le NVIDIA Container Toolkit côté Docker ; à
+// défaut, le conteneur refuse de démarrer plutôt que de retomber silencieusement sur le processeur.
 var ollama = builder.AddOllama("ollama")
   .WithContainerName("microservice_rgpd_ollama")
   .WithLifetime(ContainerLifetime.Persistent)
+  .WithGPUSupport()
   .WithDataVolume("microservice_rgpd_ollama_models");
 
 // Le modèle est tiré par Aspire au démarrage, et non par une procédure manuelle à côté.
