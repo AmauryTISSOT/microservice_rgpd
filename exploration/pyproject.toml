@@ -1,0 +1,51 @@
+[project]
+# Projet délibérément distinct de `src/sidecar` : le lock de la production ne doit jamais
+# résoudre `torch`. La sobriété des quatre dépendances servies devient ainsi un fait de
+# structure et non une affaire de `uv sync --no-group` bien tapé (ticket #49).
+name = "exploration-temoin"
+version = "0.1.0"
+description = "Banc d'essai d'un troisième témoin non génératif, sur les 120 exemples du corpus."
+requires-python = ">=3.12"
+dependencies = [
+    # La tête commune aux trois montages, la validation croisée, les métriques.
+    "scikit-learn>=1.6",
+    # L'encodeur `intfloat/multilingual-e5-small`, chargé depuis Hugging Face avec son
+    # tokeniseur d'origine — c'est ce qui met le banc d'essai hors d'atteinte du bug
+    # d'accents `ollama#15609`, qui est un défaut de la conversion GGUF (ticket #47).
+    "sentence-transformers>=3.4",
+    # Le montage 3, et lui seul : l'entraînement contrastif de l'encodeur.
+    "setfit>=1.1",
+    # SetFit 1.1 importe `default_logdir` de `transformers.training_args`, retiré en 5.x :
+    # la borne haute est une incompatibilité constatée, pas une précaution.
+    "transformers>=4.45,<5",
+    # L'empreinte mémoire résidente est au nombre des coûts que le critère #48 demande de
+    # rapporter ; `resource` n'existe pas sous Windows, où le notebook est écrit.
+    # Déclaré alors qu'il n'est que transitif : `[tool.uv.sources]` ne s'applique qu'aux
+    # dépendances que le projet déclare lui-même, et c'est par là que passe l'index CUDA.
+    "torch>=2.6",
+    "psutil>=6.1",
+    # Le notebook *est* le rendu du banc d'essai (ticket #49) : de quoi l'exécuter fait donc
+    # partie du projet, pas d'un groupe optionnel.
+    "jupyterlab>=4.3",
+    "nbconvert>=7.16",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'win32'", "sys_platform == 'linux'"]
+
+# Roues CUDA, pour l'**entraînement contrastif du montage 3 seulement**. Les 25 entraînements
+# saturaient les 8 cœurs physiques pendant ~6 h d'affilée, jusqu'à rendre la machine
+# inutilisable : ce n'est pas un réglage de confort mais la condition pour que le banc d'essai
+# soit exécutable. Ce que le critère #48 demande de rapporter reste mesuré sur **CPU** — c'est
+# la latence du *service*, et le service n'a pas de GPU à lui (ADR-0001 : `qwen3:8b` l'occupe).
+# La durée d'entraînement est un coût de **banc**, pas un coût de service.
+#
+# Le notebook retombe sur le CPU si aucune carte n'est visible : l'index CUDA installe des roues
+# qui fonctionnent sans carte, il ne rend pas le GPU obligatoire.
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
