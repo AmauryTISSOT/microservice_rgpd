@@ -82,6 +82,17 @@ l'environnement virtuel et l'installation des dépendances. Le modèle est tiré
 et conservé dans un volume nommé ; comptez plusieurs gigaoctets, et un GPU pour que les temps de
 réponse aient un sens.
 
+Le container Ollama réclame le GPU (`WithGPUSupport()` dans l'AppHost), ce qui suppose une carte
+**NVIDIA** et le [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+installé côté Docker. Pour vérifier avant de lancer la pile :
+
+```sh
+docker run --rm --gpus=all --entrypoint nvidia-smi ollama/ollama:0.13.0 -L
+```
+
+Sans ce prérequis, le container refuse de démarrer — c'est délibéré : le repli silencieux sur le
+processeur donnait une pile qui « marche » mais dont personne n'attend les réponses.
+
 Les tests d'intégration et fonctionnels utilisent Testcontainers : **Docker doit être démarré**.
 Voir [`TESTCONTAINERS_IMPLEMENTATION.md`](TESTCONTAINERS_IMPLEMENTATION.md). **Aucun test ne
 démarre Ollama, ni ne s'approche d'un GPU.**
