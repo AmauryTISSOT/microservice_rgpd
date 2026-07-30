@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titre %}Clients — administration{% endblock %}
+{% block contenu %}
+<h1>Clients</h1>
+<form method="get">
+  <input type="hidden" name="cle" value="{{ request.args.get('cle', '') }}">
+  <input type="search" name="q" value="{{ q }}" placeholder="nom ou adresse">
+  <button type="submit">Chercher</button>
+</form>
+<table>
+  <tr><th>#</th><th>Adresse</th><th>Nom</th><th>Téléphone</th><th>Inscrit le</th></tr>
+  {% for c in clients %}
+    <tr>
+      <td>{{ c.id }}</td>
+      <td>{{ c.email }}</td>
+      <td>{{ c.prenom }} {{ c.nom }}</td>
+      <td>{{ c.telephone or '' }}</td>
+      <td>{{ c.cree_le.strftime('%d/%m/%Y') }}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% endblock %}

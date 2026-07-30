@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titre %}{{ c.reference }} — administration{% endblock %}
+{% block contenu %}
+<h1>{{ c.reference }}</h1>
+<table>
+  <tr><th>Compte</th><td>{% if c.client_id %}#{{ c.client_id }}{% else %}commande sans compte{% endif %}</td></tr>
+  <tr><th>Adresse de l'acheteur</th><td>{{ c.courriel_acheteur }}</td></tr>
+  <tr><th>Livraison</th><td>{{ c.nom_livraison }}<br><pre>{{ c.adresse_livraison }}</pre></td></tr>
+  <tr><th>Montant</th><td>{{ "%.2f"|format(c.total_centimes / 100) }} €</td></tr>
+  <tr><th>Statut</th><td>{{ c.statut }}</td></tr>
+</table>
+
+<h2>Facture</h2>
+{% if facture %}
+  <p>{{ facture.numero }} du {{ facture.emise_le.strftime('%d/%m/%Y') }} —
+     {{ facture.destinataire_nom }}, {{ facture.destinataire_courriel }}</p>
+{% else %}
+  <p>Pas de facture émise.</p>
+{% endif %}
+
+<h2>Paiement</h2>
+{% if paiement %}
+  <p>{{ paiement.prestataire }} — {{ paiement.reference_psp }}
+     {% if paiement.carte_4_derniers %}(carte •••• {{ paiement.carte_4_derniers }}){% endif %}</p>
+{% else %}
+  <p>Pas de paiement enregistré.</p>
+{% endif %}
+{% endblock %}
