@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Les annonces du moment</h1>
+{% for a in annonces %}
+  <div class="annonce">
+    <a href="{{ url_for('annonce', annonce_id=a.id) }}"><strong>{{ a.titre }}</strong></a>
+    — {{ "%.2f"|format(a.prix_centimes / 100) }} €<br>
+    <small>vendu par {{ a.prenom }} {{ a.nom }}, publiée le {{ a.publiee_le.strftime('%d/%m/%Y') }}</small>
+  </div>
+{% else %}
+  <p>Aucune annonce en ligne.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titre %}{{ a.titre }} — Brocanto{% endblock %}
+{% block contenu %}
+<h1>{{ a.titre }}</h1>
+<p><strong>{{ "%.2f"|format(a.prix_centimes / 100) }} €</strong> — {{ a.etat }}</p>
+<p>{{ a.description }}</p>
+<p><small>
+  Vendu par {{ a.prenom }} {{ a.nom }} ({{ a.email_vendeur }}){% if a.telephone %}, {{ a.telephone }}{% endif %}
+</small></p>
+<ul>
+  {% for p in photos %}<li>{{ p.fichier }}</li>{% endfor %}
+</ul>
+{% endblock %}

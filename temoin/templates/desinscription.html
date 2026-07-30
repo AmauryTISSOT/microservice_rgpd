@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>C'est fait</h1>
+<p>L'adresse {{ courriel }} ne recevra plus la lettre d'information.</p>
+<p><a href="{{ url_for('accueil') }}">Retour aux annonces</a></p>
+{% endblock %}

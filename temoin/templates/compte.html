@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titre %}Mon compte — Brocanto{% endblock %}
+{% block contenu %}
+<h1>Bonjour {{ moi.prenom }}</h1>
+<p>{{ moi.email }}{% if moi.telephone %} — {{ moi.telephone }}{% endif %}</p>
+
+<h2>Mes commandes</h2>
+<table>
+  <tr><th>Référence</th><th>Date</th><th>Montant</th><th>Statut</th></tr>
+  {% for c in commandes %}
+    <tr>
+      <td>{{ c.reference }}</td>
+      <td>{{ c.passee_le.strftime('%d/%m/%Y') }}</td>
+      <td>{{ "%.2f"|format(c.total_centimes / 100) }} €</td>
+      <td>{{ c.statut }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4">Aucune commande.</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Mes annonces</h2>
+<ul>
+  {% for a in mes_annonces %}
+    <li><a href="{{ url_for('annonce', annonce_id=a.id) }}">{{ a.titre }}</a> — {{ a.etat }}</li>
+  {% else %}
+    <li>Aucune annonce.</li>
+  {% endfor %}
+</ul>
+
+<h2>Mes adresses</h2>
+<ul>
+  {% for ad in adresses %}
+    <li>{{ ad.destinataire }} — {{ ad.ligne1 }}{% if ad.ligne2 %}, {{ ad.ligne2 }}{% endif %}, {{ ad.code_postal }} {{ ad.ville }}</li>
+  {% endfor %}
+</ul>
+
+<h2>Lettre d'information</h2>
+{% if lettre and not lettre.desinscrit_le %}
+  <p>Vous êtes inscrit·e depuis le {{ lettre.inscrit_le.strftime('%d/%m/%Y') }}.
+     <a href="{{ url_for('desinscription', courriel=moi.email) }}">Se désinscrire</a></p>
+{% else %}
+  <p>Vous n'êtes pas inscrit·e.</p>
+{% endif %}
+{% endblock %}
