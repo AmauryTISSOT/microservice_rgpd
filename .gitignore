@@ -75,3 +75,8 @@ __pycache__/
 
 # Jupyter (notebook d'exploration)
 .ipynb_checkpoints/
+
+# Corps contrastifs mis en cache par le banc de réglage (ticket #56). Fonction pure de sa clé
+# (encodeur, taux, germe, pli) : le vider et relancer redonne les mêmes chiffres, au prix du temps.
+# Les poids restent hors dépôt, comme le veut le ticket #49.
+exploration/.cache-corps/
