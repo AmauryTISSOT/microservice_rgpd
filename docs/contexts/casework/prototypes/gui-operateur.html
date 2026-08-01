@@ -1,13 +1,13 @@
-<title>GUI opérateur — trois variantes à trancher (#71)</title>
+<title>GUI opérateur — la surface tranchée (#71)</title>
 
 <style>
   /* ─────────────────────────────────────────────────────────────
-     Maquette jetable — ticket #71 de la carte #57.
-     Aucune donnée réelle : le cas Jean Dupont vient de temoin/db/seed.sql.
+     Maquette jetable — résolution du ticket #71 de la carte #57.
+     Montre la variante retenue, pas le menu des variantes.
+     Données : temoin/db/seed.sql. Aucun back-end, aucun code réutilisable.
      ───────────────────────────────────────────────────────────── */
 
   :root {
-    /* Fond bleuté très pâle — papier de formulaire administratif, pas crème. */
     --ground:      #EDF0F3;
     --surface:     #FFFFFF;
     --surface-2:   #F4F6F8;
@@ -18,23 +18,18 @@
     --ink-muted:   #56636F;
     --ink-faint:   #7C8894;
 
-    /* Accent : bleu pétrole, institutionnel. */
     --accent:      #2E5266;
     --accent-soft: #DDE7EC;
 
-    /* Tampon : oxblood. Réservé aux interdictions et aux annotations. */
     --stamp:       #8C3B34;
     --stamp-soft:  #F3E3E1;
 
-    /* Sémantique d'état — volontairement sourde. Rien ne doit féliciter. */
     --st-done:     #40705A;
     --st-done-bg:  #E1EBE5;
     --st-todo:     #97682A;
     --st-todo-bg:  #F5EBDA;
     --st-reach:    #566370;
     --st-reach-bg: #E5E9ED;
-    --st-untr:     #8C3B34;
-    --st-untr-bg:  #F3E3E1;
     --st-wait:     #3F5C86;
     --st-wait-bg:  #E2E8F2;
 
@@ -45,32 +40,15 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --ground:      #12171C;
-      --surface:     #1A2027;
-      --surface-2:   #212932;
-      --line:        #2E3841;
-      --line-strong: #43505C;
-
-      --ink:         #E2E7EC;
-      --ink-muted:   #9AA6B2;
-      --ink-faint:   #74818D;
-
-      --accent:      #7FB0C7;
-      --accent-soft: #22323C;
-
-      --stamp:       #D9847B;
-      --stamp-soft:  #34211F;
-
-      --st-done:     #7FB499;
-      --st-done-bg:  #1D2A24;
-      --st-todo:     #D2A461;
-      --st-todo-bg:  #2E2519;
-      --st-reach:    #96A3AF;
-      --st-reach-bg: #242C34;
-      --st-untr:     #D9847B;
-      --st-untr-bg:  #34211F;
-      --st-wait:     #8AA5CC;
-      --st-wait-bg:  #1E2733;
+      --ground:      #12171C;  --surface:     #1A2027;  --surface-2:   #212932;
+      --line:        #2E3841;  --line-strong: #43505C;
+      --ink:         #E2E7EC;  --ink-muted:   #9AA6B2;  --ink-faint:   #74818D;
+      --accent:      #7FB0C7;  --accent-soft: #22323C;
+      --stamp:       #D9847B;  --stamp-soft:  #34211F;
+      --st-done:     #7FB499;  --st-done-bg:  #1D2A24;
+      --st-todo:     #D2A461;  --st-todo-bg:  #2E2519;
+      --st-reach:    #96A3AF;  --st-reach-bg: #242C34;
+      --st-wait:     #8AA5CC;  --st-wait-bg:  #1E2733;
     }
   }
 
@@ -83,7 +61,6 @@
     --st-done:     #40705A;  --st-done-bg:  #E1EBE5;
     --st-todo:     #97682A;  --st-todo-bg:  #F5EBDA;
     --st-reach:    #566370;  --st-reach-bg: #E5E9ED;
-    --st-untr:     #8C3B34;  --st-untr-bg:  #F3E3E1;
     --st-wait:     #3F5C86;  --st-wait-bg:  #E2E8F2;
   }
 
@@ -96,7 +73,6 @@
     --st-done:     #7FB499;  --st-done-bg:  #1D2A24;
     --st-todo:     #D2A461;  --st-todo-bg:  #2E2519;
     --st-reach:    #96A3AF;  --st-reach-bg: #242C34;
-    --st-untr:     #D9847B;  --st-untr-bg:  #34211F;
     --st-wait:     #8AA5CC;  --st-wait-bg:  #1E2733;
   }
 
@@ -110,15 +86,13 @@
   }
 
   .page {
-    max-width: 1140px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 40px 24px 96px;
     display: flex;
     flex-direction: column;
-    gap: 56px;
+    gap: 48px;
   }
-
-  /* ── En-tête ─────────────────────────────────────────────── */
 
   .masthead { display: flex; flex-direction: column; gap: 14px; }
 
@@ -139,37 +113,17 @@
     margin: 0;
   }
 
-  .lede {
-    max-width: 66ch;
-    color: var(--ink-muted);
-    font-size: 16px;
-  }
-
+  .lede { max-width: 68ch; color: var(--ink-muted); font-size: 16px; }
   .lede strong { color: var(--ink); font-weight: 600; }
 
   .caveat {
     border-left: 3px solid var(--stamp);
     background: var(--stamp-soft);
     padding: 12px 16px;
-    max-width: 72ch;
+    max-width: 74ch;
     font-size: 14px;
-    color: var(--ink);
     border-radius: 0 var(--radius) var(--radius) 0;
   }
-
-  /* ── Le cas de référence ─────────────────────────────────── */
-
-  .brief {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 22px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .brief h2, .variant > h2 { margin: 0; }
 
   h2 {
     font-size: 13px;
@@ -178,11 +132,16 @@
     text-transform: uppercase;
     color: var(--accent);
     font-weight: 600;
+    margin: 0;
   }
 
-  .syslist {
+  hr.rule { border: none; border-top: 1px solid var(--line-strong); margin: 0; }
+
+  /* ── Ce qui est tranché ──────────────────────────────────── */
+
+  .verdicts {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1px;
     background: var(--line);
     border: 1px solid var(--line);
@@ -190,65 +149,35 @@
     overflow: hidden;
   }
 
-  .sys {
+  .v {
     background: var(--surface);
-    padding: 12px 14px;
+    padding: 15px 16px;
     display: flex;
     flex-direction: column;
     gap: 5px;
   }
 
-  .sys-name { font-weight: 600; font-size: 14px; }
-
-  .sys-cap {
+  .v-k {
     font-family: var(--mono);
-    font-size: 11.5px;
-    color: var(--ink-muted);
+    font-size: 10.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
   }
 
-  .sys-cap.zero { color: var(--st-todo); }
+  .v-v { font-weight: 620; font-size: 14.5px; line-height: 1.4; }
+  .v-why { font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
 
-  /* ── Cadre « écran » ─────────────────────────────────────── */
-
-  .variant { display: flex; flex-direction: column; gap: 18px; }
-
-  .variant-head { display: flex; flex-direction: column; gap: 8px; }
-
-  .variant-title {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .variant-letter {
-    font-family: var(--mono);
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: -0.02em;
-  }
-
-  .variant-name {
-    font-size: 21px;
-    font-weight: 620;
-    letter-spacing: -0.012em;
-  }
-
-  .variant-sub { color: var(--ink-muted); max-width: 70ch; font-size: 14.5px; }
+  /* ── Cadre écran ─────────────────────────────────────────── */
 
   .screens {
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
     gap: 20px;
     align-items: start;
   }
 
-  .screens.single { grid-template-columns: minmax(0, 1fr); }
-
-  @media (max-width: 860px) {
-    .screens { grid-template-columns: minmax(0, 1fr); }
-  }
+  @media (max-width: 900px) { .screens { grid-template-columns: minmax(0, 1fr); } }
 
   .screen {
     background: var(--surface);
@@ -272,55 +201,59 @@
 
   .screen-bar::before {
     content: "";
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--line-strong);
-    flex: none;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line-strong); flex: none;
   }
 
   .screen-body { padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 16px; }
 
-  /* ── Bandeau d'incomplétude ──────────────────────────────── */
+  /* ── Compteur autorisé ───────────────────────────────────── */
 
-  .incompleteness {
-    border: 1px solid var(--st-todo);
-    background: var(--st-todo-bg);
-    border-radius: var(--radius);
-    padding: 11px 13px;
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--ink);
+  .counter {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
   }
 
-  .incompleteness b { display: block; font-weight: 650; margin-bottom: 2px; }
+  .counter-n {
+    font-size: 26px;
+    font-weight: 660;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .counter-l {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
 
   /* ── File ────────────────────────────────────────────────── */
 
-  .queue { display: flex; flex-direction: column; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-
-  .qrow {
-    background: var(--surface);
-    padding: 11px 13px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  .queue {
+    display: flex; flex-direction: column; gap: 1px;
+    background: var(--line); border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden;
   }
 
+  .qrow { background: var(--surface); padding: 11px 13px; display: flex; flex-direction: column; gap: 4px; }
   .qrow.current { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
 
   .qtop { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-
   .qname { font-weight: 620; font-size: 14px; }
 
   .qday {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--ink-muted);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
   }
 
   .qday.late { color: var(--stamp); font-weight: 600; }
+  .qday .dflt { color: var(--st-todo); font-weight: 600; }
 
   .qwhy { font-size: 12.5px; color: var(--ink-muted); }
 
@@ -329,13 +262,8 @@
   .case-head { display: flex; flex-direction: column; gap: 8px; }
 
   .case-id {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--ink-faint);
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    font-variant-numeric: tabular-nums;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+    display: flex; gap: 10px; flex-wrap: wrap; font-variant-numeric: tabular-nums;
   }
 
   .case-name { font-size: 19px; font-weight: 640; letter-spacing: -0.01em; }
@@ -343,256 +271,166 @@
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
   .chip {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.02em;
-    padding: 2px 7px;
-    border-radius: 2px;
-    border: 1px solid var(--line-strong);
-    color: var(--ink-muted);
-    background: var(--surface-2);
-    white-space: nowrap;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em;
+    padding: 2px 7px; border-radius: 2px;
+    border: 1px solid var(--line-strong); color: var(--ink-muted);
+    background: var(--surface-2); white-space: nowrap;
   }
 
-  .chip.warn { color: var(--st-untr); border-color: var(--st-untr); background: var(--st-untr-bg); }
+  .chip.warn { color: var(--stamp); border-color: var(--stamp); background: var(--stamp-soft); }
   .chip.new  { color: var(--st-wait); border-color: var(--st-wait); background: var(--st-wait-bg); }
+
+  .incompleteness {
+    border: 1px solid var(--st-todo);
+    background: var(--st-todo-bg);
+    border-radius: var(--radius);
+    padding: 11px 13px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .incompleteness b { display: block; font-weight: 650; margin-bottom: 2px; }
+  .incompleteness .aged { color: var(--stamp); font-weight: 650; }
+
+  .openq {
+    border: 1px solid var(--st-wait); background: var(--st-wait-bg);
+    border-radius: var(--radius); padding: 11px 13px;
+    display: flex; flex-direction: column; gap: 7px; font-size: 13.5px;
+  }
+
+  .openq-title { font-weight: 640; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .openq-date { font-family: var(--mono); font-size: 11px; color: var(--ink-muted); font-weight: 400; }
 
   .claim { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 
   .claim-head {
-    background: var(--surface-2);
-    border-bottom: 1px solid var(--line);
-    padding: 9px 13px;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
-    flex-wrap: wrap;
+    background: var(--surface-2); border-bottom: 1px solid var(--line);
+    padding: 9px 13px; display: flex; justify-content: space-between;
+    align-items: baseline; gap: 10px; flex-wrap: wrap;
   }
 
   .claim-name { font-family: var(--mono); font-size: 13px; font-weight: 650; }
-
   .claim-note { font-size: 12px; color: var(--ink-muted); }
 
   .steps { display: flex; flex-direction: column; }
 
   .step {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 10px;
-    align-items: center;
-    padding: 8px 13px;
-    border-bottom: 1px solid var(--line);
-    font-size: 13.5px;
+    display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+    padding: 8px 13px; border-bottom: 1px solid var(--line); font-size: 13.5px;
   }
 
   .step:last-child { border-bottom: none; }
+  .step.flagged { background: var(--st-todo-bg); }
 
   .step-name { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-
   .step-sub { font-size: 11.5px; color: var(--ink-faint); }
+  .step-sub .decl { font-family: var(--mono); }
+  .step-sub .aged { color: var(--stamp); font-weight: 600; font-family: var(--mono); }
+  .step-sub .zero { color: var(--st-todo); font-weight: 600; }
 
   .state {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.03em;
-    padding: 2px 8px;
-    border-radius: 2px;
-    white-space: nowrap;
-    font-weight: 600;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.03em;
+    padding: 2px 8px; border-radius: 2px; white-space: nowrap; font-weight: 600;
   }
 
   .s-done  { color: var(--st-done);  background: var(--st-done-bg); }
   .s-todo  { color: var(--st-todo);  background: var(--st-todo-bg); }
   .s-reach { color: var(--st-reach); background: var(--st-reach-bg); }
-  .s-untr  { color: var(--st-untr);  background: var(--st-untr-bg); }
   .s-wait  { color: var(--st-wait);  background: var(--st-wait-bg); }
-
-  .openq {
-    border: 1px solid var(--st-wait);
-    background: var(--st-wait-bg);
-    border-radius: var(--radius);
-    padding: 11px 13px;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    font-size: 13.5px;
-  }
-
-  .openq-title { font-weight: 640; display: flex; gap: 8px; align-items: baseline; }
-
-  .openq-date { font-family: var(--mono); font-size: 11px; color: var(--ink-muted); font-weight: 400; }
 
   .btnrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
 
   .btn {
-    font-family: var(--sans);
-    font-size: 12.5px;
-    font-weight: 560;
-    padding: 5px 11px;
-    border-radius: 2px;
-    border: 1px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    cursor: default;
+    font-family: var(--sans); font-size: 12.5px; font-weight: 560;
+    padding: 5px 11px; border-radius: 2px;
+    border: 1px solid var(--accent); background: transparent;
+    color: var(--accent); cursor: default;
   }
 
   .btn.solid { background: var(--accent); color: var(--surface); }
 
   .closing {
-    border-top: 1px solid var(--line);
-    padding-top: 13px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    border-top: 1px solid var(--line); padding-top: 13px;
+    display: flex; flex-direction: column; gap: 8px;
   }
 
-  .closing-claim {
-    font-size: 13.5px;
-    color: var(--ink);
-    display: flex;
-    gap: 8px;
-    align-items: baseline;
-  }
-
-  .closing-claim::before {
-    content: "→";
-    color: var(--st-todo);
-    font-family: var(--mono);
-    flex: none;
-  }
+  .closing-claim { font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
+  .closing-claim::before { content: "→"; color: var(--st-todo); font-family: var(--mono); flex: none; }
 
   .ledger {
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 11px 13px;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    line-height: 1.75;
-    color: var(--ink-muted);
-    overflow-x: auto;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 11px 13px;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.75;
+    color: var(--ink-muted); overflow-x: auto;
   }
 
   .ledger .sig { color: var(--stamp); }
 
-  /* ── Annotations de la variante B ────────────────────────── */
+  /* ── Notes ───────────────────────────────────────────────── */
 
-  .dashboard {
+  .notes {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
   }
 
-  .tile {
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 13px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    position: relative;
-  }
-
-  .tile-num {
-    font-size: 27px;
-    font-weight: 660;
-    letter-spacing: -0.025em;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
-  }
-
-  .tile-lbl {
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ink-faint);
-    font-family: var(--mono);
-  }
-
-  .tile.forbidden { border-color: var(--stamp); border-style: dashed; }
-  .tile.forbidden .tile-num { color: var(--stamp); }
-
-  .verdict {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    border-left: 3px solid var(--stamp);
-    background: var(--stamp-soft);
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
     padding: 14px 16px;
     border-radius: 0 var(--radius) var(--radius) 0;
+    display: flex; flex-direction: column; gap: 7px;
   }
 
-  .verdict h3 {
-    margin: 0;
-    font-size: 13px;
-    font-family: var(--mono);
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--stamp);
+  .note.stamped { border-left-color: var(--stamp); background: var(--stamp-soft); }
+
+  .note h3 {
+    margin: 0; font-size: 12.5px; font-family: var(--mono);
+    letter-spacing: 0.07em; text-transform: uppercase; color: var(--accent);
   }
 
-  .verdict ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
-  .verdict li { font-size: 13.5px; line-height: 1.55; }
-  .verdict code, .brief code, .lede code, .variant-sub code, .step code {
-    font-family: var(--mono);
-    font-size: 0.88em;
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: 2px;
-    padding: 0.5px 4px;
+  .note.stamped h3 { color: var(--stamp); }
+  .note p { margin: 0; font-size: 13.5px; line-height: 1.55; }
+
+  code {
+    font-family: var(--mono); font-size: 0.88em;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 2px; padding: 0.5px 4px;
   }
 
-  /* ── Manifest (variante C) ───────────────────────────────── */
+  .note code, .incompleteness code, .openq code, .closing-claim code { background: var(--surface); }
+
+  .rulebox {
+    background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: var(--radius); padding: 22px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .rulebox h2 { color: var(--ink); }
+
+  .rulebox blockquote {
+    margin: 0; padding: 14px 18px;
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 15.5px; line-height: 1.55;
+  }
 
   .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
 
-  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 13.5px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 13.5px; }
 
   th {
-    text-align: left;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    font-weight: 600;
-    padding: 9px 13px;
-    background: var(--surface-2);
-    border-bottom: 1px solid var(--line);
-    white-space: nowrap;
+    text-align: left; font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint);
+    font-weight: 600; padding: 9px 13px; background: var(--surface-2);
+    border-bottom: 1px solid var(--line); white-space: nowrap;
   }
 
-  td {
-    padding: 9px 13px;
-    border-bottom: 1px solid var(--line);
-    vertical-align: top;
-  }
-
+  td { padding: 9px 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
   tr:last-child td { border-bottom: none; }
-
-  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-  td.stale { color: var(--stamp); font-weight: 600; }
-
-  /* ── Pied ────────────────────────────────────────────────── */
-
-  .decide {
-    background: var(--surface);
-    border: 1px solid var(--line-strong);
-    border-radius: var(--radius);
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .decide h2 { color: var(--ink); }
-
-  .decide ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
-  .decide li { font-size: 14.5px; line-height: 1.6; }
-
-  hr.rule { border: none; border-top: 1px solid var(--line-strong); margin: 0; }
+  td.verdict-in  { color: var(--st-done); font-weight: 640; font-family: var(--mono); white-space: nowrap; }
+  td.verdict-out { color: var(--stamp);   font-weight: 640; font-family: var(--mono); white-space: nowrap; }
+  td.ex { font-family: var(--mono); }
 
   a { color: var(--accent); }
 </style>
@@ -600,481 +438,315 @@
 <div class="page">
 
   <header class="masthead">
-    <div class="eyebrow">Carte #57 · ticket #71 · maquette jetable</div>
-    <h1>La surface de travail de l'opérateur : trois variantes</h1>
+    <div class="eyebrow">Carte #57 · ticket #71 · résolu</div>
+    <h1>La surface de travail de l'opérateur</h1>
     <p class="lede">
-      Le service livre une <strong>GUI web</strong> et aucune API d'instruction — tranché.
-      Reste à décider <strong>ce qu'elle montre</strong>. Voici les trois variantes côte à côte,
-      sur un cas réel du témoin.
+      Le service livre une <strong>GUI web</strong> et <strong>aucune API d'instruction</strong>.
+      Deux vues, aucun tableau de bord. Voici ce que ça donne sur un cas du témoin.
     </p>
     <p class="caveat">
       Maquette morte : aucun back-end, aucune interaction, aucun code réutilisable.
-      Elle existe pour être <em>regardée puis jetée</em>. Les données viennent de
-      <code>temoin/db/seed.sql</code> — les deux comptes Jean&nbsp;Dupont, la compta scellée,
-      l'export déjà parti chez l'agence.
+      Elle existe pour rendre la décision regardable, puis pour être jetée. Les données viennent
+      de <code>temoin/db/seed.sql</code> — les deux comptes Jean&nbsp;Dupont, l'export déjà parti
+      chez l'agence.
     </p>
   </header>
 
+  <!-- ══════════ CE QUI EST TRANCHÉ ══════════ -->
+  <section>
+    <div class="verdicts">
+      <div class="v">
+        <span class="v-k">Qui livre</span>
+        <span class="v-v">Le service, une GUI web</span>
+        <span class="v-why">Pas d'API d'instruction : c'est le seul chemin vers l'arbitrage et la clôture.</span>
+      </div>
+      <div class="v">
+        <span class="v-k">Authentification</span>
+        <span class="v-v">Aucune — PoC assumé</span>
+        <span class="v-why">Le <code>Ledger</code> signe un nom saisi, et marque le régime « non authentifié ».</span>
+      </div>
+      <div class="v">
+        <span class="v-k">Vues</span>
+        <span class="v-v">La file, le dossier</span>
+        <span class="v-why">Aucun tableau de bord : c'est le seul écran qui annulerait la doctrine sans la contredire.</span>
+      </div>
+      <div class="v">
+        <span class="v-k">Topologie</span>
+        <span class="v-v">Autonome, second onglet</span>
+        <span class="v-why">Brocanto ne cède ni iframe ni lien : ce serait du confort d'intégration.</span>
+      </div>
+    </div>
+  </section>
+
   <hr class="rule">
 
-  <!-- ══════════════ LE CAS ══════════════ -->
-  <section class="brief">
-    <h2>Le cas de référence</h2>
+  <!-- ══════════ L'ÉCRAN ══════════ -->
+  <section class="screens">
+
+    <div class="screen">
+      <div class="screen-bar">La file — ce qui attend un geste humain</div>
+      <div class="screen-body">
+
+        <div class="counter">
+          <span class="counter-n">12</span>
+          <span class="counter-l">dossiers ouverts</span>
+        </div>
+
+        <div class="queue">
+          <div class="qrow current">
+            <div class="qtop">
+              <span class="qname">Jean Dupont</span>
+              <span class="qday">J+9 <span class="dflt">(défaut)</span></span>
+            </div>
+            <span class="qwhy">1 question en suspens · 4 démarches à faire</span>
+          </div>
+          <div class="qrow">
+            <div class="qtop">
+              <span class="qname">Hélène Petit</span>
+              <span class="qday late">J+34 / 30</span>
+            </div>
+            <span class="qwhy">Délai dépassé · aucune démarche terminale</span>
+          </div>
+          <div class="qrow">
+            <div class="qtop">
+              <span class="qname">Patrick Roussel</span>
+              <span class="qday">J+21 / 30</span>
+            </div>
+            <span class="qwhy">Claim proposé, non confirmé</span>
+          </div>
+          <div class="qrow">
+            <div class="qtop">
+              <span class="qname">Luc Moreau</span>
+              <span class="qday">J+3 / 30</span>
+            </div>
+            <span class="qwhy">Aucune désignation exploitable</span>
+          </div>
+        </div>
+
+        <p class="step-sub" style="font-size:12.5px; line-height:1.5">
+          File statique au lot 1. Ce que la minuterie y fait remonter, et ce qu'on relance,
+          appartient au ticket #75.
+        </p>
+      </div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-bar">Le dossier — où l'on travaille</div>
+      <div class="screen-body">
+
+        <div class="case-head">
+          <div class="case-id">
+            <span>Case 412</span><span>·</span>
+            <span>reçu le 12/04/2026 (défaut)</span><span>·</span>
+            <span>Open</span>
+          </div>
+          <div class="case-name">Jean Dupont</div>
+          <div class="chips">
+            <span class="chip warn">Unverified · motivé</span>
+            <span class="chip">jean.dupont@example.fr</span>
+            <span class="chip new">Jean.Dupont@Example.fr · ajoutée le 18/04</span>
+            <span class="chip">06 12 34 56 78</span>
+          </div>
+        </div>
+
+        <div class="incompleteness">
+          <b>Recensement fondé sur 6 systèmes déclarés.</b>
+          Ce n'est pas « tous vos systèmes » : c'est ce qu'un humain a déclaré. La déclaration la
+          plus ancienne remonte au <span class="aged">14/11/2025</span>. Un système non déclaré
+          ne produit aucune démarche — et rien ici ne le signalera.
+        </div>
+
+        <div class="incompleteness" style="border-color: var(--stamp); background: var(--stamp-soft)">
+          <b>La date de réception n'a pas été déclarée.</b>
+          Le délai est compté depuis la saisie, faute de mieux. Il a commencé avant, d'un nombre
+          de jours que le service ne connaît pas.
+        </div>
+
+        <div class="openq">
+          <div class="openq-title">
+            Question en suspens
+            <span class="openq-date">ouverte le 16/04 — n'arrête pas le délai</span>
+          </div>
+          <div>
+            <code>Locate</code> sur la base a rendu <strong>un noyau certain</strong> (compte 1)
+            <strong>et une réserve</strong> : le compte 8, <code>Jean.Dupont@Example.fr</code>,
+            créé au téléphone par le support en 2025. Même personne, ou homonyme ?
+          </div>
+          <div class="btnrow">
+            <button class="btn solid" type="button">Confirmer la réserve</button>
+            <button class="btn" type="button">Écarter, avec motif</button>
+          </div>
+        </div>
+
+        <div class="claim">
+          <div class="claim-head">
+            <span class="claim-name">Claim · Access</span>
+            <span class="claim-note">Open — 2 démarches sur 6 déclarées faites</span>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-name">
+                <span>Base MariaDB</span>
+                <span class="step-sub"><span class="decl">déclaré le 03/02/2026</span> · Adapter, 18/04 à 09:41 · 2 rattachements</span>
+              </div>
+              <span class="state s-done">Done</span>
+            </div>
+            <div class="step flagged">
+              <div class="step-name">
+                <span>Journal applicatif</span>
+                <span class="step-sub"><span class="decl">déclaré le 03/02/2026</span> · Adapter, 18/04 à 10:03 · <span class="zero">0 rattachement sous 3 désignations</span></span>
+              </div>
+              <span class="state s-done">Done</span>
+            </div>
+            <div class="step">
+              <div class="step-name">
+                <span>Photos d'annonces</span>
+                <span class="step-sub"><span class="decl">déclaré le 03/02/2026</span> · à faire à la main</span>
+              </div>
+              <span class="state s-todo">ToDo</span>
+            </div>
+            <div class="step">
+              <div class="step-name">
+                <span>Export mensuel · agence</span>
+                <span class="step-sub"><span class="aged">déclaré le 14/11/2025</span> · à faire à la main</span>
+              </div>
+              <span class="state s-todo">ToDo</span>
+            </div>
+            <div class="step">
+              <div class="step-name">
+                <span>Prestataire de paiement</span>
+                <span class="step-sub"><span class="decl">déclaré le 03/02/2026</span> · à faire à la main</span>
+              </div>
+              <span class="state s-todo">ToDo</span>
+            </div>
+            <div class="step">
+              <div class="step-name">
+                <span>Comptabilité scellée</span>
+                <span class="step-sub"><span class="decl">déclaré le 03/02/2026</span> · à faire à la main</span>
+              </div>
+              <span class="state s-todo">ToDo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="closing">
+          <div class="closing-claim">
+            Clore ce dossier ? Le service réclame <strong>un constat</strong> sur les
+            4 démarches non terminales, <strong>et sur la démarche « Journal applicatif »</strong>,
+            déclarée faite à <strong>0 rattachement</strong>.
+          </div>
+          <div class="closing-claim">
+            Il ne bloque pas. Un dossier peut se clore en constatant qu'un système n'a pas été
+            traité — cette trace-là est la plus précieuse de toutes.
+          </div>
+          <div class="btnrow">
+            <button class="btn solid" type="button">Clore le dossier</button>
+            <button class="btn" type="button">Saisir un constat</button>
+          </div>
+        </div>
+
+        <div class="ledger">
+          12/04 08:55 · Case ouvert · date de réception non déclarée, défaut appliqué · <span class="sig">Sophie Martin (non authentifié)</span><br>
+          18/04 09:12 · Locate · base · 1 certain, 1 réserve · <span class="sig">Adapter brocanto-prod</span><br>
+          18/04 09:41 · réserve confirmée, désignation ajoutée · <span class="sig">Sophie Martin (non authentifié)</span><br>
+          18/04 09:41 · Read · base · déclaré fait · <span class="sig">Adapter brocanto-prod</span><br>
+          18/04 10:03 · Read · journal · déclaré fait, 0 rattachement · <span class="sig">Adapter brocanto-prod</span><br>
+          21/04 14:22 · recherché sous 3 désignations, dont 1 ajoutée par arbitrage
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ══════════ LES TROIS LEGS ══════════ -->
+  <section>
+    <h2 style="margin-bottom:16px">Les trois legs, tous dans le dossier</h2>
+    <div class="notes">
+      <div class="note">
+        <h3>La date qui vieillit</h3>
+        <p>
+          Chaque démarche porte la date à laquelle son <code>DeclaredSystem</code> a été déclaré,
+          et le bandeau nomme la plus ancienne — <strong>14/11/2025</strong> pour l'export chez
+          l'agence. Le <code>Manifest</code> « vieillit exprès » ; il se lit là où quelqu'un signe,
+          pas dans un écran d'administration que personne n'ouvre.
+        </p>
+      </div>
+      <div class="note">
+        <h3>Le zéro qui passait sans rien</h3>
+        <p>
+          Une démarche <code>Done</code> à <strong>0 rattachement</strong> ne réclamait aucun
+          constat, parce que <code>Done</code> est terminal. Elle en réclame un désormais.
+          Aucun état nouveau : <code>Done</code> reste déclaré et non vérifié — c'est ce que la
+          clôture <em>réclame</em> qui s'élargit, sans jamais barrer la route.
+        </p>
+      </div>
+      <div class="note stamped">
+        <h3>La date de réception supposée</h3>
+        <p>
+          Le délai s'affiche <strong>J+9 (défaut)</strong>, jamais <strong>J+9</strong> tout court,
+          et le <code>Ledger</code> consigne « date non déclarée, défaut appliqué ».
+          Enregistrer un vide plutôt que fabriquer un faux — la même règle que pour la signature
+          non authentifiée.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ══════════ LA RÈGLE DES CHIFFRES ══════════ -->
+  <section class="rulebox">
+    <h2>La règle des chiffres</h2>
     <p class="lede" style="font-size:14.5px">
-      Sophie fait l'administratif trois jours par semaine chez Brocanto. Un courriel arrive :
-      <em>« je veux savoir ce que vous avez sur moi et supprimer mon compte »</em>, signé Jean Dupont.
-      Le service ouvre un <code>Case</code> à deux <code>Claim</code> — <code>Access</code> et
-      <code>Erasure</code> — sur <strong>six <code>DeclaredSystem</code></strong>, dont deux seulement
-      sont branchés sur un <code>Adapter</code>. Douze <code>Step</code>, dont huit que le service
-      ne touchera jamais.
+      Il n'y a pas de tableau de bord, mais il y a <em>un</em> nombre à l'écran — « 12 dossiers
+      ouverts ». La règle n'est donc pas « aucun agrégat ». C'est celle-ci :
     </p>
-    <div class="syslist">
-      <div class="sys">
-        <span class="sys-name">Base MariaDB</span>
-        <span class="sys-cap">Locate · Read · Erase · Rectify</span>
-      </div>
-      <div class="sys">
-        <span class="sys-name">Journal applicatif</span>
-        <span class="sys-cap">Locate · Read</span>
-      </div>
-      <div class="sys">
-        <span class="sys-name">Photos d'annonces</span>
-        <span class="sys-cap zero">niveau 0 — à la main</span>
-      </div>
-      <div class="sys">
-        <span class="sys-name">Export mensuel · agence</span>
-        <span class="sys-cap zero">niveau 0 — à la main</span>
-      </div>
-      <div class="sys">
-        <span class="sys-name">Prestataire de paiement</span>
-        <span class="sys-cap zero">niveau 0 — à la main</span>
-      </div>
-      <div class="sys">
-        <span class="sys-name">Comptabilité scellée</span>
-        <span class="sys-cap zero">niveau 0 — 10 ans, art. L123-22</span>
-      </div>
+    <blockquote>
+      Un nombre ne s'affiche que s'il <strong>dénombre</strong> une chose <strong>présente</strong>
+      que le <strong>service détient lui-même</strong>. Jamais un taux, un ratio, un pourcentage,
+      une moyenne. Jamais un dénombrement d'absences. Jamais un dénominateur qui décrit le paysage
+      du client.
+    </blockquote>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Le nombre</th>
+            <th>Verdict</th>
+            <th>Pourquoi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ex">12 dossiers ouverts</td>
+            <td class="verdict-in">dedans</td>
+            <td>Dénombrement, de choses présentes, que le service détient. Sophie peut ouvrir la file et vérifier.</td>
+          </tr>
+          <tr>
+            <td class="ex">33 % de couverture</td>
+            <td class="verdict-out">dehors</td>
+            <td>Le dénominateur décrit Brocanto, pas le service : une déclaration humaine à qui le ratio prête l'autorité d'un fait.</td>
+          </tr>
+          <tr>
+            <td class="ex">11 j de délai moyen</td>
+            <td class="verdict-out">dehors</td>
+            <td>Une moyenne suppose des dossiers interchangeables. Le RGPD connaît un délai, sur un dossier.</td>
+          </tr>
+          <tr>
+            <td class="ex">94 % de conformité</td>
+            <td class="verdict-out">dehors</td>
+            <td>Un verdict automatique — le terme est en <code>_Avoid_</code> dans <code>CONTEXT-MAP.md</code>.</td>
+          </tr>
+          <tr>
+            <td class="ex">0 dossier en retard</td>
+            <td class="verdict-out">dehors</td>
+            <td>Le cas dur : il passe les deux premières clauses. Il dénombre une <strong>absence</strong> — un dossier jamais saisi n'est pas en retard, il n'existe pas.</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-  </section>
-
-  <hr class="rule">
-
-  <!-- ══════════════ VARIANTE A ══════════════ -->
-  <section class="variant">
-    <div class="variant-head">
-      <div class="variant-title">
-        <span class="variant-letter">A</span>
-        <span class="variant-name">La file et le dossier — aucun agrégat</span>
-      </div>
-      <p class="variant-sub">
-        Deux vues, et rien d'autre. Chaque ligne nomme <em>un</em> dossier. Rien ne se somme,
-        rien ne se moyenne, rien ne se met en pourcentage.
-      </p>
-    </div>
-
-    <div class="screens">
-
-      <!-- La file -->
-      <div class="screen">
-        <div class="screen-bar">La file — ce qui attend un geste humain</div>
-        <div class="screen-body">
-          <div class="queue">
-            <div class="qrow current">
-              <div class="qtop">
-                <span class="qname">Jean Dupont</span>
-                <span class="qday">J+9 / 30</span>
-              </div>
-              <span class="qwhy">1 question en suspens · 8 démarches à faire</span>
-            </div>
-            <div class="qrow">
-              <div class="qtop">
-                <span class="qname">Hélène Petit</span>
-                <span class="qday late">J+34 / 30</span>
-              </div>
-              <span class="qwhy">Délai dépassé · aucune démarche terminale</span>
-            </div>
-            <div class="qrow">
-              <div class="qtop">
-                <span class="qname">Patrick Roussel</span>
-                <span class="qday">J+21 / 30</span>
-              </div>
-              <span class="qwhy">Claim proposé non confirmé</span>
-            </div>
-            <div class="qrow">
-              <div class="qtop">
-                <span class="qname">Luc Moreau</span>
-                <span class="qday">J+3 / 30</span>
-              </div>
-              <span class="qwhy">Aucune désignation exploitable</span>
-            </div>
-          </div>
-          <p class="variant-sub" style="font-size:12.5px">
-            Ce que la minuterie fait remonter ici, et ce qu'on relance, appartient au
-            ticket #75 — pas à celui-ci.
-          </p>
-        </div>
-      </div>
-
-      <!-- Le dossier -->
-      <div class="screen">
-        <div class="screen-bar">Le dossier — où l'on travaille</div>
-        <div class="screen-body">
-
-          <div class="case-head">
-            <div class="case-id">
-              <span>Case 412</span><span>·</span><span>reçu le 12/04/2026</span><span>·</span><span>Open</span>
-            </div>
-            <div class="case-name">Jean Dupont</div>
-            <div class="chips">
-              <span class="chip warn">Unverified · motivé</span>
-              <span class="chip">jean.dupont@example.fr</span>
-              <span class="chip new">Jean.Dupont@Example.fr · ajoutée le 18/04</span>
-              <span class="chip">06 12 34 56 78</span>
-            </div>
-          </div>
-
-          <div class="incompleteness">
-            <b>Recensement fondé sur 6 systèmes déclarés.</b>
-            Ce n'est pas « tous vos systèmes » : c'est ce qu'un humain a déclaré, à la date
-            portée par chaque ligne. Un système non déclaré ne produit aucune démarche —
-            et rien ici ne le signalera.
-          </div>
-
-          <div class="openq">
-            <div class="openq-title">
-              Question en suspens
-              <span class="openq-date">ouverte le 16/04 — n'arrête pas le délai</span>
-            </div>
-            <div>
-              <code>Locate</code> sur la base a rendu <strong>un noyau certain</strong>
-              (compte 1) <strong>et une réserve</strong> : le compte 8,
-              <code>Jean.Dupont@Example.fr</code>, créé au téléphone par le support en 2025.
-              Même personne, ou homonyme ?
-            </div>
-            <div class="btnrow">
-              <button class="btn solid" type="button">Confirmer la réserve</button>
-              <button class="btn" type="button">Écarter, avec motif</button>
-            </div>
-          </div>
-
-          <div class="claim">
-            <div class="claim-head">
-              <span class="claim-name">Claim · Access</span>
-              <span class="claim-note">Open — 2 démarches sur 6 déclarées faites</span>
-            </div>
-            <div class="steps">
-              <div class="step">
-                <div class="step-name"><span>Base MariaDB</span><span class="step-sub">Adapter · 18/04 à 09:12</span></div>
-                <span class="state s-done">Done</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Journal applicatif</span><span class="step-sub">Adapter · 18/04 à 09:12</span></div>
-                <span class="state s-done">Done</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Photos d'annonces</span><span class="step-sub">à faire à la main</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Export mensuel · agence</span><span class="step-sub">à faire à la main</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Prestataire de paiement</span><span class="step-sub">à faire à la main</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Comptabilité scellée</span><span class="step-sub">à faire à la main</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="claim">
-            <div class="claim-head">
-              <span class="claim-name">Claim · Erasure</span>
-              <span class="claim-note">Open — la lecture précède l'effacement</span>
-            </div>
-            <div class="steps">
-              <div class="step">
-                <div class="step-name"><span>Base MariaDB</span><span class="step-sub">Access non clos : effacer maintenant détruirait la matière de la réponse</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Journal applicatif</span><span class="step-sub">en attente de l'adaptateur — échéance déclarée 22/04</span></div>
-                <span class="state s-wait">Awaiting</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Photos d'annonces</span><span class="step-sub">à faire à la main</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Export mensuel · agence</span><span class="step-sub">déjà transmis — hors du périmètre du client</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Prestataire de paiement</span><span class="step-sub">à faire à la main</span></div>
-                <span class="state s-todo">ToDo</span>
-              </div>
-              <div class="step">
-                <div class="step-name"><span>Comptabilité scellée</span><span class="step-sub">conservation légale 10 ans — annoncé au premier jour</span></div>
-                <span class="state s-reach">OutOfReach</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="closing">
-            <div class="closing-claim">
-              Clore ce dossier ? Le service réclame <strong>un constat</strong> sur chacune
-              des 9 démarches non terminales, et <strong>une issue</strong> sur chacun des
-              2 <code>Claim</code> ouverts.
-            </div>
-            <div class="closing-claim">
-              Il ne bloque pas. Un dossier peut se clore en constatant qu'un système n'a pas
-              été traité — cette trace-là est la plus précieuse de toutes.
-            </div>
-            <div class="btnrow">
-              <button class="btn solid" type="button">Clore le dossier</button>
-              <button class="btn" type="button">Saisir un constat</button>
-            </div>
-          </div>
-
-          <div class="ledger">
-            18/04 09:12 · Locate · base · 1 certain, 1 réserve · <span class="sig">Sophie Martin (non authentifié)</span><br>
-            18/04 09:41 · réserve confirmée, désignation ajoutée · <span class="sig">Sophie Martin (non authentifié)</span><br>
-            18/04 09:41 · Read · base · déclaré fait · <span class="sig">Adapter brocanto-prod</span><br>
-            18/04 10:03 · Read · journal · déclaré fait · <span class="sig">Adapter brocanto-prod</span><br>
-            21/04 14:22 · recherché sous 3 désignations, dont 1 ajoutée par arbitrage
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="rule">
-
-  <!-- ══════════════ VARIANTE B ══════════════ -->
-  <section class="variant">
-    <div class="variant-head">
-      <div class="variant-title">
-        <span class="variant-letter">B</span>
-        <span class="variant-name">La même chose, plus un tableau de bord</span>
-      </div>
-      <p class="variant-sub">
-        L'écran que tout le monde attend, et que Sophie regardera <em>à la place</em> du reste.
-        Les tuiles en pointillé rouge sont celles que la carte a déjà interdites — sans jamais
-        parler d'écrans.
-      </p>
-    </div>
-
-    <div class="screens single">
-      <div class="screen">
-        <div class="screen-bar">Tableau de bord RGPD — vue d'ensemble</div>
-        <div class="screen-body">
-          <div class="dashboard">
-            <div class="tile">
-              <span class="tile-num">12</span>
-              <span class="tile-lbl">dossiers ouverts</span>
-            </div>
-            <div class="tile forbidden">
-              <span class="tile-num">94&nbsp;%</span>
-              <span class="tile-lbl">conformité</span>
-            </div>
-            <div class="tile forbidden">
-              <span class="tile-num">33&nbsp;%</span>
-              <span class="tile-lbl">couverture systèmes</span>
-            </div>
-            <div class="tile forbidden">
-              <span class="tile-num">11&nbsp;j</span>
-              <span class="tile-lbl">délai moyen</span>
-            </div>
-            <div class="tile forbidden">
-              <span class="tile-num">17</span>
-              <span class="tile-lbl">dossiers honorés · trimestre</span>
-            </div>
-          </div>
-
-          <div class="verdict">
-            <h3>Ce que chaque tuile annule</h3>
-            <ul>
-              <li>
-                <strong>« Conformité&nbsp;: 94&nbsp;% »</strong> — le service ne décide jamais
-                si une procédure est conforme. Il <em>propose, recense, rappelle, prouve</em>.
-                Un pourcentage de conformité est un <code>verdict automatique</code>, le terme
-                explicitement listé en <code>_Avoid_</code> dans <code>CONTEXT-MAP.md</code>.
-              </li>
-              <li>
-                <strong>« Couverture&nbsp;: 33&nbsp;% »</strong> — le dénominateur est un nombre
-                de <code>DeclaredSystem</code>, donc une déclaration humaine, fausse en silence
-                si un système manque. Le ratio donne à un dénominateur déclaratif l'autorité
-                d'un dénominateur réel : c'est <em>présenter un recensement comme complet,
-                avec une décimale</em>.
-              </li>
-              <li>
-                <strong>« Délai moyen&nbsp;: 11&nbsp;j »</strong> — une moyenne suppose des
-                dossiers interchangeables. Le RGPD connaît <em>un</em> délai sur <em>un</em>
-                dossier ; l'état <code>En retard</code> a été refusé précisément pour que le
-                dépassement reste un calcul et non un objet qu'on agrège.
-              </li>
-              <li>
-                <strong>« 17 dossiers honorés »</strong> — <code>Honoured</code> est le mot que
-                le glossaire refuse trois fois : comme état (<code>Answered</code>, jamais
-                <code>Honoured</code>), comme nom de contexte (<code>Casework</code>, jamais
-                <code>Fulfilment</code>), et ici comme <strong>chiffre</strong>.
-              </li>
-            </ul>
-          </div>
-
-          <div class="verdict" style="border-left-color: var(--accent); background: var(--accent-soft);">
-            <h3 style="color: var(--accent)">Le mode de panne propre à B</h3>
-            <ul>
-              <li>
-                Toutes les autres gardes de la carte tombent parce que quelqu'un les
-                <em>contourne</em>. Celle-ci tomberait parce que quelqu'un
-                <strong>regarde ailleurs</strong> — et l'écran ne ment pas assez fort
-                pour qu'on s'en aperçoive.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="rule">
-
-  <!-- ══════════════ VARIANTE C ══════════════ -->
-  <section class="variant">
-    <div class="variant-head">
-      <div class="variant-title">
-        <span class="variant-letter">C</span>
-        <span class="variant-name">A, plus la vue « paysage déclaré »</span>
-      </div>
-      <p class="variant-sub">
-        Le <code>Manifest</code> a été décidé « daté par système » et « vieillit exprès ».
-        Personne, aujourd'hui, ne lit cette date. Cette vue est le seul endroit du dispositif
-        où elle deviendrait visible.
-      </p>
-    </div>
-
-    <div class="screens single">
-      <div class="screen">
-        <div class="screen-bar">Le paysage déclaré — Manifest de brocanto-prod</div>
-        <div class="screen-body">
-
-          <div class="incompleteness">
-            <b>Ce tableau ne liste pas vos systèmes.</b>
-            Il liste ce qui a été déclaré, et quand. Un système absent d'ici est absent de
-            tous les dossiers — sans qu'aucune ligne ne manque nulle part.
-          </div>
-
-          <div class="tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Système déclaré</th>
-                  <th>Capability</th>
-                  <th>Contient (prose)</th>
-                  <th>Déclaré le</th>
-                  <th>Vérifié le</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Base MariaDB</td>
-                  <td class="num">Locate Read Erase Rectify</td>
-                  <td>Comptes, commandes, adresses, messages</td>
-                  <td class="num">03/02/2026</td>
-                  <td class="num">21/04/2026</td>
-                </tr>
-                <tr>
-                  <td>Journal applicatif</td>
-                  <td class="num">Locate Read</td>
-                  <td>Adresses électroniques, IP, horodatages</td>
-                  <td class="num">03/02/2026</td>
-                  <td class="num">21/04/2026</td>
-                </tr>
-                <tr>
-                  <td>Photos d'annonces</td>
-                  <td class="num">—</td>
-                  <td>Images téléversées par les vendeurs</td>
-                  <td class="num">03/02/2026</td>
-                  <td class="num">jamais</td>
-                </tr>
-                <tr>
-                  <td>Export mensuel · agence</td>
-                  <td class="num">—</td>
-                  <td>Noms, adresses postales, montants</td>
-                  <td class="num stale">14/11/2025</td>
-                  <td class="num">jamais</td>
-                </tr>
-                <tr>
-                  <td>Prestataire de paiement</td>
-                  <td class="num">—</td>
-                  <td>Références de transaction, 4 derniers chiffres</td>
-                  <td class="num">03/02/2026</td>
-                  <td class="num">jamais</td>
-                </tr>
-                <tr>
-                  <td>Comptabilité scellée</td>
-                  <td class="num">—</td>
-                  <td>Factures, conservation légale 10 ans</td>
-                  <td class="num">03/02/2026</td>
-                  <td class="num">jamais</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="verdict" style="border-left-color: var(--accent); background: var(--accent-soft);">
-            <h3 style="color: var(--accent)">Ce que C achète, et ce qu'il coûte</h3>
-            <ul>
-              <li>
-                <strong>Achète</strong> — la date en rouge. L'export chez l'agence a été déclaré
-                il y a cinq mois et n'a jamais été revérifié : c'est exactement le
-                vieillissement voulu, et c'est le seul écran qui le montre.
-              </li>
-              <li>
-                <strong>Achète</strong> — une réponse à la question laissée ouverte : une démarche
-                <code>Done</code> à zéro rattachement passe aujourd'hui sans rien, et six zéros
-                se lisent « cette personne n'est pas chez nous ». Le paysage déclaré est
-                l'endroit où cette lecture peut être contredite.
-              </li>
-              <li>
-                <strong>Coûte</strong> — un écran de plus pour un public qui n'est peut-être pas
-                Sophie. Celui qui déclare le <code>Manifest</code> manipule déjà de la
-                configuration versionnée ; une GUI la rendrait <em>moins</em> relisible en revue
-                de code, pas plus.
-              </li>
-            </ul>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="rule">
-
-  <!-- ══════════════ LA DÉCISION ══════════════ -->
-  <section class="decide">
-    <h2>Ce qu'il reste à trancher</h2>
-    <ol>
-      <li>
-        <strong>A, B ou C&nbsp;?</strong> — sachant que C n'est pas un rival de A mais un
-        ajout, et que B est la seule des trois qui contredise des décisions déjà prises.
-      </li>
-      <li>
-        <strong>Si C&nbsp;: qui le lit&nbsp;?</strong> Sophie, ou celui qui a posé
-        l'<code>Adapter</code>&nbsp;? Si c'est le second, la bonne surface est peut-être le
-        fichier de configuration qu'il édite déjà, pas un écran.
-      </li>
-      <li>
-        <strong>La tuile « 12 dossiers ouverts » de B est-elle interdite aussi&nbsp;?</strong>
-        Elle ne porte aucun jugement — c'est un dénombrement de dossiers, pas de systèmes.
-        Elle est le cas limite, et c'est là que la règle se teste.
-      </li>
-    </ol>
   </section>
 
 </div>
