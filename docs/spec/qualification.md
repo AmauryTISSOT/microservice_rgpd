@@ -27,7 +27,7 @@ Traitement effectif de la demande · authentification de l'application tierce ·
 
 ## 2. Vocabulaire et taxonomie
 
-> Tranché par [Fixer le vocabulaire du domaine de la qualification](https://github.com/AmauryTISSOT/microservice_rgpd/issues/5) · glossaire dans [`CONTEXT.md`](../../CONTEXT.md)
+> Tranché par [Fixer le vocabulaire du domaine de la qualification](https://github.com/AmauryTISSOT/microservice_rgpd/issues/5) · glossaire dans [`CONTEXT.md`](../contexts/qualification/CONTEXT.md)
 
 **Langue du code : anglais** pour tous les identifiants — types, membres, dossiers, noms de champs sur le fil. Le français reste dans les `Summary` Swagger, les libellés destinés à l'opérateur, les messages d'erreur, `CONTEXT.md` et ce document.
 

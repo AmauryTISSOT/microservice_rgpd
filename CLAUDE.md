@@ -12,4 +12,4 @@ Vocabulaire canonique par défaut : `needs-triage`, `needs-info`, `ready-for-age
 
 ### Domain docs
 
-Layout single-context : un `CONTEXT.md` et un dossier `docs/adr/` à la racine du dépôt. Voir `docs/agents/domain.md`.
+Layout **multi-contexte** : `CONTEXT-MAP.md` à la racine, un `CONTEXT.md` par contexte sous `docs/contexts/<contexte>/`, et `docs/adr/` pour les décisions de système. Il n'y a **pas** de `CONTEXT.md` à la racine. Voir `docs/agents/domain.md`.

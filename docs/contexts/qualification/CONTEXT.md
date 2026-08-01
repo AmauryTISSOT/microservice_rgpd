@@ -1,6 +1,8 @@
 # Qualification RGPD
 
-Ce service reçoit d'une application tierce un texte libre en français et le qualifie au regard des droits que le RGPD ouvre aux personnes concernées. Il rend une aide à la décision : un humain, côté application tierce, valide ou corrige le verdict.
+Ce contexte ne connaît que **l'instant du verdict**. Il reçoit d'une application tierce un texte libre en français et le qualifie au regard des droits que le RGPD ouvre aux personnes concernées. Un humain valide ou corrige le verdict — c'est l'`Aide à la décision`, définie une fois pour tout le dépôt dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
+
+La durée d'une demande — son instruction, son dossier, sa preuve — appartient à l'autre contexte, [Casework](../casework/CONTEXT.md), dont ce contexte est un fournisseur amont **optionnel**. Seul `DataSubjectRight` traverse la frontière.
 
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages, documentation d'API — sont en français.
 
@@ -17,7 +19,7 @@ Le verdict rendu sur un `RightsRequestText` : l'ensemble des droits que le texte
 _Avoid_ : classification, catégorisation, analyse, évaluation
 
 **DataSubjectRight** :
-La taxonomie fermée de sept valeurs dans laquelle une `Qualification` puise. Six sont des droits ouverts par le RGPD ; la septième dit qu'aucun d'eux n'a été reconnu.
+La taxonomie fermée de sept valeurs dans laquelle une `Qualification` puise. Six sont des droits ouverts par le RGPD ; la septième dit qu'aucun d'eux n'a été reconnu. ⚠️ Elle est le **noyau partagé** des deux contextes et n'appartient à aucun : son auteur est le RGPD, articles 15 à 21. On n'y touche pas depuis ce contexte seul — voir [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 _Avoid_ : catégorie, label, classe, type de demande
 
 ### Les sept valeurs de la taxonomie
@@ -88,12 +90,14 @@ _Avoid_ : validé, confirmé, certain
 L'état d'une `Qualification` rendue alors que le service n'était pas entier — un des deux moteurs n'ayant pas produit d'avis. Il recouvre deux situations que le contrat public ne distingue pas, le booléen `degraded` étant sa seule expression vers l'appelant : le LLM absent, auquel cas la `WitnessOpinion` tient lieu de `Qualification` et rien n'est justifié ; ou le lexique absent, auquel cas le verdict est normal mais sans contrôle. La `Trace d'audit` les distingue, elle, par la nullité de l'avis manquant. Ne couvre que la défaillance des moteurs : une base de données indisponible est une panne du service, pas un mode dégradé.
 _Avoid_ : mode secours, repli, fallback, panne partielle
 
-### Ce que le service ne fait pas
+### Les bornes de ce contexte
 
-**Aide à la décision** :
-La posture du service : il propose une `Qualification` sans jamais la trancher. La validation est le fait d'un humain, hors du service. Une erreur de qualification coûte donc peu, ce qui autorise à reconnaître plusieurs droits plutôt qu'à choisir.
-_Avoid_ : décision, arbitrage, verdict automatique
+**Erreur relue** :
+Le régime d'erreur de ce contexte. Toute `Qualification` passe sous les yeux d'un humain avant de produire le moindre effet, et le texte qui l'a produite est sous ses yeux en même temps : une erreur y est donc une ligne **fausse et visible**, et elle coûte peu. C'est ce qui autorise à reconnaître plusieurs droits plutôt qu'à choisir.
+_Avoid_ : erreur bénigne, faux positif, erreur rattrapable
+
+⚠️ Ce régime ne vaut **que dans ce contexte**. Le pendant de `Casework` est l'`Omission silencieuse`, où l'erreur est une ligne manquante que la relecture ne peut pas lever — et il commande l'exact inverse : ne jamais affirmer qu'on a tout couvert.
 
 **Trace d'audit** :
-Le seul écrit que le service conserve d'une qualification. Il n'existe aucune entité de demande instruite dans le temps : le service ne suit pas le traitement de la demande, seulement l'acte de l'avoir qualifiée.
+Le seul écrit que ce contexte conserve d'une qualification : l'acte de l'avoir qualifiée, et rien de plus. Il n'y a ici aucune entité de demande instruite dans le temps — c'est la matière de `Casework`, et un `Case` ne référence une qualification que par un identifiant opaque.
 _Avoid_ : historique, dossier, demande, log

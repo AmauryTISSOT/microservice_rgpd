@@ -5,7 +5,7 @@ tourner, et ce qu'il ne faut surtout pas supposer. Il se lit seul, sans avoir su
 
 La spec complète — avec le *pourquoi* de chaque décision — vit dans
 [`docs/spec/qualification.md`](../spec/qualification.md) ; le vocabulaire du domaine dans
-[`CONTEXT.md`](../../CONTEXT.md). Les deux s'adressent au mainteneur. Ce fichier-ci s'adresse à
+[`CONTEXT.md`](../contexts/qualification/CONTEXT.md). Les deux s'adressent au mainteneur. Ce fichier-ci s'adresse à
 l'appelant, sauf la section 7 qui s'adresse au mainteneur.
 
 ---
