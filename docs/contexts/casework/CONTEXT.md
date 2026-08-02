@@ -85,6 +85,11 @@ Ce qu'un `Adapter` sait faire sur un `DeclaredSystem` donné. Quatre valeurs —
 `Erase`, `Rectify` — dont les droits se composent, parce que le catalogue exige un grain plus fin
 que le droit. `Locate` est le plancher : sans lui, une affirmation n'a pas de dénominateur. Un
 système sans aucune `Capability` reste pleinement légitime : il est traité à la main.
+Un appel `Read` porte, en plus des `Designations`, le `DataSubjectRight` **au titre duquel** on lit —
+jamais la forme attendue. L'art. 20 a un périmètre matériel plus étroit que l'art. 15 et il se décide
+ligne par ligne : seule l'application peut le trancher, et elle tranche du même geste le périmètre et
+la forme. Imposer la forme depuis le service reviendrait à arbitrer la seule chose qu'il ne sait pas
+arbitrer, ayant renoncé au grain du champ.
 _Avoid_ : Operation (pris par l'art. 4.2), acte, verbe, diligence, permission
 
 **Adapter** :
@@ -140,6 +145,10 @@ La matière de preuve d'un `Case` : qui a déclaré quoi et quand, les motifs, l
 tentatives, le compte et la provenance des `Designation`. En **ajout seul**, daté et signé — la
 déclaration d'aujourd'hui ne réécrit pas la preuve d'hier. Il ne porte jamais de contenu : il dit
 « un fichier a été remis le 12/04 couvrant 2 systèmes sur 6 », jamais ce qu'il y avait dedans.
+⚠️ Ce dénombrement s'arrête au `Ledger` et ne descend **jamais** dans la `Delivery` : son lecteur est
+le contrôle, qui juge une pratique et pour qui « 2 sur 6 » est une mesure. Écrit à la personne, le
+même chiffre lui affirmerait que le client a exactement six systèmes — donnant à une déclaration qui
+vieillit exprès l'autorité d'un recensement, ce que l'`Omission silencieuse` interdit.
 Il est **anonyme par construction, jamais par expurgation** : on n'y écrit aucune `Designation` ni
 aucun nom de personne concernée, dès la première ligne. L'anonymiser à la clôture aurait exigé de le
 réécrire — dans la seule structure du dispositif dont l'invariant est qu'on ne la réécrit pas.
@@ -167,6 +176,17 @@ détruite sans réécrire le `Case`. **Effacée à la remise** — pas anonymis�
 dans le `Ledger`. Son séjour est inévitable, la lecture précédant l'effacement ; il doit être
 minimal, un service qui entreposerait les exports devenant la donnée la plus concentrée du système
 d'information de son client.
+Une pièce par `DeclaredSystem`, et le service **n'en ouvre jamais le corps** : c'est un flux d'octets,
+écrit dans le vocabulaire de l'application et non dans un vocabulaire commun — il n'en existe aucun
+sur le terrain, et en inventer un le ferait payer à chaque `Adapter`. Le grain du champ, fermé dans
+le `Manifest`, l'est donc aussi au retour. Le service n'en connaît que ce que le **transport** lui
+met dans la main — `Content-Type`, `Content-Disposition: filename=` — qu'il **recopie sans
+l'interpréter**, en ne gardant du nom que son dernier segment ; à défaut d'en-tête il retombe sur le
+`system_id`. Il en résulte qu'il **rassemble sans jamais fusionner** : les pièces se posent côte à
+côte, elles ne se concatènent pas.
+⚠️ Le service ne saura donc jamais qu'un `Adapter` a servi du PDF pour une portabilité, ni qu'il a
+ignoré le `DataSubjectRight` de l'appel. Faute réelle, silencieuse, imputable au client — même régime
+que le `Step` `Done` déclaré et jamais vérifié.
 _Avoid_ : PersonalData, SubjectData, Payload, Export, contenu
 
 **OpenQuestion** :
@@ -175,6 +195,43 @@ Une question datée qui attend une réponse, accrochée à ce qu'elle empêche r
 jamais** le délai de l'art. 12.3 et ne barre jamais la route à l'`Operator`.
 _Avoid_ : Blocker, Pending, Hold, Query, blocage ⚠️ le nom `Blocker` ferait dans son nom même la
 promesse inverse, et quelqu'un finirait par écrire le code qui bloque.
+
+### Ce qui est remis à la personne
+
+**Delivery** :
+Ce que le service tend à l'`Operator` au titre d'**un** `Claim` : la `CoverSheet` et les
+`RetrievedData` de ce `Claim`, rassemblées. Une par `Claim`, jamais une par `Case` — deux droits sont
+deux réponses, deux dates de remise, et le service ne sait de toute façon pas fusionner.
+La remise se fait en **deux gestes distincts** : télécharger, puis déclarer remis. Le service tend le
+paquet à l'`Operator`, **jamais à la personne** — il ne s'expose pas hors du réseau de son client et
+ne fait confiance à aucune coordonnée qu'il n'a pas vérifiée, l'`IdentityDeclaration` pouvant valoir
+`Unverified`. C'est le second geste, et lui seul, qui date la remise au `Ledger` et détruit les
+`RetrievedData` : **la remise est une affirmation, pas un transfert d'octets**, et confondre les deux
+ferait dater la preuve du moment où un fichier a quitté un serveur.
+⚠️ Le service ne prouvera donc **jamais** que la personne a reçu quoi que ce soit — greffier, pas
+témoin. ⚠️ Entre les deux gestes le paquet existe en deux exemplaires, dont l'un hors de portée pour
+toujours ; une `Delivery` téléchargée et non déclarée remise remonte dans la file de l'`Operator`,
+ligne présente vue tous les jours plutôt que ligne manquante.
+_Avoid_ : Export, Package, Response, Bundle, Download, envoi
+
+**CoverSheet** :
+La page que le service écrit lui-même dans chaque `Delivery`, seul texte du dossier dont il soit
+l'auteur. Elle range les `DeclaredSystem` du `Case` en **trois listes** : ceux dont une pièce est
+jointe ; ceux qui ont été interrogés **sans qu'aucun rattachement soit trouvé sous les `Designations`
+dont on dispose** ; ceux qui ne sont pas couverts, nommés un par un dans les mots du champ « contient »
+du `Manifest`. Elle se clôt en disant que cette liste est celle des systèmes **recensés**, et qu'elle
+ne garantit pas qu'il n'en existe pas d'autres.
+Elle **énumère et ne compte jamais** : pas de total, pas de ratio, pas de dénominateur — nommer
+« l'export commercial transmis chaque mois à notre agence » est actionnable pour la personne là où
+« 4 sur 6 » ne lui apprend rien et lui ment sur l'exhaustivité du recensement.
+La troisième liste ne fusionne pas avec la première : une pièce vide n'est pas une réponse. Et la
+deuxième ne dit jamais « vous n'avez rien chez nous » — un `Locate` ne distingue pas « cherché, aucun
+rattachement » de « désignation insuffisante », et la seule phrase vraie porte ce doute avec elle,
+invitant la personne à fournir d'autres `Designation`.
+Le service l'écrit **sans ouvrir une seule pièce** : le `Manifest` et les `Step` du `Case` lui
+suffisent, l'enveloppe du transport distinguant à elle seule la pièce absente, la pièce vide et la
+pièce pleine. L'incomplétude ne coûte donc rien à l'`Adapter`.
+_Avoid_ : Summary, Report, Notice, Manifest (le mot est pris), note (pris par la prose)
 
 ### Ce qui meurt à la clôture, et ce qui reste
 
