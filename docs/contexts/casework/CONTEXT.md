@@ -116,6 +116,11 @@ valeurs — `ApplicationSession`, `ChannelControl`, `OperatorAttested`, `Unverif
 la déclaration et n'en juge **jamais** la valeur ; il ne vérifie lui-même aucune identité.
 `Unverified` doit exister : sans la valeur laide, l'opérateur pressé coche la valeur propre et le
 service fabrique un faux au lieu d'enregistrer un vide.
+La motivation qu'exigent `Unverified` et `OperatorAttested` s'écrit en **deux morceaux** : une
+**méthode**, vocabulaire fermé qui se compte et qui survit à la clôture — « recoupement d'un attribut
+que le demandeur n'a pas reçu de nous », « reconnaissance personnelle », « rappel sur un contact
+déjà enregistré », « aucune » — et un **détail** en prose libre, irréductiblement nominatif, qui
+meurt avec le `Case`. Le contrôle juge ainsi la *pratique* sans qu'un seul nom lui survive.
 _Avoid_ : Authentication, Verification, TrustLevel, niveau de confiance
 
 ⚠️ Aucune pièce d'identité n'entre dans le service, tous canaux confondus. Le `Ledger` consigne le
@@ -133,11 +138,28 @@ _Avoid_ : Source, Channel, provenance
 **Ledger** :
 La matière de preuve d'un `Case` : qui a déclaré quoi et quand, les motifs, les constats, les
 tentatives, le compte et la provenance des `Designation`. En **ajout seul**, daté et signé — la
-déclaration d'aujourd'hui ne réécrit pas la preuve d'hier. Il survit à la clôture, anonymisé, et ne
-porte jamais de contenu : il dit « un fichier a été remis le 12/04 couvrant 2 systèmes sur 6 »,
-jamais ce qu'il y avait dedans.
+déclaration d'aujourd'hui ne réécrit pas la preuve d'hier. Il ne porte jamais de contenu : il dit
+« un fichier a été remis le 12/04 couvrant 2 systèmes sur 6 », jamais ce qu'il y avait dedans.
+Il est **anonyme par construction, jamais par expurgation** : on n'y écrit aucune `Designation` ni
+aucun nom de personne concernée, dès la première ligne. L'anonymiser à la clôture aurait exigé de le
+réécrire — dans la seule structure du dispositif dont l'invariant est qu'on ne la réécrit pas.
+⚠️ Il n'est anonyme que **côté personne concernée** : il nomme l'`Operator`, définitivement, parce
+que « par qui » est un tiers de ce que le service prouve. C'est donc un fichier de données
+personnelles sur les salariés du client, et son effacement leur est légitimement refusé.
 _Avoid_ : Register, Record, Journal, AuditTrail, History, registre ⚠️ « registre » désigne l'art. 30
 en RGPD, hors périmètre de ce service.
+
+**Prose de travail / prose de preuve** :
+Toute prose saisie par l'`Operator` tombe dans l'un des deux régimes, et c'est son **lecteur** qui
+les sépare, jamais son contenu. La **prose de travail** — réserve de `Locate`, `OpenQuestion` — est
+écrite pendant l'instruction, dit *quelle ligne appartient à qui*, et nomme donc par nature, souvent
+des tiers non demandeurs ; elle vit sur le `Case` et meurt à la clôture, le `Ledger` n'en gardant que
+le fait daté : « 1 réserve arbitrée le 12/04 ». La **prose de preuve** — motif d'un `Refused`, motif
+d'un `Abandoned`, constat de clôture — est écrite à un point de décision, dit *pourquoi on a décidé
+cela*, et n'est pas nominative par nature ; elle entre dans le `Ledger` et survit.
+La règle tient par le **placement** — deux champs à deux endroits, dont un seul survit — et non par
+la discipline d'un `Operator` à qui l'on demanderait de s'auto-censurer dans un champ unique.
+_Avoid_ : commentaire, note, annotation
 
 **RetrievedData** :
 Ce que les appels `Read` ont ramené des systèmes du client. Hors de l'agrégat : durée de vie propre,
@@ -153,6 +175,34 @@ Une question datée qui attend une réponse, accrochée à ce qu'elle empêche r
 jamais** le délai de l'art. 12.3 et ne barre jamais la route à l'`Operator`.
 _Avoid_ : Blocker, Pending, Hold, Query, blocage ⚠️ le nom `Blocker` ferait dans son nom même la
 promesse inverse, et quelqu'un finirait par écrire le code qui bloque.
+
+### Ce qui meurt à la clôture, et ce qui reste
+
+**La clôture détruit le nominatif à l'instant même.** Les `Designations`, le détail de
+l'`IdentityDeclaration`, le texte d'origine et toute la prose de travail disparaissent quand
+l'`Operator` clôt le `Case` — sans fenêtre de conservation, parce qu'aucun risque juridique ne
+demande le nominatif : la preuve d'une procédure est anonyme, et le service ne prouve jamais qu'un
+droit a été honoré. Un délai « au cas où » n'aurait entreposé que le sac de désignations de gens
+ayant demandé à disparaître.
+⚠️ Le geste est donc **irréversible**, seul du dispositif à l'être. Sa parade est un geste délibéré
+dans la surface de l'`Operator`, jamais de la donnée gardée en réserve.
+⚠️ Une personne qui demande l'effacement de son `Case` **encore ouvert** est servie par la clôture
+elle-même — `Abandoned`, et tout le nominatif tombe à l'instant. Il n'existe aucune fonction
+d'effacement de `Case` distincte. Le seul arbitrage réel se pose franchement à la personne :
+poursuivre l'instruction exige ses `Designations`, donc **poursuivre ou effacer, jamais les deux**.
+
+**Le `Ledger` vit cinq ans à compter de la clôture**, non configurable — la prescription civile de
+droit commun, seul horizon qui soit un vrai nombre du droit plutôt qu'une intuition : la preuve vit
+aussi longtemps que l'action qu'elle sert à défendre. Une durée réglable par client serait une case
+qui pourrit en silence, et de la donnée gardée trop longtemps ne fait aucun bruit. À échéance le
+`Ledger` est détruit **en entier** — pas de second étage d'anonymisation, qui rouvrirait
+l'expurgation que sa définition ferme.
+⚠️ Cette destruction n'est **jamais automatique**. Une minuterie remonte le `Ledger` échu dans la
+file de l'`Operator`, qui le détruit d'un geste signé : un `Ledger` expiré est ainsi une **ligne
+présente**, vue tous les jours, jamais une ligne manquante que nulle relecture ne lèverait.
+⚠️ Deux coûts assumés : un `Operator` inactif garde au-delà de cinq ans — visible, jamais barré — et
+la destruction ne laisse **aucune trace**, un `Ledger` détruit ne pouvant consigner sa propre
+destruction. On ne prouvera pas qu'on a purgé.
 
 ### Les acteurs, et leurs pouvoirs délibérément inégaux
 
