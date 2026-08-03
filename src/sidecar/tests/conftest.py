@@ -1,8 +1,12 @@
 """La configuration du moteur LLM, posée **avant** que quoi que ce soit n'importe le sidecar.
 
-Le sidecar refuse de démarrer sans configuration : c'est délibéré, et c'est ce qui garantit qu'aucun
-`base_url` ni nom de modèle ne survit en dur dans le code. La contrepartie est ici — la suite doit
-la fournir, et `conftest` est le seul endroit importé assez tôt pour cela.
+Le moteur LLM est **éteint par défaut** : la suite l'allume ici, parce que la quasi-totalité de ce
+qu'elle exerce est le sidecar qui sert un modèle. Le déploiement éteint, lui, se vérifie dans
+[`test_disabled_llm.py`](test_disabled_llm.py), qui redémarre l'application environnement vidé.
+
+Le sidecar allumé refuse de démarrer sans configuration : c'est délibéré, et c'est ce qui garantit
+qu'aucun `base_url` ni nom de modèle ne survit en dur dans le code. La contrepartie est ici — la
+suite doit la fournir, et `conftest` est le seul endroit importé assez tôt pour cela.
 
 Les valeurs sont volontairement **dépaysantes** : ni `qwen3:8b`, ni le port d'Ollama. Un test qui
 passerait avec les vraies valeurs de production sans les lire ne prouverait rien ; celui qui passe
@@ -14,6 +18,7 @@ besoin d'un modèle lui substituant le faux de [`upstream.py`](upstream.py).
 
 import os
 
+os.environ.setdefault("QUALIFICATION_LLM_ENABLED", "true")
 os.environ.setdefault("QUALIFICATION_LLM_BASE_URL", "http://modele-de-test.invalid/v1")
 os.environ.setdefault("QUALIFICATION_LLM_MODEL", "modele-de-test:0b")
 os.environ.setdefault("QUALIFICATION_LLM_API_KEY", "cle-inutilisee")
@@ -22,8 +27,9 @@ os.environ.setdefault("QUALIFICATION_LLM_SEED", "1789")
 os.environ.setdefault("QUALIFICATION_LLM_DEADLINE_SECONDS", "20")
 os.environ.setdefault("QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS", "30")
 
-# Importés *après* la configuration ci-dessus : `llm` la lit à l'import, et la suite serait sinon
-# la première à se heurter au refus de démarrer qu'elle est précisément là pour vérifier.
+# Importés *après* la configuration ci-dessus : bien que le moteur ne lise plus ses réglages à
+# l'import, les tests qui démarrent l'application allumée les exigent, et les poser ici est ce qui
+# garantit qu'ils y sont quel que soit l'ordre de collecte.
 import pytest  # noqa: E402
 
 from tests.upstream import FakeModel  # noqa: E402

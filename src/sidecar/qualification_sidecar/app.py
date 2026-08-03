@@ -15,6 +15,7 @@ subit.
 | `503` | — | l'amont est injoignable, ou son modèle n'est pas chargé |
 | `504` | — | l'échéance vers l'amont est passée : **la lenteur arrive nommée** |
 | `499` | — | l'appelant est parti : la génération a été interrompue, personne ne lit ce corps |
+| `501` | — | ce déploiement ne sert aucun modèle : le moteur y est éteint, et c'est un choix |
 
 Le `500` du lexique et le `502` du LLM disent la même chose du domaine — un moteur en panne — et
 diffèrent par le seul fait qui compte pour l'exploitant : **qui est à réparer**. Un bogue Python
@@ -29,7 +30,8 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import FastAPI, Request
@@ -52,14 +54,27 @@ API_VERSION = "1.0.0"
 
 logger = logging.getLogger("qualification_sidecar")
 
-#: La configuration du moteur LLM, lue **au démarrage**. Une variable absente empêche le sidecar de
-#: démarrer, comme le fait déjà une divergence de taxonomie : un moteur qui devine son amont ne rend
-#: pas des avis un peu faux, il en rend d'inexploitables.
-LLM_SETTINGS = llm.LlmSettings.from_environment(os.environ)
+#: L'amont réel, **pas encore construit**. Il ne l'est qu'au démarrage d'une application dont le
+#: moteur est allumé : importer ce module ne lit plus une seule des sept variables du moteur, ce qui
+#: est exactement ce qui permet à un déploiement sans modèle d'exister.
+#:
+#: Remplaçable en test — c'est le seul objet à écarter pour que la suite entière tourne sans GPU.
+LLM_MODEL: llm.StructuredModel | None = None
 
-#: L'amont réel. Remplaçable en test — c'est le seul objet à écarter pour que la suite entière
-#: tourne sans GPU.
-LLM_MODEL: llm.StructuredModel = llm.OpenAiCompatibleModel(LLM_SETTINGS)
+
+def llm_model() -> llm.StructuredModel:
+    """Rend l'amont, en le construisant au premier besoin s'il ne l'a pas déjà été.
+
+    Sa configuration est lue ici et nulle part ailleurs. Une variable absente empêche le sidecar de
+    servir le moteur, comme le fait déjà une divergence de taxonomie : un moteur qui devine son
+    amont ne rend pas des avis un peu faux, il en rend d'inexploitables.
+    """
+    global LLM_MODEL
+
+    if LLM_MODEL is None:
+        LLM_MODEL = llm.OpenAiCompatibleModel(llm.LlmSettings.from_environment(os.environ))
+
+    return LLM_MODEL
 
 
 def _not_blank(text: str) -> str:
@@ -87,10 +102,26 @@ class OpinionRequest(BaseModel):
     )
 
 
+@asynccontextmanager
+async def load_the_engine_that_is_served(application: FastAPI) -> AsyncIterator[None]:
+    """Lit la configuration du moteur LLM **au démarrage**, et seulement là où il est allumé.
+
+    Le report à ici plutôt qu'à l'import est ce qui laisse exister un déploiement sans modèle ; le
+    report jusqu'au premier appel, lui, n'aurait pas lieu d'être : allumer le moteur sans lui donner
+    son échéance doit rester une panne bruyante au démarrage, et non une panne de qualification
+    découverte par la première personne concernée.
+    """
+    if llm.engine_is_enabled(os.environ):
+        llm_model()
+
+    yield
+
+
 app = FastAPI(
     title="Sidecar de qualification RGPD",
     version=API_VERSION,
     description=__doc__,
+    lifespan=load_the_engine_that_is_served,
 )
 
 
@@ -160,9 +191,23 @@ async def llm_opinion(opinion: OpinionRequest, request: Request) -> ReasonedOpin
     Le modèle raisonne et justifie en français ; la traduction a lieu ici, juste avant de répondre,
     comme pour le lexique. La justification, elle, **reste en français** : c'est le seul texte du
     sidecar qu'un humain lira.
+
+    **Là où aucun modèle n'est servi, la route répond quand même** — un `501` qui le dit. Le
+    déploiement éteint est le cas par défaut, et l'exploitant qui interroge ce chemin à la main a
+    droit à une phrase.
     """
+    # Le drapeau est relu à chaque appel : il ne coûte qu'une lecture de dictionnaire, là où en
+    # garder une copie posée au démarrage ferait une seconde vérité à tenir en accord avec la
+    # première.
+    if not llm.engine_is_enabled(os.environ):
+        raise llm.EngineDisabled(
+            "Ce déploiement ne sert aucun modèle : le moteur LLM y est éteint, et le lexique rend "
+            "seul ses avis. L'allumer se fait par la variable "
+            f"{llm.ENABLED_SETTING} et les sept réglages du moteur."
+        )
+
     verdict = await departure.serve_until_the_caller_leaves(
-        request, llm.qualify(opinion.text, LLM_MODEL))
+        request, llm.qualify(opinion.text, llm_model()))
 
     # Sur ce chemin, toute panne de moteur est imputable à l'amont : la requalifier ici évite que
     # deux causes identiques — un slug hors taxonomie, une exclusivité violée — sortent tantôt en
@@ -187,7 +232,8 @@ async def llm_opinion(opinion: OpinionRequest, request: Request) -> ReasonedOpin
 
 @app.get("/health", summary="Dit si le sidecar est en état de rendre un avis.")
 def health() -> dict[str, str]:
-    """Le sidecar ayant vérifié sa taxonomie et sa configuration à l'import, être démarré suffit.
+    """Le sidecar ayant vérifié sa taxonomie à l'import et sa configuration au démarrage, être
+    démarré suffit.
 
     Rien n'est demandé à l'amont du LLM : une sonde qui l'interrogerait ferait déclarer le sidecar
     malade alors que son moteur lexical, lui, répond parfaitement.
@@ -302,6 +348,24 @@ async def caller_gone(request: Request, exception: CallerGone) -> JSONResponse:
     return _problem(
         status=499,
         title="L'appelant est parti avant la fin de la qualification",
+        detail=str(exception),
+    )
+
+
+@app.exception_handler(llm.EngineDisabled)
+async def engine_disabled(request: Request, exception: llm.EngineDisabled) -> JSONResponse:
+    """Aucun modèle n'est servi ici, et c'est un choix : `501`, dans la forme d'erreur commune.
+
+    Ni `404` — qui enverrait l'exploitant chercher une faute de frappe dans son URL —, ni `503` —
+    qui le ferait redémarrer un serveur de modèles qu'on n'a jamais voulu. `501` dit la seule chose
+    vraie : ce déploiement n'implémente pas ce moteur.
+
+    **Rien n'est journalisé au-delà de l'accès.** Un moteur éteint est délibéré, et un avertissement
+    de panne à chaque appel déclencherait les alertes de l'exploitant sur son propre choix.
+    """
+    return _problem(
+        status=501,
+        title="Ce déploiement ne sert aucun modèle",
         detail=str(exception),
     )
 

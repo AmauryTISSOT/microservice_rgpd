@@ -14,7 +14,7 @@ Le sidecar n'est pas là parce que le lexique aurait besoin de Python — il n'i
 | Verbe et chemin | Moteur | Codes |
 | --- | --- | --- |
 | `POST /opinions/lexicon` | le lexique déterministe, moteur **témoin** | `200`, `400`, `500` |
-| `POST /opinions/llm` | le LLM local, qui rend le **verdict** | `200`, `400`, `502`, `503`, `504` |
+| `POST /opinions/llm` | le LLM local, qui rend le **verdict** | `200`, `400`, `501`, `502`, `503`, `504` |
 | `GET /health` | — | `200` |
 
 ```jsonc
@@ -78,9 +78,10 @@ fait qui compte pour l'exploitant, *qui* est à réparer. Un bogue Python d'un c
 déraille de l'autre.
 
 **La lenteur doit arriver nommée.** L'échéance du sidecar vers l'amont est tenue *strictement plus
-courte* que celle de l'appelant .NET, et le sidecar **refuse de démarrer** si la configuration ne
-respecte pas cette inégalité : si l'appelant abandonnait le premier, il n'aurait qu'une échéance
-anonyme à rapporter, là où le sidecar sait dire lequel des trois échecs il a subi.
+courte* que celle de l'appelant .NET, et le sidecar **refuse de démarrer** — moteur allumé — si la
+configuration ne respecte pas cette inégalité : si l'appelant abandonnait le premier, il n'aurait
+qu'une échéance anonyme à rapporter, là où le sidecar sait dire lequel des trois échecs il a subi.
+Éteint, il n'y a plus d'échéance à vérifier, et la garde ne s'applique pas.
 
 > **Ce que cette garde vaut aujourd'hui, et ce qui lui manque.** Les deux échéances viennent d'une
 > même section de configuration de l'`AppHost` — `Llm:SidecarDeadlineSeconds` et
@@ -94,14 +95,53 @@ anonyme à rapporter, là où le sidecar sait dire lequel des trois échecs il a
 opération nulle : elle rendrait le même avis en payant une seconde fois un GPU que 8 Go de VRAM
 sérialisent déjà, et en dépassant l'échéance de l'appelant par-dessus le marché.
 
+### Un déploiement sans modèle est le cas par défaut
+
+Le moteur LLM **n'existe que là où on l'a écrit**. Éteint — c'est-à-dire tant que personne n'a posé
+`QUALIFICATION_LLM_ENABLED` —, le sidecar démarre sans une seule des sept variables du moteur, sert
+le lexique exactement comme d'habitude, et rend `501` sur `POST /opinions/llm` :
+
+```jsonc
+// 501 de /opinions/llm sur un déploiement sans modèle
+{
+  "type": "about:blank",
+  "title": "Ce déploiement ne sert aucun modèle",
+  "status": 501,
+  "detail": "Ce déploiement ne sert aucun modèle : le moteur LLM y est éteint, et le lexique rend seul ses avis. …"
+}
+```
+
+**La route est conservée plutôt que retirée.** Un `404` enverrait l'exploitant chercher une faute de
+frappe dans son URL, un `503` lui ferait redémarrer un serveur de modèles qu'on n'a jamais voulu.
+`501` dit la seule chose vraie : ce déploiement n'implémente pas ce moteur. Rien n'est journalisé en
+erreur — un moteur éteint est délibéré, et l'alerte se déclencherait sur le choix de l'exploitant.
+
+Ce défaut est un choix de **traitement**, pas de commodité : un déploiement qui ne dit rien ne
+soumet aucun texte de personne concernée à un modèle génératif. Allumer devient l'acte écrit.
+
+| Écriture | Effet |
+| --- | --- |
+| absente, vide, `false`, `0`, `no`, `off` | éteint — aucun réglage de moteur n'est lu |
+| `true`, `1`, `yes`, `on` | allumé — les sept variables ci-dessous sont exigées **au démarrage** |
+| toute autre valeur | refusée par son nom : un drapeau incompréhensible n'est pas un « éteint » |
+
+La casse est ignorée, et rien d'autre ne l'est.
+
 ### Configuration du moteur LLM
 
-Aucune valeur par défaut n'existe dans le code : **une variable absente empêche le sidecar de
-démarrer**, exactement comme une divergence de taxonomie. Un `base_url` deviné ne rend pas des avis
-un peu faux, il en rend d'inexploitables.
+Aucune valeur par défaut n'existe dans le code : **allumé, une variable absente empêche le sidecar
+de démarrer**, exactement comme une divergence de taxonomie. Un `base_url` deviné ne rend pas des
+avis un peu faux, il en rend d'inexploitables. La lecture a lieu au **démarrage de l'application**
+et non plus à l'import de son module — ce qui laisse exister le déploiement éteint sans rien
+concéder sur la panne bruyante : allumer le moteur sans lui donner son échéance échoue toujours au
+démarrage, jamais à la première personne concernée.
+
+Éteint, aucune de ces variables n'est lue — l'exploitant peut donc **les laisser écrites** pour
+rallumer plus tard, y compris avec une inégalité d'échéances que le démarrage allumé refuserait.
 
 | Variable | Rôle |
 | --- | --- |
+| `QUALIFICATION_LLM_ENABLED` | le drapeau ci-dessus — **`false` par défaut**, et le seul réglage du moteur qui en ait un |
 | `QUALIFICATION_LLM_BASE_URL` | l'adresse du serveur compatible OpenAI |
 | `QUALIFICATION_LLM_MODEL` | le nom du modèle demandé |
 | `QUALIFICATION_LLM_API_KEY` | ignorée par Ollama, exigée par le protocole |
@@ -141,10 +181,13 @@ uv run pytest                              # la suite complète
 uv run uvicorn qualification_sidecar.app:app --reload
 ```
 
-Le démarrage manuel exige les variables du moteur LLM ci-dessus — c'est le prix du refus des
-valeurs par défaut. Le plus court est de laisser Aspire les fournir ; sinon, sous PowerShell :
+Sans rien poser, le sidecar démarre **sans modèle** : le lexique répond, `/opinions/llm` rend son
+`501`, et aucun matériel n'est requis. Servir un modèle exige d'allumer le moteur *et* de lui donner
+ses sept réglages — c'est le prix du refus des valeurs par défaut. Le plus court est de laisser
+Aspire les fournir ; sinon, sous PowerShell :
 
 ```powershell
+$env:QUALIFICATION_LLM_ENABLED = "true"
 $env:QUALIFICATION_LLM_BASE_URL = "http://localhost:11434/v1"
 $env:QUALIFICATION_LLM_MODEL = "qwen3:8b"
 $env:QUALIFICATION_LLM_API_KEY = "ollama-ne-lit-pas-cette-cle"
@@ -188,6 +231,9 @@ moteur LLM exige de lui — une consigne, un texte, une réponse.
   ([`tests/witness/`](tests/witness/)).
 - La **configuration du moteur LLM** : chaque variable absente refusée par son nom, et l'inégalité
   stricte des deux échéances.
+- Le **déploiement sans modèle** : l'application redémarrée environnement vidé — sans
+  sous-processus —, son `501` nommé, son lexique intact, et le fait qu'aucun amont n'y est même
+  construit.
 - Ce que le sidecar **accepte du modèle** : tout ce qui n'est pas un avis complet — JSON malformé,
   droits vides, confiance hors échelle, justification absente — est une panne, jamais un avis faible.
 - La **traduction** des slugs français et des trois degrés de confiance vers les noms du fil, et le

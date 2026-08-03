@@ -61,6 +61,16 @@ if set(CANONICAL_CONFIDENCE_BY_SLUG) != set(CONFIDENCE_SLUGS):
 #: Le préfixe des variables d'environnement qui portent la configuration du moteur.
 SETTING_PREFIX: Final = "QUALIFICATION_LLM_"
 
+#: Le drapeau qui commande l'**existence** du moteur, et lui seul — les sept autres variables ne
+#: sont lues que là où il dit oui.
+ENABLED_SETTING: Final = SETTING_PREFIX + "ENABLED"
+
+#: Les deux façons de l'écrire. La casse est ignorée ; rien d'autre ne l'est.
+_WRITTEN_YES: Final = frozenset({"true", "1", "yes", "on"})
+_WRITTEN_NO: Final = frozenset({"false", "0", "no", "off", ""})
+
+
+
 
 class UnusableCompletion(EngineFailure):
     """L'amont a répondu, mais sa réponse n'est pas un avis : JSON illisible, valeur hors taxonomie,
@@ -92,9 +102,46 @@ class ModelTooSlow(RuntimeError):
 class MisconfiguredEngine(RuntimeError):
     """La configuration du moteur est absente ou incohérente : le sidecar refuse de démarrer.
 
-    Levée à l'import, jamais rattrapée pour servir un moteur qui parlerait à un amont deviné. Une
-    valeur par défaut cachée dans le code serait un chiffre en dur qui ne dit pas son nom.
+    Levée au démarrage de l'application — jamais au premier appel —, et jamais rattrapée pour servir
+    un moteur qui parlerait à un amont deviné. Une valeur par défaut cachée dans le code serait un
+    chiffre en dur qui ne dit pas son nom. Vaut aussi pour le drapeau lui-même : un moteur allumé
+    sans son échéance est une panne bruyante au démarrage, pas une panne de qualification plus tard.
     """
+
+
+class EngineDisabled(RuntimeError):
+    """Ce déploiement ne sert aucun modèle, et l'a décidé — ce n'est pas une panne.
+
+    Un déploiement qui ne dit rien est dans ce cas : le moteur est éteint par défaut, pour qu'aucun
+    texte de personne concernée ne parte vers un modèle génératif par simple effet de bord. Le point
+    d'entrée LLM reste servi et **nomme** ce refus, plutôt que de disparaître : un exploitant qui
+    l'interroge à la main doit obtenir une phrase, pas une énigme.
+    """
+
+
+def engine_is_enabled(environment: Mapping[str, str]) -> bool:
+    """Dit si ce déploiement sert un modèle. **Non tant que personne n'a écrit le contraire.**
+
+    C'est le seul réglage du moteur qui ait une valeur par défaut, et la seule qui puisse en avoir
+    une : ne pas servir de modèle est un comportement entier, là où un `base_url` deviné ne rendrait
+    que des avis inexploitables.
+
+    Un drapeau incompréhensible ne se replie pas sur « éteint » : le repli ferait passer une faute
+    de frappe pour une décision, et l'exploitant qui croit avoir allumé son moteur ne l'apprendrait
+    qu'au premier texte qualifié sans lui.
+    """
+    written = environment.get(ENABLED_SETTING, "").strip().lower()
+
+    if written in _WRITTEN_YES:
+        return True
+
+    if written in _WRITTEN_NO:
+        return False
+
+    raise MisconfiguredEngine(
+        f"La variable {ENABLED_SETTING} vaut « {written} », qui ne dit ni oui "
+        f"({', '.join(sorted(_WRITTEN_YES))}) ni non ({', '.join(sorted(_WRITTEN_NO - {''}))})."
+    )
 
 
 @dataclass(frozen=True, slots=True)
