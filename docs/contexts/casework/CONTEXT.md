@@ -141,6 +141,9 @@ _Avoid_ : Operation (pris par l'art. 4.2), acte, verbe, diligence, permission
 Le programme que l'application du client implémente et que le service appelle pour exercer une
 `Capability` sur ses `DeclaredSystem`. Le sens est **unique** : le service appelle toujours,
 l'application ne rappelle jamais.
+Son contrat est écrit dans [`docs/api/adapter.md`](../../api/adapter.md), **clause de périmètre
+comprise** : le contrat ne dit jamais « authentifiez-vous », il dit un secret partagé **et** un
+`Adapter` hors d'atteinte de l'extérieur — les deux ensemble, jamais l'un sans l'autre.
 _Avoid_ : Connector, Plugin, Integration, Webhook
 
 ### La personne, et comment on la désigne

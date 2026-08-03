@@ -52,6 +52,7 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
       SignatoryName = entry.Signatory.Name,
       IdentityDeclaration = entry.IdentityDeclaration?.Name,
       DesignationCount = entry.DesignationCount,
+      DeclaredSystem = entry.DeclaredSystem?.Value,
     };
   }
 }

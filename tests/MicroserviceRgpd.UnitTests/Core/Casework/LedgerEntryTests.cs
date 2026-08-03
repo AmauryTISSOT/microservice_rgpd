@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.Casework.Ledger;
 
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
@@ -38,6 +39,54 @@ public class LedgerEntryTests
     entry.OccurredAt.ShouldBe(Opened);
     entry.IdentityDeclaration.ShouldBe(IdentityDeclaration.ApplicationSession);
     entry.DesignationCount.ShouldBe(2);
+  }
+
+  /// <summary>
+  /// Un appel refusé laisse une <b>tentative datée</b>, et les deux refus gardent leur distinction
+  /// jusque dans la preuve : ils ne se réparent pas au même endroit, et un « appel refusé » unique
+  /// ferait chercher au mauvais endroit qui relira.
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(AdapterVerdict.SecretRefused), nameof(LedgerFact.AdapterRefusedTheSecret))]
+  [InlineData(nameof(AdapterVerdict.SystemNotServed), nameof(LedgerFact.AdapterDidNotServeTheSystem))]
+  public void WritesTheDatedAttemptOfARefusedCall(string verdict, string expected)
+  {
+    var caseId = CaseId.Next();
+
+    var entry = LedgerEntry.AdapterRefused(
+      caseId,
+      Opened,
+      DeclaredSystemId.From("boutique"),
+      AdapterVerdict.FromName(verdict));
+
+    entry.Case.ShouldBe(caseId);
+    entry.Fact.ShouldBe(LedgerFact.FromName(expected));
+    entry.OccurredAt.ShouldBe(Opened);
+    entry.DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
+
+    // Aucun humain n'a signé : un appel sortant n'est le geste de personne, et lui donner une
+    // signature d'Operator ferait porter à quelqu'un un refus qu'il n'a pas prononcé.
+    entry.Signatory.ShouldBe(Signatory.Application);
+
+    // Un refus n'a rien cherché : un zéro se lirait comme une recherche menée sous rien.
+    entry.DesignationCount.ShouldBeNull();
+    entry.IdentityDeclaration.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// Le <c>Ledger</c> ne consigne ici que des <b>refus</b>. Un appel servi ou différé n'a pas de
+  /// fait à lui : ce qu'il devient appartient au dossier, pas à la preuve du transport.
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(AdapterVerdict.Served))]
+  [InlineData(nameof(AdapterVerdict.Deferred))]
+  public void RefusesToWriteACallThatWasNotRefused(string verdict)
+  {
+    Should.Throw<ArgumentException>(() => LedgerEntry.AdapterRefused(
+      CaseId.Next(),
+      Opened,
+      DeclaredSystemId.From("boutique"),
+      AdapterVerdict.FromName(verdict)));
   }
 
   /// <summary>

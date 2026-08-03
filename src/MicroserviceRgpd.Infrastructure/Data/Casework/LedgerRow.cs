@@ -58,4 +58,11 @@ public sealed class LedgerRow
   /// meurt à la clôture.
   /// </summary>
   public int? DesignationCount { get; init; }
+
+  /// <summary>
+  /// Le <c>DeclaredSystem</c> que le fait concerne, quand il en concerne un. C'est un nom du
+  /// <b>paysage déclaré du client</b> — choisi par l'humain qui l'a recensé — et jamais un nom de
+  /// personne concernée.
+  /// </summary>
+  public string? DeclaredSystem { get; init; }
 }

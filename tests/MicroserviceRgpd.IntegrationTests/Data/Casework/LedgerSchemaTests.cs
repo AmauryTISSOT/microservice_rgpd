@@ -1,5 +1,6 @@
 ﻿using System.Data.Common;
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.Casework.Ledger;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
@@ -30,18 +31,24 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   private static readonly DateTimeOffset Opened = new(2026, 8, 3, 14, 30, 0, TimeSpan.Zero);
 
   /// <summary>
-  /// Huit colonnes, nommées une par une : ce qui n'a pas de colonne ne s'écrira pas. La liste est
+  /// Neuf colonnes, nommées une par une : ce qui n'a pas de colonne ne s'écrira pas. La liste est
   /// écrite en toutes lettres <b>pour que l'ajout d'une colonne soit un geste délibéré</b> — une
   /// colonne de prose libre glissée ici serait la porte par laquelle un nom finirait par passer.
+  /// <para>
+  /// La neuvième, <c>declared_system</c>, est arrivée avec les tentatives d'appel d'<c>Adapter</c> :
+  /// elle porte un nom du <b>paysage déclaré du client</b>, choisi par l'humain qui l'a recensé, et
+  /// jamais un nom de personne concernée.
+  /// </para>
   /// </summary>
   [Fact]
-  public async Task NamesEightColumnsAndNotOneMoreWhereANameCouldLand()
+  public async Task NamesNineColumnsAndNotOneMoreWhereANameCouldLand()
   {
     var columns = await ColumnsAsync();
 
     columns.Keys.Order().ShouldBe(
     [
       "case_id",
+      "declared_system",
       "designation_count",
       "entry_id",
       "fact",
@@ -50,6 +57,37 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       "signatory_kind",
       "signatory_name",
     ]);
+  }
+
+  /// <summary>
+  /// Une tentative d'appel refusée fait l'aller-retour : le fait qui dit lequel des deux refus
+  /// c'était, le système appelé, et <b>personne</b> comme signataire.
+  /// </summary>
+  [Fact]
+  public async Task AppendsTheDatedAttemptOfARefusedAdapterCall()
+  {
+    await using var dbContext = postgres.NewDbContext();
+
+    var refused = CaseId.Next();
+
+    await new Ledger(dbContext).AppendAsync(
+      LedgerEntry.AdapterRefused(
+        refused,
+        Opened,
+        DeclaredSystemId.From("boutique"),
+        AdapterVerdict.SecretRefused));
+
+    await using var reread = postgres.NewDbContext();
+
+    var line = await reread.Set<LedgerRow>()
+      .AsNoTracking()
+      .SingleAsync(row => row.CaseId == refused.Value);
+
+    line.Fact.ShouldBe("AdapterRefusedTheSecret");
+    line.DeclaredSystem.ShouldBe("boutique");
+    line.SignatoryKind.ShouldBe("Application");
+    line.SignatoryName.ShouldBeNull();
+    line.DesignationCount.ShouldBeNull();
   }
 
   /// <summary>
