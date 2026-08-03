@@ -40,6 +40,32 @@ def qualify(content, served_model="modele-servi:7b", text="Supprimez mes donnée
 
 
 # --------------------------------------------------------------------------
+# Le drapeau qui commande l'existence du moteur — éteint par défaut
+# --------------------------------------------------------------------------
+
+
+def test_the_engine_is_off_when_nothing_says_otherwise():
+    """Le défaut sûr prime : un déploiement muet ne soumet aucun texte à un modèle génératif."""
+    assert not llm.engine_is_enabled({})
+
+
+@pytest.mark.parametrize("written", ["true", "True", "TRUE", "1"])
+def test_lighting_the_engine_is_an_explicit_act(written):
+    assert llm.engine_is_enabled({llm.ENABLED_SETTING: written})
+
+
+@pytest.mark.parametrize("written", ["false", "False", "0", ""])
+def test_the_engine_is_off_when_the_flag_says_so(written):
+    assert not llm.engine_is_enabled({llm.ENABLED_SETTING: written})
+
+
+def test_a_flag_that_reads_as_neither_is_refused_by_name():
+    """Ni allumé ni éteint n'est pas un défaut : c'est une configuration que personne ne relira."""
+    with pytest.raises(llm.MisconfiguredEngine, match="ENABLED"):
+        llm.engine_is_enabled({llm.ENABLED_SETTING: "peut-être"})
+
+
+# --------------------------------------------------------------------------
 # Configuration — aucun chiffre en dur
 # --------------------------------------------------------------------------
 

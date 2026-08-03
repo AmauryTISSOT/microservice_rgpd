@@ -14,6 +14,11 @@ besoin d'un modèle lui substituant le faux de [`upstream.py`](upstream.py).
 
 import os
 
+# Le moteur LLM est éteint par défaut : la suite l'allume, faute de quoi tout ce qu'elle vérifie de
+# ce moteur se heurterait au refus nommé d'un déploiement sans modèle. Les tests du sidecar éteint
+# éteignent le drapeau chez eux, et eux seuls.
+os.environ.setdefault("QUALIFICATION_LLM_ENABLED", "true")
+
 os.environ.setdefault("QUALIFICATION_LLM_BASE_URL", "http://modele-de-test.invalid/v1")
 os.environ.setdefault("QUALIFICATION_LLM_MODEL", "modele-de-test:0b")
 os.environ.setdefault("QUALIFICATION_LLM_API_KEY", "cle-inutilisee")
@@ -22,8 +27,8 @@ os.environ.setdefault("QUALIFICATION_LLM_SEED", "1789")
 os.environ.setdefault("QUALIFICATION_LLM_DEADLINE_SECONDS", "20")
 os.environ.setdefault("QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS", "30")
 
-# Importés *après* la configuration ci-dessus : `llm` la lit à l'import, et la suite serait sinon
-# la première à se heurter au refus de démarrer qu'elle est précisément là pour vérifier.
+# Importés *après* la configuration ci-dessus : le moteur la lit à son premier usage, et un test
+# qui l'exercerait sans elle se heurterait au refus qu'elle est précisément là pour écarter.
 import pytest  # noqa: E402
 
 from tests.upstream import FakeModel  # noqa: E402
