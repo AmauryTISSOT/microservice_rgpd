@@ -31,7 +31,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
   /// l'incomplétude ne se voit pas.
   /// </summary>
   [Fact]
-  public async Task RoundTripsTheWholeDossierThroughItsRootAlone()
+  public async Task RoundTripsTheWholeCaseThroughItsRootAlone()
   {
     var opened = Open(
       [DataSubjectRight.Access, DataSubjectRight.Erasure],
@@ -153,7 +153,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
   /// dépôt générique est contraint aux agrégats racines, et eux n'en sont pas.
   /// </summary>
   [Fact]
-  public async Task ReadsTheDossierThroughTheOnlyRepositoryThisContextHas()
+  public async Task ReadsTheCaseThroughTheOnlyRepositoryThisContextHas()
   {
     var opened = Open(
       [DataSubjectRight.Access],

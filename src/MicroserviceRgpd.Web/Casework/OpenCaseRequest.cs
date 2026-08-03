@@ -35,7 +35,7 @@ public sealed record OpenCaseRequest
   /// qu'une clé de plus.
   /// </para>
   /// </summary>
-  public IReadOnlyList<DesignationPayload>? Designations { get; init; }
+  public IReadOnlyList<DeclaredDesignation>? Designations { get; init; }
 
   /// <summary>
   /// Les droits que cette demande exerce, sous leurs noms canoniques anglais.
@@ -61,4 +61,4 @@ public sealed record OpenCaseRequest
 /// exactitude — la personne n'a pas d'identifiant, et prétendre valider une désignation reviendrait
 /// à prétendre savoir qui elle est.
 /// </param>
-public sealed record DesignationPayload(string? Kind, string? Value);
+public sealed record DeclaredDesignation(string? Kind, string? Value);

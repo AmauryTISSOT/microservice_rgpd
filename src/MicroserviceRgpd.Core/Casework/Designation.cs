@@ -49,34 +49,19 @@ public sealed record Designation
   /// Prend une désignation, ou refuse. Le refus est une <b>programmation fautive</b> : la frontière
   /// d'entrée a déjà nommé à l'appelant ce qu'il avait mal rempli.
   /// </summary>
+  /// <remarks>
+  /// Une désignation vide ne pointe vers personne, et une recherche lancée sous elle rendrait un
+  /// zéro qu'on lirait « cette personne n'est pas chez nous ». Au-delà de ces trois exigences,
+  /// <b>rien n'est validé</b> — ni format, ni unicité, ni exactitude.
+  /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="kind"/> est absent.</exception>
   /// <exception cref="ArgumentException">La valeur est vide, démesurée, ou porte un caractère de contrôle.</exception>
   public static Designation Of(DesignationKind kind, string? value)
   {
     ArgumentNullException.ThrowIfNull(kind);
 
-    var trimmed = value?.Trim() ?? string.Empty;
-
-    if (trimmed.Length == 0)
-    {
-      // Une désignation vide ne pointe vers personne, et une recherche lancée sous elle rendrait
-      // un zéro qu'on lirait « cette personne n'est pas chez nous ».
-      throw new ArgumentException("La valeur de la désignation est absente ou vide.", nameof(value));
-    }
-
-    if (trimmed.Length > MaxValueLength)
-    {
-      throw new ArgumentException(
-        $"La valeur de la désignation dépasse {MaxValueLength} caractères.", nameof(value));
-    }
-
-    // Une désignation part sur le fil vers un Adapter : un caractère de contrôle n'y a rien à
-    // faire, et le service ne l'échappera pas pour lui.
-    if (trimmed.Any(char.IsControl))
-    {
-      throw new ArgumentException("La valeur de la désignation porte un caractère de contrôle.", nameof(value));
-    }
-
-    return new Designation(kind, trimmed);
+    return new Designation(
+      kind,
+      DeclaredText.OrThrow(value, "La valeur de la désignation", MaxValueLength, nameof(value)));
   }
 }

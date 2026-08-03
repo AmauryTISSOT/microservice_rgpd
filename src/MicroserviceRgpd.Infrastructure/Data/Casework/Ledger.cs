@@ -29,7 +29,9 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
   {
     ArgumentNullException.ThrowIfNull(entry);
 
-    dbContext.LedgerEntries.Add(RowOf(entry));
+    // `Set<T>()` plutôt qu'un `DbSet` du contexte : le contexte n'en expose aucun pour le Ledger,
+    // afin que `Remove` et `Update` ne soient à portée de personne.
+    dbContext.Set<LedgerRow>().Add(RowOf(entry));
 
     await dbContext.SaveChangesAsync(cancellationToken);
   }

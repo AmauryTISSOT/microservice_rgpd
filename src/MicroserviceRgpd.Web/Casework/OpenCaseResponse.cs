@@ -34,14 +34,14 @@ namespace MicroserviceRgpd.Web.Casework;
 /// Il est rendu parce qu'il est <b>déclaré par le canal</b> et non constaté : l'appelant doit
 /// pouvoir lire ce que le service a retenu de sa demande.
 /// </param>
-/// <param name="Claims">
+/// <param name="ClaimedRights">
 /// Les droits reconnus, sous leurs noms canoniques et dans l'ordre de la taxonomie. Un seul dossier
 /// les porte tous.
 /// </param>
 public sealed record OpenCaseResponse(
   Guid CaseId,
   DateTimeOffset ReceivedOn,
-  IReadOnlyCollection<DataSubjectRight> Claims)
+  IReadOnlyCollection<DataSubjectRight> ClaimedRights)
 {
   /// <summary>Projette sur le fil ce que le service a ouvert.</summary>
   public static OpenCaseResponse From(Case opened)

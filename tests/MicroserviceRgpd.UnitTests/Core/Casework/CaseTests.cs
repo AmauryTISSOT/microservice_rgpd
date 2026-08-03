@@ -52,7 +52,7 @@ public class CaseTests
   /// droits se relisent alors pareil, en base comme à l'écran.
   /// </summary>
   [Fact]
-  public void RangesTheClaimsInTheOrderOfTheTaxonomyRatherThanOfTheRequest()
+  public void RangesTheClaimsInTheOrderOfTheTaxonomyRatherThanOfWhatWasSent()
   {
     var opened = Open([DataSubjectRight.Objection, DataSubjectRight.Access, DataSubjectRight.Erasure]);
 

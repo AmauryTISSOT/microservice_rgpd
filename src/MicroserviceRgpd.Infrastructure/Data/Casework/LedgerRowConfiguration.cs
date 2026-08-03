@@ -23,13 +23,6 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// </remarks>
 public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
 {
-  /// <summary>
-  /// Le plafond d'une colonne portant le mot d'un <b>vocabulaire fermé</b> — un nom de membre,
-  /// jamais un texte. Il dit à la base ce qu'elle attend, et la fait cesser d'accepter ce que le
-  /// domaine n'écrira jamais.
-  /// </summary>
-  private const int ClosedVocabularyLength = 64;
-
   /// <inheritdoc />
   public void Configure(EntityTypeBuilder<LedgerRow> builder)
   {
@@ -48,12 +41,12 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
 
     builder.Property(row => row.Fact)
       .HasColumnName("fact")
-      .HasMaxLength(ClosedVocabularyLength)
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
       .IsRequired();
 
     builder.Property(row => row.SignatoryKind)
       .HasColumnName("signatory_kind")
-      .HasMaxLength(ClosedVocabularyLength)
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
       .IsRequired();
 
     // Le plafond du nom vit une seule fois, là où le domaine le déclare : deux constantes valant
@@ -64,7 +57,7 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
 
     builder.Property(row => row.IdentityDeclaration)
       .HasColumnName("identity_declaration")
-      .HasMaxLength(ClosedVocabularyLength);
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
 
     builder.Property(row => row.DesignationCount).HasColumnName("designation_count");
   }

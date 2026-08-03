@@ -53,28 +53,16 @@ public sealed record Signatory
   /// <summary>
   /// L'<c>Operator</c> qui signe, sous le nom qu'il a saisi.
   /// </summary>
+  /// <remarks>
+  /// Un opérateur anonyme n'existe pas : le geste qui produit une issue est toujours celui d'un
+  /// humain nommé, et une signature vide serait une preuve qui ne prouve rien. « Personne n'a
+  /// signé » s'écrit par <see cref="Application"/>, jamais par un nom laissé vide.
+  /// </remarks>
   /// <exception cref="ArgumentException">Le nom est absent, vide, démesuré, ou porte un caractère de contrôle.</exception>
   public static Signatory Operator(string? name)
   {
-    var trimmed = name?.Trim() ?? string.Empty;
-
-    if (trimmed.Length == 0)
-    {
-      // Un opérateur anonyme n'existe pas : le geste qui produit une issue est toujours celui d'un
-      // humain nommé, et une signature vide serait une preuve qui ne prouve rien.
-      throw new ArgumentException("Le nom du signataire est absent ou vide.", nameof(name));
-    }
-
-    if (trimmed.Length > MaxNameLength)
-    {
-      throw new ArgumentException($"Le nom du signataire dépasse {MaxNameLength} caractères.", nameof(name));
-    }
-
-    if (trimmed.Any(char.IsControl))
-    {
-      throw new ArgumentException("Le nom du signataire porte un caractère de contrôle.", nameof(name));
-    }
-
-    return new Signatory(SignatoryKind.Operator, trimmed);
+    return new Signatory(
+      SignatoryKind.Operator,
+      DeclaredText.OrThrow(name, "Le nom du signataire", MaxNameLength, nameof(name)));
   }
 }

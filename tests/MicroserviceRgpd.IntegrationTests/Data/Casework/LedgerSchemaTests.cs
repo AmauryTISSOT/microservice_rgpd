@@ -141,7 +141,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
     await using var reread = postgres.NewDbContext();
 
-    var lines = await reread.LedgerEntries
+    var lines = await reread.Set<LedgerRow>()
       .AsNoTracking()
       .Where(row => row.CaseId == first.Value || row.CaseId == second.Value)
       .ToListAsync();
@@ -178,6 +178,13 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
     // La ligne n'est jamais déclarée agrégat racine : le dépôt générique lui aurait rendu la mise à
     // jour et la suppression que la définition du Ledger ferme.
     typeof(LedgerRow).IsAssignableTo(typeof(IAggregateRoot)).ShouldBeFalse();
+
+    // Et le contexte n'expose aucun `DbSet` du Ledger : il en existe un pour la trace d'audit, qui
+    // n'a qu'un invariant d'écriture seule, mais un `DbSet` public rendrait ici `Remove` et
+    // `Update` à quiconque tient le contexte — c'est-à-dire à tout le service.
+    typeof(AppDbContext).GetProperties()
+      .Select(property => property.PropertyType)
+      .ShouldNotContain(typeof(DbSet<LedgerRow>));
   }
 
   /// <summary>

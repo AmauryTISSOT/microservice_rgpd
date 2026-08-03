@@ -138,7 +138,7 @@ public class OpenCaseHandlerTests
   /// l'art. 12.3 court, et un vestibule où elle attendrait le laisserait courir hors du service.
   /// </summary>
   [Fact]
-  public async Task OpensACaseForARequestThatClaimsNoRightYet()
+  public async Task OpensACaseThatClaimsNoRightYet()
   {
     TheManifestDeclares();
 

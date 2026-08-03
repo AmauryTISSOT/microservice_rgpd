@@ -28,11 +28,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// </summary>
   public DbSet<Case> Cases => Set<Case>();
 
-  /// <summary>
-  /// Le <c>Ledger</c>, en <b>ajout seul</b>. Ce <c>DbSet</c> est ce par quoi EF Core connaît la
-  /// table ; l'adaptateur qui l'alimente n'y lit rien, et aucune route n'expose ce qu'il contient.
-  /// </summary>
-  public DbSet<LedgerRow> LedgerEntries => Set<LedgerRow>();
+  // ⚠️ Aucun DbSet du Ledger, et c'est délibéré. Il en existe un pour la trace d'audit, qui n'a
+  // qu'un invariant d'écriture seule ; le Ledger, lui, promet qu'aucune opération de mise à jour ni
+  // de suppression ligne à ligne n'existe sur lui — et un DbSet public rendrait `Remove` et
+  // `Update` à quiconque tient ce contexte, c'est-à-dire à tout le service. EF Core connaît la
+  // table par sa configuration d'entité, qui suffit ; le seul chemin d'écriture est l'adaptateur
+  // du port `ILedger`, dont la seule méthode est un ajout.
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

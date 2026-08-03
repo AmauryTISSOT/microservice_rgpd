@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.Infrastructure.Data.Casework;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicroserviceRgpd.FunctionalTests.Casework;
@@ -94,7 +95,7 @@ public class CasesPost
   /// effacer » traverse les <c>Claim</c>, et aucune frontiere plus fine ne pourrait la tenir.
   /// </summary>
   [Fact]
-  public async Task OpensASingleCaseForARequestCarryingThreeRights()
+  public async Task OpensASingleCaseWhenThreeRightsAreSent()
   {
     var body = await OpenAsync(new
     {
@@ -103,7 +104,7 @@ public class CasesPost
     });
 
     // Les droits ressortent dans l ordre de la taxonomie, et non dans celui de la saisie.
-    body.GetProperty("claims").EnumerateArray().Select(right => right.GetString())
+    body.GetProperty("claimedRights").EnumerateArray().Select(right => right.GetString())
       .ShouldBe(["Access", "Erasure", "Portability"]);
 
     using var scope = _factory.Services.CreateScope();
@@ -138,7 +139,11 @@ public class CasesPost
     using var scope = _factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    var line = await dbContext.LedgerEntries.AsNoTracking().SingleAsync(row => row.CaseId == caseId);
+    // `Set<T>()` : le contexte n expose aucun `DbSet` du Ledger, pour que `Remove` et `Update` ne
+    // soient a portee de personne.
+    var line = await dbContext.Set<LedgerRow>()
+      .AsNoTracking()
+      .SingleAsync(row => row.CaseId == caseId);
 
     line.Fact.ShouldBe("CaseOpened");
     line.DesignationCount.ShouldBe(2);
@@ -177,7 +182,7 @@ public class CasesPost
   /// art. 12.3 court, et un vestibule ou elle attendrait le laisserait courir hors du service.
   /// </summary>
   [Fact]
-  public async Task OpensACaseForARequestThatClaimsNoRightYet()
+  public async Task OpensACaseThatClaimsNoRightYet()
   {
     var body = await OpenAsync(new
     {
@@ -185,7 +190,7 @@ public class CasesPost
       rights = Array.Empty<string>(),
     });
 
-    body.GetProperty("claims").GetArrayLength().ShouldBe(0);
+    body.GetProperty("claimedRights").GetArrayLength().ShouldBe(0);
     body.GetProperty("caseId").GetGuid().ShouldNotBe(Guid.Empty);
   }
 

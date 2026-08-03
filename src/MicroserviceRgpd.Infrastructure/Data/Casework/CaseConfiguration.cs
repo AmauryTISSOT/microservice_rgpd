@@ -29,13 +29,6 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// </remarks>
 public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
 {
-  /// <summary>
-  /// Le plafond d'une colonne portant le mot d'un <b>vocabulaire fermé</b> — un nom de membre,
-  /// jamais un texte. Il dit à la base ce qu'elle attend, et la fait cesser d'accepter ce que le
-  /// domaine n'écrira jamais.
-  /// </summary>
-  private const int ClosedVocabularyLength = 64;
-
   /// <inheritdoc />
   public void Configure(EntityTypeBuilder<Case> builder)
   {
@@ -53,7 +46,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
     // vocabulaire fermé que personne ne pense à tenir stable, et rendrait la table illisible.
     builder.Property(opened => opened.IdentityDeclaration)
       .HasColumnName("identity_declaration")
-      .HasMaxLength(ClosedVocabularyLength)
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
       .HasConversion(
         declaration => declaration.Name,
         name => IdentityDeclaration.FromName(name))
@@ -88,7 +81,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
 
       bag.Property(designation => designation.Kind)
         .HasColumnName("kind")
-        .HasMaxLength(ClosedVocabularyLength)
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
         .HasConversion(
           // Le mot du contrat d'Adapter, et non le nom du membre C# : la base n'introduit aucun
           // second vocabulaire, et le fil et la colonne disent le même mot.
@@ -118,7 +111,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
 
       claim.Property(one => one.Right)
         .HasColumnName("data_subject_right")
-        .HasMaxLength(ClosedVocabularyLength)
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
         .HasConversion(right => right.Name, name => DataSubjectRight.FromName(name));
 
       // Un droit au plus par dossier : la clé le dit, et la base le tient.
@@ -126,7 +119,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
 
       claim.Property(one => one.State)
         .HasColumnName("state")
-        .HasMaxLength(ClosedVocabularyLength)
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
         .HasConversion(state => state.Name, name => ClaimState.FromName(name))
         .IsRequired();
 
@@ -146,7 +139,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
 
         step.Property(one => one.State)
           .HasColumnName("state")
-          .HasMaxLength(ClosedVocabularyLength)
+          .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
           .HasConversion(state => state.Name, name => StepState.FromName(name))
           .IsRequired();
       });
