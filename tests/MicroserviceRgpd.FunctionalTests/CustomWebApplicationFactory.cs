@@ -15,10 +15,17 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   // Docker est requis : PostgreSQL est le seul provider supporte, il n existe plus de repli local.
   private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:18-alpine").Build();
 
+  /// <summary>Serialise la pose de la chaine de connexion et la construction de l hote qui la lit.</summary>
+  private static readonly Lock HostBuilds = new();
+
   /// <summary>
   /// Le moteur dont l avis fait verdict, substitue. La doublure se pose <b>sur le port du domaine</b>,
   /// et non sur le fil HTTP : aucun test .NET n appelle le sidecar reel, et aucun n approche un GPU.
   /// Un test qui exigerait un GPU ne tournerait jamais, et un test qui ne tourne jamais ment.
+  /// <para>
+  /// Elle n est pas posee dans un hote demarre LLM eteint : ce role y est laisse au cablage reel,
+  /// qui ne le pourvoit par rien. Voir <see cref="SubstitutesTheVerdictRole"/>.
+  /// </para>
   /// </summary>
   public QualificationEngineDouble Verdict { get; } = new(
     Core.Qualifications.DeclaredConfidence.High,
@@ -33,14 +40,14 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   /// </summary>
   public AuditTrailControl AuditTrail { get; } = new();
 
-  public async Task InitializeAsync()
-  {
-    await _dbContainer.StartAsync();
+  /// <summary>
+  /// Le role de verdict est-il substitue ? <b>Non</b> dans un hote demarre LLM eteint : le laisser
+  /// au cablage reel est la seule facon de prouver quelque chose du drapeau — une doublure posee
+  /// par-dessus ne prouverait que la presence de cette doublure.
+  /// </summary>
+  protected virtual bool SubstitutesTheVerdictRole => true;
 
-    // Le ConfigurationManager de Program est construit avant tout ConfigureAppConfiguration :
-    // la variable d environnement est le seul moyen de fournir la chaine assez tot.
-    Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _dbContainer.GetConnectionString());
-  }
+  public Task InitializeAsync() => _dbContainer.StartAsync();
 
   public new Task DisposeAsync() => _dbContainer.DisposeAsync().AsTask();
 
@@ -53,7 +60,21 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   protected override IHost CreateHost(IHostBuilder builder)
   {
     builder.UseEnvironment("Testing"); // will not send real emails
-    var host = builder.Build();
+
+    IHost host;
+
+    // Le ConfigurationManager de Program est construit ici meme, pendant Build : la variable d
+    // environnement est le seul moyen de fournir la chaine assez tot, et la poser juste avant est
+    // ce qui donne a chaque hote le conteneur de SA fabrique. Plusieurs fabriques coexistent — une
+    // par forme d hote demarree —, et le nom de la variable, lui, est global au processus : sans ce
+    // verrou, un hote batirait son contexte sur le conteneur d une autre fabrique.
+    lock (HostBuilds)
+    {
+      Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _dbContainer.GetConnectionString());
+
+      host = builder.Build();
+    }
+
     host.Start();
 
     // Get service provider.
@@ -85,20 +106,27 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   }
 
   /// <summary>
-  /// Les seules choses substituees sont les deux moteurs, chacun sous le role par lequel
-  /// l application le demande. Tout le reste est l application telle quelle : elle resout elle-meme
-  /// sa chaine de connexion depuis <c>ConnectionStrings:DefaultConnection</c>, exactement comme
-  /// hors tests.
+  /// Les seules choses substituees sont les moteurs, chacun sous le role par lequel l application
+  /// le demande. Tout le reste est l application telle quelle : elle resout elle-meme sa chaine de
+  /// connexion depuis <c>ConnectionStrings:DefaultConnection</c>, exactement comme hors tests.
+  /// <para>
+  /// Un hote demarre LLM eteint ne substitue que le temoin, et laisse le role de verdict au cablage
+  /// reel — qui ne le pourvoit alors par rien. Aucune doublure ne se pose sur le fil HTTP dans un
+  /// cas comme dans l autre : aucun test .NET n approche un modele.
+  /// </para>
   /// </summary>
   protected override void ConfigureWebHost(IWebHostBuilder builder)
   {
     builder.ConfigureTestServices(services =>
     {
-      services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Verdict);
       services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Witness);
-
-      services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Verdict, Verdict);
       services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Witness, Witness);
+
+      if (SubstitutesTheVerdictRole)
+      {
+        services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Verdict);
+        services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Verdict, Verdict);
+      }
 
       // L adaptateur reel reste au bout de la chaine : la surveillance n intercepte que pour lui
       // dicter une panne, jamais pour se substituer a l ecriture.

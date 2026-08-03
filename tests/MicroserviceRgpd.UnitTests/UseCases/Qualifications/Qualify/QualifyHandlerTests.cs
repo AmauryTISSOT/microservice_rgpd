@@ -22,6 +22,7 @@ public class QualifyHandlerTests
   private readonly IQualificationEngine _verdictEngine = Substitute.For<IQualificationEngine>();
   private readonly IQualificationEngine _witness = Substitute.For<IQualificationEngine>();
   private readonly RecordingAuditTrail _auditTrail = new();
+  private readonly RecordingLogger _logger = new();
 
   /// <summary>
   /// Le témoin est <b>détecteur, jamais contributeur</b> en marche nominale : les droits rendus sont
@@ -60,7 +61,7 @@ public class QualifyHandlerTests
     witness.AnswerOnce(principal.Called);
 
     var handling = new QualifyHandler(
-        principal, witness, _auditTrail, TimeProvider.System, NullLogger<QualifyHandler>.Instance)
+        witness, _auditTrail, TimeProvider.System, NullLogger<QualifyHandler>.Instance, principal)
       .Handle(new QualifyCommand(Text, null), CancellationToken.None)
       .AsTask();
 
@@ -102,6 +103,75 @@ public class QualifyHandlerTests
     outcome.ReviewSignal.ShouldBe(ReviewSignal.NeedsReview);
     outcome.Degraded.ShouldBeTrue();
     outcome.Justification.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Un rôle qui n'est pourvu par rien</b> — le service tourne sans moteur de verdict. Ce que le
+  /// handler apprend est qu'un rôle peut manquer, jamais qu'il s'agit d'un LLM : il ne l'interroge
+  /// pas, et son avis entre comme un avis manquant, la forme même qu'il produit déjà pour un moteur
+  /// muet. Le domaine ne reçoit aucune règle nouvelle, le repli existant fait tout le travail.
+  /// </summary>
+  [Fact]
+  public async Task FallsBackOnTheWitnessWhenNoEngineHoldsTheVerdictRole()
+  {
+    GiveTheWitness(DataSubjectRight.Erasure);
+
+    var outcome = await HandleAsync(HandlerWithoutAVerdictEngine());
+
+    outcome.Qualification.ShouldBe(Qualification.Of([DataSubjectRight.Erasure]));
+    outcome.ReviewSignal.ShouldBe(ReviewSignal.NeedsReview);
+    outcome.Degraded.ShouldBeTrue();
+    outcome.Justification.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Un choix délibéré n'est pas une panne.</b> Un rôle non pourvu ne fait journaliser aucun
+  /// avertissement : les alertes d'un exploitant ne doivent pas se déclencher sur une décision de
+  /// configuration. C'est la raison pour laquelle un moteur factice qui lèverait toujours a été
+  /// écarté.
+  /// </summary>
+  [Fact]
+  public async Task WarnsOfNoEngineFailureWhenTheVerdictRoleIsSimplyNotProvisioned()
+  {
+    GiveTheWitness(DataSubjectRight.Erasure);
+
+    await HandleAsync(HandlerWithoutAVerdictEngine());
+
+    _logger.Warnings.ShouldBeEmpty();
+  }
+
+  /// <summary>
+  /// La ligne d'audit d'un service sans moteur de verdict est celle d'un moteur tombé : avis nul,
+  /// latence nulle. Aucune colonne nouvelle ne les distingue, et la limite est assumée — dans un tel
+  /// déploiement, l'absence de LLM est un fait de déploiement, pas un fait de qualification.
+  /// </summary>
+  [Fact]
+  public async Task RecordsTheUnprovisionedVerdictRoleAsAMissingOpinionWithoutLatency()
+  {
+    GiveTheWitness(DataSubjectRight.Erasure);
+
+    await HandleAsync(HandlerWithoutAVerdictEngine());
+
+    var entry = _auditTrail.Entries.ShouldHaveSingleItem();
+    entry.VerdictOpinion.ShouldBeNull();
+    entry.VerdictLatency.ShouldBeNull();
+    entry.WitnessOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
+  }
+
+  /// <summary>
+  /// Rôle non pourvu <b>et</b> témoin muet : il ne reste rien à qualifier, et la panne du témoin est
+  /// la seule qu'il y ait à présenter.
+  /// </summary>
+  [Fact]
+  public async Task PresentsTheFailureOfTheWitnessWhenItIsSilentAndNoEngineHoldsTheVerdictRole()
+  {
+    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+
+    var failure = await Should.ThrowAsync<QualificationEngineFailure>(
+      () => HandleAsync(HandlerWithoutAVerdictEngine()));
+
+    failure.Message.ShouldContain("500");
+    _auditTrail.Entries.ShouldBeEmpty();
   }
 
   /// <summary>
@@ -348,12 +418,23 @@ public class QualifyHandlerTests
   private QualifyHandler Handler()
   {
     return new QualifyHandler(
-      _verdictEngine, _witness, _auditTrail, TimeProvider.System, NullLogger<QualifyHandler>.Instance);
+      _witness, _auditTrail, TimeProvider.System, _logger, _verdictEngine);
+  }
+
+  /// <summary>Le handler tel que le construit un service où le rôle de verdict n'est pourvu par rien.</summary>
+  private QualifyHandler HandlerWithoutAVerdictEngine()
+  {
+    return new QualifyHandler(_witness, _auditTrail, TimeProvider.System, _logger);
   }
 
   private async Task<QualificationOutcome> HandleAsync(string? callerReference = null)
   {
-    var result = await Handler().Handle(new QualifyCommand(Text, callerReference), CancellationToken.None);
+    return await HandleAsync(Handler(), callerReference);
+  }
+
+  private static async Task<QualificationOutcome> HandleAsync(QualifyHandler handler, string? callerReference = null)
+  {
+    var result = await handler.Handle(new QualifyCommand(Text, callerReference), CancellationToken.None);
 
     result.IsSuccess.ShouldBeTrue();
 
@@ -418,6 +499,33 @@ public class QualifyHandlerTests
       Entries.Add(entry);
 
       return Task.CompletedTask;
+    }
+  }
+
+  /// <summary>
+  /// Un journal réduit à la seule question qu'un test pose ici : le silence d'un moteur a-t-il fait
+  /// journaliser un avertissement ? Un rôle non pourvu ne doit en produire aucun.
+  /// </summary>
+  private sealed class RecordingLogger : ILogger<QualifyHandler>
+  {
+    /// <summary>Les avertissements émis, dans l'ordre. Vide dit qu'aucun moteur n'a été porté disparu.</summary>
+    public List<string> Warnings { get; } = [];
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+    public bool IsEnabled(LogLevel logLevel) => true;
+
+    public void Log<TState>(
+      LogLevel logLevel,
+      EventId eventId,
+      TState state,
+      Exception? exception,
+      Func<TState, Exception?, string> formatter)
+    {
+      if (logLevel >= LogLevel.Warning)
+      {
+        Warnings.Add(formatter(state, exception));
+      }
     }
   }
 

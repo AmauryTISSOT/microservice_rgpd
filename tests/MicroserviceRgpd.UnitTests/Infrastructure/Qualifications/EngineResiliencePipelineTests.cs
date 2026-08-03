@@ -170,7 +170,7 @@ public class EngineResiliencePipelineTests
   /// sur un chiffre codé en dur qui ferait exister deux vérités.
   /// </summary>
   [Theory]
-  [InlineData("Qualification:LlmDeadlineSeconds")]
+  [InlineData("Qualification:Llm:DeadlineSeconds")]
   [InlineData("Qualification:LexiconDeadlineSeconds")]
   public void RefusesToStartWithoutADeadline(string missing)
   {
@@ -189,7 +189,7 @@ public class EngineResiliencePipelineTests
   public void RefusesADeadlineThatIsNotAStrictlyPositiveDuration(string raw)
   {
     var settings = Settings(30, 5);
-    settings["Qualification:LlmDeadlineSeconds"] = raw;
+    settings["Qualification:Llm:DeadlineSeconds"] = raw;
 
     var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
 
@@ -209,7 +209,8 @@ public class EngineResiliencePipelineTests
     return new Dictionary<string, string?>
     {
       ["Qualification:SidecarBaseAddress"] = "http://qualification-sidecar",
-      ["Qualification:LlmDeadlineSeconds"] = llm.ToString(System.Globalization.CultureInfo.InvariantCulture),
+      ["Qualification:Llm:Enabled"] = "true",
+      ["Qualification:Llm:DeadlineSeconds"] = llm.ToString(System.Globalization.CultureInfo.InvariantCulture),
       ["Qualification:LexiconDeadlineSeconds"] = lexicon.ToString(System.Globalization.CultureInfo.InvariantCulture),
     };
   }

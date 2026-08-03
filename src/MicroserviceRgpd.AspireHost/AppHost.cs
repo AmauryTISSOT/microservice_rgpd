@@ -68,7 +68,9 @@ builder.AddProject<Projects.MicroserviceRgpd_Web>("web")
   // son appelant : les faire lire au même réglage est ce qui empêche les deux moitiés de l'inégalité
   // de diverger en silence. Le sidecar refuse de démarrer si l'ordre strict n'est pas tenu — encore
   // faut-il qu'il parle du chiffre réellement appliqué ici.
-  .WithEnvironment("Qualification__LlmDeadlineSeconds", RequiredSetting("Llm:CallerDeadlineSeconds"))
+  // Le nom de la clé suit la sous-section propre au moteur LLM côté service : ses réglages y sont
+  // regroupés pour qu'éteindre le moteur rende visiblement inertes les siens.
+  .WithEnvironment("Qualification__Llm__DeadlineSeconds", RequiredSetting("Llm:CallerDeadlineSeconds"))
   // Le lexique n'a aucun amont, donc aucune échéance imbriquée : la sienne ne répond qu'à une
   // propriété, ne jamais rallonger le temps de réponse du service.
   .WithEnvironment("Qualification__LexiconDeadlineSeconds", RequiredSetting("Qualification:LexiconDeadlineSeconds"))

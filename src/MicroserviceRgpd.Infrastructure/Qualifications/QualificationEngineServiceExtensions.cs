@@ -9,11 +9,36 @@ namespace MicroserviceRgpd.Infrastructure.Qualifications;
 /// </summary>
 public static class QualificationEngineServiceExtensions
 {
-  /// <summary>La section de configuration où vivent l'adresse du sidecar et les deux échéances.</summary>
+  /// <summary>La section de configuration où vivent l'adresse du sidecar et l'échéance du lexique.</summary>
   private const string Section = "Qualification";
 
   /// <summary>
-  /// Enregistre les deux moteurs. Ils sont déclarés <b>par le même port</b>, et distingués par leur
+  /// La sous-section propre au moteur LLM. Ses réglages y sont regroupés pour qu'éteindre le moteur
+  /// rende visiblement inertes <b>ses</b> réglages, plutôt que de laisser une échéance orpheline à
+  /// côté d'un booléen.
+  /// </summary>
+  private const string LlmSection = $"{Section}:Llm";
+
+  /// <summary>
+  /// Le drapeau qui commande l'existence du moteur LLM. <b>Absent, il vaut « éteint »</b>.
+  /// </summary>
+  public const string LlmEnabledKey = $"{LlmSection}:Enabled";
+
+  /// <summary>
+  /// L'échéance du client LLM, <b>lue seulement quand le moteur est allumé</b>. Publique parce que
+  /// l'AppHost la pose par variable d'environnement : deux noms tenus en accord de tête finiraient
+  /// par diverger en silence.
+  /// </summary>
+  public const string LlmDeadlineKey = $"{LlmSection}:DeadlineSeconds";
+
+  /// <summary>L'échéance du client lexical, requise dans tous les cas. Posée elle aussi par l'AppHost.</summary>
+  public const string LexiconDeadlineKey = $"{Section}:LexiconDeadlineSeconds";
+
+  /// <summary>L'adresse du sidecar qui héberge les deux moteurs, requise dans tous les cas.</summary>
+  public const string SidecarBaseAddressKey = $"{Section}:SidecarBaseAddress";
+
+  /// <summary>
+  /// Enregistre les moteurs. Ils sont déclarés <b>par le même port</b>, et distingués par leur
   /// <b>rôle</b> seul : le use case qui les consomme ne doit pouvoir apprendre ni qu'un sidecar
   /// Python existe, ni lequel des deux est un LLM.
   /// </summary>
@@ -27,6 +52,18 @@ public static class QualificationEngineServiceExtensions
   /// deux pipelines réglables séparément — ce dont l'un a besoin, une échéance longue, tuerait
   /// précisément ce qui fait l'intérêt de l'autre.
   /// </para>
+  /// <para>
+  /// <b>Le moteur LLM, lui, peut ne pas être là du tout</b>, et c'est le défaut. Éteint, le rôle
+  /// <c>Verdict</c> n'est pourvu par rien : ni client typé, ni pipeline, ni entrée clé. Ce qui n'est
+  /// pas branché n'existe pas, et rien n'a donc à décider de ne pas l'appeler — aucun appel ne part,
+  /// aucun avertissement de panne n'est journalisé. Un moteur factice qui lèverait toujours a été
+  /// écarté pour cette raison même, et le lexique sous les deux rôles parce qu'il se corroborerait
+  /// lui-même.
+  /// </para>
+  /// <para>
+  /// Le seul repli de toute la section est celui de ce drapeau, et il est délibéré : un déploiement
+  /// qui ne dit rien ne soumet jamais le texte d'une personne concernée à un modèle génératif.
+  /// </para>
   /// </remarks>
   public static IServiceCollection AddQualificationEngines(
     this IServiceCollection services,
@@ -34,32 +71,69 @@ public static class QualificationEngineServiceExtensions
   {
     ArgumentNullException.ThrowIfNull(configuration);
 
-    var sidecar = configuration[$"{Section}:SidecarBaseAddress"];
+    var sidecar = configuration[SidecarBaseAddressKey];
     Guard.Against.NullOrEmpty(sidecar, nameof(sidecar),
       "Aucune adresse de sidecar de qualification configuree : renseigner Qualification:SidecarBaseAddress.");
 
     var address = new Uri(sidecar, UriKind.Absolute);
 
-    // L'échéance du LLM doit rester strictement plus longue que celle du sidecar vers son amont —
-    // inégalité tenue en configuration, et vérifiée au démarrage par le sidecar, seul des deux à
-    // connaître les deux chiffres.
-    services.AddEngineClient<LlmQualificationEngine>(address, Deadline(configuration, "LlmDeadlineSeconds"));
-
-    // Franchement plus courte : c'est ce qui garantit que le témoin ne puisse jamais rallonger le
-    // temps de réponse du service. Au-delà, son avis est traité comme absent.
-    services.AddEngineClient<LexiconQualificationEngine>(address, Deadline(configuration, "LexiconDeadlineSeconds"));
-
-    // Les clients typés restent enregistrés sous leur classe concrète ; ce sont ces deux lignes, et
-    // elles seules, qui décident quel moteur tient quel rôle. Personne d'autre n'a à le savoir.
-    services.AddKeyedTransient<IQualificationEngine>(
-      QualificationEngineRole.Verdict,
-      (provider, _) => provider.GetRequiredService<LlmQualificationEngine>());
+    // Requis même LLM éteint : le lexique vit dans ce même sidecar, et éteindre le moteur génératif
+    // ne retire pas cette dépendance. Échéance franchement plus courte que celle du LLM, ce qui
+    // garantit que le témoin ne puisse jamais rallonger le temps de réponse du service. Au-delà, son
+    // avis est traité comme absent.
+    services.AddEngineClient<LexiconQualificationEngine>(address, Deadline(configuration, LexiconDeadlineKey));
 
     services.AddKeyedTransient<IQualificationEngine>(
       QualificationEngineRole.Witness,
       (provider, _) => provider.GetRequiredService<LexiconQualificationEngine>());
 
+    if (!LlmIsOn(configuration))
+    {
+      return services;
+    }
+
+    // L'échéance du LLM doit rester strictement plus longue que celle du sidecar vers son amont —
+    // inégalité tenue en configuration, et vérifiée au démarrage par le sidecar, seul des deux à
+    // connaître les deux chiffres. Elle n'est lue qu'ici, donc seulement moteur allumé : laissée
+    // derrière par un moteur éteint, elle est ignorée sans bruit, et rallumer ne demande pas de
+    // recomposer ses réglages.
+    services.AddEngineClient<LlmQualificationEngine>(address, Deadline(configuration, LlmDeadlineKey));
+
+    // Le client typé reste enregistré sous sa classe concrète ; c'est cette ligne-ci, et elle seule,
+    // qui décide quel moteur tient le rôle de verdict. Personne d'autre n'a à le savoir.
+    services.AddKeyedTransient<IQualificationEngine>(
+      QualificationEngineRole.Verdict,
+      (provider, _) => provider.GetRequiredService<LlmQualificationEngine>());
+
     return services;
+  }
+
+  /// <summary>
+  /// Dit si le moteur LLM existe. <b>Absent de la configuration, il n'existe pas</b> — seule clé de
+  /// la section à disposer d'un repli, et le repli est le choix sûr.
+  /// </summary>
+  /// <remarks>
+  /// Une valeur qui n'est ni « true » ni « false » arrête le démarrage plutôt que d'éteindre : lue
+  /// comme un « non », elle ferait passer une faute de frappe pour une décision, et c'est
+  /// précisément ce qu'aucune trace ne rattraperait ensuite.
+  /// </remarks>
+  private static bool LlmIsOn(IConfiguration configuration)
+  {
+    var raw = configuration[LlmEnabledKey];
+
+    if (string.IsNullOrEmpty(raw))
+    {
+      return false;
+    }
+
+    if (!bool.TryParse(raw, out var enabled))
+    {
+      throw new ArgumentException(
+        $"Le reglage {LlmEnabledKey} vaut « {raw} », qui n'est ni « true » ni « false ».",
+        LlmEnabledKey);
+    }
+
+    return enabled;
   }
 
   /// <summary>
@@ -121,15 +195,15 @@ public static class QualificationEngineServiceExtensions
   /// <summary>Lit une échéance, ou refuse — une valeur absente n'est pas une valeur par défaut.</summary>
   private static TimeSpan Deadline(IConfiguration configuration, string key)
   {
-    var raw = configuration[$"{Section}:{key}"];
+    var raw = configuration[key];
 
     Guard.Against.NullOrEmpty(raw, key,
-      $"Aucune echeance de moteur configuree : renseigner {Section}:{key}.");
+      $"Aucune echeance de moteur configuree : renseigner {key}.");
 
     if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || seconds <= 0)
     {
       throw new ArgumentException(
-        $"Le reglage {Section}:{key} vaut « {raw} », qui n'est pas une duree en secondes strictement positive.",
+        $"Le reglage {key} vaut « {raw} », qui n'est pas une duree en secondes strictement positive.",
         key);
     }
 
