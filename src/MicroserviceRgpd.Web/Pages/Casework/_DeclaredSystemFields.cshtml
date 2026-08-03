@@ -1,0 +1,63 @@
+@model DeclaredSystemForm
+@*
+  Les quatre champs déclarables d'un système, et rien d'autre. Il n'y a **aucune case pour un
+  secret d'Adapter**, et **aucune case pour un nom de table, de colonne ou de champ** : le
+  formulaire est le seul endroit où quelqu'un aurait l'occasion d'en écrire un, et ne pas lui
+  offrir la case est ce qui ferme la porte.
+*@
+<p>
+  <label for="label">
+    Libellé
+    <span class="hint">Le nom sous lequel vous reconnaissez ce système dans votre propre maison.</span>
+  </label>
+  <input type="text" id="label" name="Form.Label" value="@Model.Label" maxlength="@SystemLabel.MaxLength" />
+</p>
+
+<p>
+  <label for="contents">
+    Contient
+    <span class="hint">
+      En vos propres mots, et en français. Ce sont ces mots-là qui nommeront ce système à la
+      personne concernée si rien n'a pu y être fait — écrivez ce qu'elle comprendrait, jamais un
+      nom de table.
+    </span>
+  </label>
+  <textarea id="contents" name="Form.Contents" rows="4" maxlength="@SystemContents.MaxLength">@Model.Contents</textarea>
+</p>
+
+<fieldset>
+  <legend>
+    Capacités
+    <span class="hint">
+      Ce que l'Adapter sait faire ici. <strong>N'en cocher aucune est une réponse normale</strong> :
+      le système est alors traité à la main, et il entre quand même au dossier. « Localiser » est le
+      plancher : sans lui, ce qu'on affirmera de ce système n'aura pas de dénominateur.
+    </span>
+  </legend>
+  @foreach (var capability in Capability.List)
+  {
+    <label for="capability-@capability.Name">
+      <input type="checkbox"
+             id="capability-@capability.Name"
+             name="Form.Capabilities"
+             value="@capability.Name"
+             checked="@Model.Capabilities.Contains(capability.Name)" />
+      @capability.FrenchLabel
+    </label>
+  }
+</fieldset>
+
+<p>
+  <label for="adapter-address">
+    Adresse de l'Adapter
+    <span class="hint">
+      À laisser vide s'il n'y en a pas — c'est le cas le plus courant. Aucun secret d'appel ne se
+      saisit ici : le catalogue n'en détient aucun.
+    </span>
+  </label>
+  <input type="url"
+         id="adapter-address"
+         name="Form.AdapterAddress"
+         value="@Model.AdapterAddress"
+         maxlength="@AdapterAddress.MaxLength" />
+</p>

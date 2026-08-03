@@ -1,0 +1,104 @@
+@page "/manifest"
+@model ManifestModel
+@using System.Globalization
+@{
+  ViewData["Title"] = "Le paysage déclaré";
+}
+
+<h1>Le paysage déclaré</h1>
+
+@*
+  La phrase est obligatoire et elle ne s'abrège pas : le service ne présente **jamais** un
+  recensement comme complet. Omettre un système est une infraction que rien ne signale — elle ne
+  produit pas une ligne fausse, elle produit une ligne manquante.
+*@
+<p class="caveat">
+  Ce catalogue est déclaré à la main. Il recense les systèmes qu'un humain y a écrits, et
+  <strong>ne garantit pas qu'il n'en existe pas d'autres</strong>.
+  @if (Model.Manifest.OldestDeclaration is { } oldest)
+  {
+    <text>
+      Sa déclaration la plus ancienne date du
+      @oldest.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).
+    </text>
+  }
+</p>
+
+<h2>Les systèmes recensés</h2>
+
+@if (Model.Manifest.Systems.Count == 0)
+{
+  @* Un catalogue vide est l'état d'un service qu'on vient d'installer, et il se dit comme tel. *@
+  <p class="none">Aucun système n'est déclaré. Tant qu'il en reste un dehors, il ne sera nommé nulle part.</p>
+}
+
+@foreach (var system in Model.Manifest.Systems)
+{
+  <div class="system">
+    <h3>@system.Label.Value</h3>
+    <dl>
+      <dt>Identifiant</dt>
+      <dd>@system.Id.Value</dd>
+
+      <dt>Contient</dt>
+      <dd>@system.Contents.Value</dd>
+
+      <dt>Capacités</dt>
+      <dd>
+        @if (system.Capabilities.Count == 0)
+        {
+          <span class="none">aucune — ce système est traité à la main</span>
+        }
+        else
+        {
+          @string.Join(", ", system.Capabilities.Select(capability => capability.FrenchLabel))
+        }
+      </dd>
+
+      <dt>Adapter</dt>
+      <dd>
+        @if (system.AdapterAddress is { } address)
+        {
+          @address.Value
+        }
+        else
+        {
+          <span class="none">aucun</span>
+        }
+      </dd>
+
+      <dt>Déclaré le</dt>
+      <dd>@system.DeclaredOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</dd>
+    </dl>
+    <p><a asp-page="ManifestRevise" asp-route-id="@system.Id.Value">Reprendre cette déclaration</a></p>
+  </div>
+}
+
+<h2>Déclarer un système</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+  <div class="refusals">
+    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+    {
+      <p class="refusal">@refusal.ErrorMessage</p>
+    }
+  </div>
+}
+
+<form method="post">
+  <p>
+    <label for="id">
+      Identifiant
+      <span class="hint">
+        Celui que votre Adapter recevra, et qui ne changera plus. Minuscules, chiffres, tirets,
+        points et tirets bas.
+      </span>
+    </label>
+    <input type="text" id="id" name="Form.Id" value="@Model.Form.Id" maxlength="@DeclaredSystemId.MaxLength" />
+  </p>
+
+  <partial name="_DeclaredSystemFields" model="Model.Form" />
+
+  <button type="submit">Déclarer ce système</button>
+</form>

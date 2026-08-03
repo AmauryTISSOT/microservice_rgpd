@@ -63,6 +63,22 @@ public class ContextInspectorTests
   }
 
   /// <summary>
+  /// Un appel générique — <c>Select&lt;T, R&gt;</c> — se lit <b>sans faire tomber l'inspecteur</b>.
+  /// C'est la panne qu'a produite la première ligne de <c>Casework</c> : la surcharge qui déballe
+  /// une opérande se rappelait elle-même sans fin sur un <c>GenericInstanceMethod</c>, et le garde
+  /// mourait par débordement de pile — c'est-à-dire ni en rouge ni en vert, la seule couleur qu'un
+  /// garde n'a pas le droit d'avoir.
+  /// </summary>
+  [Fact]
+  public void ReadsAGenericCallWithoutFallingOverInsteadOfShowingRedOrGreen()
+  {
+    var crossings = Crossings();
+
+    crossings.ShouldNotContain(
+      crossing => crossing.SourceType == typeof(AHandlerThatCallsAGenericMethod).FullName);
+  }
+
+  /// <summary>
   /// La règle est orientée : <c>Qualification</c> n'a pas le droit d'atteindre <c>Casework</c> non
   /// plus, mais ce n'est pas cette règle-ci, et un inspecteur qui confondrait les deux sens
   /// dénoncerait des dépendances légitimes le jour où l'autre sens s'ouvrirait.
