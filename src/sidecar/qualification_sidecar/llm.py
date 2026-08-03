@@ -70,8 +70,6 @@ _WRITTEN_YES: Final = frozenset({"true", "1", "yes", "on"})
 _WRITTEN_NO: Final = frozenset({"false", "0", "no", "off", ""})
 
 
-
-
 class UnusableCompletion(EngineFailure):
     """L'amont a répondu, mais sa réponse n'est pas un avis : JSON illisible, valeur hors taxonomie,
     exclusivité violée.
@@ -102,10 +100,10 @@ class ModelTooSlow(RuntimeError):
 class MisconfiguredEngine(RuntimeError):
     """La configuration du moteur est absente ou incohérente : le sidecar refuse de démarrer.
 
-    Levée au démarrage de l'application — jamais au premier appel —, et jamais rattrapée pour servir
-    un moteur qui parlerait à un amont deviné. Une valeur par défaut cachée dans le code serait un
-    chiffre en dur qui ne dit pas son nom. Vaut aussi pour le drapeau lui-même : un moteur allumé
-    sans son échéance est une panne bruyante au démarrage, pas une panne de qualification plus tard.
+    Une application dont le moteur est allumé la lève **au démarrage**, et non au premier appel :
+    c'est là que ses réglages sont lus. Elle n'est jamais rattrapée pour servir un moteur qui
+    parlerait à un amont deviné — une valeur par défaut cachée dans le code serait un chiffre en dur
+    qui ne dit pas son nom.
     """
 
 
@@ -130,7 +128,8 @@ def engine_is_enabled(environment: Mapping[str, str]) -> bool:
     de frappe pour une décision, et l'exploitant qui croit avoir allumé son moteur ne l'apprendrait
     qu'au premier texte qualifié sans lui.
     """
-    written = environment.get(ENABLED_SETTING, "").strip().lower()
+    raw = environment.get(ENABLED_SETTING, "")
+    written = raw.strip().lower()
 
     if written in _WRITTEN_YES:
         return True
@@ -138,8 +137,10 @@ def engine_is_enabled(environment: Mapping[str, str]) -> bool:
     if written in _WRITTEN_NO:
         return False
 
+    # La valeur est citée telle que l'exploitant l'a écrite, casse comprise : c'est celle qu'il
+    # relira dans sa configuration, et non celle que ce code s'est fabriquée pour comparer.
     raise MisconfiguredEngine(
-        f"La variable {ENABLED_SETTING} vaut « {written} », qui ne dit ni oui "
+        f"La variable {ENABLED_SETTING} vaut « {raw} », qui ne dit ni oui "
         f"({', '.join(sorted(_WRITTEN_YES))}) ni non ({', '.join(sorted(_WRITTEN_NO - {''}))})."
     )
 

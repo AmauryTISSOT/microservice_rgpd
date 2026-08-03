@@ -103,7 +103,7 @@ class OpinionRequest(BaseModel):
 
 
 @asynccontextmanager
-async def load_the_engine_that_is_served(application: FastAPI) -> AsyncIterator[None]:
+async def load_the_engine_where_one_is_served(application: FastAPI) -> AsyncIterator[None]:
     """Lit la configuration du moteur LLM **au démarrage**, et seulement là où il est allumé.
 
     Le report à ici plutôt qu'à l'import est ce qui laisse exister un déploiement sans modèle ; le
@@ -121,7 +121,7 @@ app = FastAPI(
     title="Sidecar de qualification RGPD",
     version=API_VERSION,
     description=__doc__,
-    lifespan=load_the_engine_that_is_served,
+    lifespan=load_the_engine_where_one_is_served,
 )
 
 
@@ -348,6 +348,28 @@ async def caller_gone(request: Request, exception: CallerGone) -> JSONResponse:
     return _problem(
         status=499,
         title="L'appelant est parti avant la fin de la qualification",
+        detail=str(exception),
+    )
+
+
+@app.exception_handler(llm.MisconfiguredEngine)
+async def misconfigured_engine(request: Request, exception: llm.MisconfiguredEngine) -> JSONResponse:
+    """Une configuration illisible croisée en servant : rare, mais elle sort dans la forme commune.
+
+    Le démarrage l'a normalement déjà refusée, bruyamment. Elle ne peut reparaître ici que si
+    l'environnement a changé sous les pieds du processus — et alors le sidecar est bien le fautif :
+    il tourne avec des réglages qu'il ne sait plus lire. D'où `500`, comme le moteur en panne, et
+    surtout pas la page d'erreur nue que l'absence de gestionnaire produirait.
+    """
+    logger.error(
+        "La configuration du moteur LLM est illisible : %s",
+        exception,
+        extra={"traceparent": request.headers.get("traceparent")},
+    )
+
+    return _problem(
+        status=500,
+        title="Le moteur LLM est mal configuré",
         detail=str(exception),
     )
 

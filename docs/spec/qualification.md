@@ -301,6 +301,7 @@ Le schéma JSON ne peut pas tout exprimer : **l'exclusivité d'`OutOfScope` n'es
 | --- | --- |
 | `200` | avis valide |
 | `400` | requête malformée — texte absent ou vide |
+| `501` | ce déploiement ne sert **aucun** modèle : le moteur LLM y est éteint, et c'est un choix — le cas par défaut |
 | `502` | Ollama a répondu mais inexploitable : JSON illisible, valeur hors taxonomie, exclusivité violée |
 | `503` | Ollama injoignable ou modèle non chargé |
 | `504` | Ollama a dépassé le délai interne du sidecar |

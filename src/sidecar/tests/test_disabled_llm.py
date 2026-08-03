@@ -101,9 +101,12 @@ def test_a_flag_that_says_neither_yes_nor_no_is_refused_by_its_name():
 
 
 def test_the_application_starts_without_a_single_llm_setting(monkeypatch):
+    """Le `with` n'est pas décoratif : c'est lui qui fait courir le démarrage de l'application, et
+    donc lui qui met à l'épreuve ce que ce démarrage lit."""
     started = start_afresh(monkeypatch)
 
-    assert TestClient(started.app).get("/health").status_code == 200
+    with TestClient(started.app) as client:
+        assert client.get("/health").status_code == 200
 
 
 def test_importing_the_application_no_longer_reads_the_llm_settings(monkeypatch):
@@ -191,6 +194,21 @@ def test_no_call_ever_leaves_towards_the_upstream(monkeypatch):
         client.post("/opinions/llm", json={"text": "Mes données ?"})
 
     assert started.LLM_MODEL is None
+
+
+def test_a_flag_gone_illegible_after_startup_still_answers_in_the_common_shape(monkeypatch):
+    """Le démarrage a déjà refusé un drapeau illisible ; s'il en apparaît un ensuite, c'est que
+    l'environnement a changé sous les pieds du processus — et cela sort quand même en `problem+json`,
+    jamais en page d'erreur nue."""
+    started = start_afresh(monkeypatch)
+    client = TestClient(started.app)
+
+    monkeypatch.setenv("QUALIFICATION_LLM_ENABLED", "peut-etre")
+    response = client.post("/opinions/llm", json={"text": "Mes données ?"})
+
+    assert response.status_code == 500
+    assert response.headers["content-type"].startswith(PROBLEM_JSON)
+    assert "peut-etre" in response.json()["detail"]
 
 
 # --------------------------------------------------------------------------
