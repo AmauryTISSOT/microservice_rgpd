@@ -89,6 +89,13 @@ L'AppHost est l'**unique vérité** de ce drapeau : il le propage au service .NE
 ne peuvent donc pas diverger. Le container Ollama entre alors dans la pile, et le modèle est tiré au
 premier démarrage puis conservé dans un volume nommé ; comptez plusieurs gigaoctets.
 
+**L'API seule tourne elle aussi sans LLM par défaut.** Lancé à la main contre un sidecar local, le
+service .NET ne lit plus l'AppHost : le drapeau qui compte est alors `Qualification:Llm:Enabled` dans
+[`src/MicroserviceRgpd.Web/appsettings.json`](src/MicroserviceRgpd.Web/appsettings.json), éteint lui
+aussi. Qui veut le LLM dans ce mode doit **l'écrire des deux côtés** — ici, et dans l'environnement du
+sidecar (`QUALIFICATION_LLM_ENABLED`) : hors Aspire, plus aucune source commune ne les tient
+d'accord.
+
 Allumé, le container Ollama réclame le GPU (`WithGPUSupport()` dans l'AppHost), ce qui suppose une
 carte **NVIDIA** et le [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 installé côté Docker. Pour vérifier avant de lancer la pile :
