@@ -523,9 +523,32 @@
           </div>
         </div>
 
+        <hr style="border:0; border-top:2px solid #d5d5d5; margin:26px 0 14px">
+
+        <div class="screen-bar" style="margin:0 0 10px; border-radius:4px">
+          À détruire — conservation échue
+        </div>
+
+        <div class="queue">
+          <div class="qrow">
+            <div class="qtop">
+              <span class="qname">1 Ledger</span>
+              <span class="qday late">échu</span>
+            </div>
+            <span class="qwhy">Clos le 11/04/2021 · échu depuis le 11/04/2026</span>
+            <p class="step-sub" style="margin:8px 0 0; font-size:12px">
+              ⚠ Irréversible et sans trace. &nbsp; [ Détruire ce Ledger ]
+            </p>
+          </div>
+        </div>
+
         <p class="step-sub" style="font-size:12.5px; line-height:1.5">
-          File statique au lot 1. Ce que la minuterie y fait remonter, et ce qu'on relance,
-          appartient au ticket #75.
+          File statique au lot 1 : elle n'émet aucun appel. Tout ce qui s'y affiche — le délai, une
+          échéance déclarée, l'âge d'une question, un Ledger échu — est <strong>recalculé à
+          l'affichage</strong> ; aucun processus ne tourne (#75). La seconde section existe parce
+          qu'un Ledger échu n'a ni personne, ni droit, ni délai, et parce que son bouton ne doit
+          jamais voisiner ceux des dossiers : elle reste affichée, et vide, les années où rien n'est
+          échu.
         </p>
       </div>
     </div>
