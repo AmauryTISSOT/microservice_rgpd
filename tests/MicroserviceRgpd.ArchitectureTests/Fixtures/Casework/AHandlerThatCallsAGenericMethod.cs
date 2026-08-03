@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+﻿namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
 
 /// <summary>
 /// Le témoin qui ne traverse rien mais qui <b>appelle une méthode générique</b> — un

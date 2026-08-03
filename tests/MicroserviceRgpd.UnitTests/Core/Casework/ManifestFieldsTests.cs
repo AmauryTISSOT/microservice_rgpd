@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using Vogen;
 
 namespace MicroserviceRgpd.UnitTests.Core.Casework;

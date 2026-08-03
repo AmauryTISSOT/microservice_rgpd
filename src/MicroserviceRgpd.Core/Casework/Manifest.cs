@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Le catalogue des <see cref="DeclaredSystem"/>, déclaré par un humain et détenu par le service.
@@ -28,7 +28,9 @@ public sealed class Manifest
 
   /// <summary>
   /// Les systèmes recensés, rangés par libellé. L'ordre est celui sous lequel l'<c>Operator</c>
-  /// cherche, et il est figé pour qu'un même catalogue ne se relise pas dans deux ordres.
+  /// cherche, et il est figé pour qu'un même catalogue ne se relise pas dans deux ordres — d'où
+  /// une comparaison <b>ordinale</b> : la culture de la machine qui sert la page rangerait le même
+  /// recensement autrement d'un serveur à l'autre, et « figé » ne veut plus rien dire.
   /// </summary>
   public IReadOnlyList<DeclaredSystem> Systems { get; }
 
@@ -46,6 +48,6 @@ public sealed class Manifest
     ArgumentNullException.ThrowIfNull(systems);
 
     return new Manifest(
-      [.. systems.OrderBy(system => system.Label.Value, StringComparer.CurrentCulture)]);
+      [.. systems.OrderBy(system => system.Label.Value, StringComparer.Ordinal)]);
   }
 }

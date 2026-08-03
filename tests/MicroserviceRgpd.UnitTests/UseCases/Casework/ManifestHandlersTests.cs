@@ -1,4 +1,4 @@
-using Ardalis.Result;
+﻿using Ardalis.Result;
 using Ardalis.Specification;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.UseCases.Casework.DeclareSystem;
@@ -34,7 +34,7 @@ public class ManifestHandlersTests
   }
 
   [Fact]
-  public async Task WritesTheDeclaredSystemToTheCatalogue()
+  public async Task WritesTheDeclaredSystemToTheManifest()
   {
     await DeclareAsync([]);
 
@@ -60,7 +60,7 @@ public class ManifestHandlersTests
 
   /// <summary>Un identifiant déjà pris est nommé à l'humain, et rien n'est écrit.</summary>
   [Fact]
-  public async Task RefusesAnIdentifierTheCatalogueAlreadyCarries()
+  public async Task RefusesAnIdentifierTheManifestAlreadyCarries()
   {
     _manifest
       .FirstOrDefaultAsync(Arg.Any<ISingleResultSpecification<DeclaredSystem>>(), Arg.Any<CancellationToken>())

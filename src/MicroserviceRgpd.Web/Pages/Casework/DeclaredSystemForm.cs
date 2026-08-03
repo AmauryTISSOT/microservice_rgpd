@@ -1,3 +1,4 @@
+﻿using Ardalis.Result;
 using MicroserviceRgpd.Core.Casework;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Vogen;
@@ -95,6 +96,32 @@ public sealed class DeclaredSystemForm
   }
 
   /// <summary>
+  /// Redit à l'humain, sous le nom du champ fautif, ce que le gestionnaire a refusé — l'unicité de
+  /// l'identifiant, ou le plancher <c>Locate</c>.
+  /// </summary>
+  /// <remarks>
+  /// Le refus se dépose sous le même nom de champ que celui de <see cref="Read"/> : les deux écrans
+  /// posent la même question, et un refus qui ne retomberait pas au même endroit selon qu'il vient
+  /// du type ou du gestionnaire s'afficherait à côté du champ sur un écran et nulle part sur l'autre.
+  /// </remarks>
+  /// <param name="modelState">L'endroit où les refus se déposent, sous le nom du champ fautif.</param>
+  /// <param name="prefix">Le préfixe de liaison du formulaire, tel que la page l'a déclaré.</param>
+  /// <param name="refusals">Ce que le gestionnaire a refusé.</param>
+  public static void Refuse(
+    ModelStateDictionary modelState,
+    string prefix,
+    IEnumerable<ValidationError> refusals)
+  {
+    ArgumentNullException.ThrowIfNull(modelState);
+    ArgumentNullException.ThrowIfNull(refusals);
+
+    foreach (var refusal in refusals)
+    {
+      modelState.AddModelError($"{prefix}.{refusal.Identifier}", refusal.ErrorMessage);
+    }
+  }
+
+  /// <summary>
   /// Une valeur du domaine, ou le refus du type déposé sous le nom du champ. Le type lève, la
   /// frontière nomme — c'est la même répartition que sur le texte reçu à qualifier.
   /// </summary>
@@ -137,18 +164,3 @@ public sealed class DeclaredSystemForm
     return capabilities;
   }
 }
-
-/// <summary>
-/// Le formulaire une fois passé dans les types du domaine — ce que la page confie au gestionnaire.
-/// </summary>
-/// <param name="Id">L'identifiant du système.</param>
-/// <param name="Label">Son libellé.</param>
-/// <param name="Contents">Ce qu'il contient, en prose.</param>
-/// <param name="Capabilities">Ses capacités, éventuellement aucune.</param>
-/// <param name="AdapterAddress">L'adresse de son <c>Adapter</c>, ou rien.</param>
-public sealed record DeclaredSystemFields(
-  DeclaredSystemId Id,
-  SystemLabel Label,
-  SystemContents Contents,
-  IReadOnlyCollection<Capability> Capabilities,
-  AdapterAddress? AdapterAddress);

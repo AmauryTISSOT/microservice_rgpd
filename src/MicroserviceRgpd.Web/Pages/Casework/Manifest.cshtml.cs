@@ -1,4 +1,4 @@
-using MicroserviceRgpd.UseCases.Casework.DeclareSystem;
+﻿using MicroserviceRgpd.UseCases.Casework.DeclareSystem;
 using MicroserviceRgpd.UseCases.Casework.ReadManifest;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -55,23 +55,11 @@ public class ManifestModel(IMediator mediator) : PageModel
         return RedirectToPage();
       }
 
-      Refuse(declared);
+      DeclaredSystemForm.Refuse(ModelState, FormPrefix, declared.ValidationErrors);
     }
 
     await OnGetAsync(cancellationToken);
 
     return Page();
-  }
-
-  /// <summary>
-  /// Redit à l'humain, sous le nom du champ fautif, ce que le gestionnaire a refusé — l'unicité de
-  /// l'identifiant, ou le plancher <c>Locate</c>.
-  /// </summary>
-  private void Refuse(Result<Core.Casework.DeclaredSystem> declared)
-  {
-    foreach (var error in declared.ValidationErrors)
-    {
-      ModelState.AddModelError($"{FormPrefix}.{error.Identifier}", error.ErrorMessage);
-    }
   }
 }

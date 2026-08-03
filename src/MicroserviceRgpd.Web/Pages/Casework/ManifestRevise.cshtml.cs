@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.UseCases.Casework.ReadManifest;
 using MicroserviceRgpd.UseCases.Casework.ReviseSystem;
 using Microsoft.AspNetCore.Mvc;
@@ -73,10 +73,7 @@ public class ManifestReviseModel(IMediator mediator) : PageModel
         return RedirectToPage("Manifest");
       }
 
-      foreach (var error in revised.ValidationErrors)
-      {
-        ModelState.AddModelError($"{FormPrefix}.{error.Identifier}", error.ErrorMessage);
-      }
+      DeclaredSystemForm.Refuse(ModelState, FormPrefix, revised.ValidationErrors);
     }
 
     return Page();

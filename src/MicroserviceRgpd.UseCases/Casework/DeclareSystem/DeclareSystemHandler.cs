@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 
 namespace MicroserviceRgpd.UseCases.Casework.DeclareSystem;
 
@@ -32,7 +32,7 @@ public sealed class DeclareSystemHandler(IRepository<DeclaredSystem> manifest, T
       return Result<DeclaredSystem>.Invalid(floor);
     }
 
-    // L'unicité se vérifie ici <b>et</b> se tient en base par la clé primaire : la lecture nomme le
+    // L'unicité se vérifie ici ET se tient en base par la clé primaire : la lecture nomme le
     // conflit à l'humain, la clé garantit qu'aucune course ne le contourne en silence.
     var alreadyDeclared = await manifest.FirstOrDefaultAsync(new DeclaredSystemByIdSpec(command.Id), cancellationToken);
 

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
@@ -234,7 +234,7 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
   /// qui tienne l'<c>Omission silencieuse</c> devant les yeux de celui qui déclare.
   /// </summary>
   [Fact]
-  public async Task NeverPresentsTheCatalogueAsComplete()
+  public async Task NeverPresentsTheManifestAsComplete()
   {
     (await ReadAsync(Manifest)).ShouldContain("ne garantit pas qu'il n'en existe pas d'autres");
   }

@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;

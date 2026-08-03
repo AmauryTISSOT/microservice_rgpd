@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Un endroit où des données personnelles vivent chez le client, <b>parce qu'un humain l'a

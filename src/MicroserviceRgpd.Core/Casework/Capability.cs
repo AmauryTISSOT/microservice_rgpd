@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Ce qu'un <c>Adapter</c> sait faire sur un <see cref="DeclaredSystem"/> donné. Quatre valeurs

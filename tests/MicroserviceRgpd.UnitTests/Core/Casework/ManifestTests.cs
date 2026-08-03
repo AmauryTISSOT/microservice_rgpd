@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 
@@ -34,7 +34,7 @@ public class ManifestTests
   /// dernière touchée : c'est cette date-là qu'on nomme en disant de quand date ce recensement.
   /// </summary>
   [Fact]
-  public void DatesTheCatalogueByItsOldestDeclarationRatherThanItsFreshest()
+  public void DatesTheManifestByItsOldestDeclarationRatherThanItsFreshest()
   {
     var manifest = Manifest.Of(
     [

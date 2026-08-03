@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.UnitTests;
+﻿namespace MicroserviceRgpd.UnitTests;
 
 /// <summary>
 /// Une horloge qui ne bouge pas, pour que la date d'un acte se <b>dicte</b> plutôt qu'elle ne se

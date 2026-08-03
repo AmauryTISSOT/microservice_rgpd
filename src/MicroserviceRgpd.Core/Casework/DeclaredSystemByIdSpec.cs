@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Le système que l'humain désigne par son identifiant, ou rien. C'est une <b>spécification</b> et
