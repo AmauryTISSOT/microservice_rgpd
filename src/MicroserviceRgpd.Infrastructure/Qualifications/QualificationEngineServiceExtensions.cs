@@ -34,8 +34,12 @@ public static class QualificationEngineServiceExtensions
   /// <summary>L'échéance du client lexical, requise dans tous les cas. Posée elle aussi par l'AppHost.</summary>
   public const string LexiconDeadlineKey = $"{Section}:LexiconDeadlineSeconds";
 
-  /// <summary>L'adresse du sidecar qui héberge les deux moteurs, requise dans tous les cas.</summary>
-  public const string SidecarBaseAddressKey = $"{Section}:SidecarBaseAddress";
+  /// <summary>
+  /// L'adresse du sidecar qui héberge les deux moteurs, requise dans tous les cas. Privée, à la
+  /// différence des deux échéances : l'AppHost ne la pose pas, elle vient de la découverte de
+  /// services.
+  /// </summary>
+  private const string SidecarBaseAddressKey = $"{Section}:SidecarBaseAddress";
 
   /// <summary>
   /// Enregistre les moteurs. Ils sont déclarés <b>par le même port</b>, et distingués par leur
@@ -73,7 +77,7 @@ public static class QualificationEngineServiceExtensions
 
     var sidecar = configuration[SidecarBaseAddressKey];
     Guard.Against.NullOrEmpty(sidecar, nameof(sidecar),
-      "Aucune adresse de sidecar de qualification configuree : renseigner Qualification:SidecarBaseAddress.");
+      $"Aucune adresse de sidecar de qualification configuree : renseigner {SidecarBaseAddressKey}.");
 
     var address = new Uri(sidecar, UriKind.Absolute);
 
@@ -114,8 +118,7 @@ public static class QualificationEngineServiceExtensions
   /// </summary>
   /// <remarks>
   /// Une valeur qui n'est ni « true » ni « false » arrête le démarrage plutôt que d'éteindre : lue
-  /// comme un « non », elle ferait passer une faute de frappe pour une décision, et c'est
-  /// précisément ce qu'aucune trace ne rattraperait ensuite.
+  /// comme un « non », elle ferait passer une faute de frappe pour une décision.
   /// </remarks>
   private static bool LlmIsOn(IConfiguration configuration)
   {

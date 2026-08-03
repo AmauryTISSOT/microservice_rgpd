@@ -168,7 +168,7 @@ public sealed class QualifyHandler(
       // cause inattendue ne ressorte en erreur interne, alors que le service sait exactement ce qui
       // lui manque.
       throw new QualificationEngineFailure(
-        "Aucun des deux moteurs n'a rendu d'avis : il ne reste rien à qualifier.", failure);
+        "Aucun moteur n'a rendu d'avis : il ne reste rien à qualifier.", failure);
     }
 
     return Corroboration.Between(verdict.Opinion, witness.Opinion);
