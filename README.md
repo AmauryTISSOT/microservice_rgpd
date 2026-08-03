@@ -75,15 +75,22 @@ dotnet run --project src/MicroserviceRgpd.Web
 dotnet run --project src/MicroserviceRgpd.AspireHost
 ```
 
-L'orchestration Aspire démarre aussi le **sidecar de qualification** (`src/sidecar`) et le container
-**Ollama** qui sert le modèle : la pile entière part d'une seule commande.
-[`uv`](https://docs.astral.sh/uv/) doit être installé — Aspire lui délègue la création de
-l'environnement virtuel et l'installation des dépendances. Le modèle est tiré au premier démarrage
-et conservé dans un volume nommé ; comptez plusieurs gigaoctets, et un GPU pour que les temps de
-réponse aient un sens.
+L'orchestration Aspire démarre aussi le **sidecar de qualification** (`src/sidecar`) : la pile
+entière part d'une seule commande. [`uv`](https://docs.astral.sh/uv/) doit être installé — Aspire lui
+délègue la création de l'environnement virtuel et l'installation des dépendances.
 
-Le container Ollama réclame le GPU (`WithGPUSupport()` dans l'AppHost), ce qui suppose une carte
-**NVIDIA** et le [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+**Le moteur LLM est éteint par défaut, et un clone frais démarre donc sans GPU et sans télécharger
+un octet de modèle** : ni container Ollama ni modèle n'entrent dans la pile. `POST /qualifications`
+répond, avec le seul témoin lexical pour avis — la qualification sort en `Mode dégradé`.
+
+Pour l'allumer, passer `Llm:Enabled` à `"true"` dans
+[`src/MicroserviceRgpd.AspireHost/appsettings.json`](src/MicroserviceRgpd.AspireHost/appsettings.json).
+L'AppHost est l'**unique vérité** de ce drapeau : il le propage au service .NET comme au sidecar, qui
+ne peuvent donc pas diverger. Le container Ollama entre alors dans la pile, et le modèle est tiré au
+premier démarrage puis conservé dans un volume nommé ; comptez plusieurs gigaoctets.
+
+Allumé, le container Ollama réclame le GPU (`WithGPUSupport()` dans l'AppHost), ce qui suppose une
+carte **NVIDIA** et le [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
 installé côté Docker. Pour vérifier avant de lancer la pile :
 
 ```sh

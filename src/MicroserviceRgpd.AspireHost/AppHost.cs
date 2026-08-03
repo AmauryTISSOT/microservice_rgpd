@@ -25,7 +25,7 @@ var cleanArchDb = postgres.AddDatabase("cleanarchitecture");
 var sidecar = builder.AddUvicornApp("qualification-sidecar", "../sidecar", "qualification_sidecar.app:app")
   .WithUv()
   .WithHttpHealthCheck("/health")
-  .WithEnvironment("QUALIFICATION_LLM_ENABLED", Written(llmIsOn));
+  .WithEnvironment("QUALIFICATION_LLM_ENABLED", AsEnvironmentValue(llmIsOn));
 
 // Add the web project with the database connection
 // La référence au sidecar est ce qui fait résoudre « http://qualification-sidecar » : le service
@@ -37,7 +37,7 @@ var web = builder.AddProject<Projects.MicroserviceRgpd_Web>("web")
   // Le même drapeau que celui posé au sidecar, écrit sous la clé que le service lit. Le nom suit la
   // sous-section propre au moteur LLM côté service : ses réglages y sont regroupés pour qu'éteindre
   // le moteur rende visiblement inertes les siens.
-  .WithEnvironment("Qualification__Llm__Enabled", Written(llmIsOn))
+  .WithEnvironment("Qualification__Llm__Enabled", AsEnvironmentValue(llmIsOn))
   // Le lexique n'a aucun amont, donc aucune échéance imbriquée : la sienne ne répond qu'à une
   // propriété, ne jamais rallonger le temps de réponse du service. Elle est donc requise même moteur
   // éteint.
@@ -138,4 +138,4 @@ bool LlmIsOn()
 
 // Ce qu'un drapeau devient une fois écrit dans une variable d'environnement : le service .NET et le
 // sidecar lisent tous deux ces deux mots-là.
-static string Written(bool on) => on ? "true" : "false";
+static string AsEnvironmentValue(bool on) => on ? "true" : "false";
