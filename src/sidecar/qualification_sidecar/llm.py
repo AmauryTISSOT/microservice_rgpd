@@ -61,6 +61,19 @@ if set(CANONICAL_CONFIDENCE_BY_SLUG) != set(CONFIDENCE_SLUGS):
 #: Le préfixe des variables d'environnement qui portent la configuration du moteur.
 SETTING_PREFIX: Final = "QUALIFICATION_LLM_"
 
+#: Le drapeau qui commande l'**existence** du moteur, et la seule variable du moteur à disposer d'un
+#: repli : absente, le moteur est éteint. L'écart à la doctrine du dépôt — une variable absente
+#: empêche de démarrer — est délibéré. Le défaut sûr prime : un déploiement qui ne dit rien ne
+#: soumet aucun texte de personne concernée à un modèle génératif, et le dépôt se clone, se démarre
+#: et se démontre sans matériel accéléré.
+ENABLED_SETTING: Final = SETTING_PREFIX + "ENABLED"
+
+#: Ce qu'un exploitant écrit pour allumer, et pour éteindre. Le vocabulaire reste court : au-delà,
+#: on lit une intention dans une chaîne quelconque, et « peut-être » deviendrait « éteint » en
+#: silence.
+_LIT_BY: Final = frozenset({"true", "1"})
+_EXTINGUISHED_BY: Final = frozenset({"false", "0", ""})
+
 
 class UnusableCompletion(EngineFailure):
     """L'amont a répondu, mais sa réponse n'est pas un avis : JSON illisible, valeur hors taxonomie,
@@ -92,8 +105,19 @@ class ModelTooSlow(RuntimeError):
 class MisconfiguredEngine(RuntimeError):
     """La configuration du moteur est absente ou incohérente : le sidecar refuse de démarrer.
 
-    Levée à l'import, jamais rattrapée pour servir un moteur qui parlerait à un amont deviné. Une
-    valeur par défaut cachée dans le code serait un chiffre en dur qui ne dit pas son nom.
+    Levée au démarrage, jamais rattrapée pour servir un moteur qui parlerait à un amont deviné. Une
+    valeur par défaut cachée dans le code serait un chiffre en dur qui ne dit pas son nom. Ne vaut
+    que pour un moteur **allumé** : éteint, il n'y a pas de configuration à tenir.
+    """
+
+
+class NoModelServed(RuntimeError):
+    """Ce déploiement ne sert aucun modèle : le moteur LLM y est éteint, délibérément.
+
+    **Ce n'est pas une panne**, et c'est pourquoi elle ne partage aucun code avec les trois autres :
+    rien n'est à réparer, rien n'est à redémarrer, personne n'est à alerter. Un exploitant qui
+    interroge le point d'entrée à la main doit lire une phrase, pas déduire d'un `404` qu'il s'est
+    trompé d'URL ni d'un `503` qu'un serveur est tombé.
     """
 
 
@@ -144,6 +168,31 @@ class LlmSettings:
             deadline_seconds=_read(environment, "DEADLINE_SECONDS", float),
             caller_deadline_seconds=_read(environment, "CALLER_DEADLINE_SECONDS", float),
         )
+
+
+def engine_is_enabled(environment: Mapping[str, str]) -> bool:
+    """Dit si ce déploiement sert un modèle. **Absent vaut éteint** — le seul repli du moteur.
+
+    Une valeur qui n'est ni l'un ni l'autre est refusée plutôt que repliée sur le défaut : replier
+    ferait passer une coquille pour une décision, et le moteur s'éteindrait sans qu'un mot le dise.
+    """
+    written = environment.get(ENABLED_SETTING)
+
+    if written is None:
+        return False
+
+    normalized = written.strip().lower()
+
+    if normalized in _LIT_BY:
+        return True
+
+    if normalized in _EXTINGUISHED_BY:
+        return False
+
+    raise MisconfiguredEngine(
+        f"La variable {ENABLED_SETTING} vaut « {written} », qui n'allume ni n'éteint le moteur : "
+        "elle s'écrit « true » ou « false »."
+    )
 
 
 def _read[T](environment: Mapping[str, str], name: str, parse: type[T]) -> T:

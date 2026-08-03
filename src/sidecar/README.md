@@ -72,6 +72,9 @@ passeraient pour comparables.
 | `503` | l'amont est injoignable, ou son modèle n'est pas chargé | démarrer ou réparer Ollama |
 | `504` | l'échéance vers l'amont est passée | changer de modèle, ou de matériel |
 
+À côté d'eux, un code qui ne nomme **aucune** panne : `501` dit que ce déploiement ne sert aucun
+modèle, le moteur y étant éteint. Rien n'est à réparer, et rien n'est journalisé en erreur.
+
 Le lexique, lui, sort une panne de moteur en `500` là où le LLM sort `502` : la panne est la même
 vue du domaine — **un avis invalide n'est pas un avis faible** —, et les codes diffèrent par le seul
 fait qui compte pour l'exploitant, *qui* est à réparer. Un bogue Python d'un côté, un modèle qui
@@ -80,7 +83,9 @@ déraille de l'autre.
 **La lenteur doit arriver nommée.** L'échéance du sidecar vers l'amont est tenue *strictement plus
 courte* que celle de l'appelant .NET, et le sidecar **refuse de démarrer** si la configuration ne
 respecte pas cette inégalité : si l'appelant abandonnait le premier, il n'aurait qu'une échéance
-anonyme à rapporter, là où le sidecar sait dire lequel des trois échecs il a subi.
+anonyme à rapporter, là où le sidecar sait dire lequel des trois échecs il a subi. **Le moteur
+éteint, cette vérification ne s'applique plus** : il n'y a pas d'échéance à tenir, et une paire
+résiduelle laissée dans la configuration pour rallumer plus tard est ignorée sans bruit.
 
 > **Ce que cette garde vaut aujourd'hui, et ce qui lui manque.** Les deux échéances viennent d'une
 > même section de configuration de l'`AppHost` — `Llm:SidecarDeadlineSeconds` et
@@ -96,11 +101,23 @@ sérialisent déjà, et en dépassant l'échéance de l'appelant par-dessus le m
 
 ### Configuration du moteur LLM
 
-Aucune valeur par défaut n'existe dans le code : **une variable absente empêche le sidecar de
-démarrer**, exactement comme une divergence de taxonomie. Un `base_url` deviné ne rend pas des avis
-un peu faux, il en rend d'inexploitables.
+**Le moteur LLM est éteint par défaut.** Un drapeau commande son existence, et sans lui le sidecar
+démarre sans une seule des sept variables ci-dessous : il sert son lexique exactement comme
+d'habitude, et rend `501` sur `POST /opinions/llm`. C'est ce qui permet de cloner le dépôt et de le
+démarrer sans carte graphique — un poste de développement, un exécuteur d'intégration continue, une
+démonstration.
 
 | Variable | Rôle |
+| --- | --- |
+| `QUALIFICATION_LLM_ENABLED` | `true` allume le moteur ; **absente, il est éteint** |
+
+Allumé, aucune valeur par défaut n'existe dans le code : **une variable absente empêche le sidecar
+de démarrer**, exactement comme une divergence de taxonomie. Un `base_url` deviné ne rend pas des
+avis un peu faux, il en rend d'inexploitables. Le drapeau est la **seule** variable du moteur à
+disposer d'un repli, et l'écart est délibéré : le défaut sûr prime, et un déploiement qui ne dit
+rien ne soumet aucun texte de personne concernée à un modèle génératif.
+
+| Variable | Rôle, le moteur allumé |
 | --- | --- |
 | `QUALIFICATION_LLM_BASE_URL` | l'adresse du serveur compatible OpenAI |
 | `QUALIFICATION_LLM_MODEL` | le nom du modèle demandé |
@@ -141,10 +158,13 @@ uv run pytest                              # la suite complète
 uv run uvicorn qualification_sidecar.app:app --reload
 ```
 
-Le démarrage manuel exige les variables du moteur LLM ci-dessus — c'est le prix du refus des
-valeurs par défaut. Le plus court est de laisser Aspire les fournir ; sinon, sous PowerShell :
+Ainsi lancé, le sidecar démarre **sans modèle** : le lexique répond, le point d'entrée LLM rend son
+refus nommé, et aucune variable n'est à poser. Allumer le moteur exige alors toutes celles du
+tableau ci-dessus — c'est le prix du refus des valeurs par défaut. Le plus court est de laisser
+Aspire les fournir ; sinon, sous PowerShell :
 
 ```powershell
+$env:QUALIFICATION_LLM_ENABLED = "true"
 $env:QUALIFICATION_LLM_BASE_URL = "http://localhost:11434/v1"
 $env:QUALIFICATION_LLM_MODEL = "qwen3:8b"
 $env:QUALIFICATION_LLM_API_KEY = "ollama-ne-lit-pas-cette-cle"
