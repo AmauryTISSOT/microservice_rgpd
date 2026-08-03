@@ -30,6 +30,21 @@ public class AppHostQualificationWiringTests
       "Le service commande : reportez ce nom dans l'AppHost.");
   }
 
+  /// <summary>
+  /// Le drapeau du moteur LLM voyage par le même chemin que les échéances, et pour la même raison :
+  /// sous Aspire, l'AppHost en est l'unique vérité, et c'est ce qui empêche le service .NET et le
+  /// sidecar de diverger. Renommé d'un seul côté, le service retomberait sur son repli — « éteint » —
+  /// pendant que le sidecar servirait un modèle, sans qu'aucune ligne ne dise pourquoi.
+  /// </summary>
+  [Fact]
+  public void PostsTheLlmFlagUnderTheKeyTheServiceReadsIt()
+  {
+    ReadAppHost().ShouldContain(
+      EnvironmentVariable(QualificationEngineServiceExtensions.LlmEnabledKey),
+      customMessage: $"{AppHostFile} ne pose plus le drapeau du moteur LLM sous le nom que le service lit. " +
+      "Le service commande : reportez ce nom dans l'AppHost.");
+  }
+
   [Fact]
   public void PostsTheLexiconDeadlineUnderTheKeyTheServiceReadsIt()
   {

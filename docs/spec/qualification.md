@@ -606,7 +606,7 @@ Tous les chiffres ci-dessous sont **arbitraires et assumés comme tels**, à ré
 
 | Réglage | Valeur | Où | § |
 | --- | --- | --- | --- |
-| Existence du moteur LLM | **éteint par défaut** — `Llm:Enabled` côté .NET, `QUALIFICATION_LLM_ENABLED` côté sidecar | `Web` / `Infrastructure`, et sidecar | 5.6 |
+| Existence du moteur LLM | **éteint par défaut** — `Llm:Enabled` dans l'`AppHost` sous Aspire, `Qualification:Llm:Enabled` côté .NET, `QUALIFICATION_LLM_ENABLED` côté sidecar | `AppHost`, `Web` / `Infrastructure`, et sidecar | 5.6 |
 | Modèle local | `qwen3:8b` | Ollama / sidecar | 3 |
 | `temperature` | `0`, seed fixe | sidecar | 5.5 |
 | `base_url` du client compatible OpenAI | Ollama | sidecar — **point de bascule vers Mistral** | 3 |
@@ -620,6 +620,10 @@ Tous les chiffres ci-dessous sont **arbitraires et assumés comme tels**, à ré
 | Longueur maximale de `callerReference` | **64** caractères | `Web` + base | 4.2 |
 
 **`AppHost`.** Le sidecar Python se déclare comme Postgres l'est déjà, via `Aspire.Hosting.Python` **13.4.6** — exactement la version des autres paquets Aspire du dépôt. **Le paquet n'est pas encore dans `Directory.Packages.props`** : il est à ajouter. Le container Ollama y entre également, avec le volume de modèles nécessaire.
+
+**Le drapeau du moteur.** Sous Aspire, l'`AppHost` en est l'**unique vérité** : il vit dans son `appsettings`, aux côtés du nom de modèle et des échéances, et il est propagé par variable d'environnement au service .NET **et** au sidecar — le mécanisme même qui tient déjà l'écart des deux échéances, et le seul qui empêche les deux drapeaux de diverger. Éteint — sa valeur en l'absence de tout réglage —, l'`AppHost` **n'ajoute ni la ressource Ollama ni le modèle**, ne propage aucun réglage LLM au sidecar, et retire l'attente de celui-ci sur le modèle : la pile entière démarre d'une seule commande sur un poste sans carte graphique, sans télécharger un octet de modèle. Allumé, sa composition est strictement celle d'avant ce drapeau.
+
+Hors Aspire, chaque processus lit sa propre configuration, et **aucun garde d'accord n'est ajouté** : un sidecar éteint face à un .NET allumé rend un refus nommé (`501`, § 5.6), que le service traite comme un moteur muet, c'est-à-dire en `Mode dégradé` ; l'inverse ne coûte rien, le point d'entrée n'étant jamais appelé. Aucune annonce n'est émise au démarrage quand le moteur est éteint — le risque assumé est qu'une coquille dans le nom de la clé l'éteigne sans un mot.
 
 ---
 
