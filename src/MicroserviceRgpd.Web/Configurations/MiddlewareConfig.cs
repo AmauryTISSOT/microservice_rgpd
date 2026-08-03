@@ -65,6 +65,11 @@ public static class MiddlewareConfig
 
     app.UseHttpsRedirection(); // Note this will drop Authorization headers
 
+    // Les écrans de l'Operator. Ils vivent à côté de l'API sans la traverser : celle-ci fait entrer
+    // une demande, elle n'instruit jamais rien — le seul chemin vers un geste humain passe par un
+    // écran que le service écrit lui-même.
+    app.MapRazorPages();
+
     // Run migrations in Development or when explicitly requested via environment variable
     var shouldMigrate = app.Environment.IsDevelopment() ||
                         app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup");

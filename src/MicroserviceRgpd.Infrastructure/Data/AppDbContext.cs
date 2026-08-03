@@ -1,3 +1,4 @@
+using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 
 namespace MicroserviceRgpd.Infrastructure.Data;
@@ -11,6 +12,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// table ; il n'est lu par personne, et aucun <c>GET</c> n'expose ce qu'il contient.
   /// </summary>
   public DbSet<QualificationAuditRow> QualificationAuditEntries => Set<QualificationAuditRow>();
+
+  /// <summary>
+  /// Le <c>Manifest</c> : le paysage déclaré du client, tenu <b>système par système</b>. Chacun est
+  /// un agrégat racine à lui seul — il se déclare, se relit et se révise seul, et porte sa propre
+  /// date de déclaration.
+  /// </summary>
+  public DbSet<DeclaredSystem> DeclaredSystems => Set<DeclaredSystem>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

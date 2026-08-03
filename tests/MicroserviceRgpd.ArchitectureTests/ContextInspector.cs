@@ -141,16 +141,33 @@ internal static class ContextInspector
     return operand switch
     {
       TypeReference type => Unwrap(type),
-      GenericInstanceMethod generic => Unwrap((MethodReference)generic)
+      GenericInstanceMethod generic => Called(generic)
         .Concat(generic.GenericArguments.SelectMany(Unwrap)),
-      MethodReference method => Unwrap(method.DeclaringType)
-        .Concat(Unwrap(method.ReturnType))
-        .Concat(method.Parameters.SelectMany(parameter => Unwrap(parameter.ParameterType))),
+      MethodReference method => Called(method),
       FieldReference field => Unwrap(field.DeclaringType).Concat(Unwrap(field.FieldType)),
       CallSite site => Unwrap(site.ReturnType)
         .Concat(site.Parameters.SelectMany(parameter => Unwrap(parameter.ParameterType))),
       _ => [],
     };
+  }
+
+  /// <summary>
+  /// Ce qu'une méthode appelée met en jeu : le type qui la déclare, ce qu'elle rend, et ce qu'elle
+  /// prend.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle est nommée, et n'est surtout pas une surcharge de <c>Unwrap</c>.</b> Un
+  /// <c>GenericInstanceMethod</c> transtypé en <c>MethodReference</c> se relierait à la surcharge
+  /// <c>object</c>, dont la branche générique est choisie sur le type <b>réel</b> de l'opérande :
+  /// la méthode se rappellerait elle-même sans fin, et le garde tomberait par débordement de pile
+  /// au lieu d'afficher rouge ou vert. Un appel générique — <c>Select&lt;T, R&gt;</c> — suffit à le
+  /// déclencher, ce que le premier contexte à porter du code a immédiatement produit.
+  /// </remarks>
+  private static IEnumerable<TypeReference> Called(MethodReference method)
+  {
+    return Unwrap(method.DeclaringType)
+      .Concat(Unwrap(method.ReturnType))
+      .Concat(method.Parameters.SelectMany(parameter => Unwrap(parameter.ParameterType)));
   }
 
   /// <summary>

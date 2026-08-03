@@ -1,0 +1,38 @@
+@*
+  La surface de l'Operator, livrée par le service lui-même — server-rendered, sans framework
+  client, et sans aucune ressource externe : ce qui doit rester visible par construction ne peut
+  pas dépendre d'un fichier que le navigateur du client n'ira pas chercher.
+*@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>@ViewData["Title"] — Droits des personnes concernées</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0 auto; max-width: 60rem; padding: 2rem 1rem; }
+    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.2rem; margin-top: 2.5rem; }
+    .caveat { border-left: 3px solid currentColor; font-style: italic; margin: 1rem 0 2rem; opacity: 0.85; padding-left: 0.75rem; }
+    .system { border-top: 1px solid rgba(127, 127, 127, 0.4); padding: 1rem 0; }
+    .system h3 { font-size: 1.05rem; margin: 0 0 0.25rem; }
+    .system dl { display: grid; gap: 0.15rem 1rem; grid-template-columns: max-content 1fr; margin: 0.5rem 0 0; }
+    .system dt { font-weight: 600; }
+    .system dd { margin: 0; white-space: pre-wrap; }
+    .none { font-style: italic; opacity: 0.75; }
+    form p { margin: 0 0 1rem; }
+    label { display: block; font-weight: 600; margin-bottom: 0.2rem; }
+    input[type="text"], input[type="url"], textarea { box-sizing: border-box; font: inherit; padding: 0.4rem; width: 100%; }
+    fieldset { border: 1px solid rgba(127, 127, 127, 0.4); }
+    fieldset label { display: inline-block; font-weight: normal; margin-right: 1.5rem; }
+    .hint { display: block; font-weight: normal; opacity: 0.8; }
+    .refusal { color: #b3261e; font-weight: 600; }
+    .refusals { border: 1px solid #b3261e; margin-bottom: 1.5rem; padding: 0.75rem 1rem; }
+    button { font: inherit; padding: 0.5rem 1.25rem; }
+  </style>
+</head>
+<body>
+  @RenderBody()
+</body>
+</html>

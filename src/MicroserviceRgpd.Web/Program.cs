@@ -1,4 +1,6 @@
-﻿using MicroserviceRgpd.Infrastructure.Qualifications;
+﻿using System.Text.Encodings.Web;
+using System.Text.Unicode;
+using MicroserviceRgpd.Infrastructure.Qualifications;
 using MicroserviceRgpd.Web.Configurations;
 using OpenTelemetry.Trace;
 
@@ -29,6 +31,18 @@ builder.Services.AddOptionConfigs(builder.Configuration, startupLogger, builder)
 builder.Services.AddServiceConfigs(startupLogger, builder);
 
 builder.Services.AddProblemDetailsConfigs();
+
+// La surface de l'Operator est livrée par le service lui-même, server-rendered et sans framework
+// client : ce qui doit rester visible par construction — un recensement qui ne se présente jamais
+// comme complet — ne peut pas dépendre d'un écran qu'un tiers réécrirait.
+builder.Services.AddRazorPages();
+
+// L'échappement par défaut d'ASP.NET Core replie tout ce qui sort du latin de base en entités
+// numériques : « contient » y devient `&#xAB; contient &#xBB;`, et la prose que l'Operator vient
+// d'écrire cesse d'être lisible dans la source de sa propre page. Sur une surface entièrement
+// française, c'est la totalité du texte. L'encodeur reste un encodeur — il continue d'échapper
+// `<`, `>`, `&` et `'` —, on lui dit seulement que l'Unicode n'est pas un danger.
+builder.Services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.All));
 
 builder.Services.AddFastEndpoints()
                 .SwaggerDocument(o =>
