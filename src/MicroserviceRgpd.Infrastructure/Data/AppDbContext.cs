@@ -1,5 +1,6 @@
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
+using MicroserviceRgpd.Infrastructure.Data.Casework;
 
 namespace MicroserviceRgpd.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
@@ -19,6 +20,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// date de déclaration.
   /// </summary>
   public DbSet<DeclaredSystem> DeclaredSystems => Set<DeclaredSystem>();
+
+  /// <summary>
+  /// Les <c>Case</c> — <b>la racine, et la seule</b>. Il n'existe volontairement aucun <c>DbSet</c>
+  /// de <c>Claim</c> ni de <c>Step</c> : ils sont <em>possédés</em> par le dossier, ne s'atteignent
+  /// que par lui, et n'ont donc structurellement ni requête ni dépôt à eux.
+  /// </summary>
+  public DbSet<Case> Cases => Set<Case>();
+
+  // ⚠️ Aucun DbSet du Ledger, et c'est délibéré. Il en existe un pour la trace d'audit, qui n'a
+  // qu'un invariant d'écriture seule ; le Ledger, lui, promet qu'aucune opération de mise à jour ni
+  // de suppression ligne à ligne n'existe sur lui — et un DbSet public rendrait `Remove` et
+  // `Update` à quiconque tient ce contexte, c'est-à-dire à tout le service. EF Core connaît la
+  // table par sa configuration d'entité, qui suffit ; le seul chemin d'écriture est l'adaptateur
+  // du port `ILedger`, dont la seule méthode est un ajout.
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
