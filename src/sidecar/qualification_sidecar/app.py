@@ -62,6 +62,21 @@ logger = logging.getLogger("qualification_sidecar")
 #: y aurait fait échouer l'import lui-même, donc le démarrage du lexique avec.
 LLM_MODEL: llm.StructuredModel | None = None
 
+#: Ce déploiement sert-il un modèle ? Décidé **une fois**, à la première demande, et jamais relu
+#: ensuite : basculer sans redéployer n'est pas visé, et un drapeau relu à chaque requête ferait de
+#: l'extinction un interrupteur d'incident que personne n'a demandé.
+LLM_ENABLED: bool | None = None
+
+
+def llm_is_enabled() -> bool:
+    """Dit si ce déploiement sert un modèle, en tranchant à la première demande et pour de bon."""
+    global LLM_ENABLED
+
+    if LLM_ENABLED is None:
+        LLM_ENABLED = llm.engine_is_enabled(os.environ)
+
+    return LLM_ENABLED
+
 
 def llm_model() -> llm.StructuredModel:
     """Rend l'amont du moteur LLM, en le construisant à sa première demande — jamais avant.
@@ -86,7 +101,7 @@ async def refuse_to_start_a_misconfigured_engine(_: FastAPI) -> AsyncIterator[No
     rien à lire, et rien à refuser — pas même une échéance résiduelle laissée là pour rallumer plus
     tard.
     """
-    if llm.engine_is_enabled(os.environ):
+    if llm_is_enabled():
         llm_model()
 
     yield
@@ -196,7 +211,7 @@ async def llm_opinion(opinion: OpinionRequest, request: Request) -> ReasonedOpin
     que de disparaître : retirée, elle laisserait un exploitant devant un `404` à chercher une faute
     de frappe dans son URL.
     """
-    if not llm.engine_is_enabled(os.environ):
+    if not llm_is_enabled():
         raise llm.NoModelServed(
             "Ce déploiement du sidecar ne sert aucun modèle : le moteur LLM y est éteint. Seul le "
             "point d'entrée lexical rend un avis. Pour l'allumer, poser "

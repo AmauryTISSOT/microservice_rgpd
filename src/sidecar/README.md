@@ -14,7 +14,7 @@ Le sidecar n'est pas là parce que le lexique aurait besoin de Python — il n'i
 | Verbe et chemin | Moteur | Codes |
 | --- | --- | --- |
 | `POST /opinions/lexicon` | le lexique déterministe, moteur **témoin** | `200`, `400`, `500` |
-| `POST /opinions/llm` | le LLM local, qui rend le **verdict** | `200`, `400`, `502`, `503`, `504` |
+| `POST /opinions/llm` | le LLM local, qui rend le **verdict** | `200`, `400`, `501`, `502`, `503`, `504` |
 | `GET /health` | — | `200` |
 
 ```jsonc
@@ -207,7 +207,10 @@ moteur LLM exige de lui — une consigne, un texte, une réponse.
 - Le **lexique rejoué sur le corpus témoin du dépôt, exemple par exemple**
   ([`tests/witness/`](tests/witness/)).
 - La **configuration du moteur LLM** : chaque variable absente refusée par son nom, et l'inégalité
-  stricte des deux échéances.
+  stricte des deux échéances — l'une comme l'autre le moteur allumé, au démarrage.
+- Le **sidecar éteint** ([`tests/test_llm_disabled.py`](tests/test_llm_disabled.py)) : l'application
+  démarrée sans une seule des sept variables, le refus nommé en `501`, le lexique et la santé
+  intacts, et une paire d'échéances résiduelle en désordre qui n'empêche plus de démarrer.
 - Ce que le sidecar **accepte du modèle** : tout ce qui n'est pas un avis complet — JSON malformé,
   droits vides, confiance hors échelle, justification absente — est une panne, jamais un avis faible.
 - La **traduction** des slugs français et des trois degrés de confiance vers les noms du fil, et le

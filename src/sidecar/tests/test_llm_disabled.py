@@ -11,11 +11,13 @@ faite ici se heurterait au refus de démarrer qu'elle est précisément là pour
 """
 
 import importlib
+from contextlib import contextmanager
 
 import pytest
 from fastapi.testclient import TestClient
 
 import qualification_sidecar.app
+from qualification_sidecar import llm
 
 PROBLEM_JSON = "application/problem+json"
 
@@ -33,30 +35,40 @@ LLM_ENVIRONMENT = (
 )
 
 
-@pytest.fixture
-def disabled_app(monkeypatch):
-    """Rend une application réimportée alors qu'aucune variable du moteur LLM n'est posée.
+@contextmanager
+def restarted(monkeypatch, **environment):
+    """Réimporte le module de l'application dans l'environnement dit, et le rend tel qu'il était.
 
-    La réimportation est le cœur du test : elle rejoue l'import du module dans un environnement vide
-    de tout réglage LLM, ce qu'un chargement fait à l'import rendrait impossible.
+    La réimportation est le cœur de ces tests : elle rejoue l'import du module là où aucun réglage
+    LLM n'est posé, ce qu'un chargement fait à l'import rendrait impossible. Toute variable du
+    moteur non citée est **retirée**, pour qu'aucun test ne repose sur ce que `conftest` a posé.
     """
     for variable in LLM_ENVIRONMENT:
         monkeypatch.delenv(variable, raising=False)
 
-    reloaded = importlib.reload(qualification_sidecar.app)
+    for name, value in environment.items():
+        monkeypatch.setenv(name, value)
 
-    yield reloaded.app
-
-    # L'environnement est rendu avant la dernière réimportation, pour que le module laissé aux
-    # tests suivants soit celui que `conftest` a configuré.
-    monkeypatch.undo()
-    importlib.reload(qualification_sidecar.app)
+    try:
+        yield importlib.reload(qualification_sidecar.app)
+    finally:
+        # L'environnement est rendu avant la dernière réimportation, pour que le module laissé aux
+        # tests suivants soit celui que `conftest` a configuré.
+        monkeypatch.undo()
+        importlib.reload(qualification_sidecar.app)
 
 
 @pytest.fixture
-def client(disabled_app):
+def disabled_module(monkeypatch):
+    """Le module de l'application, importé sans une seule variable du moteur LLM."""
+    with restarted(monkeypatch) as module:
+        yield module
+
+
+@pytest.fixture
+def client(disabled_module):
     """Entre dans le cycle de vie de l'application : le démarrage éteint est ici *exercé*, pas supposé."""
-    with TestClient(disabled_app) as client:
+    with TestClient(disabled_module.app) as client:
         yield client
 
 
@@ -70,13 +82,13 @@ def test_the_sidecar_starts_without_a_single_llm_setting(client):
     assert client.get("/health").status_code == 200
 
 
-def test_importing_the_application_module_does_not_load_the_llm_settings(disabled_app):
+def test_importing_the_application_module_does_not_load_the_llm_settings(disabled_module):
     """La paresse est ce qui rend le démarrage éteint observable sans sous-processus.
 
-    Que la fixture ait rendu une application prouve la propriété : elle a réimporté le module dans
-    un environnement dépourvu des sept variables.
+    Le module vient d'être importé sans les sept variables : qu'aucun amont n'en soit sorti est la
+    propriété même — le chargement fait à l'import aurait refusé cet import.
     """
-    assert disabled_app is not None
+    assert disabled_module.LLM_MODEL is None
 
 
 def test_a_residual_deadline_pair_in_disorder_no_longer_prevents_starting(monkeypatch):
@@ -85,18 +97,51 @@ def test_a_residual_deadline_pair_in_disorder_no_longer_prevents_starting(monkey
     Un exploitant doit pouvoir laisser d'anciens réglages écrits — fussent-ils incohérents — sans
     que le moteur éteint aille les lire. Faute d'échéance à tenir, il n'y a rien à vérifier.
     """
-    monkeypatch.setenv("QUALIFICATION_LLM_ENABLED", "false")
-    monkeypatch.setenv("QUALIFICATION_LLM_DEADLINE_SECONDS", "300")
-    monkeypatch.setenv("QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS", "30")
+    residual = {
+        "QUALIFICATION_LLM_ENABLED": "false",
+        "QUALIFICATION_LLM_DEADLINE_SECONDS": "300",
+        "QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS": "30",
+    }
 
-    reloaded = importlib.reload(qualification_sidecar.app)
+    with restarted(monkeypatch, **residual) as module, TestClient(module.app) as client:
+        assert client.get("/health").status_code == 200
 
-    try:
-        with TestClient(reloaded.app) as client:
-            assert client.get("/health").status_code == 200
-    finally:
-        monkeypatch.undo()
-        importlib.reload(qualification_sidecar.app)
+
+# --------------------------------------------------------------------------
+# Allumé, le refus de démarrer reste entier
+# --------------------------------------------------------------------------
+
+
+def test_a_lit_engine_without_its_settings_still_refuses_to_start(monkeypatch):
+    """La lecture a quitté l'import, pas le démarrage.
+
+    Une configuration incomplète doit rester une panne bruyante au démarrage, et non une panne de
+    qualification au premier appel — sans quoi la paresse aurait acheté le démarrage éteint au prix
+    d'un déploiement allumé qui ment sur son état.
+    """
+    with restarted(monkeypatch, QUALIFICATION_LLM_ENABLED="true") as module:
+        with pytest.raises(llm.MisconfiguredEngine, match="BASE_URL"):
+            with TestClient(module.app):
+                pass
+
+
+def test_a_lit_engine_whose_deadlines_are_in_disorder_still_refuses_to_start(monkeypatch):
+    """Allumé, l'inégalité stricte des deux échéances est vérifiée comme elle l'a toujours été."""
+    disorderly = {
+        "QUALIFICATION_LLM_ENABLED": "true",
+        "QUALIFICATION_LLM_BASE_URL": "http://modele-de-test.invalid/v1",
+        "QUALIFICATION_LLM_MODEL": "modele-de-test:0b",
+        "QUALIFICATION_LLM_API_KEY": "cle-inutilisee",
+        "QUALIFICATION_LLM_TEMPERATURE": "0",
+        "QUALIFICATION_LLM_SEED": "1789",
+        "QUALIFICATION_LLM_DEADLINE_SECONDS": "300",
+        "QUALIFICATION_LLM_CALLER_DEADLINE_SECONDS": "30",
+    }
+
+    with restarted(monkeypatch, **disorderly) as module:
+        with pytest.raises(llm.MisconfiguredEngine, match="strictement plus courte"):
+            with TestClient(module.app):
+                pass
 
 
 # --------------------------------------------------------------------------
