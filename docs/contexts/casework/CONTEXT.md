@@ -64,6 +64,51 @@ la personne d'un côté, la preuve destinée au contrôle de l'autre — ni la m
 `OutOfReach` figeant ce que le `Manifest` disait au moment du `Case`.
 _Avoid_ : Pending, Failed, Skipped, Blocked
 
+### Le temps, et ce qu'on en fait
+
+**Le délai de l'art. 12.3 court avant nous, et rien ne l'arrête.** Le mois part de la réception par
+n'importe quel canal officiel du responsable, sans que celui-ci en soit averti : le service hérite
+d'un compteur lancé depuis un nombre de jours inconnu, et la date de réception lui est **déclarée**.
+Rien ne le suspend — ni une `OpenQuestion`, ni une vérification d'identité, la suspension n'ayant
+aucune base textuelle.
+
+**La file est une requête, jamais un processus.** Le dépassement, l'échéance déclarée d'un `202`,
+l'ancienneté d'une `OpenQuestion`, une `Delivery` non remise, un `Ledger` échu : tout se recalcule à
+l'instant où l'`Operator` regarde. Rien ne tourne, donc rien ne peut s'arrêter en silence — un
+processus de fond interrompu rendrait une file **vide et rassurante**, soit l'`Omission silencieuse`
+sous sa forme la plus dangereuse, et ferait dépendre la preuve de ce qu'un `cron` ait tourné.
+⚠️ De ces cinq échéances, quatre ne sont que des **colonnes** sur des lignes déjà présentes : le
+`Case` est ouvert, il est déjà dans la file. L'échéance **trie**, elle n'ajoute pas. Seul le `Ledger`
+échu fait naître une ligne, son `Case` étant clos depuis cinq ans — d'où sa section propre sur
+l'écran, qui tient aussi lieu de parade au geste irréversible qu'il porte.
+⚠️ **Aucun seuil, nulle part.** Une `OpenQuestion` affiche la date à laquelle elle a été posée,
+jamais « sans réponse depuis N jours » : aucun nombre du droit ne fonde N, un seuil réglable serait
+une case à laisser pourrir de plus, et trier sur lui ferait passer devant un compteur sans force
+juridique. On montre le fait, l'`Operator` juge.
+
+**ExtensionDeclaration** :
+Ce que l'`Operator` déclare lorsqu'il prolonge de deux mois au titre de l'art. 12.3 : un **motif**,
+la **date à laquelle il a informé la personne** de la prolongation et de ses motifs, sa signature et
+sa date. Le service ne prolonge rien et ne notifie personne — il **réclame** une déclaration et
+l'enregistre, comme il le fait de l'identité et de la remise.
+Le déplacement de l'échéance est un **calcul** sur la date de la déclaration, jamais une propriété de
+l'objet : déclarée dans le mois, elle porte le délai à trois mois ; déclarée après, elle s'inscrit
+quand même — le fait est gardé — mais le dénominateur ne bouge pas, sans quoi un clic blanchirait un
+dépassement déjà acquis. Jamais barrée : on enregistre un fait laid plutôt qu'on ne fabrique un faux.
+_Avoid_ : Extension, Delay, Postponement, Deferral, prolongation
+
+**La relance a lieu à l'ouverture d'un `Case`.** Un `202` d'`Adapter` porte une échéance déclarée, et
+c'est le service qui revient — mais seulement quand l'`Operator` ouvre le dossier, jamais depuis la
+file, qui n'émet aucun appel. Il n'existe ni compteur de tentatives, ni temporisation, ni abandon
+automatique, ni escalade : l'`Operator` n'a jamais cessé d'être le seul à produire une issue, et une
+escalade automatique lui retirerait une décision qui est la sienne.
+
+**La personne n'apprend rien du temps qui passe.** Le service ne lui parle jamais — ni accusé de
+réception, ni avertissement d'échéance, ni relance de courtoisie. Les trois seules communications qui
+lui sont dues — la prolongation, le refus et ses mentions de l'art. 12.4, la remise — sont des actes
+humains **déclarés** au service, jamais émis par lui. Le temps est de la matière de preuve, lue par
+le contrôle ; il n'est pas de la matière de relation.
+
 ### Le paysage déclaré du client
 
 **DeclaredSystem** :
@@ -146,6 +191,11 @@ réécrire — dans la seule structure du dispositif dont l'invariant est qu'on 
 ⚠️ Il n'est anonyme que **côté personne concernée** : il nomme l'`Operator`, définitivement, parce
 que « par qui » est un tiers de ce que le service prouve. C'est donc un fichier de données
 personnelles sur les salariés du client, et son effacement leur est légitimement refusé.
+⚠️ Il consigne les faits qui **changent** quelque chose, jamais leur répétition : un appel s'inscrit
+s'il rend un verdict différent du précédent, et pas autrement. Trente-cinq relances rendant le même
+`202` n'ont aucun signataire — c'est un affichage qui les a déclenchées, non un humain — et
+noieraient sous du bruit de mécanique ce que le contrôle vient lire. Trois dates disent tout :
+appelé, échéance déclarée, résultat. On ne saura donc jamais combien de fois on a relancé.
 _Avoid_ : Register, Record, Journal, AuditTrail, History, registre ⚠️ « registre » désigne l'art. 30
 en RGPD, hors périmètre de ce service.
 
@@ -197,9 +247,11 @@ aussi longtemps que l'action qu'elle sert à défendre. Une durée réglable par
 qui pourrit en silence, et de la donnée gardée trop longtemps ne fait aucun bruit. À échéance le
 `Ledger` est détruit **en entier** — pas de second étage d'anonymisation, qui rouvrirait
 l'expurgation que sa définition ferme.
-⚠️ Cette destruction n'est **jamais automatique**. Une minuterie remonte le `Ledger` échu dans la
-file de l'`Operator`, qui le détruit d'un geste signé : un `Ledger` expiré est ainsi une **ligne
-présente**, vue tous les jours, jamais une ligne manquante que nulle relecture ne lèverait.
+⚠️ Cette destruction n'est **jamais automatique**. Un `Ledger` échu apparaît dans une **section
+propre** de l'écran de la file — sa ligne n'a ni personne, ni droit, ni délai, et son bouton ne doit
+jamais voisiner ceux des `Case` — où l'`Operator` le détruit d'un geste délibéré et signé : un
+`Ledger` expiré est ainsi une **ligne présente**, vue tous les jours, jamais une ligne manquante que
+nulle relecture ne lèverait. La section reste affichée, et vide, les années où rien n'est échu.
 ⚠️ Deux coûts assumés : un `Operator` inactif garde au-delà de cinq ans — visible, jamais barré — et
 la destruction ne laisse **aucune trace**, un `Ledger` détruit ne pouvant consigner sa propre
 destruction. On ne prouvera pas qu'on a purgé.
@@ -209,9 +261,15 @@ destruction. On ne prouvera pas qu'on a purgé.
 **Operator** :
 L'humain, côté client, qui instruit les `Case`. **Seul** à produire une issue : seul à confirmer un
 `Claim`, à arbitrer une réserve de `Locate`, à motiver un refus, à clore un `Case`. L'`Adapter` ne
-fait avancer que l'exécution, et toujours en réponse à un appel du service ; une minuterie ne
-transite rien, elle remonte dans la file. La personne concernée n'est pas un acteur du cycle.
+fait avancer que l'exécution, et toujours en réponse à un appel du service. La personne concernée
+n'est pas un acteur du cycle.
 _Avoid_ : User, Agent, Admin, gestionnaire
+
+⚠️ **Il n'existe aucun troisième moteur.** Ce qui fait remonter du travail dans la file est une
+**requête**, évaluée quand l'`Operator` regarde — une propriété de la surface, pas un acteur du
+domaine. Aucun nom ne lui est donné : `Timer`, `Scheduler`, `DueWork` et `Reminder` promettraient
+tous une chose qui tourne, et quelqu'un finirait par écrire le processus qui tourne — même mécanique
+que le refus de `Blocker`.
 
 ### Ce que le service ne fait pas
 
