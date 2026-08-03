@@ -301,9 +301,12 @@ Le schéma JSON ne peut pas tout exprimer : **l'exclusivité d'`OutOfScope` n'es
 | --- | --- |
 | `200` | avis valide |
 | `400` | requête malformée — texte absent ou vide |
+| `501` | ce déploiement ne sert **aucun** modèle : le moteur y est éteint, et rien n'est en panne |
 | `502` | Ollama a répondu mais inexploitable : JSON illisible, valeur hors taxonomie, exclusivité violée |
 | `503` | Ollama injoignable ou modèle non chargé |
 | `504` | Ollama a dépassé le délai interne du sidecar |
+
+**Le `501` est le seul de cette palette à ne nommer aucune panne.** Le moteur LLM est éteint par défaut (§ 9) : rien n'est à réparer, rien n'est à redémarrer, et rien n'est journalisé en erreur. Ni `404`, qui ferait chercher une faute de frappe dans l'URL, ni `503`, qui ferait redémarrer un serveur de modèles qu'on n'a jamais voulu.
 
 `POST /opinions/lexicon` : **`200` et `400` seulement** (plus `500` sur bug). Le lexique n'a aucun amont — ni `502`, ni `503`, ni `504` ne peuvent survenir. **Cette asymétrie n'est pas un accident** : c'est ce que deux endpoints séparés achètent, et ce qui rend les comportements dégradés presque gratuits.
 
@@ -603,6 +606,7 @@ Tous les chiffres ci-dessous sont **arbitraires et assumés comme tels**, à ré
 
 | Réglage | Valeur | Où | § |
 | --- | --- | --- | --- |
+| Existence du moteur LLM | **éteint par défaut** — `Llm:Enabled` côté .NET, `QUALIFICATION_LLM_ENABLED` côté sidecar | `Web` / `Infrastructure`, et sidecar | 5.6 |
 | Modèle local | `qwen3:8b` | Ollama / sidecar | 3 |
 | `temperature` | `0`, seed fixe | sidecar | 5.5 |
 | `base_url` du client compatible OpenAI | Ollama | sidecar — **point de bascule vers Mistral** | 3 |
