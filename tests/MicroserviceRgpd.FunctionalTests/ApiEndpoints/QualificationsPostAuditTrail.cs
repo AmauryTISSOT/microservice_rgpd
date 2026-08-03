@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

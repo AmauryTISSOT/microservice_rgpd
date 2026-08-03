@@ -1,4 +1,6 @@
-﻿namespace MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.SharedKernel;
+
+namespace MicroserviceRgpd.Core.Qualifications;
 
 /// <summary>
 /// Le verdict rendu sur un <see cref="RightsRequestText"/> : l'ensemble des droits que le texte est

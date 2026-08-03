@@ -1,6 +1,6 @@
 # Parallel Test Execution Configuration
 
-This workspace is configured to run all three test projects in parallel in Visual Studio Test Explorer.
+This workspace is configured to run all four test projects in parallel in Visual Studio Test Explorer.
 
 ## Configuration Files
 
@@ -34,7 +34,7 @@ Visual Studio will automatically detect and use `.runsettings` in the solution r
 ## Verification
 
 After configuration, when you run all tests:
-- The three test projects (UnitTests, IntegrationTests, FunctionalTests) will run in parallel
+- The four test projects (UnitTests, ArchitectureTests, IntegrationTests, FunctionalTests) will run in parallel
 - Within each project, test collections will also run in parallel
 - You should see multiple tests running simultaneously in Test Explorer
 

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Qualifications.Qualify;
 
 namespace MicroserviceRgpd.FunctionalTests.ApiEndpoints;

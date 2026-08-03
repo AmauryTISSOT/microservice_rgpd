@@ -20,6 +20,7 @@
     <Project Path="src/MicroserviceRgpd.ServiceDefaults/MicroserviceRgpd.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MicroserviceRgpd.ArchitectureTests/MicroserviceRgpd.ArchitectureTests.csproj" />
     <Project Path="tests/MicroserviceRgpd.FunctionalTests/MicroserviceRgpd.FunctionalTests.csproj">
       <BuildDependency Project="src/MicroserviceRgpd.Web/MicroserviceRgpd.Web.csproj" />
     </Project>

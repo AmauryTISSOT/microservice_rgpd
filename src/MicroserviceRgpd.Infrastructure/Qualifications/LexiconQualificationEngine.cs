@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Infrastructure.Qualifications;
 

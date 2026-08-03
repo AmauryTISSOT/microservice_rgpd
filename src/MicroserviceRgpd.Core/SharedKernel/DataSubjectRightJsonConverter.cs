@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace MicroserviceRgpd.Core.Qualifications;
+namespace MicroserviceRgpd.Core.SharedKernel;
 
 /// <summary>
 /// La projection d'un <see cref="DataSubjectRight"/> sur un fil JSON : son <b>nom canonique

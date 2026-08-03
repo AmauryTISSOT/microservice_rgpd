@@ -1,4 +1,5 @@
-﻿using Vogen;
+﻿using MicroserviceRgpd.Core.SharedKernel;
+using Vogen;
 
 namespace MicroserviceRgpd.Core.Qualifications;
 
