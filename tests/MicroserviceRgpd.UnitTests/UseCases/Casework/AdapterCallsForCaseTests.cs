@@ -31,12 +31,12 @@ public class AdapterCallsForCaseTests
   /// geste d'aucun humain nommé.
   /// </summary>
   [Theory]
-  [InlineData(nameof(AdapterVerdict.SecretRefused), nameof(LedgerFact.AdapterRefusedTheSecret))]
-  [InlineData(nameof(AdapterVerdict.SystemNotServed), nameof(LedgerFact.AdapterDidNotServeTheSystem))]
-  public async Task WritesTheDatedAttemptWhenTheAdapterRefuses(string verdict, string expected)
+  [InlineData(nameof(AdapterOutcome.SecretRefused), nameof(LedgerFact.AdapterRefusedTheSecret))]
+  [InlineData(nameof(AdapterOutcome.SystemNotServed), nameof(LedgerFact.AdapterDidNotServeTheSystem))]
+  public async Task WritesTheDatedAttemptWhenTheAdapterRefuses(string outcome, string expected)
   {
     var caseId = CaseId.Next();
-    TheAdapterAnswers(AdapterAnswer<Found>.Refusing(AdapterVerdict.FromName(verdict)));
+    TheAdapterAnswers(AdapterAnswer<Found>.Refusing(AdapterOutcome.FromName(outcome)));
 
     await Calling().AskAsync<Found>(caseId, ALocate());
 
@@ -56,7 +56,7 @@ public class AdapterCallsForCaseTests
   [Fact]
   public async Task CountsNoDesignationOnARefusalThatSearchedNothing()
   {
-    TheAdapterAnswers(AdapterAnswer<Found>.Refusing(AdapterVerdict.SecretRefused));
+    TheAdapterAnswers(AdapterAnswer<Found>.Refusing(AdapterOutcome.SecretRefused));
 
     await Calling().AskAsync<Found>(CaseId.Next(), ALocate());
 
@@ -70,11 +70,11 @@ public class AdapterCallsForCaseTests
   [Fact]
   public async Task SignalsTheDisagreementBesidesWritingTheProof()
   {
-    TheAdapterAnswers(AdapterAnswer<Found>.Refusing(AdapterVerdict.SystemNotServed));
+    TheAdapterAnswers(AdapterAnswer<Found>.Refusing(AdapterOutcome.SystemNotServed));
 
     await Calling().AskAsync<Found>(CaseId.Next(), ALocate());
 
-    _disagreements.Received(1).Signal(DeclaredSystemId.From("boutique"), AdapterVerdict.SystemNotServed);
+    _disagreements.Received(1).Signal(DeclaredSystemId.From("boutique"), AdapterOutcome.SystemNotServed);
   }
 
   /// <summary>
@@ -88,11 +88,11 @@ public class AdapterCallsForCaseTests
 
     var answer = await Calling().AskAsync<Found>(CaseId.Next(), ALocate());
 
-    answer.Verdict.ShouldBe(AdapterVerdict.Deferred);
+    answer.Outcome.ShouldBe(AdapterOutcome.Deferred);
     answer.DeclaredDeadline.ShouldBe(Now.AddHours(6));
 
     await _ledger.DidNotReceiveWithAnyArgs().AppendAsync(default!);
-    _disagreements.DidNotReceiveWithAnyArgs().Signal(DeclaredSystemId.From("peu-importe"), AdapterVerdict.SecretRefused);
+    _disagreements.DidNotReceiveWithAnyArgs().Signal(DeclaredSystemId.From("peu-importe"), AdapterOutcome.SecretRefused);
   }
 
   /// <summary>

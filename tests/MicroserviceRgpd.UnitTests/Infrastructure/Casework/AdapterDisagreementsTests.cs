@@ -27,7 +27,7 @@ public class AdapterDisagreementsTests
 
     for (var attempt = 0; attempt < 35; attempt++)
     {
-      disagreements.Signal(Shop, AdapterVerdict.SecretRefused);
+      disagreements.Signal(Shop, AdapterOutcome.SecretRefused);
     }
 
     said.Errors.Count.ShouldBe(1);
@@ -45,26 +45,26 @@ public class AdapterDisagreementsTests
     var said = new RecordingLogger();
     var disagreements = new AdapterDisagreements(said);
 
-    disagreements.Signal(Shop, AdapterVerdict.SecretRefused);
-    disagreements.Signal(Shop, AdapterVerdict.SystemNotServed);
-    disagreements.Signal(Log, AdapterVerdict.SecretRefused);
-    disagreements.Signal(Shop, AdapterVerdict.SecretRefused);
+    disagreements.Signal(Shop, AdapterOutcome.SecretRefused);
+    disagreements.Signal(Shop, AdapterOutcome.SystemNotServed);
+    disagreements.Signal(Log, AdapterOutcome.SecretRefused);
+    disagreements.Signal(Shop, AdapterOutcome.SecretRefused);
 
     said.Errors.Count.ShouldBe(3);
   }
 
   /// <summary>
   /// Un <c>Adapter</c> qui répond n'est pas en désaccord avec le <c>Manifest</c> : signaler un
-  /// verdict servi ou différé est une programmation fautive, jamais un signal discret.
+  /// « servi » ou « différé » est une programmation fautive, jamais un signal discret.
   /// </summary>
   [Theory]
-  [InlineData(nameof(AdapterVerdict.Served))]
-  [InlineData(nameof(AdapterVerdict.Deferred))]
-  public void RefusesToSignalWhatIsNotARefusal(string verdict)
+  [InlineData(nameof(AdapterOutcome.Served))]
+  [InlineData(nameof(AdapterOutcome.Deferred))]
+  public void RefusesToSignalWhatIsNotARefusal(string outcome)
   {
     var disagreements = new AdapterDisagreements(new RecordingLogger());
 
-    Should.Throw<ArgumentException>(() => disagreements.Signal(Shop, AdapterVerdict.FromName(verdict)));
+    Should.Throw<ArgumentException>(() => disagreements.Signal(Shop, AdapterOutcome.FromName(outcome)));
   }
 
   /// <summary>Ce que l'exploitant aurait lu, gardé plutôt qu'écrit.</summary>

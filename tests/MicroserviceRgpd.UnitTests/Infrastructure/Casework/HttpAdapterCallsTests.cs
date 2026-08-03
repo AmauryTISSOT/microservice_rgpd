@@ -106,7 +106,7 @@ public class HttpAdapterCallsTests
 
     var answer = await Calling(adapter).AskAsync<Found>(ALocate());
 
-    answer.Verdict.ShouldBe(AdapterVerdict.Served);
+    answer.Outcome.ShouldBe(AdapterOutcome.Served);
     answer.Served!.Count.ShouldBe(12);
     answer.DeclaredDeadline.ShouldBeNull();
   }
@@ -124,7 +124,7 @@ public class HttpAdapterCallsTests
 
     var answer = await Calling(adapter).AskAsync<Found>(ALocate());
 
-    answer.Verdict.ShouldBe(AdapterVerdict.Deferred);
+    answer.Outcome.ShouldBe(AdapterOutcome.Deferred);
     answer.DeclaredDeadline.ShouldBe(new DateTimeOffset(2026, 8, 5, 7, 0, 0, TimeSpan.Zero));
     answer.Served.ShouldBeNull();
     adapter.Asked.Count.ShouldBe(1);
@@ -153,16 +153,16 @@ public class HttpAdapterCallsTests
   /// fois sur deux.
   /// </summary>
   [Theory]
-  [InlineData(HttpStatusCode.Unauthorized, nameof(AdapterVerdict.SecretRefused))]
-  [InlineData(HttpStatusCode.NotFound, nameof(AdapterVerdict.SystemNotServed))]
+  [InlineData(HttpStatusCode.Unauthorized, nameof(AdapterOutcome.SecretRefused))]
+  [InlineData(HttpStatusCode.NotFound, nameof(AdapterOutcome.SystemNotServed))]
   public async Task TellsTheTwoRefusalsApart(HttpStatusCode status, string expected)
   {
     var adapter = AdapterDouble.RespondingWith(status);
 
     var answer = await Calling(adapter).AskAsync<Found>(ALocate());
 
-    answer.Verdict.ShouldBe(AdapterVerdict.FromName(expected));
-    answer.Verdict.IsRefusal.ShouldBeTrue();
+    answer.Outcome.ShouldBe(AdapterOutcome.FromName(expected));
+    answer.Outcome.IsRefusal.ShouldBeTrue();
     answer.Served.ShouldBeNull();
     answer.DeclaredDeadline.ShouldBeNull();
   }

@@ -137,6 +137,16 @@ la forme. Imposer la forme depuis le service reviendrait à arbitrer la seule ch
 arbitrer, ayant renoncé au grain du champ.
 _Avoid_ : Operation (pris par l'art. 4.2), acte, verbe, diligence, permission
 
+**Désaccord `Manifest`/`Adapter`** :
+Ce qu'un refus d'`Adapter` révèle : le paysage déclaré et le programme qui le sert ne parlent plus
+du même système, ou les deux moitiés du secret ont divergé. Il se signale **une seule fois, au grain
+du déploiement** — une panne unique n'est pas N pannes, et la crier une fois par dossier ferait
+dépendre le volume du signal du nombre de demandes en cours, qui n'en dit rien. Il ne corrige jamais
+le `Manifest` en silence : un humain tranche lequel des deux avait tort.
+⚠️ Le `Ledger`, lui, garde **toutes** les tentatives, datées, dossier par dossier : ce sont deux
+lecteurs et deux grains — l'exploitant d'un côté, le contrôle de l'autre.
+_Avoid_ : erreur, panne, incident, alerte
+
 **Adapter** :
 Le programme que l'application du client implémente et que le service appelle pour exercer une
 `Capability` sur ses `DeclaredSystem`. Le sens est **unique** : le service appelle toujours,
@@ -144,7 +154,14 @@ l'application ne rappelle jamais.
 Son contrat est écrit dans [`docs/api/adapter.md`](../../api/adapter.md), **clause de périmètre
 comprise** : le contrat ne dit jamais « authentifiez-vous », il dit un secret partagé **et** un
 `Adapter` hors d'atteinte de l'extérieur — les deux ensemble, jamais l'un sans l'autre.
-_Avoid_ : Connector, Plugin, Integration, Webhook
+Il répond de quatre façons, et de quatre seulement : il **sert**, il **diffère** en déclarant une
+échéance, ou il refuse — d'un des **deux refus** qui ne se confondent pas, `SecretRefused` et
+`SystemNotServed`, parce qu'on ne les répare pas au même endroit. Tout le reste — serveur muet,
+statut hors contrat, différé sans échéance lisible — est une **panne**, et n'entre dans aucun
+vocabulaire fermé : personne ne saurait qu'en conclure.
+⚠️ Le mot **verdict** est réservé à la `Qualification` et ne nomme jamais la réponse d'un
+`Adapter` : une machine ne rend pas d'issue.
+_Avoid_ : Connector, Plugin, Integration, Webhook ⚠️ pour sa réponse : Verdict, Result, Status
 
 ### La personne, et comment on la désigne
 
@@ -204,7 +221,10 @@ réécrire — dans la seule structure du dispositif dont l'invariant est qu'on 
 que « par qui » est un tiers de ce que le service prouve. C'est donc un fichier de données
 personnelles sur les salariés du client, et son effacement leur est légitimement refusé.
 ⚠️ Il consigne les faits qui **changent** quelque chose, jamais leur répétition : un appel s'inscrit
-s'il rend un verdict différent du précédent, et pas autrement. Trente-cinq relances rendant le même
+s'il rend un verdict différent du précédent, et pas autrement. Cette règle est tenue par
+l'**appelant**, jamais par le `Ledger` : celui-ci ne se relit pas — une écriture qui lirait la ligne
+d'avant serait une écriture qu'une ligne d'avant pourrait faire mentir. Tant qu'aucune relance
+n'existe, chaque tentative part d'un geste distinct et s'inscrit. Trente-cinq relances rendant le même
 `202` n'ont aucun signataire — c'est un affichage qui les a déclenchées, non un humain — et
 noieraient sous du bruit de mécanique ce que le contrôle vient lire. Trois dates disent tout :
 appelé, échéance déclarée, résultat. On ne saura donc jamais combien de fois on a relancé.

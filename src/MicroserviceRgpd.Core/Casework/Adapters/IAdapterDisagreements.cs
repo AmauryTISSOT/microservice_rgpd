@@ -31,5 +31,5 @@ public interface IAdapterDisagreements
   /// </summary>
   /// <param name="declaredSystem">Le système au titre duquel l'appel est parti.</param>
   /// <param name="refusal">Lequel des deux refus a été rendu.</param>
-  void Signal(DeclaredSystemId declaredSystem, AdapterVerdict refusal);
+  void Signal(DeclaredSystemId declaredSystem, AdapterOutcome refusal);
 }

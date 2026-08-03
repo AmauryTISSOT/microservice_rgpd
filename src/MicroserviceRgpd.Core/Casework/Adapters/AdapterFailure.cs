@@ -9,7 +9,7 @@
 /// <b>Elle se distingue d'un refus, et la distinction est tout son propos.</b> Un refus est une
 /// réponse claire de l'<c>Adapter</c> — on la consigne, on la signale, et l'exploitant sait où
 /// aller. Une panne ne dit rien de plus que « ça n'a pas marché », et elle n'a donc aucune valeur
-/// dans <see cref="AdapterVerdict"/> : la mettre au même rang ferait entrer au vocabulaire fermé du
+/// dans <see cref="AdapterOutcome"/> : la mettre au même rang ferait entrer au vocabulaire fermé du
 /// <c>Ledger</c> un fait dont personne ne sait quoi conclure.
 /// </para>
 /// <para>

@@ -51,7 +51,7 @@ public sealed class AdapterCallsForCase(
   TimeProvider clock)
 {
   /// <summary>
-  /// Porte un appel au titre d'un dossier, et rend le verdict tel quel — servi, différé, ou l'un
+  /// Porte un appel au titre d'un dossier, et rend la réponse telle quelle — servi, différé, ou l'un
   /// des deux refus.
   /// </summary>
   /// <remarks>
@@ -74,16 +74,16 @@ public sealed class AdapterCallsForCase(
 
     var answer = await calls.AskAsync<TServed>(call, cancellationToken);
 
-    if (!answer.Verdict.IsRefusal)
+    if (!answer.Outcome.IsRefusal)
     {
       return answer;
     }
 
     await ledger.AppendAsync(
-      LedgerEntry.AdapterRefused(caseId, clock.GetUtcNow(), call.DeclaredSystem, answer.Verdict),
+      LedgerEntry.AdapterRefused(caseId, clock.GetUtcNow(), call.DeclaredSystem, answer.Outcome),
       cancellationToken);
 
-    disagreements.Signal(call.DeclaredSystem, answer.Verdict);
+    disagreements.Signal(call.DeclaredSystem, answer.Outcome);
 
     return answer;
   }

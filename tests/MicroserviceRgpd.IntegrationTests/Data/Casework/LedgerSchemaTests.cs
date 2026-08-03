@@ -75,7 +75,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
         refused,
         Opened,
         DeclaredSystemId.From("boutique"),
-        AdapterVerdict.SecretRefused));
+        AdapterOutcome.SecretRefused));
 
     await using var reread = postgres.NewDbContext();
 

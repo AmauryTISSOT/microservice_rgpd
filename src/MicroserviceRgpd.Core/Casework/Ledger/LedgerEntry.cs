@@ -145,20 +145,18 @@ public sealed record LedgerEntry
   /// <param name="declaredSystem">Le système sur lequel on demandait à exercer.</param>
   /// <param name="refusal">Lequel des deux refus l'<c>Adapter</c> a rendu.</param>
   /// <exception cref="ArgumentNullException"><paramref name="refusal"/> est absent.</exception>
-  /// <exception cref="ArgumentException">Le verdict donné n'est pas un refus.</exception>
+  /// <exception cref="ArgumentException">La réponse donnée n'est pas un refus.</exception>
   public static LedgerEntry AdapterRefused(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
-    AdapterVerdict refusal)
+    AdapterOutcome refusal)
   {
-    ArgumentNullException.ThrowIfNull(refusal);
-
     return new LedgerEntry(
       LedgerEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      FactOf(refusal),
+      FactOf(AdapterOutcome.RefusalOrThrow(refusal, nameof(refusal))),
       Signatory.Application,
       identityDeclaration: null,
       designationCount: null,
@@ -170,21 +168,12 @@ public sealed record LedgerEntry
   /// preuve</b> : ils ne se réparent pas au même endroit, et un « appel refusé » unique ferait
   /// chercher au mauvais endroit qui relira.
   /// </summary>
-  private static LedgerFact FactOf(AdapterVerdict refusal)
+  private static LedgerFact FactOf(AdapterOutcome refusal)
   {
-    if (refusal == AdapterVerdict.SecretRefused)
-    {
-      return LedgerFact.AdapterRefusedTheSecret;
-    }
-
-    if (refusal == AdapterVerdict.SystemNotServed)
-    {
-      return LedgerFact.AdapterDidNotServeTheSystem;
-    }
-
-    throw new ArgumentException(
-      $"« {refusal.Name} » n'est pas un refus : le Ledger ne consigne ici que les tentatives "
-      + "refusées.",
-      nameof(refusal));
+    // Le refus est déjà garanti par l'appelant ; ce qui reste est la seule correspondance du
+    // dispositif entre ce que le transport a répondu et ce que la preuve en garde.
+    return refusal == AdapterOutcome.SecretRefused
+      ? LedgerFact.AdapterRefusedTheSecret
+      : LedgerFact.AdapterDidNotServeTheSystem;
   }
 }

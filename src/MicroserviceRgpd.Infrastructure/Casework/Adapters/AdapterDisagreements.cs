@@ -38,17 +38,9 @@ public sealed class AdapterDisagreements(ILogger<AdapterDisagreements> logger) :
   private readonly ConcurrentDictionary<(string System, string Refusal), bool> _said = new();
 
   /// <inheritdoc />
-  public void Signal(DeclaredSystemId declaredSystem, AdapterVerdict refusal)
+  public void Signal(DeclaredSystemId declaredSystem, AdapterOutcome refusal)
   {
-    ArgumentNullException.ThrowIfNull(refusal);
-
-    if (!refusal.IsRefusal)
-    {
-      throw new ArgumentException(
-        $"« {refusal.Name} » n'est pas un refus : un Adapter qui répond n'est pas en désaccord avec "
-        + "le Manifest.",
-        nameof(refusal));
-    }
+    AdapterOutcome.RefusalOrThrow(refusal, nameof(refusal));
 
     if (!_said.TryAdd((declaredSystem.Value, refusal.Name), true))
     {

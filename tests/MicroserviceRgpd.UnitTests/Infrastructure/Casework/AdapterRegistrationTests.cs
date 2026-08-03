@@ -1,4 +1,6 @@
-﻿using MicroserviceRgpd.Core.Casework.Adapters;
+﻿using System.Net;
+using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,6 +70,51 @@ public class AdapterRegistrationTests
     first.ServiceProvider.GetRequiredService<IAdapterDisagreements>()
       .ShouldBeSameAs(second.ServiceProvider.GetRequiredService<IAdapterDisagreements>());
   }
+
+  /// <summary>
+  /// <b>Le service ne relance jamais tout seul</b>, et c'est vrai du client réellement câblé — pas
+  /// seulement de celui qu'un test construit à la main. Le pipeline standard du dépôt reprendrait
+  /// jusqu'à trois fois un <c>POST</c> tombé sur un <c>5xx</c> ; ce test le remet en place, puis
+  /// vérifie qu'il a bien été remplacé.
+  /// </summary>
+  /// <remarks>
+  /// L'enjeu déborde ce lot : au lot où <c>Erase</c> arrive, une reprise serait une destruction
+  /// rejouée trois fois chez le client, et le contrat lui promet le contraire.
+  /// </remarks>
+  [Fact]
+  public async Task AsksOnceAndNeverRetriesOnTheWiredUpClient()
+  {
+    var adapter = AdapterDouble.RespondingWith(HttpStatusCode.InternalServerError);
+
+    var services = new ServiceCollection().AddLogging();
+
+    // Le défaut du dépôt, tel que ServiceDefaults le pose sur tous les clients : sans cette ligne,
+    // le test passerait sans rien prouver.
+    services.ConfigureHttpClientDefaults(http => http.AddStandardResilienceHandler());
+
+    services.AddAdapterCalls(Configured("un-secret-partage"));
+    services.AddHttpClient<IAdapterCalls, HttpAdapterCalls>()
+      .ConfigurePrimaryHttpMessageHandler(() => adapter);
+
+    await using var provider = services.BuildServiceProvider();
+
+    await Should.ThrowAsync<AdapterFailure>(() => provider.GetRequiredService<IAdapterCalls>()
+      .AskAsync<Found>(ALocate()));
+
+    adapter.Asked.Count.ShouldBe(1);
+  }
+
+  private static AdapterCall ALocate()
+  {
+    return new AdapterCall(
+      AdapterAddress.From("https://brocanto.example.fr/rgpd"),
+      DeclaredSystemId.From("boutique"),
+      Capability.Locate,
+      [Designation.Of(DesignationKind.Email, "helene.petit@example.fr")]);
+  }
+
+  /// <summary>Ce qu'une capacité rend — ici, rien qui n'arrive jamais.</summary>
+  private sealed record Found(int Count);
 
   private static IConfiguration Configured(string secret)
   {

@@ -18,18 +18,18 @@ public class AdapterAnswerTests
   [Fact]
   public void KnowsExactlyTwoRefusalsAndTellsThemApart()
   {
-    AdapterVerdict.List.Where(verdict => verdict.IsRefusal)
-      .ShouldBe([AdapterVerdict.SecretRefused, AdapterVerdict.SystemNotServed], ignoreOrder: true);
+    AdapterOutcome.List.Where(outcome => outcome.IsRefusal)
+      .ShouldBe([AdapterOutcome.SecretRefused, AdapterOutcome.SystemNotServed], ignoreOrder: true);
 
-    AdapterVerdict.SecretRefused.ShouldNotBe(AdapterVerdict.SystemNotServed);
+    AdapterOutcome.SecretRefused.ShouldNotBe(AdapterOutcome.SystemNotServed);
   }
 
   /// <summary>Servir et répondre ne sont pas des refus : un <c>Adapter</c> qui répond n'est pas en désaccord.</summary>
   [Fact]
   public void CountsNeitherServingNorDeferringAsARefusal()
   {
-    AdapterVerdict.Served.IsRefusal.ShouldBeFalse();
-    AdapterVerdict.Deferred.IsRefusal.ShouldBeFalse();
+    AdapterOutcome.Served.IsRefusal.ShouldBeFalse();
+    AdapterOutcome.Deferred.IsRefusal.ShouldBeFalse();
   }
 
   /// <summary>Un différé porte son échéance, et rien d'autre — <b>ramenée en UTC</b>, comme la preuve.</summary>
@@ -38,7 +38,7 @@ public class AdapterAnswerTests
   {
     var answer = AdapterAnswer<Found>.Deferring(Deadline);
 
-    answer.Verdict.ShouldBe(AdapterVerdict.Deferred);
+    answer.Outcome.ShouldBe(AdapterOutcome.Deferred);
     answer.DeclaredDeadline!.Value.Offset.ShouldBe(TimeSpan.Zero);
     answer.DeclaredDeadline.ShouldBe(new DateTimeOffset(2026, 8, 5, 7, 0, 0, TimeSpan.Zero));
     answer.Served.ShouldBeNull();
@@ -48,23 +48,23 @@ public class AdapterAnswerTests
   [Fact]
   public void CarriesNothingButTheRefusalItself()
   {
-    var answer = AdapterAnswer<Found>.Refusing(AdapterVerdict.SecretRefused);
+    var answer = AdapterAnswer<Found>.Refusing(AdapterOutcome.SecretRefused);
 
     answer.Served.ShouldBeNull();
     answer.DeclaredDeadline.ShouldBeNull();
   }
 
   /// <summary>
-  /// On ne « refuse » pas avec un verdict qui répond : servir rend un corps, différer rend une
+  /// On ne « refuse » pas avec une réponse qui sert : servir rend un corps, différer rend une
   /// échéance, et chacun a sa fabrique — le mélange est une programmation fautive.
   /// </summary>
   [Theory]
-  [InlineData(nameof(AdapterVerdict.Served))]
-  [InlineData(nameof(AdapterVerdict.Deferred))]
-  public void RefusesToBuildARefusalOutOfAnAnswer(string verdict)
+  [InlineData(nameof(AdapterOutcome.Served))]
+  [InlineData(nameof(AdapterOutcome.Deferred))]
+  public void RefusesToBuildARefusalOutOfAnAnswer(string outcome)
   {
     Should.Throw<ArgumentException>(
-      () => AdapterAnswer<Found>.Refusing(AdapterVerdict.FromName(verdict)));
+      () => AdapterAnswer<Found>.Refusing(AdapterOutcome.FromName(outcome)));
   }
 
   /// <summary>

@@ -47,9 +47,9 @@ public class LedgerEntryTests
   /// ferait chercher au mauvais endroit qui relira.
   /// </summary>
   [Theory]
-  [InlineData(nameof(AdapterVerdict.SecretRefused), nameof(LedgerFact.AdapterRefusedTheSecret))]
-  [InlineData(nameof(AdapterVerdict.SystemNotServed), nameof(LedgerFact.AdapterDidNotServeTheSystem))]
-  public void WritesTheDatedAttemptOfARefusedCall(string verdict, string expected)
+  [InlineData(nameof(AdapterOutcome.SecretRefused), nameof(LedgerFact.AdapterRefusedTheSecret))]
+  [InlineData(nameof(AdapterOutcome.SystemNotServed), nameof(LedgerFact.AdapterDidNotServeTheSystem))]
+  public void WritesTheDatedAttemptOfARefusedCall(string outcome, string expected)
   {
     var caseId = CaseId.Next();
 
@@ -57,7 +57,7 @@ public class LedgerEntryTests
       caseId,
       Opened,
       DeclaredSystemId.From("boutique"),
-      AdapterVerdict.FromName(verdict));
+      AdapterOutcome.FromName(outcome));
 
     entry.Case.ShouldBe(caseId);
     entry.Fact.ShouldBe(LedgerFact.FromName(expected));
@@ -78,15 +78,15 @@ public class LedgerEntryTests
   /// fait à lui : ce qu'il devient appartient au dossier, pas à la preuve du transport.
   /// </summary>
   [Theory]
-  [InlineData(nameof(AdapterVerdict.Served))]
-  [InlineData(nameof(AdapterVerdict.Deferred))]
-  public void RefusesToWriteACallThatWasNotRefused(string verdict)
+  [InlineData(nameof(AdapterOutcome.Served))]
+  [InlineData(nameof(AdapterOutcome.Deferred))]
+  public void RefusesToWriteACallThatWasNotRefused(string outcome)
   {
     Should.Throw<ArgumentException>(() => LedgerEntry.AdapterRefused(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("boutique"),
-      AdapterVerdict.FromName(verdict)));
+      AdapterOutcome.FromName(outcome)));
   }
 
   /// <summary>

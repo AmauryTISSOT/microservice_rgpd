@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
+using Polly.Timeout;
 
 namespace MicroserviceRgpd.Infrastructure.Casework.Adapters;
 
@@ -78,7 +79,7 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
     // choisir.
     request.Headers.TryAddWithoutValidation(SecretHeader, secret.Value);
 
-    using var response = await client.SendAsync(request, cancellationToken);
+    using var response = await AnswerTo(request, call, cancellationToken);
 
     return response.StatusCode switch
     {
@@ -88,18 +89,55 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
       // Les deux refus, et eux seuls, sont des réponses. `401` ne dit rien du système appelé : il
       // dit que le secret n'est pas celui qu'attend cet Adapter, ce qui se répare des deux côtés à
       // la fois.
-      HttpStatusCode.Unauthorized => AdapterAnswer<TServed>.Refusing(AdapterVerdict.SecretRefused),
+      HttpStatusCode.Unauthorized => AdapterAnswer<TServed>.Refusing(AdapterOutcome.SecretRefused),
 
       // `404` couvre volontairement deux lectures — « je ne sers pas ce système » et « il n'y a
       // rien à cette adresse » — parce qu'elles sont le même désaccord vu du service : le Manifest
       // désigne un Adapter qui ne sert pas ce système. Les distinguer aurait demandé au client un
       // statut inventé pour un diagnostic qu'il ne peut pas faire à notre place.
-      HttpStatusCode.NotFound => AdapterAnswer<TServed>.Refusing(AdapterVerdict.SystemNotServed),
+      HttpStatusCode.NotFound => AdapterAnswer<TServed>.Refusing(AdapterOutcome.SystemNotServed),
 
       _ => throw new AdapterFailure(
         $"L'Adapter de « {call.DeclaredSystem.Value} » a répondu {(int)response.StatusCode}, que le "
         + "contrat ne prévoit pas : ce n'est ni une réponse, ni un refus."),
     };
+  }
+
+  /// <summary>
+  /// L'aller-retour lui-même, et rien d'autre : <b>une seule tentative</b>. Ce qui n'arrive pas
+  /// jusqu'à une réponse arrive nommé, plutôt que sous une exception de transport qu'il faudrait
+  /// reconnaître au milieu d'un dossier.
+  /// </summary>
+  /// <remarks>
+  /// L'annulation, elle, n'est pas rattrapée : un appelant parti n'est pas un <c>Adapter</c> en
+  /// panne, et la compter comme telle ferait porter à l'application du client un désaccord dont
+  /// elle n'est pas l'auteur.
+  /// </remarks>
+  private async Task<HttpResponseMessage> AnswerTo(
+    HttpRequestMessage request,
+    AdapterCall call,
+    CancellationToken cancellationToken)
+  {
+    try
+    {
+      return await client.SendAsync(request, cancellationToken);
+    }
+    catch (TimeoutRejectedException tooSlow)
+    {
+      // L'échéance du service est passée sans que l'Adapter ait ni servi, ni différé, ni refusé.
+      // C'est précisément ce que le 202 existe pour éviter : un travail long se déclare, il ne se
+      // fait pas attendre.
+      throw new AdapterFailure(
+        $"L'Adapter de « {call.DeclaredSystem.Value} » n'a rien répondu dans l'échéance que le "
+        + "service lui laisse : un travail long se répond par un 202 et son échéance déclarée.",
+        tooSlow);
+    }
+    catch (HttpRequestException unreachable)
+    {
+      throw new AdapterFailure(
+        $"L'Adapter de « {call.DeclaredSystem.Value} » n'a pas répondu : ni réponse, ni refus.",
+        unreachable);
+    }
   }
 
   /// <summary>

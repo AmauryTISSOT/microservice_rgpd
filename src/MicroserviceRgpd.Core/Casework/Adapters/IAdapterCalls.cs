@@ -8,7 +8,7 @@
 /// <para>
 /// <b>Ce port ne cache pas le contrat, il le nomme.</b> L'en-tête de secret, le différé et son
 /// échéance, les deux refus : tout ce que l'intégrateur doit connaître se lit dans
-/// <see cref="AdapterAnswer{TServed}"/> et dans <see cref="AdapterVerdict"/>. Un port qui rendrait
+/// <see cref="AdapterAnswer{TServed}"/> et dans <see cref="AdapterOutcome"/>. Un port qui rendrait
 /// « le résultat ou rien » aurait mis au-dessus de la couture ce qui <b>est</b> le contrat, et les
 /// tests auraient alors prouvé le comportement d'une doublure plutôt que celui du fil.
 /// </para>
@@ -21,7 +21,7 @@
 public interface IAdapterCalls
 {
   /// <summary>
-  /// Porte un appel jusqu'à l'<c>Adapter</c> et en rapporte le verdict — servi, différé, ou l'un
+  /// Porte un appel jusqu'à l'<c>Adapter</c> et en rapporte la réponse — servi, différé, ou l'un
   /// des deux refus. <b>Aucune connexion n'est tenue</b> : un travail long se répond par un différé
   /// et une échéance, jamais par une attente.
   /// </summary>

@@ -198,9 +198,16 @@ tout ce dispositif cherche à rendre impossible.
 ## 6. Ce que le service ne fera jamais
 
 - **Vous rappeler**, ou attendre que vous le rappeliez.
-- **Tenir une connexion** en espérant votre réponse : répondez `202`.
+- **Tenir une connexion** en espérant votre réponse : répondez `202`. Le service coupe l'appel au
+  bout de **30 secondes**, et traite ce dépassement comme une panne — ni servi, ni différé, ni
+  refusé. Ce chiffre est arbitraire et assumé : il ne se règle pas par déploiement, parce que le
+  `202` existe précisément pour qu'un travail long n'ait pas besoin d'une échéance longue.
+- **Reprendre un appel.** Un appel part **une fois**, et une seule : ni reprise sur `5xx`, ni
+  reprise sur échéance. Vous ne recevrez jamais deux fois la même demande parce que le service a
+  trouvé la première trop lente — ce qui compte surtout le jour où `erase` sera exercé.
 - **Relancer tout seul.** Aucun processus de fond ne tourne ; tout se recalcule quand un opérateur
-  regarde.
+  regarde. Le service repasse après l'échéance que vous avez déclarée, mais seulement quand un
+  opérateur ouvre le dossier.
 - **Corriger son `Manifest`** sur ce que vous répondez.
 - **Vérifier ce que vous déclarez.** Le service est greffier, pas témoin : une réponse est une
   affirmation datée et attribuable, jamais un fait vérifié. Un travail déclaré fait prouve qu'on a
