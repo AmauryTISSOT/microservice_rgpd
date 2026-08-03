@@ -2,6 +2,16 @@
 
 This project uses .NET Aspire to orchestrate the application and its dependencies.
 
+## Le moteur LLM, éteint par défaut
+
+Le moteur génératif est commandé par un seul réglage, `Llm:Enabled` dans l'`appsettings` de ce projet. **Absent, il vaut « éteint »** — et c'est le cas d'un clone frais du dépôt.
+
+Éteint, la pile ne contient **ni serveur de modèles Ollama, ni modèle à tirer** : elle démarre d'une seule commande sur un poste sans carte graphique, sans télécharger les quelques gigaoctets du modèle. Le sidecar de qualification, lui, est toujours là — le lexique y vit —, et `POST /qualifications` rend une qualification en `Mode dégradé`.
+
+Allumé (`"Enabled": "true"`), la composition est celle d'avant ce drapeau : Ollama entre dans la pile avec son volume de modèles persistant, le modèle est tiré au démarrage, et le sidecar attend qu'il le soit. Le prérequis est alors le **NVIDIA Container Toolkit** côté Docker.
+
+L'`AppHost` est l'**unique vérité** de ce drapeau : il le propage au service .NET comme au sidecar, qui ne peuvent donc pas diverger sous Aspire. Lancés séparément, chacun lit sa propre configuration.
+
 ## PostgreSQL Container
 
 The Aspire host runs a PostgreSQL container named `microservice_rgpd_bdd` and automatically provides the connection string to the Web application.
