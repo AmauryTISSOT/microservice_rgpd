@@ -1,6 +1,8 @@
-﻿using MicroserviceRgpd.Core.Qualifications.Audit;
+﻿using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
+using MicroserviceRgpd.Infrastructure.Data.Casework;
 using MicroserviceRgpd.Infrastructure.Qualifications;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -37,6 +39,11 @@ public static class InfrastructureServiceExtensions
     // La trace d'audit ne passe pas par le dépôt générique ci-dessus : celui-ci est contraint aux
     // agrégats racines, et l'emprunter aurait déclaré agrégat ce qui n'est que l'écrit d'un acte.
     services.AddScoped<IQualificationAuditTrail, QualificationAuditTrail>();
+
+    // Le Ledger non plus : il est hors de l'agrégat par construction — il survit au Case de cinq
+    // ans — et le dépôt générique lui aurait rendu la mise à jour et la suppression ligne à ligne
+    // que sa définition ferme.
+    services.AddScoped<ILedger, Ledger>();
 
     // L'horloge est injectée pour que l'instant de l'acte se dicte en test, plutôt que d'être lu
     // sur la machine qui l'exécute.

@@ -1,5 +1,6 @@
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
+using MicroserviceRgpd.Infrastructure.Data.Casework;
 
 namespace MicroserviceRgpd.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
@@ -19,6 +20,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// date de déclaration.
   /// </summary>
   public DbSet<DeclaredSystem> DeclaredSystems => Set<DeclaredSystem>();
+
+  /// <summary>
+  /// Les <c>Case</c> — <b>la racine, et la seule</b>. Il n'existe volontairement aucun <c>DbSet</c>
+  /// de <c>Claim</c> ni de <c>Step</c> : ils sont <em>possédés</em> par le dossier, ne s'atteignent
+  /// que par lui, et n'ont donc structurellement ni requête ni dépôt à eux.
+  /// </summary>
+  public DbSet<Case> Cases => Set<Case>();
+
+  /// <summary>
+  /// Le <c>Ledger</c>, en <b>ajout seul</b>. Ce <c>DbSet</c> est ce par quoi EF Core connaît la
+  /// table ; l'adaptateur qui l'alimente n'y lit rien, et aucune route n'expose ce qu'il contient.
+  /// </summary>
+  public DbSet<LedgerRow> LedgerEntries => Set<LedgerRow>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
