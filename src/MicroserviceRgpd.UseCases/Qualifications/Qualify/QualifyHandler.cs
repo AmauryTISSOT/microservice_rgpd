@@ -30,9 +30,15 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// <see cref="QualificationEngineFailure"/>, puisque c'est son mode de défaillance qui décidera du
 /// code rendu à l'appelant.
 /// </para>
+/// <para>
+/// <b>Un rôle peut n'être pourvu par personne</b>, et c'est tout ce que ce handler en apprend —
+/// jamais qu'il s'agirait d'un LLM éteint : la frontière posée par le dépôt, où le service ne
+/// connaît que des rôles, reste entière. Un rôle non pourvu n'est pas interrogé, ne fait journaliser
+/// aucun avertissement — un choix délibéré n'est pas une panne —, et son avis entre comme un avis
+/// manquant. Le domaine ne reçoit aucune règle nouvelle : le repli existant fait tout le travail.
+/// </para>
 /// </remarks>
-/// <param name="verdictEngine">Le moteur dont l'avis fait verdict, déclaré par le port et par son rôle.</param>
-/// <param name="witness">Le moteur qui contrôle le verdict, déclaré par le même port et l'autre rôle.</param>
+/// <param name="witness">Le moteur qui contrôle le verdict, déclaré par le port et par son rôle.</param>
 /// <param name="auditTrail">
 /// L'écrit de l'acte. Il est demandé <b>avant</b> de répondre, jamais après : un verdict rendu sans
 /// trace serait un verdict dont plus personne ne pourrait répondre.
@@ -45,12 +51,16 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// Le seul endroit où le silence d'un moteur laisse une trace lisible : le booléen de dégradation
 /// dit à l'appelant que le service n'était pas entier, il ne dit pas à l'exploitant pourquoi.
 /// </param>
+/// <param name="verdictEngine">
+/// Le moteur dont l'avis fait verdict, déclaré par le même port et l'autre rôle — <b>optionnel</b> :
+/// ce rôle peut n'être pourvu par personne, et le handler doit alors qualifier quand même.
+/// </param>
 public sealed class QualifyHandler(
-  [FromKeyedServices(QualificationEngineRole.Verdict)] IQualificationEngine verdictEngine,
   [FromKeyedServices(QualificationEngineRole.Witness)] IQualificationEngine witness,
   IQualificationAuditTrail auditTrail,
   TimeProvider clock,
-  ILogger<QualifyHandler> logger)
+  ILogger<QualifyHandler> logger,
+  [FromKeyedServices(QualificationEngineRole.Verdict)] IQualificationEngine? verdictEngine = null)
   : ICommandHandler<QualifyCommand, Result<QualificationOutcome>>
 {
   /// <inheritdoc />
@@ -65,7 +75,13 @@ public sealed class QualifyHandler(
     var occurredAt = clock.GetUtcNow();
     var started = clock.GetTimestamp();
 
-    var verdictAnswer = AskAsync(verdictEngine, QualificationEngineRole.Verdict, command.Text, cancellationToken);
+    // Un rôle que personne ne tient n'est pas interrogé, et rien n'est journalisé : ce n'est pas un
+    // moteur qui s'est tu, c'est un moteur qui n'existe pas. Son avis entre néanmoins par la même
+    // porte que celui d'un moteur muet, et le domaine n'apprend rien de nouveau.
+    var verdictAnswer = verdictEngine is null
+      ? Task.FromResult(EngineAnswer.Unprovisioned)
+      : AskAsync(verdictEngine, QualificationEngineRole.Verdict, command.Text, cancellationToken);
+
     var witnessAnswer = AskAsync(witness, QualificationEngineRole.Witness, command.Text, cancellationToken);
 
     await Task.WhenAll(verdictAnswer, witnessAnswer);
@@ -139,6 +155,7 @@ public sealed class QualifyHandler(
     {
       // La panne du moteur principal prime : le service suit le mode de défaillance de celui dont
       // l'avis aurait fait verdict, et non celui du témoin qui n'a fait que tomber en même temps.
+      // Rôle non pourvu, il n'y a aucune panne de ce côté, et c'est celle du témoin qui reste.
       var failure = verdict.Failure ?? witness.Failure!;
 
       if (failure is QualificationEngineFailure named)
@@ -151,7 +168,7 @@ public sealed class QualifyHandler(
       // cause inattendue ne ressorte en erreur interne, alors que le service sait exactement ce qui
       // lui manque.
       throw new QualificationEngineFailure(
-        "Aucun des deux moteurs n'a rendu d'avis : il ne reste rien à qualifier.", failure);
+        "Aucun moteur n'a rendu d'avis : il ne reste rien à qualifier.", failure);
     }
 
     return Corroboration.Between(verdict.Opinion, witness.Opinion);
@@ -200,5 +217,13 @@ public sealed class QualifyHandler(
   /// Ce qu'un moteur a rendu : un avis, ou la raison de son silence — jamais les deux —, et le temps
   /// qu'il y a mis.
   /// </summary>
-  private sealed record EngineAnswer(QualificationOpinion? Opinion, Exception? Failure, TimeSpan Latency);
+  private sealed record EngineAnswer(QualificationOpinion? Opinion, Exception? Failure, TimeSpan Latency)
+  {
+    /// <summary>
+    /// Ce que rend un rôle que personne ne tient : ni avis, ni panne, et pas une seconde passée à
+    /// n'en rendre aucun. C'est la <b>même forme</b> qu'un moteur muet, à la panne près — et c'est
+    /// cette absence de panne qui distingue un choix délibéré d'un incident.
+    /// </summary>
+    public static EngineAnswer Unprovisioned { get; } = new(null, null, TimeSpan.Zero);
+  }
 }
