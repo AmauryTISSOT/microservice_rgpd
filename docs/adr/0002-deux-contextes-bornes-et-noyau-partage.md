@@ -93,6 +93,10 @@ besoin de traduction, et on ne traduit pas un identifiant opaque.
   morte : référencer les droits reviendrait à référencer le contexte entier.
 - **`System` est un nom interdit** pour le type de domaine correspondant : c'est `DeclaredSystem`.
 - **Une dépendance de test nouvelle** (`NetArchTest.Rules`), sur un paquet de test uniquement.
+  ⚠️ *Mise en œuvre, [#84](https://github.com/AmauryTISSOT/microservice_rgpd/issues/84) :* le paquet
+  retenu est `Mono.Cecil`, non `NetArchTest.Rules`. La décision ne change pas — c'est bien l'IL qui
+  est lu — mais Cecil le lit directement, là où `NetArchTest` intercale ses propres prédicats sur
+  ce que la règle sait exprimer. Le garde vit dans `tests/MicroserviceRgpd.ArchitectureTests/`.
 - **La frontière est détectable, pas impossible.** Le test la rend bruyante ; seuls des assemblages
   séparés la rendraient infranchissable. C'est le troc assumé — « bruyant » étant le critère que la
   carte a retenu ailleurs. L'option des projets séparés reste ouverte au lot 1.

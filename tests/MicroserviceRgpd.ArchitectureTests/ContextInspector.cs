@@ -173,9 +173,36 @@ internal static class ContextInspector
     }
   }
 
+  /// <summary>
+  /// L'attribut lui-même, et ce qu'il nomme : un <c>typeof</c> passé en argument lie les deux
+  /// assemblages aussi sûrement qu'un appel — <c>[JsonConverter(typeof(…))]</c> en est l'exemple
+  /// que ce dépôt écrit déjà — et ne se voit ni en signature, ni dans un corps de méthode.
+  /// </summary>
   private static IEnumerable<TypeReference> Attributed(ICustomAttributeProvider provider)
   {
-    return provider.CustomAttributes.SelectMany(attribute => Unwrap(attribute.AttributeType));
+    return provider.CustomAttributes.SelectMany(
+      attribute => Unwrap(attribute.AttributeType)
+        .Concat(attribute.ConstructorArguments.SelectMany(Unwrap))
+        .Concat(attribute.Properties.Select(named => named.Argument).SelectMany(Unwrap))
+        .Concat(attribute.Fields.Select(named => named.Argument).SelectMany(Unwrap)));
+  }
+
+  /// <summary>
+  /// Un argument d'attribut porte deux types : le sien — une énumération d'en face compte — et,
+  /// s'il s'agit d'un <c>typeof</c>, celui qu'il désigne. Les tableaux et les arguments boîtés
+  /// dans un paramètre <c>object</c> se déballent d'un cran.
+  /// </summary>
+  private static IEnumerable<TypeReference> Unwrap(CustomAttributeArgument argument)
+  {
+    var named = argument.Value switch
+    {
+      TypeReference designated => Unwrap(designated),
+      CustomAttributeArgument boxed => Unwrap(boxed),
+      CustomAttributeArgument[] several => several.SelectMany(Unwrap),
+      _ => [],
+    };
+
+    return Unwrap(argument.Type).Concat(named);
   }
 
   private static IEnumerable<TypeReference> Constrained(IEnumerable<GenericParameter> parameters)

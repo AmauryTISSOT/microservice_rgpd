@@ -10,6 +10,11 @@ internal static class ProductionAssembly
   /// <summary>
   /// La liste est écrite en toutes lettres plutôt que découverte au répertoire : un assemblage
   /// oublié se lirait sinon comme une règle respectée.
+  /// <para>
+  /// <c>AspireHost</c> et <c>ServiceDefaults</c> en sont absents sciemment : ils composent la pile
+  /// et branchent la télémétrie, ils ne portent aucun contexte. Le jour où l'un d'eux en porterait,
+  /// c'est cette liste qu'il faudrait allonger — pas la règle qu'il faudrait assouplir.
+  /// </para>
   /// </summary>
   internal static readonly string[] All =
   [

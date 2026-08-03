@@ -42,6 +42,18 @@ public class ContextInspectorTests
     crossings.ShouldContain(crossing => crossing.SourceType == typeof(AHandlerThatLeaksInItsSignature).FullName);
   }
 
+  /// <summary>
+  /// Un <c>typeof</c> dans un attribut lie les deux assemblages aussi sûrement qu'un appel, et ne
+  /// se voit ni dans une signature ni dans un corps de méthode.
+  /// </summary>
+  [Fact]
+  public void SeesACrossingCarriedByAnAttributeArgument()
+  {
+    var crossings = Crossings();
+
+    crossings.ShouldContain(crossing => crossing.SourceType == typeof(AHandlerThatLeaksThroughAnAttribute).FullName);
+  }
+
   [Fact]
   public void SaysNothingOfATypeThatCrossesNothing()
   {

@@ -18,13 +18,21 @@ public class SharedKernelTests
     "MicroserviceRgpd.Core.SharedKernel.DataSubjectRightJsonConverter",
   ];
 
+  /// <summary>Les habitants d'un dossier, toutes couches confondues.</summary>
+  private static string[] InhabitantsOf(string context)
+  {
+    return
+    [
+      .. ProductionAssembly.All
+        .SelectMany(assembly => ContextInspector.TypesIn(ProductionAssembly.PathOf(assembly), context))
+        .Order(StringComparer.Ordinal),
+    ];
+  }
+
   [Fact]
   public void HoldsTheTaxonomyAndNothingElse()
   {
-    var inhabitants = ProductionAssembly.All
-      .SelectMany(assembly => ContextInspector.TypesIn(ProductionAssembly.PathOf(assembly), ContextInspector.SharedKernel))
-      .Order(StringComparer.Ordinal)
-      .ToArray();
+    var inhabitants = InhabitantsOf(ContextInspector.SharedKernel);
 
     inhabitants.ShouldBe(
       TheTaxonomyAndItsProjection,
@@ -39,8 +47,7 @@ public class SharedKernelTests
   [Fact]
   public void LeavesNothingOfTheTaxonomyBehindInQualification()
   {
-    var strays = ProductionAssembly.All
-      .SelectMany(assembly => ContextInspector.TypesIn(ProductionAssembly.PathOf(assembly), ContextInspector.Qualification))
+    var strays = InhabitantsOf(ContextInspector.Qualification)
       .Where(type => type.Contains("DataSubjectRight", StringComparison.Ordinal))
       .ToArray();
 
