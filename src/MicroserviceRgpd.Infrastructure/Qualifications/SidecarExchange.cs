@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 using Polly.Timeout;
 
 namespace MicroserviceRgpd.Infrastructure.Qualifications;

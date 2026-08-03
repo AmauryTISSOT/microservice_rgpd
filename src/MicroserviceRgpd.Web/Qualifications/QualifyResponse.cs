@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Qualifications.Qualify;
 
 namespace MicroserviceRgpd.Web.Qualifications;

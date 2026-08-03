@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
-using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 
-namespace MicroserviceRgpd.UnitTests.Core.Qualifications;
+namespace MicroserviceRgpd.UnitTests.Core.SharedKernel;
 
 /// <summary>
 /// La taxonomie voyage sur le fil sous ses <b>noms canoniques anglais</b>, en <c>PascalCase</c> —

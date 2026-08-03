@@ -1,5 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Core.Qualifications.Audit;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 
 namespace MicroserviceRgpd.IntegrationTests.Data.Audit;

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Qualifications;
 
 namespace MicroserviceRgpd.UnitTests.Infrastructure.Qualifications;

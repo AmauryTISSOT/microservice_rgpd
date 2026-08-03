@@ -1,5 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Core.Qualifications.Audit;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Qualifications.Qualify;
 using Microsoft.Extensions.Logging.Abstractions;
 

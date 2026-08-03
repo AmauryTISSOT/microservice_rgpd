@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MicroserviceRgpd.Core.Qualifications;
+namespace MicroserviceRgpd.Core.SharedKernel;
 
 /// <summary>
 /// La taxonomie fermée de sept valeurs dans laquelle une qualification puise : six droits ouverts

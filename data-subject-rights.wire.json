@@ -3,7 +3,7 @@
     "PROJECTION SUR LE FIL DE LA TAXONOMIE — LE DOMAINE COMMANDE, CE FICHIER SUIT.",
     "",
     "La source de vérité est le SmartEnum DataSubjectRight, dans",
-    "src/MicroserviceRgpd.Core/Qualifications/DataSubjectRight.cs. C'est lui qui porte l'article",
+    "src/MicroserviceRgpd.Core/SharedKernel/DataSubjectRight.cs. C'est lui qui porte l'article",
     "du RGPD et le libellé français. Ce fichier n'est que sa projection sur le fil : les sept noms",
     "canoniques anglais que le service .NET et le sidecar Python échangent, rien d'autre.",
     "",

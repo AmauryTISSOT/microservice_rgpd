@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
-using MicroserviceRgpd.Core.Qualifications;
+using MicroserviceRgpd.Core.SharedKernel;
 
-namespace MicroserviceRgpd.UnitTests.Core.Qualifications;
+namespace MicroserviceRgpd.UnitTests.Core.SharedKernel;
 
 /// <summary>
 /// Le garde-fou anti-dérive du contrat interne. La taxonomie existe des deux côtés de la frontière

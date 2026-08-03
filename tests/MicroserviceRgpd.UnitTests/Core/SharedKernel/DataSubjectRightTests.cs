@@ -1,6 +1,6 @@
-﻿using MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.SharedKernel;
 
-namespace MicroserviceRgpd.UnitTests.Core.Qualifications;
+namespace MicroserviceRgpd.UnitTests.Core.SharedKernel;
 
 /// <summary>
 /// La taxonomie est fermée par décision : ajouter un membre est une rupture de contrat,

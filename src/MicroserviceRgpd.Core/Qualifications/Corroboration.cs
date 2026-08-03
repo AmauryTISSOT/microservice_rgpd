@@ -1,4 +1,6 @@
-﻿namespace MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.SharedKernel;
+
+namespace MicroserviceRgpd.Core.Qualifications;
 
 /// <summary>
 /// L'entrecontrôle de deux moteurs sur un même texte : ce que le service rend une fois les avis

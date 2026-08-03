@@ -44,7 +44,9 @@ quels : on écrit « la `Qualification` », « le `Ledger` ».
   vérifiable : sans cette règle, la promesse « le second contexte se démontre sans GPU » ne serait
   qu'une intention. Elle est gardée par un test au niveau de l'IL — un test de signatures seules
   afficherait vert sur un gestionnaire qui appelle le moteur dans un corps de méthode, c'est-à-dire
-  sur la fuite même que l'on craint.
+  sur la fuite même que l'on craint. Le garde vit dans `tests/MicroserviceRgpd.ArchitectureTests/`,
+  et il est posé **avant** le contexte qu'il garde : la première ligne de `Casework` naîtra déjà
+  sous surveillance.
 
 ## Langue de système
 
