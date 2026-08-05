@@ -50,7 +50,9 @@ public sealed record OpenCaseResponse(
 
     return new OpenCaseResponse(
       opened.Id.Value,
-      opened.ReceivedOn,
+      // Le nom du champ sur le fil ne bouge pas : c'est un contrat public, et le régime de la date —
+      // déclarée ou tenue pour défaut — n'a rien à dire à ce canal, qui la déclare toujours.
+      opened.Reception.On,
       [.. opened.Claims.Select(claim => claim.Right)]);
   }
 }

@@ -65,4 +65,33 @@ public sealed class LedgerRow
   /// personne concernée.
   /// </summary>
   public string? DeclaredSystem { get; init; }
+
+  /// <summary>
+  /// Sous quel régime l'<c>Operator</c> a saisi son nom, ou <c>null</c> quand l'application a
+  /// appelé. Il s'écrit <b>en même temps</b> que le nom : sans lui, la ligne d'aujourd'hui serait
+  /// indiscernable de celle de demain.
+  /// </summary>
+  public string? SignatureRegime { get; init; }
+
+  /// <summary>
+  /// Le droit au titre duquel le fait a eu lieu, quand il en concerne un. Un mot de la taxonomie du
+  /// RGPD, jamais une donnée sur la personne.
+  /// </summary>
+  public string? DataSubjectRight { get; init; }
+
+  /// <summary>L'état déclaré du travail dû, quand le fait en déclare un — <c>Untreated</c> compris.</summary>
+  public string? StepState { get; init; }
+
+  /// <summary>
+  /// La <b>prose de preuve</b> : le constat, le motif. C'est la seule prose que cette table porte, et
+  /// la prose de <em>travail</em> n'y a <b>aucune colonne</b> — elle vit sur le <c>Case</c> et meurt à
+  /// la clôture.
+  /// </summary>
+  public string? EvidenceProse { get; init; }
+
+  /// <summary>
+  /// La date de réception du dossier était-elle tenue pour défaut ? Ce que le service a <b>supposé</b>,
+  /// jamais ce que quelqu'un a déclaré.
+  /// </summary>
+  public bool? ReceptionWasDefaulted { get; init; }
 }

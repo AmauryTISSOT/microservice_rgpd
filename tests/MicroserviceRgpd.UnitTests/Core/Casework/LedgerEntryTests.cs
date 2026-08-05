@@ -2,6 +2,7 @@
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 
@@ -32,13 +33,125 @@ public class LedgerEntryTests
       Opened,
       Signatory.Application,
       IdentityDeclaration.ApplicationSession,
-      designationCount: 2);
+      designationCount: 2,
+      receptionWasDefaulted: false);
 
     entry.Case.ShouldBe(caseId);
     entry.Fact.ShouldBe(LedgerFact.CaseOpened);
     entry.OccurredAt.ShouldBe(Opened);
     entry.IdentityDeclaration.ShouldBe(IdentityDeclaration.ApplicationSession);
     entry.DesignationCount.ShouldBe(2);
+  }
+
+  /// <summary>
+  /// <b>Une date de réception tenue pour défaut s'inscrit comme un défaut.</b> Sans ce fait, la
+  /// preuve garderait la même trace d'une date affirmée par un humain et d'une hypothèse du service,
+  /// et personne ne saurait plus laquelle des deux il relit dix ans après.
+  /// </summary>
+  [Fact]
+  public void WritesADefaultedReceptionDateAsADefaultRatherThanAsADeclaredFact()
+  {
+    var defaulted = LedgerEntry.CaseOpened(
+      CaseId.Next(),
+      Opened,
+      Signatory.Application,
+      IdentityDeclaration.Unverified,
+      designationCount: 1,
+      receptionWasDefaulted: true);
+
+    var declared = LedgerEntry.CaseOpened(
+      CaseId.Next(),
+      Opened,
+      Signatory.Application,
+      IdentityDeclaration.Unverified,
+      designationCount: 1,
+      receptionWasDefaulted: false);
+
+    defaulted.ReceptionWasDefaulted.ShouldBe(true);
+    declared.ReceptionWasDefaulted.ShouldBe(false);
+  }
+
+  /// <summary>
+  /// Un constat déclaré : l'état, le système, le droit, le nom de l'humain, <b>le régime sous lequel
+  /// il a saisi ce nom</b>, et sa prose de preuve.
+  /// </summary>
+  [Fact]
+  public void WritesAFindingUnderTheNameAndTheRegimeUnderWhichItWasTyped()
+  {
+    var entry = LedgerEntry.StepDeclared(
+      CaseId.Next(),
+      Opened,
+      DeclaredSystemId.From("boutique"),
+      DataSubjectRight.Access,
+      StepState.Done,
+      "Requête lancée le 3, deux comptes trouvés, export joint.",
+      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+
+    entry.Fact.ShouldBe(LedgerFact.StepDeclared);
+    entry.DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
+    entry.Right.ShouldBe(DataSubjectRight.Access);
+    entry.DeclaredState.ShouldBe(StepState.Done);
+    entry.EvidenceProse.ShouldBe("Requête lancée le 3, deux comptes trouvés, export joint.");
+
+    entry.Signatory.Name.ShouldBe("Claire Berger");
+    entry.Signatory.Regime.ShouldBe(SignatureRegime.Unauthenticated);
+
+    // Ce fait ne mesure aucune recherche : un compte se lirait comme une ampleur qu'il n'a pas.
+    entry.DesignationCount.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b><c>Untreated</c> s'inscrit aussi volontiers que <c>Done</c>.</b> C'est l'aveu que personne ne
+  /// l'a fait, la trace la plus précieuse du dispositif, et le service n'a jamais le droit de la
+  /// bloquer.
+  /// </summary>
+  [Fact]
+  public void NeverRefusesTheAdmissionThatNobodyDidTheWork()
+  {
+    var entry = LedgerEntry.StepDeclared(
+      CaseId.Next(),
+      Opened,
+      DeclaredSystemId.From("export-agence"),
+      DataSubjectRight.Access,
+      StepState.Untreated,
+      "L'export part chez l'agence ; personne ne l'a traité pour cette demande.",
+      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+
+    entry.DeclaredState.ShouldBe(StepState.Untreated);
+  }
+
+  /// <summary>
+  /// <b>Le constat est exigé.</b> Un état coché sans un mot serait une preuve qui dit ce qui a été
+  /// coché et non ce qui a été constaté — or c'est le constat que le contrôle vient lire.
+  /// </summary>
+  [Fact]
+  public void RefusesADeclaredStateThatNobodyMotivated()
+  {
+    Should.Throw<ArgumentException>(() => LedgerEntry.StepDeclared(
+      CaseId.Next(),
+      Opened,
+      DeclaredSystemId.From("boutique"),
+      DataSubjectRight.Access,
+      StepState.Done,
+      "   ",
+      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated)));
+  }
+
+  /// <summary>
+  /// Un constat est le geste d'un humain, par définition : c'est lui qui a regardé. Le laisser signer
+  /// par l'application ferait porter à personne une déclaration que quelqu'un a faite.
+  /// </summary>
+  [Fact]
+  public void RefusesAFindingThatNoHumanSigned()
+  {
+    Should.Throw<ArgumentException>(() => LedgerEntry.StepDeclared(
+      CaseId.Next(),
+      Opened,
+      DeclaredSystemId.From("boutique"),
+      DataSubjectRight.Access,
+      StepState.Done,
+      "Un constat sans personne pour l'avoir fait.",
+      Signatory.Application));
   }
 
   /// <summary>
@@ -107,13 +220,15 @@ public class LedgerEntryTests
                   || property.PropertyType.IsAssignableTo(typeof(IEnumerable<Designation>)),
       "Le Ledger n'accepte aucune Designation, dès la première ligne.");
 
-    // La seule prose du dossier qui survive est la prose de preuve, écrite à un point de décision.
-    // Aucune chaîne libre n'entre ici tant qu'aucune n'a été décidée : un champ de texte non
-    // qualifié serait exactement la porte par laquelle un nom finirait par passer.
-    carried.ShouldNotContain(
-      property => property.PropertyType == typeof(string),
-      "Aucune chaîne libre sur la ligne : le seul nom permis est celui du signataire, et il vit "
-      + "dans Signatory, où sa raison d'être est écrite.");
+    // La seule prose du dossier qui survive est la prose de preuve, écrite à un point de décision et
+    // non nominative par nature. Les chaînes de la ligne sont donc énumérées en toutes lettres : en
+    // ajouter une doit être un geste délibéré, parce que c'est par un champ de texte non qualifié
+    // qu'un nom de personne concernée finirait par passer — et la prose de *travail*, qui nomme des
+    // tiers, n'a aucun emplacement ici.
+    carried
+      .Where(property => property.PropertyType == typeof(string))
+      .Select(property => property.Name)
+      .ShouldBe([nameof(LedgerEntry.EvidenceProse)]);
   }
 
   /// <summary>
@@ -126,7 +241,7 @@ public class LedgerEntryTests
     Signatory.Application.Kind.ShouldBe(SignatoryKind.Application);
     Signatory.Application.Name.ShouldBeNull();
 
-    var signed = Signatory.Operator("  Claire Berger  ");
+    var signed = Signatory.Operator("  Claire Berger  ", SignatureRegime.Unauthenticated);
 
     signed.Kind.ShouldBe(SignatoryKind.Operator);
     signed.Name.ShouldBe("Claire Berger");
@@ -136,7 +251,32 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesAnOperatorWhoSignedWithNothing()
   {
-    Should.Throw<ArgumentException>(() => Signatory.Operator("   "));
+    Should.Throw<ArgumentException>(() => Signatory.Operator("   ", SignatureRegime.Unauthenticated));
+  }
+
+  /// <summary>
+  /// <b>Un nom n'est pas une authentification, et le régime le dit.</b> Il s'écrit en même temps que
+  /// le nom et par le même geste : une signature qui ne garderait que le nom saisi serait relue dans
+  /// dix ans comme si quelqu'un s'était identifié.
+  /// <para>
+  /// Une seule valeur existe aujourd'hui, et c'est la raison d'être du type : le jour où la GUI
+  /// authentifiera son <c>Operator</c>, les lignes d'hier resteront lisibles pour ce qu'elles sont.
+  /// </para>
+  /// </summary>
+  [Fact]
+  public void MarksTheRegimeUnderWhichTheNameWasTypedAtTheSameTimeAsTheName()
+  {
+    // Le régime n'a pas de valeur par défaut : un défaut ferait écrire « non authentifié » par oubli
+    // le jour où l'authentification existera.
+    typeof(Signatory).GetMethod(nameof(Signatory.Operator))!
+      .GetParameters()
+      .ShouldNotContain(parameter => parameter.HasDefaultValue);
+
+    Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated).Regime
+      .ShouldBe(SignatureRegime.Unauthenticated);
+
+    // L'application n'a saisi aucun nom : un régime de signature ne dirait rien d'elle.
+    Signatory.Application.Regime.ShouldBeNull();
   }
 
   /// <summary>
@@ -151,7 +291,8 @@ public class LedgerEntryTests
       new DateTimeOffset(2026, 8, 3, 16, 30, 0, TimeSpan.FromHours(2)),
       Signatory.Application,
       IdentityDeclaration.ApplicationSession,
-      designationCount: 0);
+      designationCount: 0,
+      receptionWasDefaulted: false);
 
     entry.OccurredAt.Offset.ShouldBe(TimeSpan.Zero);
     entry.OccurredAt.ShouldBe(Opened);

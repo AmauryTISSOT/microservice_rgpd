@@ -1,0 +1,103 @@
+@page "/dossiers"
+@model QueueModel
+@using System.Globalization
+@using MicroserviceRgpd.Core.Casework
+@{
+  ViewData["Title"] = "La file";
+}
+
+<h1>La file</h1>
+
+@*
+  Aucun total, aucun taux, aucun dénombrement d'absences. Le seul usage d'un chiffre ici serait de se
+  rassurer sans lire les lignes, et « 0 dossier en retard » doit être impossible à afficher.
+*@
+<p class="caveat">
+  Les dossiers ouverts, rangés par échéance. Cette liste est <strong>recalculée à chaque
+  affichage</strong> : rien ne tourne en tâche de fond, donc rien ne peut s'arrêter en silence.
+  Regardée le @Model.Queue.ObservedAt.ToString("dd/MM/yyyy à HH'h'mm", CultureInfo.InvariantCulture) (UTC).
+</p>
+
+@if (Model.Queue.Cases.Count == 0)
+{
+  @*
+    Une file vide se dit en mots et jamais par un zéro : un « 0 dossier » se lit comme une mesure
+    rassurante, là où la phrase dit ce qu'elle est — un service qui n'a rien à instruire, ou un
+    service dans lequel rien n'est encore entré.
+  *@
+  <p class="none">
+    Aucun dossier ouvert. Une demande qui n'est pas entrée dans le service n'apparaîtra pas ici.
+  </p>
+}
+else
+{
+  <table class="queue">
+    <caption class="hint">
+      Les colonnes trient les lignes présentes ; aucune d'elles ne fait apparaître un dossier.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Dossier</th>
+        <th scope="col">Droits réclamés</th>
+        <th scope="col">Reçu le</th>
+        <th scope="col">Échéance (art. 12.3)</th>
+        <th scope="col">Délai</th>
+        <th scope="col">Identité déclarée</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var line in Model.Queue.Cases)
+      {
+        <tr>
+          <td><a asp-page="Case" asp-route-id="@line.Case.Value">@line.Case.Value</a></td>
+          <td>
+            @if (line.ClaimedRights.Count == 0)
+            {
+              @* Un dossier sans réclamation est un fait, jamais une saisie inachevée. *@
+              <span class="none">aucun droit reconnu à ce jour</span>
+            }
+            else
+            {
+              @* Énumérés, jamais comptés : « Access, Erasure » dit le travail, « 2 droits » n'apprend rien. *@
+              @string.Join(", ", line.ClaimedRights.Select(right => right.Name))
+            }
+          </td>
+          <td>
+            @if (line.Reception.IsDefault)
+            {
+              @*
+                Le défaut est visible COMME un défaut. On n'affiche pas la date qu'il a produite à la
+                place d'un fait : on nomme la règle appliquée, pour que personne ne relise une
+                hypothèse du service comme l'affirmation d'un humain.
+              *@
+              <span class="defaulted">J+@ReceptionDate.DaysHeldAlreadyRunByDefault (défaut)</span>
+            }
+            else
+            {
+              @line.Reception.On.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+            }
+          </td>
+          <td>@line.Deadline.On.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</td>
+          <td>
+            @*
+              Un fait, jamais un compteur : ni « en retard de 4 jours », ni « il reste 3 jours ». Aucun
+              nombre du droit ne fonde un seuil, et trier sur lui ferait passer un dossier devant un
+              autre sans raison juridique.
+            *@
+            @if (line.DelayOverrun)
+            {
+              <strong class="overrun">dépassé</strong>
+            }
+            else
+            {
+              <span class="running">en cours</span>
+            }
+          </td>
+          <td>@line.IdentityDeclaration.FrenchLabel</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+<p><a asp-page="Manifest">Le paysage déclaré</a></p>

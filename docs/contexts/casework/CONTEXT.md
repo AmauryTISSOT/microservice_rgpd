@@ -86,6 +86,19 @@ jamais « sans réponse depuis N jours » : aucun nombre du droit ne fonde N, un
 une case à laisser pourrir de plus, et trier sur lui ferait passer devant un compteur sans force
 juridique. On montre le fait, l'`Operator` juge.
 
+**ReceptionDate** :
+La date de réception **et le régime sous lequel le service la sait** : déclarée par quelqu'un, ou
+**tenue pour défaut**. Les deux ne se confondent jamais — une date nue serait indiscernable d'une date
+affirmée par un humain, et le drapeau vit donc à côté d'elle, là où aucun chemin d'écriture ne peut
+poser l'une sans l'autre.
+À défaut de déclaration, le service tient **neuf jours pour déjà courus** — `J+9 (défaut)` — et
+l'affiche ainsi : il nomme la **règle appliquée**, jamais la date qu'elle a produite, qui se lirait
+comme un fait. Le nombre n'est pas réglable : une case à régler serait une case à laisser pourrir, et
+sa valeur basse serait celle que tout le monde garderait. Le régime ne change **rien au calcul** de
+l'échéance — un dossier dont personne n'a déclaré la date n'a droit à aucun délai de faveur.
+_Avoid_ : ReceivedAt, StartDate, date d'entrée ⚠️ « date d'entrée » nommerait le geste du service là
+où le délai part de la réception par le client.
+
 **ExtensionDeclaration** :
 Ce que l'`Operator` déclare lorsqu'il prolonge de deux mois au titre de l'art. 12.3 : un **motif**,
 la **date à laquelle il a informé la personne** de la prolongation et de ses motifs, sa signature et
@@ -277,6 +290,15 @@ noieraient sous du bruit de mécanique ce que le contrôle vient lire. Trois dat
 appelé, échéance déclarée, résultat. On ne saura donc jamais combien de fois on a relancé.
 _Avoid_ : Register, Record, Journal, AuditTrail, History, registre ⚠️ « registre » désigne l'art. 30
 en RGPD, hors périmètre de ce service.
+
+**SignatureRegime** :
+Ce que valait le nom d'un `Operator` au moment où il l'a saisi. Il s'écrit au `Ledger` **en même temps
+que le nom et par le même geste** : un nom enregistré seul serait relu dans dix ans comme si quelqu'un
+s'était identifié. Une seule valeur aujourd'hui — `Unauthenticated` —, et c'est la raison d'être du
+type : la surface n'authentifie personne, choix de PoC assumé, et le jour où elle le fera une seconde
+valeur entrera ici sans que le `Ledger` d'aujourd'hui devienne indiscernable de celui de demain.
+_Avoid_ : Authentication, TrustLevel, niveau de confiance ⚠️ la valeur ne dit **rien** de la confiance
+qu'on accorde au nom, seulement de ce que le service a vérifié — c'est-à-dire rien.
 
 **Prose de travail / prose de preuve** :
 Toute prose saisie par l'`Operator` tombe dans l'un des deux régimes, et c'est son **lecteur** qui

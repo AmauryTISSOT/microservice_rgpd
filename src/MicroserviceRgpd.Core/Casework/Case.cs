@@ -27,7 +27,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// </para>
 /// <para>
 /// <b>Il n'y a pas d'état « en retard ».</b> Le dépassement du délai de l'art. 12.3 est un
-/// <b>calcul</b> fait sur <see cref="ReceivedOn"/> à l'instant où l'<c>Operator</c> regarde : un
+/// <b>calcul</b> fait sur <see cref="Reception"/> à l'instant où l'<c>Operator</c> regarde : un
 /// état persisté ferait dépendre la preuve de ce qu'une minuterie ait tourné, et un retard non
 /// détecté deviendrait un retard inexistant.
 /// </para>
@@ -40,13 +40,14 @@ public sealed class Case : IAggregateRoot
   private Case(
     CaseId id,
     IdentityDeclaration identityDeclaration,
-    DateTimeOffset receivedOn,
+    ReceptionDate reception,
     List<Designation> designations,
     List<Claim> claims)
   {
     Id = id;
     IdentityDeclaration = identityDeclaration;
-    ReceivedOn = receivedOn;
+    Reception = reception;
+    State = CaseState.Open;
     _designations = designations;
     _claims = claims;
   }
@@ -55,6 +56,7 @@ public sealed class Case : IAggregateRoot
   private Case()
   {
     IdentityDeclaration = IdentityDeclaration.Unverified;
+    State = CaseState.Open;
     _designations = [];
     _claims = [];
   }
@@ -69,11 +71,18 @@ public sealed class Case : IAggregateRoot
   public IdentityDeclaration IdentityDeclaration { get; private set; }
 
   /// <summary>
-  /// Le jour où le responsable de traitement a reçu la demande — <b>déclaré, jamais constaté</b>.
+  /// Le jour où le responsable de traitement a reçu la demande — <b>déclaré, jamais constaté</b> —
+  /// et le régime sous lequel le service le sait : affirmé par quelqu'un, ou tenu pour défaut.
   /// Le mois de l'art. 12.3 court avant nous et rien ne l'arrête : le service hérite d'un compteur
   /// lancé depuis un nombre de jours qu'il ignore, et c'est de cette date que tout se recalcule.
   /// </summary>
-  public DateTimeOffset ReceivedOn { get; private set; }
+  public ReceptionDate Reception { get; private set; } = null!;
+
+  /// <summary>
+  /// Où en est le dossier. <b>Deux valeurs, et jamais une troisième nommée « en retard »</b> : le
+  /// dépassement est un <see cref="StatutoryDeadline"/> calculé à l'affichage.
+  /// </summary>
+  public CaseState State { get; private set; }
 
   /// <summary>
   /// Le sac de <see cref="Designation"/> — <b>la seule identité qui circule</b>. Il s'enrichira en
@@ -116,7 +125,9 @@ public sealed class Case : IAggregateRoot
   /// réclamation, pas deux réponses dues.
   /// </param>
   /// <param name="manifest">Le paysage déclaré du client, tel qu'il se lit à cet instant.</param>
-  /// <param name="receivedOn">Le jour déclaré de réception par le responsable de traitement.</param>
+  /// <param name="reception">
+  /// Le jour de réception par le responsable de traitement, et la façon dont le service le sait.
+  /// </param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">
   /// <see cref="DataSubjectRight.OutOfScope"/> figure parmi les droits : ce n'est pas un droit
@@ -128,12 +139,13 @@ public sealed class Case : IAggregateRoot
     IEnumerable<Designation> designations,
     IEnumerable<DataSubjectRight> rights,
     Manifest manifest,
-    DateTimeOffset receivedOn)
+    ReceptionDate reception)
   {
     ArgumentNullException.ThrowIfNull(identityDeclaration);
     ArgumentNullException.ThrowIfNull(designations);
     ArgumentNullException.ThrowIfNull(rights);
     ArgumentNullException.ThrowIfNull(manifest);
+    ArgumentNullException.ThrowIfNull(reception);
 
     var claimed = Claimable(rights);
 
@@ -144,9 +156,56 @@ public sealed class Case : IAggregateRoot
     return new Case(
       id,
       identityDeclaration,
-      receivedOn,
+      reception,
       Bag(designations),
       [.. claimed.Select(right => new Claim(right, declaredSystems))]);
+  }
+
+  /// <summary>
+  /// Porte sur un <see cref="Step"/> l'état que l'<c>Operator</c> vient de <b>déclarer</b>, et dit
+  /// si le dossier connaissait ce travail dû.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est la racine qui écrit, et elle seule.</b> Le chemin passe par ici parce qu'aucun dépôt de
+  /// <see cref="Claim"/> ni de <see cref="Step"/> n'existe : les règles sont écrites une fois, sur
+  /// l'agrégat.
+  /// </para>
+  /// <para>
+  /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat :
+  /// le <c>Ledger</c> survit au dossier de cinq ans, et le faire écrire d'ici l'aurait attaché à la
+  /// durée de vie de ce qu'il doit précisément survivre.
+  /// </para>
+  /// <para>
+  /// <b>Elle rend faux plutôt qu'elle ne lève</b> lorsque la paire est inconnue du dossier. Un
+  /// travail dû qui n'existe pas ici n'est pas une programmation fautive : le <c>Manifest</c>
+  /// vieillit exprès, et un système déclaré après l'ouverture n'a jamais eu de <c>Step</c> dans ce
+  /// dossier — c'est un fait que l'écran doit pouvoir dire.
+  /// </para>
+  /// </remarks>
+  /// <param name="right">Le droit dont on déclare le travail dû.</param>
+  /// <param name="declaredSystem">Le système sur lequel ce travail était dû.</param>
+  /// <param name="state">L'état déclaré.</param>
+  /// <returns><c>true</c> si le dossier portait ce travail dû ; <c>false</c> sinon, sans rien changer.</returns>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  public bool Declare(DataSubjectRight right, DeclaredSystemId declaredSystem, StepState state)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+    ArgumentNullException.ThrowIfNull(state);
+
+    var step = _claims
+      .SingleOrDefault(claim => claim.Right == right)?
+      .Steps
+      .SingleOrDefault(one => one.DeclaredSystem == declaredSystem);
+
+    if (step is null)
+    {
+      return false;
+    }
+
+    step.Declare(state);
+
+    return true;
   }
 
   /// <summary>

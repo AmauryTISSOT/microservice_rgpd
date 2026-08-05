@@ -56,7 +56,10 @@ public sealed class OpenCaseHandler(
 
     // La demande postée par l'application arrive à l'instant où elle est postée : sur ce canal, la
     // date de réception est celle de l'appel, et il n'existe aucun champ pour la déclarer autrement.
-    var receivedOn = clock.GetUtcNow();
+    // Elle est donc *déclarée* — par l'application, qui sait quand elle a reçu la demande — et jamais
+    // tenue pour défaut : le défaut est l'affaire du dépôt manuel, où l'humain transcrit un courriel
+    // reçu il y a un nombre de jours qu'il ignore.
+    var reception = ReceptionDate.Declared(clock.GetUtcNow());
 
     var opened = Case.Open(
       CaseId.Next(),
@@ -64,19 +67,20 @@ public sealed class OpenCaseHandler(
       command.Designations,
       command.Rights,
       Manifest.Of(await manifest.ListAsync(cancellationToken)),
-      receivedOn);
+      reception);
 
     await cases.AddAsync(opened, cancellationToken);
 
     await ledger.AppendAsync(
       LedgerEntry.CaseOpened(
         opened.Id,
-        receivedOn,
+        reception.On,
         command.Signatory,
         command.IdentityDeclaration,
         // Le compte, jamais les valeurs : « recherché sous 2 désignations » est une mesure de
         // l'ampleur d'une recherche, les deux valeurs seraient le sac lui-même.
-        opened.Designations.Count),
+        opened.Designations.Count,
+        reception.IsDefault),
       cancellationToken);
 
     return Result<Case>.Success(opened);
