@@ -1,0 +1,4 @@
+# Outillage de la recette, séparé de `requirements.txt` : ce qui tourne en production reste
+# Flask + PyMySQL, et l'Adapter RGPD n'y a rien ajouté.
+-r requirements.txt
+pytest==8.3.4

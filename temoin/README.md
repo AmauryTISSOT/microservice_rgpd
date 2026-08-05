@@ -12,10 +12,16 @@ s'est tranché sur un corpus annoté et non sur des intuitions.
 
 **Cette application est écrite comme si le microservice n'existait pas.**
 
-Rien dans `app.py`, `db/schema.sql` ni `db/seed.sql` ne connaît le RGPD, l'exercice des droits ou ce
-dépôt. Pas de `deleted_at` bien placé, pas d'abstraction opportune, pas d'identifiant de personne
-unique et propre. Toute complaisance ruinerait sa valeur de témoin : un témoin qui se laisse brancher
-parce qu'on l'a écrit pour ça ne démontre rien.
+Rien dans `db/schema.sql`, `db/seed.sql` ni dans aucune route de la brocante ne connaît le RGPD,
+l'exercice des droits ou ce dépôt. Pas de `deleted_at` bien placé, pas d'abstraction opportune, pas
+d'identifiant de personne unique et propre. Toute complaisance ruinerait sa valeur de témoin : un
+témoin qui se laisse brancher parce qu'on l'a écrit pour ça ne démontre rien.
+
+**La seule exception est l'adaptateur** (`adapter_rgpd.py`, `rgpd_boutique.py`, `rgpd_journal.py`),
+et elle ne se cache pas : c'est le programme que le client écrit pour être appelé, et le contrat
+suppose qu'il existe. `app.py` n'en connaît que le montage — un import et un `register_blueprint`,
+en bas de fichier. Ce qui compte est que rien **au-dessus** ne s'y adapte : aucune route, aucune
+colonne, aucune requête de la brocante n'a bougé pour lui.
 
 **Modifier le témoin pour faciliter une intégration est donc interdit sans décision explicite.** Si un
 ticket d'intégration bute sur le témoin, c'est un résultat, pas un obstacle : il se consigne. La seule
@@ -46,6 +52,101 @@ un ticket d'intégration d'essayer la voie « accès direct à la base » sans p
 
 L'administration est derrière une clé en clair dans l'URL :
 `http://localhost:8080/admin/clients?cle=brocanto2019`.
+
+La recette de l'adaptateur (voir plus bas) se joue sans base ni conteneur :
+
+```sh
+pip install -r requirements-dev.txt   # `requirements.txt` n'a pas bougé : pytest est en plus, à côté
+pytest                                # depuis `temoin/`
+```
+
+## Le branchement — ce qui a été fait, et ce qui ne l'a pas été
+
+Ticket [#88](https://github.com/AmauryTISSOT/microservice_rgpd/issues/88). Deux choses ont été
+ajoutées au témoin, et deux seulement, chacune le rendant **plus** ordinaire — la seule raison
+légitime d'y toucher.
+
+### 1. Un `Adapter` HTTP, servant deux systèmes
+
+`adapter_rgpd.py` monte sous `/rgpd` la seule surface qui sache que le service existe ;
+`rgpd_boutique.py` et `rgpd_journal.py` répondent à `locate` pour deux `system_id` :
+
+| `system_id` | Nature du stockage | Ce qu'il compte |
+| --- | --- | --- |
+| `brocanto-boutique` | La base MariaDB | Des enregistrements, table par table |
+| `brocanto-journal` | Le journal applicatif à plat, fichiers tournés compris | Des lignes, fichier par fichier |
+
+**Deux natures plutôt qu'une** : un contrat qui ne saurait dire que « SELECT » n'aurait pas été
+éprouvé. Le journal apporte aussi le `202` — au-delà de cinq mégaoctets à relire ligne à ligne, il
+déclare l'échéance de la passe de nuit au lieu de tenir la connexion.
+
+Le secret arrive en en-tête `X-RGPD-Secret` et se compare avec `hmac.compare_digest` ; il vient de
+`RGPD_ADAPTER_SECRET`, et un déploiement qui l'oublie refuse tous les appels. **`requirements.txt`
+n'a pas bougé** : `hmac`, `re` et `datetime` sont de la bibliothèque standard.
+
+L'adaptateur est ainsi **plus rigoureux que son hôte** — `compare_digest` ici, un `==` sur une clé
+de query string pour l'administration deux cents lignes plus haut. Ce n'est pas une incohérence à
+corriger : c'est le prix de la branchabilité, et il se paie dans l'adaptateur, pas dans le témoin.
+
+Ses tests vivent ici (`tests/`, `pytest`, sur le modèle de `src/sidecar/tests/`) et n'entrent jamais
+dans la solution .NET. Aucun ne joint MariaDB ni ne lit le vrai journal : les coutures sont le
+compteur de sondes et le dossier de journal.
+
+### 2. Une porte d'entrée — un défaut de conformité **antérieur**
+
+`/contact` n'existait pas. Ni route, ni `mailto`, ni la moindre adresse écrite quelque part : la
+table `messages` était alimentée par on ne sait quoi et exposée par rien. Une personne concernée
+n'avait donc **aucun moyen d'adresser une demande** à Brocanto — ce que l'art. 12 exige de faciliter.
+
+**Ce défaut est antérieur au branchement, et il est consigné comme tel** : il n'a pas été découvert
+en branchant, il a été découvert en cherchant par où une demande entrerait. La porte ajoutée est
+celle qu'une application ordinaire aurait — un formulaire de contact qui écrit dans `messages` —
+et non une porte « RGPD » : rien dans `/contact` ne parle de droits, de demande d'exercice ni du
+service. Le témoin reste écrit comme si le microservice n'existait pas.
+
+### Ce qui n'a délibérément pas été fait
+
+- **Aucune iframe, aucun lien de navigation vers la GUI du service.** Une ligne de HTML qui ne rend
+  le témoin ni plus ni moins ordinaire est du confort d'intégration pur.
+- **Aucune facilité de schéma** : pas une colonne, pas un index, pas une vue. `db/schema.sql` est
+  intact.
+- **`localhost:3307` reste inutilisé.** La voie « accès direct à la base » était ouverte et
+  documentée ci-dessus ; le branchement ne l'a pas empruntée, et **c'est un résultat, pas un
+  oubli** : tout passe par l'`Adapter`, donc par du code que le client écrit, relit et déploie.
+- **Quatre systèmes restent au niveau 0** — recensés, touchés à la main, sans `Capability` :
+  l'export mensuel parti chez l'agence, les médias sur disque, le prestataire de paiement, et les
+  archives compressées du journal, que l'adaptateur laisse fermées. C'est le régime majoritaire, et
+  celui dont le service tire le plus de valeur : il nomme ce qu'il ne touche pas.
+
+  La reprise de 2019 (`clients_ancienne_boutique`), elle, **n'est pas** un cinquième système : elle
+  vit dans la même base et se compte avec `brocanto-boutique`. Un système est une unité de
+  recensement, et rien n'obligeait à la découper — mais le jour où on la découperait, l'adaptateur
+  la servirait déjà.
+
+Deux réserves valent d'être écrites, parce qu'un compte servi sans elles se lirait comme un fait
+complet :
+
+- **Le texte libre n'est pas fouillé.** Les descriptions d'annonces et le corps des messages
+  portent des numéros et des adresses écrits à la main (pièges 14 et 15) que les sondes ne trouvent
+  pas. Un `0` sur `messages` veut dire « aucun message *écrit par* cette adresse », jamais « aucun
+  message qui parle d'elle ».
+- **Le journal ne se cherche que par adresse.** Une ligne ne porte que celle de la session : y
+  chercher un nom ne trouverait rien, et y chercher une référence comme « 1203 » compterait des
+  horaires et des identifiants d'annonce. Un sac sans adresse ne fait donc ouvrir aucun fichier, et
+  ne rend aucun emplacement — « pas regardé » plutôt qu'un `0` qu'on n'a pas gagné.
+
+Ces deux réserves sont à porter dans la réponse de `locate` ; leur forme appartient au ticket #92.
+
+### La clause de périmètre, et ce que la recette en fait
+
+Le contrat exige **un secret partagé _et_ un `Adapter` hors d'atteinte de l'extérieur**, les deux
+ensemble. Ici, l'adaptateur vit dans le même processus Flask que la boutique et sort donc par le
+même port — `8080`, publié sur l'hôte par `compose.yaml`. C'est exactement ce qu'un client ferait,
+et c'est ce qui rend l'intégration bon marché ; **ce n'est pas conforme en production** pour autant.
+Un déploiement réel doit fermer `/rgpd` à tout ce qui ne vient pas du réseau du service — un filtre
+devant l'application, pas une ligne de Python de plus. En recette, `8080` n'est joignable que depuis
+la machine de développement : la clause tient par l'endroit où tourne le conteneur, et c'est écrit
+ici pour que personne ne croie qu'elle tient par le secret seul.
 
 ## Les pièges effectivement posés
 
@@ -121,3 +222,10 @@ rencontre dans les applications qu'on brancherait pour de vrai.
     et il est orienté ventes, pas personne.
 19. **Aucune trace de qui a consulté quoi côté administration**, sinon les lignes du journal — et
     l'administration n'a pas de compte nommé, juste une clé partagée.
+20. **Aucune porte d'entrée — défaut de conformité antérieur au branchement, consigné puis
+    refermé.** Jusqu'au ticket #88, l'application n'exposait ni route de contact, ni `mailto`, ni
+    adresse écrite nulle part ; la table `messages` n'était atteignable par aucune route. Une
+    personne concernée n'avait donc aucun moyen d'adresser quoi que ce soit à Brocanto. Le défaut
+    n'est pas né du branchement et ne s'est pas révélé en branchant : il s'est révélé en cherchant
+    par où une demande entrerait. `/contact` l'a refermé, sous la forme qu'une application ordinaire
+    aurait — voir « Le branchement » plus haut.
