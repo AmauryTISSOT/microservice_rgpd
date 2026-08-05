@@ -68,7 +68,7 @@ public class OpenCaseHandlerTests
 
     var opened = await OpenAsync([DataSubjectRight.Access]);
 
-    opened.Value.ReceivedOn.ShouldBe(Now);
+    opened.Value.Reception.ShouldBe(ReceptionDate.Declared(Now));
   }
 
   /// <summary>

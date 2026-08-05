@@ -44,4 +44,20 @@ public sealed class Step
 
   /// <summary>Où en est ce travail. Cinq valeurs, dont deux qui refusent de fusionner.</summary>
   public StepState State { get; private set; }
+
+  /// <summary>
+  /// Porte l'état que l'<c>Operator</c> vient de <b>déclarer</b>. Le service est greffier :
+  /// <see cref="StepState.Done"/> prouve qu'on a déclaré l'avoir fait, jamais que ce soit vrai.
+  /// </summary>
+  /// <remarks>
+  /// <b>Aucune transition n'est interdite, et c'est une décision.</b> Le service n'a jamais le droit
+  /// de barrer la route : un <c>Step</c> qu'on ramène de <see cref="StepState.Done"/> à
+  /// <see cref="StepState.Untreated"/> est un aveu, et le refuser ferait choisir à l'<c>Operator</c>
+  /// entre la vérité et le formulaire. Ce qui garde la trace n'est pas l'interdiction, c'est le
+  /// <c>Ledger</c> : chaque déclaration s'y inscrit datée et signée, celle-ci comme la précédente.
+  /// </remarks>
+  internal void Declare(StepState state)
+  {
+    State = state;
+  }
 }

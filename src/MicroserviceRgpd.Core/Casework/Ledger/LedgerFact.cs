@@ -43,6 +43,14 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   public static readonly LedgerFact AdapterDidNotServeTheSystem =
     new(nameof(AdapterDidNotServeTheSystem), 2, "appel refusé : système non servi");
 
+  /// <summary>
+  /// Un <c>Operator</c> a <b>déclaré</b> où en est le travail dû sur un système. C'est un constat
+  /// signé, jamais un fait vérifié : <c>Done</c> prouve qu'on a déclaré l'avoir fait, et
+  /// <c>Untreated</c> — l'aveu que personne ne l'a fait — s'inscrit aussi volontiers, le service
+  /// n'ayant jamais le droit de bloquer la trace la plus précieuse du dispositif.
+  /// </summary>
+  public static readonly LedgerFact StepDeclared = new(nameof(StepDeclared), 3, "travail dû déclaré");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

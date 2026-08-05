@@ -1,0 +1,238 @@
+@page "/dossiers/{id:guid}"
+@model CaseModel
+@using System.Globalization
+@using MicroserviceRgpd.Core.Casework
+@{
+  ViewData["Title"] = "Le dossier";
+  var onScreen = Model.OnScreen!;
+}
+
+<h1>Le dossier</h1>
+
+@*
+  Le bandeau. Il nomme la plus ancienne déclaration du Manifest parmi les systèmes de ce dossier :
+  c'est au moment où quelqu'un signe qu'une déclaration vieille doit lui être rappelée.
+*@
+<dl class="banner">
+  <dt>Identifiant</dt>
+  <dd>@onScreen.Case.Value</dd>
+
+  @*
+    Pas de ligne « État » : elle ne pourrait dire qu'« ouvert », faute de clôture, et un bandeau qui
+    affiche une valeur incapable de varier apprend à ne plus le lire. Elle reviendra avec la clôture,
+    quand elle dira quelque chose.
+  *@
+  <dt>Identité déclarée</dt>
+  <dd>@onScreen.IdentityDeclaration.FrenchLabel</dd>
+
+  <dt>Reçu le</dt>
+  <dd>
+    @if (onScreen.Reception.IsDefault)
+    {
+      @*
+        Le défaut se nomme comme un défaut : on affiche la règle appliquée, jamais la date qu'elle a
+        produite, qui se lirait comme un fait que personne n'a déclaré.
+      *@
+      <span class="defaulted">J+@ReceptionDate.DaysHeldAlreadyRunByDefault (défaut)</span>
+      <span class="hint">Personne n'a déclaré cette date ; le service tient ce nombre de jours pour déjà courus.</span>
+    }
+    else
+    {
+      @onScreen.Reception.On.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+    }
+  </dd>
+
+  <dt>Échéance (art. 12.3)</dt>
+  <dd>
+    @onScreen.Deadline.On.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+    @if (onScreen.DelayOverrun)
+    {
+      <strong class="overrun">délai dépassé</strong>
+    }
+  </dd>
+
+  <dt>Paysage déclaré</dt>
+  <dd>
+    @if (onScreen.OldestStepDeclaration is { } oldest)
+    {
+      <text>
+        La plus ancienne déclaration des systèmes de ce dossier date du
+        @oldest.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).
+      </text>
+    }
+    else
+    {
+      <span class="none">Aucun système n'était déclaré quand ce dossier s'est ouvert.</span>
+    }
+    <span class="hint">
+      Ce recensement est déclaré à la main et <strong>ne garantit pas qu'il n'en existe pas
+      d'autres</strong>.
+    </span>
+  </dd>
+</dl>
+
+@if (!ViewData.ModelState.IsValid)
+{
+  <div class="refusals">
+    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+    {
+      <p class="refusal">@refusal.ErrorMessage</p>
+    }
+  </div>
+}
+
+<h2>Le travail dû</h2>
+
+@if (onScreen.Claims.Count == 0)
+{
+  @* Un dossier sans réclamation est un fait, jamais une saisie inachevée. *@
+  <p class="none">Aucun droit n'est reconnu à ce dossier à ce jour.</p>
+}
+
+@foreach (var claim in onScreen.Claims)
+{
+  <div class="claim">
+    <h3>@claim.Right.Name <span class="hint">— @claim.State.FrenchLabel</span></h3>
+
+    @if (claim.Steps.Count == 0)
+    {
+      <p class="none">
+        Aucun système n'était déclaré quand ce dossier s'est ouvert : ce droit ne porte aucun travail
+        dû, et ce n'est pas un travail achevé.
+      </p>
+    }
+
+    @foreach (var step in claim.Steps)
+    {
+      <div class="step">
+        <h4>
+          @(step.Label?.Value ?? step.DeclaredSystem.Value)
+          <span class="hint">— @step.State.FrenchLabel</span>
+        </h4>
+
+        <p class="hint">
+          @step.DeclaredSystem.Value
+          @if (step.DeclaredOn is { } declaredOn)
+          {
+            @* La date du Manifest descend jusqu'ici : elle se lit là où quelqu'un signe. *@
+            <text>— déclaré le @declaredOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</text>
+          }
+          else
+          {
+            <text>— ce système ne figure plus au catalogue ; le travail reste dû.</text>
+          }
+        </p>
+
+        @if (step.AwaitsAFinding)
+        {
+          @*
+            Le constat réclamé sur un « fait » dont le service ne détient aucun rattachement. Aucun
+            état nouveau : un sixième état de Step aurait fait porter au dossier une exigence de la
+            surface, et il aurait fallu le faire retomber quelque part.
+          *@
+          <p class="claimed-finding">
+            <strong>Constat réclamé.</strong> Ce travail est déclaré fait sans qu'aucun rattachement
+            ne soit détenu par le service : dites ce qui a été cherché et sous quoi, pour qu'un zéro
+            ne se lise pas « cette personne n'est pas chez nous ».
+          </p>
+        }
+
+        @*
+          Sur un refus, la saisie revient — mais seulement dans le formulaire d'où elle vient : la
+          prose d'un constat recopiée dans les cinq autres formulaires de l'écran ferait signer sur un
+          système la phrase écrite pour un autre. Une prose refusée pour un nom vide ne doit pas être à
+          réécrire : c'est le travail de l'Operator, pas une saisie jetable.
+        *@
+        @{
+          var submitted = Model.Form.Right == claim.Right.Name
+            && Model.Form.DeclaredSystem == step.DeclaredSystem.Value;
+        }
+
+        <form method="post">
+          <input type="hidden" name="Form.Right" value="@claim.Right.Name" />
+          <input type="hidden" name="Form.DeclaredSystem" value="@step.DeclaredSystem.Value" />
+
+          <p>
+            <label for="state-@claim.Right.Name-@step.DeclaredSystem.Value">Déclarer l'état</label>
+            <select id="state-@claim.Right.Name-@step.DeclaredSystem.Value" name="Form.State">
+              @foreach (var state in StepState.List.OrderBy(one => one.Value))
+              {
+                @* « Non traité » est offert comme les autres : sans la valeur laide, on coche la propre. *@
+                <option value="@state.Name"
+                        selected="@(state.Name == (submitted ? Model.Form.State : step.State.Name))">
+                  @state.FrenchLabel
+                </option>
+              }
+            </select>
+          </p>
+
+          @*
+            LA SIGNATURE. Le constat — prose de PREUVE — se saisit ici, au point de décision, avec le
+            nom : il entre dans le Ledger et survit à la clôture. La prose de TRAVAIL a son propre
+            endroit, plus bas, et n'entre jamais dans la preuve. La règle tient par ce placement.
+          *@
+          <fieldset class="signature">
+            <legend>Signer ce constat</legend>
+
+            <p>
+              <label for="finding-@claim.Right.Name-@step.DeclaredSystem.Value">
+                Constat
+                <span class="hint">
+                  Ce qui a été fait, ou ce qui ne l'a pas été. Ce texte <strong>entre dans la matière
+                  de preuve et survit au dossier</strong> : il dit pourquoi vous avez déclaré cela, et
+                  ne nomme personne.
+                </span>
+              </label>
+              <textarea id="finding-@claim.Right.Name-@step.DeclaredSystem.Value"
+                        name="Form.Finding"
+                        rows="3"
+                        maxlength="@MicroserviceRgpd.Core.Casework.Ledger.LedgerEntry.MaxEvidenceProseLength">@(submitted ? Model.Form.Finding : null)</textarea>
+            </p>
+
+            <p>
+              <label for="signedby-@claim.Right.Name-@step.DeclaredSystem.Value">
+                Votre nom
+                <span class="hint">
+                  Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom
+                  <em>et</em> ce régime, pour qu'elle ne soit pas relue comme une identification.
+                </span>
+              </label>
+              @*
+                Le nom, lui, ne revient jamais — pas même sur un refus. Il coûte peu à retaper, et une
+                case vide fait de chaque envoi qui écrit un geste délibéré : c'est la seule case dont le
+                remplissage automatique ferait signer quelqu'un sans qu'il l'ait voulu.
+              *@
+              <input type="text"
+                     id="signedby-@claim.Right.Name-@step.DeclaredSystem.Value"
+                     name="Form.SignedBy"
+                     maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+            </p>
+
+            <button type="submit">Déclarer et signer</button>
+          </fieldset>
+        </form>
+      </div>
+    }
+  </div>
+}
+
+<h2>La prose de travail</h2>
+
+@*
+  Le SECOND endroit, et il est délibérément séparé du premier. Ce qui s'écrit ici dit quelle ligne
+  appartient à qui, nomme donc par nature des tiers non demandeurs, vit sur le dossier et MEURT à la
+  clôture — le Ledger n'en garde que le fait daté. Aucun champ de cette section n'a de chemin vers la
+  preuve, et c'est ce placement, et non la discipline de l'Operator, qui tient la règle.
+*@
+<p class="caveat">
+  Ce qui s'écrit ici vit sur le dossier et <strong>disparaît à sa clôture</strong> : les réserves d'un
+  <code>Locate</code> et les questions posées, qui nomment par nature. Rien de cette section n'entre
+  dans la matière de preuve.
+</p>
+
+<p class="none">
+  Aucune réserve, aucune question en suspens : le service n'a encore appelé aucun système pour ce
+  dossier.
+</p>
+
+<p><a asp-page="Queue">Revenir à la file</a></p>

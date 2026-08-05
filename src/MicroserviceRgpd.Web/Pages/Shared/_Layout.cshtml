@@ -21,6 +21,22 @@
     .system dt { font-weight: 600; }
     .system dd { margin: 0; white-space: pre-wrap; }
     .none { font-style: italic; opacity: 0.75; }
+    table.queue { border-collapse: collapse; width: 100%; }
+    table.queue caption { text-align: left; margin-bottom: 0.5rem; }
+    table.queue th, table.queue td { border-bottom: 1px solid rgba(127, 127, 127, 0.4); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+    .banner { display: grid; gap: 0.15rem 1rem; grid-template-columns: max-content 1fr; margin: 0.5rem 0 2rem; }
+    .banner dt { font-weight: 600; }
+    .banner dd { margin: 0; }
+    .claim { border-top: 1px solid rgba(127, 127, 127, 0.4); padding: 1rem 0; }
+    .claim h3 { font-size: 1.05rem; margin: 0 0 0.5rem; }
+    .step { margin: 0 0 1.5rem 1rem; }
+    .step h4 { font-size: 1rem; margin: 0; }
+    .step .hint { margin: 0 0 0.5rem; }
+    /* Le défaut et le dépassement se signalent, jamais par un nombre : le mot dit le fait. */
+    .defaulted { font-weight: 600; }
+    .overrun { color: #b3261e; }
+    .claimed-finding { border-left: 3px solid #b3261e; padding-left: 0.75rem; }
+    .signature { margin-top: 0.5rem; }
     form p { margin: 0 0 1rem; }
     label { display: block; font-weight: 600; margin-bottom: 0.2rem; }
     input[type="text"], input[type="url"], textarea { box-sizing: border-box; font: inherit; padding: 0.4rem; width: 100%; }

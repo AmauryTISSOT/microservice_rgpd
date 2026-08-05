@@ -4,7 +4,9 @@ using MicroserviceRgpd.Core.Casework.Ledger;
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : huit colonnes, et pas une de plus où un nom pourrait entrer.
+/// La table du <c>Ledger</c> : treize colonnes, et pas une de plus où un nom de personne concernée
+/// pourrait entrer. La seule prose est celle de <b>preuve</b> ; la prose de travail, qui nomme par
+/// nature, n'a aucune colonne ici.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -68,5 +70,26 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     builder.Property(row => row.DeclaredSystem)
       .HasColumnName("declared_system")
       .HasMaxLength(DeclaredSystemId.MaxLength);
+
+    builder.Property(row => row.SignatureRegime)
+      .HasColumnName("signature_regime")
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
+
+    builder.Property(row => row.DataSubjectRight)
+      .HasColumnName("data_subject_right")
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
+
+    builder.Property(row => row.StepState)
+      .HasColumnName("step_state")
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
+
+    // Le plafond de la prose vit une seule fois, là où le domaine le déclare. La colonne est bornée
+    // plutôt que libre : ce qui descend ici survit cinq ans à la clôture, et une colonne sans
+    // plafond serait la seule de la table à ne pas dire ce qu'elle accepte.
+    builder.Property(row => row.EvidenceProse)
+      .HasColumnName("evidence_prose")
+      .HasMaxLength(LedgerEntry.MaxEvidenceProseLength);
+
+    builder.Property(row => row.ReceptionWasDefaulted).HasColumnName("reception_was_defaulted");
   }
 }

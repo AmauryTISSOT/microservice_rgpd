@@ -55,7 +55,7 @@ public class ManifestModel(IMediator mediator) : PageModel
         return RedirectToPage();
       }
 
-      DeclaredSystemForm.Refuse(ModelState, FormPrefix, declared.ValidationErrors);
+      FormBoundary.Deposit(ModelState, FormPrefix, declared.ValidationErrors);
     }
 
     await OnGetAsync(cancellationToken);

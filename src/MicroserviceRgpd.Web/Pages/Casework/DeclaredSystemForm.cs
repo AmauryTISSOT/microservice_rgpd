@@ -1,7 +1,5 @@
-﻿using Ardalis.Result;
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Vogen;
 
 namespace MicroserviceRgpd.Web.Pages.Casework;
 
@@ -74,16 +72,16 @@ public sealed class DeclaredSystemForm
     // Un champ laissé vide arrive `null` de la liaison de modèle, et le refus de Vogen sur le nul
     // est un message anglais et générique. Le vide entre donc comme vide : c'est la règle du champ
     // — écrite en français, dans le type qui la porte — qui doit parler à qui a saisi.
-    var id = Read(modelState, prefix, nameof(Id), () => DeclaredSystemId.From(Id ?? string.Empty));
-    var label = Read(modelState, prefix, nameof(Label), () => SystemLabel.From(Label ?? string.Empty));
-    var contents = Read(modelState, prefix, nameof(Contents), () => SystemContents.From(Contents ?? string.Empty));
+    var id = FormBoundary.Read(modelState, prefix, nameof(Id), () => DeclaredSystemId.From(Id ?? string.Empty));
+    var label = FormBoundary.Read(modelState, prefix, nameof(Label), () => SystemLabel.From(Label ?? string.Empty));
+    var contents = FormBoundary.Read(modelState, prefix, nameof(Contents), () => SystemContents.From(Contents ?? string.Empty));
 
     // Le champ vide est l'absence d'Adapter, et non une adresse mal saisie : c'est le régime
     // majoritaire, et le seul endroit du formulaire où le vide soit une réponse à part entière
     // avec la liste de capacités.
     Core.Casework.AdapterAddress? adapterAddress = string.IsNullOrWhiteSpace(AdapterAddress)
       ? null
-      : Read(modelState, prefix, nameof(AdapterAddress), () => Core.Casework.AdapterAddress.From(AdapterAddress!));
+      : FormBoundary.Read(modelState, prefix, nameof(AdapterAddress), () => Core.Casework.AdapterAddress.From(AdapterAddress!));
 
     var capabilities = ReadCapabilities(modelState, prefix);
 
@@ -93,51 +91,6 @@ public sealed class DeclaredSystemForm
     }
 
     return new DeclaredSystemFields(id.Value, label.Value, contents.Value, capabilities, adapterAddress);
-  }
-
-  /// <summary>
-  /// Redit à l'humain, sous le nom du champ fautif, ce que le gestionnaire a refusé — l'unicité de
-  /// l'identifiant, ou le plancher <c>Locate</c>.
-  /// </summary>
-  /// <remarks>
-  /// Le refus se dépose sous le même nom de champ que celui de <see cref="Read"/> : les deux écrans
-  /// posent la même question, et un refus qui ne retomberait pas au même endroit selon qu'il vient
-  /// du type ou du gestionnaire s'afficherait à côté du champ sur un écran et nulle part sur l'autre.
-  /// </remarks>
-  /// <param name="modelState">L'endroit où les refus se déposent, sous le nom du champ fautif.</param>
-  /// <param name="prefix">Le préfixe de liaison du formulaire, tel que la page l'a déclaré.</param>
-  /// <param name="refusals">Ce que le gestionnaire a refusé.</param>
-  public static void Refuse(
-    ModelStateDictionary modelState,
-    string prefix,
-    IEnumerable<ValidationError> refusals)
-  {
-    ArgumentNullException.ThrowIfNull(modelState);
-    ArgumentNullException.ThrowIfNull(refusals);
-
-    foreach (var refusal in refusals)
-    {
-      modelState.AddModelError($"{prefix}.{refusal.Identifier}", refusal.ErrorMessage);
-    }
-  }
-
-  /// <summary>
-  /// Une valeur du domaine, ou le refus du type déposé sous le nom du champ. Le type lève, la
-  /// frontière nomme — c'est la même répartition que sur le texte reçu à qualifier.
-  /// </summary>
-  private static T? Read<T>(ModelStateDictionary modelState, string prefix, string field, Func<T> cross)
-    where T : struct
-  {
-    try
-    {
-      return cross();
-    }
-    catch (ValueObjectValidationException refusal)
-    {
-      modelState.AddModelError($"{prefix}.{field}", refusal.Message);
-
-      return null;
-    }
   }
 
   /// <summary>

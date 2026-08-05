@@ -47,7 +47,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
     var reread = await RereadAsync(opened.Id);
 
     reread.IdentityDeclaration.ShouldBe(IdentityDeclaration.ApplicationSession);
-    reread.ReceivedOn.ShouldBe(Received);
+    reread.Reception.ShouldBe(ReceptionDate.Declared(Received));
 
     reread.Claims.Select(claim => claim.Right).ShouldBe(
       [DataSubjectRight.Access, DataSubjectRight.Erasure], ignoreOrder: true);
@@ -172,6 +172,54 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
     reread.Claims[0].Steps[0].DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
   }
 
+  /// <summary>
+  /// <b>La date de réception et son régime tiennent en deux colonnes, jamais une.</b> Une date nue
+  /// serait indiscernable d'une date affirmée par un humain, et le défaut cesserait d'être visible
+  /// <em>comme</em> un défaut là où il compte le plus : en base, où il survit à l'écran qui l'a montré.
+  /// </summary>
+  [Fact]
+  public async Task WritesTheReceptionDateAndItsRegimeInTwoDistinctColumns()
+  {
+    var defaulted = Case.Open(
+      CaseId.Next(),
+      IdentityDeclaration.Unverified,
+      [Designation.Of(DesignationKind.Email, "sans.date@example.fr")],
+      [DataSubjectRight.Access],
+      Manifest.Empty,
+      ReceptionDate.Defaulted(Received));
+
+    await SaveAsync(defaulted);
+
+    var regimes = await ScalarListAsync(
+      $"select reception_is_default::text from cases where id = '{defaulted.Id.Value}'");
+
+    regimes.ShouldBe(["true"]);
+
+    var reread = await RereadAsync(defaulted.Id);
+
+    reread.Reception.IsDefault.ShouldBeTrue();
+    reread.Reception.On.ShouldBe(Received.AddDays(-ReceptionDate.DaysHeldAlreadyRunByDefault));
+  }
+
+  /// <summary>
+  /// <b>Un dossier naît <c>Open</c> en base</b>, et l'état y est écrit par son nom : la file s'appuie
+  /// sur lui plutôt que de lister « tous les dossiers », pour qu'un dossier clos n'y réapparaisse jamais
+  /// le jour où la clôture existera.
+  /// </summary>
+  [Fact]
+  public async Task WritesTheStateByItsNameAndBornsItOpen()
+  {
+    var opened = Open(
+      [DataSubjectRight.Access],
+      [Designation.Of(DesignationKind.Email, "etat.ouvert@example.fr")]);
+
+    await SaveAsync(opened);
+
+    var states = await ScalarListAsync($"select state from cases where id = '{opened.Id.Value}'");
+
+    states.ShouldBe([nameof(CaseState.Open)]);
+  }
+
   private static Case Open(
     DataSubjectRight[] rights,
     Designation[] designations,
@@ -183,7 +231,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
       designations,
       rights,
       Manifest.Of(systems),
-      Received);
+      ReceptionDate.Declared(Received));
   }
 
   private static DeclaredSystem ASystem(string id)

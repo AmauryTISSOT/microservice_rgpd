@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework.Adapters;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Core.Casework.Ledger;
 
@@ -38,7 +39,11 @@ public sealed record LedgerEntry
     Signatory signatory,
     IdentityDeclaration? identityDeclaration,
     int? designationCount,
-    DeclaredSystemId? declaredSystem)
+    DeclaredSystemId? declaredSystem,
+    DataSubjectRight? right = null,
+    StepState? declaredState = null,
+    string? evidenceProse = null,
+    bool? receptionWasDefaulted = null)
   {
     Id = id;
     Case = caseId;
@@ -48,7 +53,17 @@ public sealed record LedgerEntry
     IdentityDeclaration = identityDeclaration;
     DesignationCount = designationCount;
     DeclaredSystem = declaredSystem;
+    Right = right;
+    DeclaredState = declaredState;
+    EvidenceProse = evidenceProse;
+    ReceptionWasDefaulted = receptionWasDefaulted;
   }
+
+  /// <summary>
+  /// Le plafond de la prose de preuve, en unités UTF-16. Un constat, un motif — pas un dossier
+  /// entier recopié dans la preuve.
+  /// </summary>
+  public const int MaxEvidenceProseLength = 2000;
 
   /// <summary>L'identité de cette ligne. Jamais un rang, jamais un compteur.</summary>
   public LedgerEntryId Id { get; }
@@ -90,6 +105,50 @@ public sealed record LedgerEntry
   public DeclaredSystemId? DeclaredSystem { get; }
 
   /// <summary>
+  /// Le droit au titre duquel le fait a eu lieu, quand il en concerne un. C'est un mot de la
+  /// taxonomie du RGPD, jamais une donnée sur la personne.
+  /// </summary>
+  public DataSubjectRight? Right { get; }
+
+  /// <summary>
+  /// L'état déclaré du travail dû, quand le fait en déclare un. <c>Untreated</c> y entre aussi
+  /// volontiers que <c>Done</c> : c'est l'aveu que personne ne l'a fait, et il est la trace la plus
+  /// précieuse du dispositif.
+  /// </summary>
+  public StepState? DeclaredState { get; }
+
+  /// <summary>
+  /// La <b>prose de preuve</b> — le constat, le motif — écrite par l'<c>Operator</c> au point de
+  /// décision, et <c>null</c> pour les faits qu'aucun humain n'a motivés.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>C'est le seul champ de prose libre du <c>Ledger</c>, et son régime est écrit ici.</b> La
+  /// prose de preuve dit <i>pourquoi on a décidé cela</i>, n'est pas nominative par nature, et
+  /// survit. La <b>prose de travail</b> — celle qui dit quelle ligne appartient à qui, et qui nomme
+  /// des tiers — n'a <b>aucun emplacement ici</b> : elle vit sur le <c>Case</c> et meurt à la
+  /// clôture. La règle tient par le <b>placement</b> — deux champs à deux endroits, dont un seul
+  /// survit — et non par la discipline de l'<c>Operator</c>.
+  /// </para>
+  /// <para>
+  /// Elle est bornée et nettoyée comme tout texte déclaré : elle descend dans une colonne, et le
+  /// service ne l'échappera pour personne.
+  /// </para>
+  /// </remarks>
+  public string? EvidenceProse { get; }
+
+  /// <summary>
+  /// La date de réception du dossier était-elle <b>tenue pour défaut</b> ? Renseignée à l'ouverture,
+  /// et <c>null</c> partout ailleurs.
+  /// <para>
+  /// C'est ce que le service a <b>supposé</b>, non ce que quelqu'un a déclaré — et c'est exactement
+  /// pourquoi la preuve le garde : un défaut consigné comme un fait déclaré ferait relire dans dix
+  /// ans une hypothèse du service comme l'affirmation d'un humain.
+  /// </para>
+  /// </summary>
+  public bool? ReceptionWasDefaulted { get; }
+
+  /// <summary>
   /// La première ligne d'un dossier : il s'est ouvert, à telle date, sous telle déclaration
   /// d'identité, avec tant de désignations pour chercher la personne.
   /// </summary>
@@ -98,6 +157,11 @@ public sealed record LedgerEntry
   /// <param name="signatory">Qui a fait entrer la demande.</param>
   /// <param name="identityDeclaration">Ce que le canal d'entrée a déclaré de l'identité du demandeur.</param>
   /// <param name="designationCount">Le nombre de désignations reçues — jamais lesquelles.</param>
+  /// <param name="reception">
+  /// La date de réception <b>et son régime</b>, pris ensemble : c'est le régime que la preuve garde —
+  /// un défaut s'inscrit <b>comme un défaut</b>, sans quoi elle garderait la même trace d'une date
+  /// affirmée par un humain et d'une hypothèse du service. La paire ne se sépare pas en chemin.
+  /// </param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
   public static LedgerEntry CaseOpened(
@@ -105,10 +169,12 @@ public sealed record LedgerEntry
     DateTimeOffset occurredAt,
     Signatory signatory,
     IdentityDeclaration identityDeclaration,
-    int designationCount)
+    int designationCount,
+    ReceptionDate reception)
   {
     ArgumentNullException.ThrowIfNull(signatory);
     ArgumentNullException.ThrowIfNull(identityDeclaration);
+    ArgumentNullException.ThrowIfNull(reception);
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
     return new LedgerEntry(
@@ -121,7 +187,111 @@ public sealed record LedgerEntry
       signatory,
       identityDeclaration,
       designationCount,
-      declaredSystem: null);
+      declaredSystem: null,
+      receptionWasDefaulted: reception.IsDefault);
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>déclaré</b> où en est le travail dû sur un système, et il a écrit son
+  /// constat.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le constat est exigé là où l'état le réclame</b> — c'est-à-dire sur <c>Done</c>, et par la
+  /// même règle que celle dont l'écran se sert pour le réclamer : voir
+  /// <see cref="StepState.RequiresAFinding"/>. Un « fait » sans un mot serait une preuve qui dit ce
+  /// qui a été coché et non ce qui a été constaté, et c'est le seul rempart contre six zéros qui se
+  /// liraient « cette personne n'est pas chez nous ».
+  /// </para>
+  /// <para>
+  /// <b>Ailleurs, le constat est accueilli sans être exigé.</b> Exiger une prose sur chaque état ferait
+  /// écrire une ligne de rien à chaque clic, et le constat qui compte se noierait dans les autres —
+  /// mais rien n'empêche d'en écrire un, et il entre dans la preuve comme les autres.
+  /// </para>
+  /// <para>
+  /// <b>Aucune désignation, ni même leur compte.</b> Ce fait ne mesure aucune recherche : il dit
+  /// l'état d'un travail dû, et un compte se lirait comme une ampleur qu'il n'a pas.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier dont ce travail était dû.</param>
+  /// <param name="occurredAt">L'instant de la déclaration.</param>
+  /// <param name="declaredSystem">Le système sur lequel le travail était dû.</param>
+  /// <param name="right">Le droit au titre duquel il l'était.</param>
+  /// <param name="state">L'état déclaré, <c>Untreated</c> compris.</param>
+  /// <param name="evidenceProse">
+  /// Le constat de l'<c>Operator</c> — prose de preuve, qui survit. Exigé lorsque l'état le réclame,
+  /// accueilli sinon.
+  /// </param>
+  /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">
+  /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où l'état le réclame ; ou
+  /// la ligne n'est signée par aucun humain.
+  /// </exception>
+  public static LedgerEntry StepDeclared(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DeclaredSystemId declaredSystem,
+    DataSubjectRight right,
+    StepState state,
+    string? evidenceProse,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+    ArgumentNullException.ThrowIfNull(state);
+    ArgumentNullException.ThrowIfNull(signatory);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      // Un constat est le geste d'un humain, par définition : c'est lui qui a regardé. Le laisser
+      // signer par l'application ferait porter à personne une déclaration que quelqu'un a faite.
+      throw new ArgumentException(
+        "Un constat est déclaré par un Operator nommé : l'application ne constate rien.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.StepDeclared,
+      signatory,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem,
+      right,
+      state,
+      FindingOrThrow(evidenceProse, state));
+  }
+
+  /// <summary>
+  /// Le constat, nettoyé — <b>exigé là où l'état le réclame</b>, accueilli ailleurs, et <c>null</c>
+  /// quand il n'y en a pas et qu'aucun n'était réclamé.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle est publique pour que la frontière de saisie puisse nommer le refus à l'humain</b> sous le
+  /// nom de son champ, sans avoir à fabriquer une signature pour éprouver sa prose. La règle reste
+  /// écrite <b>ici</b>, une seule fois : un écran qui la redirait finirait par ne plus dire la même
+  /// chose que la preuve.
+  /// </remarks>
+  /// <param name="evidenceProse">Ce que l'humain a écrit, ou rien.</param>
+  /// <param name="state">L'état déclaré, qui dit si un constat est réclamé.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="state"/> est absent.</exception>
+  /// <exception cref="ArgumentException">
+  /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où l'état le réclame.
+  /// </exception>
+  public static string? FindingOrThrow(string? evidenceProse, StepState state)
+  {
+    ArgumentNullException.ThrowIfNull(state);
+
+    if (state.RequiresAFinding || !string.IsNullOrWhiteSpace(evidenceProse))
+    {
+      return DeclaredText.OrThrow(evidenceProse, "Le constat", MaxEvidenceProseLength, nameof(evidenceProse));
+    }
+
+    // Rien à consigner, et rien n'était réclamé : la colonne reste vide plutôt que de porter une
+    // chaîne vide, qui se lirait comme un constat qu'on aurait effacé.
+    return null;
   }
 
   /// <summary>

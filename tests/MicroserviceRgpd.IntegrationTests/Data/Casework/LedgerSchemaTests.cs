@@ -31,31 +31,49 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   private static readonly DateTimeOffset Opened = new(2026, 8, 3, 14, 30, 0, TimeSpan.Zero);
 
   /// <summary>
-  /// Neuf colonnes, nommées une par une : ce qui n'a pas de colonne ne s'écrira pas. La liste est
+  /// Quatorze colonnes, nommées une par une : ce qui n'a pas de colonne ne s'écrira pas. La liste est
   /// écrite en toutes lettres <b>pour que l'ajout d'une colonne soit un geste délibéré</b> — une
   /// colonne de prose libre glissée ici serait la porte par laquelle un nom finirait par passer.
   /// <para>
-  /// La neuvième, <c>declared_system</c>, est arrivée avec les tentatives d'appel d'<c>Adapter</c> :
-  /// elle porte un nom du <b>paysage déclaré du client</b>, choisi par l'humain qui l'a recensé, et
-  /// jamais un nom de personne concernée.
+  /// <c>declared_system</c> est arrivée avec les tentatives d'appel d'<c>Adapter</c> : elle porte un
+  /// nom du <b>paysage déclaré du client</b>, choisi par l'humain qui l'a recensé, et jamais un nom de
+  /// personne concernée.
+  /// </para>
+  /// <para>
+  /// Cinq sont arrivées avec la surface de l'<c>Operator</c>, et chacune pour une raison écrite :
+  /// <c>signature_regime</c>, pour que le nom saisi sans authentification ne soit pas relu comme une
+  /// identification ; <c>reception_was_defaulted</c>, pour qu'une date tenue pour défaut ne se lise pas
+  /// comme un fait déclaré ; <c>data_subject_right</c> et <c>step_state</c>, qui disent de quel travail
+  /// dû un constat parle ; et <c>evidence_prose</c>, <b>seule colonne de prose de la table</b>.
+  /// </para>
+  /// <para>
+  /// ⚠️ <c>evidence_prose</c> ne porte que la <b>prose de preuve</b> — écrite à un point de décision,
+  /// non nominative par nature, et qui survit. La <b>prose de travail</b>, qui nomme des tiers, n'a
+  /// aucune colonne ici : elle vit sur le <c>Case</c> et meurt à la clôture. La règle tient par ce
+  /// <b>placement</b>, et l'écran offre les deux champs à deux endroits distincts.
   /// </para>
   /// </summary>
   [Fact]
-  public async Task NamesNineColumnsAndNotOneMoreWhereANameCouldLand()
+  public async Task NamesFourteenColumnsAndNotOneMoreWhereANameCouldLand()
   {
     var columns = await ColumnsAsync();
 
     columns.Keys.Order().ShouldBe(
     [
       "case_id",
+      "data_subject_right",
       "declared_system",
       "designation_count",
       "entry_id",
+      "evidence_prose",
       "fact",
       "identity_declaration",
       "occurred_at",
+      "reception_was_defaulted",
       "signatory_kind",
       "signatory_name",
+      "signature_regime",
+      "step_state",
     ]);
   }
 
@@ -102,8 +120,14 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
     string[] forbidden = ["designation_value", "email", "phone", "subject", "designations"];
 
-    columns.Keys.ShouldNotContain(
-      name => forbidden.Any(word => name.Contains(word, StringComparison.OrdinalIgnoreCase)));
+    // ⚠️ « subject » reste interdit partout sauf dans `data_subject_right`, et l'exception est nommée
+    // plutôt que le mot retiré de la liste : celui-là vient de la taxonomie du RGPD — « data subject
+    // right » — et désigne un droit, jamais la personne qui l'exerce. Toute autre colonne portant ce
+    // mot serait la porte par laquelle un attribut de la personne entrerait.
+    columns.Keys
+      .Where(name => name != "data_subject_right")
+      .ShouldNotContain(
+        name => forbidden.Any(word => name.Contains(word, StringComparison.OrdinalIgnoreCase)));
 
     columns["designation_count"].DataType.ShouldBe("integer");
   }
@@ -172,10 +196,21 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
     var first = CaseId.Next();
     var second = CaseId.Next();
 
-    await ledger.AppendAsync(
-      LedgerEntry.CaseOpened(first, Opened, Signatory.Application, IdentityDeclaration.ApplicationSession, 2));
-    await ledger.AppendAsync(
-      LedgerEntry.CaseOpened(second, Opened, Signatory.Operator("Claire Berger"), IdentityDeclaration.Unverified, 0));
+    await ledger.AppendAsync(LedgerEntry.CaseOpened(
+      first,
+      Opened,
+      Signatory.Application,
+      IdentityDeclaration.ApplicationSession,
+      designationCount: 2,
+      reception: ReceptionDate.Declared(Opened)));
+
+    await ledger.AppendAsync(LedgerEntry.CaseOpened(
+      second,
+      Opened,
+      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated),
+      IdentityDeclaration.Unverified,
+      designationCount: 0,
+      reception: ReceptionDate.Defaulted(Opened)));
 
     await using var reread = postgres.NewDbContext();
 
@@ -196,6 +231,13 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
     byOperator.SignatoryKind.ShouldBe("Operator");
     byOperator.SignatoryName.ShouldBe("Claire Berger");
     byOperator.IdentityDeclaration.ShouldBe("Unverified");
+
+    // Le nom et son régime descendent ensemble : un nom sans régime serait relu comme une
+    // identification, et la date tenue pour défaut serait relue comme un fait déclaré.
+    byOperator.SignatureRegime.ShouldBe("Unauthenticated");
+    byOperator.ReceptionWasDefaulted.ShouldBe(true);
+    byApplication.SignatureRegime.ShouldBeNull();
+    byApplication.ReceptionWasDefaulted.ShouldBe(false);
   }
 
   /// <summary>

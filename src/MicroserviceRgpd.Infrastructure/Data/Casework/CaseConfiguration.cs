@@ -52,10 +52,35 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
         name => IdentityDeclaration.FromName(name))
       .IsRequired();
 
-    builder.Property(opened => opened.ReceivedOn).HasColumnName("received_on").IsRequired();
+    builder.Property(opened => opened.State)
+      .HasColumnName("state")
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+      .HasConversion(state => state.Name, name => CaseState.FromName(name))
+      .IsRequired();
 
+    ConfigureTheReception(builder);
     ConfigureTheBag(builder);
     ConfigureTheClaims(builder);
+  }
+
+  /// <summary>
+  /// La date de réception et <b>le régime sous lequel le service la sait</b> : deux colonnes de la
+  /// même table, jamais l'une sans l'autre.
+  /// </summary>
+  /// <remarks>
+  /// <b>Deux colonnes plutôt qu'une.</b> Une date nue serait indiscernable d'une date affirmée par un
+  /// humain — le drapeau est ce qui rend le défaut visible <em>comme un défaut</em>, à l'écran comme
+  /// en base. Le nom <c>received_on</c> ne bouge pas : c'est la même date, mieux qualifiée.
+  /// </remarks>
+  private static void ConfigureTheReception(EntityTypeBuilder<Case> builder)
+  {
+    builder.OwnsOne(opened => opened.Reception, reception =>
+    {
+      reception.Property(date => date.On).HasColumnName("received_on").IsRequired();
+      reception.Property(date => date.IsDefault).HasColumnName("reception_is_default").IsRequired();
+    });
+
+    builder.Navigation(opened => opened.Reception).IsRequired();
   }
 
   /// <summary>

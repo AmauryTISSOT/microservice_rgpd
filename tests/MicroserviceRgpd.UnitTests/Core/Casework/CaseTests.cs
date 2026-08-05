@@ -133,6 +133,52 @@ public class CaseTests
   }
 
   /// <summary>
+  /// Un dossier naît <b>ouvert</b>, et il n'existe aucun troisième état nommé « en retard » : le
+  /// dépassement est un calcul fait à l'instant où l'<c>Operator</c> regarde.
+  /// </summary>
+  [Fact]
+  public void BornsTheCaseOpenAndKnowsNoStateNamedLate()
+  {
+    Open([DataSubjectRight.Access]).State.ShouldBe(CaseState.Open);
+
+    CaseState.List.OrderBy(state => state.Value).Select(state => state.Name).ShouldBe(["Open", "Closed"]);
+  }
+
+  /// <summary>
+  /// <b>La racine porte l'état qu'un humain déclare, et aucune transition n'est interdite.</b>
+  /// Ramener un <c>Done</c> à <c>Untreated</c> est un aveu : le refuser ferait choisir à
+  /// l'<c>Operator</c> entre la vérité et le formulaire, et le service n'a jamais le droit de bloquer
+  /// la trace la plus précieuse du dispositif.
+  /// </summary>
+  [Fact]
+  public void CarriesEveryStateAHumanDeclaresIncludingTheOneThatAdmitsNobodyDidTheWork()
+  {
+    var opened = Open([DataSubjectRight.Access], ASystem("boutique"));
+
+    opened.Declare(DataSubjectRight.Access, DeclaredSystemId.From("boutique"), StepState.Done).ShouldBeTrue();
+    opened.Claims[0].Steps[0].State.ShouldBe(StepState.Done);
+
+    opened.Declare(DataSubjectRight.Access, DeclaredSystemId.From("boutique"), StepState.Untreated).ShouldBeTrue();
+    opened.Claims[0].Steps[0].State.ShouldBe(StepState.Untreated);
+  }
+
+  /// <summary>
+  /// Un travail dû que le dossier ne porte pas se dit <b>faux</b>, sans rien changer. Ce n'est pas une
+  /// programmation fautive : le <c>Manifest</c> vieillit exprès, et un système déclaré après
+  /// l'ouverture n'a jamais eu de <c>Step</c> ici.
+  /// </summary>
+  [Fact]
+  public void SaysSoWhenTheCaseNeverCarriedThatDueWork()
+  {
+    var opened = Open([DataSubjectRight.Access], ASystem("boutique"));
+
+    opened.Declare(DataSubjectRight.Access, DeclaredSystemId.From("declare-apres"), StepState.Done).ShouldBeFalse();
+    opened.Declare(DataSubjectRight.Erasure, DeclaredSystemId.From("boutique"), StepState.Done).ShouldBeFalse();
+
+    opened.Claims[0].Steps[0].State.ShouldBe(StepState.ToDo);
+  }
+
+  /// <summary>
   /// Le dossier porte ce que le canal a déclaré de l'identité, <b>sans en juger la valeur</b>, et
   /// la date de réception telle qu'elle lui a été dite.
   /// </summary>
@@ -142,7 +188,7 @@ public class CaseTests
     var opened = Open([DataSubjectRight.Access]);
 
     opened.IdentityDeclaration.ShouldBe(IdentityDeclaration.ApplicationSession);
-    opened.ReceivedOn.ShouldBe(Received);
+    opened.Reception.ShouldBe(ReceptionDate.Declared(Received));
   }
 
   /// <summary>
@@ -163,7 +209,7 @@ public class CaseTests
       ],
       [DataSubjectRight.Access],
       Manifest.Empty,
-      Received);
+      ReceptionDate.Declared(Received));
 
     opened.Designations.Count.ShouldBe(2);
     opened.Designations[0].Value.ShouldBe("jean.dupont@example.fr");
@@ -186,7 +232,7 @@ public class CaseTests
       ],
       [DataSubjectRight.Access],
       Manifest.Empty,
-      Received);
+      ReceptionDate.Declared(Received));
 
     // La seule chose qui distingue la référence native est sa nature, et elle est de même rang que
     // les trois autres : aucune propriété du dossier ne la nomme.
@@ -250,7 +296,7 @@ public class CaseTests
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       rights,
       Manifest.Of(systems),
-      Received);
+      ReceptionDate.Declared(Received));
   }
 
   private static DeclaredSystem ASystem(string id)
