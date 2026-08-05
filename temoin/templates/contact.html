@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titre %}Nous écrire — Brocanto{% endblock %}
+{% block contenu %}
+<h1>Nous écrire</h1>
+{% if envoye %}
+  <p>C'est envoyé. Le support répond sous deux jours ouvrés.</p>
+  <p><a href="{{ url_for('accueil') }}">Retour aux annonces</a></p>
+{% else %}
+  {% if erreur %}<p style="color:#a33">{{ erreur }}</p>{% endif %}
+  <p>Une question sur une annonce, une commande, votre compte ? Écrivez-nous.</p>
+  <form method="post">
+    <p><label>Votre adresse électronique
+      <input type="email" name="courriel" value="{{ moi.email if moi else '' }}" required></label></p>
+    <p><label>Votre message<br>
+      <textarea name="message" rows="8" cols="60" required></textarea></label></p>
+    <button type="submit">Envoyer</button>
+  </form>
+{% endif %}
+{% endblock %}

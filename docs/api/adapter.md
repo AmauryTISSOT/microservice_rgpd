@@ -246,6 +246,11 @@ qu'il ne touche pas.
 - Ce qu'un refus laisse : [`AdapterCallsForCase`](../../src/MicroserviceRgpd.UseCases/Casework/CallAdapter/AdapterCallsForCase.cs).
 - Le secret et le refus de démarrer : [`AdapterServiceExtensions`](../../src/MicroserviceRgpd.Infrastructure/Casework/Adapters/AdapterServiceExtensions.cs),
   clé `Casework:AdapterSecret`.
+- L'autre bout du fil, écrit comme un client l'écrirait : l'`Adapter` du témoin,
+  [`temoin/adapter_rgpd.py`](../../temoin/adapter_rgpd.py), qui sert `locate` pour deux `system_id`
+  de deux natures — une base MariaDB et un journal à fichiers plats. C'est là que ce contrat se
+  vérifie contre autre chose que lui-même ; ce qu'il a coûté au témoin est consigné dans
+  [`temoin/README.md`](../../temoin/README.md).
 
 **La couture de test est posée sur le fil**, et c'est délibéré : un `HttpMessageHandler` injecté
 dans le client de l'`Adapter`. L'en-tête de secret, le `system_id` en paramètre, le `202` et son

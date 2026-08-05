@@ -27,6 +27,9 @@ services:
       DB_PASSWORD: brocanto
       DB_NAME: brocanto
       FLASK_DEBUG: "1"
+      # Le secret partagé de l'adaptateur RGPD. Il vit dans la configuration de déploiement, des
+      # deux côtés ; sans lui, l'adaptateur refuse tous les appels.
+      RGPD_ADAPTER_SECRET: secret-de-recette-brocanto
     ports:
       - "8080:8080"
     volumes:

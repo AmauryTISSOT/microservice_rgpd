@@ -8,9 +8,14 @@ import csv
 import io
 import os
 from datetime import datetime
+from pathlib import Path
 
 import pymysql
 from flask import Flask, g, redirect, render_template, request, session, url_for
+
+import rgpd_boutique
+import rgpd_journal
+from adapter_rgpd import blueprint_rgpd
 
 app = Flask(__name__)
 app.secret_key = "brocanto-dev-2019"  # TODO passer par l'env avant la prod
@@ -145,6 +150,29 @@ def mon_compte():
     )
 
 
+@app.route("/contact", methods=["GET", "POST"])
+def contact():
+    """Écrire au support. Le message atterrit dans `messages`, comme ceux du fil d'une commande."""
+    envoye = False
+    erreur = None
+    if request.method == "POST":
+        courriel = request.form.get("courriel", "").strip()
+        corps = request.form.get("message", "").strip()
+        if courriel and corps:
+            with db().cursor() as cur:
+                cur.execute("SELECT COALESCE(MAX(fil_id), 0) + 1 AS suivant FROM messages")
+                fil = cur.fetchone()["suivant"]
+                cur.execute(
+                    """INSERT INTO messages (fil_id, auteur_courriel, auteur_role, corps, envoye_le)
+                       VALUES (%s, %s, 'client', %s, NOW())""",
+                    (fil, courriel, corps),
+                )
+            envoye = True
+        else:
+            erreur = "Il faut une adresse et un message."
+    return render_template("contact.html", envoye=envoye, erreur=erreur, moi=client_connecte())
+
+
 @app.route("/newsletter", methods=["POST"])
 def newsletter():
     courriel = request.form.get("courriel", "").strip()
@@ -242,6 +270,33 @@ def admin_export_ventes():
             "Content-Disposition": "attachment; filename=ventes.csv",
         },
     )
+
+
+# --- L'adaptateur RGPD ------------------------------------------------------------------------
+# Le seul endroit de cette application qui sache qu'un service de gestion des demandes existe. Il
+# est branché ici, en bas, et rien au-dessus ne le connaît : les routes de la brocante n'ont pas
+# changé d'une ligne pour lui.
+
+
+def compte_boutique(_emplacement, sql, params):
+    """La sonde d'une table, exécutée sur la connexion ordinaire de l'application."""
+    return q1(sql, *params)["n"]
+
+
+app.register_blueprint(
+    blueprint_rgpd(
+        # Pas de valeur par défaut : un déploiement qui oublie le secret refuse tous les appels.
+        os.environ.get("RGPD_ADAPTER_SECRET", ""),
+        {
+            "brocanto-boutique": lambda designations: rgpd_boutique.localiser(
+                designations, compte_boutique
+            ),
+            "brocanto-journal": lambda designations: rgpd_journal.localiser(
+                designations, Path(JOURNAL).parent
+            ),
+        },
+    )
+)
 
 
 if __name__ == "__main__":
