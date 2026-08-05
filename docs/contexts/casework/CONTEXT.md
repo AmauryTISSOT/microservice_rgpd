@@ -163,6 +163,41 @@ vocabulaire fermé : personne ne saurait qu'en conclure.
 `Adapter` : une machine ne rend pas d'issue.
 _Avoid_ : Connector, Plugin, Integration, Webhook ⚠️ pour sa réponse : Verdict, Result, Status
 
+**Vérification du `Manifest`** :
+L'opération d'exploitation qui confronte le catalogue déclaré à ce que les `Adapter` servent
+réellement, système par système, pour les seuls `DeclaredSystem` dotés d'une adresse. Elle
+**rapporte** l'écart et ne corrige **jamais** le `Manifest` : un humain tranche lequel des deux avait
+tort. Son grain est le **déploiement** — elle ne touche aucun `Case` et n'écrit rien au `Ledger`.
+Elle ne se déclenche que sur demande : rien ne tourne, sans quoi un processus interrompu rendrait un
+rapport **vide et rassurant**, soit l'`Omission silencieuse` sous sa forme la plus dangereuse.
+⚠️ **Une seule `Capability` sur quatre est vérifiable, et les trois autres sont nommées comme telles.**
+`Locate` se sonde — c'est le plancher, une requête et rien de destructeur. `Erase` et `Rectify` ne se
+constateraient qu'en détruisant ou en réécrivant des données réelles ; `Read` qu'en faisant entrer
+des données personnelles au titre d'une vérification. Elles sont donc rapportées **non vérifiables**,
+un par un, plutôt que tues — le silence les aurait fait lire comme conformes.
+⚠️ **Non vérifiable et sans conclusion ne fusionnent pas**, pour la raison qui sépare `OutOfReach` de
+`Untreated` : le premier est structurel et annonçable au premier jour, le second est le constat d'un
+jour, que la prochaine passe peut lever.
+_Avoid_ : audit, contrôle, conformité, synchronisation, réconciliation ⚠️ « synchroniser » promet
+dans son nom la correction que cette opération refuse.
+
+**Sonde à secret délibérément faux** :
+Un `Locate` — plancher obligatoire, non destructeur, sac de désignations vide — envoyé à un `Adapter`
+avec un secret **volontairement invalide**. Un `200` en réponse prouve un `Adapter` **nu**,
+c'est-à-dire ouvert à qui l'atteint : il a travaillé pour un appelant que le contrat lui demandait de
+refuser. C'est un résultat d'**exploitation**, jamais une affaire de dossier.
+Le secret présenté est **fixe et public**, et sans aucun rapport avec celui du déploiement : un faux
+dérivé du vrai le livrerait, octet par octet, à l'`Adapter` même dont on soupçonne qu'il ne garde
+rien. Sa publicité ne coûte rien — il n'ouvre aucune porte, il est fait pour s'en faire fermer une.
+⚠️ **La sonde ne lit jamais le corps de ce qu'elle reçoit.** Le corps d'un `200` rendu à un secret
+faux est fait des données personnelles que l'`Adapter` n'aurait pas dû servir : les lire ferait
+entrer dans le service, au titre de la vérification, exactement ce qu'elle vient dénoncer.
+⚠️ Seul le `200` — et le `202`, qui est un travail **pris en charge** — démontre quelque chose. Un
+refus de secret dit que la porte a été fermée **ce jour-là, sur ce chemin-là**, jamais que le
+périmètre réseau, l'autre moitié du dispositif, est en place ; et un serveur muet ne se range pas
+avec les portes fermées.
+_Avoid_ : test de pénétration, scan, audit de sécurité, attaque
+
 ### La personne, et comment on la désigne
 
 **Designation** :

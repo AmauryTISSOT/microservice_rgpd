@@ -74,29 +74,57 @@ public static class AdapterServiceExtensions
       $"Aucun secret d'Adapter configure : renseigner {SecretKey}. Le service n'appelle pas un "
       + "Adapter sans secret, et il n'existe aucun mode « sans ».");
 
+    // Le secret d'un déploiement ne peut pas être celui que la sonde présente pour se faire
+    // refuser : la sonde rapporterait alors « nu » un Adapter parfaitement gardé, et l'exploitant
+    // chercherait une porte ouverte qui n'existe pas. Le refus est au démarrage plutôt qu'au
+    // premier rapport — une fausse alerte se répare mieux avant d'avoir été crue.
+    if (string.Equals(secret, HttpAdapterProbes.FalseSecret, StringComparison.Ordinal))
+    {
+      throw new ArgumentException(
+        $"Le secret d'Adapter configuré est celui que la sonde de vérification présente pour se "
+        + $"faire refuser : en choisir un autre sous {SecretKey}.",
+        nameof(configuration));
+    }
+
     services.TryAddSingleton(new AdapterSecret(secret));
 
     // `RemoveAllResilienceHandlers` est marquée expérimentale par le paquet, et pourtant elle est le
     // cœur de la décision : c'est elle qui fait de ce pipeline un *remplacement*.
 #pragma warning disable EXTEXP0001
     services
-      .AddHttpClient<IAdapterCalls, HttpAdapterCalls>(client =>
-      {
-        // Aucune adresse de base n'est posée : chaque appel porte celle que le Manifest déclare
-        // pour son système, et un Adapter par déploiement serait la topologie que le Manifest
-        // refuse de décrire.
-        //
-        // L'échéance appartient au pipeline, et à lui seul : les cent secondes par défaut de
-        // `HttpClient` couperaient l'appel avant lui, et le dépassement arriverait alors sous une
-        // annulation muette plutôt que sous une panne nommée.
-        client.Timeout = Timeout.InfiniteTimeSpan;
-      })
+      .AddHttpClient<IAdapterCalls, HttpAdapterCalls>(OnTheWire)
       .RemoveAllResilienceHandlers()
       .AddResilienceHandler("casework-adapter", pipeline => pipeline.AddTimeout(Deadline));
+
+    // Les sondes de vérification partagent le régime des appels — même échéance, aucune reprise —
+    // parce qu'elles empruntent la même route : une sonde plus patiente ou qui réessaierait aurait
+    // vérifié un chemin que les dossiers n'empruntent pas.
+    services
+      .AddHttpClient<IAdapterProbes, HttpAdapterProbes>(OnTheWire)
+      .RemoveAllResilienceHandlers()
+      .AddResilienceHandler("casework-adapter-probe", pipeline => pipeline.AddTimeout(Deadline));
 #pragma warning restore EXTEXP0001
 
     services.TryAddSingleton<IAdapterDisagreements, AdapterDisagreements>();
 
     return services;
+  }
+
+  /// <summary>
+  /// Le client, tel que l'appel comme la sonde le reçoivent.
+  /// </summary>
+  /// <remarks>
+  /// Aucune adresse de base n'est posée : chaque appel porte celle que le <c>Manifest</c> déclare
+  /// pour son système, et un <c>Adapter</c> par déploiement serait la topologie que le
+  /// <c>Manifest</c> refuse de décrire.
+  /// <para>
+  /// L'échéance appartient au pipeline, et à lui seul : les cent secondes par défaut de
+  /// <c>HttpClient</c> couperaient l'appel avant lui, et le dépassement arriverait alors sous une
+  /// annulation muette plutôt que sous une panne nommée.
+  /// </para>
+  /// </remarks>
+  private static void OnTheWire(HttpClient client)
+  {
+    client.Timeout = Timeout.InfiniteTimeSpan;
   }
 }

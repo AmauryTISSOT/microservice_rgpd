@@ -45,16 +45,6 @@ namespace MicroserviceRgpd.Infrastructure.Casework.Adapters;
 public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : IAdapterCalls
 {
   /// <summary>
-  /// L'en-tête qui porte le secret. Un en-tête propre plutôt qu'<c>Authorization</c> : le contrat
-  /// n'a ni schéma, ni jeton, ni porteur à présenter, et emprunter le mot ferait croire à un
-  /// <c>Bearer</c> que personne n'émet ni ne valide.
-  /// </summary>
-  public const string SecretHeader = "X-RGPD-Secret";
-
-  /// <summary>Le paramètre qui porte le système — <b>en paramètre, jamais en corps</b>.</summary>
-  public const string SystemParameter = "system_id";
-
-  /// <summary>
   /// Le fil parle <c>camelCase</c>, comme celui du sidecar. Les natures de désignation et les
   /// capacités y voyagent par leur <b>mot canonique</b>, jamais par un nom de membre C# ni par un
   /// ordinal : le contrat public ne doit pas dépendre de l'ordre de déclaration d'un type.
@@ -69,7 +59,9 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
   {
     ArgumentNullException.ThrowIfNull(call);
 
-    using var request = new HttpRequestMessage(HttpMethod.Post, AddressOf(call))
+    using var request = new HttpRequestMessage(
+      HttpMethod.Post,
+      AdapterWire.AddressOf(call.Address, call.DeclaredSystem, call.Capability))
     {
       Content = JsonContent.Create(BodyOf(call), options: WireFormat),
     };
@@ -77,7 +69,7 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
     // `TryAddWithoutValidation` n'est pas un contournement : un secret est une chaîne opaque, et la
     // validation d'en-tête de `HttpClient` refuserait des octets qu'un déploiement a le droit de
     // choisir.
-    request.Headers.TryAddWithoutValidation(SecretHeader, secret.Value);
+    request.Headers.TryAddWithoutValidation(AdapterWire.SecretHeader, secret.Value);
 
     using var response = await AnswerTo(request, call, cancellationToken);
 
@@ -138,21 +130,6 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
         $"L'Adapter de « {call.DeclaredSystem.Value} » n'a pas répondu : ni réponse, ni refus.",
         unreachable);
     }
-  }
-
-  /// <summary>
-  /// L'adresse de l'opération : l'adresse déclarée, <b>une opération par <c>Capability</c></b>, et
-  /// le <c>system_id</c> en paramètre — jamais en corps, pour qu'un seul <c>Adapter</c> puisse
-  /// servir plusieurs systèmes sans les démêler lui-même.
-  /// </summary>
-  private static Uri AddressOf(AdapterCall call)
-  {
-    // L'identifiant du système est déjà d'un jeu de caractères sûr en URL ; il est échappé quand
-    // même, l'inverse étant une exception à retenir de tête à chaque nouvelle traversée.
-    return new Uri(
-      $"{call.Address.Value.TrimEnd('/')}/{call.Capability.Token}"
-      + $"?{SystemParameter}={Uri.EscapeDataString(call.DeclaredSystem.Value)}",
-      UriKind.Absolute);
   }
 
   /// <summary>
