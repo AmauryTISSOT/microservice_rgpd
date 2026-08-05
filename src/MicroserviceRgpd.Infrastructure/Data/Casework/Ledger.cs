@@ -58,6 +58,8 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
       StepState = entry.DeclaredState?.Name,
       EvidenceProse = entry.EvidenceProse,
       ReceptionWasDefaulted = entry.ReceptionWasDefaulted,
+      ReceivedOn = entry.ReceivedOn,
+      IdentityVerificationMethod = entry.VerificationMethod?.Name,
     };
   }
 }

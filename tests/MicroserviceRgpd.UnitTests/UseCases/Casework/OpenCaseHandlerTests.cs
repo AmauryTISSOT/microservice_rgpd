@@ -58,17 +58,98 @@ public class OpenCaseHandlerTests
   }
 
   /// <summary>
-  /// La date de réception vient de l'horloge du service : sur ce canal, la demande arrive à
-  /// l'instant où elle est postée, et aucun champ ne permet d'en déclarer une autre.
+  /// La date de réception vient <b>du canal</b>, entière — date et régime pris ensemble — et le
+  /// gestionnaire ne la devine jamais : c'est le canal qui sait si quelqu'un l'a affirmée.
   /// </summary>
   [Fact]
-  public async Task DatesTheReceptionOnTheServiceClockOnThisChannel()
+  public async Task CarriesTheReceptionTheChannelDeclaredWithoutEverGuessingIt()
   {
     TheManifestDeclares();
 
     var opened = await OpenAsync([DataSubjectRight.Access]);
 
     opened.Value.Reception.ShouldBe(ReceptionDate.Declared(Now));
+  }
+
+  /// <summary>
+  /// <b>La ligne de preuve date le geste, jamais ce dont le geste parle.</b> Un dépôt manuel
+  /// transcrit un courriel reçu il y a des semaines : dater la ligne de la réception ferait dire à
+  /// la preuve que le service savait depuis ce jour-là. Les deux dates cohabitent, et le régime de
+  /// la seconde part avec elle.
+  /// </summary>
+  [Fact]
+  public async Task DatesTheProofOfTheDepositAndKeepsTheReceptionDateApartWithItsRegime()
+  {
+    TheManifestDeclares();
+
+    var receivedLongBefore = Now.AddDays(-20);
+
+    await OpenAsync(ReceptionDate.Defaulted(Now), null, [DataSubjectRight.Access]);
+
+    await _ledger.Received(1).AppendAsync(
+      Arg.Is<LedgerEntry>(line =>
+        line.OccurredAt == Now
+        && line.ReceivedOn == Now.AddDays(-ReceptionDate.DaysHeldAlreadyRunByDefault)
+        && line.ReceptionWasDefaulted == true),
+      Arg.Any<CancellationToken>());
+
+    _ledger.ClearReceivedCalls();
+
+    await OpenAsync(ReceptionDate.Declared(receivedLongBefore), null, [DataSubjectRight.Access]);
+
+    await _ledger.Received(1).AppendAsync(
+      Arg.Is<LedgerEntry>(line =>
+        line.OccurredAt == Now
+        && line.ReceivedOn == receivedLongBefore
+        && line.ReceptionWasDefaulted == false),
+      Arg.Any<CancellationToken>());
+  }
+
+  /// <summary>
+  /// <b>La preuve garde la moitié qui se compte, et elle seule.</b> La méthode survit à la clôture
+  /// pour que le contrôle dénombre une pratique ; le détail nomme par nature, reste sur le dossier,
+  /// et n'a <b>aucune colonne</b> dans la preuve.
+  /// </summary>
+  [Fact]
+  public async Task WritesTheCountableHalfOfTheMotivationToTheProofAndNeverItsProse()
+  {
+    TheManifestDeclares();
+
+    var motivation = IdentityMotivation.Of(
+      IdentityVerificationMethod.CallbackOnKnownContact,
+      "Rappelé Jean Dupont sur le 06 12 34 56 78 déjà enregistré au contrat.");
+
+    var opened = await OpenAsync(ReceptionDate.Declared(Now), motivation, [DataSubjectRight.Access]);
+
+    // Le détail vit sur le dossier, où la clôture ira le détruire.
+    opened.Value.Motivation!.Detail!.ShouldContain("Jean Dupont");
+
+    await _ledger.Received(1).AppendAsync(
+      Arg.Is<LedgerEntry>(line =>
+        line.VerificationMethod == IdentityVerificationMethod.CallbackOnKnownContact),
+      Arg.Any<CancellationToken>());
+
+    // Aucun emplacement pour la prose de la motivation : la seule prose du Ledger est celle de
+    // preuve, et cette ligne-ci n'en porte aucune.
+    await _ledger.Received(1).AppendAsync(
+      Arg.Is<LedgerEntry>(line => line.EvidenceProse == null),
+      Arg.Any<CancellationToken>());
+  }
+
+  /// <summary>
+  /// <b>Aucune motivation ne s'invente.</b> Quand personne ne l'a pesée, la preuve porte un vide —
+  /// jamais <c>None</c>, qui est la réponse de qui a regardé et n'a rien fait.
+  /// </summary>
+  [Fact]
+  public async Task LeavesTheProofEmptyWhenNobodyWeighedRatherThanWritingTheAdmission()
+  {
+    TheManifestDeclares();
+
+    await OpenAsync([DataSubjectRight.Access]);
+
+    await _ledger.Received(1).AppendAsync(
+      Arg.Is<LedgerEntry>(line => line.VerificationMethod == null),
+      Arg.Any<CancellationToken>());
   }
 
   /// <summary>
@@ -159,13 +240,25 @@ public class OpenCaseHandlerTests
     DataSubjectRight[] rights,
     params Designation[] designations)
   {
+    return await OpenAsync(ReceptionDate.Declared(Now), null, rights, designations);
+  }
+
+  private async Task<Result<Case>> OpenAsync(
+    ReceptionDate reception,
+    IdentityMotivation? motivation,
+    DataSubjectRight[] rights,
+    params Designation[] designations)
+  {
     var handler = new OpenCaseHandler(_manifest, _cases, _ledger, _clock);
 
     return await handler.Handle(
       new OpenCaseCommand(
         IdentityDeclaration.ApplicationSession,
+        motivation,
         designations,
         rights,
+        ClaimOrigin.Named,
+        reception,
         Signatory.Application),
       CancellationToken.None);
   }

@@ -51,6 +51,14 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   /// </summary>
   public static readonly LedgerFact StepDeclared = new(nameof(StepDeclared), 3, "travail dû déclaré");
 
+  /// <summary>
+  /// Un <c>Operator</c> a <b>repris à son compte</b> un droit qu'une <c>Qualification</c> avait
+  /// seulement proposé. C'est le geste par lequel une proposition de machine devient une
+  /// reconnaissance d'humain : sans cette ligne, un droit qu'aucune personne n'a jamais pesé se
+  /// relirait dans dix ans comme s'il avait été reconnu par quelqu'un.
+  /// </summary>
+  public static readonly LedgerFact ClaimConfirmed = new(nameof(ClaimConfirmed), 4, "droit confirmé");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

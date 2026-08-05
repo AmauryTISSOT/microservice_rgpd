@@ -52,9 +52,22 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   /// aucune colonne ici : elle vit sur le <c>Case</c> et meurt à la clôture. La règle tient par ce
   /// <b>placement</b>, et l'écran offre les deux champs à deux endroits distincts.
   /// </para>
+  /// <para>
+  /// Deux sont arrivées avec le <b>dépôt manuel</b>, et chacune pour une raison écrite :
+  /// <c>received_on</c>, parce qu'une demande transcrite d'une boîte aux lettres a été reçue avant
+  /// d'être déposée — une seule date aurait fait choisir entre dater le geste et dater le délai ; et
+  /// <c>identity_verification_method</c>, la <b>moitié qui se compte</b> de la motivation d'identité,
+  /// pour que le contrôle dénombre une pratique.
+  /// </para>
+  /// <para>
+  /// ⚠️ Le <b>détail</b> de la motivation n'a, lui, aucune colonne ici, et c'est le même placement
+  /// que pour la prose de travail : il dit qui a été rappelé et sur quoi, il nomme donc par nature,
+  /// il vit sur le <c>Case</c> et meurt à la clôture. Le contrôle juge la pratique sans qu'un seul
+  /// nom lui survive.
+  /// </para>
   /// </summary>
   [Fact]
-  public async Task NamesFourteenColumnsAndNotOneMoreWhereANameCouldLand()
+  public async Task NamesSixteenColumnsAndNotOneMoreWhereANameCouldLand()
   {
     var columns = await ColumnsAsync();
 
@@ -68,7 +81,9 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       "evidence_prose",
       "fact",
       "identity_declaration",
+      "identity_verification_method",
       "occurred_at",
+      "received_on",
       "reception_was_defaulted",
       "signatory_kind",
       "signatory_name",

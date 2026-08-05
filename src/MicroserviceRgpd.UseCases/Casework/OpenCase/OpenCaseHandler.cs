@@ -54,18 +54,17 @@ public sealed class OpenCaseHandler(
       return Result<Case>.Invalid(claimable);
     }
 
-    // La demande postée par l'application arrive à l'instant où elle est postée : sur ce canal, la
-    // date de réception est celle de l'appel, et il n'existe aucun champ pour la déclarer autrement.
-    // Elle est donc *déclarée* — par l'application, qui sait quand elle a reçu la demande — et jamais
-    // tenue pour défaut : le défaut est l'affaire du dépôt manuel, où l'humain transcrit un courriel
-    // reçu il y a un nombre de jours qu'il ignore.
-    var reception = ReceptionDate.Declared(clock.GetUtcNow());
+    // La date de réception vient du canal, entière : c'est lui qui sait si elle a été déclarée par
+    // quelqu'un ou tenue pour défaut, et la choisir ici aurait exigé de savoir d'où l'on est appelé.
+    var reception = command.Reception;
 
     var opened = Case.Open(
       CaseId.Next(),
       command.IdentityDeclaration,
+      command.Motivation,
       command.Designations,
       command.Rights,
+      command.Origin,
       Manifest.Of(await manifest.ListAsync(cancellationToken)),
       reception);
 
@@ -74,13 +73,20 @@ public sealed class OpenCaseHandler(
     await ledger.AppendAsync(
       LedgerEntry.CaseOpened(
         opened.Id,
-        reception.On,
+        // L'instant du DÉPÔT, et non la date de réception : une demande transcrite d'une boîte aux
+        // lettres a été reçue avant d'entrer ici, et dater la ligne de sa réception ferait dire à la
+        // preuve que le service savait depuis ce jour-là. Le délai, lui, se compte sur `reception`,
+        // que la même ligne porte à part.
+        clock.GetUtcNow(),
         command.Signatory,
         command.IdentityDeclaration,
         // Le compte, jamais les valeurs : « recherché sous 2 désignations » est une mesure de
         // l'ampleur d'une recherche, les deux valeurs seraient le sac lui-même.
         opened.Designations.Count,
-        reception),
+        reception,
+        // La moitié qui se compte, et elle seule : le détail en prose reste sur le dossier et meurt
+        // avec lui. Le contrôle juge ainsi la pratique sans qu'un seul nom lui survive.
+        command.Motivation?.Method),
       cancellationToken);
 
     return Result<Case>.Success(opened);

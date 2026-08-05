@@ -202,12 +202,14 @@ public class CaseTests
     var opened = Case.Open(
       CaseId.Next(),
       IdentityDeclaration.ApplicationSession,
+      motivation: null,
       [
         Designation.Of(DesignationKind.Email, "jean.dupont@example.fr"),
         Designation.Of(DesignationKind.PersonName, "Jean Dupont"),
         Designation.Of(DesignationKind.Email, "jean.dupont@example.fr"),
       ],
       [DataSubjectRight.Access],
+      ClaimOrigin.Named,
       Manifest.Empty,
       ReceptionDate.Declared(Received));
 
@@ -226,11 +228,13 @@ public class CaseTests
     var opened = Case.Open(
       CaseId.Next(),
       IdentityDeclaration.ApplicationSession,
+      motivation: null,
       [
         Designation.Of(DesignationKind.Reference, "42"),
         Designation.Of(DesignationKind.Email, "jean.dupont@example.fr"),
       ],
       [DataSubjectRight.Access],
+      ClaimOrigin.Named,
       Manifest.Empty,
       ReceptionDate.Declared(Received));
 
@@ -288,13 +292,190 @@ public class CaseTests
     }
   }
 
+  /// <summary>
+  /// <b>Un <c>Claim</c> garde la porte sous laquelle il est né.</b> L'identité déclarée descend sur
+  /// chaque droit à l'ouverture et s'y fige : c'est ce qui empêche une déclaration relevée en fin de
+  /// dossier de réécrire la preuve d'hier.
+  /// </summary>
+  [Fact]
+  public void FreezesOnEachClaimTheIdentityDeclarationInForceAtItsBirth()
+  {
+    var opened = Open(
+      IdentityDeclaration.Unverified,
+      null,
+      ClaimOrigin.Named,
+      [DataSubjectRight.Access, DataSubjectRight.Erasure]);
+
+    opened.Claims.ShouldAllBe(claim => claim.IdentityAtOrigin == IdentityDeclaration.Unverified);
+    opened.Claims.ShouldAllBe(claim => claim.Origin == ClaimOrigin.Named);
+  }
+
+  /// <summary>
+  /// <b>Un <c>Claim</c> ne s'écrit que par la racine, l'origine comprise.</b> Il n'existe aucun
+  /// chemin pour réécrire l'identité d'origine d'un droit déjà né — c'est la propriété qui rend le
+  /// gel tenable, et non la seule discipline de qui manipule le dossier.
+  /// </summary>
+  [Fact]
+  public void OffersNoWayToRewriteWhatAClaimFrozeAtItsBirth()
+  {
+    foreach (var name in new[] { nameof(Claim.Origin), nameof(Claim.IdentityAtOrigin), nameof(Claim.Confirmed) })
+    {
+      typeof(Claim).GetProperty(name)!.SetMethod?.IsPublic.ShouldNotBe(
+        true,
+        $"{name} est figé à la naissance du droit : le réécrire rendrait rétroactivement propre un "
+        + "accès ouvert sur rien.");
+    }
+  }
+
+  /// <summary>
+  /// <b>Un <c>Access</c> ouvert sous une identité qui ne repose sur aucun contrôle du canal réclame
+  /// une motivation</b> — et le dossier s'ouvre <b>quand même</b>. La faiblesse reste visible plutôt
+  /// que contournée : la barrer aurait renvoyé la personne à son silence ou fait cocher n'importe
+  /// quoi.
+  /// </summary>
+  [Fact]
+  public void OpensTheCaseAndKeepsClaimingTheMotivationNobodyWrote()
+  {
+    var opened = Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Named, [DataSubjectRight.Access]);
+
+    opened.State.ShouldBe(CaseState.Open);
+    opened.AwaitsAMotivation.ShouldBeTrue();
+    opened.Claims[0].MotivationIsDemanded.ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// <c>None</c> est une <b>réponse</b>, et l'exigence est alors satisfaite. Sans la valeur laide,
+  /// l'opérateur pressé cocherait la valeur propre — et le service enregistrerait un faux au lieu
+  /// d'un aveu.
+  /// </summary>
+  [Fact]
+  public void TakesTheAdmissionThatNothingWasDoneAsAnAnswerAndStopsClaiming()
+  {
+    var opened = Open(
+      IdentityDeclaration.Unverified,
+      IdentityMotivation.Of(IdentityVerificationMethod.None, detail: null),
+      ClaimOrigin.Named,
+      [DataSubjectRight.Access]);
+
+    opened.AwaitsAMotivation.ShouldBeFalse();
+    opened.Motivation!.Method.ShouldBe(IdentityVerificationMethod.None);
+  }
+
+  /// <summary>
+  /// <b>L'exigence est étroite, et c'est délibéré.</b> Ce qu'on redoute est un accès accordé à un
+  /// imposteur : la croiser avec les six autres droits ferait réclamer une motivation à chaque dépôt,
+  /// et celle qui compte se noierait dans les autres.
+  /// </summary>
+  [Fact]
+  public void ClaimsNoMotivationWhereNoDataWouldBeHandedToAnImpostor()
+  {
+    // Le même Unverified, mais sur un droit qui ne remet rien à personne.
+    Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Named, [DataSubjectRight.Erasure])
+      .AwaitsAMotivation.ShouldBeFalse();
+
+    // Le même Access, mais sous une identité qui repose sur un contrôle du canal.
+    Open(IdentityDeclaration.ApplicationSession, null, ClaimOrigin.Named, [DataSubjectRight.Access])
+      .AwaitsAMotivation.ShouldBeFalse();
+
+    Open(IdentityDeclaration.ChannelControl, null, ClaimOrigin.Named, [DataSubjectRight.Access])
+      .AwaitsAMotivation.ShouldBeFalse();
+
+    // Attestée par l'opérateur repose, elle, sur ce qu'un humain a fait pour CE dossier : lui seul
+    // peut dire quoi, et c'est ce qu'on lui demande.
+    Open(IdentityDeclaration.OperatorAttested, null, ClaimOrigin.Named, [DataSubjectRight.Access])
+      .AwaitsAMotivation.ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// <b>Un <c>Claim</c> <c>Proposed</c> naît non confirmé, et se confirme dans le dossier.</b> Il
+  /// n'existe aucun état d'attente hors du <c>Case</c> : le dossier est ouvert, le délai court, et
+  /// l'attente est visible pendant que le compteur tourne.
+  /// </summary>
+  [Fact]
+  public void BornsAProposedClaimUnconfirmedAndConfirmsItInsideTheOpenCase()
+  {
+    var opened = Open(
+      IdentityDeclaration.Unverified,
+      null,
+      ClaimOrigin.Proposed,
+      [DataSubjectRight.Access]);
+
+    // Le dossier est OUVERT, pas en attente : aucun vestibule n'existe.
+    opened.State.ShouldBe(CaseState.Open);
+    opened.Claims[0].AwaitsConfirmation.ShouldBeTrue();
+    opened.Claims[0].State.ShouldBe(ClaimState.Open);
+
+    opened.Confirm(DataSubjectRight.Access).ShouldBeTrue();
+
+    opened.Claims[0].AwaitsConfirmation.ShouldBeFalse();
+
+    // Idempotent : un second clic n'est pas une faute qu'il faudrait signaler à qui l'a fait.
+    opened.Confirm(DataSubjectRight.Access).ShouldBeTrue();
+    opened.Claims[0].AwaitsConfirmation.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Les origines qui portent <b>déjà</b> le fait d'un humain naissent confirmées : rien n'est
+  /// réclamé à qui a lui-même désigné ou attesté le droit.
+  /// </summary>
+  [Fact]
+  public void ClaimsNoConfirmationWhereAHumanAlreadyStandsBehindTheRight()
+  {
+    Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Named, [DataSubjectRight.Access])
+      .Claims[0].AwaitsConfirmation.ShouldBeFalse();
+
+    Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Attested, [DataSubjectRight.Access])
+      .Claims[0].AwaitsConfirmation.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Un droit que le dossier ne porte pas se dit <b>faux</b>, sans rien changer : un écran affiché il
+  /// y a une minute peut nommer un droit qu'un autre geste vient de changer, et ce n'est pas une
+  /// programmation fautive.
+  /// </summary>
+  [Fact]
+  public void SaysSoWhenTheCaseNeverCarriedTheRightSomeoneTriesToConfirm()
+  {
+    var opened = Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Proposed, [DataSubjectRight.Access]);
+
+    opened.Confirm(DataSubjectRight.Erasure).ShouldBeFalse();
+    opened.Claims[0].AwaitsConfirmation.ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// Les trois origines d'un <c>Claim</c> existent, et rien de plus. <c>Proposed</c> n'est
+  /// <b>pas</b> un quatrième <c>ClaimState</c> : la provenance d'un droit et l'état de la réponse
+  /// due à la personne sont deux questions distinctes.
+  /// </summary>
+  [Fact]
+  public void NamesThreeOriginsForAClaimAndAddsNoStateForThem()
+  {
+    ClaimOrigin.List.OrderBy(origin => origin.Value).Select(origin => origin.Name).ShouldBe(
+      ["Named", "Attested", "Proposed"]);
+
+    ClaimState.List.OrderBy(state => state.Value).Select(state => state.Name).ShouldBe(
+      ["Open", "Answered", "Refused"]);
+  }
+
   private static Case Open(DataSubjectRight[] rights, params DeclaredSystem[] systems)
+  {
+    return Open(IdentityDeclaration.ApplicationSession, null, ClaimOrigin.Named, rights, systems);
+  }
+
+  private static Case Open(
+    IdentityDeclaration declaration,
+    IdentityMotivation? motivation,
+    ClaimOrigin origin,
+    DataSubjectRight[] rights,
+    params DeclaredSystem[] systems)
   {
     return Case.Open(
       CaseId.Next(),
-      IdentityDeclaration.ApplicationSession,
+      declaration,
+      motivation,
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       rights,
+      origin,
       Manifest.Of(systems),
       ReceptionDate.Declared(Received));
   }

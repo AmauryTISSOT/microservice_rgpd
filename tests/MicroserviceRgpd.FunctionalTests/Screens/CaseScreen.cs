@@ -416,4 +416,82 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
     (await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened)))
       .ShouldContain("Aucun système n'était déclaré quand ce dossier s'est ouvert");
   }
+
+  /// <summary>
+  /// <b>Un <c>Claim</c> <c>Proposed</c> se confirme <em>dans le dossier</em>, pendant que le délai
+  /// court.</b> Il n'existe aucun état d'attente hors du <c>Case</c> : le dossier est ouvert, il est
+  /// dans la file, et la confirmation qui manque est une ligne <b>visible</b> plutôt qu'un vestibule
+  /// que personne ne regarde.
+  /// </summary>
+  [Fact]
+  public async Task ConfirmsAProposedRightInsideTheOpenCaseRatherThanInAnyWaitingRoom()
+  {
+    var opened = await _surface.OpenAsync(
+      ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-4)),
+      ClaimOrigin.Proposed,
+      motivation: null,
+      [DataSubjectRight.Erasure]);
+
+    var address = OperatorSurface.AddressOf(opened);
+
+    // Le dossier est LISIBLE et l'attente y est écrite : elle n'a pas retenu la demande à l'entrée.
+    var before = await _surface.ReadTextAsync(address);
+
+    before.ShouldContain("Confirmation réclamée");
+    before.ShouldContain(ClaimOrigin.Proposed.FrenchLabel);
+
+    // Et le dossier est bien dans la file pendant qu'il attend : le compteur ne s'arrête pour
+    // personne, et une demande non confirmée ne doit pas disparaître de la vue.
+    (await _surface.ReadAsync(OperatorSurface.Queue)).ShouldContain(opened.Value.ToString());
+
+    var confirmed = await _surface.ConfirmAsync(opened, nameof(DataSubjectRight.Erasure), "Claire Martin");
+
+    // Une redirection après l'écriture : recharger la page ne reconfirme rien.
+    confirmed.StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    (await _surface.ReadTextAsync(address)).ShouldNotContain("Confirmation réclamée");
+  }
+
+  /// <summary>
+  /// <b>Une confirmation que personne n'a signée n'a pas lieu.</b> Confirmer est précisément le geste
+  /// qui fait passer une proposition de machine au compte de quelqu'un : sans nom, la preuve dirait
+  /// qu'un droit a été reconnu par personne.
+  /// </summary>
+  [Fact]
+  public async Task RefusesToConfirmARightUnderNobodysName()
+  {
+    var opened = await _surface.OpenAsync(
+      ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-4)),
+      ClaimOrigin.Proposed,
+      motivation: null,
+      [DataSubjectRight.Objection]);
+
+    var refused = await _surface.ConfirmAsync(opened, nameof(DataSubjectRight.Objection), string.Empty);
+
+    refused.StatusCode.ShouldBe(HttpStatusCode.OK);
+    (await refused.Content.ReadAsStringAsync()).ShouldContain("Le nom du signataire");
+
+    // Et rien n'a bougé : la réclamation est toujours là.
+    (await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened)))
+      .ShouldContain("Confirmation réclamée");
+  }
+
+  /// <summary>
+  /// <b>Un droit garde la porte sous laquelle il est né.</b> L'écran nomme l'identité <em>d'origine</em>
+  /// à côté du droit, et non celle que le dossier déclare aujourd'hui : une déclaration relevée en
+  /// fin de dossier ne réécrit pas la preuve d'hier.
+  /// </summary>
+  [Fact]
+  public async Task NamesTheIdentityUnderWhichEachRightWasOpenedRatherThanTodays()
+  {
+    var opened = await _surface.OpenAsync(
+      ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-5)),
+      ClaimOrigin.Named,
+      motivation: null,
+      [DataSubjectRight.Access]);
+
+    var screen = await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened));
+
+    screen.ShouldContain($"ouvert sous l'identité « {IdentityDeclaration.Unverified.FrenchLabel} »");
+  }
 }

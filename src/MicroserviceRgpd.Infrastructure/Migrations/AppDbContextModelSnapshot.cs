@@ -215,9 +215,18 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("identity_declaration");
 
+                    b.Property<string>("IdentityVerificationMethod")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("identity_verification_method");
+
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_at");
+
+                    b.Property<DateTimeOffset?>("ReceivedOn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_on");
 
                     b.Property<bool?>("ReceptionWasDefaulted")
                         .HasColumnType("boolean")
@@ -252,6 +261,30 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
 
             modelBuilder.Entity("MicroserviceRgpd.Core.Casework.Case", b =>
                 {
+                    b.OwnsOne("MicroserviceRgpd.Core.Casework.IdentityMotivation", "Motivation", b1 =>
+                        {
+                            b1.Property<Guid>("CaseId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Detail")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("identity_motivation_detail");
+
+                            b1.Property<string>("Method")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("identity_verification_method");
+
+                            b1.HasKey("CaseId");
+
+                            b1.ToTable("cases");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CaseId");
+                        });
+
                     b.OwnsOne("MicroserviceRgpd.Core.Casework.ReceptionDate", "Reception", b1 =>
                         {
                             b1.Property<Guid>("CaseId")
@@ -282,6 +315,22 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                                 .HasMaxLength(64)
                                 .HasColumnType("character varying(64)")
                                 .HasColumnName("data_subject_right");
+
+                            b1.Property<bool>("Confirmed")
+                                .HasColumnType("boolean")
+                                .HasColumnName("confirmed");
+
+                            b1.Property<string>("IdentityAtOrigin")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("identity_at_origin");
+
+                            b1.Property<string>("Origin")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("origin");
 
                             b1.Property<string>("State")
                                 .IsRequired()
@@ -367,6 +416,8 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.Navigation("Claims");
 
                     b.Navigation("Designations");
+
+                    b.Navigation("Motivation");
 
                     b.Navigation("Reception")
                         .IsRequired();

@@ -91,6 +91,24 @@ public sealed class CaseForm
 }
 
 /// <summary>
+/// Ce qu'un <c>Operator</c> saisit pour <b>reprendre à son compte</b> un droit qu'une
+/// <c>Qualification</c> avait seulement proposé.
+/// </summary>
+/// <remarks>
+/// <b>Deux champs, et pas un de plus.</b> Aucune prose n'est réclamée : confirmer, c'est dire « oui,
+/// ce droit-là ». Le fait, le droit, la date et le nom disent tout, et exiger un constat ferait
+/// écrire une ligne de rien à chaque confirmation.
+/// </remarks>
+public sealed class ConfirmationForm
+{
+  /// <summary>Le droit repris à son compte, par son nom canonique anglais.</summary>
+  public string? Right { get; set; }
+
+  /// <summary>Le nom que l'<c>Operator</c> saisit pour signer. Sans authentification, et sans mémoire.</summary>
+  public string? SignedBy { get; set; }
+}
+
+/// <summary>
 /// Ce qu'un <c>Operator</c> déclare, une fois la frontière du domaine franchie.
 /// </summary>
 /// <param name="Right">Le droit au titre duquel le travail était dû.</param>

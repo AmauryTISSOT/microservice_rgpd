@@ -94,4 +94,20 @@ public sealed class LedgerRow
   /// jamais ce que quelqu'un a déclaré.
   /// </summary>
   public bool? ReceptionWasDefaulted { get; init; }
+
+  /// <summary>
+  /// Le jour depuis lequel le mois de l'art. 12.3 se compte, tel que le canal l'a dit. Distincte de
+  /// <see cref="OccurredAt"/>, qui date le <b>geste</b> : un courriel transcrit d'une boîte aux
+  /// lettres a été reçu avant d'être déposé, et une seule colonne aurait fait choisir entre dater le
+  /// geste et dater le délai.
+  /// </summary>
+  public DateTimeOffset? ReceivedOn { get; init; }
+
+  /// <summary>
+  /// La <b>moitié qui se compte</b> de la motivation d'identité — c'est elle qui survit à la
+  /// clôture. ⚠️ Le détail en prose n'a <b>aucune colonne ici</b> : il est nominatif par nature, il
+  /// vit sur le <c>Case</c> et meurt avec lui. Le contrôle juge ainsi la pratique sans qu'un seul nom
+  /// lui survive.
+  /// </summary>
+  public string? IdentityVerificationMethod { get; init; }
 }

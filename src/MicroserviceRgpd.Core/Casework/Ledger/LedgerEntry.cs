@@ -43,8 +43,12 @@ public sealed record LedgerEntry
     DataSubjectRight? right = null,
     StepState? declaredState = null,
     string? evidenceProse = null,
-    bool? receptionWasDefaulted = null)
+    bool? receptionWasDefaulted = null,
+    IdentityVerificationMethod? verificationMethod = null,
+    DateTimeOffset? receivedOn = null)
   {
+    VerificationMethod = verificationMethod;
+    ReceivedOn = receivedOn;
     Id = id;
     Case = caseId;
     OccurredAt = occurredAt;
@@ -74,7 +78,16 @@ public sealed record LedgerEntry
   /// </summary>
   public CaseId Case { get; }
 
-  /// <summary>L'instant du fait, en UTC.</summary>
+  /// <summary>
+  /// L'instant du fait, en UTC — <b>l'instant du geste</b>, jamais celui dont le geste parle.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Sur une ouverture, c'est l'instant du <b>dépôt</b> et non la date de réception : le dépôt
+  /// manuel transcrit un courriel reçu il y a trois semaines, et dater la ligne d'il y a trois
+  /// semaines ferait dire à la preuve que le service savait depuis trois semaines. Ce qu'il a su et
+  /// quand est précisément ce que le <c>Ledger</c> est là pour établir. La date de réception, elle,
+  /// a sa colonne propre — voir <see cref="ReceivedOn"/>.
+  /// </remarks>
   public DateTimeOffset OccurredAt { get; }
 
   /// <summary>Ce que cette ligne consigne, dans un vocabulaire fermé.</summary>
@@ -149,11 +162,51 @@ public sealed record LedgerEntry
   public bool? ReceptionWasDefaulted { get; }
 
   /// <summary>
+  /// Le jour depuis lequel le mois de l'art. 12.3 se compte, tel que le canal l'a dit. Renseignée à
+  /// l'ouverture, et <c>null</c> partout ailleurs.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle ne se confond pas avec <see cref="OccurredAt"/>, et c'est le dépôt manuel qui l'exige.</b>
+  /// Une demande transcrite d'une boîte aux lettres a été reçue avant d'être déposée, parfois de
+  /// beaucoup : une seule date aurait fait choisir entre dater le geste et dater le délai, et le
+  /// contrôle a besoin des deux — l'une dit depuis quand la personne attend, l'autre depuis quand le
+  /// service savait. Elle se lit <b>toujours avec <see cref="ReceptionWasDefaulted"/></b>, qui dit si
+  /// quelqu'un l'a affirmée ou si le service l'a supposée.
+  /// </remarks>
+  public DateTimeOffset? ReceivedOn { get; }
+
+  /// <summary>
+  /// <b>La moitié qui se compte</b> de ce que l'humain a pesé avant d'ouvrir un droit sous une
+  /// identité qui ne repose sur aucun contrôle du canal. Renseignée à l'ouverture quand quelqu'un
+  /// l'a pesé, et <c>null</c> partout ailleurs.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le détail en prose n'entre jamais ici, et il n'existe aucune colonne où il pourrait
+  /// atterrir.</b> Il dit <i>qui</i> a été rappelé et <i>sur quoi</i> — il est nominatif par nature,
+  /// il vit sur le <see cref="Case"/> et meurt à sa clôture. Le contrôle juge ainsi la <b>pratique</b>
+  /// sans qu'un seul nom lui survive : « douze accès ouverts sous <c>None</c> » est une mesure, le
+  /// détail des douze serait le dossier.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b><c>null</c> et <see cref="IdentityVerificationMethod.None"/> ne se confondent pas.</b>
+  /// <c>None</c> est ce que quelqu'un a déclaré ; le <c>null</c> est le fait que personne ne l'ait
+  /// pesé. C'est exactement la distinction que <see cref="ReceptionWasDefaulted"/> tient pour la
+  /// date, et pour la même raison : une hypothèse du service ne doit jamais se relire comme
+  /// l'affirmation d'un humain.
+  /// </para>
+  /// </remarks>
+  public IdentityVerificationMethod? VerificationMethod { get; }
+
+  /// <summary>
   /// La première ligne d'un dossier : il s'est ouvert, à telle date, sous telle déclaration
   /// d'identité, avec tant de désignations pour chercher la personne.
   /// </summary>
   /// <param name="caseId">Le dossier qui vient de s'ouvrir.</param>
-  /// <param name="occurredAt">L'instant de l'ouverture.</param>
+  /// <param name="occurredAt">
+  /// L'instant du <b>dépôt</b> — celui où la demande est entrée dans le service, jamais celui où le
+  /// responsable de traitement l'a reçue.
+  /// </param>
   /// <param name="signatory">Qui a fait entrer la demande.</param>
   /// <param name="identityDeclaration">Ce que le canal d'entrée a déclaré de l'identité du demandeur.</param>
   /// <param name="designationCount">Le nombre de désignations reçues — jamais lesquelles.</param>
@@ -161,6 +214,10 @@ public sealed record LedgerEntry
   /// La date de réception <b>et son régime</b>, pris ensemble : c'est le régime que la preuve garde —
   /// un défaut s'inscrit <b>comme un défaut</b>, sans quoi elle garderait la même trace d'une date
   /// affirmée par un humain et d'une hypothèse du service. La paire ne se sépare pas en chemin.
+  /// </param>
+  /// <param name="verificationMethod">
+  /// La <b>moitié qui se compte</b> de la motivation, ou <c>null</c> si personne ne l'a pesée. Le
+  /// détail en prose reste sur le <see cref="Case"/> et n'a aucun chemin vers ici.
   /// </param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
@@ -170,7 +227,8 @@ public sealed record LedgerEntry
     Signatory signatory,
     IdentityDeclaration identityDeclaration,
     int designationCount,
-    ReceptionDate reception)
+    ReceptionDate reception,
+    IdentityVerificationMethod? verificationMethod = null)
   {
     ArgumentNullException.ThrowIfNull(signatory);
     ArgumentNullException.ThrowIfNull(identityDeclaration);
@@ -188,7 +246,61 @@ public sealed record LedgerEntry
       identityDeclaration,
       designationCount,
       declaredSystem: null,
-      receptionWasDefaulted: reception.IsDefault);
+      receptionWasDefaulted: reception.IsDefault,
+      verificationMethod: verificationMethod,
+      receivedOn: reception.On);
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>repris à son compte</b> un droit qu'une <c>Qualification</c> avait
+  /// seulement proposé.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le signataire est un humain nommé, et il ne peut pas être l'application.</b> Confirmer est
+  /// précisément le geste qui fait passer une proposition de machine au compte de quelqu'un : le
+  /// laisser signer par l'application viderait la ligne de tout son sens, et la preuve dirait qu'un
+  /// droit a été confirmé par personne.
+  /// </para>
+  /// <para>
+  /// <b>Aucune prose n'est réclamée.</b> Confirmer, c'est dire « oui, ce droit-là » : le fait, le
+  /// droit, la date et le nom disent tout. Exiger un constat ferait écrire une ligne de rien à chaque
+  /// confirmation, et le constat qui compte se noierait dans les autres.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier dans lequel la confirmation a eu lieu.</param>
+  /// <param name="occurredAt">L'instant du geste.</param>
+  /// <param name="right">Le droit repris à son compte.</param>
+  /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
+  public static LedgerEntry ClaimConfirmed(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DataSubjectRight right,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+    ArgumentNullException.ThrowIfNull(signatory);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      throw new ArgumentException(
+        "Une confirmation est le geste d'un Operator nommé : l'application ne confirme rien, et "
+        + "c'est tout ce qui distingue un droit reconnu par quelqu'un d'un droit proposé par une machine.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.ClaimConfirmed,
+      signatory,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem: null,
+      right);
   }
 
   /// <summary>

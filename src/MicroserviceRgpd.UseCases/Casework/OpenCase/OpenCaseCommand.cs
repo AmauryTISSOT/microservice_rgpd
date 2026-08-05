@@ -19,14 +19,26 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 /// lequel une pièce finirait par entrer.
 /// </para>
 /// <para>
-/// <b>La date de réception n'est pas un paramètre de ce canal.</b> Une demande postée par
-/// l'application arrive à l'instant où elle est postée ; c'est le dépôt manuel, où l'<c>Operator</c>
-/// transcrit un courriel reçu il y a un nombre de jours inconnu, qui aura besoin de la déclarer.
+/// <b>La date de réception est portée par la commande, et jamais devinée ici.</b> Chaque canal sait
+/// ce qu'elle vaut chez lui et le dit : l'application poste à l'instant où elle reçoit, donc elle
+/// <c>Declared</c> ; le dépôt manuel transcrit un courriel reçu il y a un nombre de jours inconnu,
+/// donc il déclare ce que l'<c>Operator</c> a dit ou retombe sur le défaut. Un gestionnaire qui
+/// aurait choisi à leur place aurait dû savoir de quel canal il était appelé.
 /// </para>
 /// </remarks>
 /// <param name="IdentityDeclaration">
 /// Ce que le canal d'entrée déclare de l'identité du demandeur. Le service l'enregistre et n'en
 /// juge <b>jamais</b> la valeur.
+/// </param>
+/// <param name="Motivation">
+/// Ce que l'humain a pesé avant d'ouvrir ces droits sous cette identité, ou <c>null</c> si personne
+/// ne l'a pesé. <b>Le <c>null</c> n'est jamais refusé</b> : le service ne barre pas la route, et le
+/// dossier restera visible comme faible.
+/// </param>
+/// <param name="Origin">D'où vient la reconnaissance de ces droits — une seule origine par dépôt.</param>
+/// <param name="Reception">
+/// Le jour de réception par le responsable de traitement, <b>et le régime sous lequel le canal le
+/// sait</b> : déclaré par quelqu'un, ou tenu pour défaut. La paire ne se sépare pas en chemin.
 /// </param>
 /// <param name="Designations">
 /// Le sac sous lequel on cherchera la personne. <b>Éventuellement vide</b> : une demande sans
@@ -39,7 +51,10 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 /// <param name="Signatory">Qui fait entrer la demande — l'application, ou un <c>Operator</c> nommé.</param>
 public sealed record OpenCaseCommand(
   IdentityDeclaration IdentityDeclaration,
+  IdentityMotivation? Motivation,
   IReadOnlyCollection<Designation> Designations,
   IReadOnlyCollection<DataSubjectRight> Rights,
+  ClaimOrigin Origin,
+  ReceptionDate Reception,
   Signatory Signatory)
   : ICommand<Result<Case>>;

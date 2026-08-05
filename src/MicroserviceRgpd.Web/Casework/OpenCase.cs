@@ -35,7 +35,7 @@ namespace MicroserviceRgpd.Web.Casework;
 /// dette réelle et assumée, réglée le jour où une v2 arrive.
 /// </para>
 /// </remarks>
-public class OpenCase(IMediator mediator) : Endpoint<OpenCaseRequest, OpenCaseResponse>
+public class OpenCase(IMediator mediator, TimeProvider clock) : Endpoint<OpenCaseRequest, OpenCaseResponse>
 {
   /// <inheritdoc />
   public override void Configure()
@@ -73,11 +73,23 @@ public class OpenCase(IMediator mediator) : Endpoint<OpenCaseRequest, OpenCaseRe
     var command = new OpenCaseCommand(
       // Ce canal en porte une, et le service la pose lui-même.
       IdentityDeclaration.ApplicationSession,
+      // Aucune motivation, et aucun champ pour en porter une : `ApplicationSession` repose sur un
+      // contrôle du canal, et il n'y a donc rien à peser. Voir `IdentityDeclaration.RestsOnNoControl`.
+      Motivation: null,
       // La validation a déjà refusé le mot inconnu, la valeur vide et la démesurée : les
       // conversions ne peuvent plus échouer, et les désignations entrent dans le domaine par leur
       // type plutôt que par des chaînes nues.
       [.. (request.Designations ?? []).Select(one => Designation.Of(DesignationKind.FromToken(one.Kind)!, one.Value))],
       [.. (request.Rights ?? []).Select(name => DataSubjectRight.FromName(name))],
+      // La personne a coché ses droits dans l'application : elle les a désignés elle-même, et rien
+      // ne reste à confirmer. `Proposed` n'entre pas par une route publique — une machine qui
+      // pourrait faire naître un droit confirmé serait une machine qui produit une issue.
+      ClaimOrigin.Named,
+      // Une demande postée par l'application arrive à l'instant où elle est postée : la date de
+      // réception est celle de l'appel, et il n'existe aucun champ pour la déclarer autrement. Elle
+      // est donc *déclarée* — par l'application, qui sait quand elle a reçu la demande — et jamais
+      // tenue pour défaut : le défaut est l'affaire du dépôt manuel.
+      ReceptionDate.Declared(clock.GetUtcNow()),
       // Aucun humain n'a signé : l'application a appelé, et la ligne le dit plutôt que de le taire.
       Signatory.Application);
 

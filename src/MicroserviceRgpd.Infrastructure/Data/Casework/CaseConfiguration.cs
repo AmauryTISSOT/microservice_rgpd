@@ -58,9 +58,44 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
       .HasConversion(state => state.Name, name => CaseState.FromName(name))
       .IsRequired();
 
+    ConfigureTheMotivation(builder);
     ConfigureTheReception(builder);
     ConfigureTheBag(builder);
     ConfigureTheClaims(builder);
+  }
+
+  /// <summary>
+  /// Ce que l'humain a pesé avant d'ouvrir un droit sous cette identité : la <b>méthode</b> qui se
+  /// compte, et le <b>détail</b> en prose qui meurt avec le dossier.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Les deux colonnes sont nulles ensemble, et c'est le propos.</b> Toutes deux nulles se lit
+  /// « personne ne l'a pesé » ; la méthode <c>None</c> se lit « quelqu'un a pesé et n'a rien fait ».
+  /// Les confondre aurait fait signer par défaut un aveu que personne n'a écrit.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le détail est du nominatif, et il est là où la clôture ira le détruire</b> : sur la ligne
+  /// du dossier. Il n'existe aucune colonne pour lui dans le <c>Ledger</c>, qui survit cinq ans.
+  /// </para>
+  /// </remarks>
+  private static void ConfigureTheMotivation(EntityTypeBuilder<Case> builder)
+  {
+    builder.OwnsOne(opened => opened.Motivation, motivation =>
+    {
+      // Par son nom, jamais par un entier, comme partout ailleurs sur les vocabulaires fermés.
+      motivation.Property(one => one.Method)
+        .HasColumnName("identity_verification_method")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(
+          method => method.Name,
+          name => IdentityVerificationMethod.FromName(name))
+        .IsRequired();
+
+      motivation.Property(one => one.Detail)
+        .HasColumnName("identity_motivation_detail")
+        .HasMaxLength(IdentityMotivation.MaxDetailLength);
+    });
   }
 
   /// <summary>
@@ -146,6 +181,28 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
         .HasColumnName("state")
         .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
         .HasConversion(state => state.Name, name => ClaimState.FromName(name))
+        .IsRequired();
+
+      // L'origine et l'identité d'origine sont des COPIES figées à la naissance du droit, et elles
+      // vivent donc sur la ligne du Claim plutôt que d'être relues sur celle du dossier : une
+      // jointure vers `cases.identity_declaration` aurait rendu rétroactivement propre un accès
+      // ouvert sur rien, le jour où quelqu'un reprend la déclaration du dossier.
+      claim.Property(one => one.Origin)
+        .HasColumnName("origin")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(origin => origin.Name, name => ClaimOrigin.FromName(name))
+        .IsRequired();
+
+      claim.Property(one => one.IdentityAtOrigin)
+        .HasColumnName("identity_at_origin")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(
+          declaration => declaration.Name,
+          name => IdentityDeclaration.FromName(name))
+        .IsRequired();
+
+      claim.Property(one => one.Confirmed)
+        .HasColumnName("confirmed")
         .IsRequired();
 
       claim.OwnsMany(one => one.Steps, step =>
