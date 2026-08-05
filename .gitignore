@@ -80,3 +80,7 @@ __pycache__/
 # (encodeur, taux, germe, pli) : le vider et relancer redonne les mêmes chiffres, au prix du temps.
 # Les poids restent hors dépôt, comme le veut le ticket #49.
 exploration/.cache-corps/
+
+# Le repli que `dotnet ef` produit sous Linux : il crée un répertoire dont le NOM porte
+# une barre inverse, que le motif `bin/` ne peut pas rattraper.
+**/bin\\Debug/
