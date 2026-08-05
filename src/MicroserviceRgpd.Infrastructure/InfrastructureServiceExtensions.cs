@@ -2,6 +2,7 @@
 using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
+using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 using MicroserviceRgpd.Infrastructure.Qualifications;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -50,6 +51,10 @@ public static class InfrastructureServiceExtensions
     services.TryAddSingleton(TimeProvider.System);
 
     services.AddQualificationEngines(config);
+
+    // Les appels sortants vers les Adapter du client. Le secret absent arrête le démarrage : aucun
+    // mode « sans » ne survit à l'intégration.
+    services.AddAdapterCalls(config);
 
     logger.LogInformation("{Project} services registered", "Infrastructure");
 

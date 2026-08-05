@@ -1,9 +1,10 @@
-﻿using MicroserviceRgpd.Core.Casework.Ledger;
+﻿using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Ledger;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : sept colonnes, et pas une de plus où un nom pourrait entrer.
+/// La table du <c>Ledger</c> : huit colonnes, et pas une de plus où un nom pourrait entrer.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -60,5 +61,12 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
       .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
 
     builder.Property(row => row.DesignationCount).HasColumnName("designation_count");
+
+    // Le plafond de l'identifiant vit une seule fois, là où le domaine le déclare : c'est le même
+    // identifiant que celui de la table des systèmes déclarés, et deux constantes valant chacune 64
+    // finiraient par ne plus valoir la même chose.
+    builder.Property(row => row.DeclaredSystem)
+      .HasColumnName("declared_system")
+      .HasMaxLength(DeclaredSystemId.MaxLength);
   }
 }

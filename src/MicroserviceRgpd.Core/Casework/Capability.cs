@@ -32,22 +32,31 @@ public sealed class Capability : SmartEnum<Capability>
   /// déclare avoir effacé » est du vide, « le client déclarait 12 enregistrements, puis 0 » est une
   /// trace. C'est aussi la première marche, une requête et rien de destructeur.
   /// </summary>
-  public static readonly Capability Locate = new(nameof(Locate), 0, "localiser");
+  public static readonly Capability Locate = new(nameof(Locate), 0, "locate", "localiser");
 
   /// <summary>Rendre les données rattachées, dans le vocabulaire de l'application et sous aucune forme imposée.</summary>
-  public static readonly Capability Read = new(nameof(Read), 1, "lire");
+  public static readonly Capability Read = new(nameof(Read), 1, "read", "lire");
 
   /// <summary>Supprimer les données rattachées. Déclarable dès ce lot, exercée à partir du lot 3.</summary>
-  public static readonly Capability Erase = new(nameof(Erase), 2, "effacer");
+  public static readonly Capability Erase = new(nameof(Erase), 2, "erase", "effacer");
 
   /// <summary>Corriger les données rattachées. Déclarable dès ce lot, exercée plus tard.</summary>
-  public static readonly Capability Rectify = new(nameof(Rectify), 3, "rectifier");
+  public static readonly Capability Rectify = new(nameof(Rectify), 3, "rectify", "rectifier");
 
-  private Capability(string name, int value, string frenchLabel)
+  private Capability(string name, int value, string token, string frenchLabel)
     : base(name, value)
   {
+    Token = token;
     FrenchLabel = frenchLabel;
   }
+
+  /// <summary>
+  /// Le mot canonique de cette capacité <b>dans le contrat d'<c>Adapter</c></b> : c'est lui qui
+  /// nomme l'opération sur le fil — une opération par <c>Capability</c>. Il est écrit ici plutôt
+  /// que dérivé du membre C#, comme pour <see cref="DesignationKind.Token"/> : sans lui, un
+  /// renommage de membre déplacerait une route que le client a déjà implémentée.
+  /// </summary>
+  public string Token { get; }
 
   /// <summary>Le libellé destiné à l'<c>Operator</c>. Le français reste hors des identifiants.</summary>
   public string FrenchLabel { get; }

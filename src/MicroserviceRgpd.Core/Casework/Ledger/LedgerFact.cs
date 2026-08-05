@@ -26,6 +26,23 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   /// </summary>
   public static readonly LedgerFact CaseOpened = new(nameof(CaseOpened), 0, "dossier ouvert");
 
+  /// <summary>
+  /// Un <c>Adapter</c> a refusé un appel parce que le <b>secret</b> ne lui convenait pas. La
+  /// tentative est datée dans le dossier au titre duquel elle est partie ; le désaccord, lui, se
+  /// signale <b>une fois, au grain du déploiement</b> — un secret périmé vaut pour tous les
+  /// dossiers à la fois, et rien n'a bougé dans celui-ci.
+  /// </summary>
+  public static readonly LedgerFact AdapterRefusedTheSecret =
+    new(nameof(AdapterRefusedTheSecret), 1, "appel refusé : secret");
+
+  /// <summary>
+  /// Un <c>Adapter</c> a refusé un appel parce qu'il <b>ne sert pas ce système</b>. C'est un
+  /// désaccord entre le <c>Manifest</c> et l'<c>Adapter</c>, et il ne se corrige jamais en silence :
+  /// la preuve garde la tentative, un humain tranche lequel des deux avait tort.
+  /// </summary>
+  public static readonly LedgerFact AdapterDidNotServeTheSystem =
+    new(nameof(AdapterDidNotServeTheSystem), 2, "appel refusé : système non servi");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

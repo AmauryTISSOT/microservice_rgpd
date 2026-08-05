@@ -1,4 +1,6 @@
-﻿namespace MicroserviceRgpd.Core.Casework.Ledger;
+﻿using MicroserviceRgpd.Core.Casework.Adapters;
+
+namespace MicroserviceRgpd.Core.Casework.Ledger;
 
 /// <summary>
 /// Une ligne de la matière de preuve d'un <see cref="Case"/> : qui a déclaré quoi, et quand.
@@ -35,7 +37,8 @@ public sealed record LedgerEntry
     LedgerFact fact,
     Signatory signatory,
     IdentityDeclaration? identityDeclaration,
-    int? designationCount)
+    int? designationCount,
+    DeclaredSystemId? declaredSystem)
   {
     Id = id;
     Case = caseId;
@@ -44,6 +47,7 @@ public sealed record LedgerEntry
     Signatory = signatory;
     IdentityDeclaration = identityDeclaration;
     DesignationCount = designationCount;
+    DeclaredSystem = declaredSystem;
   }
 
   /// <summary>L'identité de cette ligne. Jamais un rang, jamais un compteur.</summary>
@@ -79,6 +83,13 @@ public sealed record LedgerEntry
   public int? DesignationCount { get; }
 
   /// <summary>
+  /// Le <see cref="Casework.DeclaredSystem"/> que le fait concerne, quand il en concerne un — jamais
+  /// une personne : c'est un nom du paysage déclaré du client, choisi par l'humain qui l'a recensé.
+  /// <c>null</c> pour les faits qui portent sur le dossier entier.
+  /// </summary>
+  public DeclaredSystemId? DeclaredSystem { get; }
+
+  /// <summary>
   /// La première ligne d'un dossier : il s'est ouvert, à telle date, sous telle déclaration
   /// d'identité, avec tant de désignations pour chercher la personne.
   /// </summary>
@@ -109,6 +120,60 @@ public sealed record LedgerEntry
       LedgerFact.CaseOpened,
       signatory,
       identityDeclaration,
-      designationCount);
+      designationCount,
+      declaredSystem: null);
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a refusé un appel : la <b>tentative datée</b>, et rien d'autre. Le dossier,
+  /// lui, n'a pas bougé — aucun <c>Step</c> n'a changé d'état, et cette ligne ne prétend pas le
+  /// contraire.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le signataire est l'application, c'est-à-dire personne</b> : un appel sortant n'est le
+  /// geste d'aucun humain nommé, et lui donner une signature d'<c>Operator</c> ferait porter à
+  /// quelqu'un un refus qu'il n'a pas prononcé.
+  /// </para>
+  /// <para>
+  /// <b>Aucune désignation, ni même leur compte.</b> Un refus n'a rien cherché : il n'a pas
+  /// d'ampleur à mesurer, et un zéro se lirait comme une recherche menée sous rien.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel l'appel est parti.</param>
+  /// <param name="occurredAt">L'instant de la tentative.</param>
+  /// <param name="declaredSystem">Le système sur lequel on demandait à exercer.</param>
+  /// <param name="refusal">Lequel des deux refus l'<c>Adapter</c> a rendu.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="refusal"/> est absent.</exception>
+  /// <exception cref="ArgumentException">La réponse donnée n'est pas un refus.</exception>
+  public static LedgerEntry AdapterRefused(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DeclaredSystemId declaredSystem,
+    AdapterOutcome refusal)
+  {
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      FactOf(AdapterOutcome.RefusalOrThrow(refusal, nameof(refusal))),
+      Signatory.Application,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem);
+  }
+
+  /// <summary>
+  /// Le fait que consigne un refus. <b>Les deux refus gardent leur distinction jusque dans la
+  /// preuve</b> : ils ne se réparent pas au même endroit, et un « appel refusé » unique ferait
+  /// chercher au mauvais endroit qui relira.
+  /// </summary>
+  private static LedgerFact FactOf(AdapterOutcome refusal)
+  {
+    // Le refus est déjà garanti par l'appelant ; ce qui reste est la seule correspondance du
+    // dispositif entre ce que le transport a répondu et ce que la preuve en garde.
+    return refusal == AdapterOutcome.SecretRefused
+      ? LedgerFact.AdapterRefusedTheSecret
+      : LedgerFact.AdapterDidNotServeTheSystem;
   }
 }
