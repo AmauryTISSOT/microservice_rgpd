@@ -25,6 +25,9 @@ SECRET = "un-secret-de-recette"
 def application(systemes=None, secret=SECRET):
     """Une application nue portant le seul Adapter : rien de Brocanto n'est chargé ici."""
     app = Flask(__name__)
+    # Ce qui casse remonte à la suite plutôt que de se ranger derrière un 500 : une rupture du
+    # contrat doit se lire ici, pas au statut.
+    app.testing = True
     app.register_blueprint(blueprint_rgpd(secret, systemes if systemes is not None else {}))
     return app.test_client()
 
@@ -86,7 +89,7 @@ def test_un_appel_sans_systeme_est_un_systeme_non_servi():
     assert reponse.status_code == 404
 
 
-def test_le_secret_est_jugé_avant_le_systeme():
+def test_le_secret_est_juge_avant_le_systeme():
     """Sans quoi un inconnu lirait, statut par statut, la liste des systèmes que l'Adapter sert."""
     reponse = appelle(
         application({"brocanto-boutique": sert_rien}), systeme="brocanto-crm", secret="faux"
@@ -146,6 +149,37 @@ def test_le_sac_de_designations_arrive_tel_quel():
         Designation("phone", "+33 6 12 34 56 78"),
         Designation("reference", "1203"),
     ]
+
+
+def test_une_echeance_sans_fuseau_ne_part_pas_sur_le_fil():
+    """Le service la refuserait comme une panne ; autant se le dire ici, où le défaut est réparable."""
+    sans_fuseau = datetime(2026, 8, 6, 3, 0)
+    client = application({"brocanto-boutique": lambda _d: Differe(sans_fuseau)})
+
+    with pytest.raises(ValueError, match="décalage"):
+        appelle(client)
+
+
+def test_une_valeur_qui_n_est_pas_du_texte_n_est_pas_une_designation():
+    """Un nombre là où le contrat écrit une chaîne : on l'écarte plutôt que de casser sur lui."""
+    recu = []
+
+    def sert(designations):
+        recu.extend(designations)
+        return Servi({"emplacements": [], "enregistrements": 0})
+
+    reponse = appelle(
+        application({"brocanto-boutique": sert}),
+        corps={
+            "designations": [
+                {"kind": "reference", "value": 1203},
+                {"kind": "email", "value": "luc.moreau@example.fr"},
+            ]
+        },
+    )
+
+    assert reponse.status_code == 200
+    assert recu == [Designation("email", "luc.moreau@example.fr")]
 
 
 def test_une_nature_hors_du_vocabulaire_ferme_est_ecartee():

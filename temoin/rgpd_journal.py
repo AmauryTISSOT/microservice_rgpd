@@ -11,6 +11,10 @@ Deux conséquences, propres à cette nature de stockage :
 
 - l'unité comptée est la **ligne**, pas l'enregistrement — le journal ne connaît pas de personne,
   il connaît des passages ;
+- **seule l'adresse électronique s'y cherche.** C'est la seule désignation qu'une ligne porte ; y
+  chercher un nom ne trouverait rien, et y chercher une référence comme « 1203 » compterait des
+  horaires, des statuts et des identifiants d'annonce. Un compte gonflé par un chiffre qui traîne
+  dans une date serait pire qu'un compte absent : il aurait l'air d'un fait.
 - au-delà d'un certain volume, la lecture ne tient pas dans une requête HTTP. On répond alors
   `202` en déclarant l'échéance de la passe de nuit, plutôt que de faire attendre le service.
 """
@@ -35,8 +39,11 @@ def localiser(designations, dossier, seuil=SEUIL_OCTETS, maintenant=None):
 
     Rend un `Servi` quand la lecture tient dans l'appel, un `Differe` quand elle n'y tient pas.
     """
-    if not designations:
-        # Une recherche sous rien ne trouvera rien : inutile d'ouvrir quoi que ce soit.
+    cherchees = adresses_cherchees(designations)
+
+    if not cherchees:
+        # Rien de cherchable ici : ni sac vide, ni sac sans adresse ne fait ouvrir un fichier, et
+        # aucun emplacement n'est rendu — on ne déclare pas « regardé » ce qu'on n'a pas regardé.
         return Servi({"emplacements": [], "lignes": 0})
 
     fichiers = fichiers_du_journal(dossier)
@@ -45,7 +52,7 @@ def localiser(designations, dossier, seuil=SEUIL_OCTETS, maintenant=None):
         return Differe(prochaine_fenetre_de_nuit(maintenant or datetime.now().astimezone()))
 
     comptes = [
-        {"emplacement": fichier.name, "lignes": lignes_portant(fichier, designations)}
+        {"emplacement": fichier.name, "lignes": lignes_portant(fichier, cherchees)}
         for fichier in fichiers
     ]
 
@@ -68,15 +75,22 @@ def fichiers_du_journal(dossier):
     )
 
 
-def lignes_portant(fichier, designations):
-    """Les lignes où l'une des valeurs cherchées apparaît, casse indifférente.
+def adresses_cherchees(designations):
+    """Les adresses du sac, en minuscules. Les autres natures ne se cherchent pas dans un journal."""
+    return [
+        designation.valeur.lower()
+        for designation in designations
+        if designation.nature == "email" and designation.valeur
+    ]
+
+
+def lignes_portant(fichier, cherchees):
+    """Les lignes où l'une des adresses cherchées apparaît, casse indifférente.
 
     La comparaison porte sur la ligne entière et non sur le seul champ d'adresse : une adresse se
     retrouve aussi dans un chemin appelé — le lien de désinscription la met dans l'URL, et cette
     URL est journalisée comme les autres.
     """
-    cherchees = [designation.valeur.lower() for designation in designations if designation.valeur]
-
     with fichier.open(encoding="utf-8", errors="replace") as lignes:
         return sum(
             1 for ligne in lignes if any(cherchee in ligne.lower() for cherchee in cherchees)

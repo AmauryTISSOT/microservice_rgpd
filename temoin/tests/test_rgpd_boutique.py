@@ -17,9 +17,9 @@ def compteur(par_emplacement):
     """Un compteur qui rend ce qu'on lui dit, et retient ce qu'on lui a demandé."""
     demandes = []
 
-    def compte(emplacement, sql, params):
-        demandes.append((emplacement, sql, tuple(params)))
-        return par_emplacement.get(emplacement, 0)
+    def compte(sonde):
+        demandes.append(sonde)
+        return par_emplacement.get(sonde.emplacement, 0)
 
     compte.demandes = demandes
     return compte
@@ -110,7 +110,7 @@ def test_chaque_sonde_est_executee_une_fois_avec_ses_propres_valeurs():
 
     localiser([HELENE], compte)
 
-    assert [emplacement for emplacement, _sql, _params in compte.demandes] == [
+    assert [sonde.emplacement for sonde in compte.demandes] == [
         "clients",
         "commandes",
         "factures",
@@ -118,4 +118,4 @@ def test_chaque_sonde_est_executee_une_fois_avec_ses_propres_valeurs():
         "newsletter",
         "messages",
     ]
-    assert all(params == (HELENE.valeur,) for _e, _sql, params in compte.demandes)
+    assert all(sonde.params == (HELENE.valeur,) for sonde in compte.demandes)

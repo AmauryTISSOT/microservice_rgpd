@@ -107,14 +107,14 @@ def sondes(designations):
 def localiser(designations, compter):
     """Ce que la base porte sous ces désignations, table par table.
 
-    `compter` exécute une sonde et rend son nombre de lignes ; c'est par là que la connexion entre,
-    et c'est tout ce que ce fichier sait de MariaDB.
+    `compter` exécute une `Sonde` et rend son nombre de lignes ; c'est par là que la connexion
+    entre, et c'est tout ce que ce fichier sait de MariaDB.
 
     Les tables visitées sont rendues **même à zéro** : « regardé, rien trouvé » et « pas regardé »
     ne sont pas la même déclaration, et c'est la première qui a une valeur de preuve.
     """
     comptes = [
-        {"emplacement": sonde.emplacement, "enregistrements": compter(sonde.emplacement, sonde.sql, sonde.params)}
+        {"emplacement": sonde.emplacement, "enregistrements": compter(sonde)}
         for sonde in sondes(designations)
     ]
 

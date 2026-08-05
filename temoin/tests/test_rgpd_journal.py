@@ -71,6 +71,20 @@ def test_la_casse_ne_fait_pas_perdre_une_ligne(tmp_path):
     assert servi.corps["lignes"] == 3
 
 
+def test_seule_une_adresse_se_cherche_dans_un_journal(tmp_path):
+    """Une ligne ne porte qu'une adresse : y chercher « 1203 » compterait des horaires et des statuts.
+
+    Ce qu'on ne peut pas chercher, on ne le déclare pas regardé — un `0` acheté par une comparaison
+    qu'on n'a pas faite serait un mensonge, et un compte gonflé par un chiffre qui traîne dans une
+    date en serait un autre.
+    """
+    servi = localiser(
+        [Designation("reference", "2026"), Designation("name", "Hélène Petit")], journal(tmp_path)
+    )
+
+    assert servi == Servi({"emplacements": [], "lignes": 0})
+
+
 def test_un_sac_vide_ne_fait_lire_aucun_fichier(tmp_path):
     servi = localiser([], journal(tmp_path))
 

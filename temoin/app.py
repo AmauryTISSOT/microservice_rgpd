@@ -278,9 +278,9 @@ def admin_export_ventes():
 # changé d'une ligne pour lui.
 
 
-def compte_boutique(_emplacement, sql, params):
+def compte_boutique(sonde):
     """La sonde d'une table, exécutée sur la connexion ordinaire de l'application."""
-    return q1(sql, *params)["n"]
+    return q1(sonde.sql, *sonde.params)["n"]
 
 
 app.register_blueprint(

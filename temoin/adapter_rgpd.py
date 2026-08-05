@@ -1,8 +1,9 @@
 """L'adaptateur RGPD : ce que le microservice de gestion des demandes vient nous demander.
 
-C'est la **seule** partie de Brocanto qui sache que ce service existe. Le reste de l'application —
-`app.py`, le schéma, les gabarits — l'ignore, et doit continuer de l'ignorer : ce fichier se branche
-par-dessus, il ne se mélange pas.
+C'est la **seule** partie de Brocanto qui sache que ce service existe. Le schéma, les gabarits et
+toutes les routes de la brocante l'ignorent, et doivent continuer de l'ignorer ; `app.py` n'en
+connaît que le montage, en bas de fichier — un import et un `register_blueprint`, comme pour
+n'importe quelle greffe.
 
 Le sens des appels est unique : le service appelle, on répond. Rien à rappeler, aucune adresse du
 service à connaître, aucune file de reprise à tenir.
@@ -25,6 +26,7 @@ secret ne répare cela. Voir `docs/api/adapter.md`, § 2, du dépôt du service.
 """
 
 import hmac
+from datetime import datetime
 from typing import NamedTuple
 
 from flask import Blueprint, jsonify, request
@@ -59,7 +61,7 @@ class Differe(NamedTuple):
     qui vaudrait deux heures de moins d'un serveur à l'autre.
     """
 
-    echeance: object
+    echeance: datetime
 
 
 def blueprint_rgpd(secret, systemes):
@@ -91,7 +93,7 @@ def blueprint_rgpd(secret, systemes):
         reponse = localise(designations_du_corps(request.get_json(silent=True)))
 
         if isinstance(reponse, Differe):
-            return jsonify({"deadline": reponse.echeance.isoformat()}), 202
+            return jsonify({"deadline": echeance_declarable(reponse.echeance)}), 202
 
         return jsonify(reponse.corps), 200
 
@@ -105,15 +107,36 @@ def autorise(secret):
     return bool(secret) and hmac.compare_digest(presente, secret)
 
 
+def echeance_declarable(echeance):
+    """L'échéance écrite pour le fil, décalage horaire compris.
+
+    Une date sans fuseau n'est pas déclarable : le service la lit comme une panne, pas comme un
+    différé. Le défaut se répare ici, chez celui qui l'a écrite — mieux vaut donc casser bruyamment
+    dans nos propres journaux que déclarer une échéance que personne ne saura relire.
+    """
+    if echeance.utcoffset() is None:
+        raise ValueError(
+            "Une échéance déclarée sans décalage horaire vaudrait deux heures de moins d'un "
+            "serveur à l'autre : le service la refuse, et il a raison."
+        )
+
+    return echeance.isoformat()
+
+
 def designations_du_corps(corps):
     """Le sac tel qu'il est arrivé, débarrassé de ce qui n'est pas une désignation.
 
     Le sac peut être vide, et ce n'est pas une erreur : c'est une recherche qui ne trouvera rien.
+
+    Ce qui n'a ni nature connue ni valeur textuelle est écarté plutôt que de casser l'appel : une
+    désignation qu'on ne sait pas lire est une désignation de moins, pas une panne de l'Adapter.
     """
     brutes = (corps or {}).get("designations") or []
 
     return [
         Designation(brute["kind"], brute["value"])
         for brute in brutes
-        if isinstance(brute, dict) and brute.get("kind") in NATURES and "value" in brute
+        if isinstance(brute, dict)
+        and brute.get("kind") in NATURES
+        and isinstance(brute.get("value"), str)
     ]

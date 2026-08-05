@@ -12,10 +12,16 @@ s'est tranché sur un corpus annoté et non sur des intuitions.
 
 **Cette application est écrite comme si le microservice n'existait pas.**
 
-Rien dans `app.py`, `db/schema.sql` ni `db/seed.sql` ne connaît le RGPD, l'exercice des droits ou ce
-dépôt. Pas de `deleted_at` bien placé, pas d'abstraction opportune, pas d'identifiant de personne
-unique et propre. Toute complaisance ruinerait sa valeur de témoin : un témoin qui se laisse brancher
-parce qu'on l'a écrit pour ça ne démontre rien.
+Rien dans `db/schema.sql`, `db/seed.sql` ni dans aucune route de la brocante ne connaît le RGPD,
+l'exercice des droits ou ce dépôt. Pas de `deleted_at` bien placé, pas d'abstraction opportune, pas
+d'identifiant de personne unique et propre. Toute complaisance ruinerait sa valeur de témoin : un
+témoin qui se laisse brancher parce qu'on l'a écrit pour ça ne démontre rien.
+
+**La seule exception est l'adaptateur** (`adapter_rgpd.py`, `rgpd_boutique.py`, `rgpd_journal.py`),
+et elle ne se cache pas : c'est le programme que le client écrit pour être appelé, et le contrat
+suppose qu'il existe. `app.py` n'en connaît que le montage — un import et un `register_blueprint`,
+en bas de fichier. Ce qui compte est que rien **au-dessus** ne s'y adapte : aucune route, aucune
+colonne, aucune requête de la brocante n'a bougé pour lui.
 
 **Modifier le témoin pour faciliter une intégration est donc interdit sans décision explicite.** Si un
 ticket d'intégration bute sur le témoin, c'est un résultat, pas un obstacle : il se consigne. La seule
@@ -107,15 +113,40 @@ service. Le témoin reste écrit comme si le microservice n'existait pas.
 - **`localhost:3307` reste inutilisé.** La voie « accès direct à la base » était ouverte et
   documentée ci-dessus ; le branchement ne l'a pas empruntée, et **c'est un résultat, pas un
   oubli** : tout passe par l'`Adapter`, donc par du code que le client écrit, relit et déploie.
-- **Quatre systèmes restent au niveau 0** — recensés, touchés à la main, sans `Capability` : la
-  reprise de 2019 (`clients_ancienne_boutique`), l'export mensuel parti chez l'agence, les médias
-  sur disque, et le prestataire de paiement. C'est le régime majoritaire, et celui dont le service
-  tire le plus de valeur : il nomme ce qu'il ne touche pas.
+- **Quatre systèmes restent au niveau 0** — recensés, touchés à la main, sans `Capability` :
+  l'export mensuel parti chez l'agence, les médias sur disque, le prestataire de paiement, et les
+  archives compressées du journal, que l'adaptateur laisse fermées. C'est le régime majoritaire, et
+  celui dont le service tire le plus de valeur : il nomme ce qu'il ne touche pas.
+
+  La reprise de 2019 (`clients_ancienne_boutique`), elle, **n'est pas** un cinquième système : elle
+  vit dans la même base et se compte avec `brocanto-boutique`. Un système est une unité de
+  recensement, et rien n'obligeait à la découper — mais le jour où on la découperait, l'adaptateur
+  la servirait déjà.
+
+Deux réserves valent d'être écrites, parce qu'un compte servi sans elles se lirait comme un fait
+complet :
+
 - **Le texte libre n'est pas fouillé.** Les descriptions d'annonces et le corps des messages
   portent des numéros et des adresses écrits à la main (pièges 14 et 15) que les sondes ne trouvent
   pas. Un `0` sur `messages` veut dire « aucun message *écrit par* cette adresse », jamais « aucun
-  message qui parle d'elle ». C'est une réserve à porter dans la réponse de `locate`, et elle
-  appartient au ticket #92.
+  message qui parle d'elle ».
+- **Le journal ne se cherche que par adresse.** Une ligne ne porte que celle de la session : y
+  chercher un nom ne trouverait rien, et y chercher une référence comme « 1203 » compterait des
+  horaires et des identifiants d'annonce. Un sac sans adresse ne fait donc ouvrir aucun fichier, et
+  ne rend aucun emplacement — « pas regardé » plutôt qu'un `0` qu'on n'a pas gagné.
+
+Ces deux réserves sont à porter dans la réponse de `locate` ; leur forme appartient au ticket #92.
+
+### La clause de périmètre, et ce que la recette en fait
+
+Le contrat exige **un secret partagé _et_ un `Adapter` hors d'atteinte de l'extérieur**, les deux
+ensemble. Ici, l'adaptateur vit dans le même processus Flask que la boutique et sort donc par le
+même port — `8080`, publié sur l'hôte par `compose.yaml`. C'est exactement ce qu'un client ferait,
+et c'est ce qui rend l'intégration bon marché ; **ce n'est pas conforme en production** pour autant.
+Un déploiement réel doit fermer `/rgpd` à tout ce qui ne vient pas du réseau du service — un filtre
+devant l'application, pas une ligne de Python de plus. En recette, `8080` n'est joignable que depuis
+la machine de développement : la clause tient par l'endroit où tourne le conteneur, et c'est écrit
+ici pour que personne ne croie qu'elle tient par le secret seul.
 
 ## Les pièges effectivement posés
 
