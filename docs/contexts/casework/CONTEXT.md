@@ -164,6 +164,13 @@ vocabulaire fermé : personne ne saurait qu'en conclure.
 _Avoid_ : Connector, Plugin, Integration, Webhook ⚠️ pour sa réponse : Verdict, Result, Status
 
 **Vérification du `Manifest`** :
+⚠️ **Le mot « vérification » est sur la liste _Avoid_ de `Greffier, pas témoin`, et il est repris ici
+sciemment** — il n'y a pas de contradiction, parce que les deux ne portent pas sur la même chose. Ce
+qui reste interdit, c'est de vérifier ce qu'un humain **déclare** : un `Step` `Done` prouve qu'on a
+déclaré l'avoir fait, jamais qu'il l'a été. Ici, l'objet vérifié n'est pas une déclaration sur le
+monde mais **une déclaration sur le service lui-même** — quelle adresse répond, et à quoi — et c'est
+la seule chose que le service puisse constater de ses propres yeux, en appelant. Il reste greffier de
+tout le reste.
 L'opération d'exploitation qui confronte le catalogue déclaré à ce que les `Adapter` servent
 réellement, système par système, pour les seuls `DeclaredSystem` dotés d'une adresse. Elle
 **rapporte** l'écart et ne corrige **jamais** le `Manifest` : un humain tranche lequel des deux avait
@@ -172,9 +179,14 @@ Elle ne se déclenche que sur demande : rien ne tourne, sans quoi un processus i
 rapport **vide et rassurant**, soit l'`Omission silencieuse` sous sa forme la plus dangereuse.
 ⚠️ **Une seule `Capability` sur quatre est vérifiable, et les trois autres sont nommées comme telles.**
 `Locate` se sonde — c'est le plancher, une requête et rien de destructeur. `Erase` et `Rectify` ne se
-constateraient qu'en détruisant ou en réécrivant des données réelles ; `Read` qu'en faisant entrer
-des données personnelles au titre d'une vérification. Elles sont donc rapportées **non vérifiables**,
-un par un, plutôt que tues — le silence les aurait fait lire comme conformes.
+constateraient qu'en détruisant ou en réécrivant des données réelles, **définitivement** ; `Read`
+n'a pas encore de forme d'appel fixée, le contrat lui promettant un champ de plus, et sonder avant
+qu'elle le soit enverrait chez le client une requête que le contrat ne décrit pas. Elles sont donc
+rapportées **non vérifiables**, une par une, plutôt que tues — le silence les aurait fait lire comme
+conformes.
+⚠️ **Un `Adapter` nu ne prouve rien de son catalogue non plus.** Son `200` peut venir d'une route qui
+sert tout à tout le monde, système inconnu compris : la vérification ne le rappelle pas sous le vrai
+secret et ne conclut rien de ses capacités, plutôt que d'écrire un accord que personne n'a constaté.
 ⚠️ **Non vérifiable et sans conclusion ne fusionnent pas**, pour la raison qui sépare `OutOfReach` de
 `Untreated` : le premier est structurel et annonçable au premier jour, le second est le constat d'un
 jour, que la prochaine passe peut lever.

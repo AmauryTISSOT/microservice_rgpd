@@ -64,10 +64,15 @@ public sealed class HttpAdapterProbes(HttpClient client, AdapterSecret secret) :
 
     return response.StatusCode switch
     {
-      // Servir et différer disent la même chose de la question posée : l'Adapter connaît ce système
-      // et sait y localiser. Ce qu'un différé deviendrait dans un dossier n'a pas de sens ici — la
-      // vérification n'a aucune échéance à tenir, et ne repassera pas.
-      HttpStatusCode.OK or HttpStatusCode.Accepted => AdapterOutcome.Served,
+      HttpStatusCode.OK => AdapterOutcome.Served,
+
+      // Un différé est rapporté comme tel, et non replié sur « servi » : le vocabulaire des réponses
+      // d'Adapter est fermé, et lui faire dire d'un 202 qu'il a servi le viderait de sens à
+      // l'endroit même où il sert. L'échéance déclarée, en revanche, n'est pas relue — la sonde ne
+      // lit aucun corps, et la règle qui fait d'un 202 sans échéance une panne protège un appel qui
+      // repassera, ce qu'une vérification ne fait jamais.
+      HttpStatusCode.Accepted => AdapterOutcome.Deferred,
+
       HttpStatusCode.Unauthorized => AdapterOutcome.SecretRefused,
       HttpStatusCode.NotFound => AdapterOutcome.SystemNotServed,
 
@@ -138,24 +143,10 @@ public sealed class HttpAdapterProbes(HttpClient client, AdapterSecret secret) :
 
     request.Headers.TryAddWithoutValidation(AdapterWire.SecretHeader, presented);
 
-    try
-    {
-      return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-    }
-    catch (TimeoutRejectedException tooSlow)
-    {
-      throw new AdapterFailure(
-        $"L'Adapter de « {declaredSystem.Value} » n'a rien répondu à la sonde de vérification dans "
-        + "l'échéance que le service lui laisse.",
-        tooSlow);
-    }
-    catch (HttpRequestException unreachable)
-    {
-      throw new AdapterFailure(
-        $"L'Adapter de « {declaredSystem.Value} » n'a pas répondu à la sonde de vérification : ni "
-        + "réponse, ni refus.",
-        unreachable);
-    }
+    // `ResponseHeadersRead` n'est pas une optimisation : c'est la promesse « aucune sonde ne lit le
+    // corps » tenue par le transport lui-même, plutôt que par la discipline de ce qui suit.
+    return await AdapterWire.AnswerTo(
+      client, request, declaredSystem, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
   }
 
   /// <summary>Le sac de désignations d'une sonde : vide, par construction et sans paramètre pour le remplir.</summary>

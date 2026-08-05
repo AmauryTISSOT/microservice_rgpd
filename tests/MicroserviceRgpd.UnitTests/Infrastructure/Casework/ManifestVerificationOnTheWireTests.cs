@@ -76,11 +76,17 @@ public class ManifestVerificationOnTheWireTests
     var adapter = AnAdapterOnTheWire.Naked();
 
     var verified = await Verifying(adapter, ASystem([Capability.Locate]));
+    var boutique = verified.Naked.ShouldHaveSingleItem();
 
-    verified.Naked.ShouldHaveSingleItem().DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
+    boutique.DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
 
     // Une seule requête : un Adapter trouvé nu n'est pas rappelé sous le vrai secret.
     adapter.Asked.ShouldHaveSingleItem();
+
+    // ⚠️ Et l'on ne conclut rien de son catalogue : cette doublure sert 200 à tout le monde, système
+    // inconnu compris. Lire son 200 comme « déclarée et servie » écrirait un accord que personne
+    // n'a constaté.
+    boutique.Capabilities.ShouldHaveSingleItem().Agreement.ShouldBe(CapabilityAgreement.Unknown);
   }
 
   /// <summary>

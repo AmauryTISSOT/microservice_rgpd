@@ -45,9 +45,16 @@ public sealed class CapabilityAgreement : SmartEnum<CapabilityAgreement>
   /// <para>
   /// C'est le sort de <see cref="Capability.Erase"/> et de <see cref="Capability.Rectify"/>, qu'une
   /// sonde ne touchera jamais — elle détruirait ou réécrirait des données réelles pour vérifier une
-  /// ligne de catalogue. C'est aussi celui de <see cref="Capability.Read"/>, qu'on ne sonde pas non
-  /// plus : sa réponse est faite de données personnelles, et les faire entrer au titre d'une
-  /// vérification est exactement ce que le service refuse de faire.
+  /// ligne de catalogue.
+  /// </para>
+  /// <para>
+  /// C'est aussi, <b>pour l'instant</b>, celui de <see cref="Capability.Read"/>, et pour une autre
+  /// raison : <b>sa forme d'appel n'est pas encore fixée</b>. Le contrat annonce qu'un <c>Read</c>
+  /// portera, en plus des désignations, le <c>DataSubjectRight</c> au titre duquel on lit
+  /// (<c>docs/api/adapter.md</c>, § 7) ; sonder avant que ce champ existe enverrait chez le client
+  /// une requête que le contrat ne décrit pas, et vérifierait une route que nul dossier n'emprunte.
+  /// Le jour où <c>Read</c> s'appellera, il sera sondable comme <see cref="Capability.Locate"/>
+  /// l'est — sous un sac vide, qui ne ramène de données de personne.
   /// </para>
   /// </summary>
   public static readonly CapabilityAgreement Unverifiable =

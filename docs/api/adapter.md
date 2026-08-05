@@ -104,15 +104,22 @@ Content-Type: application/json
 { "designations": [] }
 ```
 
-puis, si vous avez répondu `401` à la première, la même requête **sous le vrai secret**.
+puis — **sauf si vous avez servi la première**, auquel cas il n'y en a pas de seconde — la même
+requête **sous le vrai secret**.
 
 - **Le secret de la première est délibérément faux, et il est public** — le voici en toutes lettres.
   Il n'ouvre rien : il est fait pour se faire refuser. Le voir dans vos journaux n'est pas une
   attaque, c'est le service qui vérifie que votre porte est fermée. Il n'a aucun rapport avec le
   vôtre : un faux dérivé du vrai vous livrerait le vrai, octet par octet.
+  ⚠️ Sa publicité a un coût assumé : un `Adapter` qui refuserait **cette chaîne-là** et servirait
+  tout le reste passerait la sonde en restant grand ouvert. Écrire ce cas-là, c'est mentir à son
+  propre exploitant ; la sonde ne prétend pas s'en protéger, elle constate ce qu'on lui répond.
 - **Si vous répondez `200` ou `202` à cette première requête, votre `Adapter` est rapporté comme
   nu** : vous avez travaillé pour un appelant que le contrat vous demandait de refuser. C'est le
   seul résultat que la sonde tienne pour une preuve, et il remonte à votre exploitant.
+  Le service ne vous rappelle alors pas sous le vrai secret, et **ne conclut rien de votre
+  catalogue** : les réponses d'un `Adapter` qui sert n'importe qui ne prouvent plus rien de ce qu'il
+  sert.
 - **Le sac de désignations est vide.** Aucune personne réelle ne part chez vous au titre de cette
   vérification, et il n'y a rien à chercher — le sac vide est prévu par le contrat (§ 3).
 - **Le service ne lit jamais le corps de vos réponses à ces deux requêtes.** Le statut lui suffit, et
@@ -121,8 +128,8 @@ puis, si vous avez répondu `401` à la première, la même requête **sous le v
   que le `Manifest` déclare, et quoi que la sonde ait appris. Une vérification ne détruit pas des
   données pour savoir si vous savez les détruire : `erase` et `rectify` sont rapportées à votre
   exploitant comme **non vérifiables**, nommément, plutôt que passées sous silence. `read` non plus
-  n'est pas sondé : sa réponse est faite de données personnelles, et les faire entrer au titre d'une
-  vérification est exactement ce que le service refuse.
+  n'est pas sondé, et pour une autre raison : sa forme d'appel n'est pas encore fixée (§ 7), et
+  sonder avant qu'elle le soit vous enverrait une requête que ce contrat ne décrit pas.
 - **Le service ne corrige jamais son `Manifest` sur ce que vous répondez.** Un `404` sur un système
   qu'il croyait vôtre est rapporté comme un écart ; un humain tranchera lequel des deux avait tort.
 

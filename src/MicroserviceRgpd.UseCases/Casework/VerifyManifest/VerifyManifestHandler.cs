@@ -71,8 +71,16 @@ public sealed class VerifyManifestHandler(
   /// <remarks>
   /// <b>L'ordre n'est pas indifférent.</b> On demande d'abord si la porte est gardée, et un
   /// <c>Adapter</c> trouvé nu n'est pas rappelé : il vient de servir un appel qu'il aurait dû
-  /// refuser, ce qui répond déjà à la question du plancher, et un second aller-retour n'apprendrait
-  /// rien qu'on ne sache — sinon que le service insiste auprès d'une application ouverte.
+  /// refuser, et un second aller-retour n'apprendrait rien — sinon que le service insiste auprès
+  /// d'une application ouverte.
+  /// <para>
+  /// ⚠️ <b>On ne conclut alors <i>rien</i> du catalogue, et surtout pas qu'il est exact.</b> Un
+  /// <c>Adapter</c> qui sert un appelant qu'il aurait dû refuser est un <c>Adapter</c> dont plus
+  /// aucune réponse ne prouve quoi que ce soit : son <c>200</c> peut aussi bien venir d'une route
+  /// qui sert tout à tout le monde, système inconnu compris. Lire son <c>200</c> comme
+  /// « déclarée et servie » écrirait un accord là où personne n'a rien constaté — l'<c>Omission
+  /// silencieuse</c> exactement.
+  /// </para>
   /// </remarks>
   private async Task<AdapterVerification> Confront(
     DeclaredSystem system,
@@ -82,8 +90,8 @@ public sealed class VerifyManifestHandler(
     var exposure = await probes.ProbeWithAFalseSecretAsync(address, system.Id, cancellationToken);
 
     var locate = exposure == AdapterExposure.Naked
-      ? Serves.Yes
-      : await Floor(system, address, cancellationToken);
+      ? Serves.Unknown
+      : await ServesTheFloor(system, address, cancellationToken);
 
     return new AdapterVerification(system.Id, exposure, Compared(system, locate));
   }
@@ -97,8 +105,13 @@ public sealed class VerifyManifestHandler(
   /// Les deux premiers ne disent rien du catalogue — le déploiement est en désaccord avec lui-même,
   /// ou l'application est muette ; le troisième, lui, est une réponse claire : cet <c>Adapter</c> ne
   /// sert pas ce système, et c'est exactement l'écart qu'on est venu chercher.
+  /// <para>
+  /// <b>Un différé compte comme servi.</b> Un <c>Adapter</c> qui prend le travail connaît ce
+  /// système et sait y localiser, ce qui est toute la question posée ici ; l'échéance qu'il déclare
+  /// n'en est pas une, la vérification ne repassant jamais.
+  /// </para>
   /// </remarks>
-  private async Task<Serves> Floor(
+  private async Task<Serves> ServesTheFloor(
     DeclaredSystem system,
     AdapterAddress address,
     CancellationToken cancellationToken)
@@ -128,11 +141,12 @@ public sealed class VerifyManifestHandler(
   /// servi sans être déclaré.
   /// </summary>
   /// <remarks>
-  /// <b>Trois capacités sur quatre ne sont vérifiables par personne.</b> <c>Erase</c> et
-  /// <c>Rectify</c> ne se constatent qu'en détruisant ou en réécrivant des données réelles ;
-  /// <c>Read</c> ne se constate qu'en faisant entrer des données personnelles au titre d'une
-  /// vérification. Elles sont donc rapportées <b>non vérifiables</b>, nommément — plutôt que passées
-  /// sous silence, ce qui les aurait fait lire comme conformes.
+  /// <b>Trois capacités sur quatre échappent à la sonde</b>, et pas pour la même raison :
+  /// <c>Erase</c> et <c>Rectify</c> ne se constateraient qu'en détruisant ou en réécrivant des
+  /// données réelles — définitivement ; <c>Read</c> n'a pas encore de forme d'appel fixée, le
+  /// contrat lui promettant un champ de plus (<c>docs/api/adapter.md</c>, § 7). Elles sont donc
+  /// rapportées <b>non vérifiables</b>, nommément — plutôt que passées sous silence, ce qui les
+  /// aurait fait lire comme conformes.
   /// </remarks>
   private static IReadOnlyList<CapabilityVerification> Compared(DeclaredSystem system, Serves locate)
   {

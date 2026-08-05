@@ -1,4 +1,6 @@
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Adapters;
+using Polly.Timeout;
 
 namespace MicroserviceRgpd.Infrastructure.Casework.Adapters;
 
@@ -38,5 +40,60 @@ public static class AdapterWire
       $"{address.Value.TrimEnd('/')}/{capability.Token}"
       + $"?{SystemParameter}={Uri.EscapeDataString(declaredSystem.Value)}",
       UriKind.Absolute);
+  }
+
+  /// <summary>
+  /// Porte l'aller-retour, et traduit en <see cref="AdapterFailure"/> nommée ce qui n'arrive pas
+  /// jusqu'à une réponse. <b>Une seule tentative</b>, ici comme partout : le contrat promet à
+  /// l'intégrateur que le service ne relance jamais tout seul.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Les deux pannes de transport sont reconnues une fois, et non chez chaque appelant.</b> Un
+  /// serveur muet et une échéance dépassée arrivent sous des exceptions du transport ; les laisser
+  /// remonter telles quelles obligerait chaque appelant à les reconnaître au milieu d'autre chose,
+  /// et deux copies de cette reconnaissance finiraient par ne plus dire la même chose.
+  /// </para>
+  /// <para>
+  /// <b>L'annulation, elle, n'est pas rattrapée</b> : un appelant parti n'est pas un <c>Adapter</c>
+  /// en panne, et la compter comme telle ferait porter à l'application du client un désaccord dont
+  /// elle n'est pas l'auteur.
+  /// </para>
+  /// </remarks>
+  /// <param name="client">Le client sur lequel l'échange part.</param>
+  /// <param name="request">Ce qui part.</param>
+  /// <param name="declaredSystem">Le système à nommer si rien ne revient.</param>
+  /// <param name="completion">Jusqu'où lire la réponse — une sonde n'a besoin que des en-têtes.</param>
+  /// <param name="cancellationToken">L'annulation de l'échange en cours.</param>
+  /// <exception cref="AdapterFailure">L'<c>Adapter</c> n'a rendu ni réponse ni refus.</exception>
+  public static async Task<HttpResponseMessage> AnswerTo(
+    HttpClient client,
+    HttpRequestMessage request,
+    DeclaredSystemId declaredSystem,
+    HttpCompletionOption completion,
+    CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(client);
+
+    try
+    {
+      return await client.SendAsync(request, completion, cancellationToken);
+    }
+    catch (TimeoutRejectedException tooSlow)
+    {
+      // L'échéance du service est passée sans que l'Adapter ait ni servi, ni différé, ni refusé.
+      // C'est précisément ce que le 202 existe pour éviter : un travail long se déclare, il ne se
+      // fait pas attendre.
+      throw new AdapterFailure(
+        $"L'Adapter de « {declaredSystem.Value} » n'a rien répondu dans l'échéance que le service "
+        + "lui laisse : un travail long se répond par un 202 et son échéance déclarée.",
+        tooSlow);
+    }
+    catch (HttpRequestException unreachable)
+    {
+      throw new AdapterFailure(
+        $"L'Adapter de « {declaredSystem.Value} » n'a pas répondu : ni réponse, ni refus.",
+        unreachable);
+    }
   }
 }

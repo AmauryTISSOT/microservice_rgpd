@@ -99,6 +99,24 @@ public class VerifyManifestHandlerTests
   }
 
   /// <summary>
+  /// ⚠️ <b>Un <c>Adapter</c> nu ne prouve rien de son catalogue, et surtout pas qu'il est exact.</b>
+  /// Son <c>200</c> peut venir d'une route qui sert tout à tout le monde, système inconnu compris :
+  /// le lire comme « déclarée et servie » écrirait un accord que personne n'a constaté, ce qui est
+  /// l'<c>Omission silencieuse</c> exactement.
+  /// </summary>
+  [Fact]
+  public async Task ConcludesNothingOnTheCatalogueOfANakedAdapter()
+  {
+    Declared(ASystem([Capability.Locate]));
+    TheDoorIs(AdapterExposure.Naked);
+
+    var boutique = (await Verifying()).Adapters.ShouldHaveSingleItem();
+
+    Of(boutique, Capability.Locate).ShouldBe(CapabilityAgreement.Unknown);
+    boutique.Disagrees.ShouldBeFalse();
+  }
+
+  /// <summary>
   /// Un <c>Adapter</c> trouvé nu n'est <b>pas rappelé</b> : il vient de servir un appel qu'il aurait
   /// dû refuser, ce qui répond déjà à la question du plancher. Insister n'apprendrait rien, sinon
   /// que le service frappe deux fois à une porte ouverte.
@@ -149,11 +167,27 @@ public class VerifyManifestHandlerTests
     Declared(ASystem([Capability.Locate]));
     TheDoorIs(AdapterExposure.Guarded);
     TheFloorAnswers(AdapterOutcome.SecretRefused);
-
     var boutique = (await Verifying()).Adapters.ShouldHaveSingleItem();
 
     Of(boutique, Capability.Locate).ShouldBe(CapabilityAgreement.Unknown);
     boutique.Disagrees.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// <b>Un différé compte comme servi.</b> Un <c>Adapter</c> qui prend le travail connaît ce système
+  /// et sait y localiser, ce qui est toute la question posée ; l'échéance qu'il déclare n'en est
+  /// pas une, la vérification ne repassant jamais.
+  /// </summary>
+  [Fact]
+  public async Task CountsADeferredFloorAsServed()
+  {
+    Declared(ASystem([Capability.Locate]));
+    TheDoorIs(AdapterExposure.Guarded);
+    TheFloorAnswers(AdapterOutcome.Deferred);
+
+    var boutique = (await Verifying()).Adapters.ShouldHaveSingleItem();
+
+    Of(boutique, Capability.Locate).ShouldBe(CapabilityAgreement.Agreed);
   }
 
   /// <summary>
