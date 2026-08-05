@@ -89,6 +89,50 @@ sur votre code.
   à la saisie. Il vit dans la configuration de déploiement des deux côtés.
 - **Côté service, son absence arrête le démarrage.** Il n'existe aucun mode « sans ».
 
+### La sonde de vérification, et pourquoi vous la verrez dans vos journaux
+
+Le `Manifest` du service est **déclaratif** : un humain y écrit vos systèmes et ce que votre
+`Adapter` sait y faire. Il vieillit, et rien d'autre qu'une confrontation ne dira qu'il ment. Le
+service en tient donc une, à la demande d'un exploitant — jamais par une minuterie — et elle vous
+adresse **deux requêtes par système**, toutes deux inoffensives :
+
+```
+POST <adresse déclarée>/locate?system_id=<votre système>
+X-RGPD-Secret: sonde-de-verification-du-manifest-secret-deliberement-faux
+Content-Type: application/json
+
+{ "designations": [] }
+```
+
+puis — **sauf si vous avez servi la première**, auquel cas il n'y en a pas de seconde — la même
+requête **sous le vrai secret**.
+
+- **Le secret de la première est délibérément faux, et il est public** — le voici en toutes lettres.
+  Il n'ouvre rien : il est fait pour se faire refuser. Le voir dans vos journaux n'est pas une
+  attaque, c'est le service qui vérifie que votre porte est fermée. Il n'a aucun rapport avec le
+  vôtre : un faux dérivé du vrai vous livrerait le vrai, octet par octet.
+  ⚠️ Sa publicité a un coût assumé : un `Adapter` qui refuserait **cette chaîne-là** et servirait
+  tout le reste passerait la sonde en restant grand ouvert. Écrire ce cas-là, c'est mentir à son
+  propre exploitant ; la sonde ne prétend pas s'en protéger, elle constate ce qu'on lui répond.
+- **Si vous répondez `200` ou `202` à cette première requête, votre `Adapter` est rapporté comme
+  nu** : vous avez travaillé pour un appelant que le contrat vous demandait de refuser. C'est le
+  seul résultat que la sonde tienne pour une preuve, et il remonte à votre exploitant.
+  Le service ne vous rappelle alors pas sous le vrai secret, et **ne conclut rien de votre
+  catalogue** : les réponses d'un `Adapter` qui sert n'importe qui ne prouvent plus rien de ce qu'il
+  sert.
+- **Le sac de désignations est vide.** Aucune personne réelle ne part chez vous au titre de cette
+  vérification, et il n'y a rien à chercher — le sac vide est prévu par le contrat (§ 3).
+- **Le service ne lit jamais le corps de vos réponses à ces deux requêtes.** Le statut lui suffit, et
+  le corps d'un `200` rendu à un secret faux est précisément la fuite qu'il vient constater.
+- **Seul `locate` est envoyé. Jamais `read`, jamais `erase`, jamais `rectify`** — quel que soit ce
+  que le `Manifest` déclare, et quoi que la sonde ait appris. Une vérification ne détruit pas des
+  données pour savoir si vous savez les détruire : `erase` et `rectify` sont rapportées à votre
+  exploitant comme **non vérifiables**, nommément, plutôt que passées sous silence. `read` non plus
+  n'est pas sondé, et pour une autre raison : sa forme d'appel n'est pas encore fixée (§ 7), et
+  sonder avant qu'elle le soit vous enverrait une requête que ce contrat ne décrit pas.
+- **Le service ne corrige jamais son `Manifest` sur ce que vous répondez.** Un `404` sur un système
+  qu'il croyait vôtre est rapporté comme un écart ; un humain tranchera lequel des deux avait tort.
+
 ---
 
 ## 3. L'appel
@@ -244,6 +288,12 @@ qu'il ne touche pas.
 - Le vocabulaire des réponses : [`AdapterVerdict`](../../src/MicroserviceRgpd.Core/Casework/Adapters/AdapterVerdict.cs),
   [`AdapterAnswer`](../../src/MicroserviceRgpd.Core/Casework/Adapters/AdapterAnswer.cs).
 - Ce qu'un refus laisse : [`AdapterCallsForCase`](../../src/MicroserviceRgpd.UseCases/Casework/CallAdapter/AdapterCallsForCase.cs).
+- La vérification du `Manifest` et la sonde à secret délibérément faux :
+  [`VerifyManifestHandler`](../../src/MicroserviceRgpd.UseCases/Casework/VerifyManifest/VerifyManifestHandler.cs),
+  [`IAdapterProbes`](../../src/MicroserviceRgpd.Core/Casework/Adapters/IAdapterProbes.cs),
+  [`HttpAdapterProbes`](../../src/MicroserviceRgpd.Infrastructure/Casework/Adapters/HttpAdapterProbes.cs).
+  Le port ne reçoit **aucune** `Capability` : c'est par la forme, et non par la vigilance de
+  l'appelant, qu'aucune sonde ne peut exercer `Erase` ni `Rectify`.
 - Le secret et le refus de démarrer : [`AdapterServiceExtensions`](../../src/MicroserviceRgpd.Infrastructure/Casework/Adapters/AdapterServiceExtensions.cs),
   clé `Casework:AdapterSecret`.
 - L'autre bout du fil, écrit comme un client l'écrirait : l'`Adapter` du témoin,

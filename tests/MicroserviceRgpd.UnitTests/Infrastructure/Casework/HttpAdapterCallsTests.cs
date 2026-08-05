@@ -36,7 +36,7 @@ public class HttpAdapterCallsTests
 
     await Calling(adapter).AskAsync<Found>(ALocate());
 
-    adapter.LastRequest.Headers.GetValues(HttpAdapterCalls.SecretHeader).ShouldBe([Secret]);
+    adapter.LastRequest.Headers.GetValues(AdapterWire.SecretHeader).ShouldBe([Secret]);
     adapter.LastRequest.RequestUri!.ToString().ShouldNotContain(Secret);
     adapter.LastBody!.ShouldNotContain(Secret);
   }

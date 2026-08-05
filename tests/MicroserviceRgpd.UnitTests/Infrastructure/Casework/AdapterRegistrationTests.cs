@@ -39,9 +39,22 @@ public class AdapterRegistrationTests
     Should.Throw<ArgumentException>(() => new ServiceCollection().AddAdapterCalls(Configured(secret)));
   }
 
-  /// <summary>Le secret posé, le service sait appeler — et signaler les désaccords.</summary>
+  /// <summary>
+  /// Un déploiement ne peut pas prendre pour secret celui que la sonde de vérification présente pour
+  /// se faire refuser : la sonde rapporterait « nu » un <c>Adapter</c> parfaitement gardé, et
+  /// l'exploitant chercherait une porte ouverte qui n'existe pas. Le refus est au démarrage — une
+  /// fausse alerte se répare mieux avant d'avoir été crue.
+  /// </summary>
   [Fact]
-  public void WiresTheCallsAndTheDisagreementsOnceTheSecretIsThere()
+  public void RefusesToStartOnTheVerySecretTheProbePresentsToBeRefused()
+  {
+    Should.Throw<ArgumentException>(
+      () => new ServiceCollection().AddAdapterCalls(Configured(HttpAdapterProbes.FalseSecret)));
+  }
+
+  /// <summary>Le secret posé, le service sait appeler, sonder — et signaler les désaccords.</summary>
+  [Fact]
+  public void WiresTheCallsTheProbesAndTheDisagreementsOnceTheSecretIsThere()
   {
     using var services = new ServiceCollection()
       .AddLogging()
@@ -49,6 +62,7 @@ public class AdapterRegistrationTests
       .BuildServiceProvider();
 
     services.GetRequiredService<IAdapterCalls>().ShouldBeOfType<HttpAdapterCalls>();
+    services.GetRequiredService<IAdapterProbes>().ShouldBeOfType<HttpAdapterProbes>();
     services.GetRequiredService<IAdapterDisagreements>().ShouldBeOfType<AdapterDisagreements>();
   }
 

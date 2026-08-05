@@ -4,7 +4,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using Polly.Timeout;
 
 namespace MicroserviceRgpd.Infrastructure.Casework.Adapters;
 
@@ -45,16 +44,6 @@ namespace MicroserviceRgpd.Infrastructure.Casework.Adapters;
 public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : IAdapterCalls
 {
   /// <summary>
-  /// L'en-tête qui porte le secret. Un en-tête propre plutôt qu'<c>Authorization</c> : le contrat
-  /// n'a ni schéma, ni jeton, ni porteur à présenter, et emprunter le mot ferait croire à un
-  /// <c>Bearer</c> que personne n'émet ni ne valide.
-  /// </summary>
-  public const string SecretHeader = "X-RGPD-Secret";
-
-  /// <summary>Le paramètre qui porte le système — <b>en paramètre, jamais en corps</b>.</summary>
-  public const string SystemParameter = "system_id";
-
-  /// <summary>
   /// Le fil parle <c>camelCase</c>, comme celui du sidecar. Les natures de désignation et les
   /// capacités y voyagent par leur <b>mot canonique</b>, jamais par un nom de membre C# ni par un
   /// ordinal : le contrat public ne doit pas dépendre de l'ordre de déclaration d'un type.
@@ -69,7 +58,9 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
   {
     ArgumentNullException.ThrowIfNull(call);
 
-    using var request = new HttpRequestMessage(HttpMethod.Post, AddressOf(call))
+    using var request = new HttpRequestMessage(
+      HttpMethod.Post,
+      AdapterWire.AddressOf(call.Address, call.DeclaredSystem, call.Capability))
     {
       Content = JsonContent.Create(BodyOf(call), options: WireFormat),
     };
@@ -77,9 +68,10 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
     // `TryAddWithoutValidation` n'est pas un contournement : un secret est une chaîne opaque, et la
     // validation d'en-tête de `HttpClient` refuserait des octets qu'un déploiement a le droit de
     // choisir.
-    request.Headers.TryAddWithoutValidation(SecretHeader, secret.Value);
+    request.Headers.TryAddWithoutValidation(AdapterWire.SecretHeader, secret.Value);
 
-    using var response = await AnswerTo(request, call, cancellationToken);
+    using var response = await AdapterWire.AnswerTo(
+      client, request, call.DeclaredSystem, HttpCompletionOption.ResponseContentRead, cancellationToken);
 
     return response.StatusCode switch
     {
@@ -101,58 +93,6 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
         $"L'Adapter de « {call.DeclaredSystem.Value} » a répondu {(int)response.StatusCode}, que le "
         + "contrat ne prévoit pas : ce n'est ni une réponse, ni un refus."),
     };
-  }
-
-  /// <summary>
-  /// L'aller-retour lui-même, et rien d'autre : <b>une seule tentative</b>. Ce qui n'arrive pas
-  /// jusqu'à une réponse arrive nommé, plutôt que sous une exception de transport qu'il faudrait
-  /// reconnaître au milieu d'un dossier.
-  /// </summary>
-  /// <remarks>
-  /// L'annulation, elle, n'est pas rattrapée : un appelant parti n'est pas un <c>Adapter</c> en
-  /// panne, et la compter comme telle ferait porter à l'application du client un désaccord dont
-  /// elle n'est pas l'auteur.
-  /// </remarks>
-  private async Task<HttpResponseMessage> AnswerTo(
-    HttpRequestMessage request,
-    AdapterCall call,
-    CancellationToken cancellationToken)
-  {
-    try
-    {
-      return await client.SendAsync(request, cancellationToken);
-    }
-    catch (TimeoutRejectedException tooSlow)
-    {
-      // L'échéance du service est passée sans que l'Adapter ait ni servi, ni différé, ni refusé.
-      // C'est précisément ce que le 202 existe pour éviter : un travail long se déclare, il ne se
-      // fait pas attendre.
-      throw new AdapterFailure(
-        $"L'Adapter de « {call.DeclaredSystem.Value} » n'a rien répondu dans l'échéance que le "
-        + "service lui laisse : un travail long se répond par un 202 et son échéance déclarée.",
-        tooSlow);
-    }
-    catch (HttpRequestException unreachable)
-    {
-      throw new AdapterFailure(
-        $"L'Adapter de « {call.DeclaredSystem.Value} » n'a pas répondu : ni réponse, ni refus.",
-        unreachable);
-    }
-  }
-
-  /// <summary>
-  /// L'adresse de l'opération : l'adresse déclarée, <b>une opération par <c>Capability</c></b>, et
-  /// le <c>system_id</c> en paramètre — jamais en corps, pour qu'un seul <c>Adapter</c> puisse
-  /// servir plusieurs systèmes sans les démêler lui-même.
-  /// </summary>
-  private static Uri AddressOf(AdapterCall call)
-  {
-    // L'identifiant du système est déjà d'un jeu de caractères sûr en URL ; il est échappé quand
-    // même, l'inverse étant une exception à retenir de tête à chaque nouvelle traversée.
-    return new Uri(
-      $"{call.Address.Value.TrimEnd('/')}/{call.Capability.Token}"
-      + $"?{SystemParameter}={Uri.EscapeDataString(call.DeclaredSystem.Value)}",
-      UriKind.Absolute);
   }
 
   /// <summary>
