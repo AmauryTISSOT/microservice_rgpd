@@ -82,9 +82,9 @@ public sealed class DepositForm
   /// </summary>
   /// <remarks>
   /// <para>
-  /// Un mot que le vocabulaire fermé ignore n'est pas une saisie humaine — les listes sont closes —
-  /// mais un formulaire forgé : il est refusé plutôt qu'ignoré, faute de quoi le service
-  /// enregistrerait autre chose que ce qu'on croit lui avoir dit.
+  /// <b>Les refus se déposent tous par <see cref="FormBoundary"/></b>, qui tient les deux gestes une
+  /// seule fois pour tous les écrans de ce contexte : franchir, et nommer à l'humain sous le nom de
+  /// son champ ce que le type a refusé.
   /// </para>
   /// <para>
   /// <b>Le nom du signataire n'est pas relu ici</b> : sa règle vit dans le type de la preuve, et la
@@ -101,19 +101,21 @@ public sealed class DepositForm
 
     var designations = ReadDesignations(modelState, prefix);
     var rights = ReadRights(modelState, prefix);
-    // Le vide entre comme vide plutôt que comme un nul : un formulaire dont la liste n'a pas été
-    // envoyée est un formulaire forgé, qu'on refuse en le nommant plutôt que de deviner sa valeur.
-    if (!Core.Casework.IdentityDeclaration.TryFromName(IdentityDeclaration ?? string.Empty, out var declaration))
-    {
-      modelState.AddModelError(
-        $"{prefix}.{nameof(IdentityDeclaration)}",
-        $"« {IdentityDeclaration} » n'est pas une déclaration d'identité du vocabulaire.");
-    }
+    var declaration = FormBoundary.ReadVocabulary<IdentityDeclaration>(
+      modelState,
+      prefix,
+      nameof(IdentityDeclaration),
+      IdentityDeclaration,
+      Core.Casework.IdentityDeclaration.TryFromName,
+      "n'est pas une déclaration d'identité du vocabulaire");
 
-    if (!ClaimOrigin.TryFromName(Origin ?? string.Empty, out var origin))
-    {
-      modelState.AddModelError($"{prefix}.{nameof(Origin)}", $"« {Origin} » n'est pas une origine du vocabulaire.");
-    }
+    var origin = FormBoundary.ReadVocabulary<ClaimOrigin>(
+      modelState,
+      prefix,
+      nameof(Origin),
+      Origin,
+      ClaimOrigin.TryFromName,
+      "n'est pas une origine du vocabulaire");
 
     var reception = ReadReception(modelState, prefix, depositedAt);
     var motivation = ReadMotivation(modelState, prefix);
@@ -157,16 +159,18 @@ public sealed class DepositForm
         return null;
       }
 
-      try
-      {
-        bag.Add(Designation.Of(kind, value));
-      }
-      catch (ArgumentException refusal)
-      {
-        modelState.AddModelError(field, refusal.Message.Split(" (Parameter")[0]);
+      var designation = FormBoundary.Declared(
+        modelState,
+        prefix,
+        nameof(DesignationValues),
+        () => Designation.Of(kind, value));
 
+      if (designation is null)
+      {
         return null;
       }
+
+      bag.Add(designation);
     }
 
     return bag;
@@ -182,10 +186,16 @@ public sealed class DepositForm
 
     foreach (var name in Rights)
     {
-      if (!DataSubjectRight.TryFromName(name, out var right))
-      {
-        modelState.AddModelError($"{prefix}.{nameof(Rights)}", $"« {name} » n'est pas un droit de la taxonomie.");
+      var right = FormBoundary.ReadVocabulary<DataSubjectRight>(
+        modelState,
+        prefix,
+        nameof(Rights),
+        name,
+        DataSubjectRight.TryFromName,
+        "n'est pas un droit de la taxonomie");
 
+      if (right is null)
+      {
         return null;
       }
 
@@ -244,10 +254,21 @@ public sealed class DepositForm
   /// service ne barre pas la route, et le dossier restera visible comme faible.
   /// </summary>
   /// <remarks>
+  /// <para>
   /// ⚠️ <b>Un détail écrit sans méthode ne fabrique pas une motivation.</b> La méthode est ce qui se
   /// compte et ce qui survit ; une motivation qui n'aurait que de la prose serait invisible au
   /// contrôle et mourrait à la clôture, c'est-à-dire n'aurait jamais existé. Le détail est alors
   /// refusé en le nommant, plutôt que gardé sous une méthode que personne n'a choisie.
+  /// </para>
+  /// <para>
+  /// <b>Ce n'est pas une route barrée, et la distinction se tient.</b> « Le service ne bloque jamais »
+  /// porte sur les <b>états du monde</b> : « je n'ai rien vérifié », « j'ignore la date », « la
+  /// personne n'est pas identifiée » sont tous enregistrables, et c'est la raison d'être de
+  /// <see cref="IdentityVerificationMethod.None"/>, de la date laissée vide et d'<c>Unverified</c>.
+  /// Une prose sans méthode n'est l'état d'aucun monde : c'est un champ composé à moitié rempli, dont
+  /// l'autre moitié est un menu où <em>aucune</em> se trouve juste là. Le refus rend sa prose à
+  /// l'humain plutôt que de la jeter.
+  /// </para>
   /// </remarks>
   private IdentityMotivation? ReadMotivation(ModelStateDictionary modelState, string prefix)
   {
@@ -264,25 +285,21 @@ public sealed class DepositForm
       return null;
     }
 
-    if (!IdentityVerificationMethod.TryFromName(VerificationMethod, out var method))
-    {
-      modelState.AddModelError(
-        $"{prefix}.{nameof(VerificationMethod)}",
-        $"« {VerificationMethod} » n'est pas une méthode du vocabulaire.");
+    var method = FormBoundary.ReadVocabulary<IdentityVerificationMethod>(
+      modelState,
+      prefix,
+      nameof(VerificationMethod),
+      VerificationMethod,
+      IdentityVerificationMethod.TryFromName,
+      "n'est pas une méthode du vocabulaire");
 
-      return null;
-    }
-
-    try
-    {
-      return IdentityMotivation.Of(method, MotivationDetail);
-    }
-    catch (ArgumentException refusal)
-    {
-      modelState.AddModelError($"{prefix}.{nameof(MotivationDetail)}", refusal.Message.Split(" (Parameter")[0]);
-
-      return null;
-    }
+    return method is null
+      ? null
+      : FormBoundary.Declared(
+        modelState,
+        prefix,
+        nameof(MotivationDetail),
+        () => IdentityMotivation.Of(method, MotivationDetail));
   }
 
 }

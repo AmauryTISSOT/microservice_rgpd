@@ -409,9 +409,82 @@ public class CaseTests
 
     opened.Claims[0].AwaitsConfirmation.ShouldBeFalse();
 
-    // Idempotent : un second clic n'est pas une faute qu'il faudrait signaler à qui l'a fait.
-    opened.Confirm(DataSubjectRight.Access).ShouldBeTrue();
+    // Un second geste ne change RIEN, et se dit faux : le Ledger consigne les faits qui changent
+    // quelque chose, jamais leur répétition, et cette règle est tenue par l'appelant. Rendre vrai
+    // ici lui ferait écrire une seconde ligne identique.
+    opened.Confirm(DataSubjectRight.Access).ShouldBeFalse();
     opened.Claims[0].AwaitsConfirmation.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Un droit qui n'attendait rien ne se « confirme » pas : sans quoi la preuve porterait la
+  /// confirmation d'un droit que la personne avait elle-même désigné.
+  /// </summary>
+  [Fact]
+  public void ConfirmsNothingOnARightThatNeverAwaitedIt()
+  {
+    var opened = Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Named, [DataSubjectRight.Access]);
+
+    opened.Confirm(DataSubjectRight.Access).ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// <b>La réclamation d'une motivation peut être satisfaite après coup</b>, et elle doit pouvoir
+  /// l'être : une exigence qu'on ne peut pas satisfaire cesse d'être lue, et le bandeau permanent
+  /// qu'on apprend à ne plus voir rendrait la faiblesse invisible.
+  /// </summary>
+  [Fact]
+  public void LetsSomebodyWeighTheIdentityAfterTheFactAndStopsClaiming()
+  {
+    var opened = Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Named, [DataSubjectRight.Access]);
+
+    opened.AwaitsAMotivation.ShouldBeTrue();
+
+    opened.DeclareMotivation(
+      IdentityMotivation.Of(IdentityVerificationMethod.CallbackOnKnownContact, "Rappelée au contrat."))
+      .ShouldBeTrue();
+
+    opened.AwaitsAMotivation.ShouldBeFalse();
+    opened.Motivation!.Method.ShouldBe(IdentityVerificationMethod.CallbackOnKnownContact);
+  }
+
+  /// <summary>
+  /// <b>Ce qu'on pèse aujourd'hui ne réécrit pas la porte sous laquelle le droit est né.</b> C'est
+  /// tout le propos du gel : un accès ouvert sur la foi de rien ne devient pas rétroactivement propre
+  /// parce que quelqu'un a fini par passer un coup de fil.
+  /// </summary>
+  [Fact]
+  public void LeavesEachClaimsFrozenOriginUntouchedByAMotivationWrittenLater()
+  {
+    var opened = Open(IdentityDeclaration.Unverified, null, ClaimOrigin.Named, [DataSubjectRight.Access]);
+
+    opened.DeclareMotivation(
+      IdentityMotivation.Of(IdentityVerificationMethod.PersonalRecognition, detail: null));
+
+    opened.Claims[0].IdentityAtOrigin.ShouldBe(IdentityDeclaration.Unverified);
+    opened.Claims[0].MotivationIsDemanded.ShouldBeTrue(
+      "Le droit continue de dire qu'il EXIGEAIT une motivation : c'est le dossier qui en porte une, "
+      + "pas le droit qui cesse d'en avoir eu besoin.");
+  }
+
+  /// <summary>
+  /// Une motivation déjà écrite ne s'écrase pas : la réécrire ferait réécrire ce que quelqu'un a
+  /// signé, et rien n'était réclamé.
+  /// </summary>
+  [Fact]
+  public void RefusesToOverwriteAMotivationSomebodyAlreadySigned()
+  {
+    var opened = Open(
+      IdentityDeclaration.Unverified,
+      IdentityMotivation.Of(IdentityVerificationMethod.None, detail: null),
+      ClaimOrigin.Named,
+      [DataSubjectRight.Access]);
+
+    opened.DeclareMotivation(
+      IdentityMotivation.Of(IdentityVerificationMethod.PersonalRecognition, detail: null))
+      .ShouldBeFalse();
+
+    opened.Motivation!.Method.ShouldBe(IdentityVerificationMethod.None);
   }
 
   /// <summary>

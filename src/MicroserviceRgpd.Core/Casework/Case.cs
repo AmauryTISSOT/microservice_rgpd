@@ -142,6 +142,49 @@ public sealed class Case : IAggregateRoot
   public bool AwaitsAMotivation => Motivation is null && _claims.Any(claim => claim.MotivationIsDemanded);
 
   /// <summary>
+  /// Un humain écrit <b>après coup</b> ce qu'il a pesé de l'identité du demandeur, et dit si le
+  /// dossier réclamait encore une motivation.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle existe pour que la réclamation puisse être satisfaite.</b> Sans elle, un dossier déposé
+  /// sans motivation la réclamerait pour toujours, et une exigence qu'on ne peut pas satisfaire cesse
+  /// d'être lue : c'est très exactement l'écran « ✅ demande traitée » à l'envers — un bandeau rouge
+  /// permanent qu'on apprend à ne plus voir.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle ne touche à aucun <see cref="Claim"/>, et c'est tout le propos du gel.</b> Le droit
+  /// ouvert lundi garde l'<see cref="Claim.IdentityAtOrigin"/> sous laquelle il est né ; la motivation
+  /// écrite vendredi dit ce qu'on a fini par peser, elle ne rend pas rétroactivement propre ce qui a
+  /// été fait sur la foi de rien. La preuve d'hier ne se corrige pas par la saisie d'aujourd'hui.
+  /// </para>
+  /// <para>
+  /// <b>Elle rend faux plutôt qu'elle ne lève</b> quand rien n'était réclamé : ce n'est pas une
+  /// programmation fautive mais un écran affiché avant qu'un autre geste ne satisfasse la demande, et
+  /// écraser une motivation déjà écrite ferait réécrire ce que quelqu'un a signé.
+  /// </para>
+  /// <para>
+  /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat.
+  /// </para>
+  /// </remarks>
+  /// <param name="motivation">Ce que l'humain a pesé, méthode et détail pris ensemble.</param>
+  /// <returns><c>true</c> si le dossier réclamait une motivation ; <c>false</c> sinon, sans rien changer.</returns>
+  /// <exception cref="ArgumentNullException"><paramref name="motivation"/> est absent.</exception>
+  public bool DeclareMotivation(IdentityMotivation motivation)
+  {
+    ArgumentNullException.ThrowIfNull(motivation);
+
+    if (!AwaitsAMotivation)
+    {
+      return false;
+    }
+
+    Motivation = motivation;
+
+    return true;
+  }
+
+  /// <summary>
   /// Un humain <b>reprend à son compte</b> un droit qu'une <c>Qualification</c> avait seulement
   /// proposé, et dit s'il en existait un à confirmer.
   /// </summary>
@@ -164,7 +207,10 @@ public sealed class Case : IAggregateRoot
   /// </para>
   /// </remarks>
   /// <param name="right">Le droit qu'un humain reprend à son compte.</param>
-  /// <returns><c>true</c> si le dossier portait ce droit ; <c>false</c> sinon, sans rien changer.</returns>
+  /// <returns>
+  /// <c>true</c> si le dossier portait ce droit et qu'il attendait d'être confirmé ; <c>false</c>
+  /// sinon, sans rien changer.
+  /// </returns>
   /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
   public bool Confirm(DataSubjectRight right)
   {
@@ -172,7 +218,11 @@ public sealed class Case : IAggregateRoot
 
     var claim = _claims.SingleOrDefault(one => one.Right == right);
 
-    if (claim is null)
+    // Rien à confirmer se dit faux, et non vrai : le Ledger consigne les faits qui CHANGENT quelque
+    // chose, jamais leur répétition, et cette règle est tenue par l'appelant. Rendre vrai sur un
+    // droit déjà confirmé lui ferait écrire une seconde ligne identique — du bruit de mécanique dans
+    // ce que le contrôle vient lire.
+    if (claim is null || !claim.AwaitsConfirmation)
     {
       return false;
     }

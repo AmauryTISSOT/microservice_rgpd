@@ -88,6 +88,47 @@ public class DepositScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>Ce que la demande réclame peut être écrit ensuite, depuis le dossier lui-même.</b> Une
+  /// exigence qu'on ne peut pas satisfaire cesse d'être lue : le bandeau permanent qu'on apprend à
+  /// ne plus voir aurait rendu la faiblesse invisible — l'inverse exact de ce qu'il est là pour
+  /// faire.
+  /// </summary>
+  [Fact]
+  public async Task LetsTheOperatorSatisfyTheClaimedMotivationFromTheCaseItself()
+  {
+    var deposited = await _surface.DepositAsync(new ADeposit
+    {
+      Designations = [new ADesignation(DesignationKind.Email.Token, "pese.plus.tard@example.fr")],
+      Rights = [nameof(DataSubjectRight.Access)],
+      IdentityDeclaration = nameof(IdentityDeclaration.Unverified),
+      VerificationMethod = string.Empty,
+    });
+
+    var address = deposited.Headers.Location!.ToString();
+
+    (await _surface.ReadTextAsync(address)).ShouldContain("Motivation réclamée");
+
+    var opened = CaseId.From(Guid.Parse(address.Split('/')[^1]));
+
+    var weighed = await _surface.MotivateAsync(
+      opened,
+      nameof(IdentityVerificationMethod.CallbackOnKnownContact),
+      "Rappelée sur le numéro déjà enregistré au contrat.",
+      "Claire Martin");
+
+    weighed.StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    var after = await _surface.ReadTextAsync(address);
+
+    after.ShouldNotContain("Motivation réclamée");
+    after.ShouldContain(IdentityVerificationMethod.CallbackOnKnownContact.FrenchLabel);
+
+    // ET LE DROIT N'A PAS BOUGÉ : l'accès reste ouvert sous l'identité de sa naissance. Ce qu'on
+    // pèse aujourd'hui ne rend pas rétroactivement propre ce qui a été fait sur la foi de rien.
+    after.ShouldContain($"ouvert sous l'identité « {IdentityDeclaration.Unverified.FrenchLabel} »");
+  }
+
+  /// <summary>
   /// <b><c>None</c> est une réponse, et elle éteint la demande</b> — là où l'absence ne l'éteint pas.
   /// Sans la valeur laide, l'opérateur pressé cocherait la valeur propre, et le service enregistrerait
   /// un faux au lieu d'un aveu.

@@ -47,8 +47,6 @@ public sealed record LedgerEntry
     IdentityVerificationMethod? verificationMethod = null,
     DateTimeOffset? receivedOn = null)
   {
-    VerificationMethod = verificationMethod;
-    ReceivedOn = receivedOn;
     Id = id;
     Case = caseId;
     OccurredAt = occurredAt;
@@ -61,6 +59,8 @@ public sealed record LedgerEntry
     DeclaredState = declaredState;
     EvidenceProse = evidenceProse;
     ReceptionWasDefaulted = receptionWasDefaulted;
+    VerificationMethod = verificationMethod;
+    ReceivedOn = receivedOn;
   }
 
   /// <summary>
@@ -301,6 +301,56 @@ public sealed record LedgerEntry
       designationCount: null,
       declaredSystem: null,
       right);
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a écrit <b>après coup</b> ce qu'il avait pesé de l'identité du demandeur.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle ne remplace pas la ligne d'ouverture, elle s'ajoute à elle.</b> Le <c>Ledger</c> est en
+  /// ajout seul : la déclaration d'aujourd'hui ne réécrit pas la preuve d'hier, et l'<b>écart</b>
+  /// entre les deux dates est précisément ce que le contrôle doit pouvoir voir — un accès ouvert
+  /// lundi sur la foi de rien, pesé vendredi, n'est pas un accès pesé avant d'être ouvert.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>La méthode seule, comme à l'ouverture.</b> Le détail en prose nomme par nature, reste sur
+  /// le <see cref="Case"/> et meurt avec lui : il n'a aucune colonne ici.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier dont l'identité a été pesée.</param>
+  /// <param name="occurredAt">L'instant où quelqu'un l'a écrite.</param>
+  /// <param name="verificationMethod">La moitié qui se compte, et la seule qui survive.</param>
+  /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
+  public static LedgerEntry MotivationDeclared(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    IdentityVerificationMethod verificationMethod,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(verificationMethod);
+    ArgumentNullException.ThrowIfNull(signatory);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      throw new ArgumentException(
+        "Une motivation est pesée par un Operator nommé : l'application ne pèse rien, et c'est "
+        + "précisément ce qu'on lui demande d'avoir fait.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.MotivationDeclared,
+      signatory,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem: null,
+      verificationMethod: verificationMethod);
   }
 
   /// <summary>

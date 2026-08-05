@@ -91,7 +91,12 @@
                name="Form.Rights"
                value="@right.Name"
                checked="@Model.Form.Rights.Contains(right.Name)" />
-        @right.Name
+        @*
+          Le libellé français, et l'identifiant à côté : c'est un écran de saisie, où l'Operator
+          coche ce qu'il lit — mais le mot de la taxonomie est celui qu'il reverra partout ailleurs
+          dans le dossier, et le lui cacher ici lui ferait apprendre deux vocabulaires.
+        *@
+        @right.FrenchLabel <span class="hint">— @right.Name</span>
       </label>
     </p>
   }

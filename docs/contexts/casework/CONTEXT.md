@@ -284,6 +284,20 @@ soit en faisant cocher n'importe quoi.
 après avoir regardé ; l'absence est le fait que personne n'ait pesé. Les confondre ferait signer par
 défaut un aveu que personne n'a écrit — c'est la distinction que `ReceptionDate` tient pour la date,
 et pour la même raison.
+
+⚠️ **La réclamation peut être satisfaite après coup, et elle doit pouvoir l'être.** Une exigence
+qu'on ne peut pas satisfaire cesse d'être lue : un bandeau permanent s'apprend à ne plus se voir, et
+la faiblesse qu'il devait rendre visible redeviendrait invisible. Une motivation écrite plus tard
+s'ajoute au `Ledger` sans réécrire la ligne d'ouverture — l'**écart entre les deux dates** est
+précisément ce que le contrôle doit voir, un accès pesé le vendredi n'étant pas un accès pesé avant
+d'être ouvert le lundi. Elle ne touche à aucun `Claim` : c'est ce que le gel de `ClaimOrigin`
+protège.
+
+⚠️ **Le mot `Verification` est sur la liste _Avoid_ d'`IdentityDeclaration`, et il est repris ici
+sciemment** — `IdentityVerificationMethod`. Il n'y a pas de contradiction : ce que la liste interdit
+est de nommer *ce que le service aurait vérifié*, car il ne vérifie aucune identité. Ce type ne
+nomme pas une vérification du service, mais **ce qu'un humain déclare avoir fait** — et le service
+l'enregistre sans en juger la valeur, comme le reste.
 _Avoid_ : Justification, Reason, Rationale, IdentityProof, preuve d'identité
 
 ⚠️ Aucune pièce d'identité n'entre dans le service, tous canaux confondus. Le `Ledger` consigne le

@@ -59,6 +59,15 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   /// </summary>
   public static readonly LedgerFact ClaimConfirmed = new(nameof(ClaimConfirmed), 4, "droit confirmé");
 
+  /// <summary>
+  /// Un <c>Operator</c> a écrit <b>après coup</b> ce qu'il avait pesé de l'identité du demandeur.
+  /// La ligne porte la méthode et sa date : elle dit qu'on a fini par peser, et <b>quand</b> — ce
+  /// qui n'est pas la même chose que d'avoir pesé avant d'ouvrir le droit. Les deux lignes se lisent
+  /// donc ensemble, et l'écart entre elles est un fait que le contrôle voit.
+  /// </summary>
+  public static readonly LedgerFact MotivationDeclared =
+    new(nameof(MotivationDeclared), 5, "motivation d'identité déclarée");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

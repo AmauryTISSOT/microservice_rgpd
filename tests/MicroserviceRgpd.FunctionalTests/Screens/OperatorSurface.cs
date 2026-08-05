@@ -215,6 +215,29 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
     return await _client.PostAsync($"{address}?handler=Confirm", new FormUrlEncodedContent(fields));
   }
 
+  /// <summary>
+  /// Remplit le formulaire par lequel un <c>Operator</c> pèse l'identité <b>après coup</b>, et
+  /// l'envoie.
+  /// </summary>
+  internal async Task<HttpResponseMessage> MotivateAsync(
+    CaseId opened,
+    string method,
+    string detail,
+    string signedBy)
+  {
+    var address = AddressOf(opened);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
+      new("Motivation.VerificationMethod", method),
+      new("Motivation.Detail", detail),
+      new("Motivation.SignedBy", signedBy),
+    };
+
+    return await _client.PostAsync($"{address}?handler=Motivate", new FormUrlEncodedContent(fields));
+  }
+
   private async Task<string> AntiforgeryTokenOfAsync(string address)
   {
     var token = Regex.Match(

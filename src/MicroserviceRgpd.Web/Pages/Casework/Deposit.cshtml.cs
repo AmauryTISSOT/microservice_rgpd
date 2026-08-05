@@ -72,11 +72,9 @@ public class DepositModel(IMediator mediator, TimeProvider clock) : PageModel
     }
     catch (ArgumentException refusal)
     {
-      // Le message des types du domaine porte le nom du paramètre entre parenthèses, façon
-      // `ArgumentException` : il est retiré, l'écran nommant déjà le champ fautif à côté de sa case.
       ModelState.AddModelError(
         $"{FormPrefix}.{nameof(DepositForm.SignedBy)}",
-        refusal.Message.Split(" (Parameter")[0]);
+        FormBoundary.Named(refusal));
 
       return Page();
     }
