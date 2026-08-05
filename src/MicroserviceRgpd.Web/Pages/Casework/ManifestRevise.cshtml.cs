@@ -73,7 +73,7 @@ public class ManifestReviseModel(IMediator mediator) : PageModel
         return RedirectToPage("Manifest");
       }
 
-      DeclaredSystemForm.Refuse(ModelState, FormPrefix, revised.ValidationErrors);
+      FormBoundary.Deposit(ModelState, FormPrefix, revised.ValidationErrors);
     }
 
     return Page();

@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 
 namespace MicroserviceRgpd.UseCases.Casework.ReadCase;
 
@@ -47,12 +47,11 @@ public sealed class ReadCaseHandler(
       .Select(claim => new ClaimedRight(
         claim.Right,
         claim.State,
-        [.. claim.Steps.Select(step => DueWork(step, catalogue))]))
+        [.. claim.Steps.Select(step => Projected(step, catalogue))]))
       .ToArray();
 
     return new CaseOnScreen(
       opened.Id,
-      opened.State,
       opened.IdentityDeclaration,
       opened.Reception,
       deadline,
@@ -62,30 +61,19 @@ public sealed class ReadCaseHandler(
       observedAt);
   }
 
-  private static DueWorkOnASystem DueWork(Step step, IReadOnlyDictionary<DeclaredSystemId, DeclaredSystem> catalogue)
+  private static StepOnScreen Projected(Step step, IReadOnlyDictionary<DeclaredSystemId, DeclaredSystem> catalogue)
   {
     var declared = catalogue.GetValueOrDefault(step.DeclaredSystem);
 
-    return new DueWorkOnASystem(
+    return new StepOnScreen(
       step.DeclaredSystem,
       declared?.Label,
       declared?.DeclaredOn,
       step.State,
-      ClaimsAFinding(step));
+      // La règle vit sur l'état, et la ligne de preuve s'en sert pour refuser ce que l'écran réclame
+      // ici : une seule règle, aux deux endroits.
+      step.State.RequiresAFinding);
   }
-
-  /// <summary>
-  /// L'écran réclame un constat sur un <c>Done</c> dont le service ne détient <b>aucun
-  /// rattachement</b>.
-  /// </summary>
-  /// <remarks>
-  /// <b>Le service n'en détient encore aucun, pour aucun <c>Step</c></b> : les rattachements arrivent
-  /// avec le <c>Locate</c>. Tout <c>Done</c> réclame donc un constat aujourd'hui — ce qui n'est pas un
-  /// raccourci mais l'exacte vérité de ce que le service détient, et le contraire aurait fait passer
-  /// « on n'a rien à montrer » pour « on n'a rien trouvé ». La condition se resserrera le jour où les
-  /// rattachements existeront, sans qu'aucun état nouveau n'ait eu à naître.
-  /// </remarks>
-  private static bool ClaimsAFinding(Step step) => step.State == StepState.Done;
 
   private static DateTimeOffset? OldestDeclarationAmong(IEnumerable<ClaimedRight> claims)
   {

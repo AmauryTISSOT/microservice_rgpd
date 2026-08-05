@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.UseCases.Casework.DeclareStep;
 using MicroserviceRgpd.UseCases.Casework.ReadCase;
 using Microsoft.AspNetCore.Mvc;
@@ -75,7 +75,7 @@ public class CaseModel(IMediator mediator) : PageModel
         return RedirectToPage(new { id });
       }
 
-      CaseForm.Refuse(ModelState, FormPrefix, written.ValidationErrors);
+      FormBoundary.Deposit(ModelState, FormPrefix, written.ValidationErrors);
     }
 
     await LoadAsync(id, cancellationToken);

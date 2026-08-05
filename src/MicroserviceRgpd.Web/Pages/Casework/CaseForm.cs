@@ -1,5 +1,4 @@
-using Ardalis.Result;
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -72,16 +71,12 @@ public sealed class CaseForm
       modelState.AddModelError($"{prefix}.{nameof(State)}", $"« {State} » n'est pas un état du travail dû.");
     }
 
-    DeclaredSystemId? system = null;
-
-    try
-    {
-      system = DeclaredSystemId.From(DeclaredSystem ?? string.Empty);
-    }
-    catch (Vogen.ValueObjectValidationException refusal)
-    {
-      modelState.AddModelError($"{prefix}.{nameof(DeclaredSystem)}", refusal.Message);
-    }
+    // Le vide entre comme vide plutôt que comme un nul, pour la même raison que ci-dessus.
+    var system = FormBoundary.Read(
+      modelState,
+      prefix,
+      nameof(DeclaredSystem),
+      () => DeclaredSystemId.From(DeclaredSystem ?? string.Empty));
 
     if (!modelState.IsValid || right is null || state is null || system is null)
     {
@@ -93,26 +88,6 @@ public sealed class CaseForm
     return new DeclaredFinding(right, system.Value, state, Finding, SignedBy);
   }
 
-  /// <summary>
-  /// Redit à l'humain, sous le nom du champ fautif, ce que le gestionnaire a refusé — un constat vide,
-  /// un nom vide.
-  /// </summary>
-  /// <param name="modelState">L'endroit où les refus se déposent.</param>
-  /// <param name="prefix">Le préfixe de liaison du formulaire.</param>
-  /// <param name="refusals">Ce que le gestionnaire a refusé.</param>
-  public static void Refuse(
-    ModelStateDictionary modelState,
-    string prefix,
-    IEnumerable<ValidationError> refusals)
-  {
-    ArgumentNullException.ThrowIfNull(modelState);
-    ArgumentNullException.ThrowIfNull(refusals);
-
-    foreach (var refusal in refusals)
-    {
-      modelState.AddModelError($"{prefix}.{refusal.Identifier}", refusal.ErrorMessage);
-    }
-  }
 }
 
 /// <summary>

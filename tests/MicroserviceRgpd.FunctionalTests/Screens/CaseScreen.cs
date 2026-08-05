@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
@@ -31,7 +31,7 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
   /// qu'une déclaration vieille doit lui être rappelée : le catalogue vieillit exprès.
   /// </summary>
   [Fact]
-  public async Task NamesTheOldestManifestDeclarationInTheBannerOfTheDossier()
+  public async Task NamesTheOldestManifestDeclarationInTheBanner()
   {
     var opened = await _surface.OpenAsync(
       ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
@@ -57,7 +57,7 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
   /// pas chez nous ».
   /// </summary>
   [Fact]
-  public async Task ClaimsAFindingOnAWorkDeclaredDoneWithoutASingleAttachment()
+  public async Task AwaitsAFindingOnAWorkDeclaredDoneWithoutASingleAttachment()
   {
     var opened = await _surface.OpenAsync(
       ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
@@ -96,14 +96,14 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
   {
     var opened = await _surface.OpenAsync(ReceptionDate.Defaulted(DateTimeOffset.UtcNow));
 
-    var dossier = await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened));
+    var onScreen = await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened));
 
-    dossier.ShouldContain("J+9 (défaut)");
-    dossier.ShouldContain("Personne n'a déclaré cette date");
+    onScreen.ShouldContain("J+9 (défaut)");
+    onScreen.ShouldContain("Personne n'a déclaré cette date");
 
     // La date produite par le défaut ne s'affiche pas à la place d'un fait.
     var defaulted = ReceptionDate.Defaulted(DateTimeOffset.UtcNow).On.ToString("dd/MM/yyyy", null);
-    Regex.Matches(dossier, Regex.Escape(defaulted)).Count.ShouldBe(0);
+    Regex.Matches(onScreen, Regex.Escape(defaulted)).Count.ShouldBe(0);
 
     // Et la file le dit de la même façon : c'est la même règle, aux deux endroits.
     var queue = await _surface.ReadTextAsync(OperatorSurface.Queue);
@@ -200,6 +200,102 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
       .ShouldBeFalse();
 
     (await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened))).ShouldContain("à faire");
+  }
+
+  /// <summary>
+  /// <b>Le constat n'est réclamé que là où l'écran le réclame.</b> Passer un travail à « en attente »
+  /// sans un mot est accueilli : exiger une prose sur chaque état ferait écrire une ligne de rien à
+  /// chaque clic, et le constat qui compte — celui d'un « fait » sans rattachement — se noierait dans
+  /// les autres.
+  /// </summary>
+  [Fact]
+  public async Task AsksForNoFindingOnAStateTheScreenDoesNotClaimOneFor()
+  {
+    var opened = await _surface.OpenAsync(
+      ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
+      [DataSubjectRight.Access],
+      OperatorSurface.ASystem("constat-facultatif", "Un système", DeclaredRecently));
+
+    var declaring = await _surface.DeclareAsync(opened, new Declaration(
+      nameof(DataSubjectRight.Access),
+      "constat-facultatif",
+      nameof(StepState.Awaiting),
+      string.Empty,
+      "Claire Berger"));
+
+    declaring.StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    (await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened))).ShouldContain("en attente");
+
+    using var scope = factory.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var line = await dbContext.Set<LedgerRow>()
+      .AsNoTracking()
+      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == "StepDeclared");
+
+    // La colonne reste vide plutôt que de porter une chaîne vide, qui se lirait comme un constat
+    // qu'on aurait effacé.
+    line.EvidenceProse.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Un refus rend sa prose à l'<c>Operator</c></b>, et dit du même coup <b>tout</b> ce qui manque.
+  /// Un constat perdu parce que le nom était vide serait du travail jeté, et un second aller-retour
+  /// pour découvrir le second refus ferait corriger à l'aveugle.
+  /// </summary>
+  [Fact]
+  public async Task GivesTheFindingBackOnARefusalAndNamesEverythingThatIsMissingAtOnce()
+  {
+    var opened = await _surface.OpenAsync(
+      ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
+      [DataSubjectRight.Access],
+      OperatorSurface.ASystem("prose-rendue", "Un système", DeclaredRecently));
+
+    const string Written = "Requête lancée le 3 sur les deux bases, rien sous cette adresse.";
+
+    var refusal = await _surface.DeclareAsync(opened, new Declaration(
+      nameof(DataSubjectRight.Access),
+      "prose-rendue",
+      nameof(StepState.Done),
+      Written,
+      "   "));
+
+    refusal.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    var screen = await refusal.Content.ReadAsStringAsync();
+
+    // La prose revient dans le formulaire d'où elle vient, et le nom manquant est nommé.
+    screen.ShouldContain(Written);
+    screen.ShouldContain("Le nom du signataire est absent ou vide.");
+  }
+
+  /// <summary>
+  /// Les deux cases vides sont nommées <b>en un seul aller-retour</b> : découvrir le second refus après
+  /// avoir corrigé le premier ferait travailler à l'aveugle.
+  /// </summary>
+  [Fact]
+  public async Task NamesTheMissingNameAndTheMissingFindingInOneRoundTrip()
+  {
+    var opened = await _surface.OpenAsync(
+      ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
+      [DataSubjectRight.Access],
+      OperatorSurface.ASystem("deux-refus", "Un système", DeclaredRecently));
+
+    var refusal = await _surface.DeclareAsync(opened, new Declaration(
+      nameof(DataSubjectRight.Access),
+      "deux-refus",
+      nameof(StepState.Done),
+      string.Empty,
+      string.Empty));
+
+    var refused = Regex.Replace(
+      System.Net.WebUtility.HtmlDecode(Regex.Replace(await refusal.Content.ReadAsStringAsync(), "<[^>]+>", " ")),
+      @"\s+",
+      " ");
+
+    refused.ShouldContain("Le nom du signataire est absent ou vide.");
+    refused.ShouldContain("Le constat est absent ou vide.");
   }
 
   /// <summary>
@@ -313,7 +409,7 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
   /// jamais un travail achevé. C'est l'état d'un service qu'on vient d'installer.
   /// </summary>
   [Fact]
-  public async Task SaysThatAnEmptyManifestLeftTheDossierWithoutAnyDueWork()
+  public async Task SaysThatAnEmptyManifestLeftTheCaseWithoutAnyDueWork()
   {
     var opened = await _surface.OpenAsync(ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)));
 

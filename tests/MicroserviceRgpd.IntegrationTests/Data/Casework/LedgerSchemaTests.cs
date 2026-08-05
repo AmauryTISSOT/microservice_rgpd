@@ -202,7 +202,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       Signatory.Application,
       IdentityDeclaration.ApplicationSession,
       designationCount: 2,
-      receptionWasDefaulted: false));
+      reception: ReceptionDate.Declared(Opened)));
 
     await ledger.AppendAsync(LedgerEntry.CaseOpened(
       second,
@@ -210,7 +210,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated),
       IdentityDeclaration.Unverified,
       designationCount: 0,
-      receptionWasDefaulted: true));
+      reception: ReceptionDate.Defaulted(Opened)));
 
     await using var reread = postgres.NewDbContext();
 

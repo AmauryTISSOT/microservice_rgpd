@@ -34,7 +34,7 @@ public class LedgerEntryTests
       Signatory.Application,
       IdentityDeclaration.ApplicationSession,
       designationCount: 2,
-      receptionWasDefaulted: false);
+      reception: ReceptionDate.Declared(Opened));
 
     entry.Case.ShouldBe(caseId);
     entry.Fact.ShouldBe(LedgerFact.CaseOpened);
@@ -57,7 +57,7 @@ public class LedgerEntryTests
       Signatory.Application,
       IdentityDeclaration.Unverified,
       designationCount: 1,
-      receptionWasDefaulted: true);
+      reception: ReceptionDate.Defaulted(Opened));
 
     var declared = LedgerEntry.CaseOpened(
       CaseId.Next(),
@@ -65,7 +65,7 @@ public class LedgerEntryTests
       Signatory.Application,
       IdentityDeclaration.Unverified,
       designationCount: 1,
-      receptionWasDefaulted: false);
+      reception: ReceptionDate.Declared(Opened));
 
     defaulted.ReceptionWasDefaulted.ShouldBe(true);
     declared.ReceptionWasDefaulted.ShouldBe(false);
@@ -121,12 +121,15 @@ public class LedgerEntryTests
   }
 
   /// <summary>
-  /// <b>Le constat est exigé.</b> Un état coché sans un mot serait une preuve qui dit ce qui a été
-  /// coché et non ce qui a été constaté — or c'est le constat que le contrôle vient lire.
+  /// <b>Le constat est exigé là où l'état le réclame</b> — sur un « fait », et par la même règle dont
+  /// l'écran se sert pour le réclamer. Un <c>Done</c> coché sans un mot serait une preuve qui dit ce
+  /// qui a été coché et non ce qui a été constaté, or c'est le constat que le contrôle vient lire.
   /// </summary>
   [Fact]
-  public void RefusesADeclaredStateThatNobodyMotivated()
+  public void RefusesAWorkDeclaredDoneThatNobodyMotivated()
   {
+    StepState.Done.RequiresAFinding.ShouldBeTrue();
+
     Should.Throw<ArgumentException>(() => LedgerEntry.StepDeclared(
       CaseId.Next(),
       Opened,
@@ -135,6 +138,32 @@ public class LedgerEntryTests
       StepState.Done,
       "   ",
       Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated)));
+  }
+
+  /// <summary>
+  /// <b>Ailleurs, le constat est accueilli sans être exigé.</b> Exiger une prose sur chaque état ferait
+  /// écrire une ligne de rien à chaque clic, et le constat qui compte — celui d'un « fait » sans
+  /// rattachement — se noierait dans les autres.
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(StepState.ToDo))]
+  [InlineData(nameof(StepState.Awaiting))]
+  [InlineData(nameof(StepState.OutOfReach))]
+  [InlineData(nameof(StepState.Untreated))]
+  public void AsksForNoFindingOnAStateThatDoesNotClaimOne(string state)
+  {
+    var entry = LedgerEntry.StepDeclared(
+      CaseId.Next(),
+      Opened,
+      DeclaredSystemId.From("boutique"),
+      DataSubjectRight.Access,
+      StepState.FromName(state),
+      evidenceProse: null,
+      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+
+    // La colonne reste vide plutôt que de porter une chaîne vide, qui se lirait comme un constat
+    // qu'on aurait effacé.
+    entry.EvidenceProse.ShouldBeNull();
   }
 
   /// <summary>
@@ -292,7 +321,7 @@ public class LedgerEntryTests
       Signatory.Application,
       IdentityDeclaration.ApplicationSession,
       designationCount: 0,
-      receptionWasDefaulted: false);
+      reception: ReceptionDate.Declared(Opened));
 
     entry.OccurredAt.Offset.ShouldBe(TimeSpan.Zero);
     entry.OccurredAt.ShouldBe(Opened);

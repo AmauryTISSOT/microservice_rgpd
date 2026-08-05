@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Le jour où le responsable de traitement a reçu la demande, et <b>la façon dont le service le

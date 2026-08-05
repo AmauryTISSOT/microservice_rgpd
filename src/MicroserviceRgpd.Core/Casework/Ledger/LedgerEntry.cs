@@ -157,10 +157,10 @@ public sealed record LedgerEntry
   /// <param name="signatory">Qui a fait entrer la demande.</param>
   /// <param name="identityDeclaration">Ce que le canal d'entrée a déclaré de l'identité du demandeur.</param>
   /// <param name="designationCount">Le nombre de désignations reçues — jamais lesquelles.</param>
-  /// <param name="receptionWasDefaulted">
-  /// La date de réception a-t-elle été <b>tenue pour défaut</b> faute de déclaration ? Le défaut
-  /// s'inscrit <b>comme un défaut</b> : sans lui, la preuve garderait la même trace d'une date
-  /// affirmée par un humain et d'une hypothèse du service.
+  /// <param name="reception">
+  /// La date de réception <b>et son régime</b>, pris ensemble : c'est le régime que la preuve garde —
+  /// un défaut s'inscrit <b>comme un défaut</b>, sans quoi elle garderait la même trace d'une date
+  /// affirmée par un humain et d'une hypothèse du service. La paire ne se sépare pas en chemin.
   /// </param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
@@ -170,10 +170,11 @@ public sealed record LedgerEntry
     Signatory signatory,
     IdentityDeclaration identityDeclaration,
     int designationCount,
-    bool receptionWasDefaulted)
+    ReceptionDate reception)
   {
     ArgumentNullException.ThrowIfNull(signatory);
     ArgumentNullException.ThrowIfNull(identityDeclaration);
+    ArgumentNullException.ThrowIfNull(reception);
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
     return new LedgerEntry(
@@ -187,7 +188,7 @@ public sealed record LedgerEntry
       identityDeclaration,
       designationCount,
       declaredSystem: null,
-      receptionWasDefaulted: receptionWasDefaulted);
+      receptionWasDefaulted: reception.IsDefault);
   }
 
   /// <summary>
@@ -196,9 +197,16 @@ public sealed record LedgerEntry
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Le constat est exigé.</b> Un état déclaré sans un mot serait une preuve qui dit ce qui a été
-  /// coché et non ce qui a été constaté — or c'est précisément le constat que le contrôle vient lire,
-  /// et le seul rempart contre six zéros qui se liraient « cette personne n'est pas chez nous ».
+  /// <b>Le constat est exigé là où l'état le réclame</b> — c'est-à-dire sur <c>Done</c>, et par la
+  /// même règle que celle dont l'écran se sert pour le réclamer : voir
+  /// <see cref="StepState.RequiresAFinding"/>. Un « fait » sans un mot serait une preuve qui dit ce
+  /// qui a été coché et non ce qui a été constaté, et c'est le seul rempart contre six zéros qui se
+  /// liraient « cette personne n'est pas chez nous ».
+  /// </para>
+  /// <para>
+  /// <b>Ailleurs, le constat est accueilli sans être exigé.</b> Exiger une prose sur chaque état ferait
+  /// écrire une ligne de rien à chaque clic, et le constat qui compte se noierait dans les autres —
+  /// mais rien n'empêche d'en écrire un, et il entre dans la preuve comme les autres.
   /// </para>
   /// <para>
   /// <b>Aucune désignation, ni même leur compte.</b> Ce fait ne mesure aucune recherche : il dit
@@ -210,12 +218,15 @@ public sealed record LedgerEntry
   /// <param name="declaredSystem">Le système sur lequel le travail était dû.</param>
   /// <param name="right">Le droit au titre duquel il l'était.</param>
   /// <param name="state">L'état déclaré, <c>Untreated</c> compris.</param>
-  /// <param name="evidenceProse">Le constat de l'<c>Operator</c> — prose de preuve, qui survit.</param>
+  /// <param name="evidenceProse">
+  /// Le constat de l'<c>Operator</c> — prose de preuve, qui survit. Exigé lorsque l'état le réclame,
+  /// accueilli sinon.
+  /// </param>
   /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">
-  /// Le constat est absent, vide, démesuré, ou porte un caractère de contrôle ; ou la ligne n'est
-  /// signée par aucun humain.
+  /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où l'état le réclame ; ou
+  /// la ligne n'est signée par aucun humain.
   /// </exception>
   public static LedgerEntry StepDeclared(
     CaseId caseId,
@@ -250,7 +261,37 @@ public sealed record LedgerEntry
       declaredSystem,
       right,
       state,
-      DeclaredText.OrThrow(evidenceProse, "Le constat", MaxEvidenceProseLength, nameof(evidenceProse)));
+      FindingOrThrow(evidenceProse, state));
+  }
+
+  /// <summary>
+  /// Le constat, nettoyé — <b>exigé là où l'état le réclame</b>, accueilli ailleurs, et <c>null</c>
+  /// quand il n'y en a pas et qu'aucun n'était réclamé.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle est publique pour que la frontière de saisie puisse nommer le refus à l'humain</b> sous le
+  /// nom de son champ, sans avoir à fabriquer une signature pour éprouver sa prose. La règle reste
+  /// écrite <b>ici</b>, une seule fois : un écran qui la redirait finirait par ne plus dire la même
+  /// chose que la preuve.
+  /// </remarks>
+  /// <param name="evidenceProse">Ce que l'humain a écrit, ou rien.</param>
+  /// <param name="state">L'état déclaré, qui dit si un constat est réclamé.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="state"/> est absent.</exception>
+  /// <exception cref="ArgumentException">
+  /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où l'état le réclame.
+  /// </exception>
+  public static string? FindingOrThrow(string? evidenceProse, StepState state)
+  {
+    ArgumentNullException.ThrowIfNull(state);
+
+    if (state.RequiresAFinding || !string.IsNullOrWhiteSpace(evidenceProse))
+    {
+      return DeclaredText.OrThrow(evidenceProse, "Le constat", MaxEvidenceProseLength, nameof(evidenceProse));
+    }
+
+    // Rien à consigner, et rien n'était réclamé : la colonne reste vide plutôt que de porter une
+    // chaîne vide, qui se lirait comme un constat qu'on aurait effacé.
+    return null;
   }
 
   /// <summary>

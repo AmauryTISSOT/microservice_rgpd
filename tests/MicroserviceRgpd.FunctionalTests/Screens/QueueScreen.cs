@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
@@ -114,7 +114,7 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   /// ce qu'il signe. Aucun formulaire, donc, et pas même une case à cocher.
   /// </summary>
   [Fact]
-  public async Task OffersNoGestureFromTheListAndLeadsToTheDossierInstead()
+  public async Task OffersNoGestureFromTheListAndLeadsToTheCaseInstead()
   {
     var opened = await _surface.OpenAsync(ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)));
 
@@ -157,7 +157,7 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   [Theory]
   [InlineData("/dossiers/00000000-0000-0000-0000-000000000000")]
   [InlineData("/dossiers/pas-un-identifiant")]
-  public async Task OffersNoScreenForADossierNobodyOpened(string address)
+  public async Task OffersNoScreenForACaseNobodyOpened(string address)
   {
     (await _surface.Client.GetAsync(address)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
   }

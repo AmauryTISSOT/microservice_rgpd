@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 

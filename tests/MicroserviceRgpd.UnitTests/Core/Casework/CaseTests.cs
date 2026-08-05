@@ -168,7 +168,7 @@ public class CaseTests
   /// l'ouverture n'a jamais eu de <c>Step</c> ici.
   /// </summary>
   [Fact]
-  public void SaysSoWhenTheDossierNeverCarriedThatDueWork()
+  public void SaysSoWhenTheCaseNeverCarriedThatDueWork()
   {
     var opened = Open([DataSubjectRight.Access], ASystem("boutique"));
 

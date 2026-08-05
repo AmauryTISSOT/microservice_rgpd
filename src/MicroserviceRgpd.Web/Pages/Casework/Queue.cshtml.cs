@@ -1,4 +1,4 @@
-using MicroserviceRgpd.UseCases.Casework.ReadQueue;
+﻿using MicroserviceRgpd.UseCases.Casework.ReadQueue;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace MicroserviceRgpd.Web.Pages.Casework;

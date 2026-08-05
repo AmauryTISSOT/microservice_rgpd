@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using FastEndpoints;
 
 namespace MicroserviceRgpd.FunctionalTests.Casework;
@@ -68,7 +68,7 @@ public class NoApiInstructsACase(CustomWebApplicationFactory<Program> factory)
   [InlineData("DELETE", "/cases/018f0000-0000-7000-8000-000000000000")]
   [InlineData("POST", "/cases/018f0000-0000-7000-8000-000000000000/steps")]
   [InlineData("POST", "/cases/018f0000-0000-7000-8000-000000000000/close")]
-  public async Task ServesNoVerbThatWouldReadModifyOrCloseADossier(string verb, string address)
+  public async Task ServesNoVerbThatWouldReadModifyOrCloseACase(string verb, string address)
   {
     var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod(verb), address));
 

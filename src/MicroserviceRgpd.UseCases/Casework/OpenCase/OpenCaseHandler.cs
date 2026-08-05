@@ -80,7 +80,7 @@ public sealed class OpenCaseHandler(
         // Le compte, jamais les valeurs : « recherché sous 2 désignations » est une mesure de
         // l'ampleur d'une recherche, les deux valeurs seraient le sac lui-même.
         opened.Designations.Count,
-        reception.IsDefault),
+        reception),
       cancellationToken);
 
     return Result<Case>.Success(opened);

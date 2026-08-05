@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// L'échéance du mois de l'art. 12.3, et le <b>calcul</b> du dépassement.

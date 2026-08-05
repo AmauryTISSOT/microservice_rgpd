@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UseCases.Casework.ReadCase;
@@ -20,7 +20,6 @@ public sealed record ReadCaseQuery(CaseId Case) : IQuery<CaseOnScreen?>;
 /// l'autorité d'un recensement. L'écran <b>énumère</b>.
 /// </remarks>
 /// <param name="Case">L'identité du dossier.</param>
-/// <param name="State">Ouvert ou clos — jamais « en retard », qui n'est pas un état.</param>
 /// <param name="IdentityDeclaration">Ce que le canal d'entrée a déclaré de l'identité du demandeur.</param>
 /// <param name="Reception">La date de réception, et si le service l'a tenue pour défaut.</param>
 /// <param name="Deadline">L'échéance de l'art. 12.3, calculée à l'instant de l'affichage.</param>
@@ -35,7 +34,6 @@ public sealed record ReadCaseQuery(CaseId Case) : IQuery<CaseOnScreen?>;
 /// <param name="ObservedAt">L'instant sur lequel le dépassement a été calculé.</param>
 public sealed record CaseOnScreen(
   CaseId Case,
-  CaseState State,
   IdentityDeclaration IdentityDeclaration,
   ReceptionDate Reception,
   StatutoryDeadline Deadline,
@@ -55,7 +53,7 @@ public sealed record CaseOnScreen(
 public sealed record ClaimedRight(
   DataSubjectRight Right,
   ClaimState State,
-  IReadOnlyList<DueWorkOnASystem> Steps);
+  IReadOnlyList<StepOnScreen> Steps);
 
 /// <summary>
 /// Le travail dû sur un système, tel que l'écran le montre — <b>y compris ce que le service ne sait
@@ -73,19 +71,23 @@ public sealed record ClaimedRight(
 /// déclaration vieille se lit.
 /// </param>
 /// <param name="State">L'état déclaré de ce travail. Cinq valeurs, dont deux qui refusent de fusionner.</param>
-/// <param name="ClaimsAFinding">
+/// <param name="AwaitsAFinding">
 /// L'écran doit-il <b>réclamer un constat</b> sur ce travail dû ? Vrai d'un <c>Done</c> pour lequel le
 /// service ne détient <b>aucun rattachement</b> : six zéros ne doivent pas se lire « cette personne
 /// n'est pas chez nous ».
 /// <para>
-/// ⚠️ <b>C'est un calcul d'affichage, et surtout pas un état nouveau.</b> Un sixième état de
-/// <c>Step</c> — « fait, mais à constater » — aurait fait porter au dossier une exigence de la
-/// surface, et il aurait fallu le faire retomber quelque part.
+/// ⚠️ <b>C'est une lecture de <see cref="StepState.RequiresAFinding"/>, et surtout pas un état
+/// nouveau.</b> Un sixième état de <c>Step</c> — « fait, mais à constater » — aurait fait porter au
+/// dossier une exigence de la surface, et il aurait fallu le faire retomber quelque part.
+/// </para>
+/// <para>
+/// <b>La même règle refuse la déclaration</b> qu'aucun constat n'accompagne : ce que l'écran réclame
+/// ici, la ligne de preuve l'exige — sinon la demande ne serait qu'un paragraphe qu'on peut ignorer.
 /// </para>
 /// </param>
-public sealed record DueWorkOnASystem(
+public sealed record StepOnScreen(
   DeclaredSystemId DeclaredSystem,
   SystemLabel? Label,
   DateTimeOffset? DeclaredOn,
   StepState State,
-  bool ClaimsAFinding);
+  bool AwaitsAFinding);

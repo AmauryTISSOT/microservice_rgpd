@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Les dossiers <b>ouverts</b>, avec leurs <see cref="Claim"/> et leurs <see cref="Step"/>.

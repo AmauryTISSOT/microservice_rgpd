@@ -24,7 +24,10 @@ public sealed class StepState : SmartEnum<StepState>
   /// Fait — <b>déclaré, jamais vérifié</b>. Le service prouve qu'on a déclaré l'avoir fait ; il ne
   /// jure pas que ce soit vrai, n'en ayant aucun moyen et ne prétendant pas en avoir un.
   /// </summary>
-  public static readonly StepState Done = new(nameof(Done), 2, "fait");
+  /// <remarks>
+  /// C'est le seul état sur lequel un <b>constat est réclamé</b> — voir <see cref="RequiresAFinding"/>.
+  /// </remarks>
+  public static readonly StepState Done = new(nameof(Done), 2, "fait", requiresAFinding: true);
 
   /// <summary>
   /// Hors d'atteinte, <b>structurellement</b> : ce système ne pourra jamais servir ce droit, et on
@@ -38,12 +41,39 @@ public sealed class StepState : SmartEnum<StepState>
   /// </summary>
   public static readonly StepState Untreated = new(nameof(Untreated), 4, "non traité");
 
-  private StepState(string name, int value, string frenchLabel)
+  private StepState(string name, int value, string frenchLabel, bool requiresAFinding = false)
     : base(name, value)
   {
     FrenchLabel = frenchLabel;
+    RequiresAFinding = requiresAFinding;
   }
 
   /// <summary>Le libellé destiné à l'<c>Operator</c>. Le français reste hors des identifiants.</summary>
   public string FrenchLabel { get; }
+
+  /// <summary>
+  /// Cet état <b>réclame-t-il un constat</b> de l'humain qui le déclare ? Vrai de
+  /// <see cref="Done"/> seul.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Pourquoi <c>Done</c> et lui seul.</b> Un « fait » pour lequel le service ne détient aucun
+  /// rattachement est la forme la plus dangereuse de l'<c>Omission silencieuse</c> : six zéros se
+  /// liraient « cette personne n'est pas chez nous » alors que personne ne l'a établi. Le constat est
+  /// donc exigé là, et nulle part ailleurs — exiger une prose sur chaque état ferait écrire une ligne
+  /// de rien à chaque clic, et le constat qui compte se noierait dans les autres.
+  /// </para>
+  /// <para>
+  /// <b>Ce n'est pas un sixième état</b>, et il n'y en aura pas : c'est une propriété de l'état
+  /// existant, lue par l'écran pour réclamer, et par la ligne de preuve pour refuser une déclaration
+  /// que personne n'a motivée. Une seule règle, aux deux endroits.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle se resserrera</b> le jour où les rattachements existeront : la condition juste est
+  /// « <c>Done</c> <b>à zéro rattachement</b> », et le service n'en détient aujourd'hui aucun pour
+  /// aucun <c>Step</c> — tout <c>Done</c> est donc à zéro rattachement, et la règle dit exactement le
+  /// vrai. Elle déménagera alors là où les rattachements se comptent, sans qu'aucun état ne naisse.
+  /// </para>
+  /// </remarks>
+  public bool RequiresAFinding { get; }
 }

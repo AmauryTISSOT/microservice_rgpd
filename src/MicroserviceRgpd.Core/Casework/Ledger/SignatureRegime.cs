@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework.Ledger;
+﻿namespace MicroserviceRgpd.Core.Casework.Ledger;
 
 /// <summary>
 /// Sous quel régime un <c>Operator</c> a signé — c'est-à-dire <b>ce que valait son nom au moment où

@@ -1,4 +1,4 @@
-namespace MicroserviceRgpd.Core.Casework;
+﻿namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Où en est le dossier. <b>Deux valeurs, et il n'y en aura jamais une troisième nommée

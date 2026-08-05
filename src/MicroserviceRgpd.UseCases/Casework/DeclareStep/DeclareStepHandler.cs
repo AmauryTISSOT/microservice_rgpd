@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework;
+﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Ledger;
 
 namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
@@ -69,40 +69,55 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, 
   /// </summary>
   private Result<LedgerEntry> Signed(DeclareStepCommand command)
   {
-    var refusals = new List<ValidationError>();
-    Signatory? signatory = null;
+    // Le régime accompagne le nom, et il est posé ici : la surface n'authentifie personne, et c'est ce
+    // que la preuve doit garder pour ne pas être relue comme une identification.
+    var signatory = Read(
+      () => Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated),
+      nameof(DeclareStepCommand.SignedBy),
+      out var nameRefused);
 
+    // Le constat est éprouvé même quand le nom manque, et par la règle de la preuve elle-même : deux
+    // allers-retours pour deux cases vides feraient perdre à l'Operator la prose qu'il vient d'écrire,
+    // et lui feraient découvrir le second refus après avoir corrigé le premier.
+    Read(
+      () => LedgerEntry.FindingOrThrow(command.Finding, command.State),
+      nameof(DeclareStepCommand.Finding),
+      out var findingRefused);
+
+    if (signatory is null || findingRefused.Length > 0)
+    {
+      return Result<LedgerEntry>.Invalid([.. nameRefused, .. findingRefused]);
+    }
+
+    return Result<LedgerEntry>.Success(LedgerEntry.StepDeclared(
+      command.Case,
+      clock.GetUtcNow(),
+      command.DeclaredSystem,
+      command.Right,
+      command.State,
+      command.Finding,
+      signatory));
+  }
+
+  /// <summary>
+  /// Ce que le type du domaine rend, ou son refus déposé sous le nom du champ fautif. Le type lève,
+  /// la frontière nomme.
+  /// </summary>
+  private static T? Read<T>(Func<T?> cross, string field, out ValidationError[] refused)
+    where T : class
+  {
     try
     {
-      // Le régime accompagne le nom, et il est posé ici : la surface n'authentifie personne, et c'est
-      // ce que la preuve doit garder pour ne pas être relue comme une identification.
-      signatory = Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated);
+      refused = [];
+
+      return cross();
     }
     catch (ArgumentException refusal)
     {
-      refusals.Add(Refusal(nameof(DeclareStepCommand.SignedBy), refusal.Message));
-    }
+      refused = [Refusal(field, refusal.Message)];
 
-    if (signatory is not null)
-    {
-      try
-      {
-        return LedgerEntry.StepDeclared(
-          command.Case,
-          clock.GetUtcNow(),
-          command.DeclaredSystem,
-          command.Right,
-          command.State,
-          command.Finding,
-          signatory);
-      }
-      catch (ArgumentException refusal)
-      {
-        refusals.Add(Refusal(nameof(DeclareStepCommand.Finding), refusal.Message));
-      }
+      return null;
     }
-
-    return Result<LedgerEntry>.Invalid(refusals);
   }
 
   private static ValidationError Refusal(string field, string message)
