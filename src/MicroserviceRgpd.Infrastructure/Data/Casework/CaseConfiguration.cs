@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
@@ -62,6 +63,8 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
     ConfigureTheReception(builder);
     ConfigureTheBag(builder);
     ConfigureTheClaims(builder);
+    ConfigureTheLocatings(builder);
+    ConfigureTheQuestions(builder);
   }
 
   /// <summary>
@@ -230,5 +233,185 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
     });
 
     builder.Navigation(opened => opened.Claims).UsePropertyAccessMode(PropertyAccessMode.Field);
+  }
+
+  /// <summary>
+  /// Ce que les <c>Locate</c> ont rapporté : une ligne par système appelé, son noyau certain, et ses
+  /// réserves avec les désignations qu'elles proposent.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le grain est le système, jamais le droit</b> — à la différence de <c>case_steps</c>. Un
+  /// <c>Locate</c> cherche la personne : le rattacher à un <c>Claim</c> aurait fait partir deux fois
+  /// la même requête chez le client pour la même réponse, et aurait fait diverger deux réponses qui
+  /// n'en sont qu'une.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Tout ce qui descend ici est nominatif ou le devient</b> : une référence opaque désigne les
+  /// données de quelqu'un, un motif de réserve nomme des tiers non demandeurs. Ces tables sont donc du
+  /// <b>dossier</b>, possédées par lui, et la clôture les emportera. Rien de leur contenu n'a de
+  /// colonne dans <c>ledger_entries</c>, qui survit cinq ans.
+  /// </para>
+  /// </remarks>
+  private static void ConfigureTheLocatings(EntityTypeBuilder<Case> builder)
+  {
+    builder.OwnsMany(opened => opened.Locatings, locating =>
+    {
+      locating.ToTable("case_locatings");
+      locating.WithOwner().HasForeignKey("case_id").HasConstraintName("fk_case_locatings_cases");
+
+      locating.Property(one => one.DeclaredSystem)
+        .HasColumnName("declared_system_id")
+        .HasMaxLength(DeclaredSystemId.MaxLength)
+        .HasConversion(id => id.Value, value => DeclaredSystemId.From(value));
+
+      // Un système au plus par dossier : on ne cherche pas deux fois la même personne au même
+      // endroit, et la clé le dit plutôt que la seule discipline du domaine.
+      locating.HasKey("case_id", "DeclaredSystem").HasName("pk_case_locatings");
+
+      // Par son nom, jamais par un entier, comme partout ailleurs sur les vocabulaires fermés.
+      locating.Property(one => one.LastOutcome)
+        .HasColumnName("last_outcome")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(outcome => outcome.Name, name => AdapterOutcome.FromName(name))
+        .IsRequired();
+
+      locating.Property(one => one.AskedAt).HasColumnName("asked_at").IsRequired();
+
+      locating.Property(one => one.DeclaredDeadline).HasColumnName("declared_deadline");
+
+      // Le COMPTE des désignations portées par le dernier appel, jamais lesquelles : c'est lui qui
+      // dit qu'une réponse a répondu à une question plus étroite que celle qu'on pose aujourd'hui,
+      // et donc qu'il faut repasser.
+      locating.Property(one => one.DesignationsAtCall).HasColumnName("designations_at_call").IsRequired();
+
+      ConfigureTheCertainCore(locating);
+      ConfigureTheReservations(locating);
+    });
+
+    builder.Navigation(opened => opened.Locatings).UsePropertyAccessMode(PropertyAccessMode.Field);
+  }
+
+  /// <summary>
+  /// Le noyau certain : des références <b>opaques</b>, recopiées et jamais ouvertes.
+  /// </summary>
+  private static void ConfigureTheCertainCore(OwnedNavigationBuilder<Case, Locating> locating)
+  {
+    locating.OwnsMany(one => one.Certain, certain =>
+    {
+      certain.ToTable("case_locating_references");
+      certain.WithOwner()
+        .HasForeignKey("case_id", "declared_system_id")
+        .HasConstraintName("fk_case_locating_references_case_locatings");
+
+      // Un rang plutôt qu'une clé sur la valeur, comme pour le sac de désignations : la clé serait la
+      // donnée elle-même, montée dans un index que la clôture devrait aller défaire.
+      certain.Property<int>("ordinal").HasColumnName("ordinal");
+      certain.HasKey("case_id", "declared_system_id", "ordinal").HasName("pk_case_locating_references");
+
+      certain.Property(reference => reference.Value)
+        .HasColumnName("value")
+        .HasMaxLength(OpaqueReference.MaxValueLength)
+        .IsRequired();
+    });
+
+    locating.Navigation(one => one.Certain).UsePropertyAccessMode(PropertyAccessMode.Field);
+  }
+
+  /// <summary>
+  /// Les réserves d'un <c>Locate</c>, leur <b>prose de motif</b>, leur arbitrage, et les
+  /// <c>Designation</c> qu'elles proposent de verser au sac.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le motif est de la prose de TRAVAIL, et sa colonne est ici — jamais dans le
+  /// <c>Ledger</c>.</b> Il dit quelle ligne appartient à qui, il nomme donc par nature des tiers non
+  /// demandeurs, et il meurt avec le dossier. La règle tient par ce <b>placement</b> : il n'existe
+  /// aucune colonne où il pourrait atterrir dans la preuve.
+  /// </remarks>
+  private static void ConfigureTheReservations(OwnedNavigationBuilder<Case, Locating> locating)
+  {
+    locating.OwnsMany(one => one.Reserved, reservation =>
+    {
+      reservation.ToTable("case_reservations");
+      reservation.WithOwner()
+        .HasForeignKey("case_id", "declared_system_id")
+        .HasConstraintName("fk_case_reservations_case_locatings");
+
+      reservation.Property(one => one.Reference)
+        .HasColumnName("reference")
+        .HasMaxLength(OpaqueReference.MaxValueLength)
+        .HasConversion(reference => reference.Value, value => OpaqueReference.Of(value));
+
+      // La référence identifie la réserve dans son système : deux fois la même serait deux fois la
+      // même ligne, et ferait arbitrer deux fois le même doute.
+      reservation.HasKey("case_id", "declared_system_id", "Reference").HasName("pk_case_reservations");
+
+      reservation.Property(one => one.Reason)
+        .HasColumnName("reason")
+        .HasMaxLength(Reservation.MaxReasonLength)
+        .IsRequired();
+
+      reservation.Property(one => one.State)
+        .HasColumnName("state")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(state => state.Name, name => ReservationState.FromName(name))
+        .IsRequired();
+
+      reservation.OwnsMany(one => one.Designations, proposed =>
+      {
+        proposed.ToTable("case_reservation_designations");
+        proposed.WithOwner()
+          .HasForeignKey("case_id", "declared_system_id", "reference")
+          .HasConstraintName("fk_case_reservation_designations_case_reservations");
+
+        proposed.Property<int>("ordinal").HasColumnName("ordinal");
+        proposed.HasKey("case_id", "declared_system_id", "reference", "ordinal")
+          .HasName("pk_case_reservation_designations");
+
+        proposed.Property(designation => designation.Kind)
+          .HasColumnName("kind")
+          .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+          .HasConversion(kind => kind.Token, token => DesignationKind.FromToken(token)!)
+          .IsRequired();
+
+        proposed.Property(designation => designation.Value)
+          .HasColumnName("value")
+          .HasMaxLength(Designation.MaxValueLength)
+          .IsRequired();
+      });
+
+      reservation.Navigation(one => one.Designations).UsePropertyAccessMode(PropertyAccessMode.Field);
+    });
+
+    locating.Navigation(one => one.Reserved).UsePropertyAccessMode(PropertyAccessMode.Field);
+  }
+
+  /// <summary>
+  /// Les questions ouvertes du dossier : leur sujet, et la date à laquelle elles ont été posées.
+  /// </summary>
+  /// <remarks>
+  /// <b>Le sujet est la clé, et c'est ce qui fait qu'une question ne se pose qu'une fois.</b> La
+  /// reposer à chaque passage en ferait un bruit quotidien, et réinitialiserait la seule chose que
+  /// l'écran en dise : sa date. ⚠️ <b>Aucune colonne « depuis N jours »</b>, ici ni ailleurs — aucun
+  /// nombre du droit ne fonderait N.
+  /// </remarks>
+  private static void ConfigureTheQuestions(EntityTypeBuilder<Case> builder)
+  {
+    builder.OwnsMany(opened => opened.Questions, question =>
+    {
+      question.ToTable("case_questions");
+      question.WithOwner().HasForeignKey("case_id").HasConstraintName("fk_case_questions_cases");
+
+      question.Property(one => one.Subject)
+        .HasColumnName("subject")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(subject => subject.Name, name => OpenQuestionSubject.FromName(name));
+
+      question.HasKey("case_id", "Subject").HasName("pk_case_questions");
+
+      question.Property(one => one.AskedOn).HasColumnName("asked_on").IsRequired();
+    });
+
+    builder.Navigation(opened => opened.Questions).UsePropertyAccessMode(PropertyAccessMode.Field);
   }
 }

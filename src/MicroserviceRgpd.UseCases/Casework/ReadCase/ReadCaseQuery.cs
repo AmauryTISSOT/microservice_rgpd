@@ -46,6 +46,16 @@ public sealed record ReadCaseQuery(CaseId Case) : IQuery<CaseOnScreen?>;
 /// </para>
 /// </param>
 /// <param name="Claims">Les droits réclamés, et sous chacun le travail dû.</param>
+/// <param name="Locatings">
+/// Ce que les <c>Locate</c> ont rapporté, <b>un par système qui déclare la capacité</b> — appelé ou
+/// non. Un système non appelé y figure avec sa localisation à <c>null</c> : « pas appelé » et
+/// « appelé, rien trouvé » sont deux déclarations différentes, et l'écran ne les confond pas.
+/// </param>
+/// <param name="Questions">
+/// Les questions ouvertes du dossier, datées. ⚠️ <b>Aucune ancienneté n'est calculée</b> : on montre
+/// la date à laquelle la question a été posée, jamais « sans réponse depuis N jours » — aucun nombre
+/// du droit ne fonderait N.
+/// </param>
 /// <param name="ObservedAt">L'instant sur lequel le dépassement a été calculé.</param>
 public sealed record CaseOnScreen(
   CaseId Case,
@@ -57,7 +67,32 @@ public sealed record CaseOnScreen(
   bool DelayOverrun,
   DateTimeOffset? OldestStepDeclaration,
   IReadOnlyList<ClaimedRight> Claims,
+  IReadOnlyList<LocatingOnScreen> Locatings,
+  IReadOnlyList<OpenQuestion> Questions,
   DateTimeOffset ObservedAt);
+
+/// <summary>
+/// Ce qu'un <c>Locate</c> a rapporté d'un système, tel que l'écran le montre — <b>y compris qu'il
+/// n'a pas été appelé</b>.
+/// </summary>
+/// <remarks>
+/// <b>Le domaine descend ici tel quel</b>, plutôt que recopié champ par champ. Une seconde forme du
+/// noyau certain et des réserves n'aurait rien ajouté qu'une occasion de diverger : ce que l'écran
+/// montre <b>est</b> ce que le dossier porte, et la prose de motif s'y lit telle qu'elle est arrivée.
+/// </remarks>
+/// <param name="DeclaredSystem">L'identifiant du système, celui que l'<c>Adapter</c> a reçu.</param>
+/// <param name="Label">
+/// Le nom sous lequel l'<c>Operator</c> reconnaît ce système, ou <c>null</c> si le catalogue ne le
+/// porte plus.
+/// </param>
+/// <param name="Locating">
+/// Ce que l'appel a rapporté, ou <c>null</c> si le service n'a pas encore obtenu de réponse — jamais
+/// appelé, ou toutes ses tentatives tombées en panne.
+/// </param>
+public sealed record LocatingOnScreen(
+  DeclaredSystemId DeclaredSystem,
+  SystemLabel? Label,
+  Locating? Locating);
 
 /// <summary>
 /// Un droit réclamé, et le travail dû qu'il porte. <b>Éventuellement aucun</b> : c'est l'état d'un
@@ -112,10 +147,10 @@ public sealed record ClaimedRight(
 /// <param name="State">L'état déclaré de ce travail. Cinq valeurs, dont deux qui refusent de fusionner.</param>
 /// <param name="AwaitsAFinding">
 /// L'écran doit-il <b>réclamer un constat</b> sur ce travail dû ? Vrai d'un <c>Done</c> pour lequel le
-/// service ne détient <b>aucun rattachement</b> : six zéros ne doivent pas se lire « cette personne
-/// n'est pas chez nous ».
+/// service ne détient <b>aucun rattachement</b> dans ce système : six zéros ne doivent pas se lire
+/// « cette personne n'est pas chez nous ».
 /// <para>
-/// ⚠️ <b>C'est une lecture de <see cref="StepState.RequiresAFinding"/>, et surtout pas un état
+/// ⚠️ <b>C'est une lecture de <see cref="Case.FindingIsDemandedBy"/>, et surtout pas un état
 /// nouveau.</b> Un sixième état de <c>Step</c> — « fait, mais à constater » — aurait fait porter au
 /// dossier une exigence de la surface, et il aurait fallu le faire retomber quelque part.
 /// </para>

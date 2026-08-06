@@ -240,9 +240,13 @@ _Avoid_ : Identifier, SubjectId, Identity, Key, Selector
 
 **Designations** :
 Le sac de `Designation` d'un `Case` — la seule identité qui circule. Il s'**enrichit** en cours
-d'instruction : une réserve confirmée par l'`Operator` qui introduit une désignation nouvelle la
-verse au sac, où elle sert aux appels suivants. Ce qui n'apporte rien reste local au système qui
+d'instruction : une `Reservation` que l'`Operator` rattache et qui propose une désignation nouvelle
+la verse au sac, où elle sert aux appels suivants. Ce qui n'apporte rien reste local au système qui
 l'a produit, en vocabulaire opaque.
+⚠️ **Seul un rattachement enrichit** : une réserve écartée laisse le sac intact — c'est justement ce
+qu'un humain vient de dire. Et le sac part en **copie** à chaque appel : ce qui a traversé la
+frontière est ce sous quoi *cet* appel-là a cherché, qu'un arbitrage postérieur ne doit pas pouvoir
+réécrire après coup.
 _Avoid_ : IdentityGraph, Aliases, Profil
 
 **IdentityDeclaration** :
@@ -325,6 +329,54 @@ mois de l'art. 12.3 court : une salle d'attente aurait fait passer pour « pas e
 compteur déjà lancé, et la demande y aurait attendu hors de la file.
 _Avoid_ : Source, Channel, provenance
 
+### Ce qu'un `Locate` rapporte, et ce qu'il refuse de trancher
+
+**Locating** :
+Ce qu'un `Locate` a rendu, pour **un** `DeclaredSystem` d'**un** `Case` : la dernière issue de
+l'appel, sa date, l'échéance d'un `202`, le **nombre de `Designation` sous lesquelles on avait
+cherché**, un noyau certain de références opaques, et les `Reservation` que le système n'a pas su
+trancher. Un système par ligne, réécrite à chaque appel servi — sauf les réserves, qui **fusionnent**
+plutôt qu'elles ne se remplacent : une réserve déjà arbitrée par un humain n'est jamais réécrite ni
+retirée par un appel ultérieur.
+⚠️ **Un zéro n'est pas une absence de `Locating`.** « Appelé, rien trouvé » a une valeur de preuve
+que « pas appelé » n'a pas, et une panne laisse donc le système **sans localisation** plutôt qu'avec
+un zéro que personne n'a déclaré.
+⚠️ Le compte des désignations n'est pas décoratif : c'est lui qui dit si la réponse d'hier répond
+encore à la question qu'on pose aujourd'hui, et donc **quand on rappelle**. Il n'existe aucune
+minuterie ; les quatre raisons de rappeler sont : on n'avait jamais appelé, le sac s'est enrichi,
+l'échéance d'un `202` est passée, l'appel avait été refusé. Toutes se constatent à l'ouverture du
+dossier.
+_Avoid_ : Attachment, Search, Lookup, Result, LocateRecord, recherche ⚠️ `Attachment` ferait d'un
+`Locate` à zéro « un rattachement portant zéro rattachement » ; `Record` est sur la liste du
+`Ledger`.
+
+**OpaqueReference** :
+Le mot par lequel **l'application** désigne une ligne qu'elle a rattachée — `clients#1203`,
+`/var/log/app-2026-03.log:88`. Le service ne la découpe pas, ne la compare pas d'un système à
+l'autre, n'en tire aucun compte : il la garde et la réaffiche mot pour mot à un humain qui saura la
+lire chez le client. C'est le grain du champ, fermé dans le `Manifest`, qui l'est encore au retour.
+_Avoid_ : Id, Key, RowId, Locator, identifiant ⚠️ tous promettraient une structure que le service
+s'interdit de lire.
+
+**Reservation** :
+Une ligne qu'un système a trouvée **sans pouvoir dire si c'est la personne**, avec le **motif** du
+doute en prose française et, éventuellement, les `Designation` que cette ligne-là propose. Elle porte
+un `ReservationState` — `Awaiting`, `Attached`, `SetAside` — dont seuls les deux derniers sont
+tranchés, et toujours par un `Operator` nommé et daté au `Ledger`.
+⚠️ **Une réserve n'est pas un demi-rattachement.** Tant que personne ne l'a arbitrée, elle ne compte
+pour aucun rattachement : c'est ce qui fait réclamer un constat sur un `Step` `Done` d'un système qui
+n'en porte aucun. Le service ne tranche **jamais** de lui-même — il n'existe ni score, ni seuil, ni
+règle de majorité.
+⚠️ **Le motif est de la prose de travail**, lu tel quel et jamais analysé : il nomme par nature des
+tiers non demandeurs — « l'autre Jean Dupont » —, vit sur le `Case` et meurt à la clôture. Une
+réserve **sans** motif est une panne du contrat, pas une réserve : ce serait un doute qu'on
+demanderait de trancher sans dire lequel.
+⚠️ **Les `designations` d'une réserve sont le seul champ que le service interprète**, et seulement
+après le rattachement. Sans elles, la réserve reste locale et opaque : elle s'arbitre, mais elle
+n'apprend rien à personne d'autre.
+_Avoid_ : Candidate, Match, Suggestion, Doubt, Ambiguity ⚠️ `Match` et `Candidate` promettent un
+rapprochement que le service ne fait pas, et un score qu'il n'a pas.
+
 ### Ce que le service détient, et pour combien de temps
 
 **Ledger** :
@@ -336,6 +388,12 @@ déclaration d'aujourd'hui ne réécrit pas la preuve d'hier. Il ne porte jamais
 le contrôle, qui juge une pratique et pour qui « 2 sur 6 » est une mesure. Écrit à la personne, le
 même chiffre lui affirmerait que le client a exactement six systèmes — donnant à une déclaration qui
 vieillit exprès l'autorité d'un recensement, ce que l'`Omission silencieuse` interdit.
+⚠️ Du sac de désignations il garde le **compte et la provenance, jamais les valeurs** : « recherché
+sous 2 désignations, dont 1 ajoutée par arbitrage le 12/04 ». Le contrôle juge ainsi l'effort de
+recherche — a-t-on cherché sous une seule adresse, ou sous ce qu'on avait ? — sans qu'une seule
+désignation lui survive. Une réserve arbitrée y laisse le **sens** de l'arbitrage, son système, son
+signataire et sa date ; jamais sa référence opaque ni le motif que l'application avait écrit, qui
+sont de la prose de travail et meurent avec le `Case`.
 Il est **anonyme par construction, jamais par expurgation** : on n'y écrit aucune `Designation` ni
 aucun nom de personne concernée, dès la première ligne. L'anonymiser à la clôture aurait exigé de le
 réécrire — dans la seule structure du dispositif dont l'invariant est qu'on ne la réécrit pas.
@@ -397,6 +455,22 @@ _Avoid_ : PersonalData, SubjectData, Payload, Export, contenu
 Une question datée qui attend une réponse, accrochée à ce qu'elle empêche réellement d'avancer — le
 `Case` pour la désignation de la personne, un `Claim` pour le contenu d'un droit. Elle **n'arrête
 jamais** le délai de l'art. 12.3 et ne barre jamais la route à l'`Operator`.
+La question de la désignation naît sous **trois** conditions, et il les faut toutes : tous les
+`Locate` ont répondu, aucun n'a rien rattaché, et aucune `Reservation` n'attend un humain. Un
+système qui a différé ou refusé n'a pas répondu — conclure avant de l'avoir entendu ferait poser une
+question dont on ne sait pas encore si elle se pose. Un `Case` sans aucun système atteignable n'en
+pose aucune : il n'y a pas six zéros à mal lire, il n'y a eu aucun appel.
+⚠️ **Une réserve en attente n'est pas un zéro**, et c'est la condition la moins évidente des trois.
+Elle ne compte pour aucun rattachement, mais quelque chose a bel et bien été trouvé sous ce qu'on
+avait : ce qui manque est un **regard**, pas une désignation de plus. Poser la question là ferait
+afficher « aucun rattachement nulle part » juste au-dessus des lignes que le système vient de rendre.
+Elle ne se pose qu'**une fois** par sujet — la reposer à chaque ouverture de dossier ferait de sa
+date le reflet du dernier regard plutôt que celui du jour où le doute est né — et elle se **retire**
+le jour où le dossier y répond. Une question sans issue deviendrait un bandeau permanent, et un
+bandeau permanent s'apprend à ne plus se voir : c'est la mécanique qui vaut déjà pour la réclamation
+d'une `IdentityMotivation`, et pour la même raison. Rien n'est perdu de la preuve — le jour de la
+question est au `Ledger`, ce qui y a répondu porte sa propre ligne datée, et le contrôle lit l'écart
+entre les deux. L'écran, lui, ne montre que ce qui attend encore.
 _Avoid_ : Blocker, Pending, Hold, Query, blocage ⚠️ le nom `Blocker` ferait dans son nom même la
 promesse inverse, et quelqu'un finirait par écrire le code qui bloque.
 

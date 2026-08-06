@@ -54,7 +54,7 @@ public sealed class ReadCaseHandler(
         claim.IdentityAtOrigin,
         claim.AwaitsConfirmation,
         claim.MotivationIsDemanded,
-        [.. claim.Steps.Select(step => Projected(step, catalogue))]))
+        [.. claim.Steps.Select(step => Projected(opened, step, catalogue))]))
       .ToArray();
 
     return new CaseOnScreen(
@@ -69,10 +69,44 @@ public sealed class ReadCaseHandler(
       deadline.IsOverrunAt(observedAt),
       OldestDeclarationAmong(claims),
       claims,
+      Located(opened, catalogue),
+      opened.Questions,
       observedAt);
   }
 
-  private static StepOnScreen Projected(Step step, IReadOnlyDictionary<DeclaredSystemId, DeclaredSystem> catalogue)
+  /// <summary>
+  /// Les systèmes où l'on cherche la personne : ceux que le catalogue déclare joignables et capables
+  /// de <c>Locate</c> <b>aujourd'hui</b>, plus ceux qu'on a déjà appelés et qui ne le sont plus.
+  /// </summary>
+  /// <remarks>
+  /// <b>Une localisation obtenue ne disparaît jamais de l'écran</b>, même si son système quitte le
+  /// catalogue ou perd son adresse : une ligne qui s'évaporerait serait l'<c>Omission silencieuse</c>
+  /// fabriquée par l'écran, et ce qui a été trouvé reste à arbitrer.
+  /// </remarks>
+  private static LocatingOnScreen[] Located(
+    Case opened,
+    IReadOnlyDictionary<DeclaredSystemId, DeclaredSystem> catalogue)
+  {
+    var reachable = catalogue.Values
+      .Where(system => system.AdapterAddress is not null && system.Capabilities.Contains(Capability.Locate))
+      .Select(system => system.Id);
+
+    return
+    [
+      .. reachable
+        .Union(opened.Locatings.Select(locating => locating.DeclaredSystem))
+        .OrderBy(id => id.Value, StringComparer.Ordinal)
+        .Select(id => new LocatingOnScreen(
+          id,
+          catalogue.GetValueOrDefault(id)?.Label,
+          opened.LocatingIn(id))),
+    ];
+  }
+
+  private static StepOnScreen Projected(
+    Case opened,
+    Step step,
+    IReadOnlyDictionary<DeclaredSystemId, DeclaredSystem> catalogue)
   {
     var declared = catalogue.GetValueOrDefault(step.DeclaredSystem);
 
@@ -81,9 +115,10 @@ public sealed class ReadCaseHandler(
       declared?.Label,
       declared?.DeclaredOn,
       step.State,
-      // La règle vit sur l'état, et la ligne de preuve s'en sert pour refuser ce que l'écran réclame
-      // ici : une seule règle, aux deux endroits.
-      step.State.RequiresAFinding);
+      // La règle vit sur la racine — elle a besoin des rattachements, que seul le dossier détient —
+      // et la ligne de preuve s'en sert pour refuser ce que l'écran réclame ici : une seule règle,
+      // aux deux endroits.
+      opened.FindingIsDemandedBy(step.State, step.DeclaredSystem));
   }
 
   private static DateTimeOffset? OldestDeclarationAmong(IEnumerable<ClaimedRight> claims)

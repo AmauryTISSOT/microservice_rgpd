@@ -1,8 +1,10 @@
 ﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 using MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 using MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 using MicroserviceRgpd.UseCases.Casework.DeclareStep;
+using MicroserviceRgpd.UseCases.Casework.Locate;
 using MicroserviceRgpd.UseCases.Casework.ReadCase;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -57,6 +59,20 @@ public class CaseModel(IMediator mediator) : PageModel
   /// <summary>Le préfixe de liaison de la motivation, cité tel quel lorsqu'un champ est refusé.</summary>
   public const string MotivationPrefix = nameof(Motivation);
 
+  /// <summary>Le préfixe de liaison de l'arbitrage, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string ArbitrationPrefix = nameof(Arbitration);
+
+  /// <summary>
+  /// Ce que l'humain saisit pour <b>trancher une réserve</b> de <c>Locate</c>.
+  /// </summary>
+  /// <remarks>
+  /// <b>Un formulaire à part, comme les trois autres.</b> Les gestes de cet écran ne portent pas la
+  /// même chose, et les mêler aurait fait signer d'un clic un rattachement qu'on n'avait pas voulu —
+  /// erreur irréversible, et portant sur la donnée d'un tiers.
+  /// </remarks>
+  [BindProperty]
+  public ArbitrationForm Arbitration { get; set; } = new();
+
   /// <summary>
   /// Ce que l'humain saisit pour écrire <b>après coup</b> ce qu'il a pesé de l'identité du demandeur.
   /// </summary>
@@ -66,8 +82,27 @@ public class CaseModel(IMediator mediator) : PageModel
   /// <summary>Le dossier tel qu'il se lit à cet instant.</summary>
   public CaseOnScreen? OnScreen { get; private set; }
 
+  /// <summary>
+  /// Affiche le dossier — et, <b>avant de l'afficher</b>, va désigner la personne dans les systèmes
+  /// qui déclarent un <c>Adapter</c>.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est ici, et nulle part ailleurs, que le service appelle.</b> L'ouverture du dossier est
+  /// aussi le seul endroit où se fait la <b>relance</b> d'un <c>202</c> : jamais depuis la file, qui
+  /// n'émet aucun appel, et jamais par une minuterie. Rien ne tourne, donc rien ne peut s'arrêter en
+  /// silence — un processus de fond interrompu rendrait un écran <b>vide et rassurant</b>.
+  /// </para>
+  /// <para>
+  /// <b>L'ordre des appels est signifiant sans jamais être bloquant.</b> On cherche la personne avant
+  /// d'affirmer quoi que ce soit sur elle, mais rien n'attend l'autre : une panne d'<c>Adapter</c>
+  /// laisse une ligne « non appelé » à l'écran, et l'<c>Operator</c> instruit le dossier comme avant.
+  /// </para>
+  /// </remarks>
   public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken)
   {
+    await LocateAsync(id, cancellationToken);
+
     await LoadAsync(id, cancellationToken);
 
     // Une adresse qui ne désigne aucun dossier n'est pas un écran vide : elle n'existe pas.
@@ -202,6 +237,87 @@ public class CaseModel(IMediator mediator) : PageModel
     await LoadAsync(id, cancellationToken);
 
     return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> <b>tranche une réserve</b> : cette ligne est celle de la personne, ou elle ne
+  /// l'est pas.
+  /// </summary>
+  /// <remarks>
+  /// <b>Le sac s'enrichit du même geste</b> quand la réserve est rattachée et qu'elle proposait une
+  /// désignation neuve. L'appel suivant la portera — à la <b>prochaine ouverture</b> du dossier, que
+  /// la redirection ci-dessous provoque : c'est le seul endroit où le service appelle.
+  /// </remarks>
+  public async Task<IActionResult> OnPostArbitrateAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var ruling = FormBoundary.ReadVocabulary<ReservationState>(
+      ModelState,
+      ArbitrationPrefix,
+      nameof(ArbitrationForm.Ruling),
+      Arbitration.Ruling,
+      ReservationState.TryFromName,
+      "n'est pas un arbitrage");
+
+    // Le vide entre comme vide plutôt que comme un nul : un formulaire forgé est refusé en le
+    // nommant, jamais ignoré.
+    var system = FormBoundary.Read(
+      ModelState,
+      ArbitrationPrefix,
+      nameof(ArbitrationForm.DeclaredSystem),
+      () => DeclaredSystemId.From(Arbitration.DeclaredSystem ?? string.Empty));
+
+    var reference = FormBoundary.Declared(
+      ModelState,
+      ArbitrationPrefix,
+      nameof(ArbitrationForm.Reference),
+      () => OpaqueReference.Of(Arbitration.Reference));
+
+    if (ruling is not null && system is not null && reference is not null)
+    {
+      var arbitrated = await mediator.Send(
+        new ArbitrateReservationCommand(
+          CaseId.From(id),
+          system.Value,
+          reference,
+          ruling,
+          Arbitration.SignedBy),
+        cancellationToken);
+
+      if (arbitrated.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (arbitrated.IsSuccess)
+      {
+        // Une redirection après l'écriture : recharger la page ne ré-arbitre rien, et c'est elle qui
+        // fait repartir l'appel sous le sac que cet arbitrage vient d'enrichir.
+        return RedirectToPage(new { id });
+      }
+
+      FormBoundary.Deposit(ModelState, ArbitrationPrefix, arbitrated.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// Va désigner la personne là où le catalogue déclare un <c>Adapter</c> capable de le faire.
+  /// </summary>
+  /// <remarks>
+  /// <b>Un dossier introuvable n'est pas une panne ici</b> : l'affichage qui suit le dira, et c'est
+  /// lui qui rend le <c>404</c>. Cette méthode ne décide de rien de ce que l'écran montre.
+  /// </remarks>
+  private async Task LocateAsync(Guid id, CancellationToken cancellationToken)
+  {
+    if (!CaseId.TryFrom(id, out var opened))
+    {
+      return;
+    }
+
+    await mediator.Send(new LocateCommand(opened), cancellationToken);
   }
 
   private async Task LoadAsync(Guid id, CancellationToken cancellationToken)

@@ -64,17 +64,18 @@ pytest                                # depuis `temoin/`
 
 Ticket [#88](https://github.com/AmauryTISSOT/microservice_rgpd/issues/88). Deux choses ont été
 ajoutées au témoin, et deux seulement, chacune le rendant **plus** ordinaire — la seule raison
-légitime d'y toucher.
+légitime d'y toucher. La troisième section ci-dessous n'est pas un ajout : c'est ce que la forme
+définitive de `locate` a changé dans l'adaptateur, et ce qu'elle a fait découvrir du témoin.
 
 ### 1. Un `Adapter` HTTP, servant deux systèmes
 
 `adapter_rgpd.py` monte sous `/rgpd` la seule surface qui sache que le service existe ;
 `rgpd_boutique.py` et `rgpd_journal.py` répondent à `locate` pour deux `system_id` :
 
-| `system_id` | Nature du stockage | Ce qu'il compte |
+| `system_id` | Nature du stockage | Ce qu'il rend |
 | --- | --- | --- |
-| `brocanto-boutique` | La base MariaDB | Des enregistrements, table par table |
-| `brocanto-journal` | Le journal applicatif à plat, fichiers tournés compris | Des lignes, fichier par fichier |
+| `brocanto-boutique` | La base MariaDB | Des références de lignes, table par table — et des **réserves** là où un nom ne tranche pas |
+| `brocanto-journal` | Le journal applicatif à plat, fichiers tournés compris | Un nom de fichier par fichier portant la personne |
 
 **Deux natures plutôt qu'une** : un contrat qui ne saurait dire que « SELECT » n'aurait pas été
 éprouvé. Le journal apporte aussi le `202` — au-delà de cinq mégaoctets à relire ligne à ligne, il
@@ -90,7 +91,7 @@ corriger : c'est le prix de la branchabilité, et il se paie dans l'adaptateur, 
 
 Ses tests vivent ici (`tests/`, `pytest`, sur le modèle de `src/sidecar/tests/`) et n'entrent jamais
 dans la solution .NET. Aucun ne joint MariaDB ni ne lit le vrai journal : les coutures sont le
-compteur de sondes et le dossier de journal.
+**lecteur** de sondes et le dossier de journal.
 
 ### 2. Une porte d'entrée — un défaut de conformité **antérieur**
 
@@ -123,19 +124,56 @@ service. Le témoin reste écrit comme si le microservice n'existait pas.
   recensement, et rien n'obligeait à la découper — mais le jour où on la découperait, l'adaptateur
   la servirait déjà.
 
-Deux réserves valent d'être écrites, parce qu'un compte servi sans elles se lirait comme un fait
+Deux réserves valent d'être écrites, parce qu'une réponse servie sans elles se lirait comme un fait
 complet :
 
 - **Le texte libre n'est pas fouillé.** Les descriptions d'annonces et le corps des messages
   portent des numéros et des adresses écrits à la main (pièges 14 et 15) que les sondes ne trouvent
-  pas. Un `0` sur `messages` veut dire « aucun message *écrit par* cette adresse », jamais « aucun
+  pas. L'absence de `messages` veut dire « aucun message *écrit par* cette adresse », jamais « aucun
   message qui parle d'elle ».
 - **Le journal ne se cherche que par adresse.** Une ligne ne porte que celle de la session : y
-  chercher un nom ne trouverait rien, et y chercher une référence comme « 1203 » compterait des
-  horaires et des identifiants d'annonce. Un sac sans adresse ne fait donc ouvrir aucun fichier, et
-  ne rend aucun emplacement — « pas regardé » plutôt qu'un `0` qu'on n'a pas gagné.
+  chercher un nom ne trouverait rien, et y chercher une référence comme « 1203 » rattacherait des
+  horaires et des identifiants d'annonce. Un sac sans adresse ne fait donc ouvrir aucun fichier.
 
-Ces deux réserves sont à porter dans la réponse de `locate` ; leur forme appartient au ticket #92.
+### 3. Ce que la forme de `locate` a coûté, et ce qu'elle a révélé
+
+Ticket [#92](https://github.com/AmauryTISSOT/microservice_rgpd/issues/92). Les deux systèmes
+rendaient un **dénombrement** — « 3 enregistrements sur 6 tables ». Ils rendent désormais ce que le
+contrat demande : des **références opaques**, et des **réserves motivées** là où Brocanto ne sait pas
+trancher. Trois choses en sont sorties, dont deux qu'on ne cherchait pas.
+
+**Le compte est perdu, et c'était le prix.** « 412 passages dans le journal » disait quelque chose de
+l'intensité d'un usage ; `brocanto.log` ne le dit pas. Le service n'en faisait rien de bon — il ne
+peut ni le vérifier ni le comparer d'un système à l'autre — mais la perte est réelle, et elle est
+consignée ici plutôt que passée sous silence.
+
+**Deux sondes par table, là où le dénombrement en imposait une.** Tant qu'on comptait, deux requêtes
+sur `clients` auraient compté deux fois la personne trouvée par son nom *et* par son adresse. Une
+référence, elle, se dédoublonne. C'est ce changement de forme qui a permis de séparer la question
+qui **identifie** — adresse, téléphone, référence — de celle qui ne fait que **nommer** ; et c'est
+cette séparation, et non une intention, qui a rendu le doute visible.
+
+**Un nom ne rattache rien, jamais.** `clients` ne pose aucune unicité — le support crée un second
+compte quand quelqu'un dit « je n'arrive plus à me connecter » (piège n° 2) —,
+`adresses.destinataire` et `paiements.porteur_nom` nomment couramment un tiers (piège n° 5), et la
+reprise de 2019 n'a jamais été rapprochée des comptes actuels (piège n° 4). Chercher « Jean Dupont »
+rend donc des lignes
+que rien ici ne départage : elles partent en réserves motivées, chacune proposant l'adresse de sa
+ligne, et un humain tranche côté service.
+
+⚠️ **La découverte, celle qu'on ne cherchait pas : la base et le journal ne comparent pas pareil.**
+MariaDB ignore la casse ; un fichier plat n'a pas de collation, et `rgpd_journal` ne normalise rien —
+parce que rien de ce qui lit ce journal ne normalise, ni `grep`, ni l'astreinte à trois heures du
+matin. La conséquence est qu'une même désignation ouvre l'un et **rate l'autre** : chercher
+`jean.dupont@example.fr` trouve les deux comptes de la base et zéro ligne du journal, où la session
+s'est écrite `Jean.Dupont@Example.fr` (piège n° 2). Deux systèmes du même client, la même personne,
+deux réponses opposées.
+
+Personne chez Brocanto ne l'avait vu, et rien dans Brocanto ne pouvait le voir : il a fallu qu'un
+tiers pose la même question aux deux d'affilée. Ce qui répare le trou n'est pas une ligne de code —
+c'est la réserve que la base rend sur son homonyme, l'adresse qu'elle propose **dans la casse où
+elle la stocke**, l'humain qui la rattache, et l'appel suivant qui la porte. Le dispositif entier
+sert à ça, et ce cas-là est la raison pour laquelle il a cette forme.
 
 ### La clause de périmètre, et ce que la recette en fait
 

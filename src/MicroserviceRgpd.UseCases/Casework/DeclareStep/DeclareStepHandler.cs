@@ -42,7 +42,9 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, 
 
     // La ligne de preuve est forgée d'abord : c'est elle qui exige un nom et un constat, et rien du
     // dossier ne doit bouger si la signature manque. La règle vit dans le type de la preuve, pas ici.
-    var signed = Signed(command);
+    // Le dossier lui dit seulement s'il RÉCLAME un constat : cette règle-là a besoin des
+    // rattachements, que seul le Case détient — c'est la même que celle dont l'écran se sert.
+    var signed = Signed(command, opened.FindingIsDemandedBy(command.State, command.DeclaredSystem));
 
     if (!signed.IsSuccess)
     {
@@ -67,7 +69,7 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, 
   /// La ligne de preuve, ou les refus nommés champ par champ. Les messages viennent des types du
   /// domaine : deux rédactions d'une même règle finiraient par ne plus dire la même chose.
   /// </summary>
-  private Result<LedgerEntry> Signed(DeclareStepCommand command)
+  private Result<LedgerEntry> Signed(DeclareStepCommand command, bool findingIsDemanded)
   {
     // Le régime accompagne le nom, et il est posé ici : la surface n'authentifie personne, et c'est ce
     // que la preuve doit garder pour ne pas être relue comme une identification.
@@ -80,7 +82,7 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, 
     // allers-retours pour deux cases vides feraient perdre à l'Operator la prose qu'il vient d'écrire,
     // et lui feraient découvrir le second refus après avoir corrigé le premier.
     Read(
-      () => LedgerEntry.FindingOrThrow(command.Finding, command.State),
+      () => LedgerEntry.FindingOrThrow(command.Finding, findingIsDemanded),
       nameof(DeclareStepCommand.Finding),
       out var findingRefused);
 
@@ -96,6 +98,7 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, 
       command.Right,
       command.State,
       command.Finding,
+      findingIsDemanded,
       signatory));
   }
 

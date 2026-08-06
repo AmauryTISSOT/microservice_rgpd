@@ -60,6 +60,7 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
       ReceptionWasDefaulted = entry.ReceptionWasDefaulted,
       ReceivedOn = entry.ReceivedOn,
       IdentityVerificationMethod = entry.VerificationMethod?.Name,
+      DeclaredDeadline = entry.DeclaredDeadline,
     };
   }
 }

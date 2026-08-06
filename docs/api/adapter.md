@@ -226,6 +226,74 @@ tout ce dispositif cherche à rendre impossible.
 
 ---
 
+## 4 bis. Le corps d'un `200` à `locate`
+
+C'est la seule `Capability` appelée à ce jour, et la seule dont la réponse ait une forme fixée.
+
+```json
+{
+  "certain": ["clients#1203"],
+  "reserved": [
+    {
+      "reference": "clients#4417",
+      "reason": "Deux comptes portent le nom « Jean Dupont ». Celui-ci a été créé en 2019 et n'a jamais commandé.",
+      "designations": [{ "kind": "email", "value": "j.dupont1954@example.fr" }]
+    }
+  ]
+}
+```
+
+**Deux listes, et la différence entre les deux est tout le sujet.**
+
+- `certain` — ce que vous **rattachez** à la personne cherchée. Vous en répondez.
+- `reserved` — ce que vous avez trouvé **sans pouvoir trancher**. Le service n'en tranchera pas non
+  plus : un humain le fera, à l'écran, nommément et à une date.
+
+**Une réserve n'est pas un demi-rattachement.** Tant que personne ne l'a arbitrée, elle ne compte
+pour aucun rattachement, et un `Step` déclaré fait sur un système qui n'en porte aucun réclamera un
+constat écrit.
+
+### Les champs
+
+| Champ | Obligatoire | Ce que c'est |
+| --- | --- | --- |
+| `certain[]` | non — l'absence vaut liste vide | Une **référence opaque**, écrite dans votre vocabulaire. |
+| `reserved[].reference` | **oui** | La même chose, pour une ligne dont vous doutez. |
+| `reserved[].reason` | **oui** | Le motif du doute, **en français**, lu tel quel par l'opérateur. |
+| `reserved[].designations` | non | Ce que cette ligne-là propose comme désignation de la personne. |
+
+**Les références sont opaques de bout en bout.** `clients#1203`, `/var/log/app-2026-03.log:88`,
+`ligne 412 du fichier de reprise` : le service ne les découpe pas, ne les compte pas, ne les
+compare pas entre systèmes, et ne vous les redemandera que telles qu'elles. Elles reviennent à
+l'écran, mot pour mot, pour un humain qui saura les lire chez vous. **200 caractères** au plus.
+
+**Le motif est lu par un humain, pas par une machine.** Écrivez la phrase que vous diriez à un
+collègue : « deux comptes portent ce nom, celui-ci a commandé en mars ». Le service ne l'analyse
+jamais — il l'affiche. Une réserve **sans motif** est une panne, pas une réserve : c'est un doute
+qu'on demanderait à quelqu'un de trancher sans lui dire lequel.
+
+**`designations` est le seul champ que le service interprète**, et seulement **après** qu'un humain
+a rattaché la réserve. Il entre alors au sac, et l'appel suivant le porte — c'est ainsi qu'une
+adresse trouvée dans votre base ouvre le journal du voisin. Son `kind` appartient au même
+vocabulaire fermé de quatre mots qu'au § 3. Une réserve **sans** `designations` reste locale et
+opaque : elle s'arbitre, mais elle n'apprend rien à personne d'autre.
+
+### Le zéro
+
+```json
+{ "certain": [], "reserved": [] }
+```
+
+**Il n'a qu'une forme, et c'est délibéré.** Le service ne vous demande pas de distinguer « rien
+trouvé » de « rien à trouver », ni de rendre un compte : un zéro est un zéro. Ce que vous auriez
+mis dans la nuance, mettez-le dans une réserve motivée — c'est là qu'un humain la lira.
+
+Un corps **vide**, ou sans aucune des deux clés, vaut le même zéro. En revanche une réserve sans
+`reference`, sans `reason`, ou portant un `kind` hors des quatre mots, est une **panne** : le
+service préfère ne rien apprendre plutôt qu'apprendre à moitié en silence.
+
+---
+
 ## 5. Ce que le service fait d'un refus
 
 - **Rien ne bouge dans le dossier.** Aucune étape ne change d'état : votre refus n'apprend rien sur
@@ -264,10 +332,8 @@ tout ce dispositif cherche à rendre impossible.
 ## 7. Ce qui n'est pas encore là
 
 Ce contrat est celui du **transport**, et il est complet : l'appel, le secret, le différé, les deux
-refus. Ce que chaque `Capability` **rend** se fixe ticket par ticket.
+refus. Ce que chaque `Capability` **rend** se fixe ticket par ticket ; `locate` est fixée (§ 4 bis).
 
-- `locate` — la forme de sa réponse (noyau certain, réserves motivées) se décide avec l'écran
-  d'arbitrage.
 - `read` — portera, **en plus des désignations**, le droit **au titre duquel** on lit. Jamais la
   forme attendue : le périmètre matériel de l'art. 20 est plus étroit que celui de l'art. 15 et se
   décide ligne par ligne — vous seul pouvez le trancher, et vous tranchez du même geste le périmètre
@@ -285,9 +351,20 @@ qu'il ne touche pas.
 ## 8. Pour le mainteneur
 
 - Le contrat sur le fil : [`HttpAdapterCalls`](../../src/MicroserviceRgpd.Infrastructure/Casework/Adapters/HttpAdapterCalls.cs).
-- Le vocabulaire des réponses : [`AdapterVerdict`](../../src/MicroserviceRgpd.Core/Casework/Adapters/AdapterVerdict.cs),
+- Le vocabulaire des réponses : [`AdapterOutcome`](../../src/MicroserviceRgpd.Core/Casework/Adapters/AdapterOutcome.cs),
   [`AdapterAnswer`](../../src/MicroserviceRgpd.Core/Casework/Adapters/AdapterAnswer.cs).
+- Le corps d'un `locate` servi, en deux types et non un :
+  [`LocateOnTheWire`](../../src/MicroserviceRgpd.Core/Casework/Adapters/LocateOnTheWire.cs) est ce que
+  le fil rend — tout y est nullable, parce qu'un client peut tout omettre —, et
+  [`LocateFindings`](../../src/MicroserviceRgpd.Core/Casework/Adapters/LocateFindings.cs) est ce que
+  le domaine accepte d'en croire. La frontière entre les deux est le seul endroit où un corps mal
+  formé devient une panne plutôt qu'un zéro.
 - Ce qu'un refus laisse : [`AdapterCallsForCase`](../../src/MicroserviceRgpd.UseCases/Casework/CallAdapter/AdapterCallsForCase.cs).
+- L'appel de `locate` de bout en bout, et la relance d'un `202` à l'ouverture du dossier :
+  [`LocateHandler`](../../src/MicroserviceRgpd.UseCases/Casework/Locate/LocateHandler.cs).
+- L'arbitrage d'une réserve par un humain nommé, et le sac qu'il enrichit :
+  [`ArbitrateReservationHandler`](../../src/MicroserviceRgpd.UseCases/Casework/ArbitrateReservation/ArbitrateReservationHandler.cs),
+  [`Case.Arbitrate`](../../src/MicroserviceRgpd.Core/Casework/Case.cs).
 - La vérification du `Manifest` et la sonde à secret délibérément faux :
   [`VerifyManifestHandler`](../../src/MicroserviceRgpd.UseCases/Casework/VerifyManifest/VerifyManifestHandler.cs),
   [`IAdapterProbes`](../../src/MicroserviceRgpd.Core/Casework/Adapters/IAdapterProbes.cs),
