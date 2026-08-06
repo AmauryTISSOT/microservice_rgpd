@@ -192,6 +192,17 @@ public sealed class Case : IAggregateRoot
   public bool AwaitsAMotivation => Motivation is null && _claims.Any(claim => claim.MotivationIsDemanded);
 
   /// <summary>
+  /// Un paquet est-il sorti du service sans que personne n'ait déclaré la remise ? Vrai dès qu'un
+  /// droit est dans ce cas.
+  /// </summary>
+  /// <remarks>
+  /// <b>C'est une lecture, jamais un état.</b> Elle se recalcule sur les <see cref="Claim"/> à chaque
+  /// affichage, et sert de <b>colonne</b> sur une ligne de file déjà présente : une remise commencée
+  /// et non déclarée doit se voir tous les jours, plutôt que de manquer.
+  /// </remarks>
+  public bool AwaitsADeliveryDeclaration => _claims.Any(claim => claim.DeliveryAwaitsDeclaration);
+
+  /// <summary>
   /// Un humain écrit <b>après coup</b> ce qu'il a pesé de l'identité du demandeur, et dit si le
   /// dossier réclamait encore une motivation.
   /// </summary>
@@ -280,6 +291,83 @@ public sealed class Case : IAggregateRoot
     claim.Confirm();
 
     return true;
+  }
+
+  /// <summary>
+  /// Le paquet d'un droit <b>sort du service</b> — premier des deux gestes de la remise.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Rien n'est remis ici, et rien ne se consigne.</b> Ce geste sert à ouvrir le ZIP et à vérifier
+  /// qu'il n'est pas vide ; dater la preuve maintenant la daterait du moment où un fichier a quitté
+  /// un serveur, alors que la remise est une affirmation.
+  /// </para>
+  /// <para>
+  /// <b>Une remise déjà déclarée ne se reprend pas.</b> Les <see cref="RetrievedData"/> ont été
+  /// détruites par le second geste : le paquet n'existe plus, et prétendre le tendre à nouveau
+  /// rendrait une page de garde sans une seule des pièces qu'elle annonce.
+  /// </para>
+  /// </remarks>
+  /// <param name="right">Le droit dont on prend le paquet.</param>
+  /// <param name="takenOn">L'instant où le paquet sort.</param>
+  /// <returns>
+  /// <c>true</c> si le dossier porte ce droit et que la remise n'est pas déclarée ; <c>false</c>
+  /// sinon, sans rien changer.
+  /// </returns>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  public bool TakeDelivery(DataSubjectRight right, DateTimeOffset takenOn)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+
+    var claim = _claims.SingleOrDefault(one => one.Right == right);
+
+    if (claim is null || claim.DeliveryDeclaredOn is not null)
+    {
+      return false;
+    }
+
+    // Le premier instant est gardé, et reprendre le paquet reste permis : ce qui compte est qu'un
+    // exemplaire soit dehors depuis ce jour-là, et non combien de fois on l'a copié.
+    claim.TakeDelivery(takenOn);
+
+    return true;
+  }
+
+  /// <summary>
+  /// Un humain <b>déclare la remise</b> d'un droit — second geste, et le seul qui date la remise.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle ne se déclare qu'après que le paquet est sorti.</b> Déclarer remis un paquet que
+  /// personne n'a jamais tenu daterait la remise de quelque chose dont il n'existe aucun exemplaire —
+  /// une preuve d'un geste qui n'a pas eu lieu. Ce n'est pas barrer la route à l'<c>Operator</c> :
+  /// le premier geste est à un clic, et il ne coûte rien.
+  /// </para>
+  /// <para>
+  /// <b>Elle ne détruit rien elle-même.</b> Les <see cref="RetrievedData"/> vivent hors de l'agrégat,
+  /// et c'est l'appelant qui les efface — la remise détruit la pièce <b>sans réécrire le dossier</b>.
+  /// Elle ne consigne rien non plus : la ligne de preuve est écrite hors de l'agrégat, comme partout.
+  /// </para>
+  /// </remarks>
+  /// <param name="right">Le droit dont on déclare la remise.</param>
+  /// <param name="declaredOn">L'instant de la déclaration.</param>
+  /// <returns>
+  /// <c>true</c> si la remise vient d'être déclarée ; <c>false</c> si le dossier ne porte pas ce
+  /// droit, si aucun paquet n'est sorti, ou si elle l'était déjà.
+  /// </returns>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  public bool DeclareDelivered(DataSubjectRight right, DateTimeOffset declaredOn)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+
+    var claim = _claims.SingleOrDefault(one => one.Right == right);
+
+    if (claim is null || claim.DeliveryTakenOn is null)
+    {
+      return false;
+    }
+
+    return claim.DeclareDelivered(declaredOn);
   }
 
   /// <summary>

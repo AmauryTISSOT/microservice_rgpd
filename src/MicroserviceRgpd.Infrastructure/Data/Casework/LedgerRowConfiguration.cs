@@ -4,7 +4,7 @@ using MicroserviceRgpd.Core.Casework.Ledger;
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : seize colonnes, et pas une de plus où un nom de personne concernée
+/// La table du <c>Ledger</c> : dix-neuf colonnes, et pas une de plus où un nom de personne concernée
 /// pourrait entrer. La seule prose est celle de <b>preuve</b> ; la prose de travail, qui nomme par
 /// nature, n'a aucune colonne ici.
 /// </summary>
@@ -107,5 +107,11 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     // L'échéance d'un différé, déclarée par le client. Aucune colonne ne compte les passages : une
     // relance n'a aucun signataire, et son compte serait du bruit de mécanique dans la preuve.
     builder.Property(row => row.DeclaredDeadline).HasColumnName("declared_deadline");
+
+    // Les deux moitiés du « 2 sur 6 ». Elles s'arrêtent ici : le contrôle juge une pratique, et ce
+    // rapport n'a aucune place dans ce que la personne reçoit.
+    builder.Property(row => row.CoveredSystemCount).HasColumnName("covered_system_count");
+
+    builder.Property(row => row.DeclaredSystemCount).HasColumnName("declared_system_count");
   }
 }

@@ -4,6 +4,7 @@ using MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 using MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 using MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 using MicroserviceRgpd.UseCases.Casework.DeclareStep;
+using MicroserviceRgpd.UseCases.Casework.Deliver;
 using MicroserviceRgpd.UseCases.Casework.Locate;
 using MicroserviceRgpd.UseCases.Casework.Read;
 using MicroserviceRgpd.UseCases.Casework.ReadCase;
@@ -59,6 +60,23 @@ public class CaseModel(IMediator mediator) : PageModel
 
   /// <summary>Le préfixe de liaison de la motivation, cité tel quel lorsqu'un champ est refusé.</summary>
   public const string MotivationPrefix = nameof(Motivation);
+
+  /// <summary>Le préfixe de liaison du téléchargement, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string DeliveryPrefix = nameof(Delivery);
+
+  /// <summary>Le préfixe de liaison de la remise, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string DeclarationPrefix = nameof(Declaration);
+
+  /// <summary>Ce que l'humain saisit pour <b>télécharger</b> la remise d'un droit — le premier geste.</summary>
+  [BindProperty]
+  public DeliveryForm Delivery { get; set; } = new();
+
+  /// <summary>
+  /// Ce que l'humain saisit pour <b>déclarer remis</b> — le second geste, et le seul qui date la
+  /// remise et détruise les pièces.
+  /// </summary>
+  [BindProperty]
+  public DeliveryDeclarationForm Declaration { get; set; } = new();
 
   /// <summary>Le préfixe de liaison de l'arbitrage, cité tel quel lorsqu'un champ est refusé.</summary>
   public const string ArbitrationPrefix = nameof(Arbitration);
@@ -299,6 +317,90 @@ public class CaseModel(IMediator mediator) : PageModel
       }
 
       FormBoundary.Deposit(ModelState, ArbitrationPrefix, arbitrated.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// <b>Premier geste</b> : l'<c>Operator</c> télécharge la remise d'un droit, pour l'ouvrir et voir
+  /// ce qu'elle contient.
+  /// </summary>
+  /// <remarks>
+  /// <b>Aucune redirection, et aucune trace.</b> Ce qui part est un fichier, pas une page ; rien
+  /// n'est daté au <c>Ledger</c>, et rien n'est détruit. La preuve attend le second geste.
+  /// </remarks>
+  public async Task<IActionResult> OnPostTakeAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var right = FormBoundary.ReadVocabulary<DataSubjectRight>(
+      ModelState,
+      DeliveryPrefix,
+      nameof(DeliveryForm.Right),
+      Delivery.Right,
+      DataSubjectRight.TryFromName,
+      "n'est pas un droit de la taxonomie");
+
+    if (right is not null)
+    {
+      var taken = await mediator.Send(new TakeDeliveryCommand(CaseId.From(id), right), cancellationToken);
+
+      if (taken.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (taken.IsSuccess)
+      {
+        return File(taken.Value.Content, DeliveryArchive.ContentType, taken.Value.FileName);
+      }
+
+      FormBoundary.Deposit(ModelState, DeliveryPrefix, taken.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// <b>Second geste</b> : l'<c>Operator</c> affirme avoir rendu la réponse. Ce clic seul date la
+  /// remise au <c>Ledger</c> et détruit les pièces.
+  /// </summary>
+  /// <remarks>
+  /// <b>Le service ne remet rien à personne.</b> Aucun lien à jeton, aucun SMTP : ce qui est
+  /// consigné est le constat signé d'un humain, et non un accusé de réception que personne n'a.
+  /// </remarks>
+  public async Task<IActionResult> OnPostDeclareDeliveredAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var right = FormBoundary.ReadVocabulary<DataSubjectRight>(
+      ModelState,
+      DeclarationPrefix,
+      nameof(DeliveryDeclarationForm.Right),
+      Declaration.Right,
+      DataSubjectRight.TryFromName,
+      "n'est pas un droit de la taxonomie");
+
+    if (right is not null)
+    {
+      var declared = await mediator.Send(
+        new DeclareDeliveryCommand(CaseId.From(id), right, Declaration.SignedBy),
+        cancellationToken);
+
+      if (declared.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (declared.IsSuccess)
+      {
+        // Une redirection après l'écriture : recharger la page ne redéclare rien, et le formulaire
+        // repart vide plutôt que de garder le nom du signataire précédent sous les yeux du suivant.
+        return RedirectToPage(new { id });
+      }
+
+      FormBoundary.Deposit(ModelState, DeclarationPrefix, declared.ValidationErrors);
     }
 
     await LoadAsync(id, cancellationToken);

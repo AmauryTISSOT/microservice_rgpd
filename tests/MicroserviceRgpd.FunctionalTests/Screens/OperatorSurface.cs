@@ -312,6 +312,44 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
     return await _client.PostAsync($"{address}?handler=Motivate", new FormUrlEncodedContent(fields));
   }
 
+  /// <summary>
+  /// <b>Premier geste</b> : télécharge la remise d'un droit. Ce qui revient est un fichier, et rien
+  /// n'est daté nulle part.
+  /// </summary>
+  internal async Task<HttpResponseMessage> TakeDeliveryAsync(CaseId opened, string right)
+  {
+    var address = AddressOf(opened);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
+      new("Delivery.Right", right),
+    };
+
+    return await _client.PostAsync($"{address}?handler=Take", new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// <b>Second geste</b> : déclare la remise. Ce clic seul date la remise au <c>Ledger</c> et
+  /// détruit les pièces.
+  /// </summary>
+  internal async Task<HttpResponseMessage> DeclareDeliveryAsync(
+    CaseId opened,
+    string right,
+    string signedBy)
+  {
+    var address = AddressOf(opened);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
+      new("Declaration.Right", right),
+      new("Declaration.SignedBy", signedBy),
+    };
+
+    return await _client.PostAsync($"{address}?handler=DeclareDelivered", new FormUrlEncodedContent(fields));
+  }
+
   private async Task<string> AntiforgeryTokenOfAsync(string address)
   {
     var token = Regex.Match(

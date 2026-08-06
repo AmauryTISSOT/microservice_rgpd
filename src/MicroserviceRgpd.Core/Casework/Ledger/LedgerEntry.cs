@@ -46,8 +46,12 @@ public sealed record LedgerEntry
     bool? receptionWasDefaulted = null,
     IdentityVerificationMethod? verificationMethod = null,
     DateTimeOffset? receivedOn = null,
-    DateTimeOffset? declaredDeadline = null)
+    DateTimeOffset? declaredDeadline = null,
+    int? coveredSystemCount = null,
+    int? declaredSystemCount = null)
   {
+    CoveredSystemCount = coveredSystemCount;
+    DeclaredSystemCount = declaredSystemCount;
     Id = id;
     Case = caseId;
     OccurredAt = occurredAt;
@@ -210,6 +214,25 @@ public sealed record LedgerEntry
   /// quelque chose à quelqu'un.
   /// </remarks>
   public DateTimeOffset? DeclaredDeadline { get; }
+
+  /// <summary>
+  /// Le nombre de systèmes recensés dont une pièce accompagnait la remise, et <c>null</c> partout
+  /// ailleurs. Il se lit <b>avec</b> <see cref="DeclaredSystemCount"/> : « couvrant 2 systèmes sur 6 ».
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est une mesure de la couverture, jamais un compte de données de la personne.</b> Son
+  /// lecteur est le contrôle, qui juge une pratique — et il <b>ne descend jamais</b> dans la
+  /// <c>CoverSheet</c>, où le même chiffre affirmerait à la personne que le client a exactement six
+  /// systèmes.
+  /// </remarks>
+  public int? CoveredSystemCount { get; }
+
+  /// <summary>
+  /// Le nombre de systèmes dont la réponse avait à répondre sous ce droit — ceux de son travail dû
+  /// et ceux dont une pièce était détenue —, et <c>null</c> partout ailleurs. C'est le dénominateur
+  /// de « 2 sur 6 », et il ne vaut que pour le contrôle.
+  /// </summary>
+  public int? DeclaredSystemCount { get; }
 
   /// <summary>
   /// La première ligne d'un dossier : il s'est ouvert, à telle date, sous telle déclaration
@@ -776,6 +799,83 @@ public sealed record LedgerEntry
       identityDeclaration: null,
       designationCount,
       declaredSystem: null);
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>déclaré la remise</b> d'un droit — le second des deux gestes, et le seul
+  /// qui date quoi que ce soit.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est ici, et nulle part ailleurs, que « 2 systèmes sur 6 » s'écrit.</b> Les deux nombres
+  /// sont une mesure destinée au contrôle, qui juge une pratique. Ils ne descendent <b>jamais</b>
+  /// dans la <c>CoverSheet</c> : écrits à la personne, ils lui affirmeraient que le client a
+  /// exactement six systèmes, donnant à une déclaration qui vieillit exprès l'autorité d'un
+  /// recensement.
+  /// </para>
+  /// <para>
+  /// <b>Le signataire est un humain nommé.</b> La remise est une <b>affirmation</b> : une machine
+  /// qui la daterait attesterait d'un geste que personne n'a fait, et le service ne prouve de toute
+  /// façon jamais que la personne ait reçu quoi que ce soit.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Rien du paquet n'entre ici</b> : ni nom de fichier, ni type, ni taille, ni le texte de la
+  /// page de garde. La preuve dit qu'un fichier a été remis, jamais ce qu'il y avait dedans.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel la remise est déclarée.</param>
+  /// <param name="occurredAt">L'instant de la déclaration — le geste, jamais le téléchargement.</param>
+  /// <param name="right">Le droit auquel cette remise répond. Une remise par droit, jamais par dossier.</param>
+  /// <param name="coveredSystemCount">
+  /// Le nombre de systèmes recensés dont une pièce était jointe. <b>Une mesure de la couverture</b>,
+  /// et non un compte de données.
+  /// </param>
+  /// <param name="declaredSystemCount">
+  /// Le nombre de systèmes dont la réponse avait à répondre sous ce droit — le dénominateur, qui ne
+  /// vaut que pour le contrôle. ⚠️ Il est pris sur <b>le même ensemble</b> que le numérateur : deux
+  /// ensembles différents mesurés l'un contre l'autre écriraient « 6 sur 5 ».
+  /// </param>
+  /// <param name="signatory">L'humain qui déclare la remise, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
+  /// <exception cref="ArgumentOutOfRangeException">L'un des deux comptes est négatif.</exception>
+  public static LedgerEntry DeliveryDeclared(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DataSubjectRight right,
+    int coveredSystemCount,
+    int declaredSystemCount,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+    ArgumentNullException.ThrowIfNull(signatory);
+    ArgumentOutOfRangeException.ThrowIfNegative(coveredSystemCount);
+    ArgumentOutOfRangeException.ThrowIfNegative(declaredSystemCount);
+
+    // « 6 sur 5 » n'est pas un rapport : c'est le signe que les deux moitiés ont été comptées sur
+    // deux ensembles différents. La preuve refuse de porter un chiffre que personne ne peut lire.
+    ArgumentOutOfRangeException.ThrowIfGreaterThan(coveredSystemCount, declaredSystemCount);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      throw new ArgumentException(
+        "Une remise est déclarée par un Operator nommé : elle est une affirmation, et aucune machine "
+        + "n'affirme qu'une réponse a été rendue à quelqu'un.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.DeliveryDeclared,
+      signatory,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem: null,
+      right,
+      coveredSystemCount: coveredSystemCount,
+      declaredSystemCount: declaredSystemCount);
   }
 
   /// <summary>

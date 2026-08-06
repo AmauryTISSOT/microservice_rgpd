@@ -43,6 +43,7 @@ else
         <th scope="col">Échéance (art. 12.3)</th>
         <th scope="col">Délai</th>
         <th scope="col">Identité déclarée</th>
+        <th scope="col">Remise</th>
       </tr>
     </thead>
     <tbody>
@@ -94,6 +95,25 @@ else
             }
           </td>
           <td>@line.IdentityDeclaration.FrenchLabel</td>
+          <td>
+            @*
+              UNE COLONNE SUR UNE LIGNE DÉJÀ PRÉSENTE, jamais une file de plus. Le dossier est ouvert,
+              il est là ; ce que cette colonne ajoute est qu'une réponse assemblée n'a jamais été
+              rendue. La laisser invisible serait l'Omission silencieuse sous sa forme la plus
+              tranquille. Énumérée, jamais comptée, comme les droits réclamés.
+            *@
+            @if (line.RightsAwaitingADeliveryDeclaration.Count == 0)
+            {
+              <span class="hint">—</span>
+            }
+            else
+            {
+              <strong class="awaiting-delivery-declaration">
+                téléchargée, non déclarée :
+                @string.Join(", ", line.RightsAwaitingADeliveryDeclaration.Select(right => right.Name))
+              </strong>
+            }
+          </td>
         </tr>
       }
     </tbody>

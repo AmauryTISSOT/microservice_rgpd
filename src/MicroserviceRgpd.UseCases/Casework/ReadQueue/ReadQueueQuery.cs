@@ -65,10 +65,21 @@ public sealed record OperatorQueue(IReadOnlyList<QueuedCase> Cases, DateTimeOffs
 /// Les droits réclamés, <b>énumérés et jamais comptés</b> : « Access, Erasure » dit à
 /// l'<c>Operator</c> ce qu'il a à faire, là où « 2 droits » ne lui apprend rien.
 /// </param>
+/// <param name="RightsAwaitingADeliveryDeclaration">
+/// Les droits dont quelqu'un a téléchargé la remise sans jamais déclarer l'avoir rendue —
+/// <b>énumérés et jamais comptés</b>, comme les droits réclamés.
+/// <para>
+/// <b>C'est une colonne sur une ligne déjà présente</b>, jamais une file de plus. Le dossier est
+/// ouvert, il est là ; ce que cette colonne ajoute est qu'un travail s'est arrêté au milieu du gué,
+/// et le laisser invisible serait l'<c>Omission silencieuse</c> sous sa forme la plus tranquille :
+/// la personne a une réponse assemblée que personne ne lui a rendue.
+/// </para>
+/// </param>
 public sealed record QueuedCase(
   CaseId Case,
   IdentityDeclaration IdentityDeclaration,
   ReceptionDate Reception,
   StatutoryDeadline Deadline,
   bool DelayOverrun,
-  IReadOnlyList<DataSubjectRight> ClaimedRights);
+  IReadOnlyList<DataSubjectRight> ClaimedRights,
+  IReadOnlyList<DataSubjectRight> RightsAwaitingADeliveryDeclaration);

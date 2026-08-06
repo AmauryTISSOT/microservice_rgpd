@@ -78,18 +78,26 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   /// ligne appartient à qui. Les deux vivent sur le <c>Case</c> et meurent à sa clôture ; ce qui
   /// survit d'un arbitrage est le <b>fait daté</b> et le <b>compte du sac</b>.
   /// </para>
+  /// <para>
+  /// Deux sont arrivées avec la remise : <c>covered_system_count</c> et
+  /// <c>declared_system_count</c>, les deux moitiés du « 2 sur 6 ». ⚠️ <b>Elles s'arrêtent ici</b> :
+  /// leur lecteur est le contrôle, qui juge une pratique, et le même rapport écrit à la personne
+  /// donnerait à une déclaration qui vieillit exprès l'autorité d'un recensement.
+  /// </para>
   /// </summary>
   [Fact]
-  public async Task NamesSeventeenColumnsAndNotOneMoreWhereANameCouldLand()
+  public async Task NamesNineteenColumnsAndNotOneMoreWhereANameCouldLand()
   {
     var columns = await ColumnsAsync();
 
     columns.Keys.Order().ShouldBe(
     [
       "case_id",
+      "covered_system_count",
       "data_subject_right",
       "declared_deadline",
       "declared_system",
+      "declared_system_count",
       "designation_count",
       "entry_id",
       "evidence_prose",

@@ -117,4 +117,18 @@ public sealed class LedgerRow
   /// et cette table n'en portera jamais une quatrième qui compterait les relances.
   /// </summary>
   public DateTimeOffset? DeclaredDeadline { get; init; }
+
+  /// <summary>
+  /// Combien de <c>DeclaredSystem</c> recensés la réponse remise <b>couvrait</b>. Le numérateur du
+  /// « 2 sur 6 » que le contrôle vient lire, et qui ne descend <b>jamais</b> dans la
+  /// <c>CoverSheet</c> : écrit à la personne, il affirmerait que le client a exactement six systèmes.
+  /// </summary>
+  public int? CoveredSystemCount { get; init; }
+
+  /// <summary>
+  /// Combien de <c>DeclaredSystem</c> le catalogue recensait au moment de la remise — le
+  /// dénominateur du même « 2 sur 6 ». Il est <b>écrit</b> plutôt que relu plus tard : le recensement
+  /// vieillit exprès, et le relire dans trois ans jugerait la pratique d'hier au paysage de demain.
+  /// </summary>
+  public int? DeclaredSystemCount { get; init; }
 }

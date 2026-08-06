@@ -128,4 +128,75 @@ public sealed class Claim
   /// pour la même raison qu'ailleurs : le <c>Ledger</c> survit au dossier de cinq ans.
   /// </remarks>
   internal void Confirm() => Confirmed = true;
+
+  /// <summary>
+  /// L'instant où le paquet de ce droit est <b>sorti du service</b> pour la première fois, ou
+  /// <c>null</c> si personne ne l'a encore pris. C'est le <b>premier</b> des deux gestes de la remise.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Il ne date rien de ce que le service prouve</b>, et n'entre donc pas au <c>Ledger</c> :
+  /// prendre le paquet n'est pas remettre, et confondre les deux ferait dater la preuve du moment où
+  /// un fichier a quitté un serveur. Ce qu'il sert est la <b>file</b> — une remise commencée et non
+  /// déclarée doit rester une ligne vue tous les jours, plutôt qu'une ligne manquante.
+  /// </para>
+  /// <para>
+  /// <b>Le premier instant est gardé, jamais le dernier.</b> Reprendre le paquet ne défait pas qu'un
+  /// exemplaire soit déjà hors de portée pour toujours, et réécrire la date ferait mentir la file sur
+  /// le jour où cela a commencé.
+  /// </para>
+  /// </remarks>
+  public DateTimeOffset? DeliveryTakenOn { get; private set; }
+
+  /// <summary>
+  /// L'instant où un humain a <b>déclaré la remise</b> de ce droit, ou <c>null</c> si personne ne l'a
+  /// déclarée. C'est le <b>second</b> geste, et lui seul date la remise au <c>Ledger</c> et détruit
+  /// les <see cref="RetrievedData"/>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La remise est une affirmation, pas un transfert d'octets.</b> Le service ne prouvera
+  /// jamais que la personne a reçu quoi que ce soit — greffier, pas témoin.
+  /// </remarks>
+  public DateTimeOffset? DeliveryDeclaredOn { get; private set; }
+
+  /// <summary>
+  /// Le paquet est-il sorti sans que personne n'ait déclaré la remise ? C'est la colonne que la file
+  /// porte sur une ligne <b>déjà présente</b> : elle trie et rappelle, elle ne fait apparaître aucun
+  /// dossier.
+  /// </summary>
+  public bool DeliveryAwaitsDeclaration => DeliveryTakenOn is not null && DeliveryDeclaredOn is null;
+
+  /// <summary>
+  /// Le paquet sort du service. <b>Rien n'est remis</b> : c'est le geste par lequel un humain ouvre
+  /// le ZIP et vérifie qu'il n'est pas vide, sans dater la preuve du mauvais instant.
+  /// </summary>
+  /// <returns><c>true</c> si c'est la première sortie ; <c>false</c> si un exemplaire était déjà dehors.</returns>
+  internal bool TakeDelivery(DateTimeOffset takenOn)
+  {
+    if (DeliveryTakenOn is not null)
+    {
+      return false;
+    }
+
+    DeliveryTakenOn = takenOn.ToUniversalTime();
+
+    return true;
+  }
+
+  /// <summary>
+  /// Un humain <b>déclare</b> la remise. Le geste ne se rejoue pas : une remise déjà déclarée l'est
+  /// une fois pour toutes, et la redéclarer écrirait une seconde ligne de preuve pour un seul fait.
+  /// </summary>
+  /// <returns><c>true</c> si la remise vient d'être déclarée ; <c>false</c> si elle l'était déjà.</returns>
+  internal bool DeclareDelivered(DateTimeOffset declaredOn)
+  {
+    if (DeliveryDeclaredOn is not null)
+    {
+      return false;
+    }
+
+    DeliveryDeclaredOn = declaredOn.ToUniversalTime();
+
+    return true;
+  }
 }

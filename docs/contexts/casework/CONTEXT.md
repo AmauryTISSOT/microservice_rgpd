@@ -531,6 +531,23 @@ ferait dater la preuve du moment où un fichier a quitté un serveur.
 témoin. ⚠️ Entre les deux gestes le paquet existe en deux exemplaires, dont l'un hors de portée pour
 toujours ; une `Delivery` téléchargée et non déclarée remise remonte dans la file de l'`Operator`,
 ligne présente vue tous les jours plutôt que ligne manquante.
+⚠️ **Le second geste demande le premier.** Déclarer remis un paquet que personne n'a jamais eu en
+main daterait au `Ledger` un geste qui n'a pas eu lieu, et détruirait des `RetrievedData` que
+personne n'a tendues.
+⚠️ **La `Delivery` n'est jamais gardée** : elle est recomposée à chaque geste à partir des
+`RetrievedData` détenues. L'entreposer aurait fait un second exemplaire des données de quelqu'un,
+dont l'effacement serait devenu une seconde chose à ne pas oublier.
+Elle **assemble sans jamais fusionner** : une pièce par `DeclaredSystem`, chacune sous un dossier
+portant son identifiant. Deux applications peuvent servir une pièce du même nom, et mettre l'archive
+à plat en aurait écrasé une — une réponse incomplète que rien n'aurait signalée.
+La ligne `DeliveryDeclared` du `Ledger` porte le rapport « 2 systèmes sur 6 » : combien la réponse
+couvrait, sur combien elle avait à répondre. ⚠️ Les deux moitiés sont comptées sur **le même
+ensemble** — celui que la `CoverSheet` énumère —, jamais l'une sur la page et l'autre sur le
+catalogue du jour : deux ensembles mesurés l'un contre l'autre écriraient « 6 sur 5 » le jour où
+quelqu'un retire du catalogue un système que le dossier portait. Il est **écrit** plutôt que relu
+plus tard : le recensement vieillit exprès, et le relire dans trois ans jugerait la pratique d'hier
+au paysage de demain. ⚠️ Ce rapport **s'arrête au `Ledger`** et ne descend jamais dans la
+`CoverSheet`.
 _Avoid_ : Export, Package, Response, Bundle, Download, envoi
 
 **CoverSheet** :
@@ -540,6 +557,9 @@ jointe ; ceux qui ont été interrogés **sans qu'aucun rattachement soit trouv�
 dont on dispose** ; ceux qui ne sont pas couverts, nommés un par un dans les mots du champ « contient »
 du `Manifest`. Elle se clôt en disant que cette liste est celle des systèmes **recensés**, et qu'elle
 ne garantit pas qu'il n'en existe pas d'autres.
+Une pièce **vide** n'est pas jointe à l'archive : elle est une réponse datée, la page la range parmi
+les systèmes interrogés sans rattachement, et joindre en plus un fichier de zéro octet ferait deux
+dires contradictoires dans le même envoi.
 Elle **énumère et ne compte jamais** : pas de total, pas de ratio, pas de dénominateur — nommer
 « l'export commercial transmis chaque mois à notre agence » est actionnable pour la personne là où
 « 4 sur 6 » ne lui apprend rien et lui ment sur l'exhaustivité du recensement.
@@ -550,6 +570,13 @@ invitant la personne à fournir d'autres `Designation`.
 Le service l'écrit **sans ouvrir une seule pièce** : le `Manifest` et les `Step` du `Case` lui
 suffisent, l'enveloppe du transport distinguant à elle seule la pièce absente, la pièce vide et la
 pièce pleine. L'incomplétude ne coûte donc rien à l'`Adapter`.
+Elle énumère les systèmes du travail dû **et** ceux dont une pièce est détenue : un `DeclaredSystem`
+recensé **après** l'ouverture du `Case` n'a aucun `Step`, et sa pièce partirait pourtant dans
+l'archive. La page annoncerait alors moins que ce que la personne reçoit — la façon la plus sûre de
+lui faire croire qu'elle a tout.
+⚠️ Le service n'y écrit **pas un chiffre**, et le nom du droit s'y lit en toutes lettres — « au titre
+du droit d'accès », jamais « article 15 ». Les mots d'un `DeclaredSystem` sont ceux du client : s'il
+a nommé son système avec un nombre, la page le recopie sans le réécrire.
 _Avoid_ : Summary, Report, Notice, Manifest (le mot est pris), note (pris par la prose)
 
 ### Ce qui meurt à la clôture, et ce qui reste

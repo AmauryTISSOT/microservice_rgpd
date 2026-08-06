@@ -390,6 +390,85 @@
         </form>
       </div>
     }
+
+    @*
+      LA REMISE, AU GRAIN DU DROIT. Une Delivery par Claim, jamais une par Case : deux droits sont
+      deux réponses et deux dates de remise, et un bouton unique sur le dossier aurait remis d'un
+      clic une réponse que personne n'avait relue.
+
+      DEUX GESTES, DEUX FORMULAIRES. Télécharger ouvre l'archive et ne date rien ; déclarer remis
+      affirme, date la preuve, et détruit les pièces. Les réunir aurait daté la remise à l'instant
+      où quelqu'un vérifiait — et détruit ce qu'il vérifiait.
+    *@
+    <div class="delivery">
+      <h4>La remise</h4>
+
+      @if (claim.DeliveryDeclaredOn is { } handedOn)
+      {
+        <p class="delivered">
+          <strong>Remise déclarée le @handedOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).</strong>
+          Les pièces lues au titre de ce droit ont été détruites. Le service n'en garde plus rien —
+          la preuve dit qu'un fichier a été remis, jamais ce qu'il y avait dedans.
+        </p>
+      }
+      else
+      {
+        <form method="post" asp-page-handler="Take">
+          <input type="hidden" name="Delivery.Right" value="@claim.Right.Name" />
+
+          <fieldset>
+            <legend>Télécharger</legend>
+
+            <p class="hint">
+              Le fichier réunit les pièces <strong>côte à côte</strong>, une par système, et la page
+              de garde qui les énumère. Ouvrez-le et vérifiez-le : ce geste ne date rien et ne
+              détruit rien.
+            </p>
+
+            <button type="submit">Télécharger la remise</button>
+          </fieldset>
+        </form>
+
+        @if (claim.DeliveryTakenOn is { } takenOn)
+        {
+          <p class="hint">
+            Téléchargée le @takenOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture), et
+            <strong>jamais déclarée remise</strong>. Ce dossier remonte dans la file tant que cette
+            ligne est là.
+          </p>
+
+          <form method="post" asp-page-handler="Handover">
+            <input type="hidden" name="Declaration.Right" value="@claim.Right.Name" />
+
+            <fieldset class="signature">
+              <legend>Déclarer remis</legend>
+
+              <p class="caveat">
+                ⚠️ Ce geste <strong>date la remise</strong> dans la matière de preuve et
+                <strong>détruit les pièces</strong>. Le service ne remet rien à personne : vous
+                affirmez avoir rendu cette réponse par le canal dont vous répondez.
+              </p>
+
+              <p>
+                <label for="declaration-signedby-@claim.Right.Name">
+                  Votre nom
+                  <span class="hint">
+                    Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em>
+                    ce régime. Aucune machine n'affirme qu'une réponse a été rendue à quelqu'un.
+                  </span>
+                </label>
+                <input type="text"
+                       id="declaration-signedby-@claim.Right.Name"
+                       name="Declaration.SignedBy"
+                       maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+              </p>
+
+              <button type="submit">Déclarer remis et signer</button>
+            </fieldset>
+          </form>
+        }
+      }
+    </div>
   </div>
 }
 
