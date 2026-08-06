@@ -96,6 +96,12 @@ l'affiche ainsi : il nomme la **règle appliquée**, jamais la date qu'elle a pr
 comme un fait. Le nombre n'est pas réglable : une case à régler serait une case à laisser pourrir, et
 sa valeur basse serait celle que tout le monde garderait. Le régime ne change **rien au calcul** de
 l'échéance — un dossier dont personne n'a déclaré la date n'a droit à aucun délai de faveur.
+⚠️ **Elle ne se confond pas avec l'instant du dépôt, et c'est le dépôt manuel qui l'exige.** Une
+demande transcrite d'une boîte aux lettres a été reçue **avant** d'entrer dans le service, parfois de
+beaucoup. La preuve garde donc les **deux** dates : celle du geste — quand le service a su — et celle
+de la réception, avec son régime. Une seule aurait fait choisir entre dater le geste et dater le
+délai, et dater la ligne d'ouverture de la réception ferait dire à la preuve que le service savait
+depuis trois semaines.
 _Avoid_ : ReceivedAt, StartDate, date d'entrée ⚠️ « date d'entrée » nommerait le geste du service là
 où le délai part de la réception par le client.
 
@@ -246,12 +252,53 @@ valeurs — `ApplicationSession`, `ChannelControl`, `OperatorAttested`, `Unverif
 la déclaration et n'en juge **jamais** la valeur ; il ne vérifie lui-même aucune identité.
 `Unverified` doit exister : sans la valeur laide, l'opérateur pressé coche la valeur propre et le
 service fabrique un faux au lieu d'enregistrer un vide.
-La motivation qu'exigent `Unverified` et `OperatorAttested` s'écrit en **deux morceaux** : une
-**méthode**, vocabulaire fermé qui se compte et qui survit à la clôture — « recoupement d'un attribut
-que le demandeur n'a pas reçu de nous », « reconnaissance personnelle », « rappel sur un contact
-déjà enregistré », « aucune » — et un **détail** en prose libre, irréductiblement nominatif, qui
-meurt avec le `Case`. Le contrôle juge ainsi la *pratique* sans qu'un seul nom lui survive.
-_Avoid_ : Authentication, Verification, TrustLevel, niveau de confiance
+`Unverified` et `OperatorAttested` sont les deux valeurs qui **ne reposent sur aucun contrôle du
+canal** : les deux autres s'appuient sur un dispositif que le client a mis en place et qui existe
+indépendamment d'un dossier donné ; celles-ci reposent sur ce qu'un humain a fait — ou n'a pas fait
+— pour *ce* dossier-là, et lui seul peut dire quoi. C'est très exactement ce qu'une
+`IdentityMotivation` vient recueillir.
+_Avoid_ : Authentication, Verification, TrustLevel, niveau de confiance ⚠️ le nom du prédicat évite
+« confiance » : il ne dit rien de ce que la déclaration vaut, seulement de **qui** l'a produite.
+
+**IdentityMotivation** :
+Ce que l'humain a pesé avant d'ouvrir un droit sous une identité qui ne repose sur aucun contrôle du
+canal. Elle s'écrit en **deux champs qui ne se confondent jamais** : une **méthode**
+(`IdentityVerificationMethod`), vocabulaire fermé de quatre valeurs qui **se compte** et **survit à
+la clôture** dans le `Ledger` — `AttributeCrosscheck` (« recoupement d'un attribut que le demandeur
+n'a pas reçu de nous »), `PersonalRecognition`, `CallbackOnKnownContact`, `None` — et un **détail**
+en prose libre, irréductiblement nominatif, qui vit sur le `Case` et **meurt avec lui**. Le contrôle
+juge ainsi la *pratique* sans qu'un seul nom lui survive. La règle tient par le **placement** — deux
+champs à deux endroits, dont un seul survit — comme pour la prose de travail et la prose de preuve.
+
+Elle est **réclamée** là où un accès pourrait être remis à un imposteur, c'est-à-dire sur le
+croisement `Access` × (`Unverified` | `OperatorAttested`), et **nulle part ailleurs** : la croiser
+avec les six autres droits ferait réclamer une motivation à chaque dépôt, et celle qui compte se
+noierait dans les autres.
+
+⚠️ **Elle ne barre jamais la route.** Un dossier ouvert sans elle est un dossier **faible et visible
+comme tel** : la réclamation reste affichée tant qu'elle n'est pas satisfaite, pendant que le délai
+court. Un refus à l'entrée l'aurait fait disparaître — soit en renvoyant la personne à son silence,
+soit en faisant cocher n'importe quoi.
+
+⚠️ **`None` est une réponse ; son absence n'en est pas une.** `None` est ce que quelqu'un a déclaré
+après avoir regardé ; l'absence est le fait que personne n'ait pesé. Les confondre ferait signer par
+défaut un aveu que personne n'a écrit — c'est la distinction que `ReceptionDate` tient pour la date,
+et pour la même raison.
+
+⚠️ **La réclamation peut être satisfaite après coup, et elle doit pouvoir l'être.** Une exigence
+qu'on ne peut pas satisfaire cesse d'être lue : un bandeau permanent s'apprend à ne plus se voir, et
+la faiblesse qu'il devait rendre visible redeviendrait invisible. Une motivation écrite plus tard
+s'ajoute au `Ledger` sans réécrire la ligne d'ouverture — l'**écart entre les deux dates** est
+précisément ce que le contrôle doit voir, un accès pesé le vendredi n'étant pas un accès pesé avant
+d'être ouvert le lundi. Elle ne touche à aucun `Claim` : c'est ce que le gel de `ClaimOrigin`
+protège.
+
+⚠️ **Le mot `Verification` est sur la liste _Avoid_ d'`IdentityDeclaration`, et il est repris ici
+sciemment** — `IdentityVerificationMethod`. Il n'y a pas de contradiction : ce que la liste interdit
+est de nommer *ce que le service aurait vérifié*, car il ne vérifie aucune identité. Ce type ne
+nomme pas une vérification du service, mais **ce qu'un humain déclare avoir fait** — et le service
+l'enregistre sans en juger la valeur, comme le reste.
+_Avoid_ : Justification, Reason, Rationale, IdentityProof, preuve d'identité
 
 ⚠️ Aucune pièce d'identité n'entre dans le service, tous canaux confondus. Le `Ledger` consigne le
 **fait** qu'une pièce est passée, jamais la pièce.
@@ -261,6 +308,21 @@ D'où vient la reconnaissance d'un droit dans un `Case` : `Named` (la personne l
 `Attested` (l'`Operator` l'affirme), `Proposed` (une `Qualification` l'a proposé, un humain le
 confirme dans le `Case`). Un `Claim` `Proposed` non confirmé est une `OpenQuestion` — visible
 pendant que le délai court.
+
+**Un `Claim` garde la porte sous laquelle il est né.** L'origine **et** l'`IdentityDeclaration` en
+vigueur à cet instant se **figent** sur le `Claim`, sur sa propre ligne et jamais par une jointure
+vers le `Case` : le dossier porte l'identité déclarée d'aujourd'hui, qui se reprend, mais une
+déclaration relevée en fin de dossier ne réécrit pas la preuve d'hier — l'accès ouvert lundi l'a été
+sous `Unverified`, et le rappel passé vendredi ne le rend pas rétroactivement propre.
+
+⚠️ `Proposed` **n'est pas un quatrième `ClaimState`**, et la confirmation n'en est pas un non plus :
+la provenance d'un droit et l'état de la réponse due à la personne sont deux questions distinctes.
+Un état de plus aurait fait porter à la réponse une question de provenance, qu'il aurait fallu faire
+retomber quelque part à la clôture.
+
+⚠️ **Il n'existe aucun vestibule.** La confirmation a lieu **dans le `Case` ouvert**, pendant que le
+mois de l'art. 12.3 court : une salle d'attente aurait fait passer pour « pas encore commencé » un
+compteur déjà lancé, et la demande y aurait attendu hors de la file.
 _Avoid_ : Source, Channel, provenance
 
 ### Ce que le service détient, et pour combien de temps

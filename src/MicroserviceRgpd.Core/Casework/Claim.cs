@@ -28,10 +28,17 @@ public sealed class Claim
 {
   private readonly List<Step> _steps;
 
-  internal Claim(DataSubjectRight right, IEnumerable<DeclaredSystemId> declaredSystems)
+  internal Claim(
+    DataSubjectRight right,
+    ClaimOrigin origin,
+    IdentityDeclaration identityAtOrigin,
+    IEnumerable<DeclaredSystemId> declaredSystems)
   {
     Right = right;
     State = ClaimState.Open;
+    Origin = origin;
+    IdentityAtOrigin = identityAtOrigin;
+    Confirmed = origin.ConfirmedAtBirth;
     _steps = [.. declaredSystems.Select(system => new Step(system))];
   }
 
@@ -40,6 +47,8 @@ public sealed class Claim
   {
     Right = DataSubjectRight.Access;
     State = ClaimState.Open;
+    Origin = ClaimOrigin.Named;
+    IdentityAtOrigin = IdentityDeclaration.Unverified;
     _steps = [];
   }
 
@@ -60,4 +69,63 @@ public sealed class Claim
   /// <c>Manifest</c> n'a pas encore été déclaré, et l'écran doit pouvoir le dire.
   /// </summary>
   public IReadOnlyList<Step> Steps => _steps;
+
+  /// <summary>
+  /// D'où vient la reconnaissance de ce droit. <b>Figée à la naissance</b> : un <c>Claim</c> garde
+  /// la porte sous laquelle il est né.
+  /// </summary>
+  public ClaimOrigin Origin { get; private set; }
+
+  /// <summary>
+  /// Ce que le canal déclarait de l'identité du demandeur <b>à l'instant où ce droit s'est
+  /// ouvert</b>, et non ce qu'il en déclare aujourd'hui.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est une copie, et c'est le propos.</b> Le <see cref="Case"/> porte l'identité déclarée
+  /// courante — l'identité est une propriété de la personne, et elle se reprend. Mais une déclaration
+  /// relevée en fin de dossier ne réécrit pas la preuve d'hier : l'accès ouvert lundi l'a été sous
+  /// <c>Unverified</c>, et le rappel passé vendredi ne le rend pas rétroactivement propre.
+  /// </para>
+  /// <para>
+  /// La copie vit ici plutôt que dans le <c>Ledger</c> seul parce que l'écran doit pouvoir la
+  /// montrer à côté du droit qu'elle concerne, sans faire relire à l'<c>Operator</c> la preuve pour
+  /// savoir ce qu'il a sous les yeux.
+  /// </para>
+  /// </remarks>
+  public IdentityDeclaration IdentityAtOrigin { get; private set; }
+
+  /// <summary>
+  /// Un humain a-t-il repris ce droit à son compte ? Vrai dès la naissance sauf pour
+  /// <see cref="ClaimOrigin.Proposed"/>, qu'une machine seule a reconnu.
+  /// </summary>
+  public bool Confirmed { get; private set; }
+
+  /// <summary>
+  /// Le dossier doit-il <b>réclamer une motivation</b> pour ce droit ? C'est une lecture de
+  /// <see cref="IdentityMotivation.IsDemandedBy"/> sur l'identité <b>d'origine</b>, jamais sur
+  /// l'identité courante : ce qui est en cause est la porte sous laquelle ce droit s'est ouvert.
+  /// </summary>
+  public bool MotivationIsDemanded => IdentityMotivation.IsDemandedBy(IdentityAtOrigin, Right);
+
+  /// <summary>
+  /// Ce droit attend-il encore qu'un humain le reprenne à son compte ? Vrai d'un
+  /// <see cref="ClaimOrigin.Proposed"/> non confirmé, et <b>de rien d'autre</b>.
+  /// </summary>
+  /// <remarks>
+  /// C'est une <c>OpenQuestion</c>, jamais un blocage : le dossier est ouvert, le délai court, et
+  /// l'attente est <b>visible dans le <see cref="Case"/></b> plutôt que rangée dans un vestibule que
+  /// personne ne regarde.
+  /// </remarks>
+  public bool AwaitsConfirmation => !Confirmed;
+
+  /// <summary>
+  /// Un humain reprend ce droit à son compte. <b>Idempotent</b> : reconfirmer ne défait rien, et un
+  /// second clic n'est pas une faute qu'il faudrait signaler à qui l'a fait.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat,
+  /// pour la même raison qu'ailleurs : le <c>Ledger</c> survit au dossier de cinq ans.
+  /// </remarks>
+  internal void Confirm() => Confirmed = true;
 }

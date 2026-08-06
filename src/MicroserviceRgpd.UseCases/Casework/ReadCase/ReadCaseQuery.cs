@@ -30,11 +30,28 @@ public sealed record ReadCaseQuery(CaseId Case) : IQuery<CaseOnScreen?>;
 /// fraîcheur d'un recensement est celle de sa ligne la plus vieille, et c'est au moment où quelqu'un
 /// signe qu'une déclaration vieille doit lui être rappelée.
 /// </param>
+/// <param name="Motivation">
+/// Ce que l'humain a pesé avant d'ouvrir ces droits sous cette identité, ou <c>null</c> si personne
+/// ne l'a pesé. La méthode se lit à l'écran comme au <c>Ledger</c> ; le détail ne se lit qu'ici, et
+/// meurt avec le dossier.
+/// </param>
+/// <param name="AwaitsAMotivation">
+/// L'écran doit-il <b>réclamer une motivation</b> que personne n'a écrite ? Vrai quand au moins un
+/// droit l'exige et qu'aucune n'a été donnée.
+/// <para>
+/// ⚠️ <b>Elle ne barre rien.</b> Le dossier est ouvert, le délai court, et l'exigence non satisfaite
+/// reste affichée tant qu'elle ne l'est pas : la faiblesse d'un dossier doit rester <b>visible</b>
+/// plutôt que contournée. Un refus à l'entrée l'aurait fait disparaître — soit en renvoyant la
+/// personne à son silence, soit en faisant cocher n'importe quoi.
+/// </para>
+/// </param>
 /// <param name="Claims">Les droits réclamés, et sous chacun le travail dû.</param>
 /// <param name="ObservedAt">L'instant sur lequel le dépassement a été calculé.</param>
 public sealed record CaseOnScreen(
   CaseId Case,
   IdentityDeclaration IdentityDeclaration,
+  IdentityMotivation? Motivation,
+  bool AwaitsAMotivation,
   ReceptionDate Reception,
   StatutoryDeadline Deadline,
   bool DelayOverrun,
@@ -49,10 +66,32 @@ public sealed record CaseOnScreen(
 /// </summary>
 /// <param name="Right">Le droit réclamé.</param>
 /// <param name="State">Où en est la réponse du service sur ce droit.</param>
+/// <param name="Origin">D'où vient la reconnaissance de ce droit — figée à sa naissance.</param>
+/// <param name="IdentityAtOrigin">
+/// Ce que le canal déclarait de l'identité <b>quand ce droit s'est ouvert</b>, et non ce qu'il en
+/// déclare aujourd'hui : une déclaration relevée plus tard ne réécrit pas la preuve d'hier.
+/// </param>
+/// <param name="AwaitsConfirmation">
+/// Ce droit attend-il encore qu'un humain le reprenne à son compte ? Vrai d'un
+/// <see cref="ClaimOrigin.Proposed"/> non confirmé.
+/// <para>
+/// ⚠️ <b>C'est une <c>OpenQuestion</c>, jamais un blocage</b> : elle est visible <b>dans</b> le
+/// dossier ouvert, pendant que le délai court, et il n'existe aucun état d'attente hors du
+/// <c>Case</c>.
+/// </para>
+/// </param>
+/// <param name="MotivationIsDemanded">
+/// Ce droit, sous l'identité de sa naissance, réclame-t-il une motivation ? Vrai d'un
+/// <c>Access</c> ouvert sous une déclaration qui ne repose sur aucun contrôle du canal.
+/// </param>
 /// <param name="Steps">Le travail dû, un par système déclaré au moment de l'ouverture.</param>
 public sealed record ClaimedRight(
   DataSubjectRight Right,
   ClaimState State,
+  ClaimOrigin Origin,
+  IdentityDeclaration IdentityAtOrigin,
+  bool AwaitsConfirmation,
+  bool MotivationIsDemanded,
   IReadOnlyList<StepOnScreen> Steps);
 
 /// <summary>

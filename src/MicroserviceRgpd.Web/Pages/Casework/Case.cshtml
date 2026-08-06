@@ -25,6 +25,115 @@
   <dt>Identité déclarée</dt>
   <dd>@onScreen.IdentityDeclaration.FrenchLabel</dd>
 
+  @*
+    LA MOTIVATION, ET SES DEUX MOITIÉS. La méthode se compte et survit au dossier ; le détail nomme
+    par nature et meurt à la clôture. L'écran est le seul endroit où les deux se lisent ensemble.
+  *@
+  <dt>Motivation de l'identité</dt>
+  <dd>
+    @if (onScreen.Motivation is { } motivation)
+    {
+      <span class="method">@motivation.Method.FrenchLabel</span>
+      @if (motivation.Detail is { } detail)
+      {
+        <span class="hint">
+          @detail
+          <br />
+          Ce détail vit sur ce dossier et <strong>disparaît à sa clôture</strong> ; seule la méthode
+          survit dans la matière de preuve.
+        </span>
+      }
+    }
+    else if (onScreen.AwaitsAMotivation)
+    {
+      @*
+        L'EXIGENCE NON SATISFAITE, ET ELLE RESTE AFFICHÉE. Le dossier est ouvert, le délai court, et
+        rien n'est barré : la faiblesse doit rester VISIBLE plutôt que contournée. Un refus à
+        l'entrée l'aurait fait disparaître — soit en renvoyant la personne à son silence, soit en
+        faisant cocher n'importe quoi.
+      *@
+      <strong class="claimed-motivation">Motivation réclamée.</strong>
+      <span class="hint">
+        Un <code>Access</code> s'est ouvert ici sous une identité qui ne repose sur aucun contrôle du
+        canal, et <strong>personne n'a pesé</strong> ce que cela valait. Le dossier s'instruit quand
+        même ; cette ligne restera tant qu'aucune méthode n'aura été déclarée.
+      </span>
+
+      @*
+        LA DEMANDE PEUT ÊTRE SATISFAITE, et c'est ce qui la rend lisible : une exigence qu'on ne peut
+        pas satisfaire cesse d'être lue, et le bandeau qu'on apprend à ne plus voir aurait rendu la
+        faiblesse invisible — l'inverse exact de ce qu'il est là pour faire.
+
+        ⚠️ Ce qui s'écrit ici ne touche AUCUN droit : l'accès ouvert lundi garde l'identité sous
+        laquelle il est né. La preuve gardera les deux dates, et l'écart entre elles est un fait.
+      *@
+      <form method="post" asp-page-handler="Motivate">
+        <fieldset class="signature">
+          <legend>Peser cette identité maintenant</legend>
+
+          <p class="hint">
+            Ce que vous écrivez ici dit ce que vous avez <strong>fini par</strong> peser. Le droit
+            déjà ouvert garde l'identité sous laquelle il est né : la preuve gardera les deux dates,
+            et rien de ce geste ne rend rétroactivement propre ce qui a été fait avant lui.
+          </p>
+
+          <p>
+            <label for="motivation-method">Méthode</label>
+            <span class="hint">
+              Fermée, parce qu'elle <strong>se compte et survit au dossier</strong>. <em>Aucune</em>
+              en fait partie : c'est la réponse de qui a regardé et n'a rien fait.
+            </span>
+            <select id="motivation-method" name="Motivation.VerificationMethod">
+              @*
+                Aucune option vide ici, à la différence du dépôt : le vide y disait « personne n'a
+                encore pesé », et quelqu'un est en train de peser — c'est le geste même.
+              *@
+              @foreach (var method in IdentityVerificationMethod.List.OrderBy(one => one.Value))
+              {
+                <option value="@method.Name"
+                        selected="@(method.Name == Model.Motivation.VerificationMethod)">
+                  @method.FrenchLabel
+                </option>
+              }
+            </select>
+          </p>
+
+          <p>
+            <label for="motivation-detail">Détail</label>
+            <span class="hint">
+              En prose libre, et <strong>facultatif</strong>. Il nomme par nature, vit sur ce dossier
+              et <strong>disparaît à sa clôture</strong>. Rien de ce champ n'entre dans la preuve.
+            </span>
+            <textarea id="motivation-detail"
+                      name="Motivation.Detail"
+                      rows="3"
+                      maxlength="@IdentityMotivation.MaxDetailLength">@Model.Motivation.Detail</textarea>
+          </p>
+
+          <p>
+            <label for="motivation-signedby">
+              Votre nom
+              <span class="hint">
+                Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em> ce
+                régime.
+              </span>
+            </label>
+            <input type="text"
+                   id="motivation-signedby"
+                   name="Motivation.SignedBy"
+                   maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+          </p>
+
+          <button type="submit">Déclarer et signer</button>
+        </fieldset>
+      </form>
+    }
+    else
+    {
+      <span class="none">Aucune n'est réclamée pour ce dossier.</span>
+    }
+  </dd>
+
   <dt>Reçu le</dt>
   <dd>
     @if (onScreen.Reception.IsDefault)
@@ -93,6 +202,74 @@
 {
   <div class="claim">
     <h3>@claim.Right.Name <span class="hint">— @claim.State.FrenchLabel</span></h3>
+
+    @*
+      L'origine et l'identité D'ORIGINE, et non celles du dossier d'aujourd'hui : un droit garde la
+      porte sous laquelle il est né, et une déclaration relevée plus tard ne réécrit pas la preuve
+      d'hier.
+    *@
+    <p class="hint">
+      @claim.Origin.FrenchLabel — ouvert sous l'identité « @claim.IdentityAtOrigin.FrenchLabel ».
+      @if (claim.IdentityAtOrigin != onScreen.IdentityDeclaration)
+      {
+        <text>
+          Le dossier déclare aujourd'hui « @onScreen.IdentityDeclaration.FrenchLabel » ; ce droit
+          garde <strong>celle sous laquelle il s'est ouvert</strong>.
+        </text>
+      }
+    </p>
+
+    @if (claim.AwaitsConfirmation)
+    {
+      @*
+        UNE OpenQuestion, JAMAIS UN BLOCAGE. Le droit est dans le dossier, le travail dû existe, le
+        délai court : l'attente est visible ICI plutôt que rangée dans un vestibule que personne ne
+        regarde. Il n'existe aucun état d'attente hors du Case.
+      *@
+      <p class="claimed-confirmation">
+        <strong>Confirmation réclamée.</strong> Une <code>Qualification</code> a proposé ce droit ;
+        aucun humain ne l'a encore repris à son compte. Le dossier s'instruit quand même — le délai
+        de l'art. 12.3 ne s'arrête pour personne — mais la preuve dira qu'aucune personne ne l'a
+        reconnu tant que cette ligne est là.
+      </p>
+
+      <form method="post" asp-page-handler="Confirm">
+        <input type="hidden" name="Confirmation.Right" value="@claim.Right.Name" />
+
+        <fieldset class="signature">
+          <legend>Reprendre ce droit à mon compte</legend>
+
+          <p>
+            <label for="confirm-signedby-@claim.Right.Name">
+              Votre nom
+              <span class="hint">
+                Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em> ce
+                régime.
+              </span>
+            </label>
+            <input type="text"
+                   id="confirm-signedby-@claim.Right.Name"
+                   name="Confirmation.SignedBy"
+                   maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+          </p>
+
+          <button type="submit">Confirmer et signer</button>
+        </fieldset>
+      </form>
+    }
+
+    @if (claim.MotivationIsDemanded && onScreen.Motivation is null)
+    {
+      @*
+        Redite au grain du droit : le bandeau dit que le dossier réclame une motivation, cette ligne
+        dit LEQUEL des droits l'exige. Sans elle, un dossier portant Access et Erasure laisserait
+        chercher lequel des deux est en cause.
+      *@
+      <p class="claimed-motivation">
+        <strong>Motivation réclamée pour ce droit.</strong> Un accès accordé à un imposteur ne doit
+        pas passer sans que quiconque l'ait pesé.
+      </p>
+    }
 
     @if (claim.Steps.Count == 0)
     {

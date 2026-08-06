@@ -1,0 +1,259 @@
+@page "/dossiers/depot"
+@model DepositModel
+@using MicroserviceRgpd.Core.Casework
+@using MicroserviceRgpd.Core.Casework.Ledger
+@using MicroserviceRgpd.Core.SharedKernel
+@{
+  ViewData["Title"] = "Le dépôt manuel";
+}
+
+<h1>Le dépôt manuel</h1>
+
+@*
+  Le mois de l'art. 12.3 court DÉJÀ. C'est la première chose que l'écran dit, parce que c'est la
+  raison pour laquelle il existe : tant que la demande dort dans une boîte aux lettres, le service
+  ne peut rien prouver et le délai s'écoule quand même.
+*@
+<p class="caveat">
+  Une demande reçue par courriel entre ici. Le <strong>mois de l'art. 12.3 court déjà</strong> : il
+  part de la réception par le responsable de traitement, jamais de ce dépôt. Aucun champ n'est
+  obligatoire hors votre nom — <strong>un dossier incomplet vaut mieux qu'un dossier absent</strong>,
+  et ce qui manque restera visible.
+</p>
+
+@if (!ViewData.ModelState.IsValid)
+{
+  <div class="refusals">
+    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+    {
+      <p class="refusal">@refusal.ErrorMessage</p>
+    }
+  </div>
+}
+
+<form method="post">
+  <h2>La personne, telle qu'on la désigne</h2>
+
+  @*
+    Le sac a la FORME du canal API, exactement : une nature du vocabulaire fermé, une valeur relue
+    telle quelle. Deux formes voudraient dire deux chemins de recherche à maintenir.
+  *@
+  <p class="hint">
+    Ce sont les seules clés sous lesquelles on cherchera cette personne. Aucune ne prétend à
+    l'unicité ni à l'exactitude : deux peuvent viser la même personne, une seule peut en viser deux.
+    Les lignes laissées vides sont ignorées.
+  </p>
+
+  @for (var line = 0; line < DepositModel.DesignationLines; line++)
+  {
+    var kind = line < Model.Form.DesignationKinds.Length
+      ? Model.Form.DesignationKinds[line]
+      : DesignationKind.Email.Token;
+    var value = line < Model.Form.DesignationValues.Length ? Model.Form.DesignationValues[line] : null;
+
+    <p class="designation">
+      <label for="designation-kind-@line">Nature</label>
+      <select id="designation-kind-@line" name="Form.DesignationKinds">
+        @foreach (var one in DesignationKind.List.OrderBy(each => each.Value))
+        {
+          <option value="@one.Token" selected="@(one.Token == kind)">@one.FrenchLabel</option>
+        }
+      </select>
+
+      <label for="designation-value-@line">Valeur</label>
+      <input type="text"
+             id="designation-value-@line"
+             name="Form.DesignationValues"
+             maxlength="@Designation.MaxValueLength"
+             value="@value" />
+    </p>
+  }
+
+  <h2>Les droits exercés</h2>
+
+  @*
+    Aucune case cochée est une RÉPONSE. Une demande n'exerçant aucun droit entre quand même, et se
+    clora NotApplicable sous la signature d'un humain : aucun verdict OutOfScope ne reste orphelin,
+    et aucune machine ne prononce seule une fin de non-recevoir.
+  *@
+  <p class="hint">
+    Ne cochez que ce que la demande exerce réellement. <strong>Aucune case cochée est une
+    réponse</strong> : une demande n'exerçant aucun droit entre quand même, et se clôt sous la
+    signature d'un humain — jamais par le service seul.
+  </p>
+
+  @foreach (var right in DataSubjectRight.List.Where(one => one != DataSubjectRight.OutOfScope).OrderBy(one => one.Value))
+  {
+    <p>
+      <label for="right-@right.Name">
+        <input type="checkbox"
+               id="right-@right.Name"
+               name="Form.Rights"
+               value="@right.Name"
+               checked="@Model.Form.Rights.Contains(right.Name)" />
+        @*
+          Le libellé français, et l'identifiant à côté : c'est un écran de saisie, où l'Operator
+          coche ce qu'il lit — mais le mot de la taxonomie est celui qu'il reverra partout ailleurs
+          dans le dossier, et le lui cacher ici lui ferait apprendre deux vocabulaires.
+        *@
+        @right.FrenchLabel <span class="hint">— @right.Name</span>
+      </label>
+    </p>
+  }
+
+  @*
+    OutOfScope N'EST PAS OFFERT, et son absence est structurelle : ce n'est pas un droit réclamable,
+    c'est le verdict qu'aucun ne l'a été. Il se prononce à la clôture, par un humain nommé.
+  *@
+  <p class="hint">
+    <code>OutOfScope</code> ne figure pas dans cette liste et n'y figurera pas : ce n'est pas un droit
+    qu'on réclame, c'est le constat qu'aucun ne l'a été. Il se prononce à la clôture, sous une
+    signature.
+  </p>
+
+  <p>
+    <label for="origin">D'où vient cette reconnaissance</label>
+    <span class="hint">
+      Ce que vous choisissez ici <strong>se fige sur chaque droit</strong> : un droit garde la porte
+      sous laquelle il est né. <em>Proposé en amont</em> naît non confirmé et vous sera réclamé dans
+      le dossier — une machine ne reconnaît jamais un droit toute seule.
+    </span>
+    <select id="origin" name="Form.Origin">
+      @foreach (var origin in ClaimOrigin.List.OrderBy(one => one.Value))
+      {
+        <option value="@origin.Name"
+                selected="@(origin.Name == (Model.Form.Origin ?? ClaimOrigin.Named.Name))">
+          @origin.FrenchLabel
+        </option>
+      }
+    </select>
+  </p>
+
+  <h2>La date de réception</h2>
+
+  <p>
+    <label for="received-on">Reçue le</label>
+    <span class="hint">
+      La date à laquelle <strong>le client</strong> a reçu la demande, et non celle de votre geste.
+      <strong>Laissez vide si vous l'ignorez</strong> : le service tiendra
+      J+@ReceptionDate.DaysHeldAlreadyRunByDefault pour déjà courus et l'affichera
+      <strong>comme un défaut</strong> — jamais comme une date que quelqu'un aurait affirmée.
+      Inventer une date propre serait pire que ne rien savoir.
+    </span>
+    <input type="date" id="received-on" name="Form.ReceivedOn" value="@Model.Form.ReceivedOn" />
+  </p>
+
+  <h2>L'identité du demandeur</h2>
+
+  <p>
+    <label for="identity-declaration">Identité déclarée</label>
+    <span class="hint">
+      Ce que <strong>vous</strong> déclarez, jamais ce que le service vérifie : il enregistre la
+      déclaration et n'en juge pas la valeur. <em>Non vérifiée</em> est une valeur à part entière —
+      enregistrer un vide vaut mieux que fabriquer un faux en cochant la valeur propre.
+    </span>
+    <select id="identity-declaration" name="Form.IdentityDeclaration">
+      @foreach (var declaration in IdentityDeclaration.List.OrderBy(one => one.Value))
+      {
+        <option value="@declaration.Name"
+                selected="@(declaration.Name == (Model.Form.IdentityDeclaration ?? IdentityDeclaration.Unverified.Name))">
+          @declaration.FrenchLabel
+        </option>
+      }
+    </select>
+  </p>
+
+  @*
+    LA MOTIVATION, EN DEUX CHAMPS QUI NE SE CONFONDENT PAS.
+
+    La MÉTHODE est fermée : elle se compte, son lecteur est le contrôle, et elle entre au Ledger où
+    elle SURVIT à la clôture. Le DÉTAIL est de la prose libre : il dit qui a été rappelé et sur quoi,
+    il est nominatif par nature, et il MEURT avec le dossier. Un champ unique aurait fait choisir
+    entre compter et raconter. La règle tient par ce placement, jamais par la discipline.
+
+    ⚠️ AUCUN emplacement pour une pièce jointe, ici pas plus qu'ailleurs (CEPD § 79).
+  *@
+  <fieldset class="motivation">
+    <legend>La motivation</legend>
+
+    <p class="hint">
+      Réclamée lorsqu'un <strong>Access</strong> s'ouvre sous une identité qui ne repose sur aucun
+      contrôle du canal — le régime courant ici. Un accès accordé à un imposteur ne doit pas passer
+      sans que quiconque l'ait pesé. <strong>Elle ne barre jamais la route</strong> : le dossier
+      s'enregistrera sans elle, et la réclamera tant qu'elle manque.
+    </p>
+
+    <p>
+      <label for="verification-method">Méthode</label>
+      <span class="hint">
+        Fermée, parce qu'elle <strong>se compte et survit au dossier</strong>. <em>Aucune</em> en fait
+        partie : c'est la réponse de qui a regardé et n'a rien fait, et elle vaut infiniment mieux
+        qu'une méthode propre cochée par commodité.
+      </span>
+      <select id="verification-method" name="Form.VerificationMethod">
+        @*
+          Le vide est en tête et il est distinct de « aucune » : vide veut dire « personne n'a pesé »,
+          « aucune » veut dire « quelqu'un a pesé et n'a rien fait ». Les confondre ferait signer par
+          défaut un aveu que personne n'a écrit.
+        *@
+        <option value="" selected="@string.IsNullOrEmpty(Model.Form.VerificationMethod)">
+          — personne ne l'a pesé —
+        </option>
+        @foreach (var method in IdentityVerificationMethod.List.OrderBy(one => one.Value))
+        {
+          <option value="@method.Name" selected="@(method.Name == Model.Form.VerificationMethod)">
+            @method.FrenchLabel
+          </option>
+        }
+      </select>
+    </p>
+
+    <p>
+      <label for="motivation-detail">Détail</label>
+      <span class="hint">
+        En prose libre, et <strong>facultatif</strong>. Il nomme par nature — qui a été rappelé, sur
+        quoi — il vit sur ce dossier et <strong>disparaît à sa clôture</strong>. Rien de ce champ
+        n'entre dans la matière de preuve.
+      </span>
+      <textarea id="motivation-detail"
+                name="Form.MotivationDetail"
+                rows="3"
+                maxlength="@IdentityMotivation.MaxDetailLength">@Model.Form.MotivationDetail</textarea>
+    </p>
+  </fieldset>
+
+  @*
+    Aucun champ de pièce jointe sur cet écran, et l'absence est structurelle : le formulaire n'a
+    aucune propriété qui pourrait en porter une. Le Ledger ne garde jamais qu'un FAIT de
+    vérification, jamais la pièce (CEPD § 79).
+  *@
+  <p class="caveat">
+    <strong>N'attachez aucune pièce d'identité, et n'en recopiez aucune ici.</strong> Aucun champ de
+    cet écran n'en accepte, sur ce canal pas plus que sur les autres : le service consigne le
+    <em>fait</em> qu'une pièce est passée sous vos yeux, jamais la pièce.
+  </p>
+
+  <fieldset class="signature">
+    <legend>Signer ce dépôt</legend>
+
+    <p>
+      <label for="signed-by">
+        Votre nom
+        <span class="hint">
+          Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em> ce
+          régime, pour qu'elle ne soit pas relue comme une identification.
+        </span>
+      </label>
+      @*
+        Le nom ne revient jamais, pas même sur un refus : une case vide fait de chaque envoi un geste
+        délibéré, et c'est la seule case dont le remplissage automatique ferait signer quelqu'un sans
+        qu'il l'ait voulu.
+      *@
+      <input type="text" id="signed-by" name="Form.SignedBy" maxlength="@Signatory.MaxNameLength" />
+    </p>
+
+    <button type="submit">Déposer et signer</button>
+  </fieldset>
+</form>
+
+<p><a asp-page="Queue">Revenir à la file</a></p>

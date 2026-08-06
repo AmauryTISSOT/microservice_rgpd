@@ -47,12 +47,23 @@ public sealed class ReadCaseHandler(
       .Select(claim => new ClaimedRight(
         claim.Right,
         claim.State,
+        // L'origine et l'identité d'origine descendent telles quelles : ce sont des copies figées à
+        // la naissance du droit, et les recalculer sur le dossier d'aujourd'hui serait exactement la
+        // réécriture qu'elles existent pour empêcher.
+        claim.Origin,
+        claim.IdentityAtOrigin,
+        claim.AwaitsConfirmation,
+        claim.MotivationIsDemanded,
         [.. claim.Steps.Select(step => Projected(step, catalogue))]))
       .ToArray();
 
     return new CaseOnScreen(
       opened.Id,
       opened.IdentityDeclaration,
+      opened.Motivation,
+      // La règle vit sur la racine, qui la calcule sur ses Claim : une seconde rédaction ici
+      // finirait par ne plus dire la même chose que le dossier.
+      opened.AwaitsAMotivation,
       opened.Reception,
       deadline,
       deadline.IsOverrunAt(observedAt),

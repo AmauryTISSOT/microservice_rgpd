@@ -183,8 +183,10 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
     var defaulted = Case.Open(
       CaseId.Next(),
       IdentityDeclaration.Unverified,
+      motivation: null,
       [Designation.Of(DesignationKind.Email, "sans.date@example.fr")],
       [DataSubjectRight.Access],
+      ClaimOrigin.Named,
       Manifest.Empty,
       ReceptionDate.Defaulted(Received));
 
@@ -220,6 +222,98 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
     states.ShouldBe([nameof(CaseState.Open)]);
   }
 
+  /// <summary>
+  /// <b>Ce qu'un <c>Claim</c> a figé à sa naissance descend sur sa ligne</b>, et non par une jointure
+  /// vers celle du dossier : le jour où quelqu'un reprend la déclaration d'identité du <c>Case</c>,
+  /// une jointure rendrait rétroactivement propre un accès ouvert sur rien.
+  /// </summary>
+  [Fact]
+  public async Task WritesOnEachClaimTheOriginAndTheIdentityItFrozeAtItsBirth()
+  {
+    var proposed = Case.Open(
+      CaseId.Next(),
+      IdentityDeclaration.Unverified,
+      motivation: null,
+      [Designation.Of(DesignationKind.Email, "propose@example.fr")],
+      [DataSubjectRight.Access],
+      ClaimOrigin.Proposed,
+      Manifest.Empty,
+      ReceptionDate.Declared(Received));
+
+    await SaveAsync(proposed);
+
+    var frozen = await ScalarListAsync(
+      $"select origin || '/' || identity_at_origin || '/' || confirmed::text "
+      + $"from case_claims where case_id = '{proposed.Id.Value}'");
+
+    frozen.ShouldBe([$"{nameof(ClaimOrigin.Proposed)}/{nameof(IdentityDeclaration.Unverified)}/false"]);
+
+    var reread = await RereadAsync(proposed.Id);
+
+    reread.Claims[0].Origin.ShouldBe(ClaimOrigin.Proposed);
+    reread.Claims[0].IdentityAtOrigin.ShouldBe(IdentityDeclaration.Unverified);
+    reread.Claims[0].AwaitsConfirmation.ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// <b>Les deux moitiés de la motivation tiennent en deux colonnes du dossier</b> — celle qui se
+  /// compte et celle qui nomme — et toutes deux sont là où la clôture ira les détruire. La méthode
+  /// survit ailleurs, dans le <c>Ledger</c>, et jamais ici.
+  /// </summary>
+  [Fact]
+  public async Task WritesTheMotivationInTwoColumnsThatBothDieWithTheCase()
+  {
+    var motivated = Case.Open(
+      CaseId.Next(),
+      IdentityDeclaration.Unverified,
+      IdentityMotivation.Of(
+        IdentityVerificationMethod.AttributeCrosscheck,
+        "A su citer le montant de sa dernière facture, que nous ne lui avons jamais écrit."),
+      [Designation.Of(DesignationKind.Email, "motive@example.fr")],
+      [DataSubjectRight.Access],
+      ClaimOrigin.Named,
+      Manifest.Empty,
+      ReceptionDate.Declared(Received));
+
+    await SaveAsync(motivated);
+
+    var written = await ScalarListAsync(
+      $"select identity_verification_method from cases where id = '{motivated.Id.Value}'");
+
+    written.ShouldBe([nameof(IdentityVerificationMethod.AttributeCrosscheck)]);
+
+    var reread = await RereadAsync(motivated.Id);
+
+    reread.Motivation!.Method.ShouldBe(IdentityVerificationMethod.AttributeCrosscheck);
+    reread.Motivation.Detail!.ShouldContain("dernière facture");
+    reread.AwaitsAMotivation.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// <b>« Personne ne l'a pesé » se relit comme tel</b>, et jamais comme <c>None</c> : les deux
+  /// colonnes sont nulles ensemble, et le dossier réclame toujours ce qu'aucun humain n'a écrit.
+  /// </summary>
+  [Fact]
+  public async Task RereadsTheAbsenceOfAMotivationAsAnAbsenceRatherThanAsTheAdmission()
+  {
+    var unweighed = Case.Open(
+      CaseId.Next(),
+      IdentityDeclaration.Unverified,
+      motivation: null,
+      [Designation.Of(DesignationKind.Email, "non.pese@example.fr")],
+      [DataSubjectRight.Access],
+      ClaimOrigin.Named,
+      Manifest.Empty,
+      ReceptionDate.Declared(Received));
+
+    await SaveAsync(unweighed);
+
+    var reread = await RereadAsync(unweighed.Id);
+
+    reread.Motivation.ShouldBeNull();
+    reread.AwaitsAMotivation.ShouldBeTrue();
+  }
+
   private static Case Open(
     DataSubjectRight[] rights,
     Designation[] designations,
@@ -228,8 +322,10 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
     return Case.Open(
       CaseId.Next(),
       IdentityDeclaration.ApplicationSession,
+      motivation: null,
       designations,
       rights,
+      ClaimOrigin.Named,
       Manifest.Of(systems),
       ReceptionDate.Declared(Received));
   }

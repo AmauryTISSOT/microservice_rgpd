@@ -4,7 +4,7 @@ using MicroserviceRgpd.Core.Casework.Ledger;
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : treize colonnes, et pas une de plus où un nom de personne concernée
+/// La table du <c>Ledger</c> : quinze colonnes, et pas une de plus où un nom de personne concernée
 /// pourrait entrer. La seule prose est celle de <b>preuve</b> ; la prose de travail, qui nomme par
 /// nature, n'a aucune colonne ici.
 /// </summary>
@@ -91,5 +91,17 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
       .HasMaxLength(LedgerEntry.MaxEvidenceProseLength);
 
     builder.Property(row => row.ReceptionWasDefaulted).HasColumnName("reception_was_defaulted");
+
+    // Une colonne distincte d'`occurred_at`, qui date le geste : le dépôt manuel transcrit un
+    // courriel reçu il y a un nombre de jours inconnu, et une seule date aurait fait choisir entre
+    // dire depuis quand la personne attend et dire depuis quand le service savait.
+    builder.Property(row => row.ReceivedOn).HasColumnName("received_on");
+
+    // La moitié de la motivation qui se compte, et la seule qui entre ici. ⚠️ Il n'existe aucune
+    // colonne pour le détail en prose : il est nominatif par nature, et cette table survit cinq ans
+    // à la clôture du dossier.
+    builder.Property(row => row.IdentityVerificationMethod)
+      .HasColumnName("identity_verification_method")
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
   }
 }

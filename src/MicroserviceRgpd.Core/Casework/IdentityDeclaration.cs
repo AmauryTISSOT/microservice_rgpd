@@ -27,7 +27,7 @@ public sealed class IdentityDeclaration : SmartEnum<IdentityDeclaration>
   /// l'application qui a authentifié, et le service ne refait pas son travail.
   /// </summary>
   public static readonly IdentityDeclaration ApplicationSession =
-    new(nameof(ApplicationSession), 0, "session authentifiée de l'application");
+    new(nameof(ApplicationSession), 0, "session authentifiée de l'application", restsOnNoControl: false);
 
   /// <summary>
   /// Le canal lui-même vaut contrôle — un espace client, un guichet. Inatteignable sur bien des
@@ -35,25 +35,46 @@ public sealed class IdentityDeclaration : SmartEnum<IdentityDeclaration>
   /// l'atteindre qu'un autre ne l'atteindra jamais.
   /// </summary>
   public static readonly IdentityDeclaration ChannelControl =
-    new(nameof(ChannelControl), 1, "contrôle par le canal");
+    new(nameof(ChannelControl), 1, "contrôle par le canal", restsOnNoControl: false);
 
   /// <summary>L'<c>Operator</c> atteste l'identité — reconnaissance personnelle, recoupement, rappel.</summary>
   public static readonly IdentityDeclaration OperatorAttested =
-    new(nameof(OperatorAttested), 2, "attestée par l'opérateur");
+    new(nameof(OperatorAttested), 2, "attestée par l'opérateur", restsOnNoControl: true);
 
   /// <summary>
   /// Rien n'a été vérifié. <b>La valeur laide doit exister</b> : sans elle, l'opérateur pressé
   /// coche la valeur propre et le service fabrique un faux au lieu d'enregistrer un vide.
   /// </summary>
   public static readonly IdentityDeclaration Unverified =
-    new(nameof(Unverified), 3, "non vérifiée");
+    new(nameof(Unverified), 3, "non vérifiée", restsOnNoControl: true);
 
-  private IdentityDeclaration(string name, int value, string frenchLabel)
+  private IdentityDeclaration(string name, int value, string frenchLabel, bool restsOnNoControl)
     : base(name, value)
   {
     FrenchLabel = frenchLabel;
+    RestsOnNoControl = restsOnNoControl;
   }
 
   /// <summary>Le libellé destiné à l'<c>Operator</c>. Le français reste hors des identifiants.</summary>
   public string FrenchLabel { get; }
+
+  /// <summary>
+  /// Cette déclaration repose-t-elle sur <b>aucun contrôle du canal</b> ? Vrai de
+  /// <see cref="Unverified"/> et de <see cref="OperatorAttested"/>.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Les deux ensemble, et pour la même raison.</b> <c>ApplicationSession</c> et
+  /// <c>ChannelControl</c> reposent l'une et l'autre sur un dispositif que le client a mis en place
+  /// et qui existe indépendamment de ce dossier-ci. Les deux autres reposent sur ce qu'un humain a
+  /// fait — ou n'a pas fait — pour ce dossier-là, et lui seul peut dire quoi : c'est très exactement
+  /// ce qu'une <see cref="IdentityMotivation"/> vient recueillir.
+  /// </para>
+  /// <para>
+  /// <b>Ce n'est pas un niveau de confiance</b>, et le nom l'évite délibérément : la valeur ne dit
+  /// rien de ce que la déclaration vaut, seulement de <b>qui</b> l'a produite. Le service ne juge
+  /// jamais la valeur d'une déclaration d'identité.
+  /// </para>
+  /// </remarks>
+  public bool RestsOnNoControl { get; }
 }

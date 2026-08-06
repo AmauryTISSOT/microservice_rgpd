@@ -1,4 +1,7 @@
 ﻿using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
+using MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 using MicroserviceRgpd.UseCases.Casework.DeclareStep;
 using MicroserviceRgpd.UseCases.Casework.ReadCase;
 using Microsoft.AspNetCore.Mvc;
@@ -32,9 +35,33 @@ public class CaseModel(IMediator mediator) : PageModel
   /// <summary>Le préfixe de liaison du formulaire, cité tel quel lorsqu'un champ est refusé.</summary>
   public const string FormPrefix = nameof(Form);
 
+  /// <summary>Le préfixe de liaison de la confirmation, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string ConfirmationPrefix = nameof(Confirmation);
+
   /// <summary>Ce que l'humain saisit pour déclarer où en est un travail dû.</summary>
   [BindProperty]
   public CaseForm Form { get; set; } = new();
+
+  /// <summary>
+  /// Ce que l'humain saisit pour <b>reprendre à son compte</b> un droit qu'une <c>Qualification</c>
+  /// avait proposé.
+  /// </summary>
+  /// <remarks>
+  /// <b>Un formulaire à part, et non un champ de plus sur le premier.</b> Les deux gestes ne portent
+  /// pas la même chose : l'un déclare où en est un travail dû, l'autre dit d'où vient un droit. Les
+  /// mêler aurait fait signer d'un clic une reconnaissance qu'on n'avait pas voulue.
+  /// </remarks>
+  [BindProperty]
+  public ConfirmationForm Confirmation { get; set; } = new();
+
+  /// <summary>Le préfixe de liaison de la motivation, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string MotivationPrefix = nameof(Motivation);
+
+  /// <summary>
+  /// Ce que l'humain saisit pour écrire <b>après coup</b> ce qu'il a pesé de l'identité du demandeur.
+  /// </summary>
+  [BindProperty]
+  public MotivationForm Motivation { get; set; } = new();
 
   /// <summary>Le dossier tel qu'il se lit à cet instant.</summary>
   public CaseOnScreen? OnScreen { get; private set; }
@@ -76,6 +103,100 @@ public class CaseModel(IMediator mediator) : PageModel
       }
 
       FormBoundary.Deposit(ModelState, FormPrefix, written.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> reprend à son compte un droit qu'une <c>Qualification</c> avait proposé.
+  /// </summary>
+  /// <remarks>
+  /// <b>Le geste a lieu dans le dossier ouvert</b>, pendant que le délai court : il n'existe aucun
+  /// vestibule où une demande attendrait sa confirmation avant d'entrer.
+  /// </remarks>
+  public async Task<IActionResult> OnPostConfirmAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var right = FormBoundary.ReadVocabulary<DataSubjectRight>(
+      ModelState,
+      ConfirmationPrefix,
+      nameof(ConfirmationForm.Right),
+      Confirmation.Right,
+      DataSubjectRight.TryFromName,
+      "n'est pas un droit de la taxonomie");
+
+    if (right is not null)
+    {
+      var confirmed = await mediator.Send(
+        new ConfirmClaimCommand(CaseId.From(id), right, Confirmation.SignedBy),
+        cancellationToken);
+
+      if (confirmed.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (confirmed.IsSuccess)
+      {
+        // Une redirection après l'écriture : recharger la page ne reconfirme rien, et le formulaire
+        // repart vide plutôt que de garder le nom du signataire précédent sous les yeux du suivant.
+        return RedirectToPage(new { id });
+      }
+
+      FormBoundary.Deposit(ModelState, ConfirmationPrefix, confirmed.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> écrit <b>après coup</b> ce qu'il a pesé de l'identité du demandeur.
+  /// </summary>
+  /// <remarks>
+  /// <b>Le droit ne bouge pas.</b> Ce qui s'écrit ici dit ce qu'on a fini par peser ; il ne rend pas
+  /// rétroactivement propre l'accès ouvert sur la foi de rien, dont l'origine reste figée.
+  /// </remarks>
+  public async Task<IActionResult> OnPostMotivateAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var method = FormBoundary.ReadVocabulary<IdentityVerificationMethod>(
+      ModelState,
+      MotivationPrefix,
+      nameof(MotivationForm.VerificationMethod),
+      Motivation.VerificationMethod,
+      IdentityVerificationMethod.TryFromName,
+      "n'est pas une méthode du vocabulaire");
+
+    var motivation = method is null
+      ? null
+      : FormBoundary.Declared(
+        ModelState,
+        MotivationPrefix,
+        nameof(MotivationForm.Detail),
+        () => IdentityMotivation.Of(method, Motivation.Detail));
+
+    if (motivation is not null)
+    {
+      var written = await mediator.Send(
+        new DeclareMotivationCommand(CaseId.From(id), motivation, Motivation.SignedBy),
+        cancellationToken);
+
+      if (written.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (written.IsSuccess)
+      {
+        // Une redirection après l'écriture : recharger la page ne redéclare rien, et le formulaire
+        // repart vide plutôt que de garder le nom du signataire précédent sous les yeux du suivant.
+        return RedirectToPage(new { id });
+      }
+
+      FormBoundary.Deposit(ModelState, MotivationPrefix, written.ValidationErrors);
     }
 
     await LoadAsync(id, cancellationToken);
