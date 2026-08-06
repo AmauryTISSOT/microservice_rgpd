@@ -61,6 +61,8 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
       ReceivedOn = entry.ReceivedOn,
       IdentityVerificationMethod = entry.VerificationMethod?.Name,
       DeclaredDeadline = entry.DeclaredDeadline,
+      CoveredSystemCount = entry.CoveredSystemCount,
+      DeclaredSystemCount = entry.DeclaredSystemCount,
     };
   }
 }

@@ -54,7 +54,9 @@ public sealed class ReadCaseHandler(
         claim.IdentityAtOrigin,
         claim.AwaitsConfirmation,
         claim.MotivationIsDemanded,
-        [.. claim.Steps.Select(step => Projected(opened, step, catalogue))]))
+        [.. claim.Steps.Select(step => Projected(opened, step, catalogue))],
+        claim.DeliveryTakenOn,
+        claim.DeliveryDeclaredOn))
       .ToArray();
 
     return new CaseOnScreen(

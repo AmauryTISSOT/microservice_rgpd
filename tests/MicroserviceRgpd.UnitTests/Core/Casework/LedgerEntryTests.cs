@@ -358,6 +358,63 @@ public class LedgerEntryTests
   }
 
   /// <summary>
+  /// La remise déclarée dit le droit, le jour, le signataire et <b>le « 2 sur 6 »</b> — jamais ce
+  /// qu'il y avait dans le fichier remis.
+  /// </summary>
+  [Fact]
+  public void WritesWhatTheHandedAnswerCoveredWithoutSayingWhatWasInIt()
+  {
+    var caseId = CaseId.Next();
+
+    var entry = LedgerEntry.DeliveryDeclared(
+      caseId,
+      Opened,
+      DataSubjectRight.Access,
+      coveredSystemCount: 2,
+      declaredSystemCount: 6,
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+
+    entry.Case.ShouldBe(caseId);
+    entry.Fact.ShouldBe(LedgerFact.DeliveryDeclared);
+    entry.OccurredAt.ShouldBe(Opened);
+    entry.Right.ShouldBe(DataSubjectRight.Access);
+    entry.CoveredSystemCount.ShouldBe(2);
+    entry.DeclaredSystemCount.ShouldBe(6);
+    entry.Signatory.Name.ShouldBe("Camille Roy");
+
+    // Rien du fichier : ni système, ni prose, ni compte de désignations. La preuve dit qu'un fichier
+    // a été remis, jamais ce qu'il y avait dedans.
+    entry.DeclaredSystem.ShouldBeNull();
+    entry.EvidenceProse.ShouldBeNull();
+    entry.DesignationCount.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Aucune machine n'affirme qu'une réponse a été rendue à quelqu'un.</b> La remise est une
+  /// affirmation : la signer par l'application aurait fait produire au service la preuve d'un geste
+  /// que personne n'a fait.
+  /// </summary>
+  [Fact]
+  public void RefusesAHandoverThatNoOneSigned()
+  {
+    Should.Throw<ArgumentException>(() => LedgerEntry.DeliveryDeclared(
+      CaseId.Next(),
+      Opened,
+      DataSubjectRight.Access,
+      coveredSystemCount: 2,
+      declaredSystemCount: 6,
+      Signatory.Application));
+
+    Should.Throw<ArgumentException>(() => LedgerEntry.DeliveryDeclared(
+      CaseId.Next(),
+      Opened,
+      DataSubjectRight.Access,
+      coveredSystemCount: 2,
+      declaredSystemCount: 6,
+      Signatory.Operator(" ", SignatureRegime.Unauthenticated)));
+  }
+
+  /// <summary>
   /// <b>Le port n'expose qu'un ajout.</b> Ni mise à jour, ni suppression ligne à ligne, ni
   /// relecture : ce que le type ne sait pas faire, personne n'aura à jurer qu'il ne l'a pas fait.
   /// </summary>

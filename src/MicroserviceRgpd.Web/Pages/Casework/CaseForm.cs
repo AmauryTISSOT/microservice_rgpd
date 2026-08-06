@@ -164,6 +164,45 @@ public sealed class ArbitrationForm
 }
 
 /// <summary>
+/// Ce qu'un <c>Operator</c> saisit pour <b>télécharger</b> la remise d'un droit. Le premier geste.
+/// </summary>
+/// <remarks>
+/// <b>Aucun nom, et c'est délibéré.</b> Ce geste n'affirme rien : il ouvre une archive pour la
+/// vérifier. Réclamer une signature ici aurait fait signer un humain pour lire un fichier, et
+/// mêlé la preuve d'une remise à la vérification qui la précède.
+/// </remarks>
+public sealed class DeliveryForm
+{
+  /// <summary>Le droit dont on prend la remise, par son nom canonique anglais.</summary>
+  public string? Right { get; set; }
+}
+
+/// <summary>
+/// Ce qu'un <c>Operator</c> saisit pour <b>déclarer remis</b>. Le second geste, et le seul qui date
+/// quoi que ce soit.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Un formulaire à part du téléchargement.</b> Les deux gestes ne portent pas la même chose :
+/// l'un vérifie, l'autre affirme — et cette affirmation détruit les pièces. Les mêler aurait fait
+/// détruire d'un clic ce que quelqu'un venait seulement d'ouvrir.
+/// </para>
+/// <para>
+/// <b>Aucun champ de prose.</b> Ce qui se déclare est un fait — la réponse a été rendue —, et le
+/// canal par lequel elle l'a été n'est pas quelque chose que le service sait vérifier. Réclamer une
+/// prose ferait écrire une ligne de rien à chaque remise.
+/// </para>
+/// </remarks>
+public sealed class HandoverForm
+{
+  /// <summary>Le droit dont on déclare la remise, par son nom canonique anglais.</summary>
+  public string? Right { get; set; }
+
+  /// <summary>Le nom que l'<c>Operator</c> saisit pour signer. Sans authentification, et sans mémoire.</summary>
+  public string? SignedBy { get; set; }
+}
+
+/// <summary>
 /// Ce qu'un <c>Operator</c> déclare, une fois la frontière du domaine franchie.
 /// </summary>
 /// <param name="Right">Le droit au titre duquel le travail était dû.</param>

@@ -133,6 +133,27 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   /// </summary>
   public static readonly LedgerFact ReadDeferred = new(nameof(ReadDeferred), 12, "lecture différée");
 
+  /// <summary>
+  /// Un <c>Operator</c> a <b>déclaré la remise</b> d'un droit. La ligne dit le droit, le jour, le
+  /// signataire, et <b>combien de systèmes recensés la réponse couvrait</b> — « un fichier a été
+  /// remis le 12/04 couvrant 2 systèmes sur 6 ».
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Ce dénombrement s'arrête ici et ne descend jamais dans la <c>CoverSheet</c>.</b> Son
+  /// lecteur est le contrôle, qui juge une pratique et pour qui « 2 sur 6 » est une mesure. Écrit à
+  /// la personne, le même chiffre lui affirmerait que le client a exactement six systèmes — donnant
+  /// à une déclaration qui vieillit exprès l'autorité d'un recensement.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle ne dit rien de ce qui a été remis.</b> Ni type, ni nom de fichier, ni taille : la
+  /// preuve dit qu'un fichier a été remis, jamais ce qu'il y avait dedans. Elle ne prouve pas non
+  /// plus que la personne l'ait reçu — le service est greffier, pas témoin.
+  /// </para>
+  /// </remarks>
+  public static readonly LedgerFact DeliveryDeclared =
+    new(nameof(DeliveryDeclared), 13, "remise déclarée");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

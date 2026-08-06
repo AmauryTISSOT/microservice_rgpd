@@ -1,3 +1,5 @@
+using MicroserviceRgpd.Core.SharedKernel;
+
 namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
@@ -39,4 +41,30 @@ public interface IRetrievedData
   /// <param name="caseId">Le dossier dont on veut les pièces.</param>
   /// <param name="cancellationToken">L'annulation de la lecture en cours.</param>
   Task<IReadOnlyList<RetrievedData>> HeldForAsync(CaseId caseId, CancellationToken cancellationToken = default);
+
+  /// <summary>
+  /// <b>Détruit</b> les pièces détenues au titre d'un droit de ce dossier. C'est ce que le second
+  /// geste de la remise fait, et rien d'autre ne les efface.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Effacées, pas anonymisées</b> — et <b>sans réécrire le dossier</b> : c'est très exactement
+  /// pourquoi ces pièces vivent hors de l'agrégat. Le séjour est inévitable, la lecture précédant
+  /// l'effacement ; il doit être minimal.
+  /// </para>
+  /// <para>
+  /// <b>Le grain est le droit, jamais le dossier.</b> Deux droits sont deux réponses et deux dates de
+  /// remise : effacer le dossier entier à la première remise aurait détruit la réponse due sur le
+  /// second droit avant que personne ne l'ait rendue.
+  /// </para>
+  /// <para>
+  /// <b>Rien à détruire n'est pas une panne.</b> Un droit dont aucune lecture n'a rien rapporté se
+  /// remet quand même — la <c>CoverSheet</c> seule est déjà une réponse.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier dont on remet un droit.</param>
+  /// <param name="right">Le droit remis, et lui seul.</param>
+  /// <param name="cancellationToken">L'annulation de l'effacement en cours.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  Task DiscardAsync(CaseId caseId, DataSubjectRight right, CancellationToken cancellationToken = default);
 }

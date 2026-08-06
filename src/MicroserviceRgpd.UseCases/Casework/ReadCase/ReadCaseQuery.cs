@@ -120,6 +120,15 @@ public sealed record LocatingOnScreen(
 /// <c>Access</c> ouvert sous une déclaration qui ne repose sur aucun contrôle du canal.
 /// </param>
 /// <param name="Steps">Le travail dû, un par système déclaré au moment de l'ouverture.</param>
+/// <param name="DeliveryTakenOn">
+/// Le jour où quelqu'un a téléchargé la remise de ce droit, ou <c>null</c> si personne ne l'a prise.
+/// <b>Ce n'est pas une date de remise</b> : un téléchargement ouvre l'archive pour la vérifier, et
+/// la confondre avec la remise daterait la preuve à l'instant où quelqu'un vérifiait.
+/// </param>
+/// <param name="DeliveryDeclaredOn">
+/// Le jour où un <c>Operator</c> a affirmé avoir rendu la réponse, ou <c>null</c> tant que personne
+/// ne l'a affirmé. <b>Ce second geste seul</b> date la remise au <c>Ledger</c> et détruit les pièces.
+/// </param>
 public sealed record ClaimedRight(
   DataSubjectRight Right,
   ClaimState State,
@@ -127,7 +136,9 @@ public sealed record ClaimedRight(
   IdentityDeclaration IdentityAtOrigin,
   bool AwaitsConfirmation,
   bool MotivationIsDemanded,
-  IReadOnlyList<StepOnScreen> Steps);
+  IReadOnlyList<StepOnScreen> Steps,
+  DateTimeOffset? DeliveryTakenOn,
+  DateTimeOffset? DeliveryDeclaredOn);
 
 /// <summary>
 /// Le travail dû sur un système, tel que l'écran le montre — <b>y compris ce que le service ne sait

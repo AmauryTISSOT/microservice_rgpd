@@ -1,5 +1,6 @@
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
@@ -71,5 +72,20 @@ public sealed class RetrievedDataStore(AppDbContext dbContext) : IRetrievedData
         .OrderBy(piece => piece.Right.Value)
         .ThenBy(piece => piece.DeclaredSystem.Value, StringComparer.Ordinal),
     ];
+  }
+
+  /// <inheritdoc />
+  public async Task DiscardAsync(
+    CaseId caseId,
+    DataSubjectRight right,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+
+    // Un effacement en base, sans charger les octets qu'on détruit : les relire pour les jeter aurait
+    // fait passer une dernière fois les données de quelqu'un par la mémoire du service, pour rien.
+    await dbContext.Set<RetrievedData>()
+      .Where(piece => piece.Case == caseId && piece.Right == right)
+      .ExecuteDeleteAsync(cancellationToken);
   }
 }

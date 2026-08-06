@@ -53,6 +53,11 @@ public sealed class ReadQueueHandler(IReadRepository<Case> cases, TimeProvider c
       opened.Reception,
       deadline,
       deadline.IsOverrunAt(observedAt),
-      [.. opened.Claims.Select(claim => claim.Right)]);
+      [.. opened.Claims.Select(claim => claim.Right)],
+      [
+        .. opened.Claims
+          .Where(claim => claim.DeliveryAwaitsDeclaration)
+          .Select(claim => claim.Right),
+      ]);
   }
 }
