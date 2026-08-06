@@ -31,16 +31,16 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// <param name="retrieved">Les pièces détenues, hors de l'agrégat : c'est ici qu'elles meurent.</param>
 /// <param name="ledger">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une remise se dicte en test.</param>
-public sealed class DeclareHandoverHandler(
+public sealed class DeclareDeliveryHandler(
   IRepository<Case> cases,
   IReadRepository<DeclaredSystem> manifest,
   IRetrievedData retrieved,
   ILedger ledger,
   TimeProvider clock)
-  : ICommandHandler<DeclareHandoverCommand, Result>
+  : ICommandHandler<DeclareDeliveryCommand, Result>
 {
   /// <inheritdoc />
-  public async ValueTask<Result> Handle(DeclareHandoverCommand command, CancellationToken cancellationToken)
+  public async ValueTask<Result> Handle(DeclareDeliveryCommand command, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(command);
 
@@ -61,12 +61,10 @@ public sealed class DeclareHandoverHandler(
       return Result.NotFound();
     }
 
-    var declared = Manifest.Of(await manifest.ListAsync(cancellationToken));
-
     var delivery = Delivery.Of(
       opened,
       command.Right,
-      declared,
+      Manifest.Of(await manifest.ListAsync(cancellationToken)),
       await retrieved.HeldForAsync(command.Case, cancellationToken));
 
     // La ligne de preuve est forgée d'abord : c'est elle qui exige un nom, et rien ne doit bouger si
@@ -82,14 +80,17 @@ public sealed class DeclareHandoverHandler(
         // Ce que la réponse couvrait : les systèmes dont une pièce est jointe, et eux seuls. Une
         // pièce vide est une réponse datée, mais elle ne couvre rien.
         delivery.CoverSheet.Joined.Count,
-        declared.Systems.Count,
+        // Le dénominateur est pris sur LE MÊME ensemble que le numérateur — celui que la page de
+        // garde énumère —, et non sur le catalogue du jour : mesurer l'un contre l'autre écrirait
+        // « 6 sur 5 » le jour où quelqu'un retire du catalogue un système que ce dossier portait.
+        delivery.CoverSheet.RecordedSystemCount,
         Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated));
     }
     catch (ArgumentException refusal)
     {
       return Result.Invalid(new ValidationError
       {
-        Identifier = nameof(DeclareHandoverCommand.SignedBy),
+        Identifier = nameof(DeclareDeliveryCommand.SignedBy),
         // Le message des types du domaine porte le nom du paramètre entre parenthèses, façon
         // `ArgumentException` : il est retiré, l'écran nommant déjà le champ fautif à côté de sa case.
         ErrorMessage = refusal.Message.Split(" (Parameter")[0],

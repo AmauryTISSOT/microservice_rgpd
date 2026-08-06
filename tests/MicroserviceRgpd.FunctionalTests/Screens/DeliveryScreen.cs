@@ -45,7 +45,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
   /// geste et meurent au second, la remise est datée au <c>Ledger</c> par le second seul.
   /// </summary>
   [Fact]
-  public async Task DestroysThePiecesAndDatesTheHandoverOnTheSecondGestureAlone()
+  public async Task DestroysThePiecesAndDatesTheDeliveryOnTheSecondGestureAlone()
   {
     var opened = await AJeanDupontAsync();
 
@@ -68,8 +68,12 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
 
     (await LedgerOf(opened)).ShouldNotContain(line => line.Fact == nameof(LedgerFact.DeliveryDeclared));
 
+    var systemsNamedOnThePage = (await CoverSheetOfAsync(opened))
+      .Split(Environment.NewLine)
+      .Count(line => line.StartsWith("- ", StringComparison.Ordinal));
+
     // 2. Déclarer remis. Ce clic seul date la remise et détruit les pièces.
-    var declared = await _surface.DeclareHandoverAsync(
+    var declared = await _surface.DeclareDeliveryAsync(
       opened,
       nameof(DataSubjectRight.Access),
       "Claire Martin");
@@ -85,11 +89,12 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
     line.SignatoryName.ShouldBe("Claire Martin");
     line.SignatureRegime.ShouldBe(nameof(SignatureRegime.Unauthenticated));
 
-    // Le rapport que le contrôle vient lire : les systèmes couverts sur ceux que le catalogue
-    // recensait ce jour-là. Le numérateur est le compte des pièces PLEINES, et il est strictement
-    // plus petit que le dénominateur — l'export de l'agence n'est joignable par rien.
+    // Le rapport que le contrôle vient lire. Le numérateur est le compte des pièces PLEINES ; le
+    // dénominateur est celui des systèmes que la page de garde énumère — le MÊME ensemble, une ligne
+    // « - » par système. Il est strictement plus grand : l'export de l'agence n'est joignable par
+    // rien, et la réponse ne le couvre pas.
     line.CoveredSystemCount.ShouldBe(held.Count(piece => !piece.IsEmpty));
-    line.DeclaredSystemCount.ShouldBe(await DeclaredSystemsAsync());
+    line.DeclaredSystemCount.ShouldBe(systemsNamedOnThePage);
     line.CoveredSystemCount!.Value.ShouldBeLessThan(line.DeclaredSystemCount!.Value);
 
     // Et rien de ce qui a été remis : ni système, ni nom de fichier, ni prose.
@@ -201,7 +206,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
 
     (await QueueLineOfAsync(opened)).ShouldContain("téléchargée, non déclarée");
 
-    await _surface.DeclareHandoverAsync(opened, nameof(DataSubjectRight.Access), "Claire Martin");
+    await _surface.DeclareDeliveryAsync(opened, nameof(DataSubjectRight.Access), "Claire Martin");
 
     (await QueueLineOfAsync(opened)).ShouldNotContain("téléchargée, non déclarée");
   }
@@ -224,13 +229,13 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
   /// tendues.
   /// </summary>
   [Fact]
-  public async Task RefusesToDeclareAHandoverOfSomethingNoOneEverTook()
+  public async Task RefusesToDeclareTheDeliveryOfSomethingNoOneEverTook()
   {
     var opened = await AJeanDupontAsync();
 
     await ReadEverythingAsync(opened);
 
-    var declared = await _surface.DeclareHandoverAsync(
+    var declared = await _surface.DeclareDeliveryAsync(
       opened,
       nameof(DataSubjectRight.Access),
       "Claire Martin");
@@ -344,19 +349,6 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
 
     return await scope.ServiceProvider.GetRequiredService<IRetrievedData>().HeldForAsync(opened);
-  }
-
-  /// <summary>
-  /// Combien de systèmes le catalogue recense <b>à cet instant</b> — le dénominateur du rapport que
-  /// le <c>Ledger</c> garde. Il est relu plutôt qu'écrit en dur : le catalogue est commun à toute la
-  /// suite, et un chiffre figé ici ferait dépendre ce test des systèmes du voisin.
-  /// </summary>
-  private async Task<int> DeclaredSystemsAsync()
-  {
-    using var scope = factory.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-    return await dbContext.Set<DeclaredSystem>().CountAsync();
   }
 
   private async Task<IReadOnlyList<LedgerRow>> LedgerOf(CaseId opened)

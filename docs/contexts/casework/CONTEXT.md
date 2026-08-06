@@ -541,10 +541,13 @@ Elle **assemble sans jamais fusionner** : une pièce par `DeclaredSystem`, chacu
 portant son identifiant. Deux applications peuvent servir une pièce du même nom, et mettre l'archive
 à plat en aurait écrasé une — une réponse incomplète que rien n'aurait signalée.
 La ligne `DeliveryDeclared` du `Ledger` porte le rapport « 2 systèmes sur 6 » : combien la réponse
-couvrait, sur combien le `Manifest` en recensait **ce jour-là**. ⚠️ Le dénominateur est **écrit**
-plutôt que relu plus tard — le recensement vieillit exprès, et le relire dans trois ans jugerait la
-pratique d'hier au paysage de demain. ⚠️ Ce rapport **s'arrête au `Ledger`** et ne descend jamais
-dans la `CoverSheet`.
+couvrait, sur combien elle avait à répondre. ⚠️ Les deux moitiés sont comptées sur **le même
+ensemble** — celui que la `CoverSheet` énumère —, jamais l'une sur la page et l'autre sur le
+catalogue du jour : deux ensembles mesurés l'un contre l'autre écriraient « 6 sur 5 » le jour où
+quelqu'un retire du catalogue un système que le dossier portait. Il est **écrit** plutôt que relu
+plus tard : le recensement vieillit exprès, et le relire dans trois ans jugerait la pratique d'hier
+au paysage de demain. ⚠️ Ce rapport **s'arrête au `Ledger`** et ne descend jamais dans la
+`CoverSheet`.
 _Avoid_ : Export, Package, Response, Bundle, Download, envoi
 
 **CoverSheet** :
@@ -554,6 +557,9 @@ jointe ; ceux qui ont été interrogés **sans qu'aucun rattachement soit trouv�
 dont on dispose** ; ceux qui ne sont pas couverts, nommés un par un dans les mots du champ « contient »
 du `Manifest`. Elle se clôt en disant que cette liste est celle des systèmes **recensés**, et qu'elle
 ne garantit pas qu'il n'en existe pas d'autres.
+Une pièce **vide** n'est pas jointe à l'archive : elle est une réponse datée, la page la range parmi
+les systèmes interrogés sans rattachement, et joindre en plus un fichier de zéro octet ferait deux
+dires contradictoires dans le même envoi.
 Elle **énumère et ne compte jamais** : pas de total, pas de ratio, pas de dénominateur — nommer
 « l'export commercial transmis chaque mois à notre agence » est actionnable pour la personne là où
 « 4 sur 6 » ne lui apprend rien et lui ment sur l'exhaustivité du recensement.

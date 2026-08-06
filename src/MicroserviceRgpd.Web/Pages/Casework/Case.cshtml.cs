@@ -65,7 +65,7 @@ public class CaseModel(IMediator mediator) : PageModel
   public const string DeliveryPrefix = nameof(Delivery);
 
   /// <summary>Le préfixe de liaison de la remise, cité tel quel lorsqu'un champ est refusé.</summary>
-  public const string HandoverPrefix = nameof(Handover);
+  public const string DeclarationPrefix = nameof(Declaration);
 
   /// <summary>Ce que l'humain saisit pour <b>télécharger</b> la remise d'un droit — le premier geste.</summary>
   [BindProperty]
@@ -76,7 +76,7 @@ public class CaseModel(IMediator mediator) : PageModel
   /// remise et détruise les pièces.
   /// </summary>
   [BindProperty]
-  public HandoverForm Handover { get; set; } = new();
+  public DeliveryDeclarationForm Declaration { get; set; } = new();
 
   /// <summary>Le préfixe de liaison de l'arbitrage, cité tel quel lorsqu'un champ est refusé.</summary>
   public const string ArbitrationPrefix = nameof(Arbitration);
@@ -353,7 +353,7 @@ public class CaseModel(IMediator mediator) : PageModel
 
       if (taken.IsSuccess)
       {
-        return File(taken.Value.Content, DeliveryPackage.ContentType, taken.Value.FileName);
+        return File(taken.Value.Content, DeliveryArchive.ContentType, taken.Value.FileName);
       }
 
       FormBoundary.Deposit(ModelState, DeliveryPrefix, taken.ValidationErrors);
@@ -372,20 +372,20 @@ public class CaseModel(IMediator mediator) : PageModel
   /// <b>Le service ne remet rien à personne.</b> Aucun lien à jeton, aucun SMTP : ce qui est
   /// consigné est le constat signé d'un humain, et non un accusé de réception que personne n'a.
   /// </remarks>
-  public async Task<IActionResult> OnPostHandoverAsync(Guid id, CancellationToken cancellationToken)
+  public async Task<IActionResult> OnPostDeclareDeliveredAsync(Guid id, CancellationToken cancellationToken)
   {
     var right = FormBoundary.ReadVocabulary<DataSubjectRight>(
       ModelState,
-      HandoverPrefix,
-      nameof(HandoverForm.Right),
-      Handover.Right,
+      DeclarationPrefix,
+      nameof(DeliveryDeclarationForm.Right),
+      Declaration.Right,
       DataSubjectRight.TryFromName,
       "n'est pas un droit de la taxonomie");
 
     if (right is not null)
     {
       var declared = await mediator.Send(
-        new DeclareHandoverCommand(CaseId.From(id), right, Handover.SignedBy),
+        new DeclareDeliveryCommand(CaseId.From(id), right, Declaration.SignedBy),
         cancellationToken);
 
       if (declared.Status == ResultStatus.NotFound)
@@ -400,7 +400,7 @@ public class CaseModel(IMediator mediator) : PageModel
         return RedirectToPage(new { id });
       }
 
-      FormBoundary.Deposit(ModelState, HandoverPrefix, declared.ValidationErrors);
+      FormBoundary.Deposit(ModelState, DeclarationPrefix, declared.ValidationErrors);
     }
 
     await LoadAsync(id, cancellationToken);

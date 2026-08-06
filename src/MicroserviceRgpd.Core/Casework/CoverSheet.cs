@@ -71,6 +71,24 @@ public sealed class CoverSheet
   public IReadOnlyList<NamedSystem> NotCovered { get; }
 
   /// <summary>
+  /// Combien de systèmes cette réponse avait à justifier : les trois listes réunies.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Il ne s'écrit jamais sur la page.</b> C'est le <b>dénominateur</b> du « 2 systèmes sur 6 »
+  /// que le <c>Ledger</c> garde, et son lecteur est le contrôle. Écrit à la personne, le même chiffre
+  /// lui affirmerait que le client a exactement six systèmes.
+  /// </para>
+  /// <para>
+  /// <b>C'est bien l'univers de cette page, et non le catalogue d'aujourd'hui.</b> Le numérateur
+  /// compte des systèmes de cette liste-ci ; un dénombrement pris sur le <c>Manifest</c> du jour
+  /// mesurerait deux ensembles différents l'un contre l'autre, et écrirait « 6 sur 5 » le jour où
+  /// quelqu'un retire du catalogue un système que ce dossier portait.
+  /// </para>
+  /// </remarks>
+  public int RecordedSystemCount => Joined.Count + QueriedWithoutAttachment.Count + NotCovered.Count;
+
+  /// <summary>
   /// Range les systèmes dont ce droit portait le travail dû, à partir du <see cref="Manifest"/> et
   /// des <see cref="Step"/> — et des enveloppes des pièces détenues, jamais de leur corps.
   /// </summary>

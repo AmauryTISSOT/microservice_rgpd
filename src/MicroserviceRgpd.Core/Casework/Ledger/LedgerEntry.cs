@@ -228,8 +228,9 @@ public sealed record LedgerEntry
   public int? CoveredSystemCount { get; }
 
   /// <summary>
-  /// Le nombre de systèmes que le dossier portait au travail dû sous ce droit, et <c>null</c> partout
-  /// ailleurs. C'est le dénominateur de « 2 sur 6 », et il ne vaut que pour le contrôle.
+  /// Le nombre de systèmes dont la réponse avait à répondre sous ce droit — ceux de son travail dû
+  /// et ceux dont une pièce était détenue —, et <c>null</c> partout ailleurs. C'est le dénominateur
+  /// de « 2 sur 6 », et il ne vaut que pour le contrôle.
   /// </summary>
   public int? DeclaredSystemCount { get; }
 
@@ -830,8 +831,9 @@ public sealed record LedgerEntry
   /// et non un compte de données.
   /// </param>
   /// <param name="declaredSystemCount">
-  /// Le nombre de systèmes que le dossier portait au travail dû sous ce droit — le dénominateur, qui
-  /// ne vaut que pour le contrôle.
+  /// Le nombre de systèmes dont la réponse avait à répondre sous ce droit — le dénominateur, qui ne
+  /// vaut que pour le contrôle. ⚠️ Il est pris sur <b>le même ensemble</b> que le numérateur : deux
+  /// ensembles différents mesurés l'un contre l'autre écriraient « 6 sur 5 ».
   /// </param>
   /// <param name="signatory">L'humain qui déclare la remise, et le régime sous lequel il a saisi son nom.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
@@ -849,6 +851,10 @@ public sealed record LedgerEntry
     ArgumentNullException.ThrowIfNull(signatory);
     ArgumentOutOfRangeException.ThrowIfNegative(coveredSystemCount);
     ArgumentOutOfRangeException.ThrowIfNegative(declaredSystemCount);
+
+    // « 6 sur 5 » n'est pas un rapport : c'est le signe que les deux moitiés ont été comptées sur
+    // deux ensembles différents. La preuve refuse de porter un chiffre que personne ne peut lire.
+    ArgumentOutOfRangeException.ThrowIfGreaterThan(coveredSystemCount, declaredSystemCount);
 
     if (signatory.Kind != SignatoryKind.Operator)
     {

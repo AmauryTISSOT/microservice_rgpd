@@ -415,6 +415,23 @@ public class LedgerEntryTests
   }
 
   /// <summary>
+  /// <b>« 6 sur 5 » n'est pas un rapport.</b> C'est le signe que les deux moitiés ont été comptées
+  /// sur deux ensembles différents, et la preuve refuse de porter un chiffre que personne ne peut
+  /// lire.
+  /// </summary>
+  [Fact]
+  public void RefusesToCoverMoreSystemsThanTheAnswerHadToAnswerFor()
+  {
+    Should.Throw<ArgumentOutOfRangeException>(() => LedgerEntry.DeliveryDeclared(
+      CaseId.Next(),
+      Opened,
+      DataSubjectRight.Access,
+      coveredSystemCount: 6,
+      declaredSystemCount: 5,
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+  }
+
+  /// <summary>
   /// <b>Le port n'expose qu'un ajout.</b> Ni mise à jour, ni suppression ligne à ligne, ni
   /// relecture : ce que le type ne sait pas faire, personne n'aura à jurer qu'il ne l'a pas fait.
   /// </summary>

@@ -102,15 +102,15 @@ else
               rendue. La laisser invisible serait l'Omission silencieuse sous sa forme la plus
               tranquille. Énumérée, jamais comptée, comme les droits réclamés.
             *@
-            @if (line.RightsAwaitingAHandover.Count == 0)
+            @if (line.RightsAwaitingADeliveryDeclaration.Count == 0)
             {
               <span class="hint">—</span>
             }
             else
             {
-              <strong class="awaiting-handover">
+              <strong class="awaiting-delivery-declaration">
                 téléchargée, non déclarée :
-                @string.Join(", ", line.RightsAwaitingAHandover.Select(right => right.Name))
+                @string.Join(", ", line.RightsAwaitingADeliveryDeclaration.Select(right => right.Name))
               </strong>
             }
           </td>

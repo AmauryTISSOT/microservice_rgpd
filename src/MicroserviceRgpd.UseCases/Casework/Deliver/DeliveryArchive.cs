@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO.Compression;
 using System.Text;
 using MicroserviceRgpd.Core.Casework;
@@ -5,12 +6,12 @@ using MicroserviceRgpd.Core.Casework;
 namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 
 /// <summary>
-/// Range une <see cref="Delivery"/> dans une archive : <b>un dossier par système</b>, et la
-/// <c>CoverSheet</c> à la racine.
+/// Une <see cref="Delivery"/> rangée dans une archive : <b>un dossier par système</b>, et la
+/// <c>CoverSheet</c> à la racine. C'est ce que l'<c>Operator</c> télécharge.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Il assemble sans jamais fusionner.</b> Les pièces sont posées côte à côte, telles qu'elles
+/// <b>Elle assemble sans jamais fusionner.</b> Les pièces sont posées côte à côte, telles qu'elles
 /// sont arrivées : le service ne sait pas lire ce qu'elles portent — c'est le prix, et le propos,
 /// d'une réponse écrite dans le vocabulaire de chaque application — et concaténer deux formats
 /// qu'on n'a pas ouverts fabriquerait un fichier que personne ne peut relire.
@@ -22,19 +23,41 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// commodité d'assemblage.
 /// </para>
 /// <para>
-/// <b>Même entrée pour une pièce vide.</b> Elle est une réponse datée, et non un silence : la faire
-/// disparaître de l'archive ferait passer « interrogé, rien » pour « pas interrogé ».
+/// <b>Elle n'est jamais gardée.</b> Elle est assemblée en mémoire à chaque geste depuis les pièces
+/// détenues : l'entreposer aurait fait un second exemplaire des données de quelqu'un, dont
+/// l'effacement serait devenu une seconde chose à ne pas oublier.
+/// </para>
+/// <para>
+/// <b>Le service ne la remet à personne.</b> Il la tend à l'<c>Operator</c>, qui la remettra par le
+/// canal dont il répond. Aucun lien à jeton, aucun SMTP : le jour où le service enverrait lui-même,
+/// il deviendrait comptable d'une adresse qu'il n'a pas vérifiée.
 /// </para>
 /// </remarks>
-internal static class DeliveryArchive
+/// <param name="FileName">Le nom sous lequel le navigateur l'enregistre.</param>
+/// <param name="Content">Les octets de l'archive.</param>
+public sealed record DeliveryArchive(string FileName, byte[] Content)
 {
+  /// <summary>Le type de contenu de l'archive. Une constante, le service n'assemblant qu'un format.</summary>
+  public const string ContentType = "application/zip";
+
   /// <summary>
-  /// Les octets de l'archive, assemblés en mémoire — les données de quelqu'un ne touchent aucun
-  /// disque du service en chemin.
+  /// Range la remise, et la nomme.
   /// </summary>
   /// <param name="delivery">La remise à ranger.</param>
-  /// <param name="assembledAt">L'instant de l'assemblage, porté par la page de garde.</param>
-  public static byte[] Of(Delivery delivery, DateTimeOffset assembledAt)
+  /// <param name="assembledAt">L'instant de l'assemblage, porté par la page de garde et par le nom.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="delivery"/> est absent.</exception>
+  public static DeliveryArchive Of(Delivery delivery, DateTimeOffset assembledAt)
+  {
+    ArgumentNullException.ThrowIfNull(delivery);
+
+    return new DeliveryArchive(NameOf(delivery, assembledAt), BytesOf(delivery, assembledAt));
+  }
+
+  /// <summary>
+  /// Les octets, assemblés en mémoire — les données de quelqu'un ne touchent aucun disque du service
+  /// en chemin.
+  /// </summary>
+  private static byte[] BytesOf(Delivery delivery, DateTimeOffset assembledAt)
   {
     using var bytes = new MemoryStream();
 
@@ -65,6 +88,18 @@ internal static class DeliveryArchive
     }
 
     return bytes.ToArray();
+  }
+
+  /// <summary>
+  /// Le nom du fichier : le droit, le jour, et le dossier. <b>Aucun nom de personne concernée</b> —
+  /// le dossier est anonyme côté personne, et le nom d'un fichier voyage sur des machines dont le
+  /// service ne répond pas.
+  /// </summary>
+  private static string NameOf(Delivery delivery, DateTimeOffset assembledAt)
+  {
+    var day = assembledAt.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    return $"remise-{delivery.Right.Name.ToLowerInvariant()}-{day}-{delivery.Case.Value}.zip";
   }
 
   /// <summary>

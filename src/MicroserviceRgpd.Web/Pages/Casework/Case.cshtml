@@ -438,7 +438,7 @@
           </p>
 
           <form method="post" asp-page-handler="Handover">
-            <input type="hidden" name="Handover.Right" value="@claim.Right.Name" />
+            <input type="hidden" name="Declaration.Right" value="@claim.Right.Name" />
 
             <fieldset class="signature">
               <legend>Déclarer remis</legend>
@@ -450,7 +450,7 @@
               </p>
 
               <p>
-                <label for="handover-signedby-@claim.Right.Name">
+                <label for="declaration-signedby-@claim.Right.Name">
                   Votre nom
                   <span class="hint">
                     Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em>
@@ -458,8 +458,8 @@
                   </span>
                 </label>
                 <input type="text"
-                       id="handover-signedby-@claim.Right.Name"
-                       name="Handover.SignedBy"
+                       id="declaration-signedby-@claim.Right.Name"
+                       name="Declaration.SignedBy"
                        maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
               </p>
 

@@ -333,7 +333,7 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
   /// <b>Second geste</b> : déclare la remise. Ce clic seul date la remise au <c>Ledger</c> et
   /// détruit les pièces.
   /// </summary>
-  internal async Task<HttpResponseMessage> DeclareHandoverAsync(
+  internal async Task<HttpResponseMessage> DeclareDeliveryAsync(
     CaseId opened,
     string right,
     string signedBy)
@@ -343,11 +343,11 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
     var fields = new List<KeyValuePair<string, string>>
     {
       new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
-      new("Handover.Right", right),
-      new("Handover.SignedBy", signedBy),
+      new("Declaration.Right", right),
+      new("Declaration.SignedBy", signedBy),
     };
 
-    return await _client.PostAsync($"{address}?handler=Handover", new FormUrlEncodedContent(fields));
+    return await _client.PostAsync($"{address}?handler=DeclareDelivered", new FormUrlEncodedContent(fields));
   }
 
   private async Task<string> AntiforgeryTokenOfAsync(string address)

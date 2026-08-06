@@ -193,7 +193,7 @@ public sealed class DeliveryForm
 /// prose ferait écrire une ligne de rien à chaque remise.
 /// </para>
 /// </remarks>
-public sealed class HandoverForm
+public sealed class DeliveryDeclarationForm
 {
   /// <summary>Le droit dont on déclare la remise, par son nom canonique anglais.</summary>
   public string? Right { get; set; }

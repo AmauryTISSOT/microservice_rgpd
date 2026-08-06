@@ -26,5 +26,5 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// Le nom que l'<c>Operator</c> a saisi. Non authentifié — la preuve garde le nom <b>et</b> ce
 /// régime.
 /// </param>
-public sealed record DeclareHandoverCommand(CaseId Case, DataSubjectRight Right, string? SignedBy)
+public sealed record DeclareDeliveryCommand(CaseId Case, DataSubjectRight Right, string? SignedBy)
   : ICommand<Result>;

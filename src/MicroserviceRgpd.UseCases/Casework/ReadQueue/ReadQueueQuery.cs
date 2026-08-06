@@ -65,7 +65,7 @@ public sealed record OperatorQueue(IReadOnlyList<QueuedCase> Cases, DateTimeOffs
 /// Les droits réclamés, <b>énumérés et jamais comptés</b> : « Access, Erasure » dit à
 /// l'<c>Operator</c> ce qu'il a à faire, là où « 2 droits » ne lui apprend rien.
 /// </param>
-/// <param name="RightsAwaitingAHandover">
+/// <param name="RightsAwaitingADeliveryDeclaration">
 /// Les droits dont quelqu'un a téléchargé la remise sans jamais déclarer l'avoir rendue —
 /// <b>énumérés et jamais comptés</b>, comme les droits réclamés.
 /// <para>
@@ -82,4 +82,4 @@ public sealed record QueuedCase(
   StatutoryDeadline Deadline,
   bool DelayOverrun,
   IReadOnlyList<DataSubjectRight> ClaimedRights,
-  IReadOnlyList<DataSubjectRight> RightsAwaitingAHandover);
+  IReadOnlyList<DataSubjectRight> RightsAwaitingADeliveryDeclaration);

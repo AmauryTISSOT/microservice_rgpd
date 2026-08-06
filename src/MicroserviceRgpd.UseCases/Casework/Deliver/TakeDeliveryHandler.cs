@@ -1,4 +1,3 @@
-using System.Globalization;
 using MicroserviceRgpd.Core.Casework;
 
 namespace MicroserviceRgpd.UseCases.Casework.Deliver;
@@ -32,10 +31,10 @@ public sealed class TakeDeliveryHandler(
   IReadRepository<DeclaredSystem> manifest,
   IRetrievedData retrieved,
   TimeProvider clock)
-  : ICommandHandler<TakeDeliveryCommand, Result<DeliveryPackage>>
+  : ICommandHandler<TakeDeliveryCommand, Result<DeliveryArchive>>
 {
   /// <inheritdoc />
-  public async ValueTask<Result<DeliveryPackage>> Handle(
+  public async ValueTask<Result<DeliveryArchive>> Handle(
     TakeDeliveryCommand command,
     CancellationToken cancellationToken)
   {
@@ -45,7 +44,7 @@ public sealed class TakeDeliveryHandler(
 
     if (opened is null)
     {
-      return Result<DeliveryPackage>.NotFound();
+      return Result<DeliveryArchive>.NotFound();
     }
 
     var claim = opened.Claims.SingleOrDefault(one => one.Right == command.Right);
@@ -55,7 +54,7 @@ public sealed class TakeDeliveryHandler(
       // Le dossier ne porte pas ce droit, ou sa remise est déjà déclarée. Ce n'est pas une
       // programmation fautive : un écran affiché il y a une minute peut nommer un geste qu'un autre
       // vient de faire.
-      return Result<DeliveryPackage>.NotFound();
+      return Result<DeliveryArchive>.NotFound();
     }
 
     var takenAt = clock.GetUtcNow();
@@ -68,25 +67,13 @@ public sealed class TakeDeliveryHandler(
 
     // L'archive est assemblée AVANT que le dossier ne bouge : noter un téléchargement dont
     // l'assemblage aurait échoué ferait remonter dans la file une remise que personne n'a eue.
-    var package = new DeliveryPackage(NameOf(delivery, takenAt), DeliveryArchive.Of(delivery, takenAt));
+    var archive = DeliveryArchive.Of(delivery, takenAt);
 
     if (opened.TakeDelivery(command.Right, takenAt))
     {
       await cases.UpdateAsync(opened, cancellationToken);
     }
 
-    return Result<DeliveryPackage>.Success(package);
-  }
-
-  /// <summary>
-  /// Le nom du fichier : le droit, le jour, et le dossier. <b>Aucun nom de personne concernée</b> —
-  /// le dossier est anonyme côté personne, et le nom d'un fichier voyage sur des machines dont le
-  /// service ne répond pas.
-  /// </summary>
-  private static string NameOf(Delivery delivery, DateTimeOffset takenAt)
-  {
-    var day = takenAt.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
-    return $"remise-{delivery.Right.Name.ToLowerInvariant()}-{day}-{delivery.Case.Value}.zip";
+    return Result<DeliveryArchive>.Success(archive);
   }
 }

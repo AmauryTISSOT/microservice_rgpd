@@ -27,4 +27,4 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// <param name="Case">Le dossier dont on prend la remise.</param>
 /// <param name="Right">Le droit remis, et lui seul — deux droits sont deux réponses.</param>
 public sealed record TakeDeliveryCommand(CaseId Case, DataSubjectRight Right)
-  : ICommand<Result<DeliveryPackage>>;
+  : ICommand<Result<DeliveryArchive>>;
