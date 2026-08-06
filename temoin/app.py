@@ -278,9 +278,13 @@ def admin_export_ventes():
 # changé d'une ligne pour lui.
 
 
-def compte_boutique(sonde):
-    """La sonde d'une table, exécutée sur la connexion ordinaire de l'application."""
-    return q1(sonde.sql, *sonde.params)["n"]
+def lit_boutique(sonde):
+    """La sonde d'une table, exécutée sur la connexion ordinaire de l'application.
+
+    Elle rend des lignes, et non plus un compte : c'est de références que le service a besoin, pas
+    d'un nombre qu'il ne saurait ni vérifier ni comparer d'un système à l'autre.
+    """
+    return q(sonde.sql, *sonde.params)
 
 
 app.register_blueprint(
@@ -289,7 +293,7 @@ app.register_blueprint(
         os.environ.get("RGPD_ADAPTER_SECRET", ""),
         {
             "brocanto-boutique": lambda designations: rgpd_boutique.localiser(
-                designations, compte_boutique
+                designations, lit_boutique
             ),
             "brocanto-journal": lambda designations: rgpd_journal.localiser(
                 designations, Path(JOURNAL).parent

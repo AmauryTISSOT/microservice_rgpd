@@ -54,6 +54,50 @@ class Servi(NamedTuple):
     corps: dict
 
 
+class Reserve(NamedTuple):
+    """Une ligne trouvée sans qu'on sache dire si c'est la personne.
+
+    Le `motif` est lu **tel quel** par l'opérateur du service : on y écrit la phrase qu'on dirait à
+    un collègue, jamais un code ni un score. Une réserve sans motif est refusée par le service, et
+    il a raison — ce serait un doute qu'on demande de trancher sans dire lequel.
+
+    Les `designations` sont le seul champ que le service interprète, et seulement après qu'un humain
+    a rattaché la réserve : elles entrent alors au sac, et l'appel suivant les porte. C'est par là
+    que l'adresse trouvée dans la base ouvre le journal.
+    """
+
+    reference: str
+    motif: str
+    designations: tuple = ()
+
+
+def servi_locate(certain=(), reserves=()):
+    """Le corps d'un `locate` servi : ce qu'on rattache, et ce dont on doute.
+
+    Les deux listes ne se confondent pas. `certain`, c'est ce dont on répond ; `reserved`, c'est ce
+    qu'on refuse de trancher soi-même. Le service ne tranchera pas non plus : un humain le fera,
+    nommément et à une date.
+
+    Un zéro n'a **qu'une** forme — deux listes vides. Le contrat ne nous demande pas de distinguer
+    « rien trouvé » de « rien à trouver », ni de rendre un compte ; ce qu'on aurait mis dans la
+    nuance se met dans une réserve motivée, qui, elle, sera lue.
+    """
+    return Servi({
+        "certain": list(certain),
+        "reserved": [
+            {
+                "reference": reserve.reference,
+                "reason": reserve.motif,
+                "designations": [
+                    {"kind": designation.nature, "value": designation.valeur}
+                    for designation in reserve.designations
+                ],
+            }
+            for reserve in reserves
+        ],
+    })
+
+
 class Differe(NamedTuple):
     """Le travail est trop long pour la connexion : on déclare quand on aura fini.
 
