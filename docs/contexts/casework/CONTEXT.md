@@ -455,13 +455,22 @@ _Avoid_ : PersonalData, SubjectData, Payload, Export, contenu
 Une question datée qui attend une réponse, accrochée à ce qu'elle empêche réellement d'avancer — le
 `Case` pour la désignation de la personne, un `Claim` pour le contenu d'un droit. Elle **n'arrête
 jamais** le délai de l'art. 12.3 et ne barre jamais la route à l'`Operator`.
-La question de la désignation naît le jour où **tous** les `Locate` ont répondu et où **aucun** n'a
-rien rattaché : la désignation dont on dispose ne suffit pas, et seul un humain peut en trouver une
-autre. Un système qui a différé ou refusé n'a pas répondu — conclure avant de l'avoir entendu ferait
-poser une question dont on ne sait pas encore si elle se pose. Un `Case` sans aucun système
-atteignable n'en pose aucune : il n'y a pas six zéros à mal lire, il n'y a eu aucun appel.
-Elle ne se pose qu'**une fois** par sujet : la reposer à chaque ouverture de dossier ferait de sa
-date le reflet du dernier regard plutôt que celui du jour où le doute est né.
+La question de la désignation naît sous **trois** conditions, et il les faut toutes : tous les
+`Locate` ont répondu, aucun n'a rien rattaché, et aucune `Reservation` n'attend un humain. Un
+système qui a différé ou refusé n'a pas répondu — conclure avant de l'avoir entendu ferait poser une
+question dont on ne sait pas encore si elle se pose. Un `Case` sans aucun système atteignable n'en
+pose aucune : il n'y a pas six zéros à mal lire, il n'y a eu aucun appel.
+⚠️ **Une réserve en attente n'est pas un zéro**, et c'est la condition la moins évidente des trois.
+Elle ne compte pour aucun rattachement, mais quelque chose a bel et bien été trouvé sous ce qu'on
+avait : ce qui manque est un **regard**, pas une désignation de plus. Poser la question là ferait
+afficher « aucun rattachement nulle part » juste au-dessus des lignes que le système vient de rendre.
+Elle ne se pose qu'**une fois** par sujet — la reposer à chaque ouverture de dossier ferait de sa
+date le reflet du dernier regard plutôt que celui du jour où le doute est né — et elle se **retire**
+le jour où le dossier y répond. Une question sans issue deviendrait un bandeau permanent, et un
+bandeau permanent s'apprend à ne plus se voir : c'est la mécanique qui vaut déjà pour la réclamation
+d'une `IdentityMotivation`, et pour la même raison. Rien n'est perdu de la preuve — le jour de la
+question est au `Ledger`, ce qui y a répondu porte sa propre ligne datée, et le contrôle lit l'écart
+entre les deux. L'écran, lui, ne montre que ce qui attend encore.
 _Avoid_ : Blocker, Pending, Hold, Query, blocage ⚠️ le nom `Blocker` ferait dans son nom même la
 promesse inverse, et quelqu'un finirait par écrire le code qui bloque.
 

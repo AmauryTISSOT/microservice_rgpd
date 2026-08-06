@@ -60,6 +60,12 @@ jamais. Aucun de ces verbes n'est « décider ». L'issue est toujours le fait d
 daté — qu'il s'agisse de valider une `Qualification` ou de clore un `Case`. Une machine ne produit
 jamais une issue.
 _Avoid_ : décision, arbitrage, verdict automatique, automatisation
+⚠️ **Ce que cette liste interdit est de nommer une issue que la _machine_ produirait**, jamais de
+nommer le geste d'un humain. `Case.Arbitrate` et l'écran d'arbitrage d'une réserve de `Locate` sont
+donc légitimes, et le mot y est repris sciemment : ils ne nomment que l'`Operator` tranchant, nommé
+et daté — c'est-à-dire très exactement ce que la posture exige, et non ce qu'elle refuse. Un
+`ArbitrationEngine`, un « arbitrage automatique » ou un seuil qui trancherait tomberaient, eux,
+sous la liste.
 
 ⚠️ Cette posture n'emporte **pas** la même économie d'erreur des deux côtés, et c'est le piège que
 le découpage rend visible. À gauche, l'erreur est une ligne fausse qu'un humain a sous les yeux :

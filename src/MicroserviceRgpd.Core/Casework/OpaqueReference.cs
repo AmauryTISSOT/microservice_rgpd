@@ -42,8 +42,9 @@ public sealed record OpaqueReference
   public string Value { get; private set; }
 
   /// <summary>
-  /// Prend une référence, ou refuse. Le refus est une <b>programmation fautive</b> : ce qui arrive
-  /// d'un <c>Adapter</c> a déjà été trié par la lecture du corps, qui écarte plutôt qu'elle ne casse.
+  /// Prend une référence, ou refuse. Le refus n'atteint jamais un <c>Adapter</c> : la lecture du
+  /// corps a déjà tranché avant d'arriver ici, et elle tranche par une <c>AdapterFailure</c> — elle
+  /// n'écarte jamais en silence, sous peine de fabriquer l'omission que tout ceci vient empêcher.
   /// </summary>
   /// <exception cref="ArgumentException">La valeur est vide, démesurée, ou porte un caractère de contrôle.</exception>
   public static OpaqueReference Of(string? value)

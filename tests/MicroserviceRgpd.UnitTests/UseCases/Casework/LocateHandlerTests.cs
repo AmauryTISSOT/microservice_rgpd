@@ -233,12 +233,16 @@ public class LocateHandlerTests
   }
 
   /// <summary>
-  /// <b>Une réserve que personne n'a tranchée ne suffit pas à taire la question.</b> Compter comme
-  /// trouvé ce que personne n'a regardé ferait disparaître la question au moment précis où elle
-  /// commence à valoir quelque chose.
+  /// <b>Une réserve en attente n'est pas un zéro, et ne fait donc naître aucune question.</b>
   /// </summary>
+  /// <remarks>
+  /// Elle ne compte pour aucun rattachement — personne ne l'a tranchée —, mais quelque chose a bel
+  /// et bien été trouvé sous les désignations qu'on avait : ce qui manque est un regard, pas une
+  /// désignation de plus. Poser la question ici ferait afficher « aucun rattachement nulle part »
+  /// juste au-dessus de la ligne que le système vient de rendre.
+  /// </remarks>
   [Fact]
-  public async Task StillAsksWhenAllThatCameBackAwaitsAHuman()
+  public async Task AsksNothingWhileAReserveAwaitsAHuman()
   {
     var opened = ACase();
     TheManifestDeclares(AServedSystem(Boutique));
@@ -246,7 +250,40 @@ public class LocateHandlerTests
 
     await LocatingIn(opened);
 
+    opened.Questions.ShouldBeEmpty();
+    Written().ShouldNotContain(line => line.Fact == LedgerFact.QuestionRaised);
+  }
+
+  /// <summary>
+  /// <b>Une question à laquelle le dossier a fini par répondre se retire de l'écran.</b>
+  /// </summary>
+  /// <remarks>
+  /// La laisser en ferait un bandeau permanent, et un bandeau permanent s'apprend à ne plus se
+  /// voir. Rien n'est perdu : le jour où elle s'est posée est au <c>Ledger</c>, daté, et ce qui y a
+  /// répondu porte sa propre ligne datée — le contrôle lit l'écart entre les deux.
+  /// </remarks>
+  [Fact]
+  public async Task WithdrawsTheQuestionTheDaySomethingFinallyAttaches()
+  {
+    var opened = ACase();
+    TheManifestDeclares(AServedSystem(Boutique));
+    TheAdapterServes(AFinding());
+
+    await LocatingIn(opened);
+
     opened.Questions.ShouldHaveSingleItem();
+
+    // Le `Manifest` vieillit exprès : un système déclaré depuis, et jamais appelé, est rattrapé au
+    // passage suivant — et lui trouve la personne.
+    TheManifestDeclares(AServedSystem(Boutique), AServedSystem(Journal));
+    TheAdapterServes(AFinding("journal.log:2026-03"));
+
+    await LocatingIn(opened);
+
+    opened.Questions.ShouldBeEmpty();
+
+    // La preuve, elle, garde le jour où la question s'est posée.
+    Written().ShouldContain(line => line.Fact == LedgerFact.QuestionRaised);
   }
 
   /// <summary>

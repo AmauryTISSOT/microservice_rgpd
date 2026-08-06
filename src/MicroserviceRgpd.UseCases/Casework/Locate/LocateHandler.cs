@@ -171,18 +171,32 @@ public sealed class LocateHandler(
   }
 
   /// <summary>
-  /// La ligne de preuve de la <c>OpenQuestion</c> qui vient de naître, ou rien.
+  /// La ligne de preuve de la <c>OpenQuestion</c> qui vient de naître, ou rien — et, dans l'autre
+  /// sens, le retrait de celle à laquelle le dossier a fini par répondre.
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Elle ne naît que lorsque tous les <c>Locate</c> ont répondu, et qu'ils ont tous rendu
-  /// zéro.</b> Un système qui a différé n'a pas répondu, un système refusé non plus : conclure « la
-  /// désignation ne suffit pas » avant de les avoir entendus ferait poser une question dont on ne
-  /// sait pas encore si elle se pose.
+  /// <b>Trois conditions, et il les faut toutes.</b> Tous les <c>Locate</c> ont répondu ; aucun n'a
+  /// rattaché quoi que ce soit ; aucune réserve n'attend un humain. Un système qui a différé n'a pas
+  /// répondu, un système refusé non plus : conclure « la désignation ne suffit pas » avant de les
+  /// avoir entendus ferait poser une question dont on ne sait pas encore si elle se pose.
+  /// </para>
+  /// <para>
+  /// <b>Une réserve en attente n'est pas un zéro</b>, et c'est la condition la moins évidente des
+  /// trois. Elle ne compte pour aucun rattachement — personne ne l'a tranchée —, mais quelque chose
+  /// a bel et bien été trouvé sous les désignations qu'on avait : ce qui manque est un regard, pas
+  /// une désignation de plus. Poser la question là ferait afficher « aucun rattachement nulle part »
+  /// juste au-dessus des deux lignes que le système vient de rendre.
   /// </para>
   /// <para>
   /// <b>Un dossier sans aucun système atteignable ne pose aucune question.</b> Il n'y a alors pas
   /// six zéros à mal lire : il n'y a eu aucun appel, et le <c>Manifest</c> le dit déjà.
+  /// </para>
+  /// <para>
+  /// <b>Le retrait n'écrit aucune ligne, et ce n'est pas un oubli.</b> Le jour de la question est
+  /// au <c>Ledger</c> et y reste ; ce qui y répond — un <c>Locate</c> servi, une réserve rattachée —
+  /// porte déjà sa propre ligne datée. Une ligne « question levée » n'apprendrait au contrôle rien
+  /// qu'il ne lise dans l'écart entre les deux.
   /// </para>
   /// </remarks>
   private static IEnumerable<LedgerEntry> QuestionOf(
@@ -190,10 +204,17 @@ public sealed class LocateHandler(
     IReadOnlyList<DeclaredSystem> reachable,
     DateTimeOffset askedOn)
   {
+    if (opened.HoldsAnyAttachment || opened.AwaitsAnArbitration)
+    {
+      opened.Answered(OpenQuestionSubject.Designation);
+
+      yield break;
+    }
+
     var everyoneAnswered = reachable.Count > 0
       && reachable.All(system => opened.LocatingIn(system.Id)?.LastOutcome == AdapterOutcome.Served);
 
-    if (!everyoneAnswered || opened.HoldsAnyAttachment)
+    if (!everyoneAnswered)
     {
       yield break;
     }

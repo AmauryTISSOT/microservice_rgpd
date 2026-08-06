@@ -142,6 +142,19 @@ public sealed class Case : IAggregateRoot
   public bool HoldsAnyAttachment => _locatings.Any(locating => locating.HoldsAnAttachment);
 
   /// <summary>
+  /// Une réserve attend-elle un humain, <b>où que ce soit</b> ? C'est l'autre moitié de la lecture
+  /// dont naît la question de la désignation, et elle en est la négation : un dossier qui a du
+  /// travail posé devant quelqu'un n'a pas de question ouverte à poser.
+  /// </summary>
+  /// <remarks>
+  /// Une réserve n'est pas un rattachement — personne ne l'a tranchée — mais elle n'est pas un zéro
+  /// non plus : quelque chose a été trouvé, et ce qui manque est un regard, pas une désignation.
+  /// Les confondre ferait afficher « on n'a rien trouvé sous ce qu'on a » au-dessus de deux lignes
+  /// que le système vient précisément de trouver.
+  /// </remarks>
+  public bool AwaitsAnArbitration => _locatings.Any(locating => locating.AwaitsAnArbitration);
+
+  /// <summary>
   /// Les droits qu'on reconnaît à cette demande, un <see cref="Claim"/> chacun. <b>Éventuellement
   /// vide</b> : une demande n'exerçant aucun droit entre quand même, et un dossier vide de
   /// réclamations est un fait, jamais une saisie inachevée.
@@ -553,6 +566,33 @@ public sealed class Case : IAggregateRoot
     _questions.Add(new OpenQuestion(subject, askedOn.ToUniversalTime()));
 
     return true;
+  }
+
+  /// <summary>
+  /// Retire une question à laquelle le dossier a fini par répondre, et dit si elle était posée.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Une question ouverte est de la prose de travail : elle dit ce qui manque aujourd'hui.</b>
+  /// La laisser après que la désignation a été trouvée en ferait un bandeau permanent, et un
+  /// bandeau permanent s'apprend à ne plus se voir — la seule chose qu'un écran ne doive jamais
+  /// enseigner. C'est la mécanique qui vaut déjà pour la réclamation d'une
+  /// <c>IdentityMotivation</c>, et pour la même raison.
+  /// </para>
+  /// <para>
+  /// <b>Rien n'est perdu de la preuve.</b> Le jour où la question s'est posée est au <c>Ledger</c>,
+  /// daté, et il y reste ; ce qui y a répondu — un <c>Locate</c> servi, une réserve rattachée —
+  /// porte sa propre ligne datée. Le contrôle lit donc l'écart entre les deux sans qu'aucune ligne
+  /// n'ait été réécrite, et l'écran, lui, ne montre que ce qui attend encore.
+  /// </para>
+  /// </remarks>
+  /// <returns><c>true</c> si la question était posée ; <c>false</c> si elle ne l'était pas.</returns>
+  /// <exception cref="ArgumentNullException"><paramref name="subject"/> est absent.</exception>
+  public bool Answered(OpenQuestionSubject subject)
+  {
+    ArgumentNullException.ThrowIfNull(subject);
+
+    return _questions.RemoveAll(question => question.Subject == subject) > 0;
   }
 
   /// <summary>La localisation de ce système, posée si elle n'existait pas encore.</summary>
