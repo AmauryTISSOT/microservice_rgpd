@@ -61,6 +61,14 @@ public sealed class LocateHandler(
       return Result.NotFound();
     }
 
+    // Un dossier clos n'a plus une désignation : l'appel partirait sous un sac vide, et ramènerait
+    // soit rien, soit — pire — ce qu'un Adapter voudrait bien rendre à une recherche sans critère.
+    // Ouvrir un dossier clos reste permis et ne déclenche donc aucun appel.
+    if (opened.IsClosed)
+    {
+      return Result.Success();
+    }
+
     var reachable = (await manifest.ListAsync(cancellationToken))
       .Where(system => system.AdapterAddress is not null && system.Capabilities.Contains(Capability.Locate))
       .OrderBy(system => system.Id.Value, StringComparer.Ordinal)

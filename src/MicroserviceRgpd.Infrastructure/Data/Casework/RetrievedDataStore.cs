@@ -88,4 +88,14 @@ public sealed class RetrievedDataStore(AppDbContext dbContext) : IRetrievedData
       .Where(piece => piece.Case == caseId && piece.Right == right)
       .ExecuteDeleteAsync(cancellationToken);
   }
+
+  /// <inheritdoc />
+  public async Task DiscardAllAsync(CaseId caseId, CancellationToken cancellationToken = default)
+  {
+    // Sans charger les octets qu'on détruit, pour la même raison qu'au grain du droit — et ici sans
+    // énumérer les droits non plus : la clôture ne laisse rien, et une énumération pourrait oublier.
+    await dbContext.Set<RetrievedData>()
+      .Where(piece => piece.Case == caseId)
+      .ExecuteDeleteAsync(cancellationToken);
+  }
 }

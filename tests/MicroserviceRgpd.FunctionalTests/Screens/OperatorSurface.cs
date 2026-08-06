@@ -350,6 +350,56 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
     return await _client.PostAsync($"{address}?handler=DeclareDelivered", new FormUrlEncodedContent(fields));
   }
 
+  /// <summary>
+  /// Déclare que le service a <b>répondu</b> sur un droit. Un geste par droit, jamais un par dossier.
+  /// </summary>
+  internal async Task<HttpResponseMessage> AnswerClaimAsync(CaseId opened, string right, string signedBy)
+  {
+    var address = AddressOf(opened);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
+      new("Outcome.Right", right),
+      new("Outcome.SignedBy", signedBy),
+    };
+
+    return await _client.PostAsync($"{address}?handler=Answer", new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// <b>Clôt le dossier</b> — et détruit tout son nominatif à l'instant même.
+  /// </summary>
+  /// <remarks>
+  /// La case de confirmation est un champ comme les autres, et <c>confirmed: false</c> l'omet : c'est
+  /// exactement ce qu'un navigateur envoie d'une case décochée, et c'est le seul moyen d'éprouver que
+  /// la parade tient.
+  /// </remarks>
+  internal async Task<HttpResponseMessage> CloseAsync(
+    CaseId opened,
+    string cause,
+    string signedBy,
+    string motive = "",
+    bool confirmed = true)
+  {
+    var address = AddressOf(opened);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
+      new("Closing.Cause", cause),
+      new("Closing.Motive", motive),
+      new("Closing.SignedBy", signedBy),
+    };
+
+    if (confirmed)
+    {
+      fields.Add(new("Closing.Confirmed", "true"));
+    }
+
+    return await _client.PostAsync($"{address}?handler=Close", new FormUrlEncodedContent(fields));
+  }
+
   private async Task<string> AntiforgeryTokenOfAsync(string address)
   {
     var token = Regex.Match(

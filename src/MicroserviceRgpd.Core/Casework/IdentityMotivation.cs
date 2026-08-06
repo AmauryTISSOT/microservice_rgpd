@@ -81,6 +81,27 @@ public sealed record IdentityMotivation
   }
 
   /// <summary>
+  /// La même motivation, <b>amputée de son détail</b> : la méthode survit, la prose meurt. C'est le
+  /// geste que la clôture applique à ce champ.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Ce n'est pas un oubli de la méthode.</b> Elle se compte, son lecteur est le contrôle, elle
+  /// est déjà au <c>Ledger</c> — la faire disparaître du dossier clos ferait perdre <i>sous quel
+  /// régime</i> ce dossier a été instruit, au moment même où l'on veut pouvoir en juger la pratique.
+  /// </para>
+  /// <para>
+  /// <b>Le détail, lui, nomme.</b> Il dit qui a été rappelé et sur quoi ; il n'a aucun chemin vers le
+  /// <c>Ledger</c>, et rien ne justifierait qu'il survive à la personne dont il parle.
+  /// </para>
+  /// <para>
+  /// ⚠️ Elle rend un <b>nouvel</b> exemplaire plutôt que d'effacer sur place : le type est un
+  /// <c>record</c> immuable, et le <see cref="Case"/> remplace le sien.
+  /// </para>
+  /// </remarks>
+  internal IdentityMotivation WithoutDetail() => new(Method, detail: null);
+
+  /// <summary>
   /// Une motivation est-elle <b>réclamée</b> pour ce droit sous cette déclaration d'identité ?
   /// </summary>
   /// <remarks>

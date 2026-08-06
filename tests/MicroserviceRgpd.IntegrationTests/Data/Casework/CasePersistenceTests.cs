@@ -1,5 +1,6 @@
 ﻿using System.Data.Common;
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using Npgsql;
@@ -314,6 +315,120 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
     reread.AwaitsAMotivation.ShouldBeTrue();
   }
 
+  /// <summary>
+  /// <b>Après la clôture, il ne reste pas une <c>Designation</c> en base.</b> C'est l'exigence que
+  /// seule la vraie base peut prouver : le domaine peut vider une liste en mémoire et laisser des
+  /// lignes derrière lui si la configuration ne les emporte pas.
+  /// </summary>
+  /// <remarks>
+  /// <b>On compte sur la table, pas sur l'objet relu.</b> Un <c>Case</c> rematérialisé dont le sac
+  /// serait vide ne dirait rien des lignes restées dans <c>case_designations</c> : c'est très
+  /// exactement le genre d'écart qu'un délai « au cas où » aurait produit sans que personne ne le
+  /// voie.
+  /// <para>
+  /// ⚠️ <b>Le sac du dossier n'est pas la seule table qui nomme.</b> Une réserve porte ses propres
+  /// désignations, deux niveaux sous la racine, dans <c>case_reservation_designations</c> — celles
+  /// que le système a proposées et que personne n'a encore tranchées. Le dossier en pose donc une
+  /// ici : sans elle, la table la plus profonde du nominatif ne serait jamais écrite, et le test
+  /// passerait au vert sans l'avoir regardée une seule fois.
+  /// </para>
+  /// </remarks>
+  [Fact]
+  public async Task LeavesNotASingleDesignationInTheDatabaseOnceTheCaseIsClosed()
+  {
+    var opened = Open(
+      [DataSubjectRight.Access],
+      [
+        Designation.Of(DesignationKind.Email, "a.fermer@example.fr"),
+        Designation.Of(DesignationKind.Reference, "4471"),
+      ],
+      ASystem("boutique"));
+
+    opened.Ask(OpenQuestionSubject.Designation, Received.AddDays(2));
+
+    // Une réserve non tranchée, et ses désignations propres : le nominatif le plus enfoui du
+    // dispositif, deux niveaux sous la racine.
+    opened.LocateServed(
+      DeclaredSystemId.From("boutique"),
+      LocateFindings.ReadFrom(
+        new LocateOnTheWire(
+          null,
+          [
+            new ReservedOnTheWire(
+              "clients#4417",
+              "Deux comptes portent ce nom : celui-ci n'a jamais commandé.",
+              [new DesignationOnTheWire("email", "Autre.Jean@example.fr")]),
+          ]),
+        DeclaredSystemId.From("boutique")),
+      Received.AddDays(3));
+
+    await SaveAsync(opened);
+
+    // Les deux sacs sont bien là AVANT : sans cette moitié, un test vert ne prouverait qu'une
+    // écriture manquante.
+    (await ScalarListAsync($"select value from case_designations where case_id = '{opened.Id.Value}'"))
+      .Count.ShouldBe(2);
+
+    (await ScalarListAsync("select value from case_reservation_designations"))
+      .ShouldContain("Autre.Jean@example.fr");
+
+    await CloseAsync(opened.Id, ClosingCause.Answered, Received.AddDays(9));
+
+    (await ScalarListAsync($"select value from case_designations where case_id = '{opened.Id.Value}'"))
+      .ShouldBeEmpty();
+
+    (await ScalarListAsync($"select subject from case_questions where case_id = '{opened.Id.Value}'"))
+      .ShouldBeEmpty();
+
+    // La réserve tombe avec sa localisation, et ses désignations avec elle.
+    (await ScalarListAsync("select value from case_reservation_designations"))
+      .ShouldNotContain("Autre.Jean@example.fr");
+
+    // La cause et l'instant, eux, sont écrits : c'est ce que le dossier vidé garde de sa propre fin.
+    (await ScalarListAsync($"select state || '/' || closing_cause from cases where id = '{opened.Id.Value}'"))
+      .ShouldBe([$"{nameof(CaseState.Closed)}/{nameof(ClosingCause.Answered)}"]);
+
+    var reread = await RereadAsync(opened.Id);
+
+    reread.Designations.ShouldBeEmpty();
+    reread.ClosedOn.ShouldBe(Received.AddDays(9));
+
+    // ⚠️ Le travail dû n'a pas bougé : la clôture ne propage rien et ne gèle rien, et un « à faire »
+    // resté tel quel se lit comme l'oubli qu'il est.
+    reread.Claims.Single().Steps.Single().State.ShouldBe(StepState.ToDo);
+  }
+
+  /// <summary>
+  /// <b>La méthode de vérification survit à la clôture, le détail meurt.</b> La première se compte
+  /// et son lecteur est le contrôle ; le second nomme, et rien ne justifie qu'il survive à la
+  /// personne dont il parle.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheVerificationMethodInTheRowAndWipesItsProse()
+  {
+    var motivated = Case.Open(
+      CaseId.Next(),
+      IdentityDeclaration.Unverified,
+      IdentityMotivation.Of(
+        IdentityVerificationMethod.CallbackOnKnownContact,
+        "Rappel au numéro connu ; Jean Dupont a confirmé sa date de naissance."),
+      [Designation.Of(DesignationKind.Email, "a.clore@example.fr")],
+      [DataSubjectRight.Access],
+      ClaimOrigin.Named,
+      Manifest.Empty,
+      ReceptionDate.Declared(Received));
+
+    await SaveAsync(motivated);
+
+    await CloseAsync(motivated.Id, ClosingCause.Abandoned, Received.AddDays(4));
+
+    var written = await ScalarListAsync(
+      "select identity_verification_method || '/' || coalesce(identity_motivation_detail, '∅') "
+      + $"from cases where id = '{motivated.Id.Value}'");
+
+    written.ShouldBe([$"{nameof(IdentityVerificationMethod.CallbackOnKnownContact)}/∅"]);
+  }
+
   private static Case Open(
     DataSubjectRight[] rights,
     Designation[] designations,
@@ -348,6 +463,28 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
     dbContext.Cases.Add(opened);
 
     await dbContext.SaveChangesAsync();
+  }
+
+  /// <summary>
+  /// Relit le dossier, le clôt, et écrit — <b>dans un seul contexte</b>, comme le fait le
+  /// gestionnaire.
+  /// </summary>
+  /// <remarks>
+  /// C'est ce qui rend l'exigence vérifiable : la destruction du nominatif est un <b>effet de
+  /// l'écriture de la racine</b>, et non un effacement que le test aurait fait à la main.
+  /// </remarks>
+  private async Task<Case> CloseAsync(CaseId id, ClosingCause cause, DateTimeOffset closedOn)
+  {
+    await using var dbContext = postgres.NewDbContext();
+
+    var toClose = await dbContext.Cases.SingleOrDefaultAsync(one => one.Id == id);
+
+    toClose.ShouldNotBeNull();
+    toClose.Close(cause, closedOn).ShouldBeTrue();
+
+    await dbContext.SaveChangesAsync();
+
+    return toClose;
   }
 
   private async Task<Case> RereadAsync(CaseId id)

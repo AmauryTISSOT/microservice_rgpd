@@ -130,6 +130,48 @@ public sealed class Claim
   internal void Confirm() => Confirmed = true;
 
   /// <summary>
+  /// Ce droit attend-il encore une <b>issue</b> ? Vrai tant qu'il est <see cref="ClaimState.Open"/>.
+  /// </summary>
+  /// <remarks>
+  /// C'est ce que la clôture <b>réclame</b>, et jamais ce qu'elle exige : un dossier se clôt sur des
+  /// <c>Claim</c> restés ouverts, et l'écran l'aura dit avant de laisser signer.
+  /// </remarks>
+  public bool AwaitsAnOutcome => State == ClaimState.Open;
+
+  /// <summary>
+  /// Un humain déclare que le service a <b>répondu</b> sur ce droit.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle n'affirme que l'acte de répondre.</b> Des <see cref="Step"/> restés inatteints ne la
+  /// barrent pas : l'incomplétude reste lisible un <c>Step</c> à la fois, plutôt que masquée par un
+  /// état de haut niveau rassurant — voir <see cref="ClaimState.Answered"/>.
+  /// </para>
+  /// <para>
+  /// <b>Elle ne se rejoue pas et ne défait rien.</b> Un <c>Claim</c> déjà répondu — ou refusé —
+  /// rend <c>false</c> plutôt que de lever : le second clic n'est pas une panne, et réécrire un
+  /// <see cref="ClaimState.Refused"/> en <c>Answered</c> effacerait la charge probatoire propre du
+  /// refus.
+  /// </para>
+  /// <para>
+  /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat,
+  /// parce que le <c>Ledger</c> survit au dossier de cinq ans.
+  /// </para>
+  /// </remarks>
+  /// <returns><c>true</c> si le droit vient de passer à <c>Answered</c> ; <c>false</c> s'il était déjà clos.</returns>
+  internal bool Answer()
+  {
+    if (State != ClaimState.Open)
+    {
+      return false;
+    }
+
+    State = ClaimState.Answered;
+
+    return true;
+  }
+
+  /// <summary>
   /// L'instant où le paquet de ce droit est <b>sorti du service</b> pour la première fois, ou
   /// <c>null</c> si personne ne l'a encore pris. C'est le <b>premier</b> des deux gestes de la remise.
   /// </summary>

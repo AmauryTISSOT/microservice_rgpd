@@ -203,6 +203,67 @@ public sealed class DeliveryDeclarationForm
 }
 
 /// <summary>
+/// Ce qu'un <c>Operator</c> saisit pour déclarer que le service a <b>répondu</b> sur un droit.
+/// </summary>
+/// <remarks>
+/// <b>Deux champs, comme la confirmation, et pour la même raison.</b> Répondre est un fait ; le
+/// contenu de la réponse est le paquet remis, qui a ses propres gestes. Réclamer une prose ici
+/// ferait écrire une ligne de rien à chaque droit clos.
+/// </remarks>
+public sealed class ClaimOutcomeForm
+{
+  /// <summary>Le droit sur lequel le service déclare avoir répondu, par son nom canonique anglais.</summary>
+  public string? Right { get; set; }
+
+  /// <summary>Le nom que l'<c>Operator</c> saisit pour signer. Sans authentification, et sans mémoire.</summary>
+  public string? SignedBy { get; set; }
+}
+
+/// <summary>
+/// Ce qu'un <c>Operator</c> saisit pour <b>clore le dossier</b> — et détruire tout le nominatif à
+/// l'instant même.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Ce formulaire porte une case que nul autre ne porte.</b> Le geste est irréversible, seul du
+/// dispositif à l'être, et sa parade est un geste <b>délibéré dans l'écran</b> plutôt que de la
+/// donnée gardée en réserve. La case n'est ni pré-cochée ni mémorisée : elle est la seconde
+/// affirmation d'une personne qui vient de lire ce qu'elle s'apprête à détruire.
+/// </para>
+/// <para>
+/// <b>Le motif est un champ de prose, et c'est de la prose de <em>preuve</em>.</b> Il dit
+/// <i>pourquoi on a décidé cela</i>, il n'est pas nominatif par nature, et il <b>survit</b> dans le
+/// <c>Ledger</c> quand tout le dossier tombe. C'est le seul champ de prose de cet écran dont
+/// l'écriture soit parfois exigée — <c>Abandoned</c>, et lui seul.
+/// </para>
+/// </remarks>
+public sealed class ClosingForm
+{
+  /// <summary>La cause de la clôture, par son nom canonique anglais. Vocabulaire fermé : elle se compte.</summary>
+  public string? Cause { get; set; }
+
+  /// <summary>
+  /// Le motif, en prose libre. Exigé pour <c>Abandoned</c> seul, accueilli ailleurs. <b>Prose de
+  /// preuve</b> : elle survit au dossier.
+  /// </summary>
+  public string? Motive { get; set; }
+
+  /// <summary>Le nom que l'<c>Operator</c> saisit pour signer. Sans authentification, et sans mémoire.</summary>
+  public string? SignedBy { get; set; }
+
+  /// <summary>
+  /// La <b>confirmation délibérée</b> du geste irréversible. Sans elle, rien n'est détruit.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle est éprouvée dans l'écran, jamais dans le domaine.</b> Ce qu'elle protège est un
+  /// humain contre son propre clic : c'est une propriété de la surface, et la faire descendre dans
+  /// la commande aurait fait porter au domaine une exigence d'ergonomie — puis, tôt ou tard, un
+  /// appelant qui la coche pour lui-même.
+  /// </remarks>
+  public bool Confirmed { get; set; }
+}
+
+/// <summary>
 /// Ce qu'un <c>Operator</c> déclare, une fois la frontière du domaine franchie.
 /// </summary>
 /// <param name="Right">Le droit au titre duquel le travail était dû.</param>

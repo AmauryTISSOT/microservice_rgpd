@@ -59,6 +59,23 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
       .HasConversion(state => state.Name, name => CaseState.FromName(name))
       .IsRequired();
 
+    // Les deux colonnes de la clôture sont nulles ensemble sur un dossier ouvert, et pleines
+    // ensemble sur un dossier clos : elles sont écrites par le même geste, et il n'en existe pas un
+    // second qui pourrait les dissocier.
+    builder.Property(opened => opened.ClosingCause)
+      .HasColumnName("closing_cause")
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+      .HasConversion(cause => cause!.Name, name => ClosingCause.FromName(name));
+
+    builder.Property(opened => opened.ClosedOn).HasColumnName("closed_on");
+
+    // Ce que la clôture réclame se recalcule à chaque affichage, sur les Claim et les Step déjà
+    // stockés. EF Core prendrait ces deux lectures pour des navigations et leur chercherait une
+    // table : elles n'en ont pas, et n'en auront jamais — un état persisté ferait dépendre la
+    // visibilité d'un oubli de ce que quelqu'un ait pensé à le poser.
+    builder.Ignore(opened => opened.ClaimsAwaitingAnOutcome);
+    builder.Ignore(opened => opened.StepsAwaitingADeclaration);
+
     ConfigureTheMotivation(builder);
     ConfigureTheReception(builder);
     ConfigureTheBag(builder);

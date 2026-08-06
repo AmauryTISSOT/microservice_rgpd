@@ -73,7 +73,15 @@ public sealed class ReadCaseHandler(
       claims,
       Located(opened, catalogue),
       opened.Questions,
-      observedAt);
+      observedAt,
+      opened.State,
+      opened.ClosingCause,
+      opened.ClosedOn,
+      // Les deux réclamations de la clôture se comptent sur la racine, qui les calcule sur ses Claim
+      // et ses Step : une seconde rédaction ici finirait par ne plus dire la même chose que ce que
+      // l'écran montre juste à côté, ligne par ligne.
+      opened.ClaimsAwaitingAnOutcome.Count,
+      opened.StepsAwaitingADeclaration.Count);
   }
 
   /// <summary>

@@ -80,4 +80,32 @@ public sealed class StepState : SmartEnum<StepState>
   /// Le service détient-il un rattachement dans le système dont on déclare le travail dû ?
   /// </param>
   public bool DemandsAFinding(bool anAttachmentIsHeld) => this == Done && !anAttachmentIsHeld;
+
+  /// <summary>
+  /// Quelqu'un a-t-il <b>dit où en était</b> ce travail dû ? Vrai de <see cref="Done"/>, de
+  /// <see cref="OutOfReach"/> et de <see cref="Untreated"/> — les trois états qu'un humain a
+  /// déclarés. Faux de <see cref="ToDo"/> et de <see cref="Awaiting"/>.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle ne sépare pas le réussi de l'échoué</b>, mais <i>quelqu'un s'est prononcé</i> de
+  /// <i>personne ne s'est prononcé</i>. <see cref="Untreated"/> et <see cref="OutOfReach"/> en
+  /// sont : ils disent que le travail n'a pas été fait, et le disent franchement. C'est pourquoi
+  /// elle ne s'appelle pas <c>IsTerminal</c> — « terminal » aurait laissé entendre « bien
+  /// terminé », et il aurait fallu défaire ce sous-entendu partout où on la lit.
+  /// </para>
+  /// <para>
+  /// <b>À quoi elle sert : à réclamer, jamais à bloquer.</b> La clôture réclame une déclaration
+  /// pour chaque <c>Step</c> dont personne n'a parlé, et se laisse faire quand l'humain passe
+  /// outre. Un <see cref="ToDo"/> reste alors <see cref="ToDo"/> dans le dossier clos, où il se lit
+  /// comme un oubli — c'est exactement la trace que l'<c>Omission silencieuse</c> devait laisser,
+  /// et la masquer d'un état de clôture rassurant serait la perdre.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b><see cref="Awaiting"/> ne compte pas comme déclaré.</b> Il dit qu'un <c>Adapter</c> a
+  /// promis de revenir, jamais qu'il est revenu : une promesse de machine ne tient pas lieu de
+  /// déclaration humaine.
+  /// </para>
+  /// </remarks>
+  public bool WasDeclared => this == Done || this == OutOfReach || this == Untreated;
 }
