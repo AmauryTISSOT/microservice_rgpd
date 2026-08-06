@@ -69,6 +69,12 @@ public sealed record ReadCaseQuery(CaseId Case) : IQuery<CaseOnScreen?>;
 /// où tout le nominatif a été détruit</b> : il n'y a pas deux dates, parce qu'il n'y a pas deux
 /// gestes.
 /// </param>
+/// <param name="ExtensionDeclaration">
+/// La prolongation de l'art. 12.3 déclarée sur ce dossier, ou <c>null</c> si personne n'en a
+/// déclaré. <b>Elle se lit avec <paramref name="Deadline"/></b> : l'échéance dit si la prolongation
+/// la porte, cet objet dit ce qui a été déclaré, et l'écart entre les deux est ce qu'une déclaration
+/// tardive laisse voir.
+/// </param>
 /// <param name="ClaimsAwaitingAnOutcome">
 /// Combien de droits attendent encore une issue. <b>Ce que la clôture réclame</b>, montré avant de
 /// laisser signer.
@@ -99,6 +105,7 @@ public sealed record CaseOnScreen(
   CaseState State,
   ClosingCause? ClosingCause,
   DateTimeOffset? ClosedOn,
+  ExtensionDeclaration? ExtensionDeclaration,
   int ClaimsAwaitingAnOutcome,
   int StepsAwaitingADeclaration)
 {

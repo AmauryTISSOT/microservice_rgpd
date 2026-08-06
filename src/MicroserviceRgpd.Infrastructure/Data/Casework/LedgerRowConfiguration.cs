@@ -4,7 +4,7 @@ using MicroserviceRgpd.Core.Casework.Ledger;
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : vingt colonnes, et pas une de plus où un nom de personne concernée
+/// La table du <c>Ledger</c> : vingt et une colonnes, et pas une de plus où un nom de personne concernée
 /// pourrait entrer. La seule prose est celle de <b>preuve</b> ; la prose de travail, qui nomme par
 /// nature, n'a aucune colonne ici.
 /// </summary>
@@ -16,9 +16,10 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// <b>libre</b>, et il le restera.
 /// </para>
 /// <para>
-/// <b>Aucun index secondaire pour l'instant.</b> Rien ne lit encore cette table, et un index
-/// coûterait à chaque écriture. Le jour où l'écran de la file lira les <c>Ledger</c> échus, ce sera
-/// un geste délibéré, avec sa migration.
+/// <b>Un seul index secondaire, et il est daté.</b> Il est posé sur <c>case_id</c> le jour où
+/// l'écran de la file s'est mis à lire les <c>Ledger</c> échus : c'est par lui que la file demande
+/// quels dossiers clos portent encore une preuve, et par lui que la destruction emporte un dossier
+/// de preuve entier. Il n'y en a pas d'autre — rien d'autre ne lit cette table.
 /// </para>
 /// <para>
 /// <b>Le <c>snake_case</c> est déclaré ici, explicitement</b>, comme sur les autres tables du dépôt.
@@ -39,6 +40,11 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     builder.Property(row => row.EntryId).HasColumnName("entry_id").ValueGeneratedNever();
 
     builder.Property(row => row.CaseId).HasColumnName("case_id").IsRequired();
+
+    // Le seul index secondaire de la table. La file demande, à chaque affichage, quels dossiers clos
+    // portent encore une preuve ; et la destruction d'un Ledger échu emporte toutes les lignes d'un
+    // même dossier d'un coup. Les deux se lisent par cette colonne, et par elle seule.
+    builder.HasIndex(row => row.CaseId).HasDatabaseName("ix_ledger_entries_case_id");
 
     builder.Property(row => row.OccurredAt).HasColumnName("occurred_at").IsRequired();
 
@@ -120,5 +126,11 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     builder.Property(row => row.ClosingCause)
       .HasColumnName("closing_cause")
       .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
+
+    // Le jour où l'Operator déclare avoir informé la personne d'une prolongation. Une colonne à
+    // elle, distincte d'`occurred_at` qui date le clic : l'art. 12.3 exige que la personne soit
+    // informée dans le mois, et une seule date aurait fait choisir entre dater l'obligation et
+    // dater la déclaration.
+    builder.Property(row => row.InformedOn).HasColumnName("informed_on");
   }
 }

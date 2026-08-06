@@ -47,6 +47,11 @@ public static class InfrastructureServiceExtensions
     // que sa définition ferme.
     services.AddScoped<ILedger, Ledger>();
 
+    // La seule suppression du dispositif vit dans son propre type, à part de l'ajout : l'adaptateur
+    // qui écrit la preuve ne sait toujours ni la relire ni l'effacer, et celui qui détruit un
+    // Ledger échu ne sait rien écrire. ⚠️ Rien ne l'appelle qu'un clic d'Operator.
+    services.AddScoped<IExpiredLedgers, ExpiredLedgers>();
+
     // Les pièces lues non plus : elles sont hors de l'agrégat, avec leur durée de vie propre — la
     // remise les détruira sans réécrire le Case —, et le dépôt générique aurait fait d'un contenu
     // personnel une racine que tout le service pourrait charger.

@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Ledger;
 
 namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 
@@ -18,11 +19,18 @@ namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 /// </para>
 /// </remarks>
 /// <param name="cases">Les dossiers, en lecture seule.</param>
+/// <param name="expired">
+/// Les <c>Ledger</c> échus. ⚠️ <b>Ils sont demandés à chaque affichage</b>, comme tout le reste :
+/// c'est une lecture, et la seule échéance du dispositif qui fasse naître une ligne.
+/// </param>
 /// <param name="clock">
 /// L'horloge, injectée pour que l'instant du regard se dicte en test plutôt que d'être lu sur la
 /// machine qui sert la page.
 /// </param>
-public sealed class ReadQueueHandler(IReadRepository<Case> cases, TimeProvider clock)
+public sealed class ReadQueueHandler(
+  IReadRepository<Case> cases,
+  IExpiredLedgers expired,
+  TimeProvider clock)
   : IQueryHandler<ReadQueueQuery, OperatorQueue>
 {
   /// <inheritdoc />
@@ -40,12 +48,18 @@ public sealed class ReadQueueHandler(IReadRepository<Case> cases, TimeProvider c
       .ThenBy(line => line.Case.Value)
       .ToArray();
 
-    return new OperatorQueue(queued, observedAt);
+    // La seconde liste est calculée sur le même instant que la première : deux lectures d'horloge
+    // auraient fait dire à la page deux « aujourd'hui » différents, dont un seul est affiché.
+    var overdue = await expired.ListAsync(observedAt, cancellationToken);
+
+    return new OperatorQueue(queued, overdue, observedAt);
   }
 
   private static QueuedCase Line(Case opened, DateTimeOffset observedAt)
   {
-    var deadline = StatutoryDeadline.Of(opened.Reception);
+    // La prolongation déclarée entre dans le calcul, et n'en sort aucun état : déclarée dans le
+    // mois, elle porte l'échéance à trois mois ; déclarée après, elle la laisse où elle est.
+    var deadline = StatutoryDeadline.Of(opened.Reception, opened.ExtensionDeclaration);
 
     return new QueuedCase(
       opened.Id,

@@ -76,6 +76,71 @@ public class StatutoryDeadlineTests
   }
 
   /// <summary>
+  /// <b>Une prolongation déclarée dans le mois porte le dénominateur à trois mois.</b> Le
+  /// déplacement est un calcul sur la date de la déclaration, jamais une propriété de l'objet.
+  /// </summary>
+  [Fact]
+  public void CarriesTheDenominatorToThreeMonthsWhenTheExtensionWasDeclaredWithinTheMonth()
+  {
+    var within = ExtensionDeclaration.Of(
+      "Le prestataire de paie ne rend la main qu'au trimestre.",
+      Received.AddDays(10),
+      Received.AddDays(12));
+
+    var deadline = StatutoryDeadline.Of(ReceptionDate.Declared(Received), within);
+
+    deadline.On.ShouldBe(new DateTimeOffset(2026, 11, 5, 10, 0, 0, TimeSpan.Zero));
+    deadline.Extended.ShouldBeTrue();
+
+    // Et le dépassement se recalcule sur le nouveau dénominateur, à l'instant où l'on regarde.
+    deadline.IsOverrunAt(Received.AddDays(60)).ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une prolongation déclarée après le mois ne déplace rien.</b> Elle s'inscrit — le fait est
+  /// gardé —, mais un clic ne blanchit pas un dépassement déjà acquis : sans quoi le service
+  /// fabriquerait un faux au lieu d'enregistrer un fait laid.
+  /// </summary>
+  [Fact]
+  public void LeavesTheDenominatorWhereItIsWhenTheExtensionCameTooLate()
+  {
+    var late = ExtensionDeclaration.Of(
+      "Personne n'a vu passer le dossier avant la fin du mois.",
+      Received.AddDays(40),
+      Received.AddDays(40));
+
+    var deadline = StatutoryDeadline.Of(ReceptionDate.Declared(Received), late);
+
+    deadline.On.ShouldBe(new DateTimeOffset(2026, 9, 5, 10, 0, 0, TimeSpan.Zero));
+    deadline.Extended.ShouldBeFalse();
+
+    // Le dépassement acquis le reste : il était vrai avant la déclaration, il l'est après.
+    deadline.IsOverrunAt(Received.AddDays(40)).ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// Déclarée <b>le jour même de l'échéance</b>, elle porte : le dernier jour est dû, et c'est la
+  /// même frontière que celle du dépassement — une seule règle, écrite une seule fois.
+  /// </summary>
+  [Fact]
+  public void StillCarriesWhenDeclaredOnTheVeryDayTheMonthFallsDue()
+  {
+    var onTheDay = ExtensionDeclaration.Of(
+      "Le prestataire de paie ne rend la main qu'au trimestre.",
+      Received.AddDays(30),
+      Received.AddMonths(1));
+
+    StatutoryDeadline.Of(ReceptionDate.Declared(Received), onTheDay).Extended.ShouldBeTrue();
+  }
+
+  /// <summary>Sans prolongation déclarée, l'échéance ne se dit jamais prolongée.</summary>
+  [Fact]
+  public void SaysItIsNotExtendedWhenNobodyDeclaredAnything()
+  {
+    StatutoryDeadline.Of(ReceptionDate.Declared(Received)).Extended.ShouldBeFalse();
+  }
+
+  /// <summary>
   /// <b>Rien ici ne rend un nombre de jours.</b> La règle des chiffres n'autorise pas un compteur,
   /// et « sans réponse depuis N jours » est exactement la forme que le contexte refuse : on montre
   /// le fait — une date, un dépassement —, l'<c>Operator</c> juge.

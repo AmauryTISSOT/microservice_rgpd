@@ -109,10 +109,16 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La file n'offre aucun geste.</b> Chaque ligne mène au dossier, et c'est là que
-  /// l'<c>Operator</c> agit : une action depuis la liste ferait signer quelqu'un sans qu'il ait ouvert
-  /// ce qu'il signe. Aucun formulaire, donc, et pas même une case à cocher.
+  /// <b>La file n'offre aucun geste SUR UN DOSSIER.</b> Chaque ligne mène au dossier, et c'est là
+  /// que l'<c>Operator</c> agit : une action depuis la liste ferait signer quelqu'un sans qu'il ait
+  /// ouvert ce qu'il signe. Aucun formulaire, donc, et pas même une case à cocher.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'écran porte une exception, et une seule</b> : la destruction d'un <c>Ledger</c> échu,
+  /// qui n'a aucun dossier où vivre — le sien est clos depuis cinq ans. Elle est <b>tenue à part</b>,
+  /// dans sa propre section, et <see cref="ExpiredLedgerSection"/> garde qu'elle ne redescend jamais
+  /// parmi les lignes de dossiers. C'est pourquoi ce test-ci lit le tableau plutôt que la page.
+  /// </remarks>
   [Fact]
   public async Task OffersNoGestureFromTheListAndLeadsToTheCaseInstead()
   {
@@ -120,11 +126,15 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
 
     var screen = await _surface.ReadAsync(OperatorSurface.Queue);
 
-    screen.ShouldNotContain("<form");
-    screen.ShouldNotContain("<button");
-    screen.ShouldNotContain("type=\"checkbox\"");
+    // La liste des dossiers s'arrête là où commence la section des Ledger échus, et tout ce qui
+    // précède ce titre est ce qu'un Operator lit en cherchant par quel dossier commencer.
+    var cases = screen[..screen.IndexOf("À détruire", StringComparison.Ordinal)];
 
-    screen.ShouldContain($"/dossiers/{opened.Value}");
+    cases.ShouldNotContain("<form");
+    cases.ShouldNotContain("<button");
+    cases.ShouldNotContain("type=\"checkbox\"");
+
+    cases.ShouldContain($"/dossiers/{opened.Value}");
   }
 
   /// <summary>
