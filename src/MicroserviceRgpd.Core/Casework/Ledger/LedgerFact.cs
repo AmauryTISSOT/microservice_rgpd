@@ -68,6 +68,51 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   public static readonly LedgerFact MotivationDeclared =
     new(nameof(MotivationDeclared), 5, "motivation d'identité déclarée");
 
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>servi</b> un <c>Locate</c>. La ligne dit le système et <b>sous combien
+  /// de désignations</b> on a cherché — jamais lesquelles, et jamais ce qui a été trouvé : le
+  /// <c>Ledger</c> mesure l'ampleur d'une recherche, il ne dénombre pas les données de la personne.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle ne s'inscrit que si le verdict change.</b> Rouvrir un dossier relance les appels, et
+  /// trente-cinq passages rendant le même « servi » n'ont aucun signataire — c'est un affichage qui
+  /// les a déclenchés, non un humain. La règle est tenue par l'<b>appelant</b> : le <c>Ledger</c> ne
+  /// se relit jamais.
+  /// </remarks>
+  public static readonly LedgerFact LocateServed = new(nameof(LocateServed), 6, "localisation servie");
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>différé</b> un <c>Locate</c> en déclarant son échéance. Trois dates
+  /// disent tout : appelé, échéance déclarée, résultat — et l'on ne saura jamais combien de fois on
+  /// est repassé, faute de compteur que personne n'aurait signé.
+  /// </summary>
+  public static readonly LedgerFact LocateDeferred = new(nameof(LocateDeferred), 7, "localisation différée");
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>rattaché</b> une réserve : il a dit que cette ligne était bien celle de
+  /// la personne. La ligne porte le compte du sac <b>après</b> l'arbitrage — c'est ainsi que la
+  /// preuve dit « recherché sous 2 désignations, dont 1 ajoutée par arbitrage le 12/04 » sans jamais
+  /// écrire une valeur.
+  /// </summary>
+  public static readonly LedgerFact ReservationAttached =
+    new(nameof(ReservationAttached), 8, "réserve rattachée");
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>écarté</b> une réserve. Le fait est gardé au même titre que le
+  /// rattachement : une exclusion par prudence dont personne ne répondrait serait l'<c>Omission
+  /// silencieuse</c> sous sa forme la plus commode.
+  /// </summary>
+  public static readonly LedgerFact ReservationSetAside =
+    new(nameof(ReservationSetAside), 9, "réserve écartée");
+
+  /// <summary>
+  /// Une <c>OpenQuestion</c> est née sur le dossier : <b>tous</b> les <c>Locate</c> ont rendu zéro, et
+  /// la désignation ne suffit donc pas. Elle est datée, elle <b>n'arrête pas</b> le délai de
+  /// l'art. 12.3, et elle est signée par l'application — c'est un constat du service, non l'issue
+  /// d'un humain.
+  /// </summary>
+  public static readonly LedgerFact QuestionRaised = new(nameof(QuestionRaised), 10, "question posée");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

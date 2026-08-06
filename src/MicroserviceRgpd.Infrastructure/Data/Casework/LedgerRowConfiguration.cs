@@ -4,7 +4,7 @@ using MicroserviceRgpd.Core.Casework.Ledger;
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : quinze colonnes, et pas une de plus où un nom de personne concernée
+/// La table du <c>Ledger</c> : seize colonnes, et pas une de plus où un nom de personne concernée
 /// pourrait entrer. La seule prose est celle de <b>preuve</b> ; la prose de travail, qui nomme par
 /// nature, n'a aucune colonne ici.
 /// </summary>
@@ -103,5 +103,9 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     builder.Property(row => row.IdentityVerificationMethod)
       .HasColumnName("identity_verification_method")
       .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
+
+    // L'échéance d'un différé, déclarée par le client. Aucune colonne ne compte les passages : une
+    // relance n'a aucun signataire, et son compte serait du bruit de mécanique dans la preuve.
+    builder.Property(row => row.DeclaredDeadline).HasColumnName("declared_deadline");
   }
 }

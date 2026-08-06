@@ -183,14 +183,11 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
       && DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out deadline);
   }
 
-  /// <summary>Le corps de l'appel, tel qu'il part.</summary>
-  private sealed record AdapterCallBody(IReadOnlyList<DesignationOnTheWire> Designations);
-
   /// <summary>
-  /// Une désignation sur le fil : sa <b>nature par son mot canonique</b> et sa valeur, telles que
-  /// le contrat les fixe.
+  /// Le corps de l'appel, tel qu'il part. La <see cref="DesignationOnTheWire"/> qu'il porte est
+  /// celle-là même que le retour d'un <c>locate</c> emprunte : <b>une forme, écrite une fois</b>.
   /// </summary>
-  private sealed record DesignationOnTheWire(string Kind, string Value);
+  private sealed record AdapterCallBody(IReadOnlyList<DesignationOnTheWire> Designations);
 
   /// <summary>Ce qu'un différé porte : une échéance déclarée, et rien d'autre.</summary>
   private sealed record DeferredOnTheWire(string? Deadline);

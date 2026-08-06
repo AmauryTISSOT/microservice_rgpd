@@ -396,20 +396,207 @@
 <h2>La prose de travail</h2>
 
 @*
-  Le SECOND endroit, et il est délibérément séparé du premier. Ce qui s'écrit ici dit quelle ligne
+  Le SECOND endroit, et il est délibérément séparé du premier. Ce qui se lit ici dit quelle ligne
   appartient à qui, nomme donc par nature des tiers non demandeurs, vit sur le dossier et MEURT à la
   clôture — le Ledger n'en garde que le fait daté. Aucun champ de cette section n'a de chemin vers la
   preuve, et c'est ce placement, et non la discipline de l'Operator, qui tient la règle.
 *@
 <p class="caveat">
-  Ce qui s'écrit ici vit sur le dossier et <strong>disparaît à sa clôture</strong> : les réserves d'un
+  Ce qui se lit ici vit sur le dossier et <strong>disparaît à sa clôture</strong> : les réserves d'un
   <code>Locate</code> et les questions posées, qui nomment par nature. Rien de cette section n'entre
   dans la matière de preuve.
 </p>
 
-<p class="none">
-  Aucune réserve, aucune question en suspens : le service n'a encore appelé aucun système pour ce
-  dossier.
-</p>
+@*
+  LES QUESTIONS OUVERTES. On affiche la date à laquelle la question a été posée, JAMAIS « sans
+  réponse depuis N jours » : aucun nombre du droit ne fonde N, un seuil réglable serait une case à
+  laisser pourrir, et trier sur lui ferait passer devant un compteur sans force juridique.
+*@
+@foreach (var question in onScreen.Questions)
+{
+  <p class="open-question">
+    <strong>Question ouverte — @question.Subject.FrenchLabel</strong>, posée le
+    @question.AskedOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).
+    <span class="hint">
+      Tous les <code>Locate</code> de ce dossier ont rendu <strong>zéro rattachement</strong>. Cela ne
+      veut pas dire que cette personne n'est pas chez le client : un <code>Locate</code> ne distingue
+      pas « cherché, aucun rattachement » de « désignation insuffisante ». Le délai de l'art. 12.3
+      <strong>continue de courir</strong> — rien ne l'arrête, et cette question ne barre rien.
+    </span>
+  </p>
+}
+
+<h3>Où l'on cherche la personne</h3>
+
+@if (onScreen.Locatings.Count == 0)
+{
+  <p class="none">
+    Aucun système du catalogue ne déclare à la fois une adresse d'<code>Adapter</code> et la capacité
+    <code>Locate</code> : le service n'a appelé personne, et ce recensement se traite à la main.
+  </p>
+}
+
+@foreach (var located in onScreen.Locatings)
+{
+  <div class="locating">
+    <h4>@(located.Label?.Value ?? located.DeclaredSystem.Value)</h4>
+
+    <p class="hint">@located.DeclaredSystem.Value</p>
+
+    @if (located.Locating is not { } locating)
+    {
+      @*
+        « Pas appelé » et « appelé, rien trouvé » sont DEUX déclarations différentes, et seule la
+        seconde a une valeur de preuve. L'écran ne les confond pas : un zéro affiché ici pour un
+        système muet serait un constat que personne n'a fait.
+      *@
+      <p class="none">
+        <strong>Non appelé.</strong> Le service n'a obtenu aucune réponse de cet <code>Adapter</code>
+        pour ce dossier — ce n'est pas un zéro : personne n'a encore cherché ici.
+      </p>
+    }
+    else
+    {
+      <p class="hint">
+        @locating.LastOutcome.FrenchLabel — appelé le
+        @locating.AskedAt.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) sous
+        @locating.DesignationsAtCall désignation@(locating.DesignationsAtCall > 1 ? "s" : null).
+        @if (locating.DeclaredDeadline is { } deadline)
+        {
+          @*
+            L'échéance est DÉCLARÉE par le client, jamais négociée. Le service repassera après elle —
+            à la prochaine ouverture de ce dossier, et par aucune minuterie.
+          *@
+          <text>
+            L'application déclare avoir fini le
+            @deadline.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ; le service repassera à la
+            prochaine ouverture de ce dossier, sans compter ses passages.
+          </text>
+        }
+      </p>
+
+      @if (locating.LastOutcome.IsRefusal)
+      {
+        <p class="refusal">
+          <strong>Appel refusé.</strong> Le paysage déclaré et le programme qui le sert ne sont pas
+          d'accord : rien n'a bougé dans ce dossier, et la tentative est datée dans la matière de
+          preuve. Un humain tranchera lequel des deux avait tort.
+        </p>
+      }
+
+      @if (locating.Certain.Count == 0)
+      {
+        <p class="none">Aucun rattachement certain.</p>
+      }
+      else
+      {
+        @*
+          Le noyau certain, dans le VOCABULAIRE DE L'APPLICATION. Le service ne déréférence jamais ces
+          mots : il ne saura jamais que « #1203 » est une ligne d'une table héritée.
+        *@
+        <p>Rattachements certains, dans les mots de l'application :</p>
+        <ul class="certain">
+          @foreach (var reference in locating.Certain)
+          {
+            <li><code>@reference.Value</code></li>
+          }
+        </ul>
+      }
+
+      @foreach (var reservation in locating.Reserved)
+      {
+        <div class="reservation">
+          @*
+            LA PROSE DE MOTIF, LUE TELLE QUELLE. C'est ce qui distingue cet écran d'une case à
+            cocher : l'Operator lit POURQUOI l'application hésite, au lieu de cocher.
+          *@
+          <p class="reason">@reservation.Reason</p>
+
+          <p class="hint">
+            Référence de l'application : <code>@reservation.Reference.Value</code>
+          </p>
+
+          @if (reservation.Designations.Count == 0)
+          {
+            @*
+              Sans désignation, la réserve reste LOCALE ET OPAQUE : quoi qu'on en arbitre, le service
+              n'apprendra jamais ce que cette référence désignait, et aucun appel suivant n'en portera
+              rien.
+            *@
+            <p class="hint">
+              Cette réserve ne propose aucune désignation : elle reste <strong>locale à ce
+              système</strong>. La trancher n'enrichira pas le sac, et les appels suivants ne
+              porteront rien de plus.
+            </p>
+          }
+          else
+          {
+            <p class="hint">
+              Si vous la rattachez, ces désignations <strong>entrent au sac</strong> et l'appel suivant
+              les portera :
+            </p>
+            <ul class="proposed">
+              @foreach (var designation in reservation.Designations)
+              {
+                <li>@designation.Kind.FrenchLabel — @designation.Value</li>
+              }
+            </ul>
+          }
+
+          @if (!reservation.AwaitsAnArbitration)
+          {
+            <p class="settled">
+              <strong>@reservation.State.FrenchLabel.</strong> Un humain a tranché ; la matière de
+              preuve garde son nom et sa date.
+            </p>
+          }
+          else
+          {
+            @*
+              LES DEUX ISSUES SONT DEUX BOUTONS, et aucune n'est pré-sélectionnée. Une liste où
+              « rattachée » serait cochée d'avance ferait fusionner à tort d'un seul clic — erreur
+              irréversible, et portant sur la donnée d'un tiers.
+            *@
+            <form method="post" asp-page-handler="Arbitrate">
+              <input type="hidden" name="Arbitration.DeclaredSystem" value="@located.DeclaredSystem.Value" />
+              <input type="hidden" name="Arbitration.Reference" value="@reservation.Reference.Value" />
+
+              <fieldset class="signature">
+                <legend>Trancher cette réserve</legend>
+
+                <p class="hint">
+                  Le service ne tranche rien à votre place : ni la fusion à tort, irréversible et
+                  portant sur la donnée d'un tiers, ni l'exclusion par prudence, qui ne laisserait
+                  aucune trace. La preuve gardera le fait, votre nom et la date — jamais cette prose.
+                </p>
+
+                <p>
+                  <label for="arbitrate-signedby-@located.DeclaredSystem.Value-@reservation.Reference.Value">
+                    Votre nom
+                    <span class="hint">
+                      Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom
+                      <em>et</em> ce régime.
+                    </span>
+                  </label>
+                  <input type="text"
+                         id="arbitrate-signedby-@located.DeclaredSystem.Value-@reservation.Reference.Value"
+                         name="Arbitration.SignedBy"
+                         maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+                </p>
+
+                <button type="submit" name="Arbitration.Ruling" value="@ReservationState.Attached.Name">
+                  C'est bien la personne
+                </button>
+                <button type="submit" name="Arbitration.Ruling" value="@ReservationState.SetAside.Name">
+                  Ce n'est pas la personne
+                </button>
+              </fieldset>
+            </form>
+          }
+        </div>
+      }
+    }
+  </div>
+}
 
 <p><a asp-page="Queue">Revenir à la file</a></p>

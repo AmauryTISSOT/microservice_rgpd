@@ -24,12 +24,13 @@ namespace MicroserviceRgpd.UseCases.Casework.CallAdapter;
 /// vaut pour le déploiement entier : une panne unique n'est pas N pannes.
 /// </para>
 /// <para>
-/// ⚠️ <b>Une tentative refusée s'inscrit à chaque fois.</b> La règle « le <c>Ledger</c> consigne ce
-/// qui change, jamais la répétition » vise les <b>relances</b> — trente-cinq passages rendant le
-/// même différé, déclenchés par un affichage et par aucun humain. Ici, chaque appel part d'un geste
-/// distinct, et le <c>Ledger</c> ne se relit pas pour savoir ce qu'il portait déjà : une écriture
-/// qui lirait la ligne d'avant serait une écriture qu'une ligne d'avant pourrait faire mentir. Le
-/// jour où une relance existera, c'est <b>l'appelant</b> qui décidera de ne pas la répéter.
+/// ⚠️ <b>Une tentative refusée ne s'inscrit que si le verdict change.</b> La relance existe désormais
+/// — rouvrir un dossier fait repartir les appels —, et trente-cinq passages rendant le même refus
+/// n'ont aucun signataire : c'est un affichage qui les a déclenchés, non un humain, et ils
+/// noieraient sous du bruit de mécanique ce que le contrôle vient lire. La règle est tenue par
+/// l'<b>appelant</b>, qui dit ce qu'il avait obtenu la fois d'avant : le <c>Ledger</c>, lui, ne se
+/// relit pas — une écriture qui lirait la ligne d'avant serait une écriture qu'une ligne d'avant
+/// pourrait faire mentir.
 /// </para>
 /// <para>
 /// <b>Servir et différer ne laissent rien ici.</b> Ce qu'ils deviennent — un <c>Step</c>
@@ -62,11 +63,18 @@ public sealed class AdapterCallsForCase(
   /// <typeparam name="TServed">Ce que la <see cref="Capability"/> appelée rend quand elle sert.</typeparam>
   /// <param name="caseId">Le dossier au titre duquel l'appel part.</param>
   /// <param name="call">Ce qu'on demande, et à qui.</param>
+  /// <param name="previously">
+  /// Ce que ce même <c>Adapter</c> avait répondu la dernière fois sur ce système, ou <c>null</c> si
+  /// on ne l'avait jamais appelé. C'est ce que l'<b>appelant</b> sait et que le <c>Ledger</c> ne
+  /// saura jamais : celui-ci ne se relit pas, une écriture qui lirait la ligne d'avant étant une
+  /// écriture qu'une ligne d'avant pourrait faire mentir.
+  /// </param>
   /// <param name="cancellationToken">L'annulation de l'échange en cours.</param>
   /// <exception cref="AdapterFailure">L'<c>Adapter</c> n'a rendu ni réponse ni refus.</exception>
   public async Task<AdapterAnswer<TServed>> AskAsync<TServed>(
     CaseId caseId,
     AdapterCall call,
+    AdapterOutcome? previously = null,
     CancellationToken cancellationToken = default)
     where TServed : class
   {
@@ -76,6 +84,16 @@ public sealed class AdapterCallsForCase(
 
     if (!answer.Outcome.IsRefusal)
     {
+      return answer;
+    }
+
+    // Le désaccord se signale à chaque fois : c'est un compte d'exploitation au grain du
+    // déploiement, et son dédoublonnage vit dans le signalement lui-même. La PREUVE, elle, ne
+    // consigne que ce qui change — une relance rendant le même refus n'a aucun signataire.
+    if (answer.Outcome == previously)
+    {
+      disagreements.Signal(call.DeclaredSystem, answer.Outcome);
+
       return answer;
     }
 

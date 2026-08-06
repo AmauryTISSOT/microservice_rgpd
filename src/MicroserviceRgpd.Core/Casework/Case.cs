@@ -1,4 +1,5 @@
-﻿using MicroserviceRgpd.Core.SharedKernel;
+﻿using MicroserviceRgpd.Core.Casework.Adapters;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Core.Casework;
 
@@ -36,6 +37,8 @@ public sealed class Case : IAggregateRoot
 {
   private readonly List<Designation> _designations;
   private readonly List<Claim> _claims;
+  private readonly List<Locating> _locatings;
+  private readonly List<OpenQuestion> _questions;
 
   private Case(
     CaseId id,
@@ -52,6 +55,8 @@ public sealed class Case : IAggregateRoot
     State = CaseState.Open;
     _designations = designations;
     _claims = claims;
+    _locatings = [];
+    _questions = [];
   }
 
   /// <summary>Le constructeur qu'EF Core emprunte pour rematérialiser une ligne. Il ne rejoue aucun invariant.</summary>
@@ -62,6 +67,8 @@ public sealed class Case : IAggregateRoot
     State = CaseState.Open;
     _designations = [];
     _claims = [];
+    _locatings = [];
+    _questions = [];
   }
 
   /// <summary>L'identité que le service donne à ce dossier, engendrée à son ouverture.</summary>
@@ -107,12 +114,32 @@ public sealed class Case : IAggregateRoot
   public CaseState State { get; private set; }
 
   /// <summary>
-  /// Le sac de <see cref="Designation"/> — <b>la seule identité qui circule</b>. Il s'enrichira en
-  /// cours d'instruction, lorsqu'une réserve confirmée par l'<c>Operator</c> y versera une
-  /// désignation nouvelle ; ce geste appartient à l'arbitrage du <c>Locate</c>, et le sac naît ici
-  /// tel que le canal l'a déclaré.
+  /// Le sac de <see cref="Designation"/> — <b>la seule identité qui circule</b>. Il naît tel que le
+  /// canal l'a déclaré et il <b>s'enrichit</b> en cours d'instruction : une réserve qu'un
+  /// <c>Operator</c> rattache y verse ses désignations nouvelles, et l'appel <c>Locate</c> suivant
+  /// les porte — confirmer une adresse trouvée en base ouvre le journal applicatif qui la cherchait
+  /// sous une autre casse. Voir <see cref="Arbitrate"/>.
   /// </summary>
   public IReadOnlyList<Designation> Designations => _designations;
+
+  /// <summary>
+  /// Ce que les <c>Locate</c> ont rapporté, <b>un par <see cref="DeclaredSystem"/> appelé</b> —
+  /// jamais par droit : un <c>Locate</c> cherche la personne, et non la réponse due sur un droit.
+  /// </summary>
+  public IReadOnlyList<Locating> Locatings => _locatings;
+
+  /// <summary>
+  /// Les questions ouvertes du dossier, datées. Elles <b>n'arrêtent jamais</b> le délai de
+  /// l'art. 12.3 et ne barrent jamais la route à l'<c>Operator</c>.
+  /// </summary>
+  public IReadOnlyList<OpenQuestion> Questions => _questions;
+
+  /// <summary>
+  /// Le service détient-il un rattachement <b>où que ce soit</b> ? C'est la lecture dont naît la
+  /// question de la désignation : six zéros ne doivent pas se lire « cette personne n'est pas chez
+  /// nous ».
+  /// </summary>
+  public bool HoldsAnyAttachment => _locatings.Any(locating => locating.HoldsAnAttachment);
 
   /// <summary>
   /// Les droits qu'on reconnaît à cette demande, un <see cref="Claim"/> chacun. <b>Éventuellement
@@ -355,6 +382,194 @@ public sealed class Case : IAggregateRoot
     step.Declare(state);
 
     return true;
+  }
+
+  /// <summary>
+  /// Ce que le <c>Locate</c> a rapporté de ce système, ou <c>null</c> si on ne l'a pas encore appelé.
+  /// <b>Le <c>null</c> n'est pas un zéro</b> : « pas appelé » et « appelé, rien trouvé » sont deux
+  /// déclarations différentes, et c'est la seconde qui a une valeur de preuve.
+  /// </summary>
+  public Locating? LocatingIn(DeclaredSystemId declaredSystem)
+  {
+    return _locatings.SingleOrDefault(locating => locating.DeclaredSystem == declaredSystem);
+  }
+
+  /// <summary>Le service détient-il un rattachement dans ce système ?</summary>
+  public bool HoldsAnAttachmentIn(DeclaredSystemId declaredSystem)
+  {
+    return LocatingIn(declaredSystem)?.HoldsAnAttachment ?? false;
+  }
+
+  /// <summary>
+  /// Un <b>constat</b> est-il réclamé pour déclarer ce travail dû dans cet état ? C'est la règle de
+  /// <see cref="StepState.DemandsAFinding"/>, lue avec les rattachements que ce dossier détient.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle vit ici parce qu'elle a besoin des deux moitiés</b> — l'état, qui est du <c>Step</c>, et
+  /// les rattachements, qui sont du dossier. L'écran s'en sert pour <b>réclamer</b>, la ligne de
+  /// preuve pour <b>refuser</b> une déclaration que personne n'a motivée : une seule règle, aux deux
+  /// endroits.
+  /// </remarks>
+  /// <exception cref="ArgumentNullException"><paramref name="state"/> est absent.</exception>
+  public bool FindingIsDemandedBy(StepState state, DeclaredSystemId declaredSystem)
+  {
+    ArgumentNullException.ThrowIfNull(state);
+
+    return state.DemandsAFinding(HoldsAnAttachmentIn(declaredSystem));
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>servi</b> un <c>Locate</c> : le dossier retient le noyau certain et les
+  /// réserves, et rend la localisation telle qu'elle se lit désormais.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat —
+  /// et c'est lui, et lui seul, qui décide de ne pas consigner un verdict identique au précédent : le
+  /// <c>Ledger</c> ne se relit jamais.
+  /// </remarks>
+  /// <param name="declaredSystem">Le système qu'on a interrogé.</param>
+  /// <param name="findings">Ce qu'il a rendu — <see cref="LocateFindings.Nothing"/> compris.</param>
+  /// <param name="askedAt">L'instant de la tentative.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="findings"/> est absent.</exception>
+  public Locating LocateServed(DeclaredSystemId declaredSystem, LocateFindings findings, DateTimeOffset askedAt)
+  {
+    ArgumentNullException.ThrowIfNull(findings);
+
+    var locating = LocatingFor(declaredSystem, askedAt.ToUniversalTime());
+
+    locating.Served(findings.Certain, findings.Reserved, askedAt.ToUniversalTime(), _designations.Count);
+
+    return locating;
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>différé</b> et déclaré son échéance. Rien du rattachement ne bouge : le
+  /// service repassera après elle, <b>à l'ouverture du dossier</b> et jamais depuis la file.
+  /// </summary>
+  public Locating LocateDeferred(
+    DeclaredSystemId declaredSystem,
+    DateTimeOffset declaredDeadline,
+    DateTimeOffset askedAt)
+  {
+    var locating = LocatingFor(declaredSystem, askedAt.ToUniversalTime());
+
+    locating.Deferred(declaredDeadline.ToUniversalTime(), askedAt.ToUniversalTime(), _designations.Count);
+
+    return locating;
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>refusé</b>. Rien du rattachement ne bouge : un refus dit que le service
+  /// et l'application ne sont pas d'accord, jamais ce que le système porte.
+  /// </summary>
+  /// <exception cref="ArgumentException">La réponse donnée n'est pas un refus.</exception>
+  public Locating LocateRefused(DeclaredSystemId declaredSystem, AdapterOutcome refusal, DateTimeOffset askedAt)
+  {
+    var locating = LocatingFor(declaredSystem, askedAt.ToUniversalTime());
+
+    locating.Refused(refusal, askedAt.ToUniversalTime(), _designations.Count);
+
+    return locating;
+  }
+
+  /// <summary>
+  /// Un humain <b>tranche une réserve</b>, et le sac s'enrichit de ce qu'elle proposait si elle est
+  /// rattachée.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Aucun rattachement n'est décidé par le service.</b> Ni la fusion à tort — irréversible, et
+  /// portant sur la donnée d'un tiers — ni l'exclusion par prudence, qui est l'<c>Omission
+  /// silencieuse</c>. Cette méthode ne fait que porter l'issue d'un humain, que l'appelant datera et
+  /// signera au <c>Ledger</c>.
+  /// </para>
+  /// <para>
+  /// <b>Seules les <see cref="Designation"/> entrent au sac, et seulement sur un rattachement.</b> La
+  /// <see cref="OpaqueReference"/>, elle, n'a de sens que chez le client : une réserve qui n'apporte
+  /// qu'elle reste <b>locale et opaque</b>, et le service n'apprendra jamais ce qu'elle désignait.
+  /// </para>
+  /// <para>
+  /// <b>Elle rend <c>null</c> plutôt qu'elle ne lève</b> quand la réserve est inconnue ou déjà
+  /// tranchée : un écran affiché il y a une minute peut nommer une réserve qu'un autre geste vient
+  /// d'arbitrer, et ce n'est pas une programmation fautive.
+  /// </para>
+  /// </remarks>
+  /// <param name="declaredSystem">Le système où la réserve a été levée.</param>
+  /// <param name="reference">La référence opaque qui identifie la réserve dans ce système.</param>
+  /// <param name="ruling">L'issue de l'humain : rattachée, ou écartée.</param>
+  /// <returns>La réserve tranchée, ou <c>null</c> si aucune ne l'attendait.</returns>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException"><paramref name="ruling"/> n'est pas un arbitrage.</exception>
+  public Reservation? Arbitrate(DeclaredSystemId declaredSystem, OpaqueReference reference, ReservationState ruling)
+  {
+    ArgumentNullException.ThrowIfNull(reference);
+    ArgumentNullException.ThrowIfNull(ruling);
+
+    var arbitrated = LocatingIn(declaredSystem)?.Arbitrate(reference, ruling);
+
+    if (arbitrated is null || ruling != ReservationState.Attached)
+    {
+      return arbitrated;
+    }
+
+    foreach (var designation in arbitrated.Designations)
+    {
+      // Ce qui est déjà au sac n'y entre pas deux fois : le compte du Ledger mesure l'ampleur d'une
+      // recherche, et un doublon la gonflerait sans qu'aucune porte de plus ne s'ouvre.
+      if (!_designations.Contains(designation))
+      {
+        _designations.Add(designation);
+      }
+    }
+
+    return arbitrated;
+  }
+
+  /// <summary>
+  /// Pose une question ouverte sur le dossier, <b>datée</b>, et dit si elle ne l'était pas déjà.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle ne se pose qu'une fois.</b> Reposer la même question à chaque passage ferait d'une
+  /// question ouverte un bruit quotidien, et la date qu'elle porte — la seule chose que l'écran en
+  /// dise — se réinitialiserait à chaque regard.
+  /// </para>
+  /// <para>
+  /// <b>Elle n'arrête rien et ne barre rien</b> : le délai de l'art. 12.3 court pendant qu'elle
+  /// attend, et l'<c>Operator</c> instruit le dossier comme avant.
+  /// </para>
+  /// </remarks>
+  /// <returns><c>true</c> si la question vient d'être posée ; <c>false</c> si elle l'était déjà.</returns>
+  /// <exception cref="ArgumentNullException"><paramref name="subject"/> est absent.</exception>
+  public bool Ask(OpenQuestionSubject subject, DateTimeOffset askedOn)
+  {
+    ArgumentNullException.ThrowIfNull(subject);
+
+    if (_questions.Any(question => question.Subject == subject))
+    {
+      return false;
+    }
+
+    _questions.Add(new OpenQuestion(subject, askedOn.ToUniversalTime()));
+
+    return true;
+  }
+
+  /// <summary>La localisation de ce système, posée si elle n'existait pas encore.</summary>
+  private Locating LocatingFor(DeclaredSystemId declaredSystem, DateTimeOffset askedAt)
+  {
+    var known = LocatingIn(declaredSystem);
+
+    if (known is not null)
+    {
+      return known;
+    }
+
+    var opened = new Locating(declaredSystem, askedAt, _designations.Count);
+
+    _locatings.Add(opened);
+
+    return opened;
   }
 
   /// <summary>

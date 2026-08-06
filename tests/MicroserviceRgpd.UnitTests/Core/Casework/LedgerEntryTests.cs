@@ -85,6 +85,7 @@ public class LedgerEntryTests
       DataSubjectRight.Access,
       StepState.Done,
       "Requête lancée le 3, deux comptes trouvés, export joint.",
+      findingIsDemanded: true,
       Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
 
     entry.Fact.ShouldBe(LedgerFact.StepDeclared);
@@ -115,20 +116,22 @@ public class LedgerEntryTests
       DataSubjectRight.Access,
       StepState.Untreated,
       "L'export part chez l'agence ; personne ne l'a traité pour cette demande.",
+      findingIsDemanded: false,
       Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
 
     entry.DeclaredState.ShouldBe(StepState.Untreated);
   }
 
   /// <summary>
-  /// <b>Le constat est exigé là où l'état le réclame</b> — sur un « fait », et par la même règle dont
-  /// l'écran se sert pour le réclamer. Un <c>Done</c> coché sans un mot serait une preuve qui dit ce
-  /// qui a été coché et non ce qui a été constaté, or c'est le constat que le contrôle vient lire.
+  /// <b>Le constat est exigé là où le dossier le réclame</b> — sur un « fait » à zéro rattachement, et
+  /// par la même règle dont l'écran se sert pour le réclamer. Un <c>Done</c> coché sans un mot serait
+  /// une preuve qui dit ce qui a été coché et non ce qui a été constaté, or c'est le constat que le
+  /// contrôle vient lire.
   /// </summary>
   [Fact]
   public void RefusesAWorkDeclaredDoneThatNobodyMotivated()
   {
-    StepState.Done.RequiresAFinding.ShouldBeTrue();
+    StepState.Done.DemandsAFinding(anAttachmentIsHeld: false).ShouldBeTrue();
 
     Should.Throw<ArgumentException>(() => LedgerEntry.StepDeclared(
       CaseId.Next(),
@@ -137,7 +140,32 @@ public class LedgerEntryTests
       DataSubjectRight.Access,
       StepState.Done,
       "   ",
+      findingIsDemanded: true,
       Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated)));
+  }
+
+  /// <summary>
+  /// <b>Un « fait » sur un système où le <c>Locate</c> a rattaché quelque chose ne réclame plus de
+  /// constat.</b> Le rattachement <b>est</b> le dénominateur que le constat devait fournir : c'est
+  /// six zéros qu'on ne veut pas voir se lire « cette personne n'est pas chez nous », pas un travail
+  /// dont on sait ce qu'il portait.
+  /// </summary>
+  [Fact]
+  public void AsksForNoFindingWhereTheServiceHoldsAnAttachment()
+  {
+    StepState.Done.DemandsAFinding(anAttachmentIsHeld: true).ShouldBeFalse();
+
+    var entry = LedgerEntry.StepDeclared(
+      CaseId.Next(),
+      Opened,
+      DeclaredSystemId.From("boutique"),
+      DataSubjectRight.Access,
+      StepState.Done,
+      evidenceProse: null,
+      findingIsDemanded: false,
+      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+
+    entry.EvidenceProse.ShouldBeNull();
   }
 
   /// <summary>
@@ -159,6 +187,7 @@ public class LedgerEntryTests
       DataSubjectRight.Access,
       StepState.FromName(state),
       evidenceProse: null,
+      findingIsDemanded: false,
       Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
 
     // La colonne reste vide plutôt que de porter une chaîne vide, qui se lirait comme un constat
@@ -180,6 +209,7 @@ public class LedgerEntryTests
       DataSubjectRight.Access,
       StepState.Done,
       "Un constat sans personne pour l'avoir fait.",
+      findingIsDemanded: true,
       Signatory.Application));
   }
 

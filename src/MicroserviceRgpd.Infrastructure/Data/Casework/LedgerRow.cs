@@ -110,4 +110,11 @@ public sealed class LedgerRow
   /// lui survive.
   /// </summary>
   public string? IdentityVerificationMethod { get; init; }
+
+  /// <summary>
+  /// L'échéance qu'un <c>Adapter</c> a <b>déclarée</b> en différant. Elle est de lui, jamais du
+  /// service : trois dates disent tout d'un travail différé — appelé, échéance déclarée, résultat —
+  /// et cette table n'en portera jamais une quatrième qui compterait les relances.
+  /// </summary>
+  public DateTimeOffset? DeclaredDeadline { get; init; }
 }

@@ -45,7 +45,8 @@ public sealed record LedgerEntry
     string? evidenceProse = null,
     bool? receptionWasDefaulted = null,
     IdentityVerificationMethod? verificationMethod = null,
-    DateTimeOffset? receivedOn = null)
+    DateTimeOffset? receivedOn = null,
+    DateTimeOffset? declaredDeadline = null)
   {
     Id = id;
     Case = caseId;
@@ -61,6 +62,7 @@ public sealed record LedgerEntry
     ReceptionWasDefaulted = receptionWasDefaulted;
     VerificationMethod = verificationMethod;
     ReceivedOn = receivedOn;
+    DeclaredDeadline = declaredDeadline;
   }
 
   /// <summary>
@@ -197,6 +199,17 @@ public sealed record LedgerEntry
   /// </para>
   /// </remarks>
   public IdentityVerificationMethod? VerificationMethod { get; }
+
+  /// <summary>
+  /// L'échéance qu'un <c>Adapter</c> a <b>déclarée</b> en différant, et <c>null</c> partout ailleurs.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle est déclarée par le client, jamais négociée ni inventée</b> — et c'est pourquoi elle
+  /// entre dans la preuve : trois dates disent tout d'un travail différé — appelé, échéance déclarée,
+  /// résultat — là où un compteur de relances ne dirait que combien de fois un affichage a rappelé
+  /// quelque chose à quelqu'un.
+  /// </remarks>
+  public DateTimeOffset? DeclaredDeadline { get; }
 
   /// <summary>
   /// La première ligne d'un dossier : il s'est ouvert, à telle date, sous telle déclaration
@@ -359,9 +372,9 @@ public sealed record LedgerEntry
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Le constat est exigé là où l'état le réclame</b> — c'est-à-dire sur <c>Done</c>, et par la
-  /// même règle que celle dont l'écran se sert pour le réclamer : voir
-  /// <see cref="StepState.RequiresAFinding"/>. Un « fait » sans un mot serait une preuve qui dit ce
+  /// <b>Le constat est exigé là où l'état le réclame</b> — c'est-à-dire sur un <c>Done</c> <b>à zéro
+  /// rattachement</b>, et par la même règle que celle dont l'écran se sert pour le réclamer : voir
+  /// <see cref="Case.FindingIsDemandedBy"/>. Un « fait » sans un mot serait une preuve qui dit ce
   /// qui a été coché et non ce qui a été constaté, et c'est le seul rempart contre six zéros qui se
   /// liraient « cette personne n'est pas chez nous ».
   /// </para>
@@ -384,6 +397,12 @@ public sealed record LedgerEntry
   /// Le constat de l'<c>Operator</c> — prose de preuve, qui survit. Exigé lorsque l'état le réclame,
   /// accueilli sinon.
   /// </param>
+  /// <param name="findingIsDemanded">
+  /// Le dossier réclame-t-il un constat pour cette déclaration ? La règle vit sur le
+  /// <see cref="Case"/>, qui seul détient les deux moitiés — l'état déclaré et les rattachements du
+  /// système. La redire ici en ferait une seconde règle, qui finirait par ne plus dire la même chose
+  /// que l'écran.
+  /// </param>
   /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">
@@ -397,6 +416,7 @@ public sealed record LedgerEntry
     DataSubjectRight right,
     StepState state,
     string? evidenceProse,
+    bool findingIsDemanded,
     Signatory signatory)
   {
     ArgumentNullException.ThrowIfNull(right);
@@ -423,30 +443,28 @@ public sealed record LedgerEntry
       declaredSystem,
       right,
       state,
-      FindingOrThrow(evidenceProse, state));
+      FindingOrThrow(evidenceProse, findingIsDemanded));
   }
 
   /// <summary>
-  /// Le constat, nettoyé — <b>exigé là où l'état le réclame</b>, accueilli ailleurs, et <c>null</c>
-  /// quand il n'y en a pas et qu'aucun n'était réclamé.
+  /// Le constat, nettoyé — <b>exigé là où le dossier le réclame</b>, accueilli ailleurs, et
+  /// <c>null</c> quand il n'y en a pas et qu'aucun n'était réclamé.
   /// </summary>
   /// <remarks>
   /// <b>Elle est publique pour que la frontière de saisie puisse nommer le refus à l'humain</b> sous le
-  /// nom de son champ, sans avoir à fabriquer une signature pour éprouver sa prose. La règle reste
-  /// écrite <b>ici</b>, une seule fois : un écran qui la redirait finirait par ne plus dire la même
-  /// chose que la preuve.
+  /// nom de son champ, sans avoir à fabriquer une signature pour éprouver sa prose. Ce qui reste écrit
+  /// <b>ici</b>, une seule fois, est la <b>forme</b> du constat ; <b>qui</b> le réclame est une règle
+  /// du <see cref="Case"/> — voir <see cref="Case.FindingIsDemandedBy"/> —, parce qu'elle a besoin
+  /// des rattachements que seul le dossier détient.
   /// </remarks>
   /// <param name="evidenceProse">Ce que l'humain a écrit, ou rien.</param>
-  /// <param name="state">L'état déclaré, qui dit si un constat est réclamé.</param>
-  /// <exception cref="ArgumentNullException"><paramref name="state"/> est absent.</exception>
+  /// <param name="findingIsDemanded">Le dossier réclame-t-il un constat pour cette déclaration ?</param>
   /// <exception cref="ArgumentException">
-  /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où l'état le réclame.
+  /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où il est réclamé.
   /// </exception>
-  public static string? FindingOrThrow(string? evidenceProse, StepState state)
+  public static string? FindingOrThrow(string? evidenceProse, bool findingIsDemanded)
   {
-    ArgumentNullException.ThrowIfNull(state);
-
-    if (state.RequiresAFinding || !string.IsNullOrWhiteSpace(evidenceProse))
+    if (findingIsDemanded || !string.IsNullOrWhiteSpace(evidenceProse))
     {
       return DeclaredText.OrThrow(evidenceProse, "Le constat", MaxEvidenceProseLength, nameof(evidenceProse));
     }
@@ -493,6 +511,184 @@ public sealed record LedgerEntry
       identityDeclaration: null,
       designationCount: null,
       declaredSystem);
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>servi</b> un <c>Locate</c> : la tentative datée, le système, et
+  /// <b>sous combien de désignations</b> on a cherché.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le compte est la seule mesure, et il porte sur la recherche — jamais sur ce qu'on a
+  /// trouvé.</b> « Recherché sous 2 désignations » dit l'ampleur de ce que le service a tenté, ce que
+  /// le contrôle vient juger ; dénombrer les rattachements ferait entrer dans la preuve une mesure des
+  /// données de la personne, que le <c>Ledger</c> ne porte jamais. Aucune valeur de désignation
+  /// n'entre ici, et il n'existe aucune colonne où elle pourrait atterrir.
+  /// </para>
+  /// <para>
+  /// <b>Le signataire est l'application, c'est-à-dire personne</b> : un appel sortant n'est le geste
+  /// d'aucun humain nommé.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel l'appel est parti.</param>
+  /// <param name="occurredAt">L'instant de la tentative.</param>
+  /// <param name="declaredSystem">Le système où l'on a cherché.</param>
+  /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
+  public static LedgerEntry LocateServed(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DeclaredSystemId declaredSystem,
+    int designationCount)
+  {
+    ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.LocateServed,
+      Signatory.Application,
+      identityDeclaration: null,
+      designationCount,
+      declaredSystem);
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>différé</b> un <c>Locate</c> et déclaré son échéance.
+  /// </summary>
+  /// <remarks>
+  /// <b>L'échéance entre dans la preuve parce qu'elle est déclarée par le client</b>, et parce que
+  /// trois dates disent tout de ce travail : appelé, échéance déclarée, résultat. Ce qu'on ne saura
+  /// jamais, en revanche, est combien de fois le service est repassé — une relance n'a aucun
+  /// signataire, et son compte serait du bruit de mécanique dans ce que le contrôle vient lire.
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel l'appel est parti.</param>
+  /// <param name="occurredAt">L'instant de la tentative.</param>
+  /// <param name="declaredSystem">Le système où l'on cherchait.</param>
+  /// <param name="declaredDeadline">L'échéance que l'<c>Adapter</c> a déclarée.</param>
+  /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
+  public static LedgerEntry LocateDeferred(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DeclaredSystemId declaredSystem,
+    DateTimeOffset declaredDeadline,
+    int designationCount)
+  {
+    ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.LocateDeferred,
+      Signatory.Application,
+      identityDeclaration: null,
+      designationCount,
+      declaredSystem,
+      declaredDeadline: declaredDeadline.ToUniversalTime());
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>tranché une réserve</b> de <c>Locate</c> : il a dit que cette ligne
+  /// était celle de la personne, ou qu'elle ne l'était pas.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le signataire est un humain nommé, et il ne peut pas être l'application.</b> C'est très
+  /// exactement ce que l'arbitrage est : ni la fusion à tort — irréversible, et portant sur la donnée
+  /// d'un tiers — ni l'exclusion par prudence n'appartiennent à une machine.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Ni la référence, ni le motif, ni les désignations n'entrent ici.</b> Ce sont de la prose de
+  /// travail et du nominatif : ils vivent sur le <see cref="Case"/> et meurent à sa clôture. Ce qui
+  /// survit est le <b>fait daté</b> et le <b>compte du sac après l'arbitrage</b> — de quoi lire
+  /// « recherché sous 2 désignations, dont 1 ajoutée par arbitrage le 12/04 » sans qu'aucune valeur
+  /// n'ait été gardée.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier dans lequel l'arbitrage a eu lieu.</param>
+  /// <param name="occurredAt">L'instant du geste.</param>
+  /// <param name="declaredSystem">Le système où la réserve avait été levée.</param>
+  /// <param name="ruling">L'issue rendue : rattachée, ou écartée.</param>
+  /// <param name="designationCount">Le compte du sac <b>après</b> l'arbitrage — jamais son contenu.</param>
+  /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">
+  /// L'issue n'est pas un arbitrage, ou la ligne n'est signée par aucun humain.
+  /// </exception>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
+  public static LedgerEntry ReservationArbitrated(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DeclaredSystemId declaredSystem,
+    ReservationState ruling,
+    int designationCount,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(signatory);
+    ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      throw new ArgumentException(
+        "Une réserve est tranchée par un Operator nommé : le service ne décide aucun rattachement, "
+        + "ni par fusion à tort, ni par exclusion par prudence.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      ReservationState.RulingOrThrow(ruling, nameof(ruling)) == ReservationState.Attached
+        ? LedgerFact.ReservationAttached
+        : LedgerFact.ReservationSetAside,
+      signatory,
+      identityDeclaration: null,
+      designationCount,
+      declaredSystem);
+  }
+
+  /// <summary>
+  /// Une <c>OpenQuestion</c> est née sur le dossier : <b>tous</b> les <c>Locate</c> ont rendu zéro, et
+  /// la désignation ne suffit donc pas.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le signataire est l'application</b>, et c'est exact : personne n'a rien décidé — le service a
+  /// constaté que ses propres appels ne rattachaient rien. La question est ce constat, daté ; elle
+  /// <b>n'arrête pas</b> le délai de l'art. 12.3, et rien de cette ligne ne prétend le contraire.
+  /// </para>
+  /// <para>
+  /// <b>Le compte du sac l'accompagne</b> : « rien trouvé sous 1 désignation » et « rien trouvé sous
+  /// 4 » ne se jugent pas pareil, et c'est précisément la question que la ligne pose.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Aucun sujet n'est écrit, et ce n'est pas un oubli.</b> Une question du dossier ne porte
+  /// aucun droit ; celle du contenu d'un droit, quand <c>Read</c> sera exercé, portera le sien dans
+  /// <see cref="Right"/> — la colonne existe déjà, et c'est elle qui distinguera les deux sans
+  /// qu'un vocabulaire de plus entre dans la preuve.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier sur lequel la question naît.</param>
+  /// <param name="occurredAt">L'instant du constat, qui est aussi la date de la question.</param>
+  /// <param name="designationCount">Le nombre de désignations sous lesquelles on a cherché.</param>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
+  public static LedgerEntry QuestionRaised(CaseId caseId, DateTimeOffset occurredAt, int designationCount)
+  {
+    ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.QuestionRaised,
+      Signatory.Application,
+      identityDeclaration: null,
+      designationCount,
+      declaredSystem: null);
   }
 
   /// <summary>

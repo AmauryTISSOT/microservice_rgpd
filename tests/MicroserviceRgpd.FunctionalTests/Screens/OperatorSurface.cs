@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.FunctionalTests.Platform;
 using MicroserviceRgpd.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -66,6 +67,21 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
     DataSubjectRight[]? rights = null,
     params DeclaredSystem[] systems)
   {
+    return await OpenAsync(reception, origin, motivation, designations: null, rights, systems);
+  }
+
+  /// <summary>
+  /// Pose un dossier en base sous le <b>sac de désignations</b> qu'on veut lui donner — celui-là même
+  /// que les appels <c>Locate</c> porteront.
+  /// </summary>
+  internal async Task<CaseId> OpenAsync(
+    ReceptionDate reception,
+    ClaimOrigin origin,
+    IdentityMotivation? motivation,
+    Designation[]? designations,
+    DataSubjectRight[]? rights = null,
+    params DeclaredSystem[] systems)
+  {
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -83,7 +99,7 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
       CaseId.Next(),
       IdentityDeclaration.Unverified,
       motivation,
-      [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
+      designations ?? [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       rights ?? [DataSubjectRight.Access],
       origin,
       Manifest.Of(systems),
@@ -106,6 +122,45 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
       [],
       adapterAddress: null,
       declaredOn);
+  }
+
+  /// <summary>
+  /// Un système <b>servi par un <c>Adapter</c></b> : une adresse déclarée, et la capacité
+  /// <c>Locate</c> — c'est-à-dire les deux conditions sans lesquelles le service n'appelle personne.
+  /// </summary>
+  internal static DeclaredSystem ASystemServedByAnAdapter(string id, string label, DateTimeOffset declaredOn)
+  {
+    return DeclaredSystem.Declare(
+      DeclaredSystemId.From(id),
+      SystemLabel.From(label),
+      SystemContents.From("Ce qu'il contient, dans les mots de qui l'a déclaré."),
+      [Capability.Locate],
+      AdapterAddress.From(ABrocantoOnTheWire.Address),
+      declaredOn);
+  }
+
+  /// <summary>
+  /// Remplit le formulaire par lequel un <c>Operator</c> <b>tranche une réserve</b> et l'envoie.
+  /// </summary>
+  internal async Task<HttpResponseMessage> ArbitrateAsync(
+    CaseId opened,
+    string declaredSystem,
+    string reference,
+    string ruling,
+    string signedBy)
+  {
+    var address = AddressOf(opened);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
+      new("Arbitration.DeclaredSystem", declaredSystem),
+      new("Arbitration.Reference", reference),
+      new("Arbitration.Ruling", ruling),
+      new("Arbitration.SignedBy", signedBy),
+    };
+
+    return await _client.PostAsync($"{address}?handler=Arbitrate", new FormUrlEncodedContent(fields));
   }
 
   internal async Task<string> ReadAsync(string address)

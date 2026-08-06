@@ -133,6 +133,37 @@ public sealed class ConfirmationForm
 }
 
 /// <summary>
+/// Ce qu'un <c>Operator</c> saisit pour <b>trancher une réserve</b> de <c>Locate</c>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Aucun champ de prose, et c'est délibéré.</b> Le motif de la réserve est écrit par
+/// l'application et lu par l'humain ; ce que l'humain rend est une <b>issue</b> — rattachée, ou
+/// écartée — et le <c>Ledger</c> en garde le fait, la date et le nom. Réclamer une prose ici ferait
+/// écrire une ligne de rien à chaque arbitrage, et le constat qui compte se noierait dans les autres.
+/// </para>
+/// <para>
+/// ⚠️ <b>Il n'existe aucune valeur par défaut.</b> Les deux issues sont deux boutons distincts : une
+/// liste où « rattachée » serait pré-sélectionnée ferait fusionner à tort d'un seul clic — et cette
+/// erreur-là est irréversible, et porte sur la donnée d'un tiers.
+/// </para>
+/// </remarks>
+public sealed class ArbitrationForm
+{
+  /// <summary>Le système qui a rendu la réserve, par son identifiant.</summary>
+  public string? DeclaredSystem { get; set; }
+
+  /// <summary>La référence opaque de la ligne, dans le vocabulaire de l'application.</summary>
+  public string? Reference { get; set; }
+
+  /// <summary>L'issue rendue, par son nom canonique anglais. Jamais <c>Awaiting</c>.</summary>
+  public string? Ruling { get; set; }
+
+  /// <summary>Le nom que l'<c>Operator</c> saisit pour signer. Sans authentification, et sans mémoire.</summary>
+  public string? SignedBy { get; set; }
+}
+
+/// <summary>
 /// Ce qu'un <c>Operator</c> déclare, une fois la frontière du domaine franchie.
 /// </summary>
 /// <param name="Right">Le droit au titre duquel le travail était dû.</param>

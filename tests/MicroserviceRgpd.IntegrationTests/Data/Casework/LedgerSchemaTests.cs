@@ -65,9 +65,22 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   /// il vit sur le <c>Case</c> et meurt à la clôture. Le contrôle juge la pratique sans qu'un seul
   /// nom lui survive.
   /// </para>
+  /// <para>
+  /// Une est arrivée avec <c>Locate</c> : <c>declared_deadline</c>, l'échéance qu'un <c>Adapter</c>
+  /// <b>déclare</b> en différant. Trois dates disent alors tout de ce travail — appelé, échéance
+  /// déclarée, résultat. ⚠️ <b>Aucune colonne ne compte les passages</b> : une relance n'a aucun
+  /// signataire, c'est un affichage qui l'a déclenchée, et son compte serait du bruit de mécanique
+  /// dans ce que le contrôle vient lire.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Ni la référence opaque, ni le motif d'une réserve n'ont de colonne ici</b>, et c'est encore
+  /// le même placement : l'une désigne les données de quelqu'un chez le client, l'autre dit quelle
+  /// ligne appartient à qui. Les deux vivent sur le <c>Case</c> et meurent à sa clôture ; ce qui
+  /// survit d'un arbitrage est le <b>fait daté</b> et le <b>compte du sac</b>.
+  /// </para>
   /// </summary>
   [Fact]
-  public async Task NamesSixteenColumnsAndNotOneMoreWhereANameCouldLand()
+  public async Task NamesSeventeenColumnsAndNotOneMoreWhereANameCouldLand()
   {
     var columns = await ColumnsAsync();
 
@@ -75,6 +88,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
     [
       "case_id",
       "data_subject_right",
+      "declared_deadline",
       "declared_system",
       "designation_count",
       "entry_id",
@@ -295,14 +309,30 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
     dbContext.Model.FindEntityType(typeof(Claim))!.IsOwned().ShouldBeTrue();
     dbContext.Model.FindEntityType(typeof(Step))!.IsOwned().ShouldBeTrue();
-    dbContext.Model.FindEntityType(typeof(Designation))!.IsOwned().ShouldBeTrue();
+    dbContext.Model.FindEntityType(typeof(Locating))!.IsOwned().ShouldBeTrue();
+    dbContext.Model.FindEntityType(typeof(Reservation))!.IsOwned().ShouldBeTrue();
+    dbContext.Model.FindEntityType(typeof(OpenQuestion))!.IsOwned().ShouldBeTrue();
+    dbContext.Model.FindEntityType(typeof(OpaqueReference))!.IsOwned().ShouldBeTrue();
+
+    // `Designation` est possédée à DEUX endroits — le sac du dossier, et ce qu'une réserve propose —
+    // et EF en tient donc deux types, un par propriétaire. Aucun des deux n'est interrogeable seul.
+    var designations = dbContext.Model.GetEntityTypes()
+      .Where(owned => owned.ClrType == typeof(Designation))
+      .ToArray();
+
+    designations.Length.ShouldBe(2);
+    designations.ShouldAllBe(owned => owned.IsOwned());
 
     dbContext.Model.FindEntityType(typeof(Case))!.IsOwned().ShouldBeFalse();
 
     // Et aucun DbSet ne les expose : le seul dépôt de ce contexte est celui des Case.
     typeof(AppDbContext).GetProperties()
       .Select(property => property.PropertyType)
-      .ShouldNotContain(type => type == typeof(DbSet<Claim>) || type == typeof(DbSet<Step>));
+      .ShouldNotContain(type =>
+        type == typeof(DbSet<Claim>)
+        || type == typeof(DbSet<Step>)
+        || type == typeof(DbSet<Locating>)
+        || type == typeof(DbSet<Reservation>));
   }
 
   private async Task<Dictionary<string, ColumnShape>> ColumnsAsync()
