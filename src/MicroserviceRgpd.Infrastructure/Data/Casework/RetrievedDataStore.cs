@@ -1,4 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Adapters;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
@@ -35,18 +36,18 @@ public sealed class RetrievedDataStore(AppDbContext dbContext) : IRetrievedData
         one => one.Case == piece.Case && one.Right == piece.Right && one.DeclaredSystem == piece.DeclaredSystem,
         cancellationToken);
 
-    if (held is not null)
+    if (held is null)
     {
-      // La pièce d'hier part **avant** que celle d'aujourd'hui n'entre, et par un enregistrement à
-      // elle : les deux portent la même identité — le triplet est la clé —, et les faire coexister
-      // le temps d'une seule écriture n'est pas seulement refusé par le suivi des modifications,
-      // c'est un exemplaire de trop des données de quelqu'un.
-      dbContext.Set<RetrievedData>().Remove(held);
-
-      await dbContext.SaveChangesAsync(cancellationToken);
+      dbContext.Set<RetrievedData>().Add(piece);
     }
-
-    dbContext.Set<RetrievedData>().Add(piece);
+    else
+    {
+      // La pièce d'aujourd'hui prend la place de celle d'hier **sur la ligne d'hier** : les deux
+      // portent la même identité — le triplet est la clé —, et détruire puis recréer aurait demandé
+      // deux écritures pour une identité qui ne change pas, en laissant entre elles un instant où la
+      // personne n'a plus ni l'ancienne pièce ni la nouvelle.
+      held.Replace(new RetrievedPiece(piece.Envelope, piece.Content), piece.RetrievedAt);
+    }
 
     await dbContext.SaveChangesAsync(cancellationToken);
   }
@@ -56,12 +57,19 @@ public sealed class RetrievedDataStore(AppDbContext dbContext) : IRetrievedData
     CaseId caseId,
     CancellationToken cancellationToken = default)
   {
-    // L'ordre est celui du droit puis du système, et non celui de l'arrivée : un écran ordonné par
-    // l'ordre où des appels ont répondu changerait d'un passage à l'autre sans que rien n'ait bougé.
-    return await dbContext.Set<RetrievedData>()
+    // L'ordre est celui de la taxonomie des droits puis du catalogue, et non celui de l'arrivée : un
+    // écran ordonné par l'ordre où des appels ont répondu changerait d'un passage à l'autre sans que
+    // rien n'ait bougé. Il se fait en mémoire — la colonne porte le NOM du droit, et trier dessus
+    // rangerait `Access` après `Portability` un jour où quelqu'un renomme un membre.
+    var held = await dbContext.Set<RetrievedData>()
       .Where(piece => piece.Case == caseId)
-      .OrderBy(piece => piece.Right)
-      .ThenBy(piece => piece.DeclaredSystem)
       .ToListAsync(cancellationToken);
+
+    return
+    [
+      .. held
+        .OrderBy(piece => piece.Right.Value)
+        .ThenBy(piece => piece.DeclaredSystem.Value, StringComparer.Ordinal),
+    ];
   }
 }

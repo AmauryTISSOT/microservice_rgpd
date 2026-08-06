@@ -160,10 +160,27 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
 
     return new RetrievedPiece(
       TransportEnvelope.Of(
-        response.Content.Headers.ContentType?.ToString(),
+        ContentTypeAsWritten(response),
         disposition?.FileNameStar ?? disposition?.FileName,
         call.DeclaredSystem),
       await response.Content.ReadAsByteArrayAsync(cancellationToken));
+  }
+
+  /// <summary>
+  /// Le <c>Content-Type</c> <b>tel que l'<c>Adapter</c> l'a écrit</b>, et non tel que le transport
+  /// sait le relire.
+  /// </summary>
+  /// <remarks>
+  /// La valeur analysée est réécrite par la bibliothèque — paramètres normalisés, et <c>null</c> pour
+  /// tout en-tête qu'elle ne sait pas lire. Or « recopié sans interprétation » se prend au mot : un
+  /// type biscornu doit arriver biscornu sous les yeux de l'<c>Operator</c>, qui saura en juger, et le
+  /// remplacer par « octets sans type déclaré » lui cacherait ce que le client a réellement dit.
+  /// </remarks>
+  private static string? ContentTypeAsWritten(HttpResponseMessage response)
+  {
+    return response.Content.Headers.TryGetValues("Content-Type", out var written)
+      ? string.Join(", ", written)
+      : response.Content.Headers.ContentType?.ToString();
   }
 
   /// <summary>

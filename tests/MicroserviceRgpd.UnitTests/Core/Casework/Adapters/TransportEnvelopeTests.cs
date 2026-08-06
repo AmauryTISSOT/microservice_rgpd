@@ -83,6 +83,20 @@ public class TransportEnvelopeTests
   }
 
   /// <summary>
+  /// Un <c>Content-Type</c> démesuré est <b>coupé</b> lui aussi, et pour la même raison : la borne
+  /// est celle d'une colonne. ⚠️ Le laisser passer entier ferait <b>perdre la pièce à l'écriture</b>
+  /// — c'est-à-dire perdre les données d'une personne pour un en-tête trop long.
+  /// </summary>
+  [Fact]
+  public void CutsAnOutsizedContentTypeRatherThanLosingThePiece()
+  {
+    var enormous = "text/" + new string('c', TransportEnvelope.MaxContentTypeLength);
+
+    TransportEnvelope.Of(enormous, "export.csv", Boutique).ContentType
+      .Length.ShouldBe(TransportEnvelope.MaxContentTypeLength);
+  }
+
+  /// <summary>
   /// <b>Rien n'est refusé ici.</b> Une enveloppe entièrement absente reste une enveloppe : c'est un
   /// <c>Adapter</c> qui a servi sans se soucier de nommer, et non une panne.
   /// </summary>

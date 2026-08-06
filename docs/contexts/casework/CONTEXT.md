@@ -370,6 +370,14 @@ que tout ce dispositif cherche à raccourcir.
 _Avoid_ : Extraction, Fetch, Retrieval, ReadRecord, lecture ⚠️ `Retrieval` se confondrait avec la
 `RetrievedData` qu'elle n'est justement pas ; `Record` est sur la liste du `Ledger`.
 
+**RetrievedPiece** :
+Ce qu'un `Read` **servi** vient de rendre, avant que le service n'en fasse quoi que ce soit : une
+`TransportEnvelope` et des octets. C'est la forme sur le **fil**, et elle ne porte ni dossier, ni
+droit, ni date — l'`Adapter` n'en connaît aucun. La `RetrievedData` est ce qu'elle devient une fois
+attribuée et datée ; l'une traverse la frontière, l'autre est détenue.
+_Avoid_ : File, Document, Attachment, Blob, fichier ⚠️ `File` et `Document` promettent une chose
+nommée et structurée, alors que ce sont des octets dont on ne sait rien.
+
 **TransportEnvelope** :
 Tout ce que le service sait d'une pièce, et il n'en saura jamais rien d'autre : un `Content-Type` et
 un nom de fichier, **recopiés sans interprétation** de ce que le transport lui a mis dans la main. Du

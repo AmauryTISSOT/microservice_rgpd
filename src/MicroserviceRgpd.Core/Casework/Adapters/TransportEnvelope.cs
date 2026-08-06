@@ -44,6 +44,13 @@ public sealed record TransportEnvelope(string ContentType, string FileName)
   public const int MaxFileNameLength = 255;
 
   /// <summary>
+  /// Le plafond du type de contenu, en unités UTF-16. Même raison, et même conséquence : un
+  /// <c>Content-Type</c> à rallonge est <b>coupé</b>, jamais refusé — une pièce perdue parce que son
+  /// en-tête dépassait d'un caractère serait la donnée d'une personne perdue pour une colonne.
+  /// </summary>
+  public const int MaxContentTypeLength = 256;
+
+  /// <summary>
   /// L'enveloppe telle que le transport l'a portée, ramenée à ce que le service consent à en garder.
   /// </summary>
   /// <remarks>
@@ -60,8 +67,20 @@ public sealed record TransportEnvelope(string ContentType, string FileName)
   public static TransportEnvelope Of(string? contentType, string? fileName, DeclaredSystemId declaredSystem)
   {
     return new TransportEnvelope(
-      string.IsNullOrWhiteSpace(contentType) ? UnnamedContentType : contentType.Trim(),
+      TypeOf(contentType) ?? UnnamedContentType,
       NameOf(fileName) ?? declaredSystem.Value);
+  }
+
+  /// <summary>
+  /// Le type de contenu tel qu'il est arrivé, ou <c>null</c> quand rien n'a été dit des octets.
+  /// </summary>
+  private static string? TypeOf(string? contentType)
+  {
+    var written = contentType?.Trim();
+
+    return string.IsNullOrEmpty(written)
+      ? null
+      : written[..Math.Min(written.Length, MaxContentTypeLength)];
   }
 
   /// <summary>

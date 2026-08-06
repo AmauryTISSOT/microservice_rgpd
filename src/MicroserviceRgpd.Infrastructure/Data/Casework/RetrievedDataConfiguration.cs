@@ -63,7 +63,9 @@ public sealed class RetrievedDataConfiguration : IEntityTypeConfiguration<Retrie
     {
       envelope.Property(one => one.ContentType)
         .HasColumnName("content_type")
-        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength * 4)
+        // La borne est celle que l'enveloppe applique elle-même : une colonne plus étroite que le
+        // domaine ferait perdre la pièce à l'écriture, pour un en-tête que personne n'a lu.
+        .HasMaxLength(TransportEnvelope.MaxContentTypeLength)
         .IsRequired();
 
       envelope.Property(one => one.FileName)

@@ -119,6 +119,22 @@ public class HttpAdapterReadsTests
   }
 
   /// <summary>
+  /// <b>Le <c>Content-Type</c> arrive tel que l'<c>Adapter</c> l'a écrit</b>, y compris quand le
+  /// transport ne sait pas le relire. « Recopié sans interprétation » se prend au mot : le remplacer
+  /// par « octets sans type déclaré » cacherait à l'<c>Operator</c> ce que le client a réellement dit.
+  /// </summary>
+  [Fact]
+  public async Task CopiesTheContentTypeAsTheAdapterWroteIt()
+  {
+    var adapter = AdapterDouble.ServingAPiece(SomeBytes, "csv, mais à notre façon");
+
+    var answer = await Calling(adapter).ReadAsync(ARead(), DataSubjectRight.Access);
+
+    answer.Served!.Envelope.ContentType.ShouldBe("csv, mais à notre façon");
+    answer.Served.Content.ShouldBe(SomeBytes);
+  }
+
+  /// <summary>
   /// Un <c>Content-Disposition</c> que le transport ne sait pas relire ne perd pas la pièce : le nom
   /// dégrade sur le <c>system_id</c>, et les octets arrivent quand même.
   /// </summary>

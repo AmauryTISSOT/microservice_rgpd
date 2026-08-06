@@ -128,4 +128,30 @@ public sealed class RetrievedData
       served.Content,
       retrievedAt.ToUniversalTime());
   }
+
+  /// <summary>
+  /// La pièce d'aujourd'hui <b>prend la place</b> de celle d'hier, sur la même identité.
+  /// </summary>
+  /// <remarks>
+  /// <b>Remplacer, et non empiler.</b> Une relecture sous un sac enrichi rend une autre pièce pour le
+  /// même (dossier, droit, système) ; en garder deux ferait deux réponses dues à la personne sur la
+  /// même question, et laisserait dans le service un exemplaire de plus des données de quelqu'un —
+  /// c'est-à-dire l'inverse exact du séjour minimal qu'on lui doit.
+  /// <para>
+  /// C'est une <b>écriture sur place</b>, et cela compte : détruire puis recréer aurait demandé deux
+  /// écritures pour une identité qui ne change pas, et laissé, entre les deux, un instant où la
+  /// personne n'a plus ni l'ancienne pièce ni la nouvelle.
+  /// </para>
+  /// </remarks>
+  /// <param name="served">L'enveloppe et les octets qui viennent d'arriver.</param>
+  /// <param name="retrievedAt">L'instant de cette lecture-ci.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="served"/> est absent.</exception>
+  public void Replace(RetrievedPiece served, DateTimeOffset retrievedAt)
+  {
+    ArgumentNullException.ThrowIfNull(served);
+
+    Envelope = served.Envelope;
+    Content = served.Content;
+    RetrievedAt = retrievedAt.ToUniversalTime();
+  }
 }
