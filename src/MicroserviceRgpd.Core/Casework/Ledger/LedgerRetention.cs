@@ -43,4 +43,25 @@ public static class LedgerRetention
   /// <param name="instant">L'instant où quelqu'un regarde — jamais lu sur une horloge d'ici.</param>
   public static bool IsExpiredAt(DateTimeOffset closedOn, DateTimeOffset instant) =>
     instant > ExpiryOf(closedOn);
+
+  /// <summary>
+  /// La borne <b>large</b> qu'une base peut appliquer pour dégrossir : tout ce qui est échu à cet
+  /// instant a été clos avant elle. L'inverse n'est pas vrai, et c'est voulu — ce qui passe cette
+  /// borne se tranche ensuite par <see cref="IsExpiredAt"/>, seule à dire la règle.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le jour de marge n'est pas de la prudence en trop.</b> <c>AddYears(-5)</c> n'est pas
+  /// l'inverse de <c>AddYears(5)</c> : un dossier clos un 29 février voit son échéance ramenée au 28
+  /// par le calendrier, et une borne calculée à l'envers l'écarterait le jour même où sa preuve cesse
+  /// d'être due — la ligne n'apparaîtrait que le lendemain, pendant que le geste, lui, l'accepterait
+  /// déjà. Deux réponses différentes à la même question, un jour tous les quatre ans.
+  /// <para>
+  /// Le jour se donne donc <b>du côté qui laisse passer</b>. Une borne trop large ne coûte que
+  /// quelques lignes relues et rejetées derrière ; une borne trop étroite fait disparaître de
+  /// l'écran une preuve qui n'est plus due, et personne ne vient jamais la chercher.
+  /// </para>
+  /// </remarks>
+  /// <param name="observedAt">L'instant où quelqu'un regarde.</param>
+  public static DateTimeOffset ClosedNoLaterThan(DateTimeOffset observedAt) =>
+    observedAt.AddYears(-Years).AddDays(1);
 }

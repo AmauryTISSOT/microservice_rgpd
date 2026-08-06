@@ -225,7 +225,7 @@ public sealed class Case : IAggregateRoot
   /// déclaré. <b>Le dossier la garde, il ne la juge pas</b> : c'est <see cref="StatutoryDeadline"/>
   /// qui dit, à l'instant où quelqu'un regarde, si elle déplace l'échéance ou non.
   /// </summary>
-  public ExtensionDeclaration? Extension { get; private set; }
+  public ExtensionDeclaration? ExtensionDeclaration { get; private set; }
 
   /// <summary>Le dossier est-il clos ? La lecture que tout geste d'écriture consulte avant d'agir.</summary>
   public bool IsClosed => State == CaseState.Closed;
@@ -872,6 +872,44 @@ public sealed class Case : IAggregateRoot
   }
 
   /// <summary>
+  /// Un <c>Operator</c> déclare <b>prolonger de deux mois</b> au titre de l'art. 12.3 — un motif, et
+  /// la date à laquelle il dit avoir informé la personne.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le dossier enregistre, il ne prolonge pas.</b> Rien n'est écrit à la personne concernée : le
+  /// service ne lui a jamais rien envoyé et ne commencera pas ici. L'échéance, elle, n'est pas
+  /// touchée non plus — elle se <b>calcule</b> à l'affichage sur la date de cette déclaration.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une déclaration tardive est acceptée telle quelle.</b> Elle s'inscrit au dossier et à la
+  /// preuve, et le dénominateur ne bouge pas : le service consigne un fait laid plutôt qu'il ne
+  /// fabrique un faux, et un dépassement déjà acquis reste lisible à côté.
+  /// </para>
+  /// <para>
+  /// <b>Elle rend <c>false</c> plutôt qu'elle ne lève</b>, comme les autres gestes d'humain : sur un
+  /// dossier clos, dont le délai est éteint, et sur un dossier déjà prolongé — l'art. 12.3 n'ouvre
+  /// qu'une prolongation, et une seconde réécrirait le motif et les dates qu'un humain a signés.
+  /// </para>
+  /// </remarks>
+  /// <param name="declaration">Ce que l'<c>Operator</c> déclare.</param>
+  /// <returns><c>true</c> si la déclaration vient de se poser ; <c>false</c> si le dossier est clos ou déjà prolongé.</returns>
+  /// <exception cref="ArgumentNullException"><paramref name="declaration"/> est absent.</exception>
+  public bool DeclareExtension(ExtensionDeclaration declaration)
+  {
+    ArgumentNullException.ThrowIfNull(declaration);
+
+    if (IsClosed || ExtensionDeclaration is not null)
+    {
+      return false;
+    }
+
+    ExtensionDeclaration = declaration;
+
+    return true;
+  }
+
+  /// <summary>
   /// Un humain <b>clôt le dossier</b>, et tout le nominatif est détruit <b>à l'instant même</b>, en
   /// une seule transaction.
   /// </summary>
@@ -920,44 +958,6 @@ public sealed class Case : IAggregateRoot
   /// <param name="closedOn">L'instant de la clôture, et de la destruction.</param>
   /// <returns><c>true</c> si le dossier vient de se clore ; <c>false</c> s'il l'était déjà.</returns>
   /// <exception cref="ArgumentNullException"><paramref name="cause"/> est absent.</exception>
-  /// <summary>
-  /// Un <c>Operator</c> déclare <b>prolonger de deux mois</b> au titre de l'art. 12.3 — un motif, et
-  /// la date à laquelle il dit avoir informé la personne.
-  /// </summary>
-  /// <remarks>
-  /// <para>
-  /// <b>Le dossier enregistre, il ne prolonge pas.</b> Rien n'est écrit à la personne concernée : le
-  /// service ne lui a jamais rien envoyé et ne commencera pas ici. L'échéance, elle, n'est pas
-  /// touchée non plus — elle se <b>calcule</b> à l'affichage sur la date de cette déclaration.
-  /// </para>
-  /// <para>
-  /// ⚠️ <b>Une déclaration tardive est acceptée telle quelle.</b> Elle s'inscrit au dossier et à la
-  /// preuve, et le dénominateur ne bouge pas : le service consigne un fait laid plutôt qu'il ne
-  /// fabrique un faux, et un dépassement déjà acquis reste lisible à côté.
-  /// </para>
-  /// <para>
-  /// <b>Elle rend <c>false</c> plutôt qu'elle ne lève</b>, comme les autres gestes d'humain : sur un
-  /// dossier clos, dont le délai est éteint, et sur un dossier déjà prolongé — l'art. 12.3 n'ouvre
-  /// qu'une prolongation, et une seconde réécrirait le motif et les dates qu'un humain a signés.
-  /// </para>
-  /// </remarks>
-  /// <param name="declaration">Ce que l'<c>Operator</c> déclare.</param>
-  /// <returns><c>true</c> si la déclaration vient de se poser ; <c>false</c> si le dossier est clos ou déjà prolongé.</returns>
-  /// <exception cref="ArgumentNullException"><paramref name="declaration"/> est absent.</exception>
-  public bool DeclareExtension(ExtensionDeclaration declaration)
-  {
-    ArgumentNullException.ThrowIfNull(declaration);
-
-    if (IsClosed || Extension is not null)
-    {
-      return false;
-    }
-
-    Extension = declaration;
-
-    return true;
-  }
-
   public bool Close(ClosingCause cause, DateTimeOffset closedOn)
   {
     ArgumentNullException.ThrowIfNull(cause);

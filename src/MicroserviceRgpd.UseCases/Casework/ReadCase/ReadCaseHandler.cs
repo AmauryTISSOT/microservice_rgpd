@@ -43,7 +43,7 @@ public sealed class ReadCaseHandler(
     var catalogue = (await manifest.ListAsync(cancellationToken)).ToDictionary(system => system.Id);
     // La prolongation déclarée entre dans le calcul, et n'en sort aucun état : c'est ici, à
     // l'affichage, que le dénominateur se décide — jamais dans une colonne.
-    var deadline = StatutoryDeadline.Of(opened.Reception, opened.Extension);
+    var deadline = StatutoryDeadline.Of(opened.Reception, opened.ExtensionDeclaration);
 
     var claims = opened.Claims
       .Select(claim => new ClaimedRight(
@@ -79,7 +79,7 @@ public sealed class ReadCaseHandler(
       opened.State,
       opened.ClosingCause,
       opened.ClosedOn,
-      opened.Extension,
+      opened.ExtensionDeclaration,
       // Les deux réclamations de la clôture se comptent sur la racine, qui les calcule sur ses Claim
       // et ses Step : une seconde rédaction ici finirait par ne plus dire la même chose que ce que
       // l'écran montre juste à côté, ligne par ligne.

@@ -144,7 +144,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
   /// </remarks>
   private static void ConfigureTheExtension(EntityTypeBuilder<Case> builder)
   {
-    builder.OwnsOne(opened => opened.Extension, extension =>
+    builder.OwnsOne(opened => opened.ExtensionDeclaration, extension =>
     {
       // Le plafond est celui de la prose de preuve, déclaré là où la colonne qui la reçoit vit : ce
       // motif descend au Ledger, et deux plafonds finiraient par ne plus valoir la même chose.

@@ -97,10 +97,18 @@ public sealed class DeclareExtensionHandler(
   /// <remarks>
   /// Le type du domaine lève sous le nom de <b>son</b> paramètre ; l'écran, lui, nomme ses cases.
   /// Sans cette correspondance, un « motif absent » s'afficherait à côté de la case de la date.
+  /// <para>
+  /// La comparaison se fait sur le nom de la <b>propriété</b>, à la casse près : le paramètre du
+  /// domaine et la propriété qu'il alimente portent le même mot, et un littéral écrit ici aurait
+  /// survécu en silence à un renommage — en déposant le refus sous le mauvais champ.
+  /// </para>
   /// </remarks>
   private static string FieldOf(ArgumentException refusal)
   {
-    return refusal.ParamName == "informedOn"
+    return string.Equals(
+      refusal.ParamName,
+      nameof(ExtensionDeclaration.InformedOn),
+      StringComparison.OrdinalIgnoreCase)
       ? nameof(DeclareExtensionCommand.InformedOn)
       : nameof(DeclareExtensionCommand.Motive);
   }

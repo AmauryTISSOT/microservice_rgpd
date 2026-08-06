@@ -46,6 +46,51 @@ public class LedgerRetentionTests
   }
 
   /// <summary>
+  /// ⚠️ <b>La borne large de la base ne perd pas le 29 février.</b> Un dossier clos un 29 février
+  /// voit son échéance ramenée au 28 par le calendrier ; une borne calculée à l'envers —
+  /// <c>AddYears(-5)</c> sur l'instant du regard — l'écarterait le jour même où sa preuve cesse
+  /// d'être due, et la ligne n'apparaîtrait que le lendemain pendant que le geste, lui, l'accepterait
+  /// déjà. Deux réponses à la même question, un jour tous les quatre ans.
+  /// </summary>
+  [Fact]
+  public void KeepsWhatALeapDayWouldDropWhenTheBoundIsComputedBackwards()
+  {
+    var leap = new DateTimeOffset(2020, 2, 29, 9, 0, 0, TimeSpan.Zero);
+
+    // Le 28 février 2025 à dix heures, la preuve close ce 29 février n'est plus due.
+    var looking = new DateTimeOffset(2025, 2, 28, 10, 0, 0, TimeSpan.Zero);
+
+    LedgerRetention.IsExpiredAt(leap, looking).ShouldBeTrue();
+
+    // Et la borne que la base applique la laisse passer, là où observedAt.AddYears(-5) l'aurait
+    // écartée d'une heure.
+    LedgerRetention.ClosedNoLaterThan(looking).ShouldBeGreaterThanOrEqualTo(leap);
+  }
+
+  /// <summary>
+  /// <b>La borne large n'écarte jamais rien d'échu</b>, quel que soit le jour de clôture — c'est la
+  /// seule chose qu'on lui demande. Ce qu'elle laisse passer, <see cref="LedgerRetention.IsExpiredAt"/>
+  /// le tranche derrière elle ; ce qu'elle écarterait à tort ne serait jamais rattrapé.
+  /// </summary>
+  [Fact]
+  public void NeverDropsAnythingThatIsAlreadyExpired()
+  {
+    var looking = new DateTimeOffset(2025, 2, 28, 10, 0, 0, TimeSpan.Zero);
+
+    var bound = LedgerRetention.ClosedNoLaterThan(looking);
+
+    // Quatre ans de clôtures possibles, un jour après l'autre : aucune échue ne doit tomber du côté
+    // écarté de la borne.
+    for (var closedOn = looking.AddYears(-7); closedOn < looking; closedOn = closedOn.AddDays(1))
+    {
+      if (LedgerRetention.IsExpiredAt(closedOn, looking))
+      {
+        closedOn.ShouldBeLessThanOrEqualTo(bound);
+      }
+    }
+  }
+
+  /// <summary>
   /// <b>Cinq ans, écrits en dur.</b> Aucune option, aucun réglage, aucune surcharge : la seule façon
   /// de changer cette durée est de changer ce fichier, ce qui est un geste que quelqu'un signe.
   /// </summary>

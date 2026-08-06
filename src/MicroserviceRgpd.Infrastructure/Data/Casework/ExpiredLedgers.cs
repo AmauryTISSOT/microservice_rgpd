@@ -33,8 +33,9 @@ public sealed class ExpiredLedgers(AppDbContext dbContext) : IExpiredLedgers
   {
     // La base ne fait que dégrossir : elle écarte les dossiers manifestement trop récents, et la
     // règle des cinq ans se tranche ensuite par le type du domaine qui la porte. Deux écritures de
-    // la même règle — une en SQL, une en C# — finiraient par ne plus dire la même chose.
-    var perhaps = observedAt.AddYears(-LedgerRetention.Years);
+    // la même règle — une en SQL, une en C# — finiraient par ne plus dire la même chose. La borne
+    // elle-même vient du domaine : calculée à l'envers ici, elle perdrait le 29 février.
+    var perhaps = LedgerRetention.ClosedNoLaterThan(observedAt);
 
     var closed = await dbContext.Cases
       .AsNoTracking()

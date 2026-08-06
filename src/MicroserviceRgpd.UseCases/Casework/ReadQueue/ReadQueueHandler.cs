@@ -59,7 +59,7 @@ public sealed class ReadQueueHandler(
   {
     // La prolongation déclarée entre dans le calcul, et n'en sort aucun état : déclarée dans le
     // mois, elle porte l'échéance à trois mois ; déclarée après, elle la laisse où elle est.
-    var deadline = StatutoryDeadline.Of(opened.Reception, opened.Extension);
+    var deadline = StatutoryDeadline.Of(opened.Reception, opened.ExtensionDeclaration);
 
     return new QueuedCase(
       opened.Id,

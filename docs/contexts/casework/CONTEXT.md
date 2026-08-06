@@ -107,9 +107,12 @@ où le délai part de la réception par le client.
 
 **ExtensionDeclaration** :
 Ce que l'`Operator` déclare lorsqu'il prolonge de deux mois au titre de l'art. 12.3 : un **motif**,
-la **date à laquelle il a informé la personne** de la prolongation et de ses motifs, sa signature et
-sa date. Le service ne prolonge rien et ne notifie personne — il **réclame** une déclaration et
+la **date à laquelle il a informé la personne** de la prolongation et de ses motifs, et la date de sa
+déclaration. Le service ne prolonge rien et ne notifie personne — il **réclame** une déclaration et
 l'enregistre, comme il le fait de l'identité et de la remise.
+La **signature n'est pas sur l'objet** : elle est sur la ligne de `Ledger` que le geste écrit, comme
+celle de tout autre geste d'humain. Une signature portée deux fois finirait par se contredire, et
+c'est la preuve — non le dossier — qui doit nommer qui a répondu.
 Le déplacement de l'échéance est un **calcul** sur la date de la déclaration, jamais une propriété de
 l'objet : déclarée dans le mois, elle porte le délai à trois mois ; déclarée après, elle s'inscrit
 quand même — le fait est gardé — mais le dénominateur ne bouge pas, sans quoi un clic blanchirait un

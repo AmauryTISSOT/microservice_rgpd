@@ -29,7 +29,7 @@ public class CaseExtensionTests
   [Fact]
   public void OpensWithoutAnyExtension()
   {
-    ACase().Extension.ShouldBeNull();
+    ACase().ExtensionDeclaration.ShouldBeNull();
   }
 
   /// <summary>La déclaration se pose sur le dossier, telle que l'humain l'a écrite.</summary>
@@ -42,7 +42,7 @@ public class CaseExtensionTests
 
     opened.DeclareExtension(declared).ShouldBeTrue();
 
-    opened.Extension.ShouldBe(declared);
+    opened.ExtensionDeclaration.ShouldBe(declared);
   }
 
   /// <summary>
@@ -58,8 +58,8 @@ public class CaseExtensionTests
 
     opened.DeclareExtension(late).ShouldBeTrue();
 
-    opened.Extension.ShouldBe(late);
-    StatutoryDeadline.Of(opened.Reception, opened.Extension).Extended.ShouldBeFalse();
+    opened.ExtensionDeclaration.ShouldBe(late);
+    StatutoryDeadline.Of(opened.Reception, opened.ExtensionDeclaration).Extended.ShouldBeFalse();
   }
 
   /// <summary>
@@ -76,7 +76,7 @@ public class CaseExtensionTests
     opened.DeclareExtension(first).ShouldBeTrue();
     opened.DeclareExtension(AnExtension(Received.AddDays(25))).ShouldBeFalse();
 
-    opened.Extension.ShouldBe(first);
+    opened.ExtensionDeclaration.ShouldBe(first);
   }
 
   /// <summary>
@@ -92,7 +92,7 @@ public class CaseExtensionTests
 
     opened.DeclareExtension(AnExtension(Received.AddDays(20))).ShouldBeFalse();
 
-    opened.Extension.ShouldBeNull();
+    opened.ExtensionDeclaration.ShouldBeNull();
   }
 
   private static ExtensionDeclaration AnExtension(DateTimeOffset declaredOn)

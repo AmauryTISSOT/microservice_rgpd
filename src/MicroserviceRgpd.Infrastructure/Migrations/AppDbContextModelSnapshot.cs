@@ -325,7 +325,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
 
             modelBuilder.Entity("MicroserviceRgpd.Core.Casework.Case", b =>
                 {
-                    b.OwnsOne("MicroserviceRgpd.Core.Casework.ExtensionDeclaration", "Extension", b1 =>
+                    b.OwnsOne("MicroserviceRgpd.Core.Casework.ExtensionDeclaration", "ExtensionDeclaration", b1 =>
                         {
                             b1.Property<Guid>("CaseId")
                                 .HasColumnType("uuid");
@@ -733,7 +733,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
 
                     b.Navigation("Designations");
 
-                    b.Navigation("Extension");
+                    b.Navigation("ExtensionDeclaration");
 
                     b.Navigation("Locatings");
 

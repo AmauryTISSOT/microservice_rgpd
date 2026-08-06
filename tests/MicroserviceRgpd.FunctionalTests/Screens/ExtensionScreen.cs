@@ -158,7 +158,7 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    (await dbContext.Cases.AsNoTracking().SingleAsync(one => one.Id == opened)).Extension.ShouldBeNull();
+    (await dbContext.Cases.AsNoTracking().SingleAsync(one => one.Id == opened)).ExtensionDeclaration.ShouldBeNull();
 
     (await dbContext.Set<LedgerRow>()
       .AsNoTracking()

@@ -183,7 +183,7 @@
       trois mois ; déclarée après, elle est là — le fait est gardé — et n'a rien déplacé. L'écran
       dit lequel des deux, parce qu'un « prolongé » nu ferait croire à un délai gagné.
     *@
-    @if (onScreen.Extension is { } extension)
+    @if (onScreen.ExtensionDeclaration is { } extension)
     {
       <span class="hint">
         @if (onScreen.Deadline.Extended)
@@ -827,7 +827,7 @@ else if (onScreen.Locatings.Count == 0)
   seconde réécrirait le motif et les dates qu'un humain a signés. Ce qui a été déclaré se relit dans
   le bandeau, en haut.
 *@
-@if (!onScreen.IsClosed && onScreen.Extension is null)
+@if (!onScreen.IsClosed && onScreen.ExtensionDeclaration is null)
 {
   <h2>La prolongation (art. 12.3)</h2>
 
