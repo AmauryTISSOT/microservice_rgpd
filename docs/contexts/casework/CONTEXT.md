@@ -624,9 +624,15 @@ qui pourrit en silence, et de la donnée gardée trop longtemps ne fait aucun br
 l'expurgation que sa définition ferme.
 ⚠️ Cette destruction n'est **jamais automatique**. Un `Ledger` échu apparaît dans une **section
 propre** de l'écran de la file — sa ligne n'a ni personne, ni droit, ni délai, et son bouton ne doit
-jamais voisiner ceux des `Case` — où l'`Operator` le détruit d'un geste délibéré et signé : un
-`Ledger` expiré est ainsi une **ligne présente**, vue tous les jours, jamais une ligne manquante que
-nulle relecture ne lèverait. La section reste affichée, et vide, les années où rien n'est échu.
+jamais voisiner ceux des `Case` — où l'`Operator` le détruit d'un geste délibéré, confirmé case
+cochée comme l'est la clôture : un `Ledger` expiré est ainsi une **ligne présente**, vue tous les
+jours, jamais une ligne manquante que nulle relecture ne lèverait. La section reste affichée, et
+vide, les années où rien n'est échu.
+⚠️ **C'est le seul geste du dispositif qui ne porte pas de signature**, et c'est une conséquence de
+ce qui suit, non un oubli : le seul endroit où ce nom aurait pu s'écrire est le `Ledger` qui
+disparaît. L'écrire ailleurs — seconde table, journal — aurait rouvert l'expurgation que la
+définition du `Ledger` ferme ; le réclamer pour ne l'écrire nulle part aurait été la façade d'une
+preuve. La parade au geste irréversible reste donc entière : elle est **dans l'écran**.
 ⚠️ Deux coûts assumés : un `Operator` inactif garde au-delà de cinq ans — visible, jamais barré — et
 la destruction ne laisse **aucune trace**, un `Ledger` détruit ne pouvant consigner sa propre
 destruction. On ne prouvera pas qu'on a purgé.

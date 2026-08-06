@@ -187,6 +187,29 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   /// </remarks>
   public static readonly LedgerFact CaseClosed = new(nameof(CaseClosed), 15, "dossier clos");
 
+  /// <summary>
+  /// Un <c>Operator</c> a <b>déclaré prolonger</b> de deux mois au titre de l'art. 12.3. La ligne dit
+  /// le motif, le jour où il déclare avoir informé la personne, le jour de la déclaration et le
+  /// signataire — c'est-à-dire la charge probatoire que l'article met sur lui, et que le service lui
+  /// fait tenir.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Elle ne dit pas si le délai a bougé.</b> Le déplacement est un calcul sur la date de la
+  /// déclaration, refait à chaque affichage ; l'écrire ici aurait persisté un dénominateur, et
+  /// l'aurait fait relire dans cinq ans comme un fait signé plutôt que comme le calcul qu'il est. Le
+  /// contrôle le refait depuis cette date et celle de l'ouverture, qui sont toutes deux au
+  /// <c>Ledger</c>.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une prolongation déclarée hors délai s'inscrit aussi</b>, et sans mention particulière :
+  /// le fait est gardé tel quel, et l'écart entre les deux dates est exactement ce que le contrôle
+  /// vient lire.
+  /// </para>
+  /// </remarks>
+  public static readonly LedgerFact ExtensionDeclared =
+    new(nameof(ExtensionDeclared), 16, "prolongation déclarée");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

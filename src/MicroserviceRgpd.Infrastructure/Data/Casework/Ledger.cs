@@ -64,6 +64,7 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
       CoveredSystemCount = entry.CoveredSystemCount,
       DeclaredSystemCount = entry.DeclaredSystemCount,
       ClosingCause = entry.ClosingCause?.Name,
+      InformedOn = entry.InformedOn,
     };
   }
 }

@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Ledger;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
@@ -35,11 +36,28 @@ public sealed record ReadQueueQuery : IQuery<OperatorQueue>;
 /// impossible à produire — il l'est ici parce qu'aucun compte n'existe.
 /// </remarks>
 /// <param name="Cases">Les dossiers ouverts, dans l'ordre où il faut les prendre.</param>
+/// <param name="ExpiredLedgers">
+/// Les <c>Ledger</c> dont la conservation est échue, <b>à part des dossiers</b>.
+/// <para>
+/// ⚠️ <b>C'est la seule échéance du dispositif qui fait naître une ligne</b>, et c'est pourquoi elle
+/// a sa liste plutôt qu'une colonne : un <c>Ledger</c> échu n'a ni personne, ni droit, ni délai —
+/// son dossier est clos depuis cinq ans —, et le geste qu'il porte est irréversible et sans trace.
+/// Son bouton ne doit jamais voisiner ceux des <c>Case</c>.
+/// </para>
+/// <para>
+/// <b>Elle est rendue même vide</b>, et l'écran l'affiche même vide : une section qui
+/// disparaîtrait les années où rien n'est échu sortirait du regard, et le jour où quelque chose y
+/// tomberait, personne ne l'attendrait plus.
+/// </para>
+/// </param>
 /// <param name="ObservedAt">
 /// L'instant sur lequel tous les dépassements de cette page ont été calculés. Il est <b>nommé</b> :
 /// une file qui ne dirait pas de quand elle date se lirait comme une vérité intemporelle.
 /// </param>
-public sealed record OperatorQueue(IReadOnlyList<QueuedCase> Cases, DateTimeOffset ObservedAt);
+public sealed record OperatorQueue(
+  IReadOnlyList<QueuedCase> Cases,
+  IReadOnlyList<ExpiredLedger> ExpiredLedgers,
+  DateTimeOffset ObservedAt);
 
 /// <summary>
 /// Une ligne de la file : un dossier ouvert, et ce qui sert à décider s'il passe avant un autre.

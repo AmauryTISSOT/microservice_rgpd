@@ -142,4 +142,11 @@ public sealed class LedgerRow
   /// seconde colonne de prose aurait fait chercher un motif à deux endroits.
   /// </remarks>
   public string? ClosingCause { get; init; }
+
+  /// <summary>
+  /// Le jour où l'<c>Operator</c> déclare avoir <b>informé la personne</b> d'une prolongation de
+  /// l'art. 12.3. Distincte d'<see cref="OccurredAt"/>, qui date la déclaration au service : l'écart
+  /// entre les deux est très exactement ce que l'article met à la charge de qui prolonge.
+  /// </summary>
+  public DateTimeOffset? InformedOn { get; init; }
 }

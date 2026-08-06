@@ -177,6 +177,39 @@
     {
       <strong class="overrun">délai dépassé</strong>
     }
+
+    @*
+      LA PROLONGATION, LUE AVEC L'ÉCHÉANCE. Déclarée dans le mois, elle porte le dénominateur à
+      trois mois ; déclarée après, elle est là — le fait est gardé — et n'a rien déplacé. L'écran
+      dit lequel des deux, parce qu'un « prolongé » nu ferait croire à un délai gagné.
+    *@
+    @if (onScreen.Extension is { } extension)
+    {
+      <span class="hint">
+        @if (onScreen.Deadline.Extended)
+        {
+          <text>
+            <strong>Prolongée de deux mois</strong>, déclarée le
+            @extension.DeclaredOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).
+          </text>
+        }
+        else
+        {
+          <text>
+            <strong>Prolongation déclarée hors délai</strong>, le
+            @extension.DeclaredOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) : elle est
+            inscrite au dossier et à la preuve, et elle <strong>n'a pas déplacé l'échéance</strong> —
+            un dépassement déjà acquis ne se blanchit pas.
+          </text>
+        }
+        <br />
+        Personne informée le
+        @extension.InformedOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture), déclaré par
+        l'<code>Operator</code> ; le service n'a écrit à personne.
+        <br />
+        Motif : @extension.Motive
+      </span>
+    }
   </dd>
 
   <dt>Paysage déclaré</dt>
@@ -783,6 +816,82 @@ else if (onScreen.Locatings.Count == 0)
       }
     }
   </div>
+}
+
+@*
+  LA PROLONGATION DE L'ART. 12.3. Le service ne prolonge rien et n'écrit à personne : il RÉCLAME une
+  déclaration — un motif, et la date à laquelle l'Operator a informé la personne — et l'enregistre.
+  La charge probatoire est à celui qui prolonge, et le service la lui fait tenir.
+
+  Le formulaire disparaît une fois la prolongation déclarée : l'art. 12.3 n'en ouvre qu'une, et une
+  seconde réécrirait le motif et les dates qu'un humain a signés. Ce qui a été déclaré se relit dans
+  le bandeau, en haut.
+*@
+@if (!onScreen.IsClosed && onScreen.Extension is null)
+{
+  <h2>La prolongation (art. 12.3)</h2>
+
+  <form method="post" asp-page-handler="DeclareExtension">
+    <fieldset class="signature extension">
+      <legend>Déclarer une prolongation de deux mois</legend>
+
+      <p class="caveat">
+        ⚠️ <strong>Le service n'écrit pas à la personne concernée</strong>, ni ici ni ailleurs.
+        L'art. 12.3 exige que vous l'informiez de la prolongation <em>et de ses motifs</em>
+        <strong>dans le mois</strong> : c'est votre geste, et cet écran ne fait que l'enregistrer.
+      </p>
+
+      <p class="hint">
+        Déclarée dans le mois, la prolongation porte le délai à <strong>trois mois</strong>.
+        Déclarée après, elle s'inscrit tout de même au dossier et à la preuve —
+        <strong>sans déplacer l'échéance</strong> : un dépassement déjà acquis ne se blanchit pas
+        d'un clic. Le service enregistre un fait, il n'en fabrique pas.
+      </p>
+
+      <p>
+        <label for="extension-motive">
+          Le motif
+          <span class="hint">
+            Exigé : l'art. 12.3 met la raison à la charge de qui prolonge. <strong>Il survit au
+            dossier</strong> dans la preuve — n'y écrivez rien qui nomme la personne ou un tiers.
+          </span>
+        </label>
+        <textarea id="extension-motive"
+                  name="Extension.Motive"
+                  rows="3"
+                  maxlength="@MicroserviceRgpd.Core.Casework.Ledger.LedgerEntry.MaxEvidenceProseLength">@Model.Extension.Motive</textarea>
+      </p>
+
+      <p>
+        <label for="extension-informedon">
+          Le jour où vous avez informé la personne
+          <span class="hint">
+            Ce que vous <strong>déclarez</strong> avoir fait, jamais ce que le service a constaté.
+            La preuve gardera cette date à côté de celle de votre déclaration, et l'écart entre les
+            deux se lira tel quel.
+          </span>
+        </label>
+        <input type="date" id="extension-informedon" name="Extension.InformedOn" value="@Model.Extension.InformedOn" />
+      </p>
+
+      <p>
+        <label for="extension-signedby">
+          Votre nom
+          <span class="hint">
+            Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em> ce
+            régime.
+          </span>
+        </label>
+        <input type="text"
+               id="extension-signedby"
+               name="Extension.SignedBy"
+               maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength"
+               value="@Model.Extension.SignedBy" />
+      </p>
+
+      <button type="submit">Déclarer la prolongation et signer</button>
+    </fieldset>
+  </form>
 }
 
 @*

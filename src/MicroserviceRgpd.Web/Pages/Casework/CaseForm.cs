@@ -1,4 +1,5 @@
-﻿using MicroserviceRgpd.Core.Casework;
+﻿using System.Globalization;
+using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -220,15 +221,90 @@ public sealed class ClaimOutcomeForm
 }
 
 /// <summary>
+/// Ce qu'un <c>Operator</c> saisit pour <b>déclarer une prolongation</b> de deux mois au titre de
+/// l'art. 12.3.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Le service ne prolonge rien et n'écrit à personne.</b> Il réclame ce que l'article met à la
+/// charge de qui prolonge — un motif, et la date à laquelle la personne a été informée de la
+/// prolongation et de ses motifs — et l'enregistre.
+/// </para>
+/// <para>
+/// <b>Aucun champ ne dit si l'échéance a bougé</b>, et aucun ne pourrait : le déplacement est un
+/// calcul fait sur la date de la déclaration, à l'instant où quelqu'un regarde.
+/// </para>
+/// </remarks>
+public sealed class ExtensionForm
+{
+  /// <summary>
+  /// Le motif, en prose libre. <b>Exigé</b> : l'art. 12.3 met la raison à la charge de qui prolonge.
+  /// <b>Prose de preuve</b> — elle survit au dossier.
+  /// </summary>
+  public string? Motive { get; set; }
+
+  /// <summary>
+  /// Le jour où l'<c>Operator</c> déclare avoir informé la personne, tel que le navigateur l'envoie.
+  /// </summary>
+  /// <remarks>
+  /// <b>Il reste une chaîne jusqu'à la frontière</b>, comme la date de réception du dépôt : une date
+  /// mal saisie doit se redire à l'humain sous le nom de <b>sa</b> case, et un <c>DateTime?</c> lié
+  /// par le cadre aurait rendu un nul indiscernable d'une case vide.
+  /// </remarks>
+  public string? InformedOn { get; set; }
+
+  /// <summary>Le nom que l'<c>Operator</c> saisit pour signer. Sans authentification, et sans mémoire.</summary>
+  public string? SignedBy { get; set; }
+
+  /// <summary>
+  /// La date d'information, ou le refus déposé sous le nom de sa case.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle est réclamée</b> — c'est la moitié de la charge probatoire de l'art. 12.3, et une
+  /// prolongation sans elle ne prouverait que la moitié de ce que l'article exige. ⚠️ Une date
+  /// <b>postérieure</b> n'est pas refusée ici mais par le domaine, qui la connaît : la frontière
+  /// nomme, le type tranche.
+  /// </remarks>
+  /// <param name="modelState">L'endroit où les refus se déposent.</param>
+  /// <param name="prefix">Le préfixe de liaison du formulaire, tel que la page l'a déclaré.</param>
+  public DateTimeOffset? ReadInformedOn(ModelStateDictionary modelState, string prefix)
+  {
+    ArgumentNullException.ThrowIfNull(modelState);
+
+    var field = $"{prefix}.{nameof(InformedOn)}";
+
+    if (string.IsNullOrWhiteSpace(InformedOn))
+    {
+      modelState.AddModelError(
+        field,
+        "Le jour où vous avez informé la personne est exigé : l'art. 12.3 met cette preuve à votre "
+        + "charge, et le service ne la constate pas à votre place.");
+
+      return null;
+    }
+
+    if (!DateOnly.TryParse(InformedOn, CultureInfo.InvariantCulture, out var declared))
+    {
+      modelState.AddModelError(field, $"« {InformedOn} » n'est pas une date.");
+
+      return null;
+    }
+
+    return new DateTimeOffset(declared.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+  }
+}
+
+/// <summary>
 /// Ce qu'un <c>Operator</c> saisit pour <b>clore le dossier</b> — et détruire tout le nominatif à
 /// l'instant même.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Ce formulaire porte une case que nul autre ne porte.</b> Le geste est irréversible, seul du
-/// dispositif à l'être, et sa parade est un geste <b>délibéré dans l'écran</b> plutôt que de la
-/// donnée gardée en réserve. La case n'est ni pré-cochée ni mémorisée : elle est la seconde
-/// affirmation d'une personne qui vient de lire ce qu'elle s'apprête à détruire.
+/// <b>Ce formulaire porte une case que peu d'autres portent.</b> Le geste est irréversible, et sa
+/// parade est un geste <b>délibéré dans l'écran</b> plutôt que de la donnée gardée en réserve. La
+/// case n'est ni pré-cochée ni mémorisée : elle est la seconde affirmation d'une personne qui vient
+/// de lire ce qu'elle s'apprête à détruire. Le seul autre geste du dispositif à en porter une est
+/// la destruction d'un <c>Ledger</c> échu, à l'écran de la file.
 /// </para>
 /// <para>
 /// <b>Le motif est un champ de prose, et c'est de la prose de <em>preuve</em>.</b> Il dit

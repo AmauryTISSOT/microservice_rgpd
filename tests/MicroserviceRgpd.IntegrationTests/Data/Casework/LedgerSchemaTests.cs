@@ -31,7 +31,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   private static readonly DateTimeOffset Opened = new(2026, 8, 3, 14, 30, 0, TimeSpan.Zero);
 
   /// <summary>
-  /// Quatorze colonnes, nommées une par une : ce qui n'a pas de colonne ne s'écrira pas. La liste est
+  /// Vingt et une colonnes, nommées une par une : ce qui n'a pas de colonne ne s'écrira pas. La liste est
   /// écrite en toutes lettres <b>pour que l'ajout d'une colonne soit un geste délibéré</b> — une
   /// colonne de prose libre glissée ici serait la porte par laquelle un nom finirait par passer.
   /// <para>
@@ -90,9 +90,17 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   /// preuve, il partage <c>evidence_prose</c> avec les constats, et une seconde colonne de prose
   /// aurait fait chercher un motif à deux endroits.
   /// </para>
+  /// <para>
+  /// Une est arrivée avec la <b>prolongation de l'art. 12.3</b> : <c>informed_on</c>, le jour où
+  /// l'<c>Operator</c> déclare avoir informé la personne. ⚠️ Elle ne se confond pas avec
+  /// <c>occurred_at</c>, qui date la déclaration au service : l'article exige que la personne soit
+  /// informée <b>dans le mois</b>, et une seule date aurait fait choisir entre dater le clic et
+  /// dater l'obligation. ⚠️ <b>Aucune colonne ne dit si l'échéance a bougé</b> : c'est un calcul
+  /// refait à chaque affichage, et le persister l'aurait fait relire comme un fait signé.
+  /// </para>
   /// </summary>
   [Fact]
-  public async Task NamesTwentyColumnsAndNotOneMoreWhereANameCouldLand()
+  public async Task NamesTwentyOneColumnsAndNotOneMoreWhereANameCouldLand()
   {
     var columns = await ColumnsAsync();
 
@@ -111,6 +119,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       "fact",
       "identity_declaration",
       "identity_verification_method",
+      "informed_on",
       "occurred_at",
       "received_on",
       "reception_was_defaulted",

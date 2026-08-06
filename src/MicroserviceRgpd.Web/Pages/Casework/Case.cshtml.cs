@@ -3,6 +3,7 @@ using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Casework.AnswerClaim;
 using MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 using MicroserviceRgpd.UseCases.Casework.CloseCase;
+using MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 using MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 using MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 using MicroserviceRgpd.UseCases.Casework.DeclareStep;
@@ -105,6 +106,17 @@ public class CaseModel(IMediator mediator) : PageModel
 
   /// <summary>Le préfixe de liaison de la clôture, cité tel quel lorsqu'un champ est refusé.</summary>
   public const string ClosingPrefix = nameof(Closing);
+
+  /// <summary>Le préfixe de liaison de la prolongation, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string ExtensionPrefix = nameof(Extension);
+
+  /// <summary>
+  /// Ce que l'humain saisit pour <b>déclarer une prolongation</b> de l'art. 12.3. ⚠️ Le service
+  /// n'écrit à personne : il enregistre une déclaration, et la charge probatoire reste à qui l'a
+  /// faite.
+  /// </summary>
+  [BindProperty]
+  public ExtensionForm Extension { get; set; } = new();
 
   /// <summary>Ce que l'humain saisit pour déclarer que le service a <b>répondu</b> sur un droit.</summary>
   /// <remarks>
@@ -488,6 +500,51 @@ public class CaseModel(IMediator mediator) : PageModel
   /// a réclamés au-dessus du bouton ; ce qu'il n'a pas le droit de faire est d'empêcher.
   /// </para>
   /// </remarks>
+  /// <summary>
+  /// Déclare une <b>prolongation de deux mois</b> au titre de l'art. 12.3.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Aucun courriel ne part d'ici.</b> L'art. 12.3 exige que la personne soit informée de la
+  /// prolongation et de ses motifs : c'est un acte de l'<c>Operator</c>, et cet écran ne fait que
+  /// l'enregistrer avec la date qu'il déclare.
+  /// </para>
+  /// <para>
+  /// <b>Une déclaration tardive n'est pas barrée.</b> La page ne compare rien à l'échéance : elle
+  /// envoie ce qui a été saisi, et le dénominateur se recalcule à l'affichage suivant. Un écran qui
+  /// aurait refusé aurait perdu le fait.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnPostDeclareExtensionAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var informedOn = Extension.ReadInformedOn(ModelState, ExtensionPrefix);
+
+    if (informedOn is not null)
+    {
+      var declared = await mediator.Send(
+        new DeclareExtensionCommand(CaseId.From(id), Extension.Motive, informedOn.Value, Extension.SignedBy),
+        cancellationToken);
+
+      if (declared.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (declared.IsSuccess)
+      {
+        // Une redirection après l'écriture : recharger la page ne déclare pas une seconde
+        // prolongation, et le dossier qui revient porte la sienne dans son bandeau.
+        return RedirectToPage(new { id });
+      }
+
+      FormBoundary.Deposit(ModelState, ExtensionPrefix, declared.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
   public async Task<IActionResult> OnPostCloseAsync(Guid id, CancellationToken cancellationToken)
   {
     var cause = FormBoundary.ReadVocabulary<ClosingCause>(

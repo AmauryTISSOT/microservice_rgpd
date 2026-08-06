@@ -49,8 +49,10 @@ public sealed record LedgerEntry
     DateTimeOffset? declaredDeadline = null,
     int? coveredSystemCount = null,
     int? declaredSystemCount = null,
-    ClosingCause? closingCause = null)
+    ClosingCause? closingCause = null,
+    DateTimeOffset? informedOn = null)
   {
+    InformedOn = informedOn;
     ClosingCause = closingCause;
     CoveredSystemCount = coveredSystemCount;
     DeclaredSystemCount = declaredSystemCount;
@@ -246,6 +248,19 @@ public sealed record LedgerEntry
   /// elle dit <i>pourquoi on a décidé cela</i>, et elle survit ici quand tout le dossier tombe.
   /// </remarks>
   public ClosingCause? ClosingCause { get; }
+
+  /// <summary>
+  /// Le jour où l'<c>Operator</c> déclare avoir <b>informé la personne</b> d'une prolongation de
+  /// l'art. 12.3, et <c>null</c> partout ailleurs.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle ne se confond pas avec <see cref="OccurredAt"/>, qui date la déclaration au service.</b>
+  /// L'art. 12.3 exige que la personne soit informée <b>dans le mois</b> ; l'écart entre les deux
+  /// dates est donc un fait à part entière, et une seule colonne aurait fait choisir entre dater le
+  /// clic et dater l'obligation. ⚠️ Le service n'a rien envoyé : c'est une <b>déclaration</b>, et la
+  /// charge probatoire reste à celui qui l'a faite.
+  /// </remarks>
+  public DateTimeOffset? InformedOn { get; }
 
   /// <summary>
   /// La première ligne d'un dossier : il s'est ouvert, à telle date, sous telle déclaration
@@ -1009,6 +1024,66 @@ public sealed record LedgerEntry
       declaredSystem: null,
       evidenceProse: MotiveOrThrow(motive, cause),
       closingCause: cause);
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a déclaré <b>prolonger de deux mois</b> au titre de l'art. 12.3 : le motif,
+  /// le jour où il dit avoir informé la personne, et le sien.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle porte la charge probatoire de l'art. 12.3, et rien de plus.</b> Le service n'a écrit à
+  /// personne : cette ligne atteste qu'un humain a <b>déclaré</b> avoir informé la personne, jamais
+  /// qu'elle l'ait été. C'est la même distinction que partout ailleurs — le service est greffier,
+  /// pas témoin.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle ne dit pas si le délai a bougé, et s'écrit même quand il n'a pas bougé.</b> Une
+  /// prolongation déclarée hors délai est consignée telle quelle : on garde un fait laid plutôt
+  /// qu'on ne fabrique un faux. Le contrôle refait le calcul depuis <see cref="OccurredAt"/> et la
+  /// date de réception, toutes deux au <c>Ledger</c>.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le signataire est un <c>Operator</c>, obligatoirement.</b> Aucune machine ne prolonge un
+  /// délai dû à quelqu'un.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier dont le délai est prolongé.</param>
+  /// <param name="occurredAt">L'instant de la déclaration au service — celui d'où le calcul se fait.</param>
+  /// <param name="declaration">Ce que l'<c>Operator</c> a déclaré : le motif et la date d'information.</param>
+  /// <param name="signatory">L'humain qui prolonge, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
+  public static LedgerEntry ExtensionDeclared(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    ExtensionDeclaration declaration,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(declaration);
+    ArgumentNullException.ThrowIfNull(signatory);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      throw new ArgumentException(
+        "Une prolongation est déclarée par un Operator nommé : aucune machine ne prolonge un délai "
+        + "dû à quelqu'un, et la charge probatoire de l'art. 12.3 est celle d'une personne.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.ExtensionDeclared,
+      signatory,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem: null,
+      // Le motif est de la prose de preuve : il dit pourquoi on a décidé cela, il n'est pas
+      // nominatif par nature, et il partage sa colonne avec les constats et les motifs de clôture.
+      evidenceProse: declaration.Motive,
+      informedOn: declaration.InformedOn);
   }
 
   /// <summary>

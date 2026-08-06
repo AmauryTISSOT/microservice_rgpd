@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Ledger;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.FunctionalTests.Platform;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -398,6 +399,94 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
     }
 
     return await _client.PostAsync($"{address}?handler=Close", new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// Déclare une <b>prolongation de deux mois</b> au titre de l'art. 12.3 : un motif, et la date à
+  /// laquelle l'<c>Operator</c> dit avoir informé la personne.
+  /// </summary>
+  internal async Task<HttpResponseMessage> DeclareExtensionAsync(
+    CaseId opened,
+    string motive,
+    string informedOn,
+    string signedBy)
+  {
+    var address = AddressOf(opened);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(address)),
+      new("Extension.Motive", motive),
+      new("Extension.InformedOn", informedOn),
+      new("Extension.SignedBy", signedBy),
+    };
+
+    return await _client.PostAsync($"{address}?handler=DeclareExtension", new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// <b>Détruit un <c>Ledger</c> échu</b>, depuis la section propre de l'écran de la file.
+  /// </summary>
+  /// <remarks>
+  /// La case de confirmation est un champ comme les autres, et <c>confirmed: false</c> l'omet :
+  /// c'est ce qu'un navigateur envoie d'une case décochée, et le seul moyen d'éprouver la parade.
+  /// ⚠️ <b>Aucun nom n'est envoyé</b> : le geste ne laisse aucune trace où l'écrire.
+  /// </remarks>
+  internal async Task<HttpResponseMessage> DestroyLedgerAsync(CaseId ledgerOf, bool confirmed = true)
+  {
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(Queue)),
+      new("Destruction.Case", ledgerOf.Value.ToString()),
+    };
+
+    if (confirmed)
+    {
+      fields.Add(new("Destruction.Confirmed", "true"));
+    }
+
+    return await _client.PostAsync($"{Queue}?handler=DestroyLedger", new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// Pose en base un dossier <b>clos au jour qu'on choisit</b>, avec sa matière de preuve — de quoi
+  /// dicter l'échéance des cinq ans plutôt que d'attendre cinq ans.
+  /// </summary>
+  /// <remarks>
+  /// La clôture est posée par le dépôt et non par l'écran : celle de l'écran daterait de l'instant
+  /// de l'appel, et aucune conservation échue ne serait démontrable avant 2031.
+  /// </remarks>
+  internal async Task<CaseId> CloseLongAgoAsync(DateTimeOffset closedOn)
+  {
+    using var scope = factory.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var opened = Case.Open(
+      CaseId.Next(),
+      IdentityDeclaration.Unverified,
+      motivation: null,
+      [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
+      [DataSubjectRight.Access],
+      ClaimOrigin.Named,
+      Manifest.Empty,
+      ReceptionDate.Declared(closedOn.AddMonths(-1)));
+
+    opened.Close(ClosingCause.Answered, closedOn);
+
+    dbContext.Add(opened);
+
+    await dbContext.SaveChangesAsync();
+
+    var ledger = scope.ServiceProvider.GetRequiredService<ILedger>();
+
+    await ledger.AppendAsync(LedgerEntry.CaseClosed(
+      opened.Id,
+      closedOn,
+      ClosingCause.Answered,
+      motive: null,
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+
+    return opened.Id;
   }
 
   private async Task<string> AntiforgeryTokenOfAsync(string address)

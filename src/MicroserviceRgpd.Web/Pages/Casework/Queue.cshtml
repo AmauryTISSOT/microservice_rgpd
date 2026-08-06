@@ -78,7 +78,18 @@ else
               @line.Reception.On.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
             }
           </td>
-          <td>@line.Deadline.On.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</td>
+          <td>
+            @line.Deadline.On.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+            @if (line.Deadline.Extended)
+            {
+              @*
+                Le dénominateur porté à trois mois par une prolongation déclarée DANS le mois. Une
+                prolongation déclarée après ne se voit pas ici, et c'est le propos : elle est
+                inscrite au dossier et au Ledger, mais elle n'a rien déplacé.
+              *@
+              <span class="extended">prolongée (art. 12.3)</span>
+            }
+          </td>
           <td>
             @*
               Un fait, jamais un compteur : ni « en retard de 4 jours », ni « il reste 3 jours ». Aucun
@@ -127,3 +138,92 @@ else
 <p><a asp-page="Deposit">Déposer une demande reçue par courriel</a></p>
 
 <p><a asp-page="Manifest">Le paysage déclaré</a></p>
+
+@*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES LEDGER ÉCHUS. Une SECTION PROPRE, et loin des dossiers — c'est la raison même de son
+  existence. Un Ledger échu n'a ni personne, ni droit, ni délai : son dossier est clos depuis cinq
+  ans. Et le bouton qu'il porte est définitif ET sans trace, donc le pire du dispositif à avoir
+  sous la main d'un mauvais clic. Il ne voisine jamais les lignes de dossiers.
+
+  C'est aussi LA SEULE ÉCHÉANCE QUI FAIT NAÎTRE UNE LIGNE. Les quatre autres ne sont que des
+  colonnes sur des lignes déjà présentes ; celle-ci fait reparaître un dossier clos depuis cinq
+  ans, et c'est pourquoi elle ne peut pas vivre dans le tableau du dessus.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*@
+<h2>À détruire — conservation échue</h2>
+
+<p class="caveat">
+  Le <code>Ledger</code> vit <strong>cinq ans à compter de la clôture</strong>, et cette durée ne se
+  règle pas. Passé ce terme, la preuve n'est plus due : elle apparaît ici, et <strong>rien ne la
+  détruira qu'un geste de votre part</strong>. Aucun processus ne purge quoi que ce soit derrière
+  cet écran — un service qui purgerait tout seul afficherait la même liste vide qu'un service
+  arrêté.
+</p>
+
+@if (Model.Queue.ExpiredLedgers.Count == 0)
+{
+  @*
+    LA SECTION RESTE AFFICHÉE, ET VIDE. Les années où rien n'est échu, elle ne disparaît pas : une
+    section qui s'efface sort du regard, et le jour où quelque chose y tombe, personne ne l'attend
+    plus. Elle se dit en mots, jamais par un zéro.
+  *@
+  <p class="none">
+    Aucune preuve échue à ce jour. Les dossiers clos depuis moins de cinq ans gardent la leur, et
+    elle n'apparaîtra ici qu'à son terme.
+  </p>
+}
+else
+{
+  <ul class="expired-ledgers">
+    @foreach (var overdue in Model.Queue.ExpiredLedgers)
+    {
+      <li>
+        @*
+          Ni personne, ni droit, ni délai : deux dates et un dossier, c'est tout ce qu'une preuve
+          échue porte encore. Le dossier qu'elle nomme n'a plus une désignation depuis sa clôture.
+        *@
+        <p>
+          <strong>La preuve du dossier <a asp-page="Case" asp-route-id="@overdue.Case.Value">@overdue.Case.Value</a></strong>
+          — clos le @overdue.ClosedOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+          échue depuis le @overdue.ExpiredOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).
+        </p>
+
+        <form method="post" asp-page-handler="DestroyLedger">
+          <fieldset class="signature destruction">
+            <legend>Détruire cette preuve</legend>
+
+            <p class="caveat">
+              ⚠️ Ce geste détruit <strong>toute</strong> la matière de preuve de ce dossier, en une
+              fois, et il est <strong>irréversible</strong>. Il ne laisse
+              <strong>aucune trace de lui-même</strong> : la seule ligne où sa date et votre nom
+              auraient pu s'écrire est précisément celle qui disparaît. Vous ne pourrez jamais
+              prouver l'avoir fait — c'est pourquoi votre nom ne vous est pas demandé ici.
+            </p>
+
+            <input type="hidden" name="Destruction.Case" value="@overdue.Case.Value" />
+
+            <p class="deliberate">
+              <input type="checkbox"
+                     id="destroy-@overdue.Case.Value"
+                     name="Destruction.Confirmed"
+                     value="true" />
+              <label for="destroy-@overdue.Case.Value">
+                Je comprends que cette preuve disparaît entièrement et définitivement, et que rien
+                n'attestera qu'elle a existé ni qu'elle a été détruite.
+              </label>
+            </p>
+
+            @if (Model.Destruction.Case == overdue.Case.Value)
+            {
+              @Html.ValidationMessage($"{QueueModel.DestructionPrefix}.{nameof(LedgerDestructionForm.Confirmed)}",
+                new { @class = "refusal" })
+            }
+
+            <button type="submit">Détruire cette preuve</button>
+          </fieldset>
+        </form>
+      </li>
+    }
+  </ul>
+}

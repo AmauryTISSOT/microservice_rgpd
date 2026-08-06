@@ -1,5 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
+using MicroserviceRgpd.Core.Casework.Ledger;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
@@ -78,6 +79,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
 
     ConfigureTheMotivation(builder);
     ConfigureTheReception(builder);
+    ConfigureTheExtension(builder);
     ConfigureTheBag(builder);
     ConfigureTheClaims(builder);
     ConfigureTheLocatings(builder);
@@ -116,6 +118,44 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
       motivation.Property(one => one.Detail)
         .HasColumnName("identity_motivation_detail")
         .HasMaxLength(IdentityMotivation.MaxDetailLength);
+    });
+  }
+
+  /// <summary>
+  /// La prolongation de l'art. 12.3 déclarée sur le dossier : un motif, la date d'information de la
+  /// personne, et celle de la déclaration.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Trois colonnes nulles ensemble, ou pleines ensemble.</b> Un dossier que personne n'a
+  /// prolongé n'en porte aucune ; et il n'existe aucun chemin d'écriture qui poserait le motif sans
+  /// les dates, la déclaration étant indivisible dans le domaine.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Aucune colonne ne porte l'échéance prolongée</b>, ni un drapeau disant que la
+  /// prolongation a porté. Le dénominateur est un calcul refait à chaque affichage sur
+  /// <c>extension_declared_on</c> : le persister aurait fait dépendre le délai dû à la personne de
+  /// ce que quelqu'un ait pensé à le recalculer.
+  /// </para>
+  /// <para>
+  /// <b>Le motif survit à la clôture au <c>Ledger</c>, jamais ici.</b> Cette ligne-ci meurt avec le
+  /// dossier ; c'est la ligne de preuve qui porte le motif pendant cinq ans.
+  /// </para>
+  /// </remarks>
+  private static void ConfigureTheExtension(EntityTypeBuilder<Case> builder)
+  {
+    builder.OwnsOne(opened => opened.Extension, extension =>
+    {
+      // Le plafond est celui de la prose de preuve, déclaré là où la colonne qui la reçoit vit : ce
+      // motif descend au Ledger, et deux plafonds finiraient par ne plus valoir la même chose.
+      extension.Property(one => one.Motive)
+        .HasColumnName("extension_motive")
+        .HasMaxLength(LedgerEntry.MaxEvidenceProseLength)
+        .IsRequired();
+
+      extension.Property(one => one.InformedOn).HasColumnName("extension_informed_on").IsRequired();
+
+      extension.Property(one => one.DeclaredOn).HasColumnName("extension_declared_on").IsRequired();
     });
   }
 
