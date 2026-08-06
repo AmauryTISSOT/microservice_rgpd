@@ -67,6 +67,13 @@ public sealed class ReadHandler(
       return Result.NotFound();
     }
 
+    // Un dossier clos n'a plus de rattachement où lire : ses localisations ont été détruites avec
+    // le reste du nominatif, et ce qu'un Read ramènerait serait gardé pour personne.
+    if (opened.IsClosed)
+    {
+      return Result.Success();
+    }
+
     var reachable = (await manifest.ListAsync(cancellationToken))
       .Where(system => system.AdapterAddress is not null && system.Capabilities.Contains(Capability.Read))
       .Where(system => opened.HoldsAnAttachmentIn(system.Id))

@@ -203,6 +203,56 @@ public sealed class Case : IAggregateRoot
   public bool AwaitsADeliveryDeclaration => _claims.Any(claim => claim.DeliveryAwaitsDeclaration);
 
   /// <summary>
+  /// Ce par quoi le dossier s'est clos, ou <c>null</c> tant qu'il est ouvert. <b>Toujours nommée par
+  /// un humain</b> : la machine ne produit aucune issue.
+  /// </summary>
+  public ClosingCause? ClosingCause { get; private set; }
+
+  /// <summary>
+  /// L'instant de la clôture, ou <c>null</c> tant que le dossier est ouvert. <b>C'est aussi
+  /// l'instant où tout le nominatif a été détruit</b> : il n'y a pas deux dates, parce qu'il n'y a
+  /// pas deux gestes.
+  /// </summary>
+  /// <remarks>
+  /// C'est de lui que court la vie du <c>Ledger</c> — cinq ans à compter de la clôture — et c'est
+  /// pourquoi il est <b>porté par le dossier</b> plutôt que recalculé depuis la preuve : le dossier
+  /// clos est ce qu'un humain relit, la preuve est ce que le contrôle relit.
+  /// </remarks>
+  public DateTimeOffset? ClosedOn { get; private set; }
+
+  /// <summary>Le dossier est-il clos ? La lecture que tout geste d'écriture consulte avant d'agir.</summary>
+  public bool IsClosed => State == CaseState.Closed;
+
+  /// <summary>
+  /// Les droits sur lesquels <b>personne n'a encore rendu d'issue</b>. C'est ce que la clôture
+  /// <b>réclame</b>, et jamais ce qu'elle exige.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Une lecture, jamais un état.</b> Elle se recalcule sur les <see cref="Claim"/> à chaque
+  /// affichage : l'écran la montre avant de laisser signer, et un dossier se clôt malgré elle.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle ne barre rien.</b> Un <c>Claim</c> resté ouvert dans un dossier clos est un fait
+  /// que la preuve garde et que la relecture voit — pas une saisie qu'il faudrait forcer.
+  /// </para>
+  /// </remarks>
+  public IReadOnlyList<Claim> ClaimsAwaitingAnOutcome =>
+    [.. _claims.Where(claim => claim.AwaitsAnOutcome)];
+
+  /// <summary>
+  /// Les travaux dus dont <b>personne n'a dit où ils en étaient</b> — voir
+  /// <see cref="StepState.WasDeclared"/>. L'autre moitié de ce que la clôture réclame.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle ne barre rien non plus.</b> Un <c>Step</c> laissé <see cref="StepState.ToDo"/> dans un
+  /// dossier clos <b>reste</b> <c>ToDo</c>, et se lit comme l'oubli qu'il est : c'est la seule trace
+  /// que l'<c>Omission silencieuse</c> laisse jamais, et la clôture n'a pas le droit de la couvrir.
+  /// </remarks>
+  public IReadOnlyList<Step> StepsAwaitingADeclaration =>
+    [.. _claims.SelectMany(claim => claim.Steps).Where(step => !step.State.WasDeclared)];
+
+  /// <summary>
   /// Un humain écrit <b>après coup</b> ce qu'il a pesé de l'identité du demandeur, et dit si le
   /// dossier réclamait encore une motivation.
   /// </summary>
@@ -235,7 +285,9 @@ public sealed class Case : IAggregateRoot
   {
     ArgumentNullException.ThrowIfNull(motivation);
 
-    if (!AwaitsAMotivation)
+    // Un dossier clos n'a plus de détail à recevoir : celui qu'il portait vient d'être détruit, et
+    // en écrire un nouveau le lendemain rendrait au dossier la prose nominative qu'on lui a ôtée.
+    if (IsClosed || !AwaitsAMotivation)
     {
       return false;
     }
@@ -283,7 +335,7 @@ public sealed class Case : IAggregateRoot
     // chose, jamais leur répétition, et cette règle est tenue par l'appelant. Rendre vrai sur un
     // droit déjà confirmé lui ferait écrire une seconde ligne identique — du bruit de mécanique dans
     // ce que le contrôle vient lire.
-    if (claim is null || !claim.AwaitsConfirmation)
+    if (IsClosed || claim is null || !claim.AwaitsConfirmation)
     {
       return false;
     }
@@ -321,7 +373,7 @@ public sealed class Case : IAggregateRoot
 
     var claim = _claims.SingleOrDefault(one => one.Right == right);
 
-    if (claim is null || claim.DeliveryDeclaredOn is not null)
+    if (IsClosed || claim is null || claim.DeliveryDeclaredOn is not null)
     {
       return false;
     }
@@ -362,7 +414,7 @@ public sealed class Case : IAggregateRoot
 
     var claim = _claims.SingleOrDefault(one => one.Right == right);
 
-    if (claim is null || claim.DeliveryTakenOn is null)
+    if (IsClosed || claim is null || claim.DeliveryTakenOn is null)
     {
       return false;
     }
@@ -485,7 +537,10 @@ public sealed class Case : IAggregateRoot
       .Steps
       .SingleOrDefault(one => one.DeclaredSystem == declaredSystem);
 
-    if (step is null)
+    // Un dossier clos ne se travaille plus : déclarer un travail dû après coup daterait un geste que
+    // plus aucune donnée du dossier ne soutient — les désignations sous lesquelles on cherchait ont
+    // été détruites. Ce qui est resté ToDo doit le rester, et se lire comme l'oubli qu'il est.
+    if (IsClosed || step is null)
     {
       return false;
     }
@@ -686,6 +741,13 @@ public sealed class Case : IAggregateRoot
     ArgumentNullException.ThrowIfNull(reference);
     ArgumentNullException.ThrowIfNull(ruling);
 
+    // Un dossier clos n'a plus aucune localisation : elles ont été détruites avec ce qu'elles
+    // nommaient. La lecture le dit avant même de chercher, plutôt que de rendre null par accident.
+    if (IsClosed)
+    {
+      return null;
+    }
+
     var arbitrated = LocatingIn(declaredSystem)?.Arbitrate(reference, ruling);
 
     if (arbitrated is null || ruling != ReservationState.Attached)
@@ -726,7 +788,9 @@ public sealed class Case : IAggregateRoot
   {
     ArgumentNullException.ThrowIfNull(subject);
 
-    if (_questions.Any(question => question.Subject == subject))
+    // Une question ouverte dit ce qui manque aujourd'hui à un dossier qu'on instruit. Un dossier clos
+    // ne s'instruit plus, et les siennes viennent d'être détruites.
+    if (IsClosed || _questions.Any(question => question.Subject == subject))
     {
       return false;
     }
@@ -763,9 +827,139 @@ public sealed class Case : IAggregateRoot
     return _questions.RemoveAll(question => question.Subject == subject) > 0;
   }
 
-  /// <summary>La localisation de ce système, posée si elle n'existait pas encore.</summary>
+  /// <summary>
+  /// Un humain déclare que le service a <b>répondu</b> sur un droit, et dit si ce droit attendait
+  /// encore une issue.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est un geste à part de la clôture, et il le restera.</b> Clore un dossier ne peut pas
+  /// valoir réponse sur six droits d'un seul clic : chaque droit est une réponse due à la personne,
+  /// et la clôture n'en propage aucune. Ce que la clôture fait, c'est <b>réclamer</b> ces réponses —
+  /// voir <see cref="ClaimsAwaitingAnOutcome"/> — sans jamais les exiger.
+  /// </para>
+  /// <para>
+  /// <b>Elle n'affirme que l'acte de répondre.</b> Des <see cref="Step"/> restés inatteints ne la
+  /// barrent pas, et restent lisibles un par un à côté d'elle.
+  /// </para>
+  /// <para>
+  /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat.
+  /// </para>
+  /// </remarks>
+  /// <param name="right">Le droit sur lequel le service déclare avoir répondu.</param>
+  /// <returns>
+  /// <c>true</c> si le droit vient de passer à <c>Answered</c> ; <c>false</c> si le dossier est
+  /// clos, s'il ne porte pas ce droit, ou si une issue avait déjà été rendue.
+  /// </returns>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  public bool Answer(DataSubjectRight right)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+
+    if (IsClosed)
+    {
+      return false;
+    }
+
+    return _claims.SingleOrDefault(one => one.Right == right)?.Answer() ?? false;
+  }
+
+  /// <summary>
+  /// Un humain <b>clôt le dossier</b>, et tout le nominatif est détruit <b>à l'instant même</b>, en
+  /// une seule transaction.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Ce qui meurt raconte, ce qui survit se compte.</b> Tombent ici les
+  /// <see cref="Designations"/> — la seule identité qui circule —, le <see cref="Locatings"/> avec
+  /// les désignations et les motifs de réserve qu'il porte, les <see cref="Questions"/>, et le
+  /// <b>détail</b> de la <see cref="Motivation"/>. Survivent la <c>Method</c> de cette motivation,
+  /// qui se compte et dit sous quel régime le dossier a été instruit, les états déclarés des
+  /// <see cref="Step"/>, et les dates.
+  /// </para>
+  /// <para>
+  /// <b>Les <see cref="Readings"/> survivent, et ce n'est pas un oubli.</b> Une lecture ne retient
+  /// qu'un droit, un système déclaré, une date et un nombre de pièces — rien qui nomme quiconque,
+  /// les pièces elles-mêmes vivant dans les <c>RetrievedData</c> hors de l'agrégat. La vider
+  /// n'effacerait aucun nominatif et perdrait le compte de ce que l'instruction a tenté, exactement
+  /// comme le ferait remettre à zéro l'état d'un <see cref="Step"/>.
+  /// </para>
+  /// <para>
+  /// <b>Aucune fenêtre de conservation, pas même « au cas où ».</b> Aucun risque juridique ne
+  /// demande le nominatif : la preuve d'une procédure est anonyme, et le service ne prouve jamais
+  /// qu'un droit a été honoré. Un délai de sûreté n'aurait entreposé que le sac de désignations de
+  /// gens ayant demandé à disparaître.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle ne propage rien et ne gèle rien.</b> Aucun <see cref="Claim"/> ne passe à
+  /// <c>Answered</c>, aucun <see cref="Step"/> ne change d'état : un <c>Step</c> laissé
+  /// <see cref="StepState.ToDo"/> le reste, et se lit comme un oubli. L'incomplétude reste visible
+  /// là où elle est vraie plutôt que masquée par un état de haut niveau rassurant.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le geste est irréversible, seul du dispositif à l'être.</b> Sa parade est un geste
+  /// délibéré dans la surface de l'<c>Operator</c>, jamais de la donnée gardée en réserve. La
+  /// méthode se contente donc de rendre <c>false</c> sur un dossier déjà clos : reclore réécrirait
+  /// la cause et la date qu'un humain a signées, sans rien rendre de ce qui est détruit.
+  /// </para>
+  /// <para>
+  /// <b>Elle ne consigne rien, et ne touche pas au <c>Ledger</c>.</b> La preuve est écrite par
+  /// l'appelant et <b>survit au dossier de cinq ans</b> — elle continue de nommer l'<c>Operator</c>,
+  /// dont l'effacement se refuse légitimement. Les <c>RetrievedData</c>, qui vivent hors de
+  /// l'agrégat, sont détruites par l'appelant dans la même transaction.
+  /// </para>
+  /// </remarks>
+  /// <param name="cause">Ce par quoi le dossier se clôt, nommé par l'humain qui signe.</param>
+  /// <param name="closedOn">L'instant de la clôture, et de la destruction.</param>
+  /// <returns><c>true</c> si le dossier vient de se clore ; <c>false</c> s'il l'était déjà.</returns>
+  /// <exception cref="ArgumentNullException"><paramref name="cause"/> est absent.</exception>
+  public bool Close(ClosingCause cause, DateTimeOffset closedOn)
+  {
+    ArgumentNullException.ThrowIfNull(cause);
+
+    if (IsClosed)
+    {
+      return false;
+    }
+
+    State = CaseState.Closed;
+    ClosingCause = cause;
+    ClosedOn = closedOn.ToUniversalTime();
+
+    // Le sac de désignations : la seule identité qui circule, et la première à tomber.
+    _designations.Clear();
+
+    // Les localisations portent les désignations qu'une réserve proposait et le motif que
+    // l'application en a écrit — du nominatif, quelle que soit l'opacité de leur forme. Ce que le
+    // service a trouvé, et où, est déjà au Ledger sous forme de comptes.
+    _locatings.Clear();
+
+    // Les questions ouvertes disent ce qui manquait aujourd'hui : de la prose de travail, sans
+    // lecteur demain. Le jour où chacune s'est posée reste daté au Ledger.
+    _questions.Clear();
+
+    // La méthode survit, le détail meurt : le premier se compte et son lecteur est le contrôle, le
+    // second nomme et n'a aucune raison de survivre à la personne dont il parle.
+    Motivation = Motivation?.WithoutDetail();
+
+    return true;
+  }
+
+  /// <summary>
+  /// La localisation de ce système, posée si elle n'existait pas encore.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle lève sur un dossier clos</b>, là où les gestes d'humain rendent faux. La différence
+  /// n'est pas d'humeur : ces gestes-ci n'ont pas d'issue négative à rendre — ils rendent la
+  /// localisation elle-même —, et surtout appeler un <c>Adapter</c> pour un dossier clos serait
+  /// chercher la personne sous des désignations qui n'existent plus. C'est une faute de
+  /// programmation de l'appelant, qui dispose de <see cref="IsClosed"/>, et non un cas de bord.
+  /// </remarks>
+  /// <exception cref="InvalidOperationException">Le dossier est clos.</exception>
   private Locating LocatingFor(DeclaredSystemId declaredSystem, DateTimeOffset askedAt)
   {
+    RefuseWhenClosed();
+
     var known = LocatingIn(declaredSystem);
 
     if (known is not null)
@@ -780,10 +974,16 @@ public sealed class Case : IAggregateRoot
     return opened;
   }
 
-  /// <summary>La lecture de ce système sous ce droit, posée si elle n'existait pas encore.</summary>
+  /// <summary>
+  /// La lecture de ce système sous ce droit, posée si elle n'existait pas encore.
+  /// </summary>
+  /// <remarks>Elle lève sur un dossier clos, pour la raison dite en <see cref="LocatingFor"/>.</remarks>
+  /// <exception cref="InvalidOperationException">Le dossier est clos.</exception>
   private Reading ReadingFor(DataSubjectRight right, DeclaredSystemId declaredSystem, DateTimeOffset askedAt)
   {
     ArgumentNullException.ThrowIfNull(right);
+
+    RefuseWhenClosed();
 
     var known = ReadingIn(right, declaredSystem);
 
@@ -797,6 +997,18 @@ public sealed class Case : IAggregateRoot
     _readings.Add(opened);
 
     return opened;
+  }
+
+  /// <summary>Refuse un appel d'<c>Adapter</c> sur un dossier dont le nominatif n'existe plus.</summary>
+  /// <exception cref="InvalidOperationException">Le dossier est clos.</exception>
+  private void RefuseWhenClosed()
+  {
+    if (IsClosed)
+    {
+      throw new InvalidOperationException(
+        "Ce dossier est clos : ses désignations ont été détruites à l'instant de la clôture, et "
+        + "aucun Locate ni Read ne peut plus chercher qui que ce soit.");
+    }
   }
 
   /// <summary>

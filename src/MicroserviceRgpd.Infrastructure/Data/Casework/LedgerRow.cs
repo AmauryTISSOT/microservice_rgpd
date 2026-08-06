@@ -131,4 +131,15 @@ public sealed class LedgerRow
   /// vieillit exprès, et le relire dans trois ans jugerait la pratique d'hier au paysage de demain.
   /// </summary>
   public int? DeclaredSystemCount { get; init; }
+
+  /// <summary>
+  /// Ce par quoi le dossier s'est <b>clos</b>. Un vocabulaire fermé, donc une colonne à lui : il se
+  /// compte — combien de dossiers abandonnés cette année — là où une prose ne se compterait pas.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le motif qui l'accompagne parfois n'a pas de colonne propre</b> : c'est de la prose de
+  /// preuve, et elle va dans <see cref="EvidenceProse"/> avec les constats des <c>Step</c>. Une
+  /// seconde colonne de prose aurait fait chercher un motif à deux endroits.
+  /// </remarks>
+  public string? ClosingCause { get; init; }
 }

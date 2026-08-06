@@ -63,6 +63,7 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
       DeclaredDeadline = entry.DeclaredDeadline,
       CoveredSystemCount = entry.CoveredSystemCount,
       DeclaredSystemCount = entry.DeclaredSystemCount,
+      ClosingCause = entry.ClosingCause?.Name,
     };
   }
 }

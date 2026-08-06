@@ -4,7 +4,7 @@ using MicroserviceRgpd.Core.Casework.Ledger;
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : dix-neuf colonnes, et pas une de plus où un nom de personne concernée
+/// La table du <c>Ledger</c> : vingt colonnes, et pas une de plus où un nom de personne concernée
 /// pourrait entrer. La seule prose est celle de <b>preuve</b> ; la prose de travail, qui nomme par
 /// nature, n'a aucune colonne ici.
 /// </summary>
@@ -113,5 +113,12 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     builder.Property(row => row.CoveredSystemCount).HasColumnName("covered_system_count");
 
     builder.Property(row => row.DeclaredSystemCount).HasColumnName("declared_system_count");
+
+    // Par son nom, jamais par un entier, comme tous les vocabulaires fermés de ce dépôt. Le motif
+    // qui l'accompagne parfois n'a pas de colonne à lui : c'est de la prose de preuve, et elle
+    // partage evidence_prose avec les constats.
+    builder.Property(row => row.ClosingCause)
+      .HasColumnName("closing_cause")
+      .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
   }
 }

@@ -1,6 +1,8 @@
 ﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.UseCases.Casework.AnswerClaim;
 using MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
+using MicroserviceRgpd.UseCases.Casework.CloseCase;
 using MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 using MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 using MicroserviceRgpd.UseCases.Casework.DeclareStep;
@@ -97,6 +99,27 @@ public class CaseModel(IMediator mediator) : PageModel
   /// </summary>
   [BindProperty]
   public MotivationForm Motivation { get; set; } = new();
+
+  /// <summary>Le préfixe de liaison de la réponse, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string OutcomePrefix = nameof(Outcome);
+
+  /// <summary>Le préfixe de liaison de la clôture, cité tel quel lorsqu'un champ est refusé.</summary>
+  public const string ClosingPrefix = nameof(Closing);
+
+  /// <summary>Ce que l'humain saisit pour déclarer que le service a <b>répondu</b> sur un droit.</summary>
+  /// <remarks>
+  /// <b>Un formulaire à part de la clôture, et c'est tout le propos.</b> Clore un dossier ne peut
+  /// pas valoir réponse sur six droits d'un seul clic : chaque droit est une réponse due à la
+  /// personne, et la clôture se contente de réclamer celles qui manquent.
+  /// </remarks>
+  [BindProperty]
+  public ClaimOutcomeForm Outcome { get; set; } = new();
+
+  /// <summary>
+  /// Ce que l'humain saisit pour <b>clore le dossier</b> — le seul geste irréversible du dispositif.
+  /// </summary>
+  [BindProperty]
+  public ClosingForm Closing { get; set; } = new();
 
   /// <summary>Le dossier tel qu'il se lit à cet instant.</summary>
   public CaseOnScreen? OnScreen { get; private set; }
@@ -401,6 +424,107 @@ public class CaseModel(IMediator mediator) : PageModel
       }
 
       FormBoundary.Deposit(ModelState, DeclarationPrefix, declared.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> déclare que le service a <b>répondu</b> sur un droit.
+  /// </summary>
+  /// <remarks>
+  /// <b>Rien n'est détruit ici.</b> Répondre n'efface aucune pièce : c'est la remise qui détruit
+  /// celles de son droit, et la clôture qui détruit le reste.
+  /// </remarks>
+  public async Task<IActionResult> OnPostAnswerAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var right = FormBoundary.ReadVocabulary<DataSubjectRight>(
+      ModelState,
+      OutcomePrefix,
+      nameof(ClaimOutcomeForm.Right),
+      Outcome.Right,
+      DataSubjectRight.TryFromName,
+      "n'est pas un droit de la taxonomie");
+
+    if (right is not null)
+    {
+      var answered = await mediator.Send(
+        new AnswerClaimCommand(CaseId.From(id), right, Outcome.SignedBy),
+        cancellationToken);
+
+      if (answered.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (answered.IsSuccess)
+      {
+        // Une redirection après l'écriture : recharger la page ne répond pas une seconde fois, et le
+        // formulaire repart vide plutôt que de garder le nom du signataire précédent.
+        return RedirectToPage(new { id });
+      }
+
+      FormBoundary.Deposit(ModelState, OutcomePrefix, answered.ValidationErrors);
+    }
+
+    await LoadAsync(id, cancellationToken);
+
+    return OnScreen is null ? NotFound() : Page();
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> <b>clôt le dossier</b>, et tout le nominatif est détruit à l'instant même.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>La case de confirmation est éprouvée ici, avant tout le reste.</b> Elle protège un humain
+  /// contre son propre clic : c'est une propriété de la surface, et la faire descendre dans la
+  /// commande aurait fait porter au domaine une exigence d'ergonomie.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Aucun <c>Step</c> inachevé, aucun <c>Claim</c> ouvert ne barre la route.</b> L'écran les
+  /// a réclamés au-dessus du bouton ; ce qu'il n'a pas le droit de faire est d'empêcher.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnPostCloseAsync(Guid id, CancellationToken cancellationToken)
+  {
+    var cause = FormBoundary.ReadVocabulary<ClosingCause>(
+      ModelState,
+      ClosingPrefix,
+      nameof(ClosingForm.Cause),
+      Closing.Cause,
+      ClosingCause.TryFromName,
+      "n'est pas une cause de clôture");
+
+    if (!Closing.Confirmed)
+    {
+      ModelState.AddModelError(
+        $"{ClosingPrefix}.{nameof(ClosingForm.Confirmed)}",
+        "La clôture détruit tout le nominatif du dossier, et ne se défait pas. Cochez la case pour "
+        + "confirmer que c'est bien ce que vous voulez faire.");
+    }
+
+    if (cause is not null && Closing.Confirmed)
+    {
+      var closed = await mediator.Send(
+        new CloseCaseCommand(CaseId.From(id), cause, Closing.Motive, Closing.SignedBy),
+        cancellationToken);
+
+      if (closed.Status == ResultStatus.NotFound)
+      {
+        return NotFound();
+      }
+
+      if (closed.IsSuccess)
+      {
+        // Une redirection après l'écriture : recharger la page ne reclôt rien, et le dossier qui
+        // revient est celui d'après la destruction — c'est lui que l'humain doit voir.
+        return RedirectToPage(new { id });
+      }
+
+      FormBoundary.Deposit(ModelState, ClosingPrefix, closed.ValidationErrors);
     }
 
     await LoadAsync(id, cancellationToken);

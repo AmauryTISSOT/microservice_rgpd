@@ -48,8 +48,10 @@ public sealed record LedgerEntry
     DateTimeOffset? receivedOn = null,
     DateTimeOffset? declaredDeadline = null,
     int? coveredSystemCount = null,
-    int? declaredSystemCount = null)
+    int? declaredSystemCount = null,
+    ClosingCause? closingCause = null)
   {
+    ClosingCause = closingCause;
     CoveredSystemCount = coveredSystemCount;
     DeclaredSystemCount = declaredSystemCount;
     Id = id;
@@ -233,6 +235,17 @@ public sealed record LedgerEntry
   /// de « 2 sur 6 », et il ne vaut que pour le contrôle.
   /// </summary>
   public int? DeclaredSystemCount { get; }
+
+  /// <summary>
+  /// Ce par quoi le dossier s'est clos, et <c>null</c> partout ailleurs.
+  /// </summary>
+  /// <remarks>
+  /// <b>C'est un vocabulaire fermé, et c'est pourquoi il a sa colonne.</b> Il se compte — combien de
+  /// dossiers abandonnés cette année — là où une prose ne se compterait pas. Le <b>motif</b> qui
+  /// l'accompagne parfois, lui, va dans <see cref="EvidenceProse"/> : c'est de la prose de preuve,
+  /// elle dit <i>pourquoi on a décidé cela</i>, et elle survit ici quand tout le dossier tombe.
+  /// </remarks>
+  public ClosingCause? ClosingCause { get; }
 
   /// <summary>
   /// La première ligne d'un dossier : il s'est ouvert, à telle date, sous telle déclaration
@@ -876,6 +889,154 @@ public sealed record LedgerEntry
       right,
       coveredSystemCount: coveredSystemCount,
       declaredSystemCount: declaredSystemCount);
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a déclaré que le service avait <b>répondu</b> sur un droit.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Elle atteste l'acte de répondre, et rien de plus.</b> Aucun compte n'y entre : « 2 systèmes
+  /// sur 6 » est la mesure d'une <i>remise</i>, qui a sa propre ligne, et la recopier ici ferait
+  /// lire deux fois le même chiffre comme deux faits.
+  /// </para>
+  /// <para>
+  /// <b>Aucune prose non plus.</b> Répondre est un fait ; le <i>contenu</i> de la réponse est le
+  /// paquet remis, et il n'entre jamais dans la preuve. Réclamer un constat ici ferait écrire une
+  /// ligne de rien à chaque droit clos.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le signataire est un <c>Operator</c>, obligatoirement.</b> Aucune machine ne déclare
+  /// qu'on a répondu à quelqu'un — c'est l'<c>Aide à la décision</c>, et elle vaut jusqu'au bout.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel le droit est répondu.</param>
+  /// <param name="occurredAt">L'instant de la déclaration.</param>
+  /// <param name="right">Le droit sur lequel le service déclare avoir répondu.</param>
+  /// <param name="signatory">L'humain qui le déclare, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
+  public static LedgerEntry ClaimAnswered(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DataSubjectRight right,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+    ArgumentNullException.ThrowIfNull(signatory);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      throw new ArgumentException(
+        "Une réponse est déclarée par un Operator nommé : aucune machine n'affirme que le service a "
+        + "répondu à quelqu'un.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.ClaimAnswered,
+      signatory,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem: null,
+      right);
+  }
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>clos le dossier</b> : la cause, l'instant, le nom — et le motif, quand
+  /// la cause en réclame un.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est la ligne qui survit à tout le reste.</b> Le <c>Case</c> qu'elle clôt n'a plus une
+  /// désignation à l'instant même où elle s'écrit ; elle, continue de nommer l'<c>Operator</c>
+  /// pendant cinq ans, et l'effacement de ce nom se refuse légitimement — la preuve d'une procédure
+  /// ne peut pas dépendre du consentement de qui l'a instruite.
+  /// </para>
+  /// <para>
+  /// <b>Le motif est exigé par la <see cref="Casework.ClosingCause"/>, et par elle seule.</b>
+  /// <c>Abandoned</c> ne se relit nulle part sur un dossier vidé de son nominatif : sans un mot, la
+  /// preuve dirait qu'on a cessé d'instruire sans dire pourquoi. Les deux autres causes se relisent,
+  /// et leur réclamer une prose ferait écrire une ligne de rien à chaque clôture.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle ne dit rien de l'état des <c>Step</c> ni des <c>Claim</c>.</b> La clôture ne propage
+  /// rien, et cette ligne ne prétend pas le contraire : ce qui est resté <c>ToDo</c> se lit dans
+  /// l'absence de sa propre ligne, et c'est très exactement l'écart que le contrôle vient chercher.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier qui se clôt.</param>
+  /// <param name="occurredAt">L'instant de la clôture — et de la destruction du nominatif.</param>
+  /// <param name="cause">Ce par quoi le dossier se clôt, nommé par l'humain qui signe.</param>
+  /// <param name="motive">
+  /// Le motif en prose libre. <b>Exigé si — et seulement si</b> — la cause le réclame ; accueilli
+  /// ailleurs, et <c>null</c> quand il n'y en a pas.
+  /// </param>
+  /// <param name="signatory">L'humain qui clôt, et le régime sous lequel il a saisi son nom.</param>
+  /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
+  /// <exception cref="ArgumentException">
+  /// La ligne n'est signée par aucun humain, ou le motif manque là où la cause le réclame.
+  /// </exception>
+  public static LedgerEntry CaseClosed(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    ClosingCause cause,
+    string? motive,
+    Signatory signatory)
+  {
+    ArgumentNullException.ThrowIfNull(cause);
+    ArgumentNullException.ThrowIfNull(signatory);
+
+    if (signatory.Kind != SignatoryKind.Operator)
+    {
+      throw new ArgumentException(
+        "Une clôture est signée par un Operator nommé : l'issue d'un dossier est le fait d'une "
+        + "personne, et la machine n'en produit aucune.",
+        nameof(signatory));
+    }
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.CaseClosed,
+      signatory,
+      identityDeclaration: null,
+      designationCount: null,
+      declaredSystem: null,
+      evidenceProse: MotiveOrThrow(motive, cause),
+      closingCause: cause);
+  }
+
+  /// <summary>
+  /// Le motif d'une clôture, nettoyé — <b>exigé là où la cause le réclame</b>, accueilli ailleurs.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle est publique pour la même raison que <see cref="FindingOrThrow"/></b> : la frontière de
+  /// saisie doit pouvoir nommer le refus à l'humain sous le nom de son champ, sans fabriquer une
+  /// signature pour éprouver sa prose.
+  /// </remarks>
+  /// <param name="motive">Ce que l'humain a écrit, ou rien.</param>
+  /// <param name="cause">La cause dont on clôt le dossier.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="cause"/> est absent.</exception>
+  /// <exception cref="ArgumentException">
+  /// Le motif est démesuré, porte un caractère de contrôle, ou manque là où la cause le réclame.
+  /// </exception>
+  public static string? MotiveOrThrow(string? motive, ClosingCause cause)
+  {
+    ArgumentNullException.ThrowIfNull(cause);
+
+    if (cause.MotiveIsDemanded || !string.IsNullOrWhiteSpace(motive))
+    {
+      return DeclaredText.OrThrow(motive, "Le motif", MaxEvidenceProseLength, nameof(motive));
+    }
+
+    // Rien à consigner, et rien n'était réclamé : la colonne reste vide plutôt que de porter une
+    // chaîne vide, qui se lirait comme un motif qu'on aurait effacé.
+    return null;
   }
 
   /// <summary>

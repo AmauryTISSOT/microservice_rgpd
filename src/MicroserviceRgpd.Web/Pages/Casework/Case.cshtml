@@ -18,10 +18,22 @@
   <dd>@onScreen.Case.Value</dd>
 
   @*
-    Pas de ligne « État » : elle ne pourrait dire qu'« ouvert », faute de clôture, et un bandeau qui
-    affiche une valeur incapable de varier apprend à ne plus le lire. Elle reviendra avec la clôture,
-    quand elle dira quelque chose.
+    LA LIGNE « ÉTAT ». Elle existe depuis que la clôture existe : tant qu'elle n'aurait pu dire
+    qu'« ouvert », un bandeau qui affiche une valeur incapable de varier s'apprend à ne plus se lire.
+    Close, elle dit AUSSI par quoi et quand — la cause et l'instant sont ce que le dossier vidé garde
+    de sa propre fin.
   *@
+  <dt>État</dt>
+  <dd>
+    <span class="state">@onScreen.State.FrenchLabel</span>
+    @if (onScreen.ClosingCause is { } cause)
+    {
+      <span class="hint">
+        @($"{cause.FrenchLabel}, le {onScreen.ClosedOn!.Value.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("fr-FR"))}")
+      </span>
+    }
+  </dd>
+
   <dt>Identité déclarée</dt>
   <dd>@onScreen.IdentityDeclaration.FrenchLabel</dd>
 
@@ -66,7 +78,13 @@
 
         ⚠️ Ce qui s'écrit ici ne touche AUCUN droit : l'accès ouvert lundi garde l'identité sous
         laquelle il est né. La preuve gardera les deux dates, et l'écart entre elles est un fait.
+
+        ⚠️ Le CONSTAT reste affiché sur un dossier clos, mais pas le formulaire : la faiblesse est
+        un fait acquis que la relecture doit voir, et le détail qu'on écrirait maintenant rendrait au
+        dossier la prose nominative que la clôture vient de lui ôter.
       *@
+      @if (!onScreen.IsClosed)
+      {
       <form method="post" asp-page-handler="Motivate">
         <fieldset class="signature">
           <legend>Peser cette identité maintenant</legend>
@@ -127,6 +145,7 @@
           <button type="submit">Déclarer et signer</button>
         </fieldset>
       </form>
+      }
     }
     else
     {
@@ -219,7 +238,7 @@
       }
     </p>
 
-    @if (claim.AwaitsConfirmation)
+    @if (claim.AwaitsConfirmation && !onScreen.IsClosed)
     {
       @*
         UNE OpenQuestion, JAMAIS UN BLOCAGE. Le droit est dans le dossier, le travail dû existe, le
@@ -325,6 +344,14 @@
             && Model.Form.DeclaredSystem == step.DeclaredSystem.Value;
         }
 
+        @*
+          ⚠️ L'ÉTAT RESTE LISIBLE SUR UN DOSSIER CLOS, mais il ne se déclare plus. Un « à faire » qui
+          y demeure se lit comme l'oubli qu'il est — c'est très exactement ce que la clôture ne
+          recouvre pas —, et le déclarer après coup daterait un travail que plus aucune donnée du
+          dossier ne soutient : les désignations sous lesquelles on cherchait n'existent plus.
+        *@
+        @if (!onScreen.IsClosed)
+        {
         <form method="post">
           <input type="hidden" name="Form.Right" value="@claim.Right.Name" />
           <input type="hidden" name="Form.DeclaredSystem" value="@step.DeclaredSystem.Value" />
@@ -388,6 +415,7 @@
             <button type="submit">Déclarer et signer</button>
           </fieldset>
         </form>
+        }
       </div>
     }
 
@@ -403,7 +431,19 @@
     <div class="delivery">
       <h4>La remise</h4>
 
-      @if (claim.DeliveryDeclaredOn is { } handedOn)
+      @*
+        ⚠️ SUR UN DOSSIER CLOS, PLUS RIEN NE SE REMET. Les pièces ont été détruites avec le reste du
+        nominatif : l'archive ne porterait plus que sa page de garde, et la tendre ferait croire à
+        une réponse là où il n'y a plus rien.
+      *@
+      @if (onScreen.IsClosed && claim.DeliveryDeclaredOn is null)
+      {
+        <p class="none">
+          Aucune remise n'a été déclarée pour ce droit, et le dossier est clos : les pièces lues ont
+          été détruites à cet instant, et il n'y a plus rien à remettre.
+        </p>
+      }
+      else if (claim.DeliveryDeclaredOn is { } handedOn)
       {
         <p class="delivered">
           <strong>Remise déclarée le @handedOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).</strong>
@@ -437,7 +477,7 @@
             ligne est là.
           </p>
 
-          <form method="post" asp-page-handler="Handover">
+          <form method="post" asp-page-handler="DeclareDelivered">
             <input type="hidden" name="Declaration.Right" value="@claim.Right.Name" />
 
             <fieldset class="signature">
@@ -469,6 +509,47 @@
         }
       }
     </div>
+
+    @*
+      L'ISSUE, AU GRAIN DU DROIT — et jamais au grain du dossier. Chaque droit est une réponse due à
+      la personne : clore le dossier ne peut pas valoir réponse sur six droits d'un seul clic. Ce
+      bouton est ce que la clôture RÉCLAME plus bas, et qu'elle n'exigera jamais.
+
+      « Répondu » atteste l'ACTE DE RÉPONDRE, et rien de plus : des Step restés inatteints ne le
+      barrent pas, et restent lisibles un par un juste au-dessus.
+    *@
+    @if (claim.State == ClaimState.Open && !onScreen.IsClosed)
+    {
+      <form method="post" asp-page-handler="Answer">
+        <input type="hidden" name="Outcome.Right" value="@claim.Right.Name" />
+
+        <fieldset class="signature">
+          <legend>Déclarer répondu</legend>
+
+          <p class="hint">
+            Vous déclarez que le service a <strong>répondu</strong> sur ce droit — l'acte de
+            répondre, et rien de plus. Ce que le travail dû ci-dessus dit d'inachevé reste écrit
+            tel quel : rien ici ne le recouvre.
+          </p>
+
+          <p>
+            <label for="outcome-signedby-@claim.Right.Name">
+              Votre nom
+              <span class="hint">
+                Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em> ce
+                régime.
+              </span>
+            </label>
+            <input type="text"
+                   id="outcome-signedby-@claim.Right.Name"
+                   name="Outcome.SignedBy"
+                   maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+          </p>
+
+          <button type="submit">Déclarer répondu et signer</button>
+        </fieldset>
+      </form>
+    }
   </div>
 }
 
@@ -480,11 +561,23 @@
   clôture — le Ledger n'en garde que le fait daté. Aucun champ de cette section n'a de chemin vers la
   preuve, et c'est ce placement, et non la discipline de l'Operator, qui tient la règle.
 *@
-<p class="caveat">
-  Ce qui se lit ici vit sur le dossier et <strong>disparaît à sa clôture</strong> : les réserves d'un
-  <code>Locate</code> et les questions posées, qui nomment par nature. Rien de cette section n'entre
-  dans la matière de preuve.
-</p>
+@if (onScreen.IsClosed)
+{
+  <p class="caveat">
+    <strong>Cette section est vide, et elle le restera.</strong> Tout ce qu'elle portait — les
+    réserves d'un <code>Locate</code>, les questions posées — a été détruit à la clôture. Ce qui en
+    reste est ailleurs, dans la matière de preuve : le jour où chaque question s'est posée, sans un
+    mot de ce qu'elle nommait.
+  </p>
+}
+else
+{
+  <p class="caveat">
+    Ce qui se lit ici vit sur le dossier et <strong>disparaît à sa clôture</strong> : les réserves
+    d'un <code>Locate</code> et les questions posées, qui nomment par nature. Rien de cette section
+    n'entre dans la matière de preuve.
+  </p>
+}
 
 @*
   LES QUESTIONS OUVERTES. On affiche la date à laquelle la question a été posée, JAMAIS « sans
@@ -507,7 +600,21 @@
 
 <h3>Où l'on cherche la personne</h3>
 
-@if (onScreen.Locatings.Count == 0)
+@if (onScreen.IsClosed)
+{
+  @*
+    ⚠️ RIEN NE SE LIT ICI SUR UN DOSSIER CLOS. Les localisations portaient les désignations qu'une
+    réserve proposait et les motifs que l'application en avait écrits : du nominatif, quelle que soit
+    l'opacité de leur forme. Elles ont été détruites, et laisser la liste des systèmes « non
+    appelés » ferait lire un travail à faire là où il n'y a plus personne à chercher.
+  *@
+  <p class="none">
+    Ce dossier est clos : les désignations sous lesquelles on cherchait la personne et tout ce que
+    les localisations portaient ont été détruits à cet instant. Il n'y a plus rien à chercher, ni
+    aucune réserve à trancher.
+  </p>
+}
+else if (onScreen.Locatings.Count == 0)
 {
   <p class="none">
     Aucun système du catalogue ne déclare à la fois une adresse d'<code>Adapter</code> et la capacité
@@ -515,7 +622,7 @@
   </p>
 }
 
-@foreach (var located in onScreen.Locatings)
+@foreach (var located in onScreen.IsClosed ? [] : onScreen.Locatings)
 {
   <div class="locating">
     <h4>@(located.Label?.Value ?? located.DeclaredSystem.Value)</h4>
@@ -676,6 +783,161 @@
       }
     }
   </div>
+}
+
+@*
+  LA CLÔTURE. Le seul geste irréversible du dispositif, et le seul qui détruise. Il vit en bas de
+  l'écran, après tout ce qu'il fera disparaître : on ne clôt pas un dossier qu'on n'a pas relu.
+*@
+<h2>La clôture</h2>
+
+@if (onScreen.IsClosed)
+{
+  @*
+    Ce que le dossier clos dit de lui-même. Il ne dit pas que tout a été fait — le travail dû
+    ci-dessus reste lisible, ligne à ligne, avec ses ToDo s'il en reste.
+  *@
+  <p class="closed">
+    <strong>
+      Dossier clos le
+      @onScreen.ClosedOn!.Value.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+      — @onScreen.ClosingCause!.FrenchLabel.
+    </strong>
+    Tout le nominatif a été détruit à cet instant : les désignations sous lesquelles on cherchait la
+    personne, le détail de la motivation d'identité, ce que les localisations portaient, les
+    questions ouvertes, et les pièces lues. Le service n'en garde plus rien, et rien ne le rendra.
+  </p>
+
+  <p class="hint">
+    La matière de preuve, elle, n'a pas bougé : elle est anonyme côté personne concernée depuis sa
+    première ligne, elle nomme définitivement les <code>Operator</code> qui ont signé, et elle vit
+    cinq ans à compter d'aujourd'hui.
+  </p>
+}
+else
+{
+  @if (onScreen.ClosureHasSomethingToClaim)
+  {
+    @*
+      LA RÉCLAMATION, ET ELLE NE BLOQUE RIEN. L'écran dit ce qui manque avant de laisser signer ; il
+      n'a pas le droit d'empêcher. Un Step laissé ToDo dans un dossier clos RESTE ToDo, et se lit
+      comme l'oubli qu'il est — c'est la seule trace que l'Omission silencieuse laisse jamais, et un
+      écran qui aurait forcé à la remplir l'aurait fait remplir n'importe comment.
+    *@
+    <p class="claimed-closure">
+      <strong>Avant de clore.</strong>
+      @if (onScreen.StepsAwaitingADeclaration > 0)
+      {
+        <text>
+          @onScreen.StepsAwaitingADeclaration travail@(onScreen.StepsAwaitingADeclaration > 1 ? "x" : "")
+          dû@(onScreen.StepsAwaitingADeclaration > 1 ? "s" : "")
+          n'@(onScreen.StepsAwaitingADeclaration > 1 ? "ont" : "a") reçu aucune déclaration — pas même
+          <code>Untreated</code>, l'aveu que personne ne l'a fait.
+        </text>
+      }
+      @if (onScreen.ClaimsAwaitingAnOutcome > 0)
+      {
+        <text>
+          @onScreen.ClaimsAwaitingAnOutcome droit@(onScreen.ClaimsAwaitingAnOutcome > 1 ? "s" : "")
+          n'@(onScreen.ClaimsAwaitingAnOutcome > 1 ? "ont" : "a") reçu aucune issue.
+        </text>
+      }
+      Rien de tout cela ne vous barre la route : ce qui reste en l'état le restera dans le dossier
+      clos, où il se lira comme un oubli.
+    </p>
+  }
+
+  <form method="post" asp-page-handler="Close">
+    <fieldset class="signature closing">
+      <legend>Clore ce dossier</legend>
+
+      <p class="caveat">
+        ⚠️ Ce geste <strong>détruit tout le nominatif à l'instant même</strong> — les désignations,
+        le détail de la motivation d'identité, ce que les localisations portent, les questions
+        ouvertes, les pièces lues — et il est <strong>irréversible</strong>. Aucun délai de
+        conservation « au cas où » ne les garde ailleurs : il n'y a rien à récupérer ensuite.
+      </p>
+
+      <p class="hint">
+        Une personne qui demande l'effacement de son dossier encore ouvert est servie par ce geste,
+        sous « abandonné ». Il n'en existe pas d'autre : poursuivre l'instruction exige ses
+        désignations, donc <strong>poursuivre ou effacer, jamais les deux</strong>.
+      </p>
+
+      @*
+        AUCUNE VALEUR PRÉ-SÉLECTIONNÉE. Les trois causes ne disent pas la même chose de ce qui s'est
+        passé, et une liste dont la première serait cochée par défaut ferait signer « répondu » à qui
+        n'a fait que cesser d'instruire.
+      *@
+      <p>
+        <label for="closing-cause">
+          La cause
+          <span class="hint">
+            Aucune des trois ne promet qu'un droit a été honoré. « Répondu » atteste que le service a
+            répondu ; « abandonné » qu'on a cessé d'instruire ; « sans objet » que la demande
+            n'exerçait aucun droit.
+          </span>
+        </label>
+        <select id="closing-cause" name="Closing.Cause" required>
+          <option value="" selected disabled>— choisir —</option>
+          @foreach (var cause in ClosingCause.List)
+          {
+            <option value="@cause.Name">@cause.FrenchLabel</option>
+          }
+        </select>
+      </p>
+
+      @*
+        LE MOTIF EST DE LA PROSE DE PREUVE, et le seul champ de prose de cet écran qui SURVIT au
+        dossier : il dit pourquoi on a décidé cela, et il n'est pas nominatif par nature. Il est
+        exigé pour « abandonné » seul — les deux autres causes se relisent sur le dossier, et leur
+        réclamer une prose ferait écrire une ligne de rien à chaque clôture.
+      *@
+      <p>
+        <label for="closing-motive">
+          Le motif
+          <span class="hint">
+            Exigé pour « abandonné », accueilli ailleurs. <strong>Il survit au dossier</strong> :
+            n'y écrivez rien qui nomme la personne ou un tiers.
+          </span>
+        </label>
+        <textarea id="closing-motive"
+                  name="Closing.Motive"
+                  rows="3"
+                  maxlength="@MicroserviceRgpd.Core.Casework.Ledger.LedgerEntry.MaxEvidenceProseLength"></textarea>
+      </p>
+
+      <p>
+        <label for="closing-signedby">
+          Votre nom
+          <span class="hint">
+            Saisi, et <strong>non authentifié</strong> : la preuve garde votre nom <em>et</em> ce
+            régime, et continue de le porter cinq ans après la clôture.
+          </span>
+        </label>
+        <input type="text"
+               id="closing-signedby"
+               name="Closing.SignedBy"
+               maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+      </p>
+
+      @*
+        LA CONFIRMATION DÉLIBÉRÉE. C'est la parade du seul geste irréversible du dispositif — et la
+        parade est ICI, dans l'écran, jamais de la donnée gardée en réserve « au cas où ». Elle n'est
+        ni pré-cochée ni mémorisée : elle est la seconde affirmation de qui vient de lire ce qu'il
+        s'apprête à détruire.
+      *@
+      <p class="deliberate">
+        <input type="checkbox" id="closing-confirmed" name="Closing.Confirmed" value="true" />
+        <label for="closing-confirmed">
+          Je comprends que la clôture détruit tout le nominatif de ce dossier à l'instant même, et
+          que rien ne le rendra.
+        </label>
+      </p>
+
+      <button type="submit">Clore, détruire et signer</button>
+    </fieldset>
+  </form>
 }
 
 <p><a asp-page="Queue">Revenir à la file</a></p>

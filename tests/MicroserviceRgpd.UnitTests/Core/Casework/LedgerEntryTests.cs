@@ -432,6 +432,138 @@ public class LedgerEntryTests
   }
 
   /// <summary>
+  /// La réponse sur un droit dit le droit, le jour et le signataire — <b>et rien de plus</b>, parce
+  /// qu'elle n'atteste rien de plus que l'acte de répondre.
+  /// </summary>
+  [Fact]
+  public void WritesTheActOfAnsweringAndNothingElse()
+  {
+    var caseId = CaseId.Next();
+
+    var entry = LedgerEntry.ClaimAnswered(
+      caseId,
+      Opened,
+      DataSubjectRight.Access,
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+
+    entry.Case.ShouldBe(caseId);
+    entry.Fact.ShouldBe(LedgerFact.ClaimAnswered);
+    entry.OccurredAt.ShouldBe(Opened);
+    entry.Right.ShouldBe(DataSubjectRight.Access);
+    entry.Signatory.Name.ShouldBe("Camille Roy");
+
+    // Aucun compte, aucune prose : « 2 sur 6 » mesure une remise, qui a sa propre ligne, et le
+    // contenu d'une réponse est le paquet remis — il n'entre jamais dans la preuve.
+    entry.CoveredSystemCount.ShouldBeNull();
+    entry.DeclaredSystemCount.ShouldBeNull();
+    entry.EvidenceProse.ShouldBeNull();
+    entry.ClosingCause.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Aucune machine ne déclare qu'on a répondu à quelqu'un.</b> C'est l'<c>Aide à la décision</c>,
+  /// et elle vaut jusqu'au bout.
+  /// </summary>
+  [Fact]
+  public void RefusesAnAnswerThatNoOneSigned()
+  {
+    Should.Throw<ArgumentException>(() => LedgerEntry.ClaimAnswered(
+      CaseId.Next(),
+      Opened,
+      DataSubjectRight.Access,
+      Signatory.Application));
+  }
+
+  /// <summary>
+  /// La clôture dit la cause, le jour et le signataire. <b>Elle survit au dossier</b> qu'elle vient
+  /// de vider, et continue de nommer l'<c>Operator</c>.
+  /// </summary>
+  [Fact]
+  public void WritesTheClosureOfACaseUnderAHumanName()
+  {
+    var caseId = CaseId.Next();
+
+    var entry = LedgerEntry.CaseClosed(
+      caseId,
+      Opened,
+      ClosingCause.Answered,
+      motive: null,
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+
+    entry.Case.ShouldBe(caseId);
+    entry.Fact.ShouldBe(LedgerFact.CaseClosed);
+    entry.OccurredAt.ShouldBe(Opened);
+    entry.ClosingCause.ShouldBe(ClosingCause.Answered);
+    entry.Signatory.Name.ShouldBe("Camille Roy");
+
+    // Aucun motif là où la cause n'en réclame pas : la colonne reste vide plutôt que de porter une
+    // chaîne vide, qui se lirait comme un motif qu'on aurait effacé.
+    entry.EvidenceProse.ShouldBeNull();
+
+    // Et rien du dossier détruit : ni droit, ni système, ni compte de désignations.
+    entry.Right.ShouldBeNull();
+    entry.DeclaredSystem.ShouldBeNull();
+    entry.DesignationCount.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b><c>Abandoned</c> exige un motif, et lui seul.</b> Il ne se relit nulle part sur un dossier
+  /// vidé de son nominatif : sans un mot, la preuve dirait qu'on a cessé d'instruire sans dire
+  /// pourquoi, le jour même où tout disparaît.
+  /// </summary>
+  [Fact]
+  public void RefusesAnAbandonmentNoOneExplained()
+  {
+    Should.Throw<ArgumentException>(() => LedgerEntry.CaseClosed(
+      CaseId.Next(),
+      Opened,
+      ClosingCause.Abandoned,
+      motive: null,
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+
+    var explained = LedgerEntry.CaseClosed(
+      CaseId.Next(),
+      Opened,
+      ClosingCause.Abandoned,
+      "La personne s'est ravisée et a demandé l'effacement de son dossier.",
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+
+    explained.EvidenceProse.ShouldBe("La personne s'est ravisée et a demandé l'effacement de son dossier.");
+  }
+
+  /// <summary>
+  /// Le motif est <b>accueilli</b> sur les deux causes qui ne l'exigent pas : ce qui est refusé est
+  /// son absence là où il compte, jamais sa présence ailleurs.
+  /// </summary>
+  [Fact]
+  public void WelcomesAMotiveOnACauseThatDoesNotDemandOne()
+  {
+    var entry = LedgerEntry.CaseClosed(
+      CaseId.Next(),
+      Opened,
+      ClosingCause.NotApplicable,
+      "Le courriel demandait l'horaire de la déchèterie.",
+      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+
+    entry.EvidenceProse.ShouldBe("Le courriel demandait l'horaire de la déchèterie.");
+  }
+
+  /// <summary>
+  /// <b>Aucune machine ne clôt un dossier.</b> L'issue est le fait d'une personne nommée et datée,
+  /// et c'est ce que la clôture détruit qui rend l'exigence non négociable.
+  /// </summary>
+  [Fact]
+  public void RefusesAClosureThatNoOneSigned()
+  {
+    Should.Throw<ArgumentException>(() => LedgerEntry.CaseClosed(
+      CaseId.Next(),
+      Opened,
+      ClosingCause.Answered,
+      motive: null,
+      Signatory.Application));
+  }
+
+  /// <summary>
   /// <b>Le port n'expose qu'un ajout.</b> Ni mise à jour, ni suppression ligne à ligne, ni
   /// relecture : ce que le type ne sait pas faire, personne n'aura à jurer qu'il ne l'a pas fait.
   /// </summary>

@@ -84,15 +84,22 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   /// leur lecteur est le contrôle, qui juge une pratique, et le même rapport écrit à la personne
   /// donnerait à une déclaration qui vieillit exprès l'autorité d'un recensement.
   /// </para>
+  /// <para>
+  /// Une est arrivée avec la clôture : <c>closing_cause</c>, un vocabulaire fermé — donc une colonne
+  /// à lui, parce qu'il <b>se compte</b>. ⚠️ <b>Le motif n'en a pas</b> : c'est de la prose de
+  /// preuve, il partage <c>evidence_prose</c> avec les constats, et une seconde colonne de prose
+  /// aurait fait chercher un motif à deux endroits.
+  /// </para>
   /// </summary>
   [Fact]
-  public async Task NamesNineteenColumnsAndNotOneMoreWhereANameCouldLand()
+  public async Task NamesTwentyColumnsAndNotOneMoreWhereANameCouldLand()
   {
     var columns = await ColumnsAsync();
 
     columns.Keys.Order().ShouldBe(
     [
       "case_id",
+      "closing_cause",
       "covered_system_count",
       "data_subject_right",
       "declared_deadline",
@@ -143,6 +150,46 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
     line.SignatoryKind.ShouldBe("Application");
     line.SignatoryName.ShouldBeNull();
     line.DesignationCount.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// La clôture fait l'aller-retour : la cause dans sa colonne, le motif dans la prose de preuve,
+  /// et le nom de l'humain qui a signé. <b>C'est ce qui survit au dossier détruit.</b>
+  /// </summary>
+  [Fact]
+  public async Task AppendsTheClosureThatOutlivesTheCaseItEmptied()
+  {
+    await using var dbContext = postgres.NewDbContext();
+
+    var closed = CaseId.Next();
+
+    await new Ledger(dbContext).AppendAsync(
+      LedgerEntry.CaseClosed(
+        closed,
+        Opened,
+        ClosingCause.Abandoned,
+        "La personne s'est ravisée et a demandé l'effacement de son dossier.",
+        Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+
+    await using var reread = postgres.NewDbContext();
+
+    var line = await reread.Set<LedgerRow>()
+      .AsNoTracking()
+      .SingleAsync(row => row.CaseId == closed.Value);
+
+    line.Fact.ShouldBe(nameof(LedgerFact.CaseClosed));
+    line.ClosingCause.ShouldBe(nameof(ClosingCause.Abandoned));
+    line.EvidenceProse!.ShouldContain("demandé l'effacement");
+
+    // Elle nomme l'Operator, définitivement : la preuve d'une procédure ne peut pas dépendre du
+    // consentement de qui l'a instruite.
+    line.SignatoryName.ShouldBe("Camille Roy");
+    line.SignatureRegime.ShouldBe(nameof(SignatureRegime.Unauthenticated));
+
+    // Et rien du dossier qu'elle vient de vider.
+    line.DesignationCount.ShouldBeNull();
+    line.DataSubjectRight.ShouldBeNull();
+    line.DeclaredSystem.ShouldBeNull();
   }
 
   /// <summary>

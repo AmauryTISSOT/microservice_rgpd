@@ -154,6 +154,39 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   public static readonly LedgerFact DeliveryDeclared =
     new(nameof(DeliveryDeclared), 13, "remise déclarée");
 
+  /// <summary>
+  /// Un <c>Operator</c> a déclaré que le service avait <b>répondu</b> sur un droit. La ligne dit le
+  /// droit, le jour et le signataire — et rien de plus, parce qu'elle n'atteste rien de plus que
+  /// l'acte de répondre.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle ne promet pas que le droit ait été honoré.</b> Le dossier peut porter des
+  /// <c>Step</c> restés inatteints, et la preuve les garde ligne à ligne : c'est là, et pas dans
+  /// cette ligne-ci, que le contrôle lit ce qui a réellement été fait.
+  /// </remarks>
+  public static readonly LedgerFact ClaimAnswered = new(nameof(ClaimAnswered), 14, "droit répondu");
+
+  /// <summary>
+  /// Un <c>Operator</c> a <b>clos le dossier</b>, et tout le nominatif a été détruit à cet instant.
+  /// La ligne dit la cause, le jour et le signataire ; c'est d'elle que courent les cinq ans du
+  /// <c>Ledger</c>.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est la dernière ligne d'un dossier, et souvent la seule qui restera longtemps.</b> Le
+  /// <c>Case</c> qu'elle clôt n'a plus une désignation ; la preuve, elle, continue de nommer
+  /// l'<c>Operator</c> — et son effacement se refuse légitimement, la preuve d'une procédure ne
+  /// pouvant pas dépendre du consentement de qui l'a instruite.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle ne dit rien de l'état des <c>Step</c> ni des <c>Claim</c>.</b> La clôture ne propage
+  /// rien : un travail resté <c>ToDo</c> a sa propre absence de ligne, et l'écart entre cette
+  /// ligne-ci et ce que la preuve porte par ailleurs est très exactement ce que le contrôle vient
+  /// lire.
+  /// </para>
+  /// </remarks>
+  public static readonly LedgerFact CaseClosed = new(nameof(CaseClosed), 15, "dossier clos");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {

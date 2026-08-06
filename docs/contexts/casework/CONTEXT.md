@@ -587,6 +587,28 @@ l'`Operator` clôt le `Case` — sans fenêtre de conservation, parce qu'aucun r
 demande le nominatif : la preuve d'une procédure est anonyme, et le service ne prouve jamais qu'un
 droit a été honoré. Un délai « au cas où » n'aurait entreposé que le sac de désignations de gens
 ayant demandé à disparaître.
+⚠️ **Les `RetrievedData` tombent avec le reste**, bien qu'elles vivent hors de l'agrégat : ce sont
+les données de la personne telles que les systèmes du client les ont rendues — les plus concentrées
+du dispositif —, et les laisser survivre aurait vidé le geste de son sens à l'endroit où il compte
+le plus. Elles sont détruites **en dernier**, quand la preuve est déjà écrite : une panne entre les
+deux laisse des pièces détenues un moment de trop, visible et réparable, plutôt qu'un dossier clos
+dont rien ne dirait qu'il l'a été.
+⚠️ **La méthode de l'`IdentityDeclaration` survit**, et elle seule : elle se compte, son lecteur est
+le contrôle, et la faire disparaître ferait perdre sous quel régime le dossier a été instruit au
+moment même où l'on veut pouvoir en juger la pratique.
+
+**La clôture réclame, et ne bloque jamais.** À l'instant de clore, l'écran compte les `Step` dont
+personne n'a dit où ils en étaient — ni `Done`, ni `OutOfReach`, ni même l'aveu `Untreated` — et les
+`Claim` restés sans issue. Il les compte plutôt qu'il ne les renomme : la liste des travaux dus est
+déjà dépliée juste au-dessus, système par système, et la redire sous le bouton n'aurait fait que
+répéter le même écran deux fois. Puis il laisse signer. **La clôture ne propage rien et ne gèle rien** :
+aucun `Claim` ne passe `Answered`, aucun `Step` ne change d'état, et un `Step` laissé `ToDo` dans un
+`Case` clos **reste** `ToDo`, où il se lit comme l'oubli qu'il est. Le recouvrir d'une cause de
+clôture rassurante aurait perdu la seule trace que l'`Omission silencieuse` laisse jamais.
+⚠️ **Répondre est donc un geste à part, au grain du droit.** Clore un dossier ne peut pas valoir
+réponse sur six droits d'un seul clic : chaque `Claim` porte une réponse due à la personne, et
+`Answered` s'y déclare un droit à la fois, sous un nom et une date. `Refused`, lui, a sa charge
+probatoire propre — les mentions de l'art. 12.4 sont dues à la personne — et attend son propre geste.
 ⚠️ Le geste est donc **irréversible**, seul du dispositif à l'être. Sa parade est un geste délibéré
 dans la surface de l'`Operator`, jamais de la donnée gardée en réserve.
 ⚠️ Une personne qui demande l'effacement de son `Case` **encore ouvert** est servie par la clôture

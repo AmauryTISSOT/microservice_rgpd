@@ -67,4 +67,31 @@ public interface IRetrievedData
   /// <param name="cancellationToken">L'annulation de l'effacement en cours.</param>
   /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
   Task DiscardAsync(CaseId caseId, DataSubjectRight right, CancellationToken cancellationToken = default);
+
+  /// <summary>
+  /// <b>Détruit toutes</b> les pièces détenues au titre d'un dossier, quel que soit le droit. C'est
+  /// ce que la <b>clôture</b> fait, et le seul geste dont le grain soit le dossier entier.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le grain diffère de <see cref="DiscardAsync"/> parce que le geste diffère.</b> Une remise
+  /// répond sur <i>un</i> droit et ne doit rien détruire des autres ; une clôture dit qu'il n'y aura
+  /// plus de réponse du tout, sur aucun droit. Réutiliser le grain fin aurait obligé la clôture à
+  /// énumérer les droits, et un droit oublié dans l'énumération aurait laissé derrière lui les
+  /// données les plus concentrées du dispositif.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Ces pièces ne sont pas dans la liste que le ticket énumère, et elles tombent quand
+  /// même.</b> Ce sont les données de la personne telles que les systèmes du client les ont rendues
+  /// — plus nominatives que tout ce que le dossier porte par ailleurs. Les laisser survivre à la
+  /// clôture aurait vidé le geste de son sens au seul endroit où il compte le plus.
+  /// </para>
+  /// <para>
+  /// <b>Rien à détruire n'est pas une panne</b>, comme au grain du droit : un dossier clos sans
+  /// qu'aucune lecture n'ait rien rapporté est un dossier ordinaire.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier qui se clôt.</param>
+  /// <param name="cancellationToken">L'annulation de l'effacement en cours.</param>
+  Task DiscardAllAsync(CaseId caseId, CancellationToken cancellationToken = default);
 }

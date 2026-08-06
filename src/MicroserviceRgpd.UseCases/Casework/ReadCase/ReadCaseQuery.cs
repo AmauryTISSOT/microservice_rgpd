@@ -57,6 +57,32 @@ public sealed record ReadCaseQuery(CaseId Case) : IQuery<CaseOnScreen?>;
 /// du droit ne fonderait N.
 /// </param>
 /// <param name="ObservedAt">L'instant sur lequel le dépassement a été calculé.</param>
+/// <param name="State">
+/// Où en est le dossier. <b>La ligne « État » du bandeau existe parce que la clôture existe</b> :
+/// tant qu'elle ne pouvait dire qu'« ouvert », elle ne disait rien.
+/// </param>
+/// <param name="ClosingCause">
+/// Ce par quoi le dossier s'est clos, ou <c>null</c> tant qu'il est ouvert.
+/// </param>
+/// <param name="ClosedOn">
+/// L'instant de la clôture, ou <c>null</c> tant que le dossier est ouvert. <b>C'est aussi l'instant
+/// où tout le nominatif a été détruit</b> : il n'y a pas deux dates, parce qu'il n'y a pas deux
+/// gestes.
+/// </param>
+/// <param name="ClaimsAwaitingAnOutcome">
+/// Combien de droits attendent encore une issue. <b>Ce que la clôture réclame</b>, montré avant de
+/// laisser signer.
+/// <para>
+/// ⚠️ <b>Il ne barre rien.</b> Un dossier se clôt sur des droits restés ouverts — et le service n'a
+/// jamais le droit de bloquer un humain qui décide de clore.
+/// </para>
+/// </param>
+/// <param name="StepsAwaitingADeclaration">
+/// Combien de travaux dus n'ont reçu <b>aucune déclaration</b> — ni <c>Done</c>, ni
+/// <c>OutOfReach</c>, ni même l'aveu <c>Untreated</c>. L'autre moitié de ce que la clôture réclame,
+/// et elle ne barre rien non plus : ce qui reste <c>ToDo</c> dans un dossier clos se lit comme
+/// l'oubli qu'il est.
+/// </param>
 public sealed record CaseOnScreen(
   CaseId Case,
   IdentityDeclaration IdentityDeclaration,
@@ -69,7 +95,27 @@ public sealed record CaseOnScreen(
   IReadOnlyList<ClaimedRight> Claims,
   IReadOnlyList<LocatingOnScreen> Locatings,
   IReadOnlyList<OpenQuestion> Questions,
-  DateTimeOffset ObservedAt);
+  DateTimeOffset ObservedAt,
+  CaseState State,
+  ClosingCause? ClosingCause,
+  DateTimeOffset? ClosedOn,
+  int ClaimsAwaitingAnOutcome,
+  int StepsAwaitingADeclaration)
+{
+  /// <summary>Le dossier est-il clos ? Ce que l'écran consulte avant d'offrir le moindre geste.</summary>
+  public bool IsClosed => State == CaseState.Closed;
+
+  /// <summary>
+  /// La clôture a-t-elle quelque chose à <b>réclamer</b> avant qu'on ne signe ?
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle ne se lit que sur un dossier ouvert.</b> Une fois clos, ce qui manquait est un fait
+  /// acquis : le redire en rouge sous le bouton d'un geste qui n'existe plus ferait d'un constat un
+  /// reproche, et d'un bandeau permanent quelque chose qu'on apprend à ne plus voir.
+  /// </remarks>
+  public bool ClosureHasSomethingToClaim =>
+    !IsClosed && (ClaimsAwaitingAnOutcome > 0 || StepsAwaitingADeclaration > 0);
+}
 
 /// <summary>
 /// Ce qu'un <c>Locate</c> a rapporté d'un système, tel que l'écran le montre — <b>y compris qu'il
