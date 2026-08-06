@@ -1,4 +1,6 @@
-"""`Locate` sur la base : nommer les lignes rattachables, et dire lesquelles font douter.
+"""La base, vue par l'Adapter : `locate` nomme les lignes rattachables, `read` les rapatrie.
+
+`locate` d'abord — nommer les lignes rattachables, et dire lesquelles font douter.
 
 Il n'y a pas de « table des personnes » à interroger. `clients.id` n'est la clé qu'à l'intérieur de
 `clients` ; ailleurs, la personne est désignée par son adresse électronique recopiée à la main —
@@ -29,15 +31,24 @@ comptait, deux sondes sur `clients` auraient compté deux fois la personne trouv
 par son adresse. Une référence, elle, se dédoublonne — et la ligne certaine l'emporte alors sur la
 réserve, la question étant déjà tranchée.
 
+**`read` ensuite, et il ne coûte presque rien.** Les mêmes emplacements, les mêmes sondes exactes,
+un `SELECT *` au lieu d'un `SELECT clé`, et un CSV — celui-là même que l'export mensuel de la
+brocante écrit déjà. Aucune forme n'est imposée par le service : c'est cette gratuité qui rend la
+capacité déclarable, et un schéma commun aurait demandé de traduire nos tables dans le vocabulaire
+de quelqu'un d'autre. Voir `sondes_de_lecture` pour ce que les réserves n'ouvrent **pas**, et
+`FOURNIES_PAR_LA_PERSONNE` pour ce que l'art. 20 laisse dehors.
+
 **Ce qu'on ne regarde pas, et qu'il faudra dire un jour** : le texte libre. Les descriptions
 d'annonces et le corps des messages contiennent des numéros de téléphone et des adresses postales
 écrits à la main, que ces sondes ne trouvent pas. L'absence de `messages` veut donc dire « aucun
 message *écrit par* cette adresse », jamais « aucun message qui parle d'elle ».
 """
 
+import csv
+import io
 from typing import NamedTuple
 
-from adapter_rgpd import Designation, Reserve, servi_locate
+from adapter_rgpd import Designation, Piece, Reserve, servi_locate
 
 
 class Emplacement(NamedTuple):
@@ -263,6 +274,118 @@ def _motif(emplacement, homonymes):
         return f"{homonymes} lignes de « {emplacement.table} » portent ce nom. {emplacement.doute}"
 
     return f"Trouvée sur le seul nom. {emplacement.doute}"
+
+
+FOURNIES_PAR_LA_PERSONNE = ("clients", "adresses", "commandes", "newsletter", "messages")
+"""Les tables qui entrent dans une portabilité (art. 20), et elles seules.
+
+**Le périmètre de l'art. 20 est plus étroit que celui de l'art. 15, et il se décide ici.** Sont
+écartées : `factures` et `paiements`, que la personne ne nous a pas *fournies* — nous les avons
+produites en la facturant, et une facture est de surcroît scellée dix ans (art. L123-22 c. com.) —
+et `clients_ancienne_boutique`, dont la reprise PrestaShop de 2019 n'a jamais été rapprochée des
+comptes actuels.
+
+Ce découpage ne remonte nulle part et n'a pas à remonter : le service ne connaît aucun nom de table,
+et n'aurait pas su l'arbitrer. C'est très exactement ce que « le droit part, la forme jamais »
+achète — le jour où l'on nous dira que `paiements` est portable, seule cette ligne change.
+"""
+
+TYPE_DE_L_EXPORT = "text/csv; charset=utf-8"
+"""Ce que la brocante sait déjà écrire. Le service le recopiera sans jamais l'interpréter."""
+
+
+def sondes_de_lecture(designations):
+    """Les questions à poser pour **rapatrier** les lignes, et non plus pour les nommer.
+
+    ⚠️ **Seules les sondes certaines sont posées.** Une ligne trouvée sous un nom est une réserve,
+    et une réserve que personne n'a tranchée n'est pas la personne : l'exporter rendrait au
+    demandeur les données d'un homonyme, ce qui est une violation dans l'autre sens. Le service ne
+    lit d'ailleurs que là où il a rattaché ; les deux moitiés du dispositif disent la même chose.
+
+    Ce qu'un arbitrage rattache entre au sac sous forme de **désignation** — l'adresse que la
+    réserve proposait —, et c'est sous elle, exacte, que l'appel suivant retrouvera la ligne.
+    """
+    posees = []
+
+    for emplacement in EMPLACEMENTS:
+        applicables = [
+            (emplacement.exactes[designation.nature], designation.valeur)
+            for designation in designations
+            if designation.nature in emplacement.exactes
+        ]
+
+        if not applicables:
+            continue
+
+        conditions = " OR ".join(f"{colonne} = %s" for colonne, _valeur in applicables)
+
+        posees.append(
+            Sonde(
+                emplacement.table,
+                f"SELECT * FROM {emplacement.table} WHERE {conditions}",
+                tuple(valeur for _colonne, valeur in applicables),
+                certaine=True,
+            )
+        )
+
+    return posees
+
+
+def lire(designations, lire_sql, droit):
+    """Ce que la base porte sur cette personne, en un CSV que la brocante sait déjà écrire.
+
+    `lire_sql` exécute une `Sonde` et rend ses lignes — des dictionnaires colonne → valeur.
+
+    Le résultat est **une** pièce et non une par table : le service n'en attend aucune forme, et un
+    seul fichier est ce qu'un opérateur ouvrira le plus volontiers. Chaque table y est une section,
+    précédée de son nom, parce que « commandes » et « factures » ne se lisent pas de la même façon.
+
+    Un sac sans rien de cherchable, ou une personne qu'aucune table ne porte, rend une pièce
+    **vide** — pas une absence de pièce. « On a regardé, il n'y a rien » est une déclaration, et
+    elle ne doit rien coûter.
+    """
+    tampon = io.StringIO()
+    plume = csv.writer(tampon, delimiter=";")
+    quelque_chose = False
+
+    for sonde in sondes_de_lecture(designations):
+        if sonde.emplacement not in tables_du_droit(droit):
+            continue
+
+        lignes = list(lire_sql(sonde))
+
+        if not lignes:
+            continue
+
+        if quelque_chose:
+            plume.writerow([])
+
+        plume.writerow([f"# {sonde.emplacement}"])
+        plume.writerow(list(lignes[0].keys()))
+        plume.writerows([_texte(valeur) for valeur in ligne.values()] for ligne in lignes)
+        quelque_chose = True
+
+    return Piece(
+        tampon.getvalue().encode("utf-8") if quelque_chose else b"",
+        TYPE_DE_L_EXPORT,
+        f"brocanto-boutique-{droit.lower()}.csv",
+    )
+
+
+def tables_du_droit(droit):
+    """Les tables que ce droit ouvre. Le seul endroit où le droit reçu change quoi que ce soit."""
+    if droit == "Portability":
+        return FOURNIES_PAR_LA_PERSONNE
+
+    return tuple(emplacement.table for emplacement in EMPLACEMENTS)
+
+
+def _texte(valeur):
+    """Une valeur de colonne, écrite pour un CSV. Les dates y vont en ISO, le vide en vide."""
+    if valeur is None:
+        return ""
+
+    return valeur.isoformat() if hasattr(valeur, "isoformat") else str(valeur)
 
 
 def _propose(ligne):

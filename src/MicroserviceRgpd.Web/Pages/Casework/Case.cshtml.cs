@@ -5,6 +5,7 @@ using MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 using MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 using MicroserviceRgpd.UseCases.Casework.DeclareStep;
 using MicroserviceRgpd.UseCases.Casework.Locate;
+using MicroserviceRgpd.UseCases.Casework.Read;
 using MicroserviceRgpd.UseCases.Casework.ReadCase;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -102,6 +103,8 @@ public class CaseModel(IMediator mediator) : PageModel
   public async Task<IActionResult> OnGetAsync(Guid id, CancellationToken cancellationToken)
   {
     await LocateAsync(id, cancellationToken);
+
+    await ReadAsync(id, cancellationToken);
 
     await LoadAsync(id, cancellationToken);
 
@@ -318,6 +321,24 @@ public class CaseModel(IMediator mediator) : PageModel
     }
 
     await mediator.Send(new LocateCommand(opened), cancellationToken);
+  }
+
+  /// <summary>
+  /// Va lire les données de la personne là où le dossier vient d'en rattacher.
+  /// </summary>
+  /// <remarks>
+  /// <b>Après <c>Locate</c>, et la dépendance est réelle</b> : on ne lit que là où l'on a trouvé, et
+  /// c'est l'appel qui précède qui vient de dire où. Rien n'attend pour autant — une panne de l'un
+  /// n'empêche pas l'autre, et l'écran s'affiche dans tous les cas.
+  /// </remarks>
+  private async Task ReadAsync(Guid id, CancellationToken cancellationToken)
+  {
+    if (!CaseId.TryFrom(id, out var opened))
+    {
+      return;
+    }
+
+    await mediator.Send(new ReadCommand(opened), cancellationToken);
   }
 
   private async Task LoadAsync(Guid id, CancellationToken cancellationToken)

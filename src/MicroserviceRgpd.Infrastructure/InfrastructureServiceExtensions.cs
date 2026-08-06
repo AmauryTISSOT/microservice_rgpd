@@ -1,4 +1,5 @@
-﻿using MicroserviceRgpd.Core.Casework.Ledger;
+﻿using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Casework.Ledger;
 using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
@@ -45,6 +46,11 @@ public static class InfrastructureServiceExtensions
     // ans — et le dépôt générique lui aurait rendu la mise à jour et la suppression ligne à ligne
     // que sa définition ferme.
     services.AddScoped<ILedger, Ledger>();
+
+    // Les pièces lues non plus : elles sont hors de l'agrégat, avec leur durée de vie propre — la
+    // remise les détruira sans réécrire le Case —, et le dépôt générique aurait fait d'un contenu
+    // personnel une racine que tout le service pourrait charger.
+    services.AddScoped<IRetrievedData, RetrievedDataStore>();
 
     // L'horloge est injectée pour que l'instant de l'acte se dicte en test, plutôt que d'être lu
     // sur la machine qui l'exécute.

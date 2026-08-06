@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Infrastructure.Casework.Adapters;
 
@@ -93,6 +94,93 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
         $"L'Adapter de « {call.DeclaredSystem.Value} » a répondu {(int)response.StatusCode}, que le "
         + "contrat ne prévoit pas : ce n'est ni une réponse, ni un refus."),
     };
+  }
+
+  /// <inheritdoc />
+  public async Task<AdapterAnswer<RetrievedPiece>> ReadAsync(
+    AdapterCall call,
+    DataSubjectRight right,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentNullException.ThrowIfNull(call);
+    ArgumentNullException.ThrowIfNull(right);
+
+    using var request = new HttpRequestMessage(
+      HttpMethod.Post,
+      AdapterWire.AddressOf(call.Address, call.DeclaredSystem, call.Capability))
+    {
+      Content = JsonContent.Create(new AdapterReadBody(BodyOf(call).Designations, right), options: WireFormat),
+    };
+
+    request.Headers.TryAddWithoutValidation(AdapterWire.SecretHeader, secret.Value);
+
+    using var response = await AdapterWire.AnswerTo(
+      client, request, call.DeclaredSystem, HttpCompletionOption.ResponseContentRead, cancellationToken);
+
+    return response.StatusCode switch
+    {
+      HttpStatusCode.OK => AdapterAnswer<RetrievedPiece>.Serving(await PieceOf(response, call, cancellationToken)),
+      HttpStatusCode.Accepted => AdapterAnswer<RetrievedPiece>.Deferring(
+        await DeclaredDeadline(response, call, cancellationToken)),
+
+      HttpStatusCode.Unauthorized => AdapterAnswer<RetrievedPiece>.Refusing(AdapterOutcome.SecretRefused),
+      HttpStatusCode.NotFound => AdapterAnswer<RetrievedPiece>.Refusing(AdapterOutcome.SystemNotServed),
+
+      _ => throw new AdapterFailure(
+        $"L'Adapter de « {call.DeclaredSystem.Value} » a répondu {(int)response.StatusCode}, que le "
+        + "contrat ne prévoit pas : ce n'est ni une réponse, ni un refus."),
+    };
+  }
+
+  /// <summary>
+  /// La pièce servie : son <b>enveloppe de transport</b>, recopiée sans être interprétée, et ses
+  /// octets, qui ne sont pas ouverts.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Un corps vide n'est pas une panne ici</b>, à la différence d'un <c>200</c> à <c>locate</c> :
+  /// c'est la <b>pièce vide</b>, une déclaration datée disant « interrogé, rien ». C'est elle qui
+  /// rend l'incomplétude gratuite pour l'<c>Adapter</c>, qui n'a aucun export d'une forme convenue à
+  /// fabriquer pour dire qu'il n'a rien.
+  /// </para>
+  /// <para>
+  /// <b>Le nom vient de l'accesseur typé du transport</b>, <c>filename*</c> d'abord : c'est lui qui
+  /// sait déjà décoder un nom accentué, et le réécrire ici aurait fait vivre dans ce fichier une
+  /// seconde lecture de la RFC 6266. Un en-tête que le transport n'arrive pas à lire rend
+  /// <c>null</c>, et le nom dégrade alors sur le <c>system_id</c> — dégrader proprement est
+  /// exactement ce que le contrat promet.
+  /// </para>
+  /// </remarks>
+  private static async Task<RetrievedPiece> PieceOf(
+    HttpResponseMessage response,
+    AdapterCall call,
+    CancellationToken cancellationToken)
+  {
+    var disposition = response.Content.Headers.ContentDisposition;
+
+    return new RetrievedPiece(
+      TransportEnvelope.Of(
+        ContentTypeAsWritten(response),
+        disposition?.FileNameStar ?? disposition?.FileName,
+        call.DeclaredSystem),
+      await response.Content.ReadAsByteArrayAsync(cancellationToken));
+  }
+
+  /// <summary>
+  /// Le <c>Content-Type</c> <b>tel que l'<c>Adapter</c> l'a écrit</b>, et non tel que le transport
+  /// sait le relire.
+  /// </summary>
+  /// <remarks>
+  /// La valeur analysée est réécrite par la bibliothèque — paramètres normalisés, et <c>null</c> pour
+  /// tout en-tête qu'elle ne sait pas lire. Or « recopié sans interprétation » se prend au mot : un
+  /// type biscornu doit arriver biscornu sous les yeux de l'<c>Operator</c>, qui saura en juger, et le
+  /// remplacer par « octets sans type déclaré » lui cacherait ce que le client a réellement dit.
+  /// </remarks>
+  private static string? ContentTypeAsWritten(HttpResponseMessage response)
+  {
+    return response.Content.Headers.TryGetValues("Content-Type", out var written)
+      ? string.Join(", ", written)
+      : response.Content.Headers.ContentType?.ToString();
   }
 
   /// <summary>
@@ -188,6 +276,16 @@ public sealed class HttpAdapterCalls(HttpClient client, AdapterSecret secret) : 
   /// celle-là même que le retour d'un <c>locate</c> emprunte : <b>une forme, écrite une fois</b>.
   /// </summary>
   private sealed record AdapterCallBody(IReadOnlyList<DesignationOnTheWire> Designations);
+
+  /// <summary>
+  /// Le corps d'un <c>read</c> : le sac, et le <b>droit au titre duquel on lit</b>.
+  /// </summary>
+  /// <remarks>
+  /// <b>Aucune forme attendue n'y figure</b> — ni type de contenu souhaité, ni liste de champs, ni
+  /// version de schéma —, et il n'existe aucun emplacement pour en porter une. Le droit part sous son
+  /// <b>nom canonique anglais</b>, comme sur tout fil de ce dépôt.
+  /// </remarks>
+  private sealed record AdapterReadBody(IReadOnlyList<DesignationOnTheWire> Designations, DataSubjectRight Right);
 
   /// <summary>Ce qu'un différé porte : une échéance déclarée, et rien d'autre.</summary>
   private sealed record DeferredOnTheWire(string? Deadline);

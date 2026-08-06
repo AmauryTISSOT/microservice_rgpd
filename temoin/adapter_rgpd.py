@@ -29,7 +29,7 @@ import hmac
 from datetime import datetime
 from typing import NamedTuple
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 
 EN_TETE_SECRET = "X-RGPD-Secret"
 """L'en-tête qui porte le secret partagé. Ni `Authorization`, ni schéma, ni porteur."""
@@ -39,6 +39,21 @@ PARAMETRE_SYSTEME = "system_id"
 
 NATURES = ("email", "name", "phone", "reference")
 """Le vocabulaire fermé des désignations. Un cinquième mot n'est pas une nature qu'on devine."""
+
+DROITS = ("Access", "Rectification", "Erasure", "Portability", "Restriction", "Objection")
+"""Les droits que le service sait porter, sous leurs noms canoniques anglais.
+
+Ils sont **ici** et non dans les modules qui lisent : c'est du vocabulaire de fil, comme `NATURES`.
+Un droit inconnu n'est pas deviné — voir `droit_du_corps`.
+"""
+
+DROIT_PAR_DEFAUT = "Access"
+"""Le droit d'un corps qui n'en déclare pas.
+
+Le plus **large** des périmètres, délibérément : un appel mal formé qui rendrait moins que demandé
+serait une omission silencieuse, tandis qu'en rendre plus se voit — l'opérateur du service a la
+pièce sous les yeux et lit ce qu'elle contient.
+"""
 
 
 class Designation(NamedTuple):
@@ -98,6 +113,28 @@ def servi_locate(certain=(), reserves=()):
     })
 
 
+class Piece(NamedTuple):
+    """Ce qu'un `read` rend : des octets, et de quoi les nommer. Rien de plus.
+
+    **Aucune forme n'est imposée.** Le service ne lit pas le corps, ne le désérialise pas, et ne
+    saura jamais si ces octets sont un CSV, un ZIP ou un PDF — il recopie le `Content-Type` qu'on
+    écrit et le montre à un humain. C'est ce qui rend cette route tenable ici : exporter un CSV que
+    la brocante sait déjà écrire coûte trois lignes, tandis qu'un schéma commun aurait demandé de
+    traduire nos tables dans le vocabulaire de quelqu'un d'autre.
+
+    Un `contenu` vide est une **réponse** : « on a regardé, il n'y a rien ». Le service la distingue
+    d'une pièce absente, et cette gratuité-là est délibérée — dire « rien » ne doit rien coûter,
+    sans quoi on serait tenté de ne rien dire du tout.
+
+    Le `nom` est facultatif. Quand il manque, le service dégrade sur le `system_id` plutôt que de
+    perdre la pièce : `send_file()` seul doit suffire.
+    """
+
+    contenu: bytes
+    type_mime: str = "application/octet-stream"
+    nom: str = ""
+
+
 class Differe(NamedTuple):
     """Le travail est trop long pour la connexion : on déclare quand on aura fini.
 
@@ -108,40 +145,96 @@ class Differe(NamedTuple):
     echeance: datetime
 
 
-def blueprint_rgpd(secret, systemes):
+def blueprint_rgpd(secret, systemes, lectures=None):
     """Les routes de l'Adapter, montées sous `/rgpd`.
 
-    `systemes` associe un `system_id` à la fonction qui sait le localiser : elle reçoit le sac de
-    désignations et rend un `Servi` ou un `Differe`.
+    `systemes` associe un `system_id` à la fonction qui sait le **localiser** : elle reçoit le sac
+    de désignations et rend un `Servi` ou un `Differe`.
+
+    `lectures` associe un `system_id` à la fonction qui sait le **lire** : elle reçoit le sac et le
+    droit au titre duquel on lit, et rend une `Piece` ou un `Differe`. Les deux tables sont
+    séparées parce que les deux capacités le sont : un système peut être localisable sans être
+    lisible, et le `Manifest` du service le déclare ainsi.
 
     Un `secret` vide ne laisse rien passer. C'est délibéré : un déploiement qui a oublié de le
     configurer doit refuser, pas s'ouvrir.
     """
     rgpd = Blueprint("rgpd", __name__, url_prefix="/rgpd")
+    lectures = lectures or {}
 
     @rgpd.post("/locate")
     def locate():
-        if not autorise(secret):
-            # 401 ne dit rien du système appelé : il dit que nos deux moitiés n'ont plus le même
-            # secret, ce qui se répare des deux côtés à la fois. Il est rendu **avant** de regarder
-            # le système, sans quoi un inconnu lirait, statut par statut, ce que l'Adapter sert.
-            return "Secret refusé", 401
-
-        localise = systemes.get(request.args.get(PARAMETRE_SYSTEME, ""))
-        if localise is None:
-            # On refuse explicitement un système inconnu plutôt que de servir « au mieux » : un 200
-            # poli sur un identifiant qu'on ne connaît pas serait exactement l'omission silencieuse
-            # que tout ce dispositif cherche à rendre impossible.
-            return "Système non servi", 404
+        refus, localise = servant(secret, systemes)
+        if refus is not None:
+            return refus
 
         reponse = localise(designations_du_corps(request.get_json(silent=True)))
 
         if isinstance(reponse, Differe):
-            return jsonify({"deadline": echeance_declarable(reponse.echeance)}), 202
+            return differe(reponse)
 
         return jsonify(reponse.corps), 200
 
+    @rgpd.post("/read")
+    def read():
+        refus, lit = servant(secret, lectures)
+        if refus is not None:
+            return refus
+
+        corps = request.get_json(silent=True)
+        reponse = lit(designations_du_corps(corps), droit_du_corps(corps))
+
+        if isinstance(reponse, Differe):
+            return differe(reponse)
+
+        return piece_servie(reponse)
+
     return rgpd
+
+
+def servant(secret, servants):
+    """Qui servira cet appel — ou le refus à rendre, secret d'abord et système ensuite.
+
+    L'ordre n'est pas un détail : rendre 404 avant de juger le secret laisserait un inconnu lire,
+    statut par statut, la liste des systèmes que cet Adapter sert.
+
+    Le 404 est aussi ce qu'une **capacité non servie** rend. Un système localisable mais non lisible
+    est un système que `/read` ne connaît pas, et « je ne sers pas cela » se dit d'une seule façon.
+    """
+    if not autorise(secret):
+        # 401 ne dit rien du système appelé : il dit que nos deux moitiés n'ont plus le même secret,
+        # ce qui se répare des deux côtés à la fois.
+        return ("Secret refusé", 401), None
+
+    servant_du_systeme = servants.get(request.args.get(PARAMETRE_SYSTEME, ""))
+
+    if servant_du_systeme is None:
+        # On refuse explicitement un système inconnu plutôt que de servir « au mieux » : un 200 poli
+        # sur un identifiant qu'on ne connaît pas serait exactement l'omission silencieuse que tout
+        # ce dispositif cherche à rendre impossible.
+        return ("Système non servi", 404), None
+
+    return None, servant_du_systeme
+
+
+def differe(reponse):
+    """Le 202 et son échéance déclarée, écrits une fois pour toutes les capacités."""
+    return jsonify({"deadline": echeance_declarable(reponse.echeance)}), 202
+
+
+def piece_servie(piece):
+    """La pièce sur le fil : les octets, leur type, et leur nom s'il y en a un.
+
+    ⚠️ **Le corps part tel quel, y compris vide.** Un 204 dirait autre chose — le service le lit
+    comme une panne —, et un 200 sans octets est précisément la façon dont le contrat écrit
+    « on a regardé, il n'y a rien ».
+    """
+    entetes = {"Content-Type": piece.type_mime}
+
+    if piece.nom:
+        entetes["Content-Disposition"] = f'attachment; filename="{piece.nom}"'
+
+    return Response(piece.contenu, status=200, headers=entetes)
 
 
 def autorise(secret):
@@ -184,3 +277,20 @@ def designations_du_corps(corps):
         and brute.get("kind") in NATURES
         and isinstance(brute.get("value"), str)
     ]
+
+
+def droit_du_corps(corps):
+    """Le droit au titre duquel on lit, ou `Access` si le corps n'en déclare pas.
+
+    C'est **la seule chose que le service impose à un `read`**, et il n'impose rien de la réponse :
+    le périmètre matériel se décide ici, ligne par ligne, parce que celui de l'art. 20 n'est pas
+    celui de l'art. 15 et que personne d'autre que nous ne sait quelles colonnes la personne nous a
+    fournies elle-même.
+
+    Un droit hors du vocabulaire dégrade sur le défaut plutôt que de casser l'appel : le service ne
+    l'enverrait pas, et rendre une panne sur un mot qu'on ne reconnaît pas ferait perdre une pièce
+    qu'on savait servir.
+    """
+    declare = (corps or {}).get("right")
+
+    return declare if declare in DROITS else DROIT_PAR_DEFAUT

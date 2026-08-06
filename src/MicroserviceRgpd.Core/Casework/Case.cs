@@ -38,6 +38,7 @@ public sealed class Case : IAggregateRoot
   private readonly List<Designation> _designations;
   private readonly List<Claim> _claims;
   private readonly List<Locating> _locatings;
+  private readonly List<Reading> _readings;
   private readonly List<OpenQuestion> _questions;
 
   private Case(
@@ -56,6 +57,7 @@ public sealed class Case : IAggregateRoot
     _designations = designations;
     _claims = claims;
     _locatings = [];
+    _readings = [];
     _questions = [];
   }
 
@@ -68,6 +70,7 @@ public sealed class Case : IAggregateRoot
     _designations = [];
     _claims = [];
     _locatings = [];
+    _readings = [];
     _questions = [];
   }
 
@@ -127,6 +130,13 @@ public sealed class Case : IAggregateRoot
   /// jamais par droit : un <c>Locate</c> cherche la personne, et non la réponse due sur un droit.
   /// </summary>
   public IReadOnlyList<Locating> Locatings => _locatings;
+
+  /// <summary>
+  /// Ce que les <c>Read</c> ont tenté, <b>un par (<see cref="Claim"/>, <see cref="DeclaredSystem"/>)
+  /// appelé</b> — et rien de ce qu'ils ont ramené : les pièces vivent dans des
+  /// <see cref="RetrievedData"/>, hors de l'agrégat, avec leur durée de vie propre.
+  /// </summary>
+  public IReadOnlyList<Reading> Readings => _readings;
 
   /// <summary>
   /// Les questions ouvertes du dossier, datées. Elles <b>n'arrêtent jamais</b> le délai de
@@ -486,6 +496,76 @@ public sealed class Case : IAggregateRoot
   }
 
   /// <summary>
+  /// Ce que le <c>Read</c> a tenté sur ce système au titre de ce droit, ou <c>null</c> si on ne l'a
+  /// pas encore appelé. <b>Le <c>null</c> n'est pas une pièce vide</b> : « pas appelé » et
+  /// « appelé, rien » sont deux déclarations différentes, et c'est la seconde qui a une valeur de
+  /// preuve.
+  /// </summary>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  public Reading? ReadingIn(DataSubjectRight right, DeclaredSystemId declaredSystem)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+
+    return _readings.SingleOrDefault(
+      reading => reading.Right == right && reading.DeclaredSystem == declaredSystem);
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>servi</b> un <c>Read</c>. Le dossier ne retient que le fait daté : la
+  /// pièce, elle, est gardée <b>hors de l'agrégat</b>, pour que la remise l'efface sans le réécrire.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat —
+  /// et c'est lui, et lui seul, qui décide de ne pas consigner un verdict identique au précédent.
+  /// </remarks>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  public Reading ReadServed(DataSubjectRight right, DeclaredSystemId declaredSystem, DateTimeOffset askedAt)
+  {
+    var reading = ReadingFor(right, declaredSystem, askedAt.ToUniversalTime());
+
+    reading.Served(askedAt.ToUniversalTime(), _designations.Count);
+
+    return reading;
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>différé</b> un <c>Read</c> et déclaré son échéance. Rien n'a été lu : le
+  /// service repassera après elle, <b>à l'ouverture du dossier</b> et jamais depuis la file.
+  /// </summary>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  public Reading ReadDeferred(
+    DataSubjectRight right,
+    DeclaredSystemId declaredSystem,
+    DateTimeOffset declaredDeadline,
+    DateTimeOffset askedAt)
+  {
+    var reading = ReadingFor(right, declaredSystem, askedAt.ToUniversalTime());
+
+    reading.Deferred(declaredDeadline.ToUniversalTime(), askedAt.ToUniversalTime(), _designations.Count);
+
+    return reading;
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>refusé</b> un <c>Read</c>. Rien n'a été lu : un refus dit que le service
+  /// et l'application ne sont pas d'accord, jamais ce que le système porte.
+  /// </summary>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  /// <exception cref="ArgumentException">La réponse donnée n'est pas un refus.</exception>
+  public Reading ReadRefused(
+    DataSubjectRight right,
+    DeclaredSystemId declaredSystem,
+    AdapterOutcome refusal,
+    DateTimeOffset askedAt)
+  {
+    var reading = ReadingFor(right, declaredSystem, askedAt.ToUniversalTime());
+
+    reading.Refused(refusal, askedAt.ToUniversalTime(), _designations.Count);
+
+    return reading;
+  }
+
+  /// <summary>
   /// Un humain <b>tranche une réserve</b>, et le sac s'enrichit de ce qu'elle proposait si elle est
   /// rattachée.
   /// </summary>
@@ -608,6 +688,25 @@ public sealed class Case : IAggregateRoot
     var opened = new Locating(declaredSystem, askedAt, _designations.Count);
 
     _locatings.Add(opened);
+
+    return opened;
+  }
+
+  /// <summary>La lecture de ce système sous ce droit, posée si elle n'existait pas encore.</summary>
+  private Reading ReadingFor(DataSubjectRight right, DeclaredSystemId declaredSystem, DateTimeOffset askedAt)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+
+    var known = ReadingIn(right, declaredSystem);
+
+    if (known is not null)
+    {
+      return known;
+    }
+
+    var opened = new Reading(right, declaredSystem, askedAt, _designations.Count);
+
+    _readings.Add(opened);
 
     return opened;
   }

@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Casework;
 /// gestionnaire est tout l'autre bout.
 /// </para>
 /// </remarks>
-internal sealed class AdapterDouble(HttpStatusCode status, string? body) : HttpMessageHandler
+internal sealed class AdapterDouble(HttpStatusCode status, Func<HttpContent>? body) : HttpMessageHandler
 {
   /// <summary>Ce que le service a demandé, dans l'ordre. Le compte est un fait du contrat : rien ne relance.</summary>
   private readonly List<HttpRequestMessage> _asked = [];
@@ -27,10 +27,43 @@ internal sealed class AdapterDouble(HttpStatusCode status, string? body) : HttpM
   /// <summary>Les corps envoyés, lus au passage — le contenu d'une requête ne se relit pas après coup.</summary>
   private readonly List<string?> _bodies = [];
 
-  /// <summary>Un <c>Adapter</c> qui répondra cela.</summary>
+  /// <summary>Un <c>Adapter</c> qui répondra cela, en JSON.</summary>
   public static AdapterDouble RespondingWith(HttpStatusCode status, string? body = null)
   {
-    return new AdapterDouble(status, body);
+    return new AdapterDouble(
+      status,
+      body is null ? null : () => new StringContent(body, Encoding.UTF8, "application/json"));
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> qui sert une <b>pièce</b> : des octets, et l'enveloppe de transport telle
+  /// qu'il l'écrit — éventuellement pas du tout.
+  /// </summary>
+  /// <remarks>
+  /// Les en-têtes sont posés <b>sans validation</b> : un <c>Content-Disposition</c> biscornu est
+  /// précisément ce que le service doit savoir encaisser, et un test qui n'aurait pas pu l'écrire
+  /// n'aurait prouvé que la validation du transport.
+  /// </remarks>
+  public static AdapterDouble ServingAPiece(byte[] content, string? contentType, string? disposition = null)
+  {
+    return new AdapterDouble(HttpStatusCode.OK, () =>
+    {
+      var piece = new ByteArrayContent(content);
+
+      piece.Headers.Remove("Content-Type");
+
+      if (contentType is not null)
+      {
+        piece.Headers.TryAddWithoutValidation("Content-Type", contentType);
+      }
+
+      if (disposition is not null)
+      {
+        piece.Headers.TryAddWithoutValidation("Content-Disposition", disposition);
+      }
+
+      return piece;
+    });
   }
 
   /// <summary>Tout ce qui est parti vers l'<c>Adapter</c>.</summary>
@@ -64,7 +97,7 @@ internal sealed class AdapterDouble(HttpStatusCode status, string? body) : HttpM
 
     if (body is not null)
     {
-      response.Content = new StringContent(body, Encoding.UTF8, "application/json");
+      response.Content = body();
     }
 
     return response;

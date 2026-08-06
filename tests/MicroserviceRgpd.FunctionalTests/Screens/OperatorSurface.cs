@@ -140,6 +140,25 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
   }
 
   /// <summary>
+  /// Un système servi par un <c>Adapter</c> qui déclare <b>aussi</b> <c>Read</c>. <c>Locate</c>
+  /// reste du lot : c'est le plancher, et un système lisible sans être localisable rendrait une
+  /// pièce dont personne ne saurait de qui elle parle.
+  /// </summary>
+  internal static DeclaredSystem AReadableSystemServedByAnAdapter(
+    string id,
+    string label,
+    DateTimeOffset declaredOn)
+  {
+    return DeclaredSystem.Declare(
+      DeclaredSystemId.From(id),
+      SystemLabel.From(label),
+      SystemContents.From("Ce qu'il contient, dans les mots de qui l'a déclaré."),
+      [Capability.Locate, Capability.Read],
+      AdapterAddress.From(ABrocantoOnTheWire.Address),
+      declaredOn);
+  }
+
+  /// <summary>
   /// Remplit le formulaire par lequel un <c>Operator</c> <b>tranche une réserve</b> et l'envoie.
   /// </summary>
   internal async Task<HttpResponseMessage> ArbitrateAsync(

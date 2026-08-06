@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 from adapter_rgpd import Designation, Differe, Servi
 
-from rgpd_journal import localiser, prochaine_fenetre_de_nuit
+from rgpd_journal import lire, localiser, prochaine_fenetre_de_nuit
 
 PARIS = timezone(timedelta(hours=2))
 
@@ -163,3 +163,71 @@ def test_l_echeance_porte_un_decalage_explicite():
 
     assert echeance.utcoffset() is not None
     assert echeance.isoformat() == "2026-08-06T03:00:00+02:00"
+
+
+# --- `read` : les mêmes lignes, recopiées jusqu'au bout ------------------------------------------
+
+
+def test_les_lignes_portant_l_adresse_sont_recopiees_telles_quelles(tmp_path):
+    """Ce qu'un opérateur relira est ce qu'un `grep` lui aurait rendu ici, et rien d'autre."""
+    piece = lire([Designation("email", "helene.petit@example.fr")], journal(tmp_path), "Access")
+
+    assert piece.contenu.decode("utf-8") == (
+        "2026-05-02 09:12:04 92.184.3.7 helene.petit@example.fr GET / 200\n"
+        "2026-05-02 09:12:31 92.184.3.7 helene.petit@example.fr POST /connexion 302\n"
+        "2026-04-28 22:03:10 92.184.3.7 - "
+        "GET /newsletter/desinscription?courriel=helene.petit@example.fr 200\n"
+    )
+
+
+def test_la_piece_du_journal_dit_ce_qu_elle_est(tmp_path):
+    piece = lire([Designation("email", "helene.petit@example.fr")], journal(tmp_path), "Access")
+
+    assert piece.type_mime == "text/plain; charset=utf-8"
+    assert piece.nom == "brocanto-journal.log"
+
+
+def test_la_casse_perd_ici_ce_que_la_base_aurait_trouve(tmp_path):
+    """⚠️ Le piège du dossier, et il vaut pour `read` comme pour `locate` : rien n'est normalisé."""
+    piece = lire([Designation("email", "jean.dupont@example.fr")], journal(tmp_path), "Access")
+
+    assert piece.contenu == b""
+
+    exacte = lire([Designation("email", "Jean.Dupont@Example.fr")], journal(tmp_path), "Access")
+
+    assert b"Jean.Dupont@Example.fr" in exacte.contenu
+
+
+def test_une_adresse_qu_aucune_ligne_ne_porte_rend_une_piece_vide(tmp_path):
+    piece = lire([Designation("email", "inconnue@example.fr")], journal(tmp_path), "Access")
+
+    assert piece.contenu == b""
+
+
+def test_un_sac_sans_adresse_n_ouvre_aucun_fichier(tmp_path):
+    piece = lire([Designation("name", "Hélène Petit")], journal(tmp_path), "Access")
+
+    assert piece.contenu == b""
+
+
+def test_le_droit_ne_restreint_rien_dans_un_journal(tmp_path):
+    """Une ligne de journal est un seul objet : elle n'a pas de colonnes à trier par article."""
+    dossier = journal(tmp_path)
+    helene = [Designation("email", "helene.petit@example.fr")]
+
+    assert lire(helene, dossier, "Portability").contenu == lire(helene, dossier, "Access").contenu
+
+
+def test_un_volume_trop_gros_differe_la_lecture_comme_il_differe_la_localisation(tmp_path):
+    """Le seuil tient à la nature du stockage, pas à la capacité appelée."""
+    maintenant = datetime(2026, 8, 5, 14, 30, tzinfo=PARIS)
+
+    differe = lire(
+        [Designation("email", "helene.petit@example.fr")],
+        journal(tmp_path),
+        "Access",
+        seuil=10,
+        maintenant=maintenant,
+    )
+
+    assert differe == Differe(datetime(2026, 8, 6, 3, 0, tzinfo=PARIS))

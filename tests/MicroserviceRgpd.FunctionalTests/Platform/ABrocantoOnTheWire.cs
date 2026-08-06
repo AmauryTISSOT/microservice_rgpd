@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 
@@ -43,6 +44,14 @@ public sealed class ABrocantoOnTheWire : HttpMessageHandler
   /// </summary>
   public const string AsTheJournalWroteIt = "Jean.Dupont@Example.fr";
 
+  /// <summary>Ce que la base rend à lire : le CSV que la brocante sait déjà écrire.</summary>
+  public const string BoutiqueExport =
+    "# clients\nid;email;nom\n1203;jean.dupont@example.fr;Dupont\n";
+
+  /// <summary>Ce que le journal rend à lire : ses lignes, telles qu'un <c>grep</c> les rendrait.</summary>
+  public const string JournalLines =
+    "2026-03-14 10:41:55 88.120.9.44 Jean.Dupont@Example.fr GET /mon-compte 200\n";
+
   private readonly List<string> _bodies = [];
 
   /// <summary>Les corps envoyés, lus au passage : c'est là que se voit le sac qui s'enrichit.</summary>
@@ -68,10 +77,59 @@ public sealed class ABrocantoOnTheWire : HttpMessageHandler
     _bodies.Add(body);
     _sentTo.Add((system, body));
 
-    return new HttpResponseMessage(HttpStatusCode.OK)
+    // La capacité est la route, comme chez le témoin : un seul Adapter, un chemin par capacité.
+    return request.RequestUri.AbsolutePath.EndsWith($"/{Capability.Read.Token}", StringComparison.Ordinal)
+      ? new HttpResponseMessage(HttpStatusCode.OK) { Content = PieceOf(system, body) }
+      : new HttpResponseMessage(HttpStatusCode.OK)
+      {
+        Content = new StringContent(AnswerFor(system, body), Encoding.UTF8, "application/json"),
+      };
+  }
+
+  /// <summary>
+  /// Ce que chaque système <b>rend à lire</b> : des octets dans <b>sa</b> forme à lui, et une
+  /// enveloppe de transport écrite à la main.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Les deux systèmes ne rendent pas la même chose, et c'est tout le propos.</b> La base rend un
+  /// CSV ; le journal rend des lignes de journal, en texte brut. Aucun schéma commun ne les
+  /// rapproche, et le service n'ouvre ni l'un ni l'autre — il recopie l'enveloppe et garde les
+  /// octets.
+  /// </para>
+  /// <para>
+  /// Le nom du journal part avec un <b>chemin devant lui</b>, exprès : c'est ainsi qu'un
+  /// <c>send_file()</c> écrit sur un fichier réel l'écrirait, et le service n'en gardera que le
+  /// dernier segment.
+  /// </para>
+  /// </remarks>
+  private static HttpContent PieceOf(string system, string body)
+  {
+    if (system == Boutique)
     {
-      Content = new StringContent(AnswerFor(system, body), Encoding.UTF8, "application/json"),
-    };
+      var piece = new ByteArrayContent(Encoding.UTF8.GetBytes(BoutiqueExport));
+
+      piece.Headers.Remove("Content-Type");
+      piece.Headers.TryAddWithoutValidation("Content-Type", "text/csv; charset=utf-8");
+      piece.Headers.TryAddWithoutValidation(
+        "Content-Disposition", "attachment; filename=\"brocanto-boutique-access.csv\"");
+
+      return piece;
+    }
+
+    // Le journal ne rend que ce qu'il a écrit : sans l'adresse dans SA casse, il a regardé et n'a
+    // rien trouvé — une pièce VIDE, qui n'est pas une pièce absente.
+    var found = Designations(body).Any(designation =>
+      designation.Kind == "email" && designation.Value == AsTheJournalWroteIt);
+
+    var lines = new ByteArrayContent(found ? Encoding.UTF8.GetBytes(JournalLines) : []);
+
+    lines.Headers.Remove("Content-Type");
+    lines.Headers.TryAddWithoutValidation("Content-Type", "text/plain; charset=utf-8");
+    lines.Headers.TryAddWithoutValidation(
+      "Content-Disposition", "attachment; filename=\"/var/log/brocanto/brocanto-journal.log\"");
+
+    return lines;
   }
 
   /// <summary>

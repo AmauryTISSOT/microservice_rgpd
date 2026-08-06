@@ -64,6 +64,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
     ConfigureTheBag(builder);
     ConfigureTheClaims(builder);
     ConfigureTheLocatings(builder);
+    ConfigureTheReadings(builder);
     ConfigureTheQuestions(builder);
   }
 
@@ -384,6 +385,66 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
     });
 
     locating.Navigation(one => one.Reserved).UsePropertyAccessMode(PropertyAccessMode.Field);
+  }
+
+  /// <summary>
+  /// Ce que les <c>Read</c> ont <b>tenté</b> : une ligne par (droit, système) appelé, ce qu'on nous a
+  /// répondu, et l'échéance d'un différé.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le grain est (droit, système)</b> — à la différence de <c>case_locatings</c>, dont le grain
+  /// est le système seul : un <c>Locate</c> cherche la personne, un <c>Read</c> lit au titre d'un
+  /// droit, et l'application peut légitimement rendre d'un même système deux pièces différentes selon
+  /// qu'on lit sous l'art. 15 ou sous l'art. 20.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Aucune colonne ne porte d'octets, ni rien de la pièce.</b> Celle-ci vit dans
+  /// <c>case_retrieved_data</c>, <b>hors de l'agrégat</b>, parce que la remise l'effacera sans
+  /// réécrire le dossier. Ce qui reste ici est ce qui meurt avec lui.
+  /// </para>
+  /// <para>
+  /// <b>Aucune clé étrangère vers <c>case_claims</c>.</b> Le droit est écrit tel quel : une lecture
+  /// menée hier au titre d'un droit reste un fait daté, et une contrainte l'aurait fait disparaître
+  /// le jour où le dossier cesse de porter ce <c>Claim</c>.
+  /// </para>
+  /// </remarks>
+  private static void ConfigureTheReadings(EntityTypeBuilder<Case> builder)
+  {
+    builder.OwnsMany(opened => opened.Readings, reading =>
+    {
+      reading.ToTable("case_readings");
+      reading.WithOwner().HasForeignKey("case_id").HasConstraintName("fk_case_readings_cases");
+
+      reading.Property(one => one.Right)
+        .HasColumnName("data_subject_right")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(right => right.Name, name => DataSubjectRight.FromName(name));
+
+      reading.Property(one => one.DeclaredSystem)
+        .HasColumnName("declared_system_id")
+        .HasMaxLength(DeclaredSystemId.MaxLength)
+        .HasConversion(id => id.Value, value => DeclaredSystemId.From(value));
+
+      // Une lecture au plus par (droit, système) : on ne lit pas deux fois le même endroit au titre
+      // du même droit, et la clé le dit plutôt que la seule discipline du domaine.
+      reading.HasKey("case_id", "Right", "DeclaredSystem").HasName("pk_case_readings");
+
+      // Par son nom, jamais par un entier, comme partout ailleurs sur les vocabulaires fermés.
+      reading.Property(one => one.LastOutcome)
+        .HasColumnName("last_outcome")
+        .HasMaxLength(CaseworkSchema.ClosedVocabularyLength)
+        .HasConversion(outcome => outcome.Name, name => AdapterOutcome.FromName(name))
+        .IsRequired();
+
+      reading.Property(one => one.AskedAt).HasColumnName("asked_at").IsRequired();
+
+      reading.Property(one => one.DeclaredDeadline).HasColumnName("declared_deadline");
+
+      reading.Property(one => one.DesignationsAtCall).HasColumnName("designations_at_call").IsRequired();
+    });
+
+    builder.Navigation(opened => opened.Readings).UsePropertyAccessMode(PropertyAccessMode.Field);
   }
 
   /// <summary>

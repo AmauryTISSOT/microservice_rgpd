@@ -591,6 +591,93 @@ public sealed record LedgerEntry
   }
 
   /// <summary>
+  /// Un <c>Adapter</c> a <b>servi</b> un <c>Read</c> : la tentative datée, le système, le <b>droit
+  /// au titre duquel</b> on a lu, et sous combien de désignations.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Rien de la pièce n'entre ici — pas même son enveloppe.</b> Ni le type de contenu, ni le
+  /// nom du fichier, ni sa taille : le nom est écrit par le client et nomme couramment la personne
+  /// (« export-jean-dupont.csv »), et une taille en octets serait une mesure des données de
+  /// quelqu'un dans une table qui survit au dossier de cinq ans. Ce que la preuve garde est qu'on a
+  /// lu, quand, où, et au titre de quoi.
+  /// </para>
+  /// <para>
+  /// <b>Le droit est la différence d'avec un <c>Locate</c> servi.</b> Un <c>Locate</c> cherche la
+  /// personne et n'en porte aucun ; une lecture a toujours lieu au titre d'un droit, et c'est ce
+  /// droit qui dira à qui la pièce était due.
+  /// </para>
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel l'appel est parti.</param>
+  /// <param name="occurredAt">L'instant de la tentative.</param>
+  /// <param name="declaredSystem">Le système qui a servi.</param>
+  /// <param name="right">Le droit au titre duquel on a lu.</param>
+  /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
+  public static LedgerEntry ReadServed(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DeclaredSystemId declaredSystem,
+    DataSubjectRight right,
+    int designationCount)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+    ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.ReadServed,
+      Signatory.Application,
+      identityDeclaration: null,
+      designationCount,
+      declaredSystem,
+      right);
+  }
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>différé</b> un <c>Read</c> et déclaré son échéance.
+  /// </summary>
+  /// <remarks>
+  /// <b>L'échéance entre dans la preuve parce qu'elle est déclarée par le client</b>, et parce que
+  /// trois dates disent tout de ce travail : appelé, échéance déclarée, résultat. Ce qu'on ne saura
+  /// jamais est combien de fois le service est repassé — une relance n'a aucun signataire.
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel l'appel est parti.</param>
+  /// <param name="occurredAt">L'instant de la tentative.</param>
+  /// <param name="declaredSystem">Le système où l'on lisait.</param>
+  /// <param name="right">Le droit au titre duquel on lisait.</param>
+  /// <param name="declaredDeadline">L'échéance que l'<c>Adapter</c> a déclarée.</param>
+  /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
+  public static LedgerEntry ReadDeferred(
+    CaseId caseId,
+    DateTimeOffset occurredAt,
+    DeclaredSystemId declaredSystem,
+    DataSubjectRight right,
+    DateTimeOffset declaredDeadline,
+    int designationCount)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+    ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
+
+    return new LedgerEntry(
+      LedgerEntryId.Next(),
+      caseId,
+      occurredAt.ToUniversalTime(),
+      LedgerFact.ReadDeferred,
+      Signatory.Application,
+      identityDeclaration: null,
+      designationCount,
+      declaredSystem,
+      right,
+      declaredDeadline: declaredDeadline.ToUniversalTime());
+  }
+
+  /// <summary>
   /// Un <c>Operator</c> a <b>tranché une réserve</b> de <c>Locate</c> : il a dit que cette ligne
   /// était celle de la personne, ou qu'elle ne l'était pas.
   /// </summary>

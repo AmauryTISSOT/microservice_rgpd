@@ -15,6 +15,7 @@ from adapter_rgpd import (
     PARAMETRE_SYSTEME,
     Designation,
     Differe,
+    Piece,
     Servi,
     blueprint_rgpd,
 )
@@ -22,13 +23,15 @@ from adapter_rgpd import (
 SECRET = "un-secret-de-recette"
 
 
-def application(systemes=None, secret=SECRET):
+def application(systemes=None, secret=SECRET, lectures=None):
     """Une application nue portant le seul Adapter : rien de Brocanto n'est chargé ici."""
     app = Flask(__name__)
     # Ce qui casse remonte à la suite plutôt que de se ranger derrière un 500 : une rupture du
     # contrat doit se lire ici, pas au statut.
     app.testing = True
-    app.register_blueprint(blueprint_rgpd(secret, systemes if systemes is not None else {}))
+    app.register_blueprint(
+        blueprint_rgpd(secret, systemes if systemes is not None else {}, lectures)
+    )
     return app.test_client()
 
 
@@ -219,14 +222,145 @@ def test_un_corps_absent_vaut_un_sac_vide():
     assert reponse.status_code == 200
 
 
-def test_l_adapter_ne_sert_que_locate():
-    """`read`, `erase` et `rectify` sont déclarables ; Brocanto ne les sert pas."""
+def test_l_adapter_ne_sert_que_locate_et_read():
+    """`erase` et `rectify` sont déclarables ; Brocanto ne les sert pas encore."""
     client = application({"brocanto-boutique": sert_rien})
 
-    for capacite in ("read", "erase", "rectify"):
+    for capacite in ("erase", "rectify"):
         reponse = client.post(
             f"/rgpd/{capacite}?{PARAMETRE_SYSTEME}=brocanto-boutique",
             headers={EN_TETE_SECRET: SECRET},
             json={"designations": []},
         )
         assert reponse.status_code == 404
+
+
+# --- `read` -----------------------------------------------------------------------------------
+
+
+def sert_une_piece(contenu=b"nom;commande\n", type_mime="text/csv", nom="export.csv"):
+    def lit(_designations, _droit):
+        return Piece(contenu, type_mime, nom)
+
+    return lit
+
+
+def lit(client, systeme="brocanto-boutique", secret=SECRET, corps=None):
+    entetes = {} if secret is None else {EN_TETE_SECRET: secret}
+    return client.post(
+        f"/rgpd/read?{PARAMETRE_SYSTEME}={systeme}",
+        headers=entetes,
+        json=corps if corps is not None else {"designations": []},
+    )
+
+
+def test_une_piece_part_avec_son_type_et_son_nom():
+    reponse = lit(application(lectures={"brocanto-boutique": sert_une_piece()}))
+
+    assert reponse.status_code == 200
+    assert reponse.data == b"nom;commande\n"
+    assert reponse.headers["Content-Type"] == "text/csv"
+    assert reponse.headers["Content-Disposition"] == 'attachment; filename="export.csv"'
+
+
+def test_une_piece_vide_est_une_reponse_et_non_un_204():
+    """Un 204 se lirait comme une panne ; « on a regardé, il n'y a rien » est un 200 sans octets."""
+    reponse = lit(application(lectures={"brocanto-boutique": sert_une_piece(contenu=b"")}))
+
+    assert reponse.status_code == 200
+    assert reponse.data == b""
+
+
+def test_une_piece_sans_nom_part_quand_meme():
+    """`send_file()` seul doit suffire : le service dégradera le nom sur le `system_id`."""
+    reponse = lit(application(lectures={"brocanto-boutique": sert_une_piece(nom="")}))
+
+    assert reponse.status_code == 200
+    assert "Content-Disposition" not in reponse.headers
+
+
+def test_le_droit_arrive_tel_quel():
+    recu = []
+
+    def lit_en_notant(_designations, droit):
+        recu.append(droit)
+        return Piece(b"", "text/csv", "")
+
+    client = application(lectures={"brocanto-boutique": lit_en_notant})
+
+    lit(client, corps={"designations": [], "right": "Portability"})
+
+    assert recu == ["Portability"]
+
+
+@pytest.mark.parametrize("declare", [None, "Toboggan", 12])
+def test_un_droit_qu_on_ne_reconnait_pas_degrade_sur_le_plus_large(declare):
+    """Rendre moins que demandé serait une omission silencieuse ; en rendre plus se voit."""
+    recu = []
+
+    def lit_en_notant(_designations, droit):
+        recu.append(droit)
+        return Piece(b"", "text/csv", "")
+
+    corps = {"designations": []}
+    if declare is not None:
+        corps["right"] = declare
+
+    lit(application(lectures={"brocanto-boutique": lit_en_notant}), corps=corps)
+
+    assert recu == ["Access"]
+
+
+def test_le_sac_arrive_a_la_lecture_comme_il_arrive_a_la_localisation():
+    recu = []
+
+    def lit_en_notant(designations, _droit):
+        recu.extend(designations)
+        return Piece(b"", "text/csv", "")
+
+    lit(
+        application(lectures={"brocanto-boutique": lit_en_notant}),
+        corps={"designations": [{"kind": "email", "value": "helene.petit@example.fr"}]},
+    )
+
+    assert recu == [Designation("email", "helene.petit@example.fr")]
+
+
+def test_un_differe_sur_read_declare_son_echeance_comme_ailleurs():
+    echeance = datetime(2026, 8, 6, 3, 0, tzinfo=timezone(timedelta(hours=2)))
+
+    reponse = lit(application(lectures={"brocanto-boutique": lambda _d, _r: Differe(echeance)}))
+
+    assert reponse.status_code == 202
+    assert reponse.get_json() == {"deadline": "2026-08-06T03:00:00+02:00"}
+
+
+def test_les_deux_systemes_du_temoin_servent_read():
+    """Le critère d'acceptation, dit ici : l'Adapter sert `read` pour ses deux `system_id`."""
+    client = application(
+        lectures={
+            "brocanto-boutique": sert_une_piece(contenu=b"boutique"),
+            "brocanto-journal": sert_une_piece(contenu=b"journal", type_mime="text/plain"),
+        }
+    )
+
+    assert lit(client, systeme="brocanto-boutique").data == b"boutique"
+    assert lit(client, systeme="brocanto-journal").data == b"journal"
+
+
+def test_un_systeme_localisable_mais_non_lisible_est_un_systeme_non_servi():
+    """Les deux tables sont séparées : déclarer `locate` n'engage pas `read`."""
+    client = application({"brocanto-boutique": sert_rien}, lectures={})
+
+    assert appelle(client).status_code == 200
+    assert lit(client).status_code == 404
+
+
+def test_le_secret_est_juge_avant_le_systeme_sur_read_aussi():
+    reponse = lit(
+        application(lectures={"brocanto-boutique": sert_une_piece()}),
+        systeme="brocanto-crm",
+        secret="faux",
+    )
+
+    assert reponse.status_code == 401

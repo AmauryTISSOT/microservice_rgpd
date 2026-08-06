@@ -113,6 +113,26 @@ public sealed class LedgerFact : SmartEnum<LedgerFact>
   /// </summary>
   public static readonly LedgerFact QuestionRaised = new(nameof(QuestionRaised), 10, "question posée");
 
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>servi</b> un <c>Read</c>. La ligne dit le système, le <b>droit au titre
+  /// duquel</b> on a lu, et sous combien de désignations — <b>jamais ce qu'il y avait dans la
+  /// pièce</b>, ni son type, ni son nom, ni sa taille. Le <c>Ledger</c> ne porte aucun contenu, et
+  /// il n'existe aucune colonne où il pourrait atterrir.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle ne s'inscrit que si le verdict change</b>, comme celle d'un <c>Locate</c> : rouvrir
+  /// un dossier relance les appels, et trente-cinq passages rendant le même « servi » n'ont aucun
+  /// signataire.
+  /// </remarks>
+  public static readonly LedgerFact ReadServed = new(nameof(ReadServed), 11, "lecture servie");
+
+  /// <summary>
+  /// Un <c>Adapter</c> a <b>différé</b> un <c>Read</c> en déclarant son échéance. Trois dates disent
+  /// tout : appelé, échéance déclarée, résultat — et l'on ne saura jamais combien de fois on est
+  /// repassé, faute de compteur que personne n'aurait signé.
+  /// </summary>
+  public static readonly LedgerFact ReadDeferred = new(nameof(ReadDeferred), 12, "lecture différée");
+
   private LedgerFact(string name, int value, string frenchLabel)
     : base(name, value)
   {
