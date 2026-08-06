@@ -299,6 +299,16 @@ app.register_blueprint(
                 designations, Path(JOURNAL).parent
             ),
         },
+        # Les deux mêmes systèmes servent `read`. La table est séparée parce que les capacités le
+        # sont : déclarer l'une n'engage pas l'autre, et le Manifest du service dit laquelle.
+        {
+            "brocanto-boutique": lambda designations, droit: rgpd_boutique.lire(
+                designations, lit_boutique, droit
+            ),
+            "brocanto-journal": lambda designations, droit: rgpd_journal.lire(
+                designations, Path(JOURNAL).parent, droit
+            ),
+        },
     )
 )
 

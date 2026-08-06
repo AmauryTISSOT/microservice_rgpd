@@ -128,8 +128,9 @@ requête **sous le vrai secret**.
   que le `Manifest` déclare, et quoi que la sonde ait appris. Une vérification ne détruit pas des
   données pour savoir si vous savez les détruire : `erase` et `rectify` sont rapportées à votre
   exploitant comme **non vérifiables**, nommément, plutôt que passées sous silence. `read` non plus
-  n'est pas sondé, et pour une autre raison : sa forme d'appel n'est pas encore fixée (§ 7), et
-  sonder avant qu'elle le soit vous enverrait une requête que ce contrat ne décrit pas.
+  n'est pas sondé, et pour une autre raison : sa forme d'appel est fixée (§ 4 ter), mais le sonder
+  ferait rapatrier des données personnelles au titre d'une vérification de topologie — un séjour de
+  plus, pour n'apprendre qu'un statut que `locate` donne déjà.
 - **Le service ne corrige jamais son `Manifest` sur ce que vous répondez.** Un `404` sur un système
   qu'il croyait vôtre est rapporté comme un écart ; un humain tranchera lequel des deux avait tort.
 
@@ -145,10 +146,11 @@ X-RGPD-Secret: <le secret partagé>
 Content-Type: application/json
 ```
 
-`<capability>` vaut `locate`, `read`, `erase` ou `rectify`. Seul `locate` est appelé à ce jour ;
-voir § 7.
+`<capability>` vaut `locate`, `read`, `erase` ou `rectify`. `locate` et `read` sont appelées à ce
+jour ; `erase` et `rectify` sont déclarables et pas encore exercées (§ 7).
 
-Le corps porte le **sac de désignations**, et rien d'autre :
+Le corps porte le **sac de désignations** — et, pour `read` seulement, le **droit** au titre duquel
+on lit (§ 4 ter). Rien d'autre :
 
 ```json
 {
@@ -181,7 +183,7 @@ motif. Ce que vous ne recevez pas ne peut pas finir dans vos journaux.
 
 | Statut | Sens | Corps |
 | --- | --- | --- |
-| `200` | Servi. | Ce que la `Capability` rend, en JSON. |
+| `200` | Servi. | Ce que la `Capability` rend : du JSON pour `locate` (§ 4 bis), **des octets bruts** pour `read` (§ 4 ter). |
 | `202` | **Différé** : le travail est long, vous ne tenez pas la connexion. | `{"deadline": "<ISO 8601 avec décalage>"}` |
 | `401` | Le secret n'est pas celui que vous attendez — ou il manquait. | Libre, non lu. |
 | `404` | Vous ne servez pas ce `system_id`. | Libre, non lu. |
@@ -228,7 +230,8 @@ tout ce dispositif cherche à rendre impossible.
 
 ## 4 bis. Le corps d'un `200` à `locate`
 
-C'est la seule `Capability` appelée à ce jour, et la seule dont la réponse ait une forme fixée.
+C'est la seule `Capability` dont la **réponse** ait une forme fixée — `read` n'en a délibérément
+aucune (§ 4 ter).
 
 ```json
 {
@@ -294,6 +297,106 @@ service préfère ne rien apprendre plutôt qu'apprendre à moitié en silence.
 
 ---
 
+## 4 ter. `read` : le droit part, la forme jamais
+
+### Le corps de l'appel
+
+`read` est la seule `Capability` dont le corps porte autre chose que le sac : le **droit au titre
+duquel** on lit.
+
+```json
+{
+  "designations": [{ "kind": "email", "value": "helene.petit@example.fr" }],
+  "right": "Access"
+}
+```
+
+`right` appartient à un vocabulaire fermé, sous ses noms canoniques **anglais** : `Access`,
+`Rectification`, `Erasure`, `Portability`, `Restriction`, `Objection`.
+
+**Pourquoi il part, et pourquoi il est la seule chose qui parte.** Le périmètre matériel de
+l'art. 20 est plus étroit que celui de l'art. 15, et il se décide **ligne par ligne, chez vous** :
+« ce que la personne nous a fourni » n'a de réponse que dans vos tables. Le service ne peut pas
+trancher cela et ne le tentera jamais ; il vous dit sous quel article on lit, et vous en tirez ce
+que vous seul savez en tirer.
+
+Un `read` appelé pour deux droits différents part **deux fois**. C'est délibéré : rendre une seule
+pièce pour deux périmètres vous obligerait à retenir le plus large, c'est-à-dire à rapatrier au
+titre de l'art. 20 ce que seul l'art. 15 justifiait.
+
+### Ce que vous répondez
+
+**Rien n'est imposé. Des octets, et de quoi les nommer.**
+
+```
+200 OK
+Content-Type: text/csv; charset=utf-8
+Content-Disposition: attachment; filename="export-2026-04.csv"
+
+<vos octets, dans votre forme à vous>
+```
+
+Un CSV, un ZIP, un PDF, du JSON qui n'obéit à aucun schéma du service, un dump SQL : **le service
+n'ouvre pas le corps.** Il ne le désérialise pas, ne le valide pas, ne compte rien dedans, et n'en
+tire aucune ligne de preuve. Un export que vous savez déjà écrire coûte trois lignes ; un schéma
+commun vous aurait demandé de traduire vos tables dans le vocabulaire de quelqu'un d'autre — et
+c'est ce coût-là, plus que tout autre, qui fait qu'une capacité n'est jamais déclarée.
+
+**Les deux en-têtes sont recopiés sans interprétation :**
+
+| En-tête | Ce que le service en fait |
+| --- | --- |
+| `Content-Type` | Recopié **tel quel**, et montré à un humain. Absent → `application/octet-stream`. |
+| `Content-Disposition: filename=` | Seul le **dernier segment** est gardé — `/var/exports/2026/a.csv` devient `a.csv`. Absent, vide, ou illisible → le nom **dégrade sur votre `system_id`**. |
+
+**`send_file()` seul doit suffire.** Ne rien écrire du tout ne perd pas la pièce : c'est le cas
+prévu, pas le cas dégradé qu'on tolère.
+
+### Les trois cas, et ce qui les distingue
+
+L'enveloppe **seule** les distingue — vous n'avez aucun champ à remplir pour le dire :
+
+| Ce que vous voulez dire | Ce que vous répondez |
+| --- | --- |
+| **Pièce pleine** — voici ses données. | `200`, avec des octets. |
+| **Corps vide** — j'ai regardé, il n'y a rien. | `200`, **zéro octet**. |
+| **Pièce absente** — je n'ai pas répondu à la question. | `202`, `401`, `404` — ou vous n'êtes pas appelé. |
+
+⚠️ **Un `204` n'est pas une pièce vide** : c'est une panne, comme tout statut hors du tableau du
+§ 4. La pièce vide est un `200` sans octets, et le contrat n'a pas deux façons de la dire.
+
+**Dire « rien » ne doit rien coûter.** C'est pour cela que le corps vide est gratuit : s'il fallait
+produire un export d'une forme convenue pour déclarer qu'on n'a rien, on serait tenté de ne rien
+déclarer du tout — et l'omission silencieuse est très exactement ce que ce dispositif cherche à
+rendre impossible.
+
+### Quand vous êtes appelé, et quand vous ne l'êtes pas
+
+- **Seulement là où le service a rattaché quelqu'un**, c'est-à-dire là où votre `locate` a rendu du
+  `certain`, ou là où un humain a arbitré une de vos réserves. Vous demander les données d'une
+  personne que vous venez de dire ne pas connaître ferait remonter une pièce dont personne ne
+  saurait de qui elle parle.
+  ⚠️ **Une réserve en attente n'est pas un rattachement.** Ce qui manque est un regard, et lire
+  avant qu'un humain n'ait tranché rapatrierait les données d'un homonyme.
+- **Une pièce déjà obtenue n'est jamais redemandée.** Elle répond à la question posée sous le sac
+  d'aujourd'hui ; repasser rapatrierait une seconde fois les données de quelqu'un, c'est-à-dire
+  allongerait le séjour que tout ce dispositif cherche à raccourcir.
+- **Un sac enrichi fait repartir l'appel**, et lui seul : un arbitrage a élargi la question, et la
+  pièce d'hier répondait à une plus étroite.
+- **Un `202` fait repasser après l'échéance que vous avez déclarée** — à l'ouverture du dossier par
+  un opérateur, jamais par une minuterie.
+
+### Ce que la pièce devient côté service
+
+- Elle est gardée **hors du dossier**, avec une durée de vie qui n'est pas la sienne : la remise à
+  la personne la détruira sans réécrire le dossier.
+- **La matière de preuve n'en porte rien** — ni le type, ni le nom du fichier, ni sa taille, ni un
+  octet de son contenu. Elle consigne qu'on a lu, chez qui, quel jour, au titre de quel droit, et
+  sous **combien** de désignations. Le contrôle lit l'ampleur d'une recherche ; il n'y trouve jamais
+  les données de la personne.
+
+---
+
 ## 5. Ce que le service fait d'un refus
 
 - **Rien ne bouge dans le dossier.** Aucune étape ne change d'état : votre refus n'apprend rien sur
@@ -332,12 +435,9 @@ service préfère ne rien apprendre plutôt qu'apprendre à moitié en silence.
 ## 7. Ce qui n'est pas encore là
 
 Ce contrat est celui du **transport**, et il est complet : l'appel, le secret, le différé, les deux
-refus. Ce que chaque `Capability` **rend** se fixe ticket par ticket ; `locate` est fixée (§ 4 bis).
+refus. Ce que chaque `Capability` **rend** se fixe ticket par ticket ; `locate` est fixée (§ 4 bis),
+et `read` l'est aussi — en ceci qu'elle ne fixe **rien** de la réponse (§ 4 ter).
 
-- `read` — portera, **en plus des désignations**, le droit **au titre duquel** on lit. Jamais la
-  forme attendue : le périmètre matériel de l'art. 20 est plus étroit que celui de l'art. 15 et se
-  décide ligne par ligne — vous seul pouvez le trancher, et vous tranchez du même geste le périmètre
-  et la forme.
 - `erase` et `rectify` — **déclarables dès aujourd'hui** dans le `Manifest`, exercées plus tard.
   Déclarer une capacité que personne n'appelle encore est une déclaration exacte ; ne pas pouvoir la
   déclarer serait un mensonge du catalogue.
@@ -359,6 +459,19 @@ qu'il ne touche pas.
   [`LocateFindings`](../../src/MicroserviceRgpd.Core/Casework/Adapters/LocateFindings.cs) est ce que
   le domaine accepte d'en croire. La frontière entre les deux est le seul endroit où un corps mal
   formé devient une panne plutôt qu'un zéro.
+- Tout ce que le service sait d'une pièce, et rien de plus :
+  [`TransportEnvelope`](../../src/MicroserviceRgpd.Core/Casework/Adapters/TransportEnvelope.cs) — la
+  recopie du `Content-Type`, le dernier segment du `filename=`, et le repli sur le `system_id` —,
+  [`RetrievedPiece`](../../src/MicroserviceRgpd.Core/Casework/Adapters/RetrievedPiece.cs) pour les
+  trois cas (pleine, vide, absente).
+- La pièce gardée **hors de l'agrégat**, avec sa durée de vie propre :
+  [`RetrievedData`](../../src/MicroserviceRgpd.Core/Casework/RetrievedData.cs),
+  [`IRetrievedData`](../../src/MicroserviceRgpd.Core/Casework/IRetrievedData.cs),
+  [`RetrievedDataStore`](../../src/MicroserviceRgpd.Infrastructure/Data/Casework/RetrievedDataStore.cs).
+  Le **fait** de la lecture, lui, reste dans le dossier :
+  [`Reading`](../../src/MicroserviceRgpd.Core/Casework/Reading.cs), qui porte l'échéance d'un `202`.
+- L'appel de `read` de bout en bout, et les quatre raisons de repasser :
+  [`ReadHandler`](../../src/MicroserviceRgpd.UseCases/Casework/Read/ReadHandler.cs).
 - Ce qu'un refus laisse : [`AdapterCallsForCase`](../../src/MicroserviceRgpd.UseCases/Casework/CallAdapter/AdapterCallsForCase.cs).
 - L'appel de `locate` de bout en bout, et la relance d'un `202` à l'ouverture du dossier :
   [`LocateHandler`](../../src/MicroserviceRgpd.UseCases/Casework/Locate/LocateHandler.cs).
@@ -374,9 +487,12 @@ qu'il ne touche pas.
 - Le secret et le refus de démarrer : [`AdapterServiceExtensions`](../../src/MicroserviceRgpd.Infrastructure/Casework/Adapters/AdapterServiceExtensions.cs),
   clé `Casework:AdapterSecret`.
 - L'autre bout du fil, écrit comme un client l'écrirait : l'`Adapter` du témoin,
-  [`temoin/adapter_rgpd.py`](../../temoin/adapter_rgpd.py), qui sert `locate` pour deux `system_id`
-  de deux natures — une base MariaDB et un journal à fichiers plats. C'est là que ce contrat se
-  vérifie contre autre chose que lui-même ; ce qu'il a coûté au témoin est consigné dans
+  [`temoin/adapter_rgpd.py`](../../temoin/adapter_rgpd.py), qui sert `locate` **et** `read` pour deux
+  `system_id` de deux natures — une base MariaDB et un journal à fichiers plats. Les deux rendent
+  des pièces qu'aucun schéma ne rapproche : un CSV pour la base
+  ([`rgpd_boutique.lire`](../../temoin/rgpd_boutique.py)), des lignes de journal en texte brut pour
+  l'autre ([`rgpd_journal.lire`](../../temoin/rgpd_journal.py)). C'est là que ce contrat se vérifie
+  contre autre chose que lui-même ; ce qu'il a coûté au témoin est consigné dans
   [`temoin/README.md`](../../temoin/README.md).
 
 **La couture de test est posée sur le fil**, et c'est délibéré : un `HttpMessageHandler` injecté

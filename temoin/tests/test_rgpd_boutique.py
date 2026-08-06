@@ -1,18 +1,23 @@
-"""`Locate` sur la base : où l'on regarde, avec quoi, et ce qu'on rattache ou non.
+"""La base, vue par l'Adapter : où l'on regarde, avec quoi, ce qu'on rattache, et ce qu'on rapatrie.
 
-Aucune connexion MariaDB ici. La couture est le **lecteur** : `localiser` construit ses sondes et
-les fait exécuter par une fonction qu'on lui passe. Ce qui est éprouvé est donc ce que Brocanto
-demande à sa base — les tables visitées, les valeurs liées, et la ligne de partage entre ce qu'elle
-rattache et ce dont elle doute — et non le comportement d'InnoDB.
+Aucune connexion MariaDB ici. La couture est le **lecteur** : `localiser` et `lire` construisent
+leurs sondes et les font exécuter par une fonction qu'on leur passe. Ce qui est éprouvé est donc ce
+que Brocanto demande à sa base — les tables visitées, les valeurs liées, et la ligne de partage
+entre ce qu'elle rattache et ce dont elle doute — et non le comportement d'InnoDB.
 """
+
+from datetime import datetime
 
 from adapter_rgpd import Designation, Servi
 
-from rgpd_boutique import localiser, sondes
+from rgpd_boutique import lire, localiser, sondes, sondes_de_lecture
 
 HELENE = Designation("email", "helene.petit@example.fr")
 LUC = Designation("name", "Luc Moreau")
 JEAN = Designation("name", "Jean Dupont")
+
+DATE = datetime(2026, 4, 12, 10, 0, 0)
+"""Une date telle que le pilote la rend : un objet, pas une chaîne. Elle doit s'écrire lisiblement."""
 
 
 def lecteur(par_sonde):
@@ -235,3 +240,105 @@ def test_chaque_sonde_est_executee_une_fois_avec_ses_propres_valeurs():
         "messages",
     ]
     assert all(sonde.params == (HELENE.valeur,) for sonde in lit.demandes)
+
+
+# --- `read` : ce qu'on rapatrie, et ce qu'on laisse ---------------------------------------------
+
+
+def lignes_de(csv_octets):
+    """Le CSV rendu, découpé en lignes de texte. On n'en éprouve que la structure."""
+    return csv_octets.decode("utf-8").splitlines()
+
+
+def test_la_lecture_ne_pose_que_les_sondes_certaines():
+    """⚠️ Une réserve non tranchée n'est pas la personne : l'exporter livrerait un homonyme."""
+    assert [sonde.emplacement for sonde in sondes_de_lecture([JEAN])] == []
+
+    assert [sonde.emplacement for sonde in sondes_de_lecture([HELENE])] == [
+        "clients",
+        "commandes",
+        "factures",
+        "clients_ancienne_boutique",
+        "newsletter",
+        "messages",
+    ]
+
+
+def test_la_lecture_rapatrie_les_lignes_entieres():
+    """`SELECT *` et non plus la seule clé : c'est de contenu qu'un `read` a besoin."""
+    posee = sondes_de_lecture([HELENE])[0]
+
+    assert posee.sql == "SELECT * FROM clients WHERE email = %s"
+    assert posee.params == ("helene.petit@example.fr",)
+
+
+def test_chaque_table_est_une_section_du_meme_fichier():
+    lit = lecteur(
+        {
+            ("clients", True): [{"id": 1203, "email": "helene.petit@example.fr"}],
+            ("newsletter", True): [{"courriel": "helene.petit@example.fr", "source": "pied"}],
+        }
+    )
+
+    piece = lire([HELENE], lit, "Access")
+
+    assert lignes_de(piece.contenu) == [
+        "# clients",
+        "id;email",
+        "1203;helene.petit@example.fr",
+        "",
+        "# newsletter",
+        "courriel;source",
+        "helene.petit@example.fr;pied",
+    ]
+
+
+def test_la_piece_dit_son_type_et_son_nom():
+    piece = lire([HELENE], lecteur({("clients", True): [{"id": 1203}]}), "Access")
+
+    assert piece.type_mime == "text/csv; charset=utf-8"
+    assert piece.nom == "brocanto-boutique-access.csv"
+
+
+def test_une_personne_qu_aucune_table_ne_porte_rend_une_piece_vide():
+    """« On a regardé, il n'y a rien » est une déclaration, et elle ne doit rien coûter."""
+    assert lire([HELENE], lecteur({}), "Access").contenu == b""
+
+
+def test_un_sac_sans_rien_de_cherchable_rend_aussi_une_piece_vide():
+    assert lire([JEAN], lecteur({}), "Access").contenu == b""
+
+
+def test_la_portabilite_laisse_dehors_ce_que_la_personne_n_a_pas_fourni():
+    """L'art. 20 est plus étroit que l'art. 15, et le découpage se décide **ici**, chez le client."""
+    par_table = {
+        ("clients", True): [{"id": 1203}],
+        ("factures", True): [{"numero": "F-2026-0004"}],
+        ("clients_ancienne_boutique", True): [{"id_ancien": 77}],
+    }
+
+    complete = lignes_de(lire([HELENE], lecteur(par_table), "Access").contenu)
+
+    assert "# factures" in complete
+    assert "# clients_ancienne_boutique" in complete
+
+    assert lignes_de(lire([HELENE], lecteur(par_table), "Portability").contenu) == [
+        "# clients",
+        "id",
+        "1203",
+    ]
+
+
+def test_le_droit_entre_dans_le_nom_de_la_piece():
+    """Deux droits, deux pièces : un opérateur qui les ouvre côte à côte doit les distinguer."""
+    piece = lire([HELENE], lecteur({("clients", True): [{"id": 1203}]}), "Portability")
+
+    assert piece.nom == "brocanto-boutique-portability.csv"
+
+
+def test_une_date_et_un_vide_s_ecrivent_lisiblement():
+    lit = lecteur(
+        {("commandes", True): [{"reference": "CMD-1", "passee_le": DATE, "remise": None}]}
+    )
+
+    assert lignes_de(lire([HELENE], lit, "Access").contenu)[-1] == "CMD-1;2026-04-12T10:00:00;"

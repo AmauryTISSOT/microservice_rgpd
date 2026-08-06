@@ -1,4 +1,4 @@
-"""`Locate` sur le journal applicatif : la même question posée à des fichiers plats.
+"""Le journal applicatif, vu par l'Adapter : la même question posée à des fichiers plats.
 
 Le journal n'est pas une base. Chaque ligne y associe une date, une adresse IP, l'adresse
 électronique de la session, la méthode, le chemin appelé et le statut ; logrotate en fait des
@@ -19,6 +19,10 @@ Quatre conséquences, propres à cette nature de stockage :
   relira ici — et ici, on relit un journal avec `grep`, sur un fichier ;
 - au-delà d'un certain volume, la lecture ne tient pas dans une requête HTTP. On répond alors
   `202` en déclarant l'échéance de la passe de nuit, plutôt que de faire attendre le service.
+
+`read` est la même lecture poussée jusqu'au bout : là où `localiser` s'arrête à la première ligne
+trouvée pour ne nommer que le fichier, `lire` les recopie toutes. Le seuil et le `202` sont les
+mêmes, parce qu'ils tiennent à la nature du stockage et non à la capacité appelée.
 
 ⚠️ **La casse, et pourquoi on ne l'ignore pas.** Un fichier plat n'a pas de collation : comparer en
 minuscules serait un choix que ce journal ne fait nulle part ailleurs — ni `grep`, ni l'astreinte
@@ -41,7 +45,10 @@ sous la référence, pour qui vient regarder.
 import re
 from datetime import datetime, timedelta
 
-from adapter_rgpd import Differe, servi_locate
+from adapter_rgpd import Differe, Piece, servi_locate
+
+TYPE_DU_JOURNAL = "text/plain; charset=utf-8"
+"""Des lignes de journal restent des lignes de journal. Les mettre en JSON n'y ajouterait rien."""
 
 FICHIER_DU_JOURNAL = re.compile(r"^brocanto\.log(\.\d+)?$")
 """Le fichier courant et ceux que logrotate a tournés. Les archives compressées ne se lisent pas ici."""
@@ -76,6 +83,47 @@ def localiser(designations, dossier, seuil=SEUIL_OCTETS, maintenant=None):
     return servi_locate(
         fichier.name for fichier in fichiers if porte_une_ligne(fichier, cherchees)
     )
+
+
+def lire(designations, dossier, droit, seuil=SEUIL_OCTETS, maintenant=None):
+    """Les lignes du journal où l'une des adresses cherchées apparaît, dans l'ordre des fichiers.
+
+    C'est la **même** lecture que `localiser`, poussée jusqu'au bout : là où elle s'arrêtait à la
+    première ligne trouvée pour ne nommer que le fichier, celle-ci les recopie toutes. Le seuil de
+    volume et le `202` sont les mêmes — ils tiennent à la nature du stockage, pas à la capacité.
+
+    ⚠️ **Le droit ne change rien ici**, et c'est un fait de ce système, pas un oubli. Une ligne de
+    journal est un seul objet : elle n'a pas de colonnes dont on pourrait dire que la personne les a
+    fournies et d'autres non. La restreindre demanderait de trancher, ligne à ligne, ce que la
+    personne a « fourni » en visitant une page — et personne ici ne saurait le faire.
+    """
+    cherchees = adresses_cherchees(designations)
+    nom = "brocanto-journal.log"
+
+    if not cherchees:
+        # Rien à chercher : une pièce vide, et non l'absence de pièce. On a bien répondu.
+        return Piece(b"", TYPE_DU_JOURNAL, nom)
+
+    fichiers = fichiers_du_journal(dossier)
+
+    if sum(fichier.stat().st_size for fichier in fichiers) > seuil:
+        return Differe(prochaine_fenetre_de_nuit(maintenant or datetime.now().astimezone()))
+
+    trouvees = [ligne for fichier in fichiers for ligne in lignes_portant(fichier, cherchees)]
+
+    return Piece("".join(trouvees).encode("utf-8"), TYPE_DU_JOURNAL, nom)
+
+
+def lignes_portant(fichier, cherchees):
+    """Les lignes de ce fichier où l'une des adresses cherchées apparaît, telles quelles.
+
+    Telles quelles : ni retaillées, ni reformatées, ni triées. Ce qu'un opérateur relira est ce
+    qu'un `grep` lui aurait rendu ici, et c'est la seule forme dont on réponde.
+    """
+    with fichier.open(encoding="utf-8", errors="replace") as lignes:
+        return [
+            ligne for ligne in lignes if any(cherchee in ligne for cherchee in cherchees)
+        ]
 
 
 def fichiers_du_journal(dossier):

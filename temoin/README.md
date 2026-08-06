@@ -64,13 +64,14 @@ pytest                                # depuis `temoin/`
 
 Ticket [#88](https://github.com/AmauryTISSOT/microservice_rgpd/issues/88). Deux choses ont été
 ajoutées au témoin, et deux seulement, chacune le rendant **plus** ordinaire — la seule raison
-légitime d'y toucher. La troisième section ci-dessous n'est pas un ajout : c'est ce que la forme
-définitive de `locate` a changé dans l'adaptateur, et ce qu'elle a fait découvrir du témoin.
+légitime d'y toucher. Les sections 3 et 4 ne sont pas des ajouts au témoin : ce sont les capacités
+que l'adaptateur sert, ce qu'elles lui ont coûté, et ce qu'elles ont fait découvrir de Brocanto.
 
 ### 1. Un `Adapter` HTTP, servant deux systèmes
 
 `adapter_rgpd.py` monte sous `/rgpd` la seule surface qui sache que le service existe ;
-`rgpd_boutique.py` et `rgpd_journal.py` répondent à `locate` pour deux `system_id` :
+`rgpd_boutique.py` et `rgpd_journal.py` répondent à `locate` — et, depuis le § 4, à `read` — pour
+deux `system_id` :
 
 | `system_id` | Nature du stockage | Ce qu'il rend |
 | --- | --- | --- |
@@ -174,6 +175,47 @@ tiers pose la même question aux deux d'affilée. Ce qui répare le trou n'est p
 c'est la réserve que la base rend sur son homonyme, l'adresse qu'elle propose **dans la casse où
 elle la stocke**, l'humain qui la rattache, et l'appel suivant qui la porte. Le dispositif entier
 sert à ça, et ce cas-là est la raison pour laquelle il a cette forme.
+
+### 4. Ce que `read` a coûté, et pourquoi presque rien
+
+Ticket [#93](https://github.com/AmauryTISSOT/microservice_rgpd/issues/93). Les deux systèmes servent
+désormais `read` en plus de `locate`. **Le coût a été dérisoire, et c'est le fait le plus important
+de cette section** : le contrat n'impose **aucune forme** à la réponse.
+
+| `system_id` | Ce que `read` rend | Ce que ça a coûté |
+| --- | --- | --- |
+| `brocanto-boutique` | Un CSV, une section par table | Les mêmes emplacements, `SELECT *` au lieu de `SELECT clé`, et le module `csv` de la bibliothèque standard |
+| `brocanto-journal` | Les lignes portant l'adresse, en texte brut | La même lecture que `locate`, poussée jusqu'au bout au lieu de s'arrêter à la première ligne |
+
+**`requirements.txt` n'a toujours pas bougé.** Aucun schéma à apprendre, aucun vocabulaire commun à
+adopter, aucune traduction de nos tables dans les mots de quelqu'un d'autre : on rend l'export que la
+brocante sait déjà écrire — `/admin/export/ventes.csv` en écrit un depuis 2019 — et le service le
+recopie sans l'ouvrir. C'est cette gratuité qui fait qu'une capacité est déclarable ; l'inverse est
+la raison pour laquelle, sur le terrain, elles ne le sont pas.
+
+**Le droit part, et il ne change qu'une chose — chez nous.** L'appel porte `right`, et
+`FOURNIES_PAR_LA_PERSONNE` en tire le seul découpage qui existe : une portabilité (art. 20) laisse
+dehors `factures` et `paiements` — que la personne ne nous a pas *fournies*, nous les avons produites
+en la facturant — et `clients_ancienne_boutique`, dont la reprise de 2019 n'a jamais été rapprochée
+des comptes actuels. Ce découpage ne remonte nulle part et n'a pas à remonter : le service ne connaît
+aucun nom de table et n'aurait pas su l'arbitrer. Le jour où l'on nous dira que `paiements` est
+portable, **une seule ligne change**.
+
+⚠️ **Une réserve non tranchée n'ouvre aucune lecture.** `sondes_de_lecture` ne pose que les sondes
+**certaines** : exporter une ligne trouvée sous un nom livrerait au demandeur les données d'un
+homonyme — une violation dans l'autre sens, et le piège n° 2 s'y prête exactement. Les deux moitiés
+du dispositif disent la même chose sans s'être concertées : le service ne lit que là où il a
+rattaché, et nous ne rendons que ce que nous rattachons.
+
+**Le corps vide est gratuit, et c'est délibéré.** Une personne qu'aucune table ne porte rend un `200`
+sans octets — pas un `204`, pas une absence de réponse. S'il avait fallu produire un export d'une
+forme convenue pour dire « on a regardé, il n'y a rien », on aurait été tenté de ne rien dire du
+tout.
+
+⚠️ **Ce que le droit ne change pas dans le journal, et pourquoi.** Une ligne de journal est un seul
+objet : elle n'a pas de colonnes dont on pourrait dire que la personne les a fournies et d'autres
+non. `Portability` et `Access` y rendent donc la même chose. Ce n'est pas un oubli — c'est un fait de
+cette nature de stockage, et il est écrit ici pour que personne ne le prenne pour un défaut.
 
 ### La clause de périmètre, et ce que la recette en fait
 

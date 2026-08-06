@@ -1,6 +1,7 @@
 ﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UseCases.Casework.CallAdapter;
 
@@ -80,8 +81,51 @@ public sealed class AdapterCallsForCase(
   {
     ArgumentNullException.ThrowIfNull(call);
 
-    var answer = await calls.AskAsync<TServed>(call, cancellationToken);
+    return await KeptOf(
+      await calls.AskAsync<TServed>(call, cancellationToken), caseId, call, previously, cancellationToken);
+  }
 
+  /// <summary>
+  /// Porte un <c>Read</c> au titre d'un dossier, et rend la <b>pièce</b> telle quelle — enveloppe de
+  /// transport comprise, corps jamais ouvert.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle est à part parce que ce que <c>Read</c> rend l'est</b> : un flux d'octets sans forme
+  /// imposée, là où les autres capacités rendent du JSON que le contrat fixe. Ce qu'un refus laisse
+  /// ici, en revanche, est exactement le même — une tentative datée et un désaccord signalé une
+  /// fois —, et c'est écrit une seule fois pour les deux.
+  /// </remarks>
+  /// <param name="caseId">Le dossier au titre duquel l'appel part.</param>
+  /// <param name="call">Ce qu'on demande, et à qui.</param>
+  /// <param name="right">Le droit <b>au titre duquel</b> on lit. Jamais une forme attendue.</param>
+  /// <param name="previously">Ce que ce même <c>Adapter</c> avait répondu la dernière fois, ou <c>null</c>.</param>
+  /// <param name="cancellationToken">L'annulation de l'échange en cours.</param>
+  /// <exception cref="AdapterFailure">L'<c>Adapter</c> n'a rendu ni réponse ni refus.</exception>
+  public async Task<AdapterAnswer<RetrievedPiece>> ReadAsync(
+    CaseId caseId,
+    AdapterCall call,
+    DataSubjectRight right,
+    AdapterOutcome? previously = null,
+    CancellationToken cancellationToken = default)
+  {
+    ArgumentNullException.ThrowIfNull(call);
+
+    return await KeptOf(
+      await calls.ReadAsync(call, right, cancellationToken), caseId, call, previously, cancellationToken);
+  }
+
+  /// <summary>
+  /// Ce qu'un refus laisse : une tentative datée dans la preuve, et un désaccord signalé — écrit une
+  /// fois pour toutes les capacités, qui se refusent toutes de la même façon.
+  /// </summary>
+  private async Task<AdapterAnswer<TServed>> KeptOf<TServed>(
+    AdapterAnswer<TServed> answer,
+    CaseId caseId,
+    AdapterCall call,
+    AdapterOutcome? previously,
+    CancellationToken cancellationToken)
+    where TServed : class
+  {
     if (!answer.Outcome.IsRefusal)
     {
       return answer;

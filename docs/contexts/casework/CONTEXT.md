@@ -350,6 +350,37 @@ _Avoid_ : Attachment, Search, Lookup, Result, LocateRecord, recherche ⚠️ `At
 `Locate` à zéro « un rattachement portant zéro rattachement » ; `Record` est sur la liste du
 `Ledger`.
 
+**Reading** :
+Ce qu'un `Read` a **tenté** sur **un** `DeclaredSystem` au titre d'**un** `DataSubjectRight` : la
+dernière issue de l'appel, sa date, l'échéance d'un `202`, et le nombre de `Designation` sous
+lesquelles on avait lu. Elle vit **dans** le `Case`, à la différence de la `RetrievedData` qu'elle
+accompagne — elle ne porte aucun octet, et ce qui reste ici est ce qui **meurt avec le dossier**
+tandis que la pièce, elle, meurt à la remise.
+⚠️ **Son grain est (droit, système)**, là où celui du `Locating` est le système seul : un `Locate`
+cherche *la personne* et la chercher deux fois parce qu'elle réclame deux droits enverrait deux fois
+la même requête ; un `Read` lit *au titre d'un droit*, et le périmètre n'est pas le même.
+⚠️ **L'absence de `Reading` n'est pas une pièce vide.** « Pas appelé » et « appelé, rien rendu » sont
+deux déclarations différentes, et une panne laisse donc le couple sans lecture plutôt qu'avec une
+pièce vide que personne n'a servie. Aucune valeur ne dit « en panne » : une panne n'est ni réponse ni
+refus, et ne laisse rien.
+⚠️ Les quatre raisons de rappeler sont celles du `Locating`, et une lecture **déjà servie n'en est
+pas une** : sa pièce est détenue, elle répond à la question qu'on pose sous le sac d'aujourd'hui, et
+repasser rapatrierait une seconde fois les données de quelqu'un — c'est-à-dire allongerait le séjour
+que tout ce dispositif cherche à raccourcir.
+_Avoid_ : Extraction, Fetch, Retrieval, ReadRecord, lecture ⚠️ `Retrieval` se confondrait avec la
+`RetrievedData` qu'elle n'est justement pas ; `Record` est sur la liste du `Ledger`.
+
+**TransportEnvelope** :
+Tout ce que le service sait d'une pièce, et il n'en saura jamais rien d'autre : un `Content-Type` et
+un nom de fichier, **recopiés sans interprétation** de ce que le transport lui a mis dans la main. Du
+nom, seul le **dernier segment** est gardé ; à défaut d'en-tête relisible, il retombe sur le
+`system_id` — `send_file()` seul doit suffire, et ne rien écrire du tout ne doit pas perdre la pièce.
+⚠️ **Elle ne valide rien et ne refuse rien.** Un `Content-Type` fantaisiste est recopié tel quel : le
+service ne prétend pas savoir ce que l'application a exporté, et le seul lecteur de ces deux champs
+est l'humain qui ouvrira la pièce.
+_Avoid_ : MediaType, Metadata, FileInfo, Attachment ⚠️ `Metadata` promettrait une description du
+contenu, alors que ce sont deux chaînes que personne n'a vérifiées.
+
 **OpaqueReference** :
 Le mot par lequel **l'application** désigne une ligne qu'elle a rattachée — `clients#1203`,
 `/var/log/app-2026-03.log:88`. Le service ne la découpe pas, ne la compare pas d'un système à
@@ -438,7 +469,9 @@ détruite sans réécrire le `Case`. **Effacée à la remise** — pas anonymis�
 dans le `Ledger`. Son séjour est inévitable, la lecture précédant l'effacement ; il doit être
 minimal, un service qui entreposerait les exports devenant la donnée la plus concentrée du système
 d'information de son client.
-Une pièce par `DeclaredSystem`, et le service **n'en ouvre jamais le corps** : c'est un flux d'octets,
+Une pièce par couple (`DataSubjectRight`, `DeclaredSystem`) — le périmètre matériel de l'art. 20
+n'étant pas celui de l'art. 15, une pièce par système seul aurait forcé à retenir le plus large —, et
+le service **n'en ouvre jamais le corps** : c'est un flux d'octets,
 écrit dans le vocabulaire de l'application et non dans un vocabulaire commun — il n'en existe aucun
 sur le terrain, et en inventer un le ferait payer à chaque `Adapter`. Le grain du champ, fermé dans
 le `Manifest`, l'est donc aussi au retour. Le service n'en connaît que ce que le **transport** lui
