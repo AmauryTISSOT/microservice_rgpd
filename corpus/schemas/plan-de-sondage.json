@@ -1,0 +1,96 @@
+{
+  "graine": 20260808,
+  "schemas": {
+    "galette": {
+      "regime": "recensement",
+      "dialecte": "mariadb",
+      "tables_total": 31,
+      "colonnes_total": 194,
+      "tables_retenues": 31,
+      "colonnes_a_annoter": 194,
+      "tables_strate_A": 15,
+      "tables_strate_B": 16
+    },
+    "paheko-0.8.0": {
+      "regime": "recensement",
+      "dialecte": "sqlite",
+      "tables_total": 31,
+      "colonnes_total": 149,
+      "tables_retenues": 31,
+      "colonnes_a_annoter": 149,
+      "tables_strate_A": 7,
+      "tables_strate_B": 24
+    },
+    "paheko-1.0.0": {
+      "regime": "recensement",
+      "dialecte": "sqlite",
+      "tables_total": 32,
+      "colonnes_total": 167,
+      "tables_retenues": 32,
+      "colonnes_a_annoter": 167,
+      "tables_strate_A": 12,
+      "tables_strate_B": 20
+    },
+    "paheko-head": {
+      "regime": "recensement",
+      "dialecte": "sqlite",
+      "tables_total": 54,
+      "colonnes_total": 309,
+      "tables_retenues": 54,
+      "colonnes_a_annoter": 309,
+      "tables_strate_A": 28,
+      "tables_strate_B": 26
+    },
+    "sacoche": {
+      "regime": "recensement",
+      "dialecte": "mariadb",
+      "tables_total": 98,
+      "colonnes_total": 548,
+      "tables_retenues": 98,
+      "colonnes_a_annoter": 548,
+      "tables_strate_A": 68,
+      "tables_strate_B": 30
+    },
+    "temoin": {
+      "regime": "recensement",
+      "dialecte": "mariadb",
+      "tables_total": 11,
+      "colonnes_total": 72,
+      "tables_retenues": 11,
+      "colonnes_a_annoter": 72,
+      "tables_strate_A": 8,
+      "tables_strate_B": 3
+    },
+    "dolibarr": {
+      "regime": "sondage stratifié en grappes (table)",
+      "dialecte": "mariadb",
+      "tables_total": 413,
+      "colonnes_total": 5382,
+      "tables_retenues": 51,
+      "colonnes_a_annoter": 602,
+      "tables_strate_A": 212,
+      "tables_strate_B": 201
+    },
+    "glpi": {
+      "regime": "sondage stratifié en grappes (table)",
+      "dialecte": "mariadb",
+      "tables_total": 442,
+      "colonnes_total": 4519,
+      "tables_retenues": 57,
+      "colonnes_a_annoter": 610,
+      "tables_strate_A": 298,
+      "tables_strate_B": 144
+    },
+    "openemr": {
+      "regime": "sondage stratifié en grappes (table)",
+      "dialecte": "mariadb",
+      "tables_total": 283,
+      "colonnes_total": 3780,
+      "tables_retenues": 44,
+      "colonnes_a_annoter": 603,
+      "tables_strate_A": 189,
+      "tables_strate_B": 94
+    }
+  },
+  "colonnes_a_annoter_total": 3254
+}
