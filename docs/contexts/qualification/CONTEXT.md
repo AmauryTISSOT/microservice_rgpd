@@ -2,7 +2,7 @@
 
 Ce contexte ne connaît que **l'instant du verdict**. Il reçoit d'une application tierce un texte libre en français et le qualifie au regard des droits que le RGPD ouvre aux personnes concernées. Un humain valide ou corrige le verdict — c'est l'`Aide à la décision`, définie une fois pour tout le dépôt dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 
-La durée d'une demande — son instruction, son dossier, sa preuve — appartient à l'autre contexte, [Casework](../casework/CONTEXT.md), dont ce contexte est un fournisseur amont **optionnel**. Seul `DataSubjectRight` traverse la frontière.
+La durée d'une demande — son instruction, son dossier, sa preuve — appartient à [Casework](../casework/CONTEXT.md), dont ce contexte est un fournisseur amont **optionnel**. Seul `DataSubjectRight` traverse la frontière. Le troisième contexte du dépôt, [Screening](../screening/CONTEXT.md), ne communique avec celui-ci en aucune façon.
 
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages, documentation d'API — sont en français.
 
@@ -19,7 +19,7 @@ Le verdict rendu sur un `RightsRequestText` : l'ensemble des droits que le texte
 _Avoid_ : classification, catégorisation, analyse, évaluation
 
 **DataSubjectRight** :
-La taxonomie fermée de sept valeurs dans laquelle une `Qualification` puise. Six sont des droits ouverts par le RGPD ; la septième dit qu'aucun d'eux n'a été reconnu. ⚠️ Elle est le **noyau partagé** des deux contextes et n'appartient à aucun : son auteur est le RGPD, articles 15 à 21. On n'y touche pas depuis ce contexte seul — voir [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
+La taxonomie fermée de sept valeurs dans laquelle une `Qualification` puise. Six sont des droits ouverts par le RGPD ; la septième dit qu'aucun d'eux n'a été reconnu. ⚠️ Elle est le **noyau partagé** de ce contexte et de `Casework`, et n'appartient à aucun des deux : son auteur est le RGPD, articles 15 à 21. `Screening` n'y touche pas. On n'y touche pas depuis ce contexte seul — voir [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 _Avoid_ : catégorie, label, classe, type de demande
 
 ### Les sept valeurs de la taxonomie

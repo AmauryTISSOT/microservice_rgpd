@@ -1,8 +1,12 @@
 # Carte des contextes
 
-Ce dépôt porte **deux contextes bornés**. Ils ne se distinguent pas par le sujet — les deux
-parlent des droits que le RGPD ouvre aux personnes concernées — mais par le **temps** :
-l'un ne connaît que l'instant d'un verdict, l'autre ne connaît que la durée d'une instruction.
+Ce dépôt porte **trois contextes bornés**, et ils se distinguent par le **temps** : l'un ne connaît
+que l'instant d'un verdict, l'autre que la durée d'une instruction, le troisième que le temps
+d'**avant** — la configuration, quand aucune demande n'existe encore.
+
+Les deux premiers parlent du même sujet, les droits que le RGPD ouvre aux personnes concernées. Le
+troisième n'en parle pas du tout : il regarde le paysage de données du client avant que quiconque ne
+réclame quoi que ce soit. C'est pourquoi il ne partage rien avec eux — voir *Relations*.
 
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages,
 documentation d'API — sont en français. La prose française porte les identifiants anglais tels
@@ -17,23 +21,49 @@ quels : on écrit « la `Qualification` », « le `Ledger` ».
   d'une demande d'exercice de droits de son arrivée à sa clôture, appelle les systèmes du client
   là où il les atteint, et produit la preuve qu'une procédure a été suivie — y compris là où elle
   ne l'a pas été.
+- [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Dépiste, dans le relevé
+  des colonnes d'une base du client qu'un `Operator` lui colle, les colonnes qui portent
+  vraisemblablement des données personnelles, et les lui rend une par une pour qu'il les retienne ou
+  les écarte. Il ne se connecte à rien, ne lit aucune valeur, et ne touche jamais au `Manifest`.
 
 ## Relations
 
-- **Noyau partagé — `DataSubjectRight` et lui seul.** La taxonomie fermée de sept valeurs n'est le
-  modèle d'aucun des deux contextes : elle est écrite par le RGPD, articles 15 à 21. Les deux
-  contextes s'y **conforment**, aucun ne la **possède**. Elle vit donc en dehors des deux, dans
+- **Noyau partagé — `DataSubjectRight` et lui seul, et il ne lie que deux contextes sur trois.** La
+  taxonomie fermée de sept valeurs n'est le modèle ni de `Qualification` ni de `Casework` : elle est
+  écrite par le RGPD, articles 15 à 21. Les deux s'y **conforment**, aucun ne la **possède**. Elle
+  vit donc en dehors des deux, dans
   `src/MicroserviceRgpd.Core/SharedKernel/`, et sa clause de gouvernance est déjà écrite en toutes
   lettres dans [`data-subject-rights.wire.json`](./data-subject-rights.wire.json) : *ajouter une
   valeur est une rupture du contrat public, pas une extension — un événement de niveau ADR.*
 
-  Le noyau partagé vaut par sa **petitesse**. Ce qui n'est pas vrai des deux côtés sans exception
-  n'y entre pas : `Capability`, par exemple, est du `Casework` pur et resterait dehors.
+  Le noyau partagé vaut par sa **petitesse**. Ce qui n'est pas vrai partout sans exception n'y entre
+  pas : `Capability`, par exemple, est du `Casework` pur et resterait dehors ; et l'`Operator` de
+  `Screening` porte le même mot que celui de `Casework` **sans partager aucun type** — l'identité de
+  mot n'est pas une identité de modèle, et factoriser sur elle serait la première fissure.
+
+  ⚠️ `Screening` n'y touche pas. Il ne rattache **jamais** une colonne à un `DataSubjectRight` : une
+  colonne « courriel » ne relève pas d'un droit plutôt qu'un autre, elle relève de tous. L'y
+  raccrocher ferait peser une troisième dépendance sur le noyau sans rien apporter — sa taxonomie à
+  lui, `PersonalDataCategory`, lui appartient en propre et n'a pas le RGPD pour auteur.
 
 - **`Qualification` → `Casework` : fournisseur amont *optionnel*.** Une demande peut arriver déjà
   qualifiée — par un formulaire où la personne coche son droit, ou par un opérateur qui l'atteste.
   Seul le texte libre invoque la qualification. Un `Case` doit donc pouvoir s'ouvrir, s'instruire
   et se clore sans qu'aucune qualification n'ait jamais eu lieu.
+
+- **`Screening` : `Separate Ways` intégral, et aucun noyau partagé du tout.** C'est le seul contexte
+  du dépôt qui n'a **aucune** intersection avec les autres : pas de noyau partagé, pas de fournisseur
+  amont, pas même un identifiant opaque qui traverserait comme le `qualificationId` que porte un
+  `Case`. Il vit avant, il ne connaît aucune demande, et rien de ce qu'il produit ne descend nulle
+  part. En particulier, **rien ne va du `Screening` au `Manifest`** — c'est la clause `Suggéré, jamais
+  déclaré`, écrite dans son glossaire : un `Manifest` pré-rempli par une machine se lirait comme
+  complet, ce qui est l'`Omission silencieuse` sous sa forme la plus dangereuse.
+
+- **Aucune dépendance de compilation entre `Screening` et les deux autres, dans les deux sens.** Le
+  garde de `tests/MicroserviceRgpd.ArchitectureTests/` s'étend, avec la même lecture au niveau de
+  l'IL. ⚠️ Ce qui rend cette règle tenable est justement l'absence d'intersection : il n'y a rien à
+  factoriser, donc rien à négocier — à la différence de `Casework → Qualification`, où la règle doit
+  résister à une tentation réelle.
 
 - **Separate Ways pour tout le reste.** Rien d'autre ne traverse la frontière. `QualificationOpinion`,
   `WitnessOpinion`, `ReviewSignal`, `DeclaredConfidence`, `Mode dégradé` n'ont aucun sens dans la
@@ -50,15 +80,15 @@ quels : on écrit « la `Qualification` », « le `Ledger` ».
 
 ## Langue de système
 
-Un seul terme est vrai des deux côtés de la frontière, et il est écrit ici plutôt que dupliqué
-dans les deux glossaires — une doctrine tenue des deux côtés doit être écrite **une fois,
-au-dessus**, sinon elle n'est tenue nulle part.
+Un seul terme est vrai des trois côtés à la fois, et il est écrit ici plutôt que dupliqué dans les
+trois glossaires — une doctrine tenue partout doit être écrite **une fois, au-dessus**, sinon elle
+n'est tenue nulle part.
 
 **Aide à la décision** :
 La posture du service, sur toute sa durée : il propose, recense, rappelle et prouve ; il ne tranche
 jamais. Aucun de ces verbes n'est « décider ». L'issue est toujours le fait d'un humain, nommé et
-daté — qu'il s'agisse de valider une `Qualification` ou de clore un `Case`. Une machine ne produit
-jamais une issue.
+daté — qu'il s'agisse de valider une `Qualification`, de clore un `Case` ou de retenir une
+`ScreenedColumn`. Une machine ne produit jamais une issue.
 _Avoid_ : décision, arbitrage, verdict automatique, automatisation
 ⚠️ **Ce que cette liste interdit est de nommer une issue que la _machine_ produirait**, jamais de
 nommer le geste d'un humain. `Case.Arbitrate` et l'écran d'arbitrage d'une réserve de `Locate` sont
@@ -67,11 +97,14 @@ et daté — c'est-à-dire très exactement ce que la posture exige, et non ce q
 `ArbitrationEngine`, un « arbitrage automatique » ou un seuil qui trancherait tomberaient, eux,
 sous la liste.
 
-⚠️ Cette posture n'emporte **pas** la même économie d'erreur des deux côtés, et c'est le piège que
-le découpage rend visible. À gauche, l'erreur est une ligne fausse qu'un humain a sous les yeux :
-c'est l'`Erreur relue`, et elle coûte peu. À droite, l'erreur est une ligne manquante que personne
-ne verra jamais : c'est l'`Omission silencieuse`, et la relecture n'a aucune prise sur elle. Chaque
-régime est défini dans le glossaire du contexte où il vaut, et **nulle part ailleurs**.
+⚠️ Cette posture n'emporte **pas** la même économie d'erreur d'un contexte à l'autre, et c'est le
+piège que le découpage rend visible. Chez `Qualification`, l'erreur est une ligne fausse qu'un humain
+a sous les yeux : c'est l'`Erreur relue`, et elle coûte peu. Chez `Casework`, l'erreur est une ligne
+manquante que personne ne verra jamais : c'est l'`Omission silencieuse`, et la relecture n'a aucune
+prise sur elle. Chez `Screening`, l'erreur qui coûte est bien l'omission — mais elle est **relisible**,
+et seulement parce que le rapport rend **toutes** les colonnes du relevé, y compris celles où rien n'a
+été vu : c'est l'`Omission relue`, et elle cesse d'exister le jour où quelqu'un filtre l'affichage.
+Chaque régime est défini dans le glossaire du contexte où il vaut, et **nulle part ailleurs**.
 
 ## Décisions
 
@@ -90,4 +123,4 @@ on supplante un ADR, on ne l'édite pas.
 et chaque contexte **traverse** les quatre. Il n'existe donc pas de `src/<contexte>/` où poser un
 `CONTEXT.md` — d'où `docs/contexts/<contexte>/`, qui s'écarte sciemment du layout multi-contexte
 générique. À l'intérieur des couches, les contextes se lisent au dossier : `Core/Qualifications/`,
-`Core/Casework/`, `Core/SharedKernel/`.
+`Core/Casework/`, `Core/Screening/`, `Core/SharedKernel/`.
