@@ -9,15 +9,18 @@ lesquels, et à quelles conditions.
 
 ## 0. Ce que la recherche a établi, en une page
 
-Sept candidats ont été **clonés et mesurés**, pas seulement lus. Les chiffres qui suivent sortent
-d'un comptage sur les fichiers DDL du dépôt amont, à la date du 8 août 2026.
+Neuf candidats ont été **clonés et mesurés**, pas seulement lus. Les chiffres qui suivent sortent
+d'un comptage sur les fichiers DDL du dépôt amont, à la date du 8 août 2026. **Aucun chiffre de ce
+document ne provient d'une source secondaire** : voir la note de méthode au § 1.
 
-| Candidat | Licence | Tables | Colonnes | Langue des identifiants | Commentaires `information_schema` |
+| Candidat | Licence | Tables | Colonnes | Langue des identifiants | Commentaires SQL |
 | --- | --- | ---: | ---: | --- | ---: |
 | [Dolibarr](https://github.com/Dolibarr/dolibarr) | GPL-3.0 | 413 | 5 314 | **Mixte FR/EN, dans la même table** | **0** |
 | [PrestaShop](https://github.com/PrestaShop/PrestaShop) | OSL-3.0 (cœur) | 244 | 1 589 | Anglais, résidus FR (`siret`, `ape`) | 0 |
 | [GLPI](https://github.com/glpi-project/glpi) | GPL-3.0 | 442 | 4 534 | Anglais strict | 10 |
 | [OpenEMR](https://github.com/openemr/openemr) | GPL-3.0 | 282 | 3 877 | Anglais, abréviations médicales | **673** |
+| [SACoche](https://forge.apps.education.fr/sesamath/sacoche) | AGPL-3.0 | 103 | 632 | **Français** | 8 *(niveau table)* |
+| [Paheko](https://github.com/paheko/paheko) 0.8.0 → HEAD | AGPL-3.0 | 26 → 43 | 130 → 271 | **Français → anglais, même schéma** | 0 *(SQLite)* |
 | [Galette](https://github.com/galette/galette) | GPL-3.0 | 31 | 194 | **Français strict** | 0 |
 | [SuiteCRM](https://github.com/salesagility/SuiteCRM) | AGPL-3.0 | *aucun DDL versionné* | — | Anglais | — |
 | [Odoo Community](https://github.com/odoo/odoo) | LGPL-3.0 | *aucun DDL versionné* | — | Anglais | — |
@@ -58,9 +61,13 @@ d'un comptage sur les fichiers DDL du dépôt amont, à la date du 8 août 2026.
    saleté-là est **plus difficile** pour un détecteur que `ZZ_TMP_OLD`, qui est en réalité un cas
    facile : un nom qui crie qu'il est mort. **Le corpus doit viser la saleté sémantique, pas la
    saleté typographique.**
+   *Une exception, et une seule* : `sacoche_user.ID_NATIONAL` — une colonne en **majuscules** au
+   milieu d'une table snake_case française (§ 3.6). C'est le seul `CLI_NOM_1` authentique du
+   dossier, et il a fallu aller chercher un logiciel scolaire français pour le trouver.
 
-**Recommandation** : cinq schémas — Dolibarr, Galette, OpenEMR, PrestaShop, GLPI 0.85 — plus
-`temoin/db/` en test de fumée. Détail et justification en § 4.
+**Recommandation** : **six schémas de banc** — Dolibarr, SACoche, Paheko (trois états), OpenEMR,
+GLPI, Galette — plus `temoin/db/` en test de fumée, et PrestaShop en réserve conditionnelle.
+Détail et justification en § 4.
 
 ---
 
@@ -83,6 +90,23 @@ définit `COLUMN_COMMENT` comme « Any comment included in the column definition
 ([doc](https://dev.mysql.com/doc/refman/8.4/en/information-schema-columns-table.html)) — ce qui
 désigne la clause SQL `COMMENT`, pas les commentaires `--` du fichier. L'essai le confirme :
 Dolibarr rend six `column_comment` vides sur six, OpenEMR rend ses commentaires intacts.
+
+### Règle de provenance
+
+**Tout chiffre, tout nom de colonne et toute licence cités dans ce document ont été produits par
+une commande exécutée pour ce ticket sur un clone local**, et non repris d'un résumé, d'une page
+de documentation ou d'un rapport intermédiaire. Les licences ont été lues dans le fichier
+`LICENSE`/`COPYING` du dépôt cloné, jamais déduites du champ affiché par GitHub — l'écart est
+réel : PrestaShop est classé `NOASSERTION` par l'API GitHub alors que `LICENSE.md` dit OSL-3.0,
+et Odoo est classé `NOASSERTION` alors que `LICENSE` dit LGPLv3.
+
+Cette règle n'est pas une formalité de style. Une exploration parallèle de candidats francophones
+a produit, au cours de ce ticket, un rapport détaillé — URLs, licences, comptages de tables et de
+colonnes, exemples de noms de colonnes — qui s'est révélé **entièrement inventé** : les projets
+existent pour la plupart, aucune des affirmations les concernant n'était vérifiable. Ce rapport a
+été **intégralement écarté**. Les deux candidats francophones ajoutés depuis — SACoche et Paheko —
+l'ont été après clonage et lecture directe, et **aucun autre candidat de cette exploration n'a été
+retenu**, y compris ceux qui semblaient les plus prometteurs (§ 6).
 
 ### Ce qui n'a pas été fait, et pourquoi
 
@@ -466,7 +490,131 @@ pour ce qu'il est : le pôle « propre mais gros et anglophone », pas une sourc
 `glpi_entities` (latitude, longitude), `glpi_authldaps` (rootdn_passwd). **Santé : non.
 Infractions : non. Bancaire : non.**
 
-### 3.6 SuiteCRM — écarté, et pourquoi
+### 3.6 SACoche — le plus grand schéma strictement français
+
+**Licence** : **AGPL-3.0**, vérifiée dans
+[`COPYING`](https://forge.apps.education.fr/sesamath/sacoche/-/blob/master/COPYING) (texte de la
+GNU AGPL version 3). Voir § 2.3 : pour un corpus de fichiers statiques, AGPLv3 ≡ GPLv3.
+
+**Extraction — la plus commode du dossier.** Le dépôt (Sésamath, sur la forge de l'Éducation
+nationale : `forge.apps.education.fr/sesamath/sacoche`) versionne **un fichier `.sql` par table** :
+98 dans `_sql/structure/` et 6 dans `_sql/webmestre/`. S'y ajoutent **17 fichiers de migration
+annuels**, `requetes_structure_maj_base_2010.inc.php` … `_2026.inc.php` — soit **dix-sept années
+de migrations datées à l'année près**, mais enfouies dans du PHP, donc non lues ici.
+
+**Volumétrie** : **103 tables, 632 colonnes**. Heuristique naïve : **74 colonnes marquées
+(11,7 %)**.
+
+**Langue : français, et c'est le plus gros du corpus dans ce régime** — six fois Galette. Les
+tokens dominants des noms de colonnes sont français de bout en bout : `nom`, `matiere`, `ordre`,
+`niveau`, `eleve`, `prof`, `contenu`, `colonne`, `famille`, `acquis`, `adresse`, `seuil`,
+`valeur`, `demande`, `referentiel`, `groupe`, `periode`, `rubrique`, `saisie`, `decision`.
+
+**Sédimentation — et l'artefact que le ticket #125 demandait explicitement.** La table
+`sacoche_user` porte 33 colonnes, toutes préfixées `user_`… **sauf une** :
+
+```
+user_id, user_sconet_id, user_sconet_elenoet, user_reference, ID_NATIONAL, user_profil_sigle,
+user_genre, user_nom, user_prenom, user_naissance_date, user_email, user_email_origine,
+user_email_refus, user_login, user_password, user_langue, user_daltonisme, ...
+eleve_classe_id, eleve_lv1, eleve_lv2, eleve_dnb_mef_id, eleve_uai_origine,
+user_id_ent, user_id_gepi, ...
+```
+
+**`ID_NATIONAL`, en majuscules, au milieu d'une table snake_case française.** C'est exactement le
+`CLI_NOM_1` que le ticket décrivait, et c'est le seul exemplaire authentique trouvé dans tout le
+dossier. S'y ajoutent **quatre générations successives d'identifiant d'élève** qui coexistent
+(`user_sconet_id`, `user_sconet_elenoet`, `user_reference`, `ID_NATIONAL`), **deux ponts vers
+d'autres logiciels** (`user_id_ent`, `user_id_gepi`), et un **changement de préfixe en cours de
+table** (`user_*` puis `eleve_*`).
+
+**Commentaires** : **8 clauses `COMMENT=` de niveau table, en français**, et **zéro de niveau
+colonne**. Exemples : `"Modalités d'accompagnement"`, `"Livret Scolaire Unique"`,
+`"Enseignements Pratiques Interdisciplinaires"`. ⚠️ **Cela ouvre une question de format de pivot** :
+ces commentaires vivent dans `information_schema.tables.table_comment`, pas dans
+`columns.column_comment`. Le pivot de #122 les capture-t-il ? La question n'est pas tranchée, et
+SACoche est le seul candidat qui la pose.
+
+**Catégories rares — et une limite de premier ordre.** `user_genre`, `user_naissance_date`, et
+surtout **`user_daltonisme`** (une donnée de santé dans un logiciel scolaire). Mais l'essentiel
+est ailleurs, et c'est un **cas limite majeur pour la carte #122** : la table
+`sacoche_livret_modaccomp` n'a que deux colonnes, `livret_modaccomp_code` et
+`livret_modaccomp_nom` — dont les **valeurs** semées en dur sont `PAI` (projet d'accueil
+individualisé), `PPS` (projet personnalisé de scolarisation), `SEGPA`, `ULIS`, `UPE2A`. Rattachées
+nominativement à un élève, ce sont des **données de santé et de handicap au sens de l'article 9**.
+Or **rien dans le nom des colonnes ne le dit.** La décision de cadrage 1 de #122 — « le service ne
+lit que le schéma, jamais les valeurs » — signifie que le détecteur **ne peut pas voir cette
+sensibilité-là**. Ce n'est pas un défaut du candidat : c'est la démonstration, sur un cas réel et
+français, de ce que la doctrine du dépôt oblige à déclarer non regardé.
+
+### 3.7 Paheko (ex-Garradin) — la trajectoire français → anglais du même schéma
+
+**Licence** : **AGPL-3.0**, vérifiée dans
+[`COPYING`](https://github.com/paheko/paheko/blob/master/COPYING) ; `LICENSE.md` la déclare.
+
+**Provenance** : l'amont est un dépôt **Fossil** ([fossil.kd2.org/paheko](https://fossil.kd2.org/paheko/)).
+Le miroir Git [github.com/paheko/paheko](https://github.com/paheko/paheko) a été vérifié fidèle :
+le commit de tête (8 août 2026, auteur `bohwaz`) porte un trailer `FossilOrigin-Name:` renvoyant
+au hash Fossil. C'est le miroir qu'il faut citer, en nommant l'amont.
+
+**Extraction, et ce qui rend ce candidat unique.** Le dépôt embarque **ses propres schémas
+historiques** dans `archives/`, ce qui donne le **même schéma dans trois régimes linguistiques
+successifs et datés** :
+
+| Fichier | Tables / colonnes | Langue |
+| --- | ---: | --- |
+| `archives/0.8.0_schema.sql` | 26 / 130 | **Français intégral** |
+| `archives/1.0.0_schema.sql` | 26 / 144 | **Hybride** |
+| `src/include/migrations/1.3/schema.sql` (HEAD) | 43 / 271 | **Anglais intégral** |
+
+- **0.8.0** : `membres_categories`, `cotisations`, `cotisations_membres`, `rappels`,
+  `rappels_envoyes`, `compta_exercices`, `compta_comptes`, `compta_comptes_bancaires`,
+  `compta_journal`, `compta_moyens_paiement`, `compta_rapprochement`, `fichiers`,
+  `fichiers_membres`, `wiki_suivi`.
+- **1.0.0** : les tables françaises `membres_categories`, `membres_sessions`, `fichiers`,
+  `fichiers_membres`, `recherches` **coexistent** avec les anglaises `services`, `services_fees`,
+  `services_users`, `acc_charts`, `acc_accounts`, `acc_years`, `acc_transactions`. Et l'on y
+  trouve **`fichiers_acc_transactions`** — un nom de table **moitié français, moitié anglais**.
+- **HEAD** : `users`, `users_categories`, `files`, `searches`, `web_pages`, `acc_*`.
+
+**Aucun autre candidat n'offre le même schéma, même domaine, même projet, en français puis en
+anglais.** GLPI donne l'ancien contre le récent à domaine constant ; Paheko donne **la langue** à
+domaine constant. Pour un détecteur destiné au marché français, c'est la variable la plus
+pertinente qu'on puisse isoler.
+
+**Deux trouvailles qui valent à elles seules le versement.**
+
+1. **La table qui porte les données personnelles n'est pas dans le DDL.** `schema.sql` contient
+   littéralement :
+
+   ```sql
+   -- CREATE TABLE users (...);
+   -- Organization users table, dynamically created, see config_users_fields table
+   ```
+
+   Les colonnes réelles sont engendrées à l'installation depuis
+   `src/include/data/users_fields_presets.ini`, **en français** : `numero`, `pronom`, `nom`,
+   `email`, `adresse`, `code_postal`, `ville`, `telephone`, `pays`, `annee_naissance`,
+   `date_naissance`, `photo`. **C'est l'argument le plus fort du § 2.6** : lire les fichiers `.sql`
+   ferait manquer *toute* la table des personnes ; seule une installation suivie d'une
+   introspection la voit.
+2. **Le fichier de presets porte des annotations RGPD écrites par les auteurs.** Sur
+   `date_naissance` : « Attention, cette information est très sensible, il est déconseillé par le
+   RGPD de la demander aux membres. Il est préférable de demander seulement l'année de
+   naissance. » C'est un **jeu d'annotations gratuit et de première main** — non pas une vérité
+   terrain, mais un point de comparaison qualitatif qu'aucun autre candidat ne fournit.
+
+**Catégories rares** : `compta_comptes_bancaires (banque, iban, bic)` — **de l'IBAN dans un schéma
+en français**, présent de `0.8.0` à `0.9.5` et **disparu en `1.0.0`**. Dolibarr fournit du bancaire
+en abondance mais dans un contexte bilingue ; Paheko le fournit en français pur, et daté.
+**Santé : non. Infractions : non.**
+
+⚠️ **Réserve technique** : Paheko est en **SQLite**. Or SQLite n'a **ni `information_schema` ni
+clause `COMMENT`** — l'introspection y passe par `PRAGMA table_info`. Le pivot de #122 devra donc
+soit se restreindre à MySQL/MariaDB et PostgreSQL, soit prévoir un adaptateur. **C'est une
+question ouverte que ce candidat force à poser** ; elle n'est pas tranchée ici.
+
+### 3.8 SuiteCRM — écarté, et pourquoi
 
 **Licence** : **AGPL-3.0**, vérifiée dans
 [`LICENSE.txt`](https://github.com/salesagility/SuiteCRM/blob/hotfix/LICENSE.txt) (texte de la GNU
@@ -488,7 +636,7 @@ mécanisme `_cstm` des champs personnalisés. **Si le banc conclut plus tard qu'
 un cas de préfixes hérités opaques, c'est ici qu'il faut revenir** — et le coût d'extraction sera
 alors justifié par un besoin nommé, pas subi par défaut.
 
-### 3.7 Odoo Community — non retenu, et le motif est instructif
+### 3.9 Odoo Community — non retenu, et le motif est instructif
 
 **Licence** : **LGPL-3.0**, vérifiée dans
 [`LICENSE`](https://github.com/odoo/odoo/blob/master/LICENSE) : « Odoo is published under the GNU
@@ -513,36 +661,55 @@ sans la compensation des préfixes hérités. À rouvrir seulement si le corpus 
 
 ## 4. Recommandation de composition du corpus
 
-### Cinq schémas de banc, plus un témoin
+### Six schémas de banc, un témoin, une réserve
 
 | # | Schéma | Ce qu'il apporte que les autres n'apportent pas |
 | --- | --- | --- |
 | 1 | **Dolibarr** (413 t. / 5 314 c.) | Le **bilinguisme FR/EN à l'intérieur d'une même table**, 26 ans de sédimentation datée, 119 colonnes marquées mortes mais vivantes, le bancaire dense, les abréviations opaques (`morphy`, `thm`, `idpers1`), les noms mensongers (`iban_prefix`). **C'est le pilier ; sans lui le corpus ne mesure rien pour un client français.** |
-| 2 | **Galette** (31 t. / 194 c.) | Le **français strict**, la densité de données personnelles maximale, et surtout la **taille annotable en entier**. C'est le schéma de calibrage de l'annotation. |
-| 3 | **OpenEMR** (282 t. / 3 877 c.) | La **seule source d'article 9** — santé, origine, religion, situation sociale — et le **seul avec de vrais `column_comment`** (673). Sans lui, le banc ne peut rien dire ni sur les catégories qui comptent le plus, ni sur l'exploitation du commentaire. |
-| 4 | **PrestaShop** (244 t. / 1 589 c.) | Le **domaine e-commerce**, la convention `id_*` la plus régulière du lot, et le motif « application internationale à champs nationaux » (`siret`, `ape`, `dni`). |
-| 5 | **GLPI 0.85.5 + 11.0.4** (236→442 t.) | L'**anglais strict**, la **densité personnelle la plus faible** — donc le meilleur générateur de faux positifs, indispensable pour que la précision soit mesurable — et **le même schéma à onze ans d'écart**, seul moyen d'éprouver l'ancien contre le récent à domaine constant. |
+| 2 | **SACoche** (103 t. / 632 c.) | Le **français à grande échelle** — six fois Galette — le seul `CLI_NOM_1` authentique du dossier (`ID_NATIONAL`), quatre générations d'identifiant qui coexistent, et le cas limite des **catégories rares portées par la valeur et non par le nom** (PAI/PPS). |
+| 3 | **Paheko**, trois états (26→43 t.) | **Le même schéma en français, en hybride, puis en anglais** — la seule pièce qui isole *la langue* à domaine constant. Plus l'IBAN dans un schéma français, et une table de personnes **absente du DDL**. |
+| 4 | **OpenEMR** (282 t. / 3 877 c.) | La **seule source d'article 9** — santé, origine, religion, situation sociale — et le **seul avec de vrais `column_comment`** (673). Sans lui, le banc ne peut rien dire ni sur les catégories qui comptent le plus, ni sur l'exploitation du commentaire. |
+| 5 | **GLPI 11.0.4** (442 t. / 4 534 c.) | L'**anglais strict** et la **densité personnelle la plus faible** — donc le meilleur générateur de faux positifs, indispensable pour que la précision soit mesurable. |
+| 6 | **Galette** (31 t. / 194 c.) | La **taille annotable en entier** en une session : le point d'ancrage du protocole d'annotation, et un troisième régime du français (suffixe `_adh` systématique mais incomplet). |
 | — | `temoin/db/` (11 t. / 72 c.) | **Test de fumée uniquement, jamais banc.** Français propre, écrit par l'auteur : il vérifie que la chaîne fonctionne, il ne mesure rien. |
+| ⚠️ | *(réserve)* **PrestaShop** (244 t. / 1 589 c.) | E-commerce, convention `id_*` régulière, champs nationaux (`siret`, `ape`, `dni`). **À n'ajouter que si la question OSL-3.0 du § 2.3 est tranchée en faveur du versement** — c'est le seul candidat dont la licence est déclarée incompatible avec celle des autres. Le corpus tient sans lui. |
 
 ### Pourquoi cette combinaison-là
 
-- **Français** : Dolibarr (bilingue) et Galette (strict) — deux régimes différents du français, pas
-  un seul.
-- **Anglais** : GLPI (strict), OpenEMR (abréviations médicales), PrestaShop (avec résidus
-  nationaux) — trois régimes différents de l'anglais.
-- **Ancien contre récent** : GLPI 0.85.5 contre GLPI 11.0.4, **à domaine constant**. C'est le seul
-  couple du corpus qui isole la variable temporelle sans changer de métier — Dolibarr et OpenEMR
-  ajoutent la sédimentation, mais mêlée à tout le reste.
+- **Français** : Dolibarr (bilingue interne), SACoche (français à grande échelle), Paheko 0.8.0
+  (français pur, petit), Galette (français abrégé et suffixé) — **quatre régimes distincts du
+  français**, là où la première version de cette recommandation n'en avait que deux.
+- **Anglais** : GLPI (strict), OpenEMR (abréviations médicales), Paheko HEAD (anglais récent et
+  propre) — trois régimes distincts de l'anglais.
+- **La langue comme variable isolée** : **Paheko 0.8.0 → 1.0.0 → HEAD**, même projet, même métier,
+  même auteur. C'est la pièce la plus précieuse du corpus pour un détecteur destiné au marché
+  français : elle mesure directement ce qui se passe quand seul le vocabulaire change.
+- **Ancien contre récent** : GLPI 0.85.5 contre 11.0.4 reste disponible **en option** — 2 610
+  colonnes apparues, 174 disparues, à domaine constant. Non retenu au noyau parce que Paheko couvre
+  l'axe diachronique avec, en prime, le basculement linguistique ; ajouter les deux versions de
+  GLPI doublerait le volume anglophone sans rien ajouter au français.
 - **Catégories rares** : santé, origine, religion, situation sociale par OpenEMR ; bancaire par
-  Dolibarr et PrestaShop ; identifiants nationaux par les deux (`national_registration_number`,
-  `ss`, `siren`/`siret`, `dni`, `drivers_license`).
-- **Faux positifs** : GLPI et Dolibarr fournissent des `nom` / `name` non personnels en abondance
-  (départements, fabricants, serveurs LDAP, modèles). **Un corpus qui n'aurait que des colonnes
+  Dolibarr (abondant, bilingue) **et Paheko ≤ 0.9.5 (`banque`, `iban`, `bic`, en français)** ;
+  identifiants nationaux par Dolibarr (`national_registration_number`), OpenEMR (`ss`,
+  `drivers_license`) et SACoche (`ID_NATIONAL`, `structure_siret`).
+- **Faux positifs** : GLPI et Dolibarr fournissent des `name` / `nom` non personnels en abondance
+  (serveurs LDAP, fabricants, départements, modèles). **Un corpus qui n'aurait que des colonnes
   personnelles mesurerait le rappel et rien d'autre.**
-- **Volumétrie** : ~1 400 tables et ~15 500 colonnes au total, dont l'heuristique naïve marque
-  environ 1 500. C'est trop pour une annotation exhaustive à la main. **L'échantillonnage, sa
-  stratification et le protocole d'annotation sont hors de ce ticket** — mais Galette, annotable
-  intégralement en une session, donne le point d'ancrage à partir duquel les mesurer.
+- **Volumétrie** : ~1 400 tables et ~15 000 colonnes. Trop pour une annotation exhaustive.
+  **L'échantillonnage, sa stratification et le protocole d'annotation sont hors de ce ticket** —
+  mais Galette (194 colonnes) et Paheko 0.8.0 (130 colonnes) sont annotables intégralement, et
+  donnent deux points d'ancrage, l'un anglophone-adjacent, l'autre strictement français.
+
+### Deux questions de format que ces ajouts forcent à poser
+
+Elles ne se tranchent pas ici, mais elles ne peuvent plus être ignorées :
+
+1. **Le pivot capture-t-il le commentaire de table ?** SACoche porte 8 `COMMENT=` de niveau table,
+   en français, et zéro de niveau colonne. Si le pivot ne lit que `columns.column_comment`, cette
+   matière est perdue.
+2. **Le pivot est-il portable hors MySQL ?** Paheko est en **SQLite**, qui n'a ni
+   `information_schema` ni clause `COMMENT` (introspection par `PRAGMA table_info`). Retenir Paheko
+   suppose soit un adaptateur, soit une transposition assumée et documentée du schéma vers MariaDB.
 
 ### Conditions de versement, rappelées
 
@@ -564,23 +731,37 @@ voit pas.
 
 ## 5. Le trou qu'aucun candidat ne bouche : l'article 10
 
-**Aucun des six candidats ne porte de données d'infractions ou de condamnations.** L'heuristique
+**Aucun des neuf candidats ne porte de données d'infractions ou de condamnations.** L'heuristique
 a cherché `crime`, `criminal`, `offense`, `conviction`, `condamn`, `infraction`, `casier`,
-`judiciaire`, `arrest`, `prison`, `probation` sur les 15 500 colonnes : **zéro correspondance,
-partout.** Ce n'est pas un artefact de l'heuristique — c'est que les logiciels de gestion, de
-commerce et de parc informatique n'en manipulent pas, et que le seul candidat santé est américain.
+`judiciaire`, `arrest`, `prison`, `probation`, `penal` sur l'ensemble des colonnes relevées :
+**zéro correspondance, partout** — y compris sur SACoche et Paheko, ajoutés en second. Ce n'est pas
+un artefact de l'heuristique : les logiciels de gestion, de commerce, de parc informatique,
+d'association et de scolarité n'en manipulent pas, et le seul candidat santé est américain.
 
 **Conséquence à porter explicitement** : le banc **ne pourra rien mesurer** sur l'article 10 avec
 ce corpus. Deux issues, et ce ticket ne tranche pas entre elles :
 
 1. **L'assumer et le dire** — dans la ligne de l'`Omission silencieuse` et de la décision de
    cadrage 11 de #122 : le rapport dit ce qu'il n'a pas regardé, le banc doit dire ce qu'il n'a
-   pas mesuré.
-2. **Chercher un septième candidat** dans le travail social ou la justice — le logiciel libre
-   français **Chill** ([gitlab.com/Chill-Projet](https://gitlab.com/Chill-Projet/chill-bundles))
-   est le candidat évident : travail social français, donc identifiants potentiellement français
-   **et** catégories des articles 9 et 10. ⚠️ **Non vérifié en source primaire dans ce ticket**
-   (§ 6).
+   pas mesuré. **C'est l'issue que ce document recommande**, faute de candidat vérifié.
+2. **Chercher un candidat** dans le travail social, l'insertion ou la justice. Deux pistes ont
+   été relevées, **aucune retenue** :
+   - **Chill** ([gitlab.com/Chill-Projet](https://gitlab.com/Chill-Projet/chill-bundles)) —
+     travail social français, donc identifiants potentiellement français et catégories des
+     articles 9 et 10. ⚠️ **Aucune de ses caractéristiques n'a été vérifiée** : ni la licence, ni
+     le schéma, ni la volumétrie, ni la langue (§ 6).
+   - **`betagouv/rdv-insertion`** — signalé comme riche en catégories rares. **Écarté sur un fait
+     vérifié** : l'API GitHub rend `license: null`, le dépôt **ne porte aucun fichier de licence**
+     sur sa branche par défaut. Sans licence, il n'y a pas de droit de redistribution à discuter,
+     et le § 2 ne s'applique même pas. **Non redistribuable, quelle que soit l'analyse du § 2.**
+
+Une remarque de fond, tirée de SACoche (§ 3.6) : même *avec* un candidat porteur d'article 10, il
+n'est pas acquis que la sensibilité soit lisible **dans le nom des colonnes**. Chez SACoche, PAI et
+PPS — des données de santé — sont des **valeurs** derrière un `livret_modaccomp_code` parfaitement
+neutre. La décision de cadrage 1 de #122 (« le service ne lit que le schéma, jamais les valeurs »)
+implique que cette classe de sensibilité est **structurellement hors de portée**. Le trou de
+l'article 10 n'est donc pas seulement un trou de corpus : c'est peut-être un trou de méthode, et
+c'est au banc de le dire.
 
 ---
 
@@ -590,16 +771,31 @@ Cette section est la condition de lecture du reste.
 
 **Sur les candidats**
 
-- **Chill** (§ 5) : cité comme piste pour l'article 10, **sans aucune vérification** — ni licence,
-  ni schéma, ni volumétrie, ni langue des identifiants.
-- **Garradin / Paheko**, applications Django francophones (Etalab, DINUM), **PMB**, **GRR**,
-  **Sacoche** : cités par le ticket ou envisagés, **non évalués**. Une recherche parallèle sur ces
-  candidats francophones était en cours au moment de la rédaction et **n'a pas été intégrée** ;
-  elle reste à faire. Galette étant le seul schéma strictement français retenu, et le plus petit
-  du corpus, **c'est le point faible le plus net de cette recommandation**.
+- **Chill** (§ 5) : cité comme unique piste sérieuse pour l'article 10, **sans aucune
+  vérification** — ni licence, ni schéma, ni volumétrie, ni langue des identifiants. Rien de ce
+  qui a pu être écrit ailleurs à son sujet n'a été repris ici.
+- **Tout le reste du paysage francophone est resté non évalué** : applications Django et Rails de
+  l'État (Etalab, DINUM, beta.gouv, `demarches-simplifiees`), briques Entr'ouvert/Publik, **PMB**,
+  **GRR**, **GEPI**, **Framadate**, modules Dolibarr métier, plugins Galette. Une exploration
+  parallèle de ce périmètre a produit un rapport détaillé qui s'est révélé **fabriqué**
+  (cf. § 1, « Règle de provenance ») ; il a été intégralement écarté, et **aucun de ces candidats
+  n'est entré dans la recommandation**. La seule chose qui en a été retenue, parce qu'elle a été
+  re-vérifiée à la main, est le fait négatif sur `rdv-insertion` (§ 5). **Ce périmètre reste
+  entièrement à faire, et un ticket qui le reprendrait devrait repartir de zéro.**
+- **SACoche** : seuls les 104 fichiers `.sql` de `_sql/structure/` et `_sql/webmestre/` ont été
+  analysés. Les **17 fichiers de migration annuels** `requetes_structure_maj_base_20XX.inc.php`
+  contiennent du DDL noyé dans du PHP et **n'ont pas été lus** : les 103 tables / 632 colonnes sont
+  donc un **plancher**, et la sédimentation réelle est probablement supérieure à ce qui est décrit.
+- **Paheko** : le miroir GitHub a été vérifié fidèle sur son commit de tête (trailer
+  `FossilOrigin-Name`), **pas sur toute son histoire**. Les colonnes réelles de la table `users`
+  ont été lues dans `users_fields_presets.ini`, **sans installation** : la liste effective produite
+  par une installation par défaut n'a pas été observée. L'ancienneté du projet sous le nom
+  *Garradin* (antérieure au miroir) n'a pas été datée.
 - **PrestaShop** : les scripts de migration du module `autoupgrade` sont mentionnés, mais leur
   contenu **n'a pas été inspecté** ; l'absence de série diachronique exploitable est une
   déduction, pas une vérification.
+- **Galette** : l'existence de plugins officiels portant du DDL additionnel a été évoquée mais
+  **n'a pas été vérifiée**, non plus que leur licence ou la langue de leurs identifiants.
 
 **Sur les mesures**
 
@@ -616,7 +812,7 @@ Cette section est la condition de lecture du reste.
   des `ALTER TABLE … COMMENT` que les fichiers de tables ne montrent pas. Le comportement de
   PostgreSQL (`COMMENT ON COLUMN`, exposé par `col_description()` et non par
   `information_schema.columns`) **n'a pas été examiné du tout** — or Galette et Chill offrent une
-  variante PostgreSQL.
+  variante PostgreSQL. **SQLite non plus n'a pas été éprouvé**, alors que Paheko l'impose (§ 4).
 - Les chiffres portent sur le `HEAD` de la branche par défaut au **8 août 2026**, pas sur un tag
   stable. Le corpus devra épingler des versions exactes.
 
