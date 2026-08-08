@@ -28,11 +28,37 @@ aura trois dans un an.
 
 **ColumnListing** :
 Le relevé que l'`Operator` colle : une ligne par colonne — table, colonne, type, commentaire,
-contraintes — produit par la requête `information_schema` que le service lui fournit. Le service ne
-se connecte à rien ; l'humain colle, le service lit ce qu'on lui a mis dans la main.
+contraintes — produit par la requête que le service lui fournit. Le service ne se connecte à rien ;
+l'humain colle, le service lit ce qu'on lui a mis dans la main.
 ⚠️ **Recopié tel quel, jamais vérifié ni complété.** `Greffier, pas témoin` vaut ici aussi : le
-service ne sait pas si le relevé couvre toute la base, ni s'il vient bien de la base qu'on croit. Un
-`ColumnListing` tronqué produit un `Screening` tronqué, et rien dans le service ne peut le dire.
+service ne sait pas d'où vient ce relevé. Il en enregistre le nom de base que le SGBD lui a donné
+sans jamais le vérifier ni s'en servir pour identifier quoi que ce soit — c'est un repère pour
+l'humain qui relit un `Screening` trois jours plus tard, jamais une identité sur laquelle bâtir une
+comparaison.
+
+⚠️ **Il est entier ou il n'existe pas.** La requête fournie **produit elle-même** le relevé plutôt
+que de laisser un client SQL le mettre en forme : il déclare donc le SGBD dont il vient et le nombre
+de colonnes qu'il porte, et une troncature au collage devient **détectable**. Un relevé dont il
+manque un morceau est **refusé en bloc** — jamais ingéré en partie, si petite que soit la part
+perdue. Motif : un `Screening` bâti sur 99 % d'un relevé **se lirait comme complet**, et l'`Omission
+relue` repose entièrement sur le fait que le rapport rend **toutes** les colonnes du relevé. Trois
+colonnes que personne ne relira jamais, dans un artefact qui promet qu'on relit tout, est la faille
+exacte que ce contexte existe pour ne pas avoir. Le coût est faible et réversible : l'`Operator`
+relance sa requête, il ne perd aucun arbitrage.
+
+⚠️ **Ce qui reste hors de portée, en revanche, c'est la provenance.** Un relevé sincère, entier et
+bien formé, mais tiré de la base de recette ou de celle d'hier, est indiscernable du bon. Aucun
+mécanisme n'attrape ce cas, et aucun ne doit prétendre l'attraper : demander à l'`Operator` de
+redéclarer d'où vient son relevé créerait une seconde source de vérité sur le même fait sans rien
+vérifier, et donnerait l'illusion d'un contrôle qui n'a pas lieu.
+
+⚠️ **Ce que le relevé ne porte pas dépend du SGBD, et cette absence-là est structurelle.** Un
+`ColumnListing` a la même forme quel qu'en soit le SGBD, et un champ qu'un SGBD ne sait pas produire
+y arrive vide — SQLite, par exemple, ne rend aucun commentaire. Sans le dialecte déclaré, « cette
+colonne n'a pas de commentaire » et « ce SGBD n'en rend jamais » se liraient pareil, ce qui est
+l'`Omission silencieuse` déplacée d'un cran ; avec lui, l'absence est **nommée**, et le `Screening`
+peut dire qu'il n'a pas regardé un signal qui n'existait pas plutôt que de laisser croire qu'il l'a
+regardé en vain.
 _Avoid_ : Schema, Catalog, Inventory, Dump, Export, Snapshot, cartographie ⚠️ les cinq premiers sont
 sur la liste _Avoid_ de `Manifest`, qui garde la clause « déclaré, non découvert » : les reprendre
 ici ferait lire ce relevé comme un recensement du paysage du client, ce qu'il n'est pas.
