@@ -70,8 +70,9 @@ Ce n'est pas un détail de présentation : c'est le mécanisme entier de l'`Omis
 absente du `Screening` serait une colonne que personne ne relit jamais.
 ⚠️ **Le motif est obligatoire dès que la ligne est signalée**, sur le modèle exact de `Reservation`,
 dont le glossaire dit qu'« une réserve **sans** motif est une panne du contrat, pas une réserve ».
-« `adr_l1` → `Coordonnees`, degré bas, motif : préfixe `adr` reconnu » s'arbitre ; « `Coordonnees`,
-0,72 » ne s'arbitre pas. C'est de la prose de travail, lue telle quelle et jamais analysée.
+« `adr_l1` → `ContactDetails`, degré bas, motif : préfixe `adr` reconnu » s'arbitre ;
+« `ContactDetails`, 0,72 » ne s'arbitre pas. C'est de la prose de travail, lue telle quelle et jamais
+analysée.
 Symétriquement, une ligne `Unflagged` n'a **pas** de motif : il n'y a rien à motiver, et c'est ce qui
 distingue « rien vu » de « vu et écarté ».
 _Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et `Candidate` sont
@@ -89,6 +90,82 @@ troisième dépendance sur le noyau partagé sans rien apporter. Elle est **prop
 son auteur n'est pas le RGPD.
 ⚠️ Le mot **catégorie** est sur la liste _Avoid_ de `DataSubjectRight` et le reste : le nom complet
 est porté ici précisément pour que cette interdiction n'ait pas d'exception à gérer.
+
+**Treize valeurs**, chacune portant son **nom canonique anglais** et son **libellé français attaché**
+— décalque exact de `DataSubjectRight`, une seule source de vérité et aucune table de correspondance
+parallèle. Le motif, lui, reste en prose française : il est écrit pour l'humain qui arbitre.
+
+| Valeur | Libellé | Origine |
+|---|---|---|
+| `CriminalOffenceData` | données relatives aux infractions | RGPD art. 10 |
+| `HealthData` | données concernant la santé | RGPD art. 9 |
+| `SpecialCategoryData` | autre catégorie particulière | RGPD art. 9 |
+| `AuthenticationSecret` | secret d'authentification | doctrinal |
+| `NationalIdentifier` | identifiant national | CNIL, registre simplifié |
+| `FinancialData` | données économiques et financières | CNIL, registre simplifié |
+| `LocationData` | données de localisation | CNIL, registre simplifié |
+| `ConnectionData` | données de connexion | CNIL, registre simplifié |
+| `Identity` | état civil et identité | CNIL, registre simplifié |
+| `ContactDetails` | coordonnées | CNIL, registre simplifié |
+| `ProfessionalLife` | vie professionnelle | CNIL, ancien modèle |
+| `PersonalDataUncategorised` | donnée personnelle sans catégorie | repli |
+| `Unflagged` | rien signalé | repli |
+
+⚠️ **La sensibilité est une valeur, pas une seconde dimension.** La CNIL coche ses neuf items
+sensibles dans un **bloc parallèle** à ses six catégories ordinaires, et on pourrait croire qu'il
+faut l'imiter — une colonne serait alors une catégorie **plus** un drapeau. C'est un artefact de son
+**grain** : une fiche de registre décrit un traitement entier, où « identité **et** santé » coexistent
+forcément. Notre grain est **la colonne**, et à ce grain la coexistence s'effondre : `confession` est
+une conviction religieuse, elle n'est pas *aussi* de l'état civil. Un drapeau qui vaudrait vrai
+exactement quand la catégorie est déjà l'une des trois valeurs de droit est un champ redondant — et
+deux champs qu'un chemin d'écriture peut dissocier finissent par se dissocier. « Montre-moi les
+colonnes sensibles » est donc un **calcul** sur la catégorie, comme « courant » est un calcul sur le
+`Screening`.
+
+⚠️ **L'art. 9 tient en deux valeurs, et l'énumération n'y porte pas l'item : le motif le porte.**
+Ni une valeur unique, ni les huit du règlement. La santé se détache parce qu'elle cumule trois
+raisons — c'est le seul des huit items fréquent dans un schéma réel, le seul dont le texte singularise
+le régime (art. 9 § 2 h et i, § 3), et la première question d'un DPO. Les sept autres tiennent dans
+`SpecialCategoryData`, et le motif nomme lequel : « `confession` → catégorie particulière (art. 9),
+motif : convictions religieuses » dit à l'humain exactement ce que sept valeurs lui auraient dit,
+sans que la taxonomie porte six engagements qui ne se déclenchent jamais. Le cas qui tranche est la
+**biométrie** : le [considérant 51](https://eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:32016R0679)
+ne la range à l'art. 9 que « aux fins d'identifier une personne de manière unique » — une **finalité**
+qu'aucun lecteur de schéma ne connaît. Une valeur `Biometrics` affirmerait donc toujours plus que le
+service ne peut savoir ; un motif peut dire que le régime dépend d'une finalité illisible ici.
+
+⚠️ **L'art. 10 ne se replie pas dans l'art. 9**, alors même qu'il ne se déclenchera presque jamais.
+Articles distincts, régimes distincts ; la CNIL maintient la distinction jusque dans un commentaire de
+cellule de tableur — « font **également** l'objet de règles particulières », donc à côté et non
+dedans. Les fusionner pour économiser une valeur serait une **erreur de droit** dans l'outil dont
+c'est le métier de ne pas en commettre. Sa rareté n'est pas un argument contre son existence : c'est
+un fait que la clause d'incomplétude a charge de dire.
+
+**L'exclusivité est un invariant, et l'arbitrage est l'ordre de ce tableau, figé.** Une
+`ScreenedColumn` porte **une** valeur. Quand plusieurs règles déclenchent — `arret_maladie` est santé
+*et* vie professionnelle, `email_pro` est coordonnées *et* vie professionnelle — c'est l'ordre
+ci-dessus qui tranche, du plus au moins coûteux à omettre. ⚠️ **Jamais la `RuleStrength`** :
+comparer deux degrés pour désigner un gagnant serait un score qui produit une issue, ce que l'`Aide
+à la décision` interdit. Le motif, lui, peut dire ce qui a été écarté — « la règle *vie
+professionnelle* a aussi déclenché ». Les moteurs **héritent** cet ordre ; aucun ne le redécide.
+
+**Sa gouvernance a deux étages, parce que ses valeurs n'ont pas toutes le même auteur.**
+`DataSubjectRight` peut écrire qu'ajouter une valeur est une rupture de niveau ADR : il y a six droits
+parce que le RGPD en ouvre six, et la clause emprunte sa solennité au règlement. **Cette taxonomie-ci
+n'a pas cet appui** — le RGPD n'énumère nulle part les catégories *ordinaires*, l'art. 30 impose
+l'exercice sans fournir le vocabulaire, et **toute** nomenclature ordinaire est donc doctrinale, celle
+de la CNIL comprise. Se donner la même gravité sans le même fondement serait une posture.
+- Les **trois valeurs de droit** — `CriminalOffenceData`, `HealthData`, `SpecialCategoryData` — sont
+  fermées par le texte et ne bougent que s'il bouge.
+- Les **valeurs ordinaires** sont un découpage de travail, révisable et sans autorité empruntée. En
+  ajouter une n'est pas un ADR : c'est une PR dont le corps répond à trois questions — quelles
+  colonnes réelles, dans quel schéma réel, ne trouvaient pas de valeur ; pourquoi
+  `PersonalDataUncategorised` ne suffisait pas ; et où la valeur entre dans l'ordre d'arbitrage.
+- ⚠️ **Retirer ou renommer une valeur reste un ADR**, et pour une raison qui n'est pas la même que
+  chez `DataSubjectRight` : il n'y a pas d'appelant à casser ici, mais il y a des **arbitrages humains
+  signés et datés** qui vivent plusieurs jours, et qu'un re-scan ne reprend pas. Ce geste-là ne périme
+  pas un contrat, il périme du travail humain.
+
 _Avoid_ : DataCategory, catégorie, Label, Class, Tag, Type ⚠️ le raccourci `DataCategory` viendrait
 frotter contre la liste de `DataSubjectRight` pour économiser huit caractères.
 
@@ -101,9 +178,34 @@ est un constat sur le dépistage et non sur la donnée. Le service n'a jamais vu
 `Greffier, pas témoin` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
 parce qu'une machine qui déclare une colonne inoffensive est très exactement le témoignage qu'elle
 n'a pas les moyens de porter.
+⚠️ **Elle n'est pas le repli `PersonalDataUncategorised`**, et les confondre coûterait cher : celle-ci
+dit « rien vu », celui-là dit « vu, personnel, mais aucune valeur ne va ». La règle qui les départage
+est mécanique et se teste : **motif présent ⇔ ce n'est pas `Unflagged`.**
 _Avoid_ : None, Unknown, Safe, Clean, NonPersonal, Negative, RAS ⚠️ tous affirment l'innocuité de la
 colonne ; `None` et `Unknown` la feraient de surcroît lire comme une absence de valeur, alors qu'elle
 en est une.
+
+**PersonalDataUncategorised** :
+Le repli : la valeur rendue quand le dépistage a reconnu une colonne comme **personnelle** sans
+qu'aucune autre valeur ne lui aille. Elle est signalée, donc elle porte un **motif**, et c'est ce
+motif qui la sépare d'`Unflagged`.
+⚠️ **C'est un verdict, pas un aveu d'ignorance** — même geste que `DataSubjectRight.OutOfScope`, dont
+le glossaire dit « ce n'est ni "inconnu", ni "non classé" : c'est un verdict », et même formulation
+que le seul repli formel de tout le corpus des outils, le `GENERIC_ID` de Google : « *may be*
+personally identifying but do not belong to a well-defined category ».
+⚠️ **Sans elle, le moteur n'a que deux issues et les deux mentent** : déguiser un doute en catégorie,
+ou retomber sur `Unflagged` et affirmer « rien vu » alors que quelque chose a été vu. Le premier
+mensonge est bruyant, le second est silencieux, et c'est le second qui coûte ici.
+⚠️ **Le taux de repli est l'instrument de mesure de la taxonomie**, et il n'est pas un défaut à
+minimiser : un taux qui monte est le signal qu'il manque une valeur. C'est ce que le banc compte, au
+même titre que ce qu'il détecte.
+⚠️ **Il n'y a pas de second repli.** Une valeur « non personnelle » a été explicitement écartée : elle
+porterait sur la donnée un verdict d'innocuité que le service n'a pas les moyens de rendre — il n'a
+jamais vu la donnée. `Unflagged` occupe cette place et dit la bonne chose, un constat sur le dépistage
+et non sur la donnée. Voir la liste _Avoid_ d'`Unflagged`, où `NonPersonal` figure nommément.
+_Avoid_ : Other, Misc, Unclassified, Unknown, Generic, NonPersonal, divers, fourre-tout ⚠️ `Other` et
+`Misc` en feraient une poubelle qu'on cesse de lire, alors que c'est la valeur qu'il faut lire en
+premier ; `Unknown` en referait l'aveu d'ignorance qu'elle n'est pas.
 
 **RuleStrength** :
 Le degré de doute d'une `ScreenedColumn`, **dérivé de la règle qui a déclenché** — correspondance
