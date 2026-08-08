@@ -130,12 +130,17 @@ dotnet ef database update      --project src/MicroserviceRgpd.Infrastructure --s
 
 ```sh
 dotnet test MicroserviceRgpd.slnx
-uv run --project src/sidecar pytest
+uv run --directory src/sidecar pytest
 ```
 
 La suite du sidecar ne demande **ni réseau sortant, ni GPU, ni clé d'API** : elle n'exerce que le
 lexique déterministe et la frontière HTTP du sidecar. `uv` crée l'environnement virtuel et installe
 les dépendances verrouillées à la première exécution.
+
+`--directory`, et non `--project` : il déplace aussi le répertoire courant, ce dont dépend toute la
+collecte. Avec `--project`, pytest garde la racine du dépôt pour `rootdir`, ne lit donc jamais le
+`testpaths` de `src/sidecar/pyproject.toml`, balaie tout le dépôt et ramasse `temoin/tests/` — qui
+porte le même nom de paquet que `src/sidecar/tests/` et fait échouer la collecte.
 
 **Il n'y a ni CI ni hook git, et c'est délibéré.** Les tests à container coûtent une dizaine de
 secondes de démarrage ; un `pre-commit` qui les lance serait désactivé dans la semaine, et un
