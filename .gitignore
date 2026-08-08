@@ -70,9 +70,6 @@ __pycache__/
 .pytest_cache/
 .venv/
 
-# Skills (liens générés par "npx skills" vers .agents/skills)
-.claude/skills/
-
 # Jupyter (notebook d'exploration)
 .ipynb_checkpoints/
 
