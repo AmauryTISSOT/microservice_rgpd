@@ -79,9 +79,11 @@ public class ContextInspectorTests
   }
 
   /// <summary>
-  /// La règle est orientée : <c>Qualification</c> n'a pas le droit d'atteindre <c>Casework</c> non
-  /// plus, mais ce n'est pas cette règle-ci, et un inspecteur qui confondrait les deux sens
-  /// dénoncerait des dépendances légitimes le jour où l'autre sens s'ouvrirait.
+  /// L'inspecteur est <b>orienté</b>, et il doit le rester même là où les deux sens sont interdits.
+  /// Depuis <c>docs/adr/0003</c>, <c>Qualification → Casework</c> est une règle à part entière ; ce
+  /// qui se tient ici n'est donc plus qu'un sens soit libre, mais que l'inspecteur ne <b>confonde</b>
+  /// pas les deux — sans quoi les deux seules traversées permises du dépôt, celles qui vont vers le
+  /// noyau partagé, se dénonceraient elles-mêmes à l'envers.
   /// </summary>
   [Fact]
   public void ReadsTheRuleInOneDirectionOnly()
