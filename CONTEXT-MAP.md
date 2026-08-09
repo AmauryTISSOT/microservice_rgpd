@@ -111,6 +111,19 @@ Chaque régime est défini dans le glossaire du contexte où il vaut, et **nulle
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
+Trois ADR de système sont en vigueur, et aucun n'en supplante un autre :
+
+- [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) — l'architecture
+  polyglotte et le moteur auto-hébergé.
+- [ADR-0002](./docs/adr/0002-deux-contextes-bornes-et-noyau-partage.md) — le découpage par le temps
+  et le noyau partagé d'un seul type. ⚠️ Son titre dit « deux contextes » : il est **daté, pas
+  faux** — il décidait de ce qui existait alors, et ses décisions restent en vigueur.
+- [ADR-0003](./docs/adr/0003-troisieme-contexte-sans-intersection-et-garde-des-traversees.md) — le
+  troisième contexte borné, son absence totale d'intersection, et le garde énoncé en **liste
+  blanche** : rien ne traverse d'un contexte à l'autre sauf les deux traversées vers le noyau
+  partagé, écrites en toutes lettres. Un quatrième contexte naîtrait donc interdit partout, et son
+  `CONTEXT.md` ne peut pas entrer sans que quelqu'un écrive sa ligne.
+
 ⚠️ [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) **précède le
 découpage** : il a été écrit quand le dépôt n'avait qu'un contexte. Il se lit comme un ADR de
 système, sa clause porteuse pour `Casework` étant l'auto-hébergement intégral et le refus de toute
