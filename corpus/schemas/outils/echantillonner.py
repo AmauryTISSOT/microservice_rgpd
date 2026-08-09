@@ -26,7 +26,7 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PIVOTS = os.path.join(RACINE, "pivots")
 SORTIE = os.path.join(RACINE, "annotation")
 
-GRAINE = 20260808  # figée : le tirage doit se rejouer à l'identique
+SEED = 20260808  # figé : le tirage doit se rejouer à l'identique
 
 RECENSEMENT = ["galette", "paheko-0.8.0", "paheko-1.0.0", "paheko-head",
                "sacoche", "temoin"]
@@ -134,7 +134,7 @@ def garde_annotation():
 def main():
     garde_annotation()
     os.makedirs(SORTIE, exist_ok=True)
-    plan = {"graine": GRAINE, "schemas": {}}
+    plan = {"seed": SEED, "schemas": {}}
     total = 0
 
     for nom in RECENSEMENT + list(SONDAGE):
@@ -149,7 +149,7 @@ def main():
             regime = "recensement"
         else:
             regime = "sondage stratifié en grappes (table)"
-            rng = random.Random(f"{GRAINE}:{nom}")
+            rng = random.Random(f"{SEED}:{nom}")
             cible = SONDAGE[nom]
             a = sorted([t for t in tables if strates[t] == "A"])
             b = sorted([t for t in tables if strates[t] == "B"])

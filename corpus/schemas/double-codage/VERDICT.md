@@ -76,7 +76,7 @@ condamner un travail qui n'a pas été jugé.
   l'annotation a fait apparaître (§ 3.3 cas 2, § 3.8, § 3.9). Il vaut pour toute
   reprise.
 - Le **plan de sondage** et son tirage rejouable : probabilités d'inclusion,
-  strates, graine.
+  strates, seed.
 - L'**outillage** : `valider.py`, `accord.py`, `distribution.py`,
   `incoherences.py`, `coder.py`.
 - Le **registre des limites de méthode**, enrichi de ce que l'annotation a vu

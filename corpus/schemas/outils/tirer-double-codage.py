@@ -3,7 +3,7 @@
 
 ⚠️ **À lancer AVANT que l'annotation commence.** Un échantillon tiré après coup
 se choisit, même de bonne foi, en connaissance de ce qu'il contient. Le tirage
-est figé par une graine ; il se rejoue à l'identique et se vérifie.
+est figé par un seed ; il se rejoue à l'identique et se vérifie.
 
 **Stratifié par schéma**, comme l'exige le § 4 du protocole : aucun schéma ne
 doit être absent du double codage. L'allocation est proportionnelle au nombre de
@@ -33,7 +33,7 @@ import sys
 
 import commun
 
-GRAINE = 20260809  # figée, et distincte de celle du plan de sondage
+SEED = 20260809  # figé, et distinct de celle du plan de sondage
 CIBLE = 300
 
 ECHANTILLON = os.path.join(commun.DOUBLE_CODAGE, "echantillon.jsonl")
@@ -97,7 +97,7 @@ def main():
 
     tire = []
     for nom in commun.SCHEMAS:
-        rng = random.Random(f"{GRAINE}:{nom}")
+        rng = random.Random(f"{SEED}:{nom}")
         candidats = sorted(par_schema[nom], key=lambda l: l["id"])
         tire.extend(rng.sample(candidats, parts[nom]))
         print(f"  {nom:<14} {parts[nom]:>3} / {effectifs[nom]:<4} colonnes")
@@ -115,7 +115,7 @@ def main():
     commun.ecrire_jsonl(ECHANTILLON, [{"id": l["id"]} for l in tire])
     commun.ecrire_jsonl(CAHIER_2, vierge)
 
-    print(f"\ngraine {GRAINE} — {CIBLE} colonnes")
+    print(f"\nseed {SEED} — {CIBLE} colonnes")
     print(f"  {ECHANTILLON}  (les identifiants, pour vérifier le tirage)")
     print(f"  {CAHIER_2}  (cahier vierge de la seconde passe)")
     print("\n⚠️  La seconde passe se remplit SANS ouvrir annotation/ : on y "

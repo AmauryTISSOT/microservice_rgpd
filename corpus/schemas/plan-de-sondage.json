@@ -1,5 +1,5 @@
 {
-  "graine": 20260808,
+  "seed": 20260808,
   "schemas": {
     "galette": {
       "regime": "recensement",
