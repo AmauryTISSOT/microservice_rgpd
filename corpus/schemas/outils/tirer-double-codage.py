@@ -16,14 +16,28 @@ recevra — et des `categorie`/`motif` vides. C'est la blindness, garantie par
 construction plutôt que par la discipline : le fichier ne *contient pas* de quoi
 tricher.
 
-⚠️ **Le double codage est *intra*-annotateur** (amendement du 2026-08-09 au § 4
-du protocole) : c'est le **même** annotateur qui reprend ces 300 colonnes, une
-fois les 3 254 terminées, sans relire sa première passe. Le délai est le seul
-rempart contre le souvenir ; le faire courir jusqu'à la fin de l'annotation lui
-donne sa longueur maximale.
+La passe machine n'a rien à re-remplir : ses étiquettes sur ces colonnes sont
+déjà dans `annotation/`, et `accord.py` va les y chercher.
 
-La première passe n'a rien à re-remplir : ses étiquettes sur ces 300 colonnes
-sont déjà dans `annotation/`, et `accord.py` va les y chercher.
+## Le tirage de la tentative 2 — 2026-08-09 (#145, #149)
+
+⚠️ **Seed neuf, sur le complémentaire des 300 déjà brûlées.** Les 300 colonnes
+de la tentative 1 ont été vues par l'annotateur humain : les retirer au sort
+mesurerait un souvenir, pas un accord. Elles sont donc **exclues** du tirage, et
+les 300 nouvelles se tirent parmi les 2 954 restantes.
+
+**Le plan de sondage de [#129](https://github.com/AmauryTISSOT/microservice_rgpd/issues/129)
+ne bouge pas** — mêmes strates, mêmes probabilités d'inclusion, même allocation
+proportionnelle par schéma avec plancher de 1. Ce qui change est le seed et
+l'ensemble tirable, rien d'autre.
+
+⚠️ **Ce script ne touche jamais `annotation/`.** C'est
+`outils/echantillonner.py` qui **écrase** ce dossier (constaté par #130), et il
+n'est pas appelé ici : les 3 254 étiquettes machine et le premier échantillon
+sont conservés et publiés. Le script le **vérifie** plutôt que de le promettre.
+
+⚠️ **La fuite d'aveuglement fermée par #142 reste fermée** : le cahier n'expose
+ni `strate` ni `proba_inclusion`.
 
 Usage :  python3 outils/tirer-double-codage.py [--refaire]
 """
@@ -33,11 +47,14 @@ import sys
 
 import commun
 
-SEED = 20260809  # figé, et distinct de celle du plan de sondage
+# Seed neuf : celui de la tentative 1 valait 20260809 et a brûlé ses 300 lignes.
+SEED = 20260810
 CIBLE = 300
 
-ECHANTILLON = os.path.join(commun.DOUBLE_CODAGE, "echantillon.jsonl")
-CAHIER_2 = commun.REFERENCE_HUMAINE
+ECHANTILLON = commun.echantillon()
+CAHIER_2 = commun.reference_humaine()
+# Les identifiants déjà vus par l'annotateur, quelle que soit la tentative.
+BRULEES = [commun.echantillon(n) for n in range(1, commun.TENTATIVE_COURANTE)]
 
 # ⚠️ Ni `strate` ni `proba_inclusion` (correction du 2026-08-09, § 4 du
 # protocole). La strate est le verdict d'un pré-criblage lexical : la montrer,
@@ -82,14 +99,27 @@ def main():
                  "en connaissance de cause.")
 
     lignes = commun.lire_annotation()
-    if commun.annotees(lignes):
-        print("⚠️  l'annotation a déjà commencé : le tirage aurait dû être fait "
-              "avant. Il reste reproductible, mais la garantie « tiré à "
-              "l'aveugle » est perdue et doit être signalée au journal.",
-              file=sys.stderr)
+    empreinte_avant = [(l["id"], l["categorie"]) for l in lignes]
+
+    # ⚠️ Le complémentaire, et c'est tout l'objet de ce tirage : une colonne déjà
+    # vue par l'annotateur ne mesure plus un accord, elle mesure un souvenir.
+    brulees = set()
+    for chemin in BRULEES:
+        if not os.path.exists(chemin):
+            sys.exit(f"absent : {chemin} — sans lui, le complémentaire ne peut "
+                     "pas être calculé et le tirage rejouerait des colonnes "
+                     "déjà vues.")
+        brulees.update(l["id"] for l in commun.lire_jsonl(chemin))
+    print(f"{len(brulees)} colonnes déjà brûlées, exclues du tirage.")
+
+    tirables = [l for l in lignes if l["id"] not in brulees]
+    if len(tirables) != len(lignes) - len(brulees):
+        sys.exit("des identifiants brûlés sont introuvables dans annotation/ : "
+                 "les deux fichiers ne parlent pas du même corpus.")
+    print(f"{len(tirables)} colonnes tirables sur {len(lignes)}.")
 
     par_schema = {}
-    for l in lignes:
+    for l in tirables:
         par_schema.setdefault(l["schema_source"], []).append(l)
 
     effectifs = {n: len(v) for n, v in par_schema.items()}
@@ -112,16 +142,29 @@ def main():
         o.update(categorie=None, motif=None, annotateur=None, date=None)
         vierge.append(o)
 
+    # ⚠️ Vérifié, pas promis : `echantillonner.py` écrase `annotation/` (#130),
+    # et le tirage neuf ne doit toucher ni les étiquettes machine ni le premier
+    # échantillon. On relit le corpus et on compare avant d'écrire quoi que ce
+    # soit.
+    empreinte_apres = [(l["id"], l["categorie"]) for l in commun.lire_annotation()]
+    if empreinte_apres != empreinte_avant:
+        sys.exit("✗ annotation/ a bougé pendant le tirage — les 3 254 étiquettes "
+                 "machine doivent être conservées intactes.")
+
     commun.ecrire_jsonl(ECHANTILLON, [{"id": l["id"]} for l in tire])
     commun.ecrire_jsonl(CAHIER_2, vierge)
 
-    print(f"\nseed {SEED} — {CIBLE} colonnes")
+    assert not set(l["id"] for l in tire) & brulees, "une brûlée est ressortie"
+
+    print(f"\nseed {SEED} — {CIBLE} colonnes, tentative {commun.TENTATIVE_COURANTE}")
     print(f"  {ECHANTILLON}  (les identifiants, pour vérifier le tirage)")
-    print(f"  {CAHIER_2}  (cahier vierge de la seconde passe)")
-    print("\n⚠️  La seconde passe se remplit SANS ouvrir annotation/ : on y "
-          "verrait les étiquettes de la première.")
-    print("⚠️  Elle se fait APRÈS les 3 254 colonnes — le délai est le seul "
-          "rempart contre le souvenir (§ 4, amendement du 2026-08-09).")
+    print(f"  {CAHIER_2}  (cahier vierge de la passe humaine)")
+    print("\n⚠️  La passe humaine se remplit SANS ouvrir annotation/ : on y "
+          "verrait les étiquettes machine.")
+    print("⚠️  Aucune des colonnes de la tentative 1 n'est ressortie — le "
+          "complémentaire est ce qui empêche de mesurer un souvenir.")
+    print("⚠️  #145 n'accorde qu'UNE tentative : « deux, si un défaut "
+          "d'instrument est constaté » est indiscernable de « pas de limite ».")
 
 
 if __name__ == "__main__":

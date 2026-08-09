@@ -4,7 +4,13 @@
 
 ⚠️ **Une divergence n'est pas forcément une erreur** : le § 3.3 et le § 3.4 font légitimement dépendre l'étiquette de la table. Ce rapport classe, il ne corrige pas.
 
-## Intra-schéma — même logiciel — 25 nom(s) de colonne
+## Intra-schéma — même logiciel — 26 nom(s) de colonne
+
+### `glpi` · `comment` — 24 occurrence(s)
+
+- **Unflagged** (21) — `glpi_devicefirmwaretypes`, `glpi_networkequipmentmodels`, `glpi_solutiontypes`, `glpi_devicesimcards` +17
+- **PersonalDataUncategorised** (3) — `glpi_printers`, `glpi_softwares`, `glpi_cables`
+  - motif : « champ libre d'un objet rattaché à une personne par `users_id` »
 
 ### `paheko-1.0.0` · `id` — 21 occurrence(s)
 
@@ -44,17 +50,23 @@
   - motif : « clé étrangère vers `galette_adherents`, table de personnes »
 - **Unflagged** (1) — `galette_adherents`
 
+### `paheko-head` · `description` — 7 occurrence(s)
+
+- **Unflagged** (6) — `acc_accounts`, `acc_projects`, `modules`, `plugins` +2
+- **PersonalDataUncategorised** (1) — `searches`
+  - motif : « champ libre d'un objet rattaché à une personne par `id_user` »
+
 ### `paheko-head` · `content` — 7 occurrence(s)
 
-- **Unflagged** (6) — `files_contents`, `files_search`, `searches`, `web_pages` +2
-- **PersonalDataUncategorised** (1) — `emails_queue`
-  - motif : « contenu d'un message adressé à la personne désignée par `recipient` sur la même ligne ; correspondance dont le contenu est indéterminable depuis le schéma (§ 3.3.1). »
+- **Unflagged** (5) — `files_contents`, `files_search`, `web_pages`, `web_pages_versions` +1
+- **PersonalDataUncategorised** (2) — `emails_queue`, `searches`
+  - motif : « champ libre d'un objet rattaché à une personne par `recipient` »
 
 ### `dolibarr` · `note` — 5 occurrence(s)
 
-- **PersonalDataUncategorised** (3) — `llx_actioncomm`, `llx_bank`, `llx_societe_remise_supplier`
-  - motif : « champ libre rattaché à une personne par les clés `fk_contact` et `fk_soc` de la table ; contenu indéterminable depuis le schéma »
-- **Unflagged** (2) — `llx_tva`, `llx_payment_donation`
+- **Unflagged** (3) — `llx_bank`, `llx_tva`, `llx_payment_donation`
+- **PersonalDataUncategorised** (2) — `llx_actioncomm`, `llx_societe_remise_supplier`
+  - motif : « champ libre d'un objet rattaché à une personne par `fk_contact` »
 
 ### `dolibarr` · `name` — 4 occurrence(s)
 
@@ -64,48 +76,48 @@
 
 ### `dolibarr` · `amount` — 4 occurrence(s)
 
-- **Unflagged** (3) — `llx_tva`, `llx_budget_lines`, `llx_payment_donation`
-- **FinancialData** (1) — `llx_bank`
-  - motif : « montant d'une opération bancaire, dans une table qui nommé par ailleurs un emetteur »
+- **FinancialData** (2) — `llx_bank`, `llx_payment_donation`
+  - motif : « Montant d'un mouvement bancaire rattaché à une personne identifiable dans la même ligne, via `fk_user_author` et le titulaire du compte porté par `numero_compte`, `num_chq` et `emetteur`. »
+- **Unflagged** (2) — `llx_tva`, `llx_budget_lines`
 
 ### `paheko-1.0.0` · `hash` — 4 occurrence(s)
 
 - **Unflagged** (2) — `acc_transactions`, `fichiers_contenu`
 - **AuthenticationSecret** (2) — `compromised_passwords_cache`, `membres_sessions`
-  - motif : « `hash` dans une table nommée `compromised_passwords_cache` : la colonne porte des empreintes de mots de passe, même si le schéma n'établit aucun rattachement à une personne. »
+  - motif : « Condensat de mot de passe compromis : empreinte d'un secret d'authentification. »
+
+### `paheko-1.0.0` · `contenu` — 4 occurrence(s)
+
+- **Unflagged** (3) — `fichiers_contenu`, `wiki_recherche`, `wiki_revisions`
+- **PersonalDataUncategorised** (1) — `recherches`
+  - motif : « champ libre d'un objet rattaché à une personne par `id_membre` »
 
 ### `paheko-head` · `hash` — 4 occurrence(s)
 
 - **AuthenticationSecret** (2) — `compromised_passwords_cache`, `users_sessions`
-  - motif : « `hash` dans une table nommée `compromised_passwords_cache` : la colonne porte des empreintes de mots de passe, même si le schéma n'établit aucun rattachement à une personne. »
+  - motif : « Condensat de mot de passe compromis : empreinte d'un secret d'authentification. »
 - **Unflagged** (1) — `acc_transactions`
 - **ContactDetails** (1) — `emails`
-  - motif : « empreinte de l'adresse de courriel dans la table `emails` : la colonne porte une coordonnée pseudonymisée et non un secret vérifié à l'authentification. »
+  - motif : « Condensat d'une adresse de courriel : donnée de contact pseudonymisée au sens du RGPD. »
 
 ### `dolibarr` · `note_public` — 3 occurrence(s)
 
 - **Unflagged** (2) — `llx_webhook_target`, `llx_product_lot`
 - **PersonalDataUncategorised** (1) — `llx_adherent`
-  - motif : « Champ libre rattaché à une personne ; contenu indéterminable depuis le schéma. »
+  - motif : « champ libre rattaché à une personne ; contenu indéterminable depuis le schéma »
 
 ### `dolibarr` · `note_private` — 3 occurrence(s)
 
 - **Unflagged** (2) — `llx_webhook_target`, `llx_product_lot`
 - **PersonalDataUncategorised** (1) — `llx_adherent`
-  - motif : « Champ libre rattaché à une personne ; contenu indéterminable depuis le schéma. »
+  - motif : « champ libre rattaché à une personne ; contenu indéterminable depuis le schéma »
 
 ### `openemr` · `comments` — 3 occurrence(s)
 
-- **PersonalDataUncategorised** (2) — `procedure_specimen`, `log`
-  - motif : « champ libre rattaché au prélèvement d'une personne ; aucune qualification explicite dans le nom ni dans un commentaire, contenu indéterminable depuis le schéma (§ 3.3) »
-- **HealthData** (1) — `form_eye_mag_wearing`
-  - motif : « champ libre d'un formulaire de prescription optique rattaché au patient (`PID`) ; la table qualifie le champ comme commentaire clinique. »
-
-### `openemr` · `encounter` — 3 occurrence(s)
-
-- **HealthData** (2) — `forms`, `billing`
-  - motif : « désigne la rencontre clinique (encounter) d'un patient : l'existence d'une consultation est déjà une donnée de santé »
-- **Unflagged** (1) — `form_eye_mag_wearing`
+- **HealthData** (2) — `procedure_specimen`, `form_eye_mag_wearing`
+  - motif : « champ libre d'une table de prélèvement d'analyse médicale ; la table nomme sans ambiguïté le domaine médical »
+- **PersonalDataUncategorised** (1) — `log`
+  - motif : « champ libre d'un objet rattaché à une personne par `patient_id` »
 
 ### `paheko-head` · `subject` — 3 occurrence(s)
 
@@ -119,16 +131,10 @@
 - **ContactDetails** (1) — `llx_adherent`
   - motif : « Adresse web déclarée par l'adhérent, coordonnée de contact. »
 
-### `galette` · `comment` — 2 occurrence(s)
-
-- **Unflagged** (1) — `galette_documents`
-- **PersonalDataUncategorised** (1) — `galette_payments_schedules`
-  - motif : « champ libre d'un échéancier rattaché par `id_cotis` à la cotisation d'un adhérent ; contenu indéterminable depuis le schéma »
-
 ### `galette` · `amount` — 2 occurrence(s)
 
 - **FinancialData** (1) — `galette_payments_schedules`
-  - motif : « montant en `decimal(15,2)` d'un échéancier de paiement rattaché par `id_cotis` à la cotisation d'un adhérent »
+  - motif : « Montant d'une échéance de paiement rattaché à une personne par `id_cotis`, qui pointe vers la cotisation nominative d'un adhérent. »
 - **Unflagged** (1) — `galette_types_cotisation`
 
 ### `openemr` · `field_value` — 2 occurrence(s)
@@ -154,7 +160,7 @@
 
 - **Unflagged** (1) — `fichiers_contenu`
 - **AuthenticationSecret** (1) — `membres_sessions`
-  - motif : « empreinte du jeton de session, à côté du sélecteur : c'est le secret vérifié à l'authentification. »
+  - motif : « Condensat du jeton de session d'un membre : empreinte d'un secret d'authentification. »
 
 ### `sacoche` · `crcn_niveau_numero` — 2 occurrence(s)
 
@@ -186,9 +192,15 @@
 
 ### `comment` — 26 occurrence(s)
 
-- **Unflagged** (25) — `galette_documents`, `glpi_devicefirmwaretypes`, `glpi_networkequipmentmodels`, `glpi_solutiontypes` +21
-- **PersonalDataUncategorised** (1) — `galette_payments_schedules`
-  - motif : « champ libre d'un échéancier rattaché par `id_cotis` à la cotisation d'un adhérent ; contenu indéterminable depuis le schéma »
+- **Unflagged** (23) — `galette_documents`, `galette_payments_schedules`, `glpi_devicefirmwaretypes`, `glpi_networkequipmentmodels` +19
+- **PersonalDataUncategorised** (3) — `glpi_printers`, `glpi_softwares`, `glpi_cables`
+  - motif : « champ libre d'un objet rattaché à une personne par `users_id` »
+
+### `description` — 23 occurrence(s)
+
+- **Unflagged** (21) — `llx_webhook_target`, `llx_document_model`, `llx_website_page`, `llx_commande_fournisseurdet` +17
+- **PersonalDataUncategorised** (2) — `searches`, `annonces`
+  - motif : « champ libre d'un objet rattaché à une personne par `id_user` »
 
 ### `code` — 21 occurrence(s)
 
@@ -205,10 +217,10 @@
 ### `hash` — 12 occurrence(s)
 
 - **AuthenticationSecret** (6) — `galette_tmplinks`, `membres_sessions`, `compromised_passwords_cache`, `membres_sessions` +2
-  - motif : « `hash` d'un lien temporaire : jeton dont la détention vaut preuve d'accès »
+  - motif : « Condensat du jeton d'un lien temporaire d'accès : empreinte d'un secret d'authentification. »
 - **Unflagged** (5) — `glpi_itemtranslations_itemtranslations`, `fichiers_contenu`, `acc_transactions`, `fichiers_contenu` +1
 - **ContactDetails** (1) — `emails`
-  - motif : « empreinte de l'adresse de courriel dans la table `emails` : la colonne porte une coordonnée pseudonymisée et non un secret vérifié à l'authentification. »
+  - motif : « Condensat d'une adresse de courriel : donnée de contact pseudonymisée au sens du RGPD. »
 
 ### `items_id` — 11 occurrence(s)
 
@@ -218,9 +230,9 @@
 
 ### `amount` — 10 occurrence(s)
 
-- **Unflagged** (7) — `llx_tva`, `llx_budget_lines`, `llx_payment_donation`, `galette_types_cotisation` +3
-- **FinancialData** (3) — `llx_bank`, `galette_payments_schedules`, `benefit_eligibility`
-  - motif : « montant d'une opération bancaire, dans une table qui nommé par ailleurs un emetteur »
+- **Unflagged** (7) — `llx_tva`, `llx_budget_lines`, `galette_types_cotisation`, `benefit_eligibility` +3
+- **FinancialData** (3) — `llx_bank`, `llx_payment_donation`, `galette_payments_schedules`
+  - motif : « Montant d'un mouvement bancaire rattaché à une personne identifiable dans la même ligne, via `fk_user_author` et le titulaire du compte porté par `numero_compte`, `num_chq` et `emetteur`. »
 
 ### `nom` — 10 occurrence(s)
 
@@ -230,9 +242,9 @@
 
 ### `content` — 9 occurrence(s)
 
-- **Unflagged** (8) — `llx_website_page`, `llx_c_subtotals_texts`, `files_contents`, `files_search` +4
-- **PersonalDataUncategorised** (1) — `emails_queue`
-  - motif : « contenu d'un message adressé à la personne désignée par `recipient` sur la même ligne ; correspondance dont le contenu est indéterminable depuis le schéma (§ 3.3.1). »
+- **Unflagged** (7) — `llx_website_page`, `llx_c_subtotals_texts`, `files_contents`, `files_search` +3
+- **PersonalDataUncategorised** (2) — `emails_queue`, `searches`
+  - motif : « champ libre d'un objet rattaché à une personne par `recipient` »
 
 ### `id_adh` — 9 occurrence(s)
 
@@ -252,11 +264,19 @@
 - **HealthData** (1) — `form_eye_mag_impplan`
   - motif : « la table `form_eye_mag_impplan` est un formulaire d'impression diagnostique et de plan de soins rattaché à un patient (`pid`). »
 
+### `contenu` — 7 occurrence(s)
+
+- **Unflagged** (6) — `fichiers_contenu`, `wiki_recherche`, `wiki_revisions`, `fichiers_contenu` +2
+- **PersonalDataUncategorised** (1) — `recherches`
+  - motif : « champ libre d'un objet rattaché à une personne par `id_membre` »
+
 ### `note` — 6 occurrence(s)
 
-- **PersonalDataUncategorised** (4) — `llx_actioncomm`, `llx_bank`, `llx_societe_remise_supplier`, `patient_care_experience_preferences`
-  - motif : « champ libre rattaché à une personne par les clés `fk_contact` et `fk_soc` de la table ; contenu indéterminable depuis le schéma »
-- **Unflagged** (2) — `llx_tva`, `llx_payment_donation`
+- **Unflagged** (3) — `llx_bank`, `llx_tva`, `llx_payment_donation`
+- **PersonalDataUncategorised** (2) — `llx_actioncomm`, `llx_societe_remise_supplier`
+  - motif : « champ libre d'un objet rattaché à une personne par `fk_contact` »
+- **HealthData** (1) — `patient_care_experience_preferences`
+  - motif : « champ libre d'une table d'observations cliniques du patient ; la table nomme sans ambiguïté le domaine médical »
 
 ### `url` — 5 occurrence(s)
 
@@ -276,23 +296,17 @@
   - motif : « Pays du bloc d'adresse postale, en position immédiate après `state_id`. »
 - **Unflagged** (2) — `acc_charts`, `acc_charts`
 
-### `body` — 4 occurrence(s)
-
-- **Unflagged** (3) — `services_reminders`, `mailings`, `services_reminders`
-- **PersonalDataUncategorised** (1) — `onotes`
-  - motif : « corps d'une note libre rattachée à l'utilisateur nommé par `user` ; contenu indéterminable depuis le schéma (§ 3.3-1). »
-
 ### `note_public` — 3 occurrence(s)
 
 - **Unflagged** (2) — `llx_webhook_target`, `llx_product_lot`
 - **PersonalDataUncategorised** (1) — `llx_adherent`
-  - motif : « Champ libre rattaché à une personne ; contenu indéterminable depuis le schéma. »
+  - motif : « champ libre rattaché à une personne ; contenu indéterminable depuis le schéma »
 
 ### `note_private` — 3 occurrence(s)
 
 - **Unflagged** (2) — `llx_webhook_target`, `llx_product_lot`
 - **PersonalDataUncategorised** (1) — `llx_adherent`
-  - motif : « Champ libre rattaché à une personne ; contenu indéterminable depuis le schéma. »
+  - motif : « champ libre rattaché à une personne ; contenu indéterminable depuis le schéma »
 
 ### `source` — 3 occurrence(s)
 
@@ -302,10 +316,10 @@
 
 ### `comments` — 3 occurrence(s)
 
-- **PersonalDataUncategorised** (2) — `procedure_specimen`, `log`
-  - motif : « champ libre rattaché au prélèvement d'une personne ; aucune qualification explicite dans le nom ni dans un commentaire, contenu indéterminable depuis le schéma (§ 3.3) »
-- **HealthData** (1) — `form_eye_mag_wearing`
-  - motif : « champ libre d'un formulaire de prescription optique rattaché au patient (`PID`) ; la table qualifie le champ comme commentaire clinique. »
+- **HealthData** (2) — `procedure_specimen`, `form_eye_mag_wearing`
+  - motif : « champ libre d'une table de prélèvement d'analyse médicale ; la table nomme sans ambiguïté le domaine médical »
+- **PersonalDataUncategorised** (1) — `log`
+  - motif : « champ libre d'un objet rattaché à une personne par `patient_id` »
 
 ### `client_id` — 3 occurrence(s)
 
@@ -313,17 +327,11 @@
   - motif : « Clé étrangère déclarée vers `clients`, table de personnes : la colonne désigne le client, elle ne stocke qu'un entier. »
 - **Unflagged** (1) — `api_refresh_token`
 
-### `encounter` — 3 occurrence(s)
-
-- **HealthData** (2) — `forms`, `billing`
-  - motif : « désigne la rencontre clinique (encounter) d'un patient : l'existence d'une consultation est déjà une donnée de santé »
-- **Unflagged** (1) — `form_eye_mag_wearing`
-
 ### `notes` — 3 occurrence(s)
 
 - **Unflagged** (2) — `acc_transactions`, `acc_transactions`
 - **PersonalDataUncategorised** (1) — `person_patient_link`
-  - motif : « champ libre rattaché à une personne (la table lie une personne à un patient) ; contenu indéterminable depuis le schéma (§ 3.3-1). »
+  - motif : « champ libre d'un objet rattaché à une personne par `patient_id` »
 
 ### `prefix` — 3 occurrence(s)
 

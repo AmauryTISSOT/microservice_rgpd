@@ -14,12 +14,36 @@ import sys
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ANNOTATION = os.path.join(RACINE, "annotation")
-DOUBLE_CODAGE = os.path.join(RACINE, "double-codage")
-# Les 300 colonnes codées À LA MAIN par l'annotateur humain : la référence
-# contre laquelle les 3 254 étiquettes machine sont validées (§ 4, amendement
-# n° 2 du 2026-08-09).
-REFERENCE_HUMAINE = os.path.join(DOUBLE_CODAGE, "reference-humaine.jsonl")
 PLAN = os.path.join(RACINE, "plan-de-sondage.json")
+
+# ── Les tentatives de double codage ───────────────────────────────────────────
+# La tentative 1 (κ = 0,040) est un **document daté** : son cahier, son verdict
+# et le classement de ses 79 désaccords se lisent encore et ne se réécrivent
+# jamais. La tentative 2 vit à côté, dans son propre dossier, et #145 lui
+# accorde **une seule** chance : « deux, si un défaut d'instrument est constaté »
+# est indiscernable de « pas de limite », un tel défaut étant toujours
+# rédigeable après coup.
+TENTATIVE_COURANTE = 2
+
+
+def dossier_tentative(n=None):
+    n = TENTATIVE_COURANTE if n is None else n
+    return os.path.join(RACINE, "double-codage" if n == 1 else f"double-codage-{n}")
+
+
+def reference_humaine(n=None):
+    """Les 300 colonnes codées À LA MAIN, en aveugle : la référence du § 4."""
+    return os.path.join(dossier_tentative(n), "reference-humaine.jsonl")
+
+
+def echantillon(n=None):
+    """Les seuls identifiants tirés — de quoi rejouer et vérifier le tirage."""
+    return os.path.join(dossier_tentative(n), "echantillon.jsonl")
+
+
+# Conservés pour la tentative 1, dont les artefacts sont publiés et figés.
+DOUBLE_CODAGE = dossier_tentative(1)
+REFERENCE_HUMAINE = reference_humaine(1)
 CONTEXTE = os.path.join(
     os.path.dirname(os.path.dirname(RACINE)),
     "docs", "contexts", "screening", "CONTEXT.md")
