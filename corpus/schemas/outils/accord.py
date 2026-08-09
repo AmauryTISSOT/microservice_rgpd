@@ -32,11 +32,21 @@ Les étiquettes machine sont lues dans `annotation/`, la référence humaine dan
 `double-codage/reference-humaine.jsonl`. C'est la première et seule fois où les
 deux se rencontrent.
 
-Usage :  python3 outils/accord.py [--markdown]
+⚠️ **Il mesure la tentative courante** (§ « tentatives » de `commun.py`).
+`--tentative 1` relit celle qui a rendu κ = 0,040 ; son verdict est publié et
+ne se recalcule pas pour être amélioré.
+
+Usage :  python3 outils/accord.py [--markdown] [--tentative N]
 """
 import sys
 
 import commun
+
+
+def tentative_demandee():
+    if "--tentative" in sys.argv:
+        return int(sys.argv[sys.argv.index("--tentative") + 1])
+    return commun.TENTATIVE_COURANTE
 
 
 def kappa_cohen(paires, valeurs):
@@ -99,11 +109,13 @@ def main():
     def sortie(s=""):
         lignes.append(s)
 
+    n_tent = tentative_demandee()
+    cahier = commun.reference_humaine(n_tent)
     premier = {l["id"]: l for l in commun.lire_annotation()}
     try:
-        second = commun.lire_jsonl(commun.REFERENCE_HUMAINE)
+        second = commun.lire_jsonl(cahier)
     except FileNotFoundError:
-        sys.exit("double-codage/reference-humaine.jsonl absent — lancer d'abord "
+        sys.exit(f"{cahier} absent — lancer d'abord "
                  "outils/tirer-double-codage.py")
 
     manquants_1 = [l["id"] for l in second
@@ -196,7 +208,7 @@ def main():
     texte = "\n".join(lignes)
     print(texte)
     if "--markdown" in sys.argv:
-        chemin = f"{commun.DOUBLE_CODAGE}/accord.md"
+        chemin = f"{commun.dossier_tentative(n_tent)}/accord.md"
         with open(chemin, "w", encoding="utf-8") as f:
             f.write(texte + "\n")
         print(f"\n→ {chemin}", file=sys.stderr)

@@ -31,8 +31,14 @@ n'est pas prise.
 | [`PROTOCOLE-ANNOTATION.md`](./PROTOCOLE-ANNOTATION.md) | Les règles, écrites avant l'annotation. |
 | [`limites-de-methode.md`](./limites-de-methode.md) | Les colonnes hors de portée du régime schéma-seul. Jamais de la mesure. |
 | [`journal-arbitrages.md`](./journal-arbitrages.md) | Les cas non prévus par le protocole. |
-| [`double-codage/`](./double-codage/) | Les 300 colonnes tirées pour le double codage, et le cahier **vierge** de la seconde passe. |
+| [`double-codage/`](./double-codage/) | **Tentative 1**, close et figée : les 300 colonnes tirées, le cahier humain, son [verdict](./double-codage/VERDICT.md) (κ = 0,040), la [règle d'arbitrage pré-enregistrée](./double-codage/ARBITRAGE.md) et le [classement des 79 désaccords](./double-codage/piles.md). |
+| [`double-codage-2/`](./double-codage-2/) | **Tentative 2**, en cours : 300 colonnes neuves tirées sur le **complémentaire** des 300 brûlées, cahier **vierge**. |
 | [`outils/`](./outils/) | `extraire.sh` (clonage → conteneur → introspection) et `echantillonner.py`. Puis l'outillage d'annotation, ci-dessous. |
+
+⚠️ **Une tentative de double codage ne s'écrase pas, elle s'ajoute.** Le cahier
+de la tentative 1 est un **document daté** : le corriger effacerait la mesure au
+lieu de l'expliquer. `commun.TENTATIVE_COURANTE` dit laquelle est vivante ;
+`accord.py --tentative 1` relit l'ancienne sans la recalculer.
 
 ## L'outillage d'annotation
 
@@ -43,19 +49,20 @@ Aucun de ces outils ne juge une étiquette — la vérité terrain est humaine, 
 | Outil | Rôle |
 |---|---|
 | `valider.py` | Applique la règle mécanique du § 2 — *motif présent ⇔ ce n'est pas `Unflagged`* — plus taxonomie, doublons, lignes à moitié remplies. `--strict` exige le corpus complet. |
-| `tirer-double-codage.py` | Tire les 300 colonnes du § 4, stratifiées par schéma, et écrit le cahier vierge de la seconde passe. |
-| `accord.py` | Accord brut, kappa de Cohen, **accord restreint aux colonnes signalées**, matrice des désaccords. |
+| `tirer-double-codage.py` | Tire les 300 colonnes du § 4, stratifiées par schéma, **sur le complémentaire des tentatives précédentes**, et écrit le cahier vierge. |
+| `coder.py` | La saisie à la main des 300, une par une. Porte les **quatre durcissements** du 2026-08-09 (#145) — voir plus bas. |
+| `accord.py` | Accord brut, kappa de Cohen, **accord restreint aux colonnes signalées**, matrice des désaccords. `--tentative N`. |
+| `incoherences.py` | Les colonnes de même nom étiquetées différemment. Classe, ne corrige pas. |
+| `piles.py` | Classe les 79 désaccords de la tentative 1 selon la règle **pré-enregistrée** d'`ARBITRAGE.md`, et évalue ses conditions de réfutation. |
 | `distribution.py` | Distribution par catégorie re-pondérée par les probabilités d'inclusion, et taux de repli. |
 
 **L'ordre compte, et il n'est pas commode par hasard :**
 
 ```bash
-python3 outils/tirer-double-codage.py   # AVANT d'annoter : voir plus bas (déjà fait)
-# … annotation à la main de annotation/*.annotation.jsonl …
-python3 outils/valider.py --strict      # le corpus tient debout
-# … puis, APRÈS les 3 254 : seconde passe à l'aveugle de
-#   double-codage/seconde-passe.jsonl …
-python3 outils/accord.py --markdown     # le bruit, publié AVANT tout chiffre du moteur
+python3 outils/tirer-double-codage.py   # AVANT de coder — sinon l'échantillon se choisit
+python3 outils/valider.py --strict      # le corpus machine tient debout
+python3 outils/coder.py                 # les 300, à la main, en aveugle
+python3 outils/accord.py --markdown     # publié AVANT tout chiffre du moteur
 python3 outils/distribution.py --markdown
 ```
 
@@ -63,10 +70,30 @@ python3 outils/distribution.py --markdown
 après coup se choisit, même de bonne foi, en connaissance de ce qu'il contient.
 Le tirage est figé par un seed et se rejoue à l'identique.
 
-⚠️ **La seconde passe n'ouvre jamais `annotation/`.** `seconde-passe.jsonl` ne
-porte que les neuf champs du pivot : la blindness est garantie par ce que le
-fichier **ne contient pas**, et non par la discipline de qui le remplit. Une
-seconde passe qui relit la première mesure la docilité, pas l'accord.
+⚠️ **La passe humaine n'ouvre jamais `annotation/`.** Le cahier ne porte que les
+champs du pivot — ni étiquette, ni `strate`, ni `proba_inclusion` : la blindness
+est garantie par ce que le fichier **ne contient pas**, et non par la discipline
+de qui le remplit. Une passe qui relit l'autre mesure la docilité, pas l'accord.
+
+### Les quatre durcissements de `coder.py` — 2026-08-09
+
+La tentative 1 a rendu κ = 0,040 avec, sur son cahier, quatre défauts
+**constatés**. Chacun a son remède, et le premier est le seul non négociable :
+
+1. **le motif doit citer** une sous-chaîne du nom de colonne, du nom de table, du
+   type, ou un `§` — 16 motifs sur 47 disaient « Nom de la colonne », or c'est le
+   motif qui rend un désaccord **arbitrable** ;
+2. **la catégorie se tape par son nom**, jamais par un rang — `ConnectionData` et
+   `Identity` étaient voisines au menu, et des étiquettes contredisaient leur
+   propre motif ;
+3. **`valider.py` passe avant la clôture** — un motif « erreur ici$ » est allé
+   jusqu'au cahier publié ;
+4. **le § 3.2 s'affiche sur les clés étrangères**, première source de désaccord.
+
+⚠️ **Aucun de ces remèdes ne suggère de catégorie.** Le § 3.10 n'a
+délibérément *pas* reçu le rappel du remède 4 : signaler « ce nom est opaque »
+souffle qu'il faut hériter du domaine de la table. Rappeler le § 3.2 nomme une
+propriété du pivot ; rappeler le § 3.10 nommerait un début de réponse.
 
 ⚠️ **Le double codage est *intra*-annotateur** — amendement du 2026-08-09 au § 4
 du protocole, faute d'un second lecteur. Il mesure la **constance** d'une
