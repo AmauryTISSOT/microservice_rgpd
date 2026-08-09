@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tire les 300 colonnes du double codage, et fabrique le cahier du second codeur.
+"""Tire les 300 colonnes du double codage et fabrique le cahier de seconde passe.
 
 ⚠️ **À lancer AVANT que l'annotation commence.** Un échantillon tiré après coup
 se choisit, même de bonne foi, en connaissance de ce qu'il contient. Le tirage
@@ -10,15 +10,20 @@ doit être absent du double codage. L'allocation est proportionnelle au nombre d
 colonnes à annoter, avec un plancher de 1, et les restes sont répartis par la
 méthode du plus fort reste pour tomber exactement sur 300.
 
-**Ce que ce script ne fait jamais** : recopier une étiquette. Le cahier du second
-codeur ne porte que les neuf champs du pivot — ceux que le moteur recevra — et
-des `categorie`/`motif` vides. C'est la blindness, garantie par construction
-plutôt que par la discipline : le fichier ne *contient pas* de quoi tricher.
+**Ce que ce script ne fait jamais** : recopier une étiquette. Le cahier de
+seconde passe ne porte que les neuf champs du pivot — ceux que le moteur
+recevra — et des `categorie`/`motif` vides. C'est la blindness, garantie par
+construction plutôt que par la discipline : le fichier ne *contient pas* de quoi
+tricher.
 
-Le premier codeur, lui, n'a rien à re-remplir : ses étiquettes sur ces 300
-colonnes sont déjà dans `annotation/`, et `accord.py` va les y chercher. Le lui
-faire recoder mesurerait sa propre constance d'un jour à l'autre, pas l'accord
-entre deux personnes.
+⚠️ **Le double codage est *intra*-annotateur** (amendement du 2026-08-09 au § 4
+du protocole) : c'est le **même** annotateur qui reprend ces 300 colonnes, une
+fois les 3 254 terminées, sans relire sa première passe. Le délai est le seul
+rempart contre le souvenir ; le faire courir jusqu'à la fin de l'annotation lui
+donne sa longueur maximale.
+
+La première passe n'a rien à re-remplir : ses étiquettes sur ces 300 colonnes
+sont déjà dans `annotation/`, et `accord.py` va les y chercher.
 
 Usage :  python3 outils/tirer-double-codage.py [--refaire]
 """
@@ -32,7 +37,7 @@ GRAINE = 20260809  # figée, et distincte de celle du plan de sondage
 CIBLE = 300
 
 ECHANTILLON = os.path.join(commun.DOUBLE_CODAGE, "echantillon.jsonl")
-CAHIER_2 = os.path.join(commun.DOUBLE_CODAGE, "codeur-2.jsonl")
+CAHIER_2 = commun.SECONDE_PASSE
 
 CHAMPS_PIVOT = ["id", "schema_source", "table", "colonne", "position", "type",
                 "nullable", "commentaire_colonne", "commentaire_table",
@@ -107,9 +112,11 @@ def main():
 
     print(f"\ngraine {GRAINE} — {CIBLE} colonnes")
     print(f"  {ECHANTILLON}  (les identifiants, pour vérifier le tirage)")
-    print(f"  {CAHIER_2}  (cahier vierge du second codeur)")
-    print("\n⚠️  Le second codeur remplit codeur-2.jsonl SANS ouvrir "
-          "annotation/ : il y verrait les étiquettes du premier.")
+    print(f"  {CAHIER_2}  (cahier vierge de la seconde passe)")
+    print("\n⚠️  La seconde passe se remplit SANS ouvrir annotation/ : on y "
+          "verrait les étiquettes de la première.")
+    print("⚠️  Elle se fait APRÈS les 3 254 colonnes — le délai est le seul "
+          "rempart contre le souvenir (§ 4, amendement du 2026-08-09).")
 
 
 if __name__ == "__main__":

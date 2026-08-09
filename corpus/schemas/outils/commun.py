@@ -15,6 +15,9 @@ import sys
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ANNOTATION = os.path.join(RACINE, "annotation")
 DOUBLE_CODAGE = os.path.join(RACINE, "double-codage")
+# Nommé « seconde passe » et non « codeur 2 » : depuis l'amendement du
+# 2026-08-09 au § 4 du protocole, c'est le même annotateur qui repasse.
+SECONDE_PASSE = os.path.join(DOUBLE_CODAGE, "seconde-passe.jsonl")
 PLAN = os.path.join(RACINE, "plan-de-sondage.json")
 CONTEXTE = os.path.join(
     os.path.dirname(os.path.dirname(RACINE)),

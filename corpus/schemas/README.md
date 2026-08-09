@@ -31,7 +31,7 @@ n'est pas prise.
 | [`PROTOCOLE-ANNOTATION.md`](./PROTOCOLE-ANNOTATION.md) | Les règles, écrites avant l'annotation. |
 | [`limites-de-methode.md`](./limites-de-methode.md) | Les colonnes hors de portée du régime schéma-seul. Jamais de la mesure. |
 | [`journal-arbitrages.md`](./journal-arbitrages.md) | Les cas non prévus par le protocole. |
-| [`double-codage/`](./double-codage/) | Les 300 colonnes tirées pour le double codage, et le cahier **vierge** du second codeur. |
+| [`double-codage/`](./double-codage/) | Les 300 colonnes tirées pour le double codage, et le cahier **vierge** de la seconde passe. |
 | [`outils/`](./outils/) | `extraire.sh` (clonage → conteneur → introspection) et `echantillonner.py`. Puis l'outillage d'annotation, ci-dessous. |
 
 ## L'outillage d'annotation
@@ -43,17 +43,18 @@ Aucun de ces outils ne juge une étiquette — la vérité terrain est humaine, 
 | Outil | Rôle |
 |---|---|
 | `valider.py` | Applique la règle mécanique du § 2 — *motif présent ⇔ ce n'est pas `Unflagged`* — plus taxonomie, doublons, lignes à moitié remplies. `--strict` exige le corpus complet. |
-| `tirer-double-codage.py` | Tire les 300 colonnes du § 4, stratifiées par schéma, et écrit le cahier vierge du second codeur. |
+| `tirer-double-codage.py` | Tire les 300 colonnes du § 4, stratifiées par schéma, et écrit le cahier vierge de la seconde passe. |
 | `accord.py` | Accord brut, kappa de Cohen, **accord restreint aux colonnes signalées**, matrice des désaccords. |
 | `distribution.py` | Distribution par catégorie re-pondérée par les probabilités d'inclusion, et taux de repli. |
 
 **L'ordre compte, et il n'est pas commode par hasard :**
 
 ```bash
-python3 outils/tirer-double-codage.py   # AVANT d'annoter : voir plus bas
+python3 outils/tirer-double-codage.py   # AVANT d'annoter : voir plus bas (déjà fait)
 # … annotation à la main de annotation/*.annotation.jsonl …
 python3 outils/valider.py --strict      # le corpus tient debout
-# … second codage à l'aveugle de double-codage/codeur-2.jsonl …
+# … puis, APRÈS les 3 254 : seconde passe à l'aveugle de
+#   double-codage/seconde-passe.jsonl …
 python3 outils/accord.py --markdown     # le bruit, publié AVANT tout chiffre du moteur
 python3 outils/distribution.py --markdown
 ```
@@ -62,10 +63,16 @@ python3 outils/distribution.py --markdown
 après coup se choisit, même de bonne foi, en connaissance de ce qu'il contient.
 Le tirage est figé par une graine et se rejoue à l'identique.
 
-⚠️ **Le second codeur n'ouvre jamais `annotation/`.** `codeur-2.jsonl` ne porte
-que les neuf champs du pivot : la blindness est garantie par ce que le fichier
-**ne contient pas**, et non par la discipline de qui le remplit. Un second codage
-qui relit le premier mesure la docilité, pas l'accord.
+⚠️ **La seconde passe n'ouvre jamais `annotation/`.** `seconde-passe.jsonl` ne
+porte que les neuf champs du pivot : la blindness est garantie par ce que le
+fichier **ne contient pas**, et non par la discipline de qui le remplit. Une
+seconde passe qui relit la première mesure la docilité, pas l'accord.
+
+⚠️ **Le double codage est *intra*-annotateur** — amendement du 2026-08-09 au § 4
+du protocole, faute d'un second lecteur. Il mesure la **constance** d'une
+personne, pas la **reproductibilité** du protocole ; l'accord en est **majoré**
+et le plancher qu'il donne au banc **optimiste**. La seconde passe se fait une
+fois les 3 254 colonnes terminées, pour que le délai soit le plus long possible.
 
 ⚠️ **`echantillonner.py` refuse désormais de tourner** dès qu'une étiquette
 existe : il réécrit `annotation/` de bout en bout et détruirait plusieurs séances
