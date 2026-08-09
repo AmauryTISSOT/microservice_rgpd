@@ -39,9 +39,14 @@ CIBLE = 300
 ECHANTILLON = os.path.join(commun.DOUBLE_CODAGE, "echantillon.jsonl")
 CAHIER_2 = commun.REFERENCE_HUMAINE
 
+# ⚠️ Ni `strate` ni `proba_inclusion` (correction du 2026-08-09, § 4 du
+# protocole). La strate est le verdict d'un pré-criblage lexical : la montrer,
+# c'est donner une part de la réponse avant que l'annotateur tranche. Les deux
+# champs restent dans `annotation/` et se rejoignent par `id` au moment de
+# pondérer. Ne les remettez pas ici « pour la commodité ».
 CHAMPS_PIVOT = ["id", "schema_source", "table", "colonne", "position", "type",
                 "nullable", "commentaire_colonne", "commentaire_table",
-                "table_referencee", "strate", "proba_inclusion"]
+                "table_referencee"]
 
 
 def allouer(effectifs, cible):

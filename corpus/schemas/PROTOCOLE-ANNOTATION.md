@@ -288,8 +288,16 @@ se rejoue à l'identique : `outils/tirer-double-codage.py`.
 ⚠️ **La seconde passe se fait en aveugle** : elle ne voit ni l'étiquette ni le
 motif de la première. Une seconde passe qui relit la première ne mesure pas
 l'accord, elle mesure la docilité. Cette garantie est **structurelle** et non
-disciplinaire : `double-codage/seconde-passe.jsonl` ne porte que les neuf champs
-du pivot, et ne *contient pas* de quoi tricher.
+disciplinaire : `double-codage/reference-humaine.jsonl` ne porte que les neuf
+champs du pivot, et ne *contient pas* de quoi tricher.
+
+⚠️ **La strate ne se montre pas non plus** *(correction du 2026-08-09)*. Le
+fichier de référence humaine avait été écrit avec `strate` et `proba_inclusion`.
+La strate est le **verdict d'un pré-criblage lexical** : lire « strate A » sur une
+colonne, c'est apprendre qu'un automate y soupçonne déjà une catégorie rare, donc
+recevoir une part de la réponse avant de trancher. Les deux champs sont retirés
+du fichier ; ils restent dans `annotation/` et se rejoignent par `id` au moment
+de pondérer (§ 4, distribution).
 
 **Ce qu'on publie**, sans exception et avant tout chiffre de performance du
 moteur :
