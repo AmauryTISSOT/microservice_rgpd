@@ -131,11 +131,21 @@ potentiel :
    `PersonalDataUncategorised`, motif : « champ libre rattaché à une personne ;
    contenu indéterminable depuis le schéma ». C'est exactement l'emploi pour
    lequel ce repli existe.
-2. Le champ libre est dans une table **sans personne** (`produit`, `stock`,
-   `ecriture_comptable`) → `Unflagged`.
-3. Le champ libre porte une qualification **explicite** dans son nom ou dans un
-   commentaire — `note_medicale`, `commentaire_sante` → la catégorie que cette
-   qualification nomme.
+2. Le champ libre est dans une **table d'objet qui porte une clé étrangère vers
+   une personne** — un ticket, un rendez-vous, un prêt, une commande →
+   `PersonalDataUncategorised`, motif : « champ libre d'un objet rattaché à une
+   personne par `<la FK>` ». *(Amendement du 2026-08-09, § 6.)* Le rattachement
+   est **visible dans le schéma** : ce n'est pas un pari sur le contenu, c'est le
+   constat qu'une note portée par un objet nominatif dit quelque chose de la
+   personne nommée. Si la table ne porte aucune FK vers une personne, on est au
+   cas 3, pas ici.
+3. Le champ libre est dans une table **sans personne** (`produit`, `stock`,
+   `ecriture_comptable`, nomenclature au sens § 3.4) → `Unflagged`.
+4. Le champ libre porte une qualification **explicite** dans son nom, dans un
+   commentaire, ou dans le domaine que la table nomme sans ambiguïté —
+   `note_medicale`, `commentaire_sante`, un champ libre d'une table de dossier
+   médical → la catégorie que cette qualification nomme. **Ce cas prime sur les
+   trois autres** : l'ordre d'arbitrage du § 2 ne se contourne pas.
 
 ⚠️ **Le taux de repli est un instrument, pas un défaut** ([#127](https://github.com/AmauryTISSOT/microservice_rgpd/issues/127)).
 Un `PersonalDataUncategorised` massif sur les champs libres est un **résultat**
@@ -174,6 +184,49 @@ relue`, où l'omission coûte et le faux positif s'écarte d'un geste.
 Les colonnes marquées `deprecated` / `not used` (119 chez Dolibarr) s'annotent
 **normalement**. Elles existent dans la base du client, portent encore leurs
 données, et un recensement RGPD s'y intéresse exactement autant.
+
+### 3.8 Empreintes et condensats — *amendement du 2026-08-09 (§ 6)*
+
+`hash`, `password_hash`, `md5`, `sha1`, `checksum`, `fingerprint`, `token_hash`.
+
+**Une empreinte prend l'étiquette de ce dont elle est l'empreinte**, parce qu'un
+condensat d'une donnée personnelle reste une donnée personnelle : le RGPD range
+la pseudonymisation parmi les traitements, pas parmi les sorties du champ
+d'application.
+
+| L'empreinte porte sur… | Étiquette | Motif type |
+|---|---|---|
+| un mot de passe, une clé d'API, un jeton de session | `AuthenticationSecret` | « condensat d'un secret d'authentification » |
+| un email, un téléphone, un identifiant de personne | `ContactDetails` ou la catégorie de la source | « condensat d'une donnée de contact ; pseudonyme au sens du RGPD » |
+| un fichier, un document, une révision, une somme d'intégrité | `Unflagged` | « somme d'intégrité d'un artefact, sans lien à une personne » |
+
+⚠️ **La source se lit dans le nom ou dans la table, jamais ailleurs.** Une colonne
+`hash` seule, dans une table dont rien ne dit ce qu'elle empreinte, relève du
+§ 3.5 : on étiquette ce que le nom dit, donc `Unflagged`, et la limite se porte au
+registre du § 1.
+
+### 3.9 Faits financiers — *amendement du 2026-08-09 (§ 6)*
+
+`montant`, `amount`, `iban`, `bic`, `numero_compte`, `num_chq`, `solde`,
+`policy_number`, `group_number`, `fk_account`, `fk_bank`.
+
+**Règle** — `FinancialData` demande un **rattachement à une personne
+identifiable, visible dans le schéma** :
+
+- la colonne est dans une table de personnes, ou dans une table qui porte une FK
+  vers une personne (don, cotisation, facture, adhésion, contrat) →
+  `FinancialData`, motif citant le rattachement ;
+- la colonne est un **agrégat ou un poste comptable non rattaché** — total d'un
+  exercice, solde d'un compte du plan comptable, montant d'une ligne de stock →
+  `Unflagged` ;
+- un **identifiant bancaire** (`iban`, `bic`, `numero_compte`) est
+  `FinancialData` **même sans FK visible** : il identifie son titulaire à lui
+  seul, il n'a pas besoin d'être rattaché pour l'être.
+
+⚠️ **Le montant compte autant que l'IBAN.** Le montant d'un don, d'une cotisation
+ou d'une aide dit quelque chose de la situation de la personne — parfois de ses
+opinions, quand l'organisme bénéficiaire en est un signe. Ne pas le retenir
+viderait `FinancialData` de l'essentiel de ce que le RGPD y vise.
 
 ---
 
