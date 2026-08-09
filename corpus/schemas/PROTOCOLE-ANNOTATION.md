@@ -228,6 +228,67 @@ ou d'une aide dit quelque chose de la situation de la personne — parfois de se
 opinions, quand l'organisme bénéficiaire en est un signe. Ne pas le retenir
 viderait `FinancialData` de l'essentiel de ce que le RGPD y vise.
 
+### 3.10 L'héritage du domaine par le nom de la table — *amendement du 2026-08-09 (§ 6)*
+
+> ⚠️ **Ce § est un arbitrage post-hoc, rendu après avoir vu le désaccord, et en
+> faveur d'une des deux passes.** Il porte sur la famille la plus lourde du
+> corpus de désaccords — **25 des 29 lignes de Pile B**, et 22 des 33 désaccords
+> d'OpenEMR ([`double-codage/piles.md`](./double-codage/piles.md)). Sa légitimité
+> tient au préambule du § 3 — une règle absente se tranche, se date, et les
+> colonnes déjà annotées sont repassées — et **non** à une neutralité qu'il n'a
+> pas. Il se publie sans être adouci
+> ([#145](https://github.com/AmauryTISSOT/microservice_rgpd/issues/145)).
+
+**Règle** — une colonne **dont le nom ne dit rien** prend la catégorie du domaine
+que **le nom de sa table** nomme.
+
+⚠️ **La borne, et elle est tout le § : l'héritage porte le domaine de la table,
+jamais la lecture de la colonne.**
+
+`form_eye_mag_wearing.ODSPH` → `HealthData`, motif « colonne d'un formulaire
+d'examen ophtalmologique rattaché à un patient ». Et **jamais** un motif
+prétendant savoir que `ODSPH` est la sphère de correction de l'œil droit : ce
+savoir vient de l'ophtalmologie, pas du pivot, et le § 1 l'interdit
+explicitement. Un motif d'héritage est donc **reconnaissable à sa forme** — il
+cite le nom de la table et ne dit rien de la colonne.
+
+**Trois conditions, cumulatives :**
+
+1. le nom de la colonne ne rend **aucun mot lisible** — sigle, abréviation non
+   développable, code (`ODSPH`, `CC3`, `TIMING2`, `OSMPDD`) ;
+2. le nom de la **table** nomme un domaine **sans ambiguïté** (`form_eye_*` :
+   formulaire d'examen ophtalmologique) ;
+3. **aucun** des § 3.1, 3.2, 3.3 et 3.4 ne tranche déjà — ils **priment tous**.
+
+⚠️ **La condition 3 n'est pas une formalité.** C'est exactement là que la
+référence humaine a fauté : sur les 41 lignes de Pile A, elle a appliqué un
+héritage de ce genre là où le § 3.1 l'interdisait déjà — `person_patient_link.id`
+étiquetée `HealthData` et `phone_numbers.id` étiquetée `ContactDetails`, toutes
+deux avec pour motif « Nom de la table ». **Une clé primaire n'hérite de rien**,
+et le § 3.10 ne rouvre pas le § 3.1.
+
+**Appui** — [#128](https://github.com/AmauryTISSOT/microservice_rgpd/issues/128)
+avait fait entrer `commentaire_table` au pivot contre l'intuition de #125, parce
+qu'« un commentaire de table éclaire **toutes** ses colonnes » ; ce § dit la même
+chose du **nom** de la table. Et c'est **vérifié plutôt que supposé** : aucune
+des **17 tables `form_eye_*` ne porte de `commentaire_table`** — 0 sur 510
+colonnes du pivot. Le nom de la table est donc le **seul** signal disponible sur
+`ODSPH`, et il **est dans le pivot**. La Pile B n'est pas hors de portée du
+régime schéma-seul ; elle est hors de portée du **nom de colonne seul**, ce qui
+n'est pas la même chose.
+
+⚠️ **Ce que ce § ne fait pas.** Il ne dit rien des colonnes dont le nom **dit**
+quelque chose : celles-là s'annotent sur ce que le nom dit (§ 3.5). Et il ne
+s'applique pas quand la table ne nomme aucun domaine — vérifié sur le corpus :
+les colonnes opaques de `gprelations`, `wiki_recherche` et des tables de
+recherche plein texte de Paheko restent `Unflagged`, la condition 2 n'étant pas
+remplie.
+
+⚠️ **Ce § n'a exigé aucune reprise.** Sur les 124 colonnes du corpus au nom
+opaque, la passe machine avait déjà appliqué l'héritage partout où les trois
+conditions sont réunies — c'est la vérification que #145 déclarait « non
+couverte », et elle est négative au sens où elle ne trouve rien à corriger.
+
 ---
 
 ## 4. Le double codage
