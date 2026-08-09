@@ -61,7 +61,7 @@ python3 outils/distribution.py --markdown
 
 ⚠️ **Le tirage des 300 se fait avant la première étiquette.** Un échantillon tiré
 après coup se choisit, même de bonne foi, en connaissance de ce qu'il contient.
-Le tirage est figé par une graine et se rejoue à l'identique.
+Le tirage est figé par un seed et se rejoue à l'identique.
 
 ⚠️ **La seconde passe n'ouvre jamais `annotation/`.** `seconde-passe.jsonl` ne
 porte que les neuf champs du pivot : la blindness est garantie par ce que le
@@ -192,7 +192,7 @@ régimes ; le détail par schéma vit dans [`plan-de-sondage.json`](./plan-de-so
   une annotation et n'entre jamais au corpus. La **probabilité d'inclusion** de
   chaque grappe est enregistrée : sans elle, aucune prévalence ne serait
   estimable depuis un tirage biaisé à dessein.
-- Le tirage est **rejouable** : graine figée à `20260808` dans
+- Le tirage est **rejouable** : seed figé à `20260808` dans
   `outils/echantillonner.py`.
 
 ## Ce que ce corpus ne pourra pas mesurer

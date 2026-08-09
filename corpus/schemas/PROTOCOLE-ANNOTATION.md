@@ -292,7 +292,7 @@ viderait `FinancialData` de l'essentiel de ce que le RGPD y vise.
 **Sur un échantillon de 300 colonnes**, tiré au hasard parmi les 3 254 à annoter,
 tirage stratifié par schéma pour qu'aucun ne soit absent. ⚠️ **Le tirage se fait
 avant la première étiquette** — un échantillon tiré après coup se choisit, même
-de bonne foi, en connaissance de ce qu'il contient. Il est figé par une graine et
+de bonne foi, en connaissance de ce qu'il contient. Il est figé par un seed et
 se rejoue à l'identique : `outils/tirer-double-codage.py`.
 
 ⚠️ **La seconde passe se fait en aveugle** : elle ne voit ni l'étiquette ni le
