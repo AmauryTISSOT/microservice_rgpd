@@ -20,7 +20,7 @@ les catégories rares ont une chance de se trouver. La probabilité d'inclusion 
 chaque grappe est enregistrée, sans quoi aucune prévalence ne serait estimable
 depuis un tirage biaisé exprès.
 """
-import json, os, random, re, sys, collections
+import json, os, random, re, sys, collections, glob
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PIVOTS = os.path.join(RACINE, "pivots")
@@ -105,7 +105,34 @@ def ligne_annotation(c, nom, st, proba):
     }
 
 
+def garde_annotation():
+    """Refuse d'écraser un travail d'annotation déjà commencé.
+
+    Ce script réécrit `annotation/` de bout en bout, et `annotation/` porte les
+    étiquettes — plusieurs séances de travail humain que rien ne régénère. La
+    consigne « ne jamais relancer une fois l'annotation commencée » existait déjà
+    en avertissement ; elle est ici mécanique, parce qu'un avertissement ne
+    rattrape pas une commande relancée de mémoire six semaines plus tard.
+    """
+    faites = []
+    for chemin in sorted(glob.glob(os.path.join(SORTIE, "*.annotation.jsonl"))):
+        with open(chemin, encoding="utf-8") as f:
+            for ligne in f:
+                ligne = ligne.strip()
+                if ligne and json.loads(ligne).get("categorie") is not None:
+                    faites.append(os.path.basename(chemin))
+                    break
+    if faites:
+        sys.exit(
+            "REFUS : l'annotation a commencé dans " + ", ".join(faites) + ".\n"
+            "Ce script réécrit annotation/ et détruirait ces étiquettes.\n"
+            "Si le corpus doit vraiment être re-tiré, sauvegarder annotation/ "
+            "hors du dépôt d'abord — et savoir que le double codage et les "
+            "chiffres d'accord sont à refaire avec.")
+
+
 def main():
+    garde_annotation()
     os.makedirs(SORTIE, exist_ok=True)
     plan = {"graine": GRAINE, "schemas": {}}
     total = 0

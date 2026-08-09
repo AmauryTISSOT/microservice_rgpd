@@ -179,12 +179,57 @@ données, et un recensement RGPD s'y intéresse exactement autant.
 
 ## 4. Le double codage
 
-**Sur un échantillon de 300 colonnes**, tiré au hasard parmi les 3 254 à annoter,
-tirage stratifié par schéma pour qu'aucun ne soit absent.
+> ### ⚠️ Amendement du 2026-08-09 — le double codage est **intra**-annotateur
+>
+> Ce paragraphe supposait deux personnes. Il n'y en a qu'une, et le dépôt n'a
+> personne d'autre à qui faire lire ce protocole. Plutôt que de laisser la
+> contradiction dormir jusqu'aux chiffres, elle est tranchée ici, avant la
+> première étiquette : **aucune colonne n'était annotée au moment de cet
+> amendement**, il n'y a donc rien à repasser.
+>
+> **Le montage retenu** — le même annotateur code les 3 254 colonnes, puis
+> reprend les 300 de l'échantillon depuis le cahier vierge, **une fois le corpus
+> entièrement annoté**. Le délai n'est pas décoratif : il est le seul rempart
+> contre le souvenir, et le faire courir jusqu'à la fin de l'annotation lui donne
+> sa longueur maximale gratuitement. La dilution aide — 300 colonnes noyées dans
+> 3 254, on ne se rappelle pas avoir tranché `llx_societe.fk_typent`.
+>
+> ⚠️ **Ce qui est mesuré change de nom, et il faut le publier sous son vrai
+> nom : c'est un accord *intra*-annotateur, pas *inter*.** Il mesure la
+> **constance d'une personne**, pas la **reproductibilité du protocole par une
+> autre**. Ce ne sont pas les mêmes quantités et l'une ne s'achète pas avec
+> l'autre.
+>
+> ⚠️ **Et il penche dans le sens qui flatte.** Une personne s'accorde avec
+> elle-même plus qu'avec autrui : l'accord mesuré ici est donc **majoré**, et le
+> désaccord — le bruit — **minoré**. Or c'est le bruit qui sert de plancher au
+> banc. Un plancher sous-estimé place la barre **trop bas** et créditerait le
+> moteur d'avoir battu un écart qu'aucun second codeur n'aurait validé.
+> **Le chiffre publié est donc une borne optimiste**, et
+> [#130](https://github.com/AmauryTISSOT/microservice_rgpd/issues/130) doit le
+> reprendre comme tel — jamais comme le bruit inter-annotateur qu'il n'est pas.
+>
+> **Ce que ce montage ne rattrape pas**, et qu'on n'ira pas prétendre : une règle
+> du § 3 comprise de travers restera comprise de travers aux deux passes, et
+> l'accord sera **excellent**. Un accord intra-annotateur élevé ne dit rien de la
+> justesse du protocole ; il ne dit que sa stabilité. La seule chose qui lèverait
+> ce doute est un second lecteur, et il n'y en a pas.
+>
+> Si un second codeur devient disponible, ce montage se remplace par celui
+> d'origine ci-dessous — c'est un nouvel amendement, et les 300 colonnes sont
+> recodées.
 
-⚠️ **Le second codeur travaille en aveugle** : il ne voit ni l'étiquette ni le
-motif du premier. Un second codage qui relit le premier ne mesure pas l'accord, il
-mesure la docilité.
+**Sur un échantillon de 300 colonnes**, tiré au hasard parmi les 3 254 à annoter,
+tirage stratifié par schéma pour qu'aucun ne soit absent. ⚠️ **Le tirage se fait
+avant la première étiquette** — un échantillon tiré après coup se choisit, même
+de bonne foi, en connaissance de ce qu'il contient. Il est figé par une graine et
+se rejoue à l'identique : `outils/tirer-double-codage.py`.
+
+⚠️ **La seconde passe se fait en aveugle** : elle ne voit ni l'étiquette ni le
+motif de la première. Une seconde passe qui relit la première ne mesure pas
+l'accord, elle mesure la docilité. Cette garantie est **structurelle** et non
+disciplinaire : `double-codage/seconde-passe.jsonl` ne porte que les neuf champs
+du pivot, et ne *contient pas* de quoi tricher.
 
 **Ce qu'on publie**, sans exception et avant tout chiffre de performance du
 moteur :
@@ -195,14 +240,17 @@ moteur :
   la masse des `Unflagged`, et le publier seul serait trompeur ;
 - la **matrice des désaccords**, qui dit *quelles* valeurs se confondent.
 
+Ces quatre chiffres sortent de `outils/accord.py`.
+
 ⚠️ **Le bruit de l'annotation borne ce que le banc peut prétendre.** Un moteur qui
-« bat » un écart inférieur au désaccord entre deux humains n'a rien battu du tout.
+« bat » un écart inférieur au désaccord entre deux passes n'a rien battu du tout.
 Ce chiffre se lit **avant** les résultats du moteur, et
 [le protocole de mesure](https://github.com/AmauryTISSOT/microservice_rgpd/issues/130)
-le reprend comme plancher.
+le reprend comme plancher — **optimiste**, au sens de l'amendement ci-dessus.
 
-Les désaccords sont réconciliés par discussion ; l'issue **amende ce protocole**
-si elle révèle une règle manquante, et les colonnes déjà annotées sont repassées.
+Les désaccords sont réconciliés en reprenant la règle du § 3 qui aurait dû
+trancher ; l'exercice **amende ce protocole** s'il révèle une règle manquante, et
+les colonnes déjà annotées sont repassées.
 
 ---
 
