@@ -15,9 +15,10 @@ import sys
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ANNOTATION = os.path.join(RACINE, "annotation")
 DOUBLE_CODAGE = os.path.join(RACINE, "double-codage")
-# Nommé « seconde passe » et non « codeur 2 » : depuis l'amendement du
-# 2026-08-09 au § 4 du protocole, c'est le même annotateur qui repasse.
-SECONDE_PASSE = os.path.join(DOUBLE_CODAGE, "seconde-passe.jsonl")
+# Les 300 colonnes codées À LA MAIN par l'annotateur humain : la référence
+# contre laquelle les 3 254 étiquettes machine sont validées (§ 4, amendement
+# n° 2 du 2026-08-09).
+REFERENCE_HUMAINE = os.path.join(DOUBLE_CODAGE, "reference-humaine.jsonl")
 PLAN = os.path.join(RACINE, "plan-de-sondage.json")
 CONTEXTE = os.path.join(
     os.path.dirname(os.path.dirname(RACINE)),

@@ -37,7 +37,7 @@ GRAINE = 20260809  # figée, et distincte de celle du plan de sondage
 CIBLE = 300
 
 ECHANTILLON = os.path.join(commun.DOUBLE_CODAGE, "echantillon.jsonl")
-CAHIER_2 = commun.SECONDE_PASSE
+CAHIER_2 = commun.REFERENCE_HUMAINE
 
 CHAMPS_PIVOT = ["id", "schema_source", "table", "colonne", "position", "type",
                 "nullable", "commentaire_colonne", "commentaire_table",
