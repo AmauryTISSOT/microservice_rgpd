@@ -232,6 +232,16 @@ viderait `FinancialData` de l'essentiel de ce que le RGPD y vise.
 
 ## 4. Le double codage
 
+> ### 🔴 Résultat du 2026-08-09 — l'accord a été mesuré, et il ne passe pas
+>
+> κ = **0,040** sur les colonnes signalées, contre la convention de 0,60 de
+> [#130](https://github.com/AmauryTISSOT/microservice_rgpd/issues/130). **La
+> vérité terrain n'est pas validée** et ne sert de référence à aucune mesure de
+> moteur. Verdict complet, limites de la mesure comprises :
+> [`double-codage/VERDICT.md`](./double-codage/VERDICT.md).
+>
+> Ce qui suit reste la règle applicable à toute reprise.
+
 > ### ⚠️ Amendement n° 2 du 2026-08-09 — la première passe est **machine**, les 300 sont la **référence humaine**
 >
 > Remplace l'amendement n° 1 du même jour (double codage intra-annotateur), qui
