@@ -305,9 +305,81 @@ ensemble vide.
 ce contexte.** Filtrer les `Unflagged` — dans l'API, dans l'écran, dans une pagination par défaut —
 rétablit l'`Omission silencieuse` sans qu'aucune ligne de doctrine n'ait été modifiée.
 ⚠️ Ce que ce mécanisme **ne rattrape pas**, c'est ce qui n'était pas dans le `ColumnListing` : le CRM
-en SaaS, les tableurs partagés, les journaux, les exports du service commercial. Le `Screening` le dit
-à chaque rendu, et comme une propriété de la réponse, jamais comme une mention en pied de page.
+en SaaS, les tableurs partagés, les journaux, les exports du service commercial. C'est l'objet de la
+`Clause d'incomplétude`, que le `Screening` porte à chaque rendu comme une propriété de la réponse,
+jamais comme une mention en pied de page.
 _Avoid_ : faux négatif, angle mort, oubli, erreur bénigne, erreur rattrapable
+
+**Clause d'incomplétude** (`IncompletenessClause`) :
+Ce que le `Screening` dit, à chaque rendu, de ce qu'il n'a pas regardé. **Propriété de la réponse** :
+toute réponse rendant un `Screening` ou une `ScreenedColumn` la porte, et un test d'architecture
+l'exige. Sans ce test, la clause est une intention et non une contrainte.
+
+⚠️ **Son contenu est constant.** Il ne se dérive pas du `ColumnListing`, ne compte rien et ne nomme
+aucune colonne. Ce qui est **détectable** dans un relevé n'a pas sa place ici mais sur la ligne : une
+colonne `json` ou `jsonb`, dont le contenu est illisible depuis le schéma, est une `ScreenedColumn`
+`PersonalDataUncategorised` portant le motif « conteneur libre » — la règle *motif présent ⇔ ce n'est
+pas `Unflagged`* la donne sans rien ajouter. Le partage est celui de l'arbitrage : **une ligne se
+retient, une clause ne s'arbitre pas.** Une incomplétude reléguée dans la clause serait la seule que
+l'`Omission relue` ne relirait pas.
+
+⚠️ **La seule liste fermée est celle de ce qui a été lu.** L'ensemble de ce qu'on n'a pas regardé est
+infini ; l'énumérer dans une structure le ferait lire comme un référentiel, et un `Operator` qui a
+coché les six items conclurait qu'il a fait le tour — l'exhaustivité reconstruite à l'endroit même
+conçu pour la refuser, et cette fois dans une forme testable, donc durable. L'ensemble de ce qui a
+été lu, lui, compte exactement un élément : ce relevé-ci.
+
+Elle porte donc quatre parties, et **deux régimes de clôture** :
+
+1. **Le périmètre lu** — fermé, et **il sépare le signal du filtre**. Sont lus **comme signal** : les
+   noms de tables, les noms de colonnes, les commentaires de table et de colonne *lorsque le SGBD en
+   rend et lorsqu'ils existent*. Sont lus **seulement pour écarter, jamais comme indice de sens** :
+   le type de la colonne, sa nullabilité, la table qu'une clé étrangère référence. **Rien d'autre, et
+   aucune valeur.** ⚠️ La condition portée par les commentaires n'est pas une précaution de style :
+   sept des dix schémas du corpus n'en rendent aucun, et SQLite n'en rend jamais. ⚠️ La séparation
+   signal/filtre non plus : dire « j'ai lu les types » ferait croire qu'un `varchar(10)` et un `date`
+   sont deux indices de qualité différente, alors qu'ils ne sont un indice ni l'un ni l'autre.
+2. **Hors périmètre** — **déclaré ouvert**, et les items n'y sont que des exemples : les autres bases
+   du client, les applications en SaaS dont le CRM, les tableurs partagés, les journaux applicatifs,
+   les exports et fichiers plats, les pièces jointes de messagerie, les sauvegardes.
+3. **Les catégories hors de portée** — fermée, adossée au texte, et c'est la dimension qui ne parle
+   pas de **sources** mais de ce que ce régime ne peut pas atteindre **dans le relevé qu'il a lu**.
+   `HealthData` : la santé peut être une **valeur** derrière une colonne au nom neutre.
+   `SpecialCategoryData` : la biométrie ne relève de l'art. 9 qu'« aux fins d'identifier une personne
+   de manière unique », une **finalité** qu'aucun lecteur de schéma ne connaît. `CriminalOffenceData` :
+   l'art. 10 réserve ces traitements aux autorités publiques, et rien dans un nom de colonne ne
+   l'annonce de façon fiable. ⚠️ **Elle dit une limite de méthode, jamais un résultat de corpus** :
+   qu'aucune application libre étudiée ne porte d'art. 10 n'autorise pas à écrire qu'une base client
+   n'en porte pas. ⚠️ C'est le seul endroit où se dit la seconde moitié de ce que la
+   `PersonalDataCategory` affirme : ces trois valeurs existent **et le service ne sait pas les voir**.
+   Sans elle, la taxonomie affiche treize valeurs dont trois hors d'atteinte sans le dire — la
+   confusion qu'`Unflagged` a été nommée pour éviter, un étage plus haut.
+4. **La relation au `Manifest`** — le rapport n'est pas le recensement du paysage du client ; le
+   recensement est le `Manifest`, et il se déclare à la main. ⚠️ Écrite ici et pas seulement au
+   glossaire, parce que `Suggéré, jamais déclaré` lie le **code** et n'empêche que le pont technique :
+   rien n'y empêche un `Operator` pressé de lire le rapport comme son paysage, et la clause est le
+   seul endroit où il le lit.
+
+⚠️ **Aucun cas spécial quand rien n'est signalé.** La tentation est forte — « aucune colonne
+signalée » sur une base scolaire dont la santé est invisible par construction est le rapport **vide
+et rassurant** que la `Vérification du Manifest` refuse. Mais un énoncé déclenché au seuil zéro dirait
+implicitement que le rapport **non** vide, lui, va bien : il rétablirait la réassurance d'un cran plus
+haut, là où elle est plus difficile à voir. La clause a la même force à zéro signalement qu'à neuf
+cents. Ce qui tient ce cas est ailleurs et existe déjà : un `Screening` n'est jamais littéralement
+vide, il rend toutes ses colonnes en `Unflagged`, et `Unflagged` dit ce que le service n'a pas fait,
+jamais ce que la colonne est.
+
+**Sa gouvernance a deux étages, et l'asymétrie est le fond.** **Ajouter** un exemple hors périmètre
+est une PR : ça **élargit** l'aveu, c'est gratuit et ça ne trompe personne. **Retirer** un exemple, ou
+toucher au périmètre lu, aux catégories hors de portée ou à la relation au `Manifest`, est un **ADR** :
+ça **rétrécit** une reconnaissance déjà tenue à des `Operator`, ce qui est très exactement l'érosion
+que l'`Omission silencieuse` redoute. Les trois catégories sont d'ailleurs adossées au texte, comme
+les trois valeurs de droit de la `PersonalDataCategory` : elles ne bougent que s'il bouge.
+
+_Avoid_ : Scope, Coverage, Completeness, Disclaimer, Limitations, avertissement, réserve, mentions
+légales ⚠️ `Scope`, `Coverage` et `Completeness` promettent dans leur nom la couverture que cette
+clause existe pour refuser ; `Disclaimer` et « mentions légales » en feraient le bloc qu'on ne lit
+pas ; `réserve` est pris par la `Reservation` de `Casework`, où il désigne le geste d'un humain.
 
 **Suggéré, jamais déclaré** :
 Le `Screening` ne touche **jamais** au `Manifest`. Il produit une suggestion qu'un humain lit
