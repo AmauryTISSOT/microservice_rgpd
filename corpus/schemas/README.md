@@ -31,7 +31,45 @@ n'est pas prise.
 | [`PROTOCOLE-ANNOTATION.md`](./PROTOCOLE-ANNOTATION.md) | Les règles, écrites avant l'annotation. |
 | [`limites-de-methode.md`](./limites-de-methode.md) | Les colonnes hors de portée du régime schéma-seul. Jamais de la mesure. |
 | [`journal-arbitrages.md`](./journal-arbitrages.md) | Les cas non prévus par le protocole. |
-| [`outils/`](./outils/) | `extraire.sh` (clonage → conteneur → introspection) et `echantillonner.py`. |
+| [`double-codage/`](./double-codage/) | Les 300 colonnes tirées pour le double codage, et le cahier **vierge** du second codeur. |
+| [`outils/`](./outils/) | `extraire.sh` (clonage → conteneur → introspection) et `echantillonner.py`. Puis l'outillage d'annotation, ci-dessous. |
+
+## L'outillage d'annotation
+
+Aucun de ces outils ne juge une étiquette — la vérité terrain est humaine, et le
+§ 1 du protocole dit pourquoi. Ils vérifient ce que le protocole a rendu
+**testable**, tirent ce qui doit être tiré d'avance, et calculent les chiffres.
+
+| Outil | Rôle |
+|---|---|
+| `valider.py` | Applique la règle mécanique du § 2 — *motif présent ⇔ ce n'est pas `Unflagged`* — plus taxonomie, doublons, lignes à moitié remplies. `--strict` exige le corpus complet. |
+| `tirer-double-codage.py` | Tire les 300 colonnes du § 4, stratifiées par schéma, et écrit le cahier vierge du second codeur. |
+| `accord.py` | Accord brut, kappa de Cohen, **accord restreint aux colonnes signalées**, matrice des désaccords. |
+| `distribution.py` | Distribution par catégorie re-pondérée par les probabilités d'inclusion, et taux de repli. |
+
+**L'ordre compte, et il n'est pas commode par hasard :**
+
+```bash
+python3 outils/tirer-double-codage.py   # AVANT d'annoter : voir plus bas
+# … annotation à la main de annotation/*.annotation.jsonl …
+python3 outils/valider.py --strict      # le corpus tient debout
+# … second codage à l'aveugle de double-codage/codeur-2.jsonl …
+python3 outils/accord.py --markdown     # le bruit, publié AVANT tout chiffre du moteur
+python3 outils/distribution.py --markdown
+```
+
+⚠️ **Le tirage des 300 se fait avant la première étiquette.** Un échantillon tiré
+après coup se choisit, même de bonne foi, en connaissance de ce qu'il contient.
+Le tirage est figé par une graine et se rejoue à l'identique.
+
+⚠️ **Le second codeur n'ouvre jamais `annotation/`.** `codeur-2.jsonl` ne porte
+que les neuf champs du pivot : la blindness est garantie par ce que le fichier
+**ne contient pas**, et non par la discipline de qui le remplit. Un second codage
+qui relit le premier mesure la docilité, pas l'accord.
+
+⚠️ **`echantillonner.py` refuse désormais de tourner** dès qu'une étiquette
+existe : il réécrit `annotation/` de bout en bout et détruirait plusieurs séances
+de travail humain. L'avertissement était écrit ; il est maintenant mécanique.
 
 ## L'extraction se fait par introspection, jamais en lisant le DDL
 
