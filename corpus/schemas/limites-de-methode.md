@@ -21,5 +21,10 @@ interdit précisément.
 | Schéma | Colonne | Étiquette retenue (depuis le relevé seul) | Ce qu'elle porte en réalité | Source du savoir |
 |---|---|---|---|---|
 | SACoche | `sacoche_livret_modaccomp.livret_modaccomp_code` | `Unflagged` | PAI et PPS — **données de santé**, art. 9 | [#125](https://github.com/AmauryTISSOT/microservice_rgpd/issues/125), établi en séance |
+| SACoche | `sacoche_livret_langcultregion.livret_langcultregion_code` | `Unflagged` | Langue et culture d'origine — laisse deviner l'**origine ethnique**, art. 9 | Remonté par l'annotation machine du 2026-08-09 (#142) |
+| SACoche | `sacoche_saisie.saisie_note` | `Unflagged` | Résultat scolaire nominatif d'un élève mineur ; le nom ne dit ni l'élève ni la note | Remonté par l'annotation machine du 2026-08-09 (#142) |
+| SIECLE | `siecle_import_contenu` (champs de contenu) | `Unflagged` | Contenu d'import d'un système de gestion d'élèves — indéchiffrable sans la connaissance du format SIECLE de l'Éducation nationale | Remonté par l'annotation machine du 2026-08-09 (#142) |
+| OpenEMR | l'ensemble des tables cliniques | variable | Le caractère `HealthData` est porté par le **nom de la table**, très rarement par celui de la colonne (`code`, `value`, `date`). Un moteur qui ne lit que la colonne rate la majorité du schéma le plus sensible du corpus. | Remonté par l'annotation machine du 2026-08-09 (#142) |
+| OpenEMR | `clinical_rules.patient_*` | `Unflagged` | ⚠️ **Piège inverse** : ces colonnes portent `patient` dans leur nom mais décrivent une **règle**, pas un patient. Un moteur qui déclenche sur le préfixe y produira des faux positifs. | Remonté par l'annotation machine du 2026-08-09 (#142) |
 
 <!-- Une ligne par colonne. Ne jamais remonter une ligne d'ici vers une étiquette. -->
