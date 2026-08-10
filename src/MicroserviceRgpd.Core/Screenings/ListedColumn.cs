@@ -46,6 +46,16 @@ public sealed record ListedColumn
     ReferencedTable = referencedTable;
   }
 
+  /// <summary>
+  /// Le constructeur qu'EF Core emprunte pour rematérialiser une ligne. Il ne rejoue aucun
+  /// invariant, et il est <b>indispensable</b> : le triplet est un type possédé, et le liage par
+  /// constructeur d'EF Core ne sait pas alimenter autre chose qu'un champ simple.
+  /// </summary>
+  private ListedColumn()
+  {
+    Identity = null!;
+  }
+
   /// <summary>Le triplet schéma / table / colonne.</summary>
   public ColumnIdentity Identity { get; }
 

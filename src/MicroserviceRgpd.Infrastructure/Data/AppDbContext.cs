@@ -1,4 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 
@@ -27,6 +28,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// que par lui, et n'ont donc structurellement ni requête ni dépôt à eux.
   /// </summary>
   public DbSet<Case> Cases => Set<Case>();
+
+  /// <summary>
+  /// Les <c>Screening</c> — le rapport d'un dépistage, et l'agrégat racine de son contexte.
+  /// </summary>
+  public DbSet<Screening> Screenings => Set<Screening>();
+
+  /// <summary>
+  /// Les <c>ScreenedColumn</c> — <b>une entité fille avec son propre <c>DbSet</c></b>, ce qui rompt
+  /// délibérément le précédent de <c>Claim</c> et de <c>Step</c> juste au-dessus. Le motif est écrit
+  /// une fois, là où la table se décide : voir <c>ScreenedColumnConfiguration</c>.
+  /// </summary>
+  public DbSet<ScreenedColumn> ScreenedColumns => Set<ScreenedColumn>();
 
   // ⚠️ Aucun DbSet du Ledger, et c'est délibéré. Il en existe un pour la trace d'audit, qui n'a
   // qu'un invariant d'écriture seule ; le Ledger, lui, promet qu'aucune opération de mise à jour ni

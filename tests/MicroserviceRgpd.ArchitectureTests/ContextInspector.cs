@@ -56,6 +56,52 @@ internal static class ContextInspector
   }
 
   /// <summary>
+  /// Les types du dépôt qui n'habitent <b>aucun</b> contexte et qui en atteignent <b>plusieurs</b>,
+  /// avec la liste de ceux qu'ils touchent. Vide vaut respect de la règle.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// C'est l'angle mort de la matrice, et il est large d'un fichier :
+  /// <c>MicroserviceRgpd.Infrastructure.Data.AppDbContext</c> ne porte aucun segment de contexte
+  /// dans son espace de noms, n'est donc <b>jamais un <c>from</c> ni un <c>to</c></b>, et
+  /// n'apparaît dans aucune paire ordonnée. Un
+  /// <c>Infrastructure/Data/Reporting/ScreeningExportService.cs</c> qui lirait les colonnes
+  /// retenues pour pré-remplir le <c>Manifest</c> laisserait <c>ContextIsolationTests</c> vert sur
+  /// toute la matrice.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Les types imbriqués et engendrés remontent à celui qui les entoure</b>, et ne sont pas
+  /// écartés comme dans <see cref="TypesIn"/>. La question n'est pas ici « qui habite ce dossier »
+  /// mais « que touche ce fichier » : deux traversées cachées dans deux fermetures d'une même
+  /// classe sont deux contextes atteints par elle, et les compter séparément aurait rendu le garde
+  /// contournable par une lambda.
+  /// </para>
+  /// </remarks>
+  internal static IReadOnlyList<ContextlessReach> ContextlessTypesReachingSeveralContexts(string assemblyPath)
+  {
+    using var module = ModuleDefinition.ReadModule(assemblyPath);
+    var assembly = Path.GetFileNameWithoutExtension(assemblyPath);
+
+    return
+    [
+      .. module.GetTypes()
+        .Where(BelongsToNoContext)
+        .GroupBy(type => FullNameOf(Outermost(type)))
+        .Select(sameFile => new ContextlessReach(
+          assembly,
+          sameFile.Key,
+          [
+            .. All.Where(context => sameFile
+              .SelectMany(Reaches)
+              .Any(reached => BelongsTo(reached.Type, context)))
+              .Order(StringComparer.Ordinal),
+          ]))
+        .Where(reach => reach.Contexts.Count > 1)
+        .OrderBy(reach => reach.Type, StringComparer.Ordinal),
+    ];
+  }
+
+  /// <summary>
   /// Les types de premier plan qu'un contexte héberge dans cet assemblage. Les types imbriqués sont
   /// hors sujet : la question posée est celle des habitants d'un dossier, et le compilateur en
   /// engendre d'autres — fermetures, machines à états — qui ne sont écrits par personne.
@@ -259,7 +305,7 @@ internal static class ContextInspector
   /// L'espace de noms d'un type imbriqué est vide : c'est celui du type qui l'entoure qui dit où il
   /// vit. Une fermeture engendrée dans un gestionnaire de <c>Casework</c> reste du <c>Casework</c>.
   /// </summary>
-  private static bool BelongsTo(TypeReference reference, string context)
+  private static TypeReference Outermost(TypeReference reference)
   {
     var outermost = reference;
 
@@ -268,7 +314,24 @@ internal static class ContextInspector
       outermost = outermost.DeclaringType;
     }
 
-    var inhabited = outermost.Namespace ?? string.Empty;
+    return outermost;
+  }
+
+  /// <summary>
+  /// Un type <b>du dépôt</b> qui n'habite aucun des contextes déclarés. Un type de bibliothèque n'en
+  /// est pas un : il n'a jamais eu de frontière à respecter.
+  /// </summary>
+  private static bool BelongsToNoContext(TypeReference reference)
+  {
+    var inhabited = Outermost(reference).Namespace ?? string.Empty;
+
+    return inhabited.StartsWith(Repository, StringComparison.Ordinal)
+      && !All.Any(context => BelongsTo(reference, context));
+  }
+
+  private static bool BelongsTo(TypeReference reference, string context)
+  {
+    var inhabited = Outermost(reference).Namespace ?? string.Empty;
 
     if (!inhabited.StartsWith(Repository, StringComparison.Ordinal))
     {
@@ -301,5 +364,17 @@ internal sealed record CrossContextReference(string Assembly, string SourceType,
   public override string ToString()
   {
     return $"  {SourceType} → {TargetType}  ({Site}, dans {Assembly})";
+  }
+}
+
+/// <summary>
+/// Un type qui n'appartient à aucun contexte, et les contextes qu'il atteint. Le rapport les nomme
+/// tous : « il en touche deux » n'apprend rien à qui doit décider lequel sortir.
+/// </summary>
+internal sealed record ContextlessReach(string Assembly, string Type, IReadOnlyList<string> Contexts)
+{
+  public override string ToString()
+  {
+    return $"  {Type} → {string.Join(", ", Contexts)}  (dans {Assembly})";
   }
 }
