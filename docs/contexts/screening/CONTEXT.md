@@ -89,6 +89,34 @@ publique ne la porte. Décalque exact de `QualificationEngineIdentity`, retenue 
 _Avoid_ : modèle, moteur, provenance, signature, version ⚠️ `signature` est prise par le geste d'un
 humain, qui est la seule signature de ce dépôt.
 
+**IScreeningEngine** :
+Le port par lequel le domaine fait dépister un `ColumnListing`. Il ne nomme aucun moteur : le
+domaine ignore s'il parle à des règles locales, à un modèle servi, ou à un troisième moteur pas
+encore écrit.
+⚠️ **C'est la couture de réversibilité d'[ADR-0004](../../adr/0004-moteur-de-depistage-en-csharp-sans-second-sidecar.md),
+et non une couture de test.** Le banc a désigné un dictionnaire, l'ADR en a tiré que le moteur vit
+en C# dans `Infrastructure` ; ce port est ce qui rend cette décision réversible — un moteur qui
+reviendrait en Python serait une implémentation de plus, et `Core` ne bougerait pas. C'est aussi
+pourquoi il est **asynchrone** alors que le moteur retenu est local et déterministe : une signature
+synchrone obligerait un futur moteur servi à bloquer sur son propre transport, et cette dette-là se
+paierait dans `Core`.
+⚠️ **Il rend une ligne par colonne, ou il échoue.** Un dépistage partiel n'existe pas : c'est la
+même clause que « il est entier ou il n'existe pas », vue du moteur.
+_Avoid_ : Scanner, Detector, Classifier, Analyzer, ArbitrationEngine ⚠️ `ArbitrationEngine` donnerait
+à une machine le mot réservé au geste de l'`Operator`, qui est seul à produire une issue.
+
+**ScreenedListing** :
+Ce qu'un `IScreeningEngine` rend : une `ScreenedColumn` par colonne du relevé, dans l'ordre du
+relevé, **et l'identité du moteur qui les a produites**.
+⚠️ **L'identité voyage avec les lignes, elle ne se lit pas à côté.** Le moteur la *joint* à ce qu'il
+rend ; un moteur servi apprend la version qu'on lui sert au moment où il répond, et une propriété
+posée à côté de l'appel dirait la version configurée plutôt que celle qui a répondu.
+⚠️ **Ce n'est pas encore un `Screening`.** Il y manque ce que le moteur n'a pas à décider :
+l'identité du rapport, l'instant du lancement, le nom de base et le dialecte. C'est le geste qui
+assemble, jamais le moteur.
+_Avoid_ : ScreeningResult, ScreeningOutcome, Predictions, Findings ⚠️ `Outcome` est le mot de l'issue,
+qui n'appartient qu'à l'humain ; `Predictions` promet un modèle et un score.
+
 ### La ligne, et pourquoi elles y sont toutes
 
 **ScreenedColumn** :

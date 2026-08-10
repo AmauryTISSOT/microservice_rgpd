@@ -6,6 +6,7 @@ using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 using MicroserviceRgpd.Infrastructure.Qualifications;
+using MicroserviceRgpd.Infrastructure.Screenings;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MicroserviceRgpd.Infrastructure;
@@ -62,6 +63,10 @@ public static class InfrastructureServiceExtensions
     services.TryAddSingleton(TimeProvider.System);
 
     services.AddQualificationEngines(config);
+
+    // Le moteur de dépistage, lui, ne se configure pas : ADR-0004 l'a mis en C# ici même, sans
+    // sidecar, sans adresse et sans échéance. Il démarre avec le service.
+    services.AddScreeningEngine();
 
     // Les appels sortants vers les Adapter du client. Le secret absent arrête le démarrage : aucun
     // mode « sans » ne survit à l'intégration.

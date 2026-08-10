@@ -24,6 +24,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Le pivot témoin du corpus, embarqué depuis sa source plutôt que recopié : le contrôle de
+         fumée du moteur de dépistage doit s'éprouver sur *le* pivot témoin, et une copie de test
+         finirait par diverger de celle que le banc a laissée hors de ses deux côtés. -->
+    <EmbeddedResource Include="..\..\corpus\schemas\pivots\temoin.jsonl" LogicalName="temoin.jsonl" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="xunit.runner.json">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

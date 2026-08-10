@@ -21,6 +21,13 @@
   </ItemGroup>
   
   <ItemGroup>
+    <!-- Les lexiques gelés du banc de dépistage (commit d413d55), embarqués dans l'assemblage : le
+         moteur démarre avec le service et ne lit aucun fichier du disque. Les rééditer est interdit
+         (#155) — FrozenLexiconsTests ancre leur empreinte. -->
+    <EmbeddedResource Include="Screenings\Lexicons\*.tsv" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MicroserviceRgpd.Core\MicroserviceRgpd.Core.csproj" />
     <ProjectReference Include="..\MicroserviceRgpd.UseCases\MicroserviceRgpd.UseCases.csproj" />
   </ItemGroup>
