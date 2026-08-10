@@ -1,0 +1,170 @@
+{
+  "regle": "La macro est moyennée sur les catégories peuplées dans au moins cinq plis sur six, ensemble fixé et publié à l'issue de #142, avant tout chiffre de moteur.",
+  "seuil_plis": 5,
+  "plis": {
+    "dolibarr": [
+      "dolibarr"
+    ],
+    "glpi": [
+      "glpi"
+    ],
+    "openemr": [
+      "openemr"
+    ],
+    "sacoche": [
+      "sacoche"
+    ],
+    "paheko": [
+      "paheko-0.8.0",
+      "paheko-1.0.0",
+      "paheko-head"
+    ],
+    "galette": [
+      "galette"
+    ]
+  },
+  "peuplement": {
+    "CriminalOffenceData": {
+      "dolibarr": 0,
+      "glpi": 0,
+      "openemr": 0,
+      "sacoche": 0,
+      "paheko": 0,
+      "galette": 0
+    },
+    "HealthData": {
+      "dolibarr": 0,
+      "glpi": 0,
+      "openemr": 207,
+      "sacoche": 1,
+      "paheko": 0,
+      "galette": 0
+    },
+    "SpecialCategoryData": {
+      "dolibarr": 0,
+      "glpi": 0,
+      "openemr": 0,
+      "sacoche": 0,
+      "paheko": 0,
+      "galette": 0
+    },
+    "AuthenticationSecret": {
+      "dolibarr": 2,
+      "glpi": 0,
+      "openemr": 3,
+      "sacoche": 3,
+      "paheko": 8,
+      "galette": 5
+    },
+    "NationalIdentifier": {
+      "dolibarr": 0,
+      "glpi": 0,
+      "openemr": 1,
+      "sacoche": 1,
+      "paheko": 0,
+      "galette": 0
+    },
+    "FinancialData": {
+      "dolibarr": 7,
+      "glpi": 0,
+      "openemr": 9,
+      "sacoche": 0,
+      "paheko": 5,
+      "galette": 3
+    },
+    "LocationData": {
+      "dolibarr": 0,
+      "glpi": 0,
+      "openemr": 0,
+      "sacoche": 0,
+      "paheko": 0,
+      "galette": 0
+    },
+    "ConnectionData": {
+      "dolibarr": 4,
+      "glpi": 2,
+      "openemr": 4,
+      "sacoche": 6,
+      "paheko": 5,
+      "galette": 1
+    },
+    "Identity": {
+      "dolibarr": 59,
+      "glpi": 14,
+      "openemr": 56,
+      "sacoche": 60,
+      "paheko": 31,
+      "galette": 23
+    },
+    "ContactDetails": {
+      "dolibarr": 24,
+      "glpi": 5,
+      "openemr": 25,
+      "sacoche": 10,
+      "paheko": 9,
+      "galette": 10
+    },
+    "ProfessionalLife": {
+      "dolibarr": 3,
+      "glpi": 0,
+      "openemr": 2,
+      "sacoche": 0,
+      "paheko": 0,
+      "galette": 2
+    },
+    "PersonalDataUncategorised": {
+      "dolibarr": 10,
+      "glpi": 5,
+      "openemr": 46,
+      "sacoche": 36,
+      "paheko": 13,
+      "galette": 18
+    },
+    "Unflagged": {
+      "dolibarr": 493,
+      "glpi": 584,
+      "openemr": 250,
+      "sacoche": 431,
+      "paheko": 554,
+      "galette": 132
+    }
+  },
+  "macro": [
+    "AuthenticationSecret",
+    "ConnectionData",
+    "Identity",
+    "ContactDetails",
+    "PersonalDataUncategorised"
+  ],
+  "exclues": [
+    {
+      "categorie": "CriminalOffenceData",
+      "plis_peuples": 0
+    },
+    {
+      "categorie": "HealthData",
+      "plis_peuples": 2
+    },
+    {
+      "categorie": "SpecialCategoryData",
+      "plis_peuples": 0
+    },
+    {
+      "categorie": "NationalIdentifier",
+      "plis_peuples": 2
+    },
+    {
+      "categorie": "FinancialData",
+      "plis_peuples": 4
+    },
+    {
+      "categorie": "LocationData",
+      "plis_peuples": 0
+    },
+    {
+      "categorie": "ProfessionalLife",
+      "plis_peuples": 3
+    }
+  ],
+  "unflagged_hors_macro": "Classe négative de la F2 un-contre-tous, pas une catégorie de données (#127) : peuplée dans les six plis, elle franchirait le seuil trivialement et fondrait la classe majoritaire dans la moyenne que la macro existe pour protéger."
+}

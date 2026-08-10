@@ -55,6 +55,7 @@ Aucun de ces outils ne juge une étiquette — la vérité terrain est humaine, 
 | `incoherences.py` | Les colonnes de même nom étiquetées différemment. Classe, ne corrige pas. |
 | `piles.py` | Classe les 79 désaccords de la tentative 1 selon la règle **pré-enregistrée** d'`ARBITRAGE.md`, et évalue ses conditions de réfutation. |
 | `distribution.py` | Distribution par catégorie re-pondérée par les probabilités d'inclusion, et taux de repli. |
+| `macro-f2.py` | Dérive l'**ensemble des catégories de la macro F2** — peuplées dans au moins cinq plis sur six (#130, #157) — et publie [`macro-f2.md`](./macro-f2.md) + [`macro-f2.json`](./macro-f2.json), **avant tout chiffre de moteur**. |
 
 **L'ordre compte, et il n'est pas commode par hasard :**
 
@@ -64,6 +65,7 @@ python3 outils/valider.py --strict      # le corpus machine tient debout
 python3 outils/coder.py                 # les 300, à la main, en aveugle
 python3 outils/accord.py --markdown     # publié AVANT tout chiffre du moteur
 python3 outils/distribution.py --markdown
+python3 outils/macro-f2.py --publier    # l'ensemble de la macro F2, AVANT tout chiffre du moteur
 ```
 
 ⚠️ **Le tirage des 300 se fait avant la première étiquette.** Un échantillon tiré
