@@ -1,0 +1,187 @@
+{
+  "dispositif": "CPU seul, jamais à vide : pendant toute la mesure, le sidecar de qualification (moteur LLM éteint) sert /opinions/lexicon en boucle fermée, un client, textes de corpus/demandes-rgpd.fr.jsonl — le dispositif de mesurer_contention.py, agresseur en moins, le moteur mesuré tenant ce rôle.",
+  "pivot": "dolibarr, 5 382 colonnes (pire cas réel du corpus)",
+  "machine": {
+    "coeurs": 8,
+    "noyau": "7.0.0-28-generic"
+  },
+  "montages": [
+    {
+      "montage": "ligne-de-base",
+      "colonnes": 5382,
+      "moteur_mediane_ms": 0.0007359922165051103,
+      "moteur_p95_ms": 0.004515997716225684,
+      "moteur_max_ms": 0.1287649938603863,
+      "duree_totale_ms": 9.277144999941811,
+      "rss_processus_moteur_kio": 35136,
+      "lexique_requetes": 969,
+      "lexique_mediane_ms": 1.8027229962171987,
+      "lexique_p95_ms": 2.9203679878264666,
+      "lecture_borne": {
+        "clauses": [
+          {
+            "clause": "rythme-par-colonne",
+            "valeur_ms": 0.004515997716225684,
+            "seuil_ms": 0.35,
+            "tenue": true
+          },
+          {
+            "clause": "budget-du-geste",
+            "valeur_ms": 9.277144999941811,
+            "seuil_ms": 7000,
+            "tenue": true
+          },
+          {
+            "clause": "non-famine-du-lexique",
+            "valeur_ms": 2.9203679878264666,
+            "seuil_ms": 5000,
+            "tenue": true
+          }
+        ],
+        "borne_tenue": true
+      }
+    },
+    {
+      "montage": "regles-lexique-fr",
+      "colonnes": 5382,
+      "moteur_mediane_ms": 0.028118003683630377,
+      "moteur_p95_ms": 0.06243800453376025,
+      "moteur_max_ms": 0.20696100546047091,
+      "duree_totale_ms": 170.86572499829344,
+      "rss_processus_moteur_kio": 35212,
+      "lexique_requetes": 978,
+      "lexique_mediane_ms": 1.842236495576799,
+      "lexique_p95_ms": 3.185755995218642,
+      "lecture_borne": {
+        "clauses": [
+          {
+            "clause": "rythme-par-colonne",
+            "valeur_ms": 0.06243800453376025,
+            "seuil_ms": 0.35,
+            "tenue": true
+          },
+          {
+            "clause": "budget-du-geste",
+            "valeur_ms": 170.86572499829344,
+            "seuil_ms": 7000,
+            "tenue": true
+          },
+          {
+            "clause": "non-famine-du-lexique",
+            "valeur_ms": 3.185755995218642,
+            "seuil_ms": 5000,
+            "tenue": true
+          }
+        ],
+        "borne_tenue": true
+      }
+    },
+    {
+      "montage": "regles-lexique-en",
+      "colonnes": 5382,
+      "moteur_mediane_ms": 0.03137250314466655,
+      "moteur_p95_ms": 0.07574600749649107,
+      "moteur_max_ms": 0.26207900373265147,
+      "duree_totale_ms": 192.05204799072817,
+      "rss_processus_moteur_kio": 35216,
+      "lexique_requetes": 1008,
+      "lexique_mediane_ms": 1.7944819992408156,
+      "lexique_p95_ms": 3.439762003836222,
+      "lecture_borne": {
+        "clauses": [
+          {
+            "clause": "rythme-par-colonne",
+            "valeur_ms": 0.07574600749649107,
+            "seuil_ms": 0.35,
+            "tenue": true
+          },
+          {
+            "clause": "budget-du-geste",
+            "valeur_ms": 192.05204799072817,
+            "seuil_ms": 7000,
+            "tenue": true
+          },
+          {
+            "clause": "non-famine-du-lexique",
+            "valeur_ms": 3.439762003836222,
+            "seuil_ms": 5000,
+            "tenue": true
+          }
+        ],
+        "borne_tenue": true
+      }
+    },
+    {
+      "montage": "regles-lexique-fr-en",
+      "colonnes": 5382,
+      "moteur_mediane_ms": 0.04599399835569784,
+      "moteur_p95_ms": 0.10285899043083191,
+      "moteur_max_ms": 0.262866000412032,
+      "duree_totale_ms": 269.51793499756604,
+      "rss_processus_moteur_kio": 35216,
+      "lexique_requetes": 1080,
+      "lexique_mediane_ms": 1.7526315059512854,
+      "lexique_p95_ms": 3.0470430065179244,
+      "lecture_borne": {
+        "clauses": [
+          {
+            "clause": "rythme-par-colonne",
+            "valeur_ms": 0.10285899043083191,
+            "seuil_ms": 0.35,
+            "tenue": true
+          },
+          {
+            "clause": "budget-du-geste",
+            "valeur_ms": 269.51793499756604,
+            "seuil_ms": 7000,
+            "tenue": true
+          },
+          {
+            "clause": "non-famine-du-lexique",
+            "valeur_ms": 3.0470430065179244,
+            "seuil_ms": 5000,
+            "tenue": true
+          }
+        ],
+        "borne_tenue": true
+      }
+    },
+    {
+      "montage": "modele-cpu",
+      "colonnes": 5382,
+      "moteur_mediane_ms": 24.932074498792645,
+      "moteur_p95_ms": 29.124720007530414,
+      "moteur_max_ms": 108.11707699031103,
+      "duree_totale_ms": 131677.66161799955,
+      "rss_processus_moteur_kio": 1662104,
+      "lexique_requetes": 46592,
+      "lexique_mediane_ms": 2.419888500298839,
+      "lexique_p95_ms": 3.8623919972451404,
+      "graine": 1,
+      "note": "inférence colonne par colonne (lot de 1) : la latence par colonne de la borne n'a pas d'autre lecture honnête ; un traitement par lot serait plus rapide en durée totale et est rapporté par la mesure elle-même comme diagnostic",
+      "lecture_borne": {
+        "clauses": [
+          {
+            "clause": "rythme-par-colonne",
+            "valeur_ms": 29.124720007530414,
+            "seuil_ms": 0.35,
+            "tenue": false
+          },
+          {
+            "clause": "budget-du-geste",
+            "valeur_ms": 131677.66161799955,
+            "seuil_ms": 7000,
+            "tenue": false
+          },
+          {
+            "clause": "non-famine-du-lexique",
+            "valeur_ms": 3.8623919972451404,
+            "seuil_ms": 5000,
+            "tenue": true
+          }
+        ],
+        "borne_tenue": false
+      }
+    }
+  ]
+}
