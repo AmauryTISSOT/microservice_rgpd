@@ -1,0 +1,3625 @@
+{
+  "graines": {
+    "modele_cpu": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "bootstrap": 134,
+    "b": 10000
+  },
+  "categories_macro": [
+    "AuthenticationSecret",
+    "ConnectionData",
+    "Identity",
+    "ContactDetails",
+    "PersonalDataUncategorised"
+  ],
+  "montages": {
+    "ligne-de-base": {
+      "colonnes": 3182,
+      "f2_macro": 0.0642450241253467,
+      "f2_micro": 0.025201612903225805,
+      "exactitude": 0.7699560025141421,
+      "wilson_exactitude_ic95": [
+        0.7550126883192347,
+        0.7842482956856862
+      ],
+      "par_categorie": {
+        "CriminalOffenceData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "f2": null
+        },
+        "HealthData": {
+          "support": 208,
+          "tp": 0,
+          "fp": 0,
+          "fn": 208,
+          "f2": 0.0
+        },
+        "SpecialCategoryData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "f2": null
+        },
+        "AuthenticationSecret": {
+          "support": 21,
+          "tp": 1,
+          "fp": 0,
+          "fn": 20,
+          "f2": 0.058823529411764705
+        },
+        "NationalIdentifier": {
+          "support": 2,
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "f2": 0.0
+        },
+        "FinancialData": {
+          "support": 24,
+          "tp": 1,
+          "fp": 0,
+          "fn": 23,
+          "f2": 0.05154639175257732
+        },
+        "LocationData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "f2": null
+        },
+        "ConnectionData": {
+          "support": 22,
+          "tp": 2,
+          "fp": 0,
+          "fn": 20,
+          "f2": 0.1111111111111111
+        },
+        "Identity": {
+          "support": 243,
+          "tp": 1,
+          "fp": 9,
+          "fn": 242,
+          "f2": 0.0050916496945010185
+        },
+        "ContactDetails": {
+          "support": 83,
+          "tp": 10,
+          "fp": 0,
+          "fn": 73,
+          "f2": 0.14619883040935672
+        },
+        "ProfessionalLife": {
+          "support": 7,
+          "tp": 0,
+          "fp": 0,
+          "fn": 7,
+          "f2": 0.0
+        },
+        "PersonalDataUncategorised": {
+          "support": 128,
+          "tp": 0,
+          "fp": 0,
+          "fn": 128,
+          "f2": 0.0
+        }
+      },
+      "signalees_predites": 24,
+      "taux_repli_parmi_signalees": 0.0,
+      "par_pli": {
+        "dolibarr": {
+          "colonnes": 602,
+          "f2_macro": 0.07214526546695374,
+          "f2_micro": 0.08968609865470852,
+          "exactitude": 0.8289036544850499,
+          "wilson_exactitude_ic95": [
+            0.7967581948381233,
+            0.8568781553899143
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 7,
+              "tp": 0,
+              "fp": 0,
+              "fn": 7,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 0,
+              "fp": 0,
+              "fn": 4,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 59,
+              "tp": 1,
+              "fp": 2,
+              "fn": 58,
+              "f2": 0.02092050209205021
+            },
+            "ContactDetails": {
+              "support": 24,
+              "tp": 7,
+              "fp": 0,
+              "fn": 17,
+              "f2": 0.33980582524271846
+            },
+            "ProfessionalLife": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 10,
+              "tp": 0,
+              "fp": 0,
+              "fn": 10,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 10,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "glpi": {
+          "colonnes": 610,
+          "f2_macro": 0.05952380952380952,
+          "f2_micro": 0.047619047619047616,
+          "exactitude": 0.9590163934426229,
+          "wilson_exactitude_ic95": [
+            0.9401996185517691,
+            0.9720880607792748
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 14,
+              "tp": 0,
+              "fp": 0,
+              "fn": 14,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 5,
+              "tp": 1,
+              "fp": 0,
+              "fn": 4,
+              "f2": 0.23809523809523808
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 5,
+              "tp": 0,
+              "fp": 0,
+              "fn": 5,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 1,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "openemr": {
+          "colonnes": 603,
+          "f2_macro": 0.0687245195107746,
+          "f2_micro": 0.007072135785007072,
+          "exactitude": 0.417910447761194,
+          "wilson_exactitude_ic95": [
+            0.37918502922488106,
+            0.4576751612728065
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 207,
+              "tp": 0,
+              "fp": 0,
+              "fn": 207,
+              "f2": 0.0
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 9,
+              "tp": 0,
+              "fp": 0,
+              "fn": 9,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 1,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.29411764705882354
+            },
+            "Identity": {
+              "support": 56,
+              "tp": 0,
+              "fp": 0,
+              "fn": 56,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 25,
+              "tp": 1,
+              "fp": 0,
+              "fn": 24,
+              "f2": 0.04950495049504951
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 46,
+              "tp": 0,
+              "fp": 0,
+              "fn": 46,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 2,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "sacoche": {
+          "colonnes": 548,
+          "f2_macro": 0.0,
+          "f2_micro": 0.0,
+          "exactitude": 0.7864963503649635,
+          "wilson_exactitude_ic95": [
+            0.7502544480297787,
+            0.8187495565561526
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 6,
+              "tp": 0,
+              "fp": 0,
+              "fn": 6,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 60,
+              "tp": 0,
+              "fp": 0,
+              "fn": 60,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 0,
+              "fp": 0,
+              "fn": 10,
+              "f2": 0.0
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 36,
+              "tp": 0,
+              "fp": 0,
+              "fn": 36,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 0,
+          "taux_repli_parmi_signalees": null
+        },
+        "paheko": {
+          "colonnes": 625,
+          "f2_macro": 0.10494910494910495,
+          "f2_micro": 0.06779661016949153,
+          "exactitude": 0.8816,
+          "wilson_exactitude_ic95": [
+            0.8539099014438818,
+            0.9046278718902416
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 8,
+              "tp": 1,
+              "fp": 0,
+              "fn": 7,
+              "f2": 0.15151515151515152
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 5,
+              "tp": 1,
+              "fp": 0,
+              "fn": 4,
+              "f2": 0.23809523809523808
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 5,
+              "tp": 1,
+              "fp": 0,
+              "fn": 4,
+              "f2": 0.23809523809523808
+            },
+            "Identity": {
+              "support": 31,
+              "tp": 0,
+              "fp": 7,
+              "fn": 31,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 9,
+              "tp": 1,
+              "fp": 0,
+              "fn": 8,
+              "f2": 0.13513513513513514
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 13,
+              "tp": 0,
+              "fp": 0,
+              "fn": 13,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 11,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "galette": {
+          "colonnes": 194,
+          "f2_macro": 0.0,
+          "f2_micro": 0.0,
+          "exactitude": 0.6804123711340206,
+          "wilson_exactitude_ic95": [
+            0.6118363474742583,
+            0.7419823131634986
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 5,
+              "tp": 0,
+              "fp": 0,
+              "fn": 5,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 23,
+              "tp": 0,
+              "fp": 0,
+              "fn": 23,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 0,
+              "fp": 0,
+              "fn": 10,
+              "f2": 0.0
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 18,
+              "tp": 0,
+              "fp": 0,
+              "fn": 18,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 0,
+          "taux_repli_parmi_signalees": null
+        }
+      },
+      "erreurs_par_degre": {
+        "exacte": {
+          "total": 24,
+          "erreurs": 9,
+          "taux_erreur": 0.375
+        }
+      }
+    },
+    "regles-lexique-fr": {
+      "colonnes": 3182,
+      "f2_macro": 0.2138372440506291,
+      "f2_micro": 0.1042287075640262,
+      "exactitude": 0.7083595223130107,
+      "wilson_exactitude_ic95": [
+        0.6923233855419548,
+        0.7238931830206325
+      ],
+      "par_categorie": {
+        "CriminalOffenceData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 5,
+          "fn": 0,
+          "f2": null
+        },
+        "HealthData": {
+          "support": 208,
+          "tp": 2,
+          "fp": 6,
+          "fn": 206,
+          "f2": 0.011904761904761904
+        },
+        "SpecialCategoryData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 6,
+          "fn": 0,
+          "f2": null
+        },
+        "AuthenticationSecret": {
+          "support": 21,
+          "tp": 6,
+          "fp": 14,
+          "fn": 15,
+          "f2": 0.28846153846153844
+        },
+        "NationalIdentifier": {
+          "support": 2,
+          "tp": 0,
+          "fp": 8,
+          "fn": 2,
+          "f2": 0.0
+        },
+        "FinancialData": {
+          "support": 24,
+          "tp": 7,
+          "fp": 55,
+          "fn": 17,
+          "f2": 0.22151898734177214
+        },
+        "LocationData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 23,
+          "fn": 0,
+          "f2": null
+        },
+        "ConnectionData": {
+          "support": 22,
+          "tp": 12,
+          "fp": 82,
+          "fn": 10,
+          "f2": 0.32967032967032966
+        },
+        "Identity": {
+          "support": 243,
+          "tp": 9,
+          "fp": 50,
+          "fn": 234,
+          "f2": 0.04364694471387003
+        },
+        "ContactDetails": {
+          "support": 83,
+          "tp": 33,
+          "fp": 40,
+          "fn": 50,
+          "f2": 0.4074074074074074
+        },
+        "ProfessionalLife": {
+          "support": 7,
+          "tp": 1,
+          "fp": 44,
+          "fn": 6,
+          "f2": 0.0684931506849315
+        },
+        "PersonalDataUncategorised": {
+          "support": 128,
+          "tp": 0,
+          "fp": 3,
+          "fn": 128,
+          "f2": 0.0
+        }
+      },
+      "signalees_predites": 406,
+      "taux_repli_parmi_signalees": 0.007389162561576354,
+      "par_pli": {
+        "dolibarr": {
+          "colonnes": 602,
+          "f2_macro": 0.35867859384808537,
+          "f2_micro": 0.18026565464895636,
+          "exactitude": 0.7508305647840532,
+          "wilson_exactitude_ic95": [
+            0.7147615332637831,
+            0.7837187136272961
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 2,
+              "tp": 2,
+              "fp": 0,
+              "fn": 0,
+              "f2": 1.0
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 7,
+              "tp": 2,
+              "fp": 13,
+              "fn": 5,
+              "f2": 0.23255813953488372
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 4,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 4,
+              "fp": 34,
+              "fn": 0,
+              "f2": 0.37037037037037035
+            },
+            "Identity": {
+              "support": 59,
+              "tp": 2,
+              "fp": 2,
+              "fn": 57,
+              "f2": 0.041666666666666664
+            },
+            "ContactDetails": {
+              "support": 24,
+              "tp": 9,
+              "fp": 13,
+              "fn": 15,
+              "f2": 0.3813559322033898
+            },
+            "ProfessionalLife": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 10,
+              "tp": 0,
+              "fp": 2,
+              "fn": 10,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 91,
+          "taux_repli_parmi_signalees": 0.02197802197802198
+        },
+        "glpi": {
+          "colonnes": 610,
+          "f2_macro": 0.12931034482758622,
+          "f2_micro": 0.13274336283185842,
+          "exactitude": 0.9540983606557377,
+          "wilson_exactitude_ic95": [
+            0.9344593946495119,
+            0.9680537738315567
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 14,
+              "tp": 0,
+              "fp": 0,
+              "fn": 14,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 5,
+              "tp": 3,
+              "fp": 6,
+              "fn": 2,
+              "f2": 0.5172413793103449
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 5,
+              "tp": 0,
+              "fp": 0,
+              "fn": 5,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 9,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "openemr": {
+          "colonnes": 603,
+          "f2_macro": 0.15843137254901962,
+          "f2_micro": 0.030612244897959183,
+          "exactitude": 0.3781094527363184,
+          "wilson_exactitude_ic95": [
+            0.3402920923827717,
+            0.4174700086592492
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 207,
+              "tp": 2,
+              "fp": 0,
+              "fn": 205,
+              "f2": 0.012048192771084338
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 1,
+              "fp": 4,
+              "fn": 2,
+              "f2": 0.29411764705882354
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 9,
+              "tp": 0,
+              "fp": 2,
+              "fn": 9,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 4,
+              "fp": 30,
+              "fn": 0,
+              "f2": 0.4
+            },
+            "Identity": {
+              "support": 56,
+              "tp": 0,
+              "fp": 0,
+              "fn": 56,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 25,
+              "tp": 2,
+              "fp": 0,
+              "fn": 23,
+              "f2": 0.09803921568627451
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 0,
+              "fp": 9,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 46,
+              "tp": 0,
+              "fp": 1,
+              "fn": 46,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 58,
+          "taux_repli_parmi_signalees": 0.017241379310344827
+        },
+        "sacoche": {
+          "colonnes": 548,
+          "f2_macro": 0.278451991568893,
+          "f2_micro": 0.11824324324324324,
+          "exactitude": 0.6605839416058394,
+          "wilson_exactitude_ic95": [
+            0.619943544481819,
+            0.6989886364325885
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 1,
+              "tp": 0,
+              "fp": 3,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 2,
+              "fp": 6,
+              "fn": 1,
+              "f2": 0.5
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 11,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 6,
+              "tp": 1,
+              "fp": 6,
+              "fn": 5,
+              "f2": 0.16129032258064516
+            },
+            "Identity": {
+              "support": 60,
+              "tp": 3,
+              "fp": 40,
+              "fn": 57,
+              "f2": 0.053003533568904596
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 8,
+              "fp": 11,
+              "fn": 2,
+              "f2": 0.6779661016949152
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 30,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 36,
+              "tp": 0,
+              "fp": 0,
+              "fn": 36,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 124,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "paheko": {
+          "colonnes": 625,
+          "f2_macro": 0.150093808630394,
+          "f2_micro": 0.11527377521613832,
+          "exactitude": 0.8144,
+          "wilson_exactitude_ic95": [
+            0.7820319328950476,
+            0.8429268614871548
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 8,
+              "tp": 0,
+              "fp": 4,
+              "fn": 8,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 7,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 5,
+              "tp": 3,
+              "fp": 21,
+              "fn": 2,
+              "f2": 0.3409090909090909
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 5,
+              "tp": 2,
+              "fp": 4,
+              "fn": 3,
+              "f2": 0.38461538461538464
+            },
+            "Identity": {
+              "support": 31,
+              "tp": 0,
+              "fp": 7,
+              "fn": 31,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 9,
+              "tp": 3,
+              "fp": 2,
+              "fn": 6,
+              "f2": 0.36585365853658536
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 13,
+              "tp": 0,
+              "fp": 0,
+              "fn": 13,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 63,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "galette": {
+          "colonnes": 194,
+          "f2_macro": 0.30863638080132927,
+          "f2_micro": 0.2750809061488673,
+          "exactitude": 0.6237113402061856,
+          "wilson_exactitude_ic95": [
+            0.5537606167239651,
+            0.6888578934276396
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 5,
+              "tp": 1,
+              "fp": 0,
+              "fn": 4,
+              "f2": 0.23809523809523808
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 3,
+              "tp": 2,
+              "fp": 18,
+              "fn": 1,
+              "f2": 0.3125
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 4,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 1,
+              "tp": 1,
+              "fp": 8,
+              "fn": 0,
+              "f2": 0.38461538461538464
+            },
+            "Identity": {
+              "support": 23,
+              "tp": 4,
+              "fp": 1,
+              "fn": 19,
+              "f2": 0.20618556701030927
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 8,
+              "fp": 8,
+              "fn": 2,
+              "f2": 0.7142857142857143
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 1,
+              "fp": 4,
+              "fn": 1,
+              "f2": 0.38461538461538464
+            },
+            "PersonalDataUncategorised": {
+              "support": 18,
+              "tp": 0,
+              "fp": 0,
+              "fn": 18,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 61,
+          "taux_repli_parmi_signalees": 0.0
+        }
+      },
+      "erreurs_par_degre": {
+        "exacte": {
+          "total": 204,
+          "erreurs": 148,
+          "taux_erreur": 0.7254901960784313
+        },
+        "morphologique": {
+          "total": 202,
+          "erreurs": 188,
+          "taux_erreur": 0.9306930693069307
+        }
+      },
+      "ecart_apparie_vs_base": {
+        "b": 10000,
+        "replicats_indefinis": 0,
+        "ic95": [
+          0.07064231127828491,
+          0.24672355830743498
+        ],
+        "mediane": 0.1577383048650441
+      }
+    },
+    "regles-lexique-en": {
+      "colonnes": 3182,
+      "f2_macro": 0.2891443118071283,
+      "f2_micro": 0.1770518803184189,
+      "exactitude": 0.6898177247014456,
+      "wilson_exactitude_ic95": [
+        0.673524767677596,
+        0.7056529207263298
+      ],
+      "par_categorie": {
+        "CriminalOffenceData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "f2": null
+        },
+        "HealthData": {
+          "support": 208,
+          "tp": 20,
+          "fp": 66,
+          "fn": 188,
+          "f2": 0.10893246187363835
+        },
+        "SpecialCategoryData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 5,
+          "fn": 0,
+          "f2": null
+        },
+        "AuthenticationSecret": {
+          "support": 21,
+          "tp": 15,
+          "fp": 41,
+          "fn": 6,
+          "f2": 0.5357142857142857
+        },
+        "NationalIdentifier": {
+          "support": 2,
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "f2": 0.0
+        },
+        "FinancialData": {
+          "support": 24,
+          "tp": 10,
+          "fp": 101,
+          "fn": 14,
+          "f2": 0.24154589371980675
+        },
+        "LocationData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 38,
+          "fn": 0,
+          "f2": null
+        },
+        "ConnectionData": {
+          "support": 22,
+          "tp": 10,
+          "fp": 139,
+          "fn": 12,
+          "f2": 0.2109704641350211
+        },
+        "Identity": {
+          "support": 243,
+          "tp": 21,
+          "fp": 106,
+          "fn": 222,
+          "f2": 0.09554140127388536
+        },
+        "ContactDetails": {
+          "support": 83,
+          "tp": 50,
+          "fp": 39,
+          "fn": 33,
+          "f2": 0.5938242280285035
+        },
+        "ProfessionalLife": {
+          "support": 7,
+          "tp": 2,
+          "fp": 23,
+          "fn": 5,
+          "f2": 0.18867924528301888
+        },
+        "PersonalDataUncategorised": {
+          "support": 128,
+          "tp": 1,
+          "fp": 4,
+          "fn": 127,
+          "f2": 0.009671179883945842
+        }
+      },
+      "signalees_predites": 691,
+      "taux_repli_parmi_signalees": 0.00723589001447178,
+      "par_pli": {
+        "dolibarr": {
+          "colonnes": 602,
+          "f2_macro": 0.3908246537276246,
+          "f2_micro": 0.34071550255536626,
+          "exactitude": 0.7740863787375415,
+          "wilson_exactitude_ic95": [
+            0.7390039040341344,
+            0.8056930544892301
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 2,
+              "tp": 2,
+              "fp": 8,
+              "fn": 0,
+              "f2": 0.5555555555555556
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 7,
+              "tp": 6,
+              "fp": 41,
+              "fn": 1,
+              "f2": 0.4
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 5,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 4,
+              "fp": 31,
+              "fn": 0,
+              "f2": 0.39215686274509803
+            },
+            "Identity": {
+              "support": 59,
+              "tp": 8,
+              "fp": 7,
+              "fn": 51,
+              "f2": 0.1593625498007968
+            },
+            "ContactDetails": {
+              "support": 24,
+              "tp": 19,
+              "fp": 15,
+              "fn": 5,
+              "f2": 0.7307692307692307
+            },
+            "ProfessionalLife": {
+              "support": 3,
+              "tp": 0,
+              "fp": 1,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 10,
+              "tp": 1,
+              "fp": 2,
+              "fn": 9,
+              "f2": 0.11627906976744186
+            }
+          },
+          "signalees_predites": 151,
+          "taux_repli_parmi_signalees": 0.019867549668874173
+        },
+        "glpi": {
+          "colonnes": 610,
+          "f2_macro": 0.16526442307692307,
+          "f2_micro": 0.10101010101010101,
+          "exactitude": 0.819672131147541,
+          "wilson_exactitude_ic95": [
+            0.7871920226672463,
+            0.8481511825811593
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 9,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 2,
+              "tp": 1,
+              "fp": 17,
+              "fn": 1,
+              "f2": 0.19230769230769232
+            },
+            "Identity": {
+              "support": 14,
+              "tp": 0,
+              "fp": 47,
+              "fn": 14,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 5,
+              "tp": 3,
+              "fp": 9,
+              "fn": 2,
+              "f2": 0.46875
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 4,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 5,
+              "tp": 0,
+              "fp": 1,
+              "fn": 5,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 94,
+          "taux_repli_parmi_signalees": 0.010638297872340425
+        },
+        "openemr": {
+          "colonnes": 603,
+          "f2_macro": 0.3500636727480638,
+          "f2_micro": 0.1702127659574468,
+          "exactitude": 0.3283582089552239,
+          "wilson_exactitude_ic95": [
+            0.2920649581351068,
+            0.3668245310873308
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 207,
+              "tp": 20,
+              "fp": 64,
+              "fn": 187,
+              "f2": 0.10964912280701754
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 3,
+              "fp": 9,
+              "fn": 0,
+              "f2": 0.625
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 9,
+              "tp": 2,
+              "fp": 44,
+              "fn": 7,
+              "f2": 0.12195121951219512
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 6,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 1,
+              "fp": 16,
+              "fn": 3,
+              "f2": 0.15151515151515152
+            },
+            "Identity": {
+              "support": 56,
+              "tp": 10,
+              "fp": 31,
+              "fn": 46,
+              "f2": 0.18867924528301888
+            },
+            "ContactDetails": {
+              "support": 25,
+              "tp": 19,
+              "fp": 2,
+              "fn": 6,
+              "f2": 0.7851239669421488
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 1,
+              "fp": 3,
+              "fn": 1,
+              "f2": 0.4166666666666667
+            },
+            "PersonalDataUncategorised": {
+              "support": 46,
+              "tp": 0,
+              "fp": 1,
+              "fn": 46,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 233,
+          "taux_repli_parmi_signalees": 0.004291845493562232
+        },
+        "sacoche": {
+          "colonnes": 548,
+          "f2_macro": 0.2154464542061441,
+          "f2_micro": 0.05357142857142857,
+          "exactitude": 0.7208029197080292,
+          "wilson_exactitude_ic95": [
+            0.6818056367304822,
+            0.7567261120268279
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 2,
+              "fp": 1,
+              "fn": 1,
+              "f2": 0.6666666666666666
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 11,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 6,
+              "tp": 1,
+              "fp": 56,
+              "fn": 5,
+              "f2": 0.06172839506172839
+            },
+            "Identity": {
+              "support": 60,
+              "tp": 0,
+              "fp": 1,
+              "fn": 60,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 3,
+              "fp": 0,
+              "fn": 7,
+              "f2": 0.3488372093023256
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 15,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 36,
+              "tp": 0,
+              "fp": 0,
+              "fn": 36,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 92,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "paheko": {
+          "colonnes": 625,
+          "f2_macro": 0.22571452309737455,
+          "f2_micro": 0.1881720430107527,
+          "exactitude": 0.8208,
+          "wilson_exactitude_ic95": [
+            0.7888008959069859,
+            0.8488797059944471
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 8,
+              "tp": 6,
+              "fp": 21,
+              "fn": 2,
+              "f2": 0.5084745762711864
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 5,
+              "tp": 2,
+              "fp": 13,
+              "fn": 3,
+              "f2": 0.2857142857142857
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 5,
+              "tp": 2,
+              "fp": 18,
+              "fn": 3,
+              "f2": 0.25
+            },
+            "Identity": {
+              "support": 31,
+              "tp": 1,
+              "fp": 11,
+              "fn": 30,
+              "f2": 0.03676470588235294
+            },
+            "ContactDetails": {
+              "support": 9,
+              "tp": 3,
+              "fp": 6,
+              "fn": 6,
+              "f2": 0.3333333333333333
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 13,
+              "tp": 0,
+              "fp": 0,
+              "fn": 13,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 88,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "galette": {
+          "colonnes": 194,
+          "f2_macro": 0.33304066413395245,
+          "f2_micro": 0.1601423487544484,
+          "exactitude": 0.634020618556701,
+          "wilson_exactitude_ic95": [
+            0.5642452318086226,
+            0.6985914875222825
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 5,
+              "tp": 2,
+              "fp": 1,
+              "fn": 3,
+              "f2": 0.43478260869565216
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 3,
+              "tp": 0,
+              "fp": 1,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 4,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 1,
+              "tp": 1,
+              "fp": 1,
+              "fn": 0,
+              "f2": 0.8333333333333334
+            },
+            "Identity": {
+              "support": 23,
+              "tp": 2,
+              "fp": 9,
+              "fn": 21,
+              "f2": 0.0970873786407767
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 3,
+              "fp": 7,
+              "fn": 7,
+              "f2": 0.3
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 1,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.5555555555555556
+            },
+            "PersonalDataUncategorised": {
+              "support": 18,
+              "tp": 0,
+              "fp": 0,
+              "fn": 18,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 33,
+          "taux_repli_parmi_signalees": 0.0
+        }
+      },
+      "erreurs_par_degre": {
+        "exacte": {
+          "total": 289,
+          "erreurs": 187,
+          "taux_erreur": 0.6470588235294118
+        },
+        "morphologique": {
+          "total": 402,
+          "erreurs": 375,
+          "taux_erreur": 0.9328358208955224
+        }
+      },
+      "ecart_apparie_vs_base": {
+        "b": 10000,
+        "replicats_indefinis": 0,
+        "ic95": [
+          0.15603920191863413,
+          0.2824790474176013
+        ],
+        "mediane": 0.2284266684004316
+      }
+    },
+    "regles-lexique-fr-en": {
+      "colonnes": 3182,
+      "f2_macro": 0.3172165865322703,
+      "f2_micro": 0.19633169723585636,
+      "exactitude": 0.6398491514770585,
+      "wilson_exactitude_ic95": [
+        0.6230103822980076,
+        0.656350662966474
+      ],
+      "par_categorie": {
+        "CriminalOffenceData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 5,
+          "fn": 0,
+          "f2": null
+        },
+        "HealthData": {
+          "support": 208,
+          "tp": 20,
+          "fp": 70,
+          "fn": 188,
+          "f2": 0.10845986984815618
+        },
+        "SpecialCategoryData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 6,
+          "fn": 0,
+          "f2": null
+        },
+        "AuthenticationSecret": {
+          "support": 21,
+          "tp": 17,
+          "fp": 47,
+          "fn": 4,
+          "f2": 0.5743243243243243
+        },
+        "NationalIdentifier": {
+          "support": 2,
+          "tp": 0,
+          "fp": 8,
+          "fn": 2,
+          "f2": 0.0
+        },
+        "FinancialData": {
+          "support": 24,
+          "tp": 13,
+          "fp": 145,
+          "fn": 11,
+          "f2": 0.2559055118110236
+        },
+        "LocationData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 39,
+          "fn": 0,
+          "f2": null
+        },
+        "ConnectionData": {
+          "support": 22,
+          "tp": 12,
+          "fp": 191,
+          "fn": 10,
+          "f2": 0.20618556701030927
+        },
+        "Identity": {
+          "support": 243,
+          "tp": 27,
+          "fp": 153,
+          "fn": 216,
+          "f2": 0.1171875
+        },
+        "ContactDetails": {
+          "support": 83,
+          "tp": 60,
+          "fp": 50,
+          "fn": 23,
+          "f2": 0.6787330316742082
+        },
+        "ProfessionalLife": {
+          "support": 7,
+          "tp": 2,
+          "fp": 48,
+          "fn": 5,
+          "f2": 0.1282051282051282
+        },
+        "PersonalDataUncategorised": {
+          "support": 128,
+          "tp": 1,
+          "fp": 5,
+          "fn": 127,
+          "f2": 0.009652509652509652
+        }
+      },
+      "signalees_predites": 919,
+      "taux_repli_parmi_signalees": 0.006528835690968444,
+      "par_pli": {
+        "dolibarr": {
+          "colonnes": 602,
+          "f2_macro": 0.36199133644879755,
+          "f2_micro": 0.3213166144200627,
+          "exactitude": 0.6960132890365448,
+          "wilson_exactitude_ic95": [
+            0.6581220671700306,
+            0.7314187880163755
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 2,
+              "tp": 2,
+              "fp": 8,
+              "fn": 0,
+              "f2": 0.5555555555555556
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 7,
+              "tp": 6,
+              "fp": 52,
+              "fn": 1,
+              "f2": 0.3488372093023256
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 5,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 4,
+              "fp": 62,
+              "fn": 0,
+              "f2": 0.24390243902439024
+            },
+            "Identity": {
+              "support": 59,
+              "tp": 9,
+              "fp": 9,
+              "fn": 50,
+              "f2": 0.17716535433070865
+            },
+            "ContactDetails": {
+              "support": 24,
+              "tp": 19,
+              "fp": 17,
+              "fn": 5,
+              "f2": 0.7196969696969697
+            },
+            "ProfessionalLife": {
+              "support": 3,
+              "tp": 0,
+              "fp": 1,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 10,
+              "tp": 1,
+              "fp": 3,
+              "fn": 9,
+              "f2": 0.11363636363636363
+            }
+          },
+          "signalees_predites": 202,
+          "taux_repli_parmi_signalees": 0.019801980198019802
+        },
+        "glpi": {
+          "colonnes": 610,
+          "f2_macro": 0.16171328671328672,
+          "f2_micro": 0.10050251256281408,
+          "exactitude": 0.8180327868852459,
+          "wilson_exactitude_ic95": [
+            0.7854564725607595,
+            0.8466285624043212
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 9,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 2,
+              "tp": 1,
+              "fp": 17,
+              "fn": 1,
+              "f2": 0.19230769230769232
+            },
+            "Identity": {
+              "support": 14,
+              "tp": 0,
+              "fp": 47,
+              "fn": 14,
+              "f2": 0.0
+            },
+            "ContactDetails": {
+              "support": 5,
+              "tp": 3,
+              "fp": 10,
+              "fn": 2,
+              "f2": 0.45454545454545453
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 4,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 5,
+              "tp": 0,
+              "fp": 1,
+              "fn": 5,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 95,
+          "taux_repli_parmi_signalees": 0.010526315789473684
+        },
+        "openemr": {
+          "colonnes": 603,
+          "f2_macro": 0.37976064244503355,
+          "f2_micro": 0.17386091127098321,
+          "exactitude": 0.3018242122719735,
+          "wilson_exactitude_ic95": [
+            0.26653388540974127,
+            0.3396235441755853
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 207,
+              "tp": 20,
+              "fp": 64,
+              "fn": 187,
+              "f2": 0.10964912280701754
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 3,
+              "fp": 9,
+              "fn": 0,
+              "f2": 0.625
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 9,
+              "tp": 2,
+              "fp": 44,
+              "fn": 7,
+              "f2": 0.12195121951219512
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 6,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 3,
+              "fp": 31,
+              "fn": 1,
+              "f2": 0.3
+            },
+            "Identity": {
+              "support": 56,
+              "tp": 10,
+              "fp": 31,
+              "fn": 46,
+              "f2": 0.18867924528301888
+            },
+            "ContactDetails": {
+              "support": 25,
+              "tp": 19,
+              "fp": 2,
+              "fn": 6,
+              "f2": 0.7851239669421488
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 1,
+              "fp": 9,
+              "fn": 1,
+              "f2": 0.2777777777777778
+            },
+            "PersonalDataUncategorised": {
+              "support": 46,
+              "tp": 0,
+              "fp": 1,
+              "fn": 46,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 256,
+          "taux_repli_parmi_signalees": 0.00390625
+        },
+        "sacoche": {
+          "colonnes": 548,
+          "f2_macro": 0.29562552143197307,
+          "f2_micro": 0.10252365930599369,
+          "exactitude": 0.6240875912408759,
+          "wilson_exactitude_ic95": [
+            0.5828028742780442,
+            0.6636447200649069
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 1,
+              "tp": 0,
+              "fp": 3,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 3,
+              "fp": 7,
+              "fn": 0,
+              "f2": 0.6818181818181818
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 12,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 6,
+              "tp": 1,
+              "fp": 53,
+              "fn": 5,
+              "f2": 0.0641025641025641
+            },
+            "Identity": {
+              "support": 60,
+              "tp": 1,
+              "fp": 38,
+              "fn": 59,
+              "f2": 0.017921146953405017
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 8,
+              "fp": 8,
+              "fn": 2,
+              "f2": 0.7142857142857143
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 29,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 36,
+              "tp": 0,
+              "fp": 0,
+              "fn": 36,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 166,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "paheko": {
+          "colonnes": 625,
+          "f2_macro": 0.22297363653295857,
+          "f2_micro": 0.18382352941176472,
+          "exactitude": 0.768,
+          "wilson_exactitude_ic95": [
+            0.7333307452576543,
+            0.7993949446101263
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 8,
+              "tp": 6,
+              "fp": 21,
+              "fn": 2,
+              "f2": 0.5084745762711864
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 7,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 5,
+              "tp": 3,
+              "fp": 27,
+              "fn": 2,
+              "f2": 0.3
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 5,
+              "tp": 2,
+              "fp": 20,
+              "fn": 3,
+              "f2": 0.23809523809523808
+            },
+            "Identity": {
+              "support": 31,
+              "tp": 1,
+              "fp": 18,
+              "fn": 30,
+              "f2": 0.03496503496503497
+            },
+            "ContactDetails": {
+              "support": 9,
+              "tp": 3,
+              "fp": 6,
+              "fn": 6,
+              "f2": 0.3333333333333333
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 13,
+              "tp": 0,
+              "fp": 0,
+              "fn": 13,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 124,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "galette": {
+          "colonnes": 194,
+          "f2_macro": 0.40293317793317796,
+          "f2_micro": 0.32407407407407407,
+          "exactitude": 0.5876288659793815,
+          "wilson_exactitude_ic95": [
+            0.5173124472885664,
+            0.654542330735487
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 5,
+              "tp": 3,
+              "fp": 1,
+              "fn": 2,
+              "f2": 0.625
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 1,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 3,
+              "tp": 2,
+              "fp": 19,
+              "fn": 1,
+              "f2": 0.30303030303030304
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 4,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 1,
+              "tp": 1,
+              "fp": 8,
+              "fn": 0,
+              "f2": 0.38461538461538464
+            },
+            "Identity": {
+              "support": 23,
+              "tp": 6,
+              "fp": 10,
+              "fn": 17,
+              "f2": 0.2777777777777778
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 8,
+              "fp": 7,
+              "fn": 2,
+              "f2": 0.7272727272727273
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 1,
+              "fp": 4,
+              "fn": 1,
+              "f2": 0.38461538461538464
+            },
+            "PersonalDataUncategorised": {
+              "support": 18,
+              "tp": 0,
+              "fp": 0,
+              "fn": 18,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 76,
+          "taux_repli_parmi_signalees": 0.0
+        }
+      },
+      "erreurs_par_degre": {
+        "exacte": {
+          "total": 404,
+          "erreurs": 283,
+          "taux_erreur": 0.7004950495049505
+        },
+        "morphologique": {
+          "total": 515,
+          "erreurs": 484,
+          "taux_erreur": 0.9398058252427185
+        }
+      },
+      "ecart_apparie_vs_base": {
+        "b": 10000,
+        "replicats_indefinis": 0,
+        "ic95": [
+          0.18334799174713218,
+          0.3135667832407118
+        ],
+        "mediane": 0.2593945067822467
+      }
+    },
+    "modele-cpu": {
+      "colonnes": 3182,
+      "f2_macro": 0.24642971447615764,
+      "f2_micro": 0.18630717964253257,
+      "exactitude": 0.7529855436832181,
+      "wilson_exactitude_ic95": [
+        0.7377015726903642,
+        0.7676594193049342
+      ],
+      "par_categorie": {
+        "CriminalOffenceData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "f2": null
+        },
+        "HealthData": {
+          "support": 208,
+          "tp": 0,
+          "fp": 4,
+          "fn": 208,
+          "f2": 0.0
+        },
+        "SpecialCategoryData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "f2": null
+        },
+        "AuthenticationSecret": {
+          "support": 21,
+          "tp": 7,
+          "fp": 50,
+          "fn": 14,
+          "f2": 0.24822695035460993
+        },
+        "NationalIdentifier": {
+          "support": 2,
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "f2": 0.0
+        },
+        "FinancialData": {
+          "support": 24,
+          "tp": 3,
+          "fp": 7,
+          "fn": 21,
+          "f2": 0.14150943396226415
+        },
+        "LocationData": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "f2": null
+        },
+        "ConnectionData": {
+          "support": 22,
+          "tp": 4,
+          "fp": 10,
+          "fn": 18,
+          "f2": 0.19607843137254902
+        },
+        "Identity": {
+          "support": 243,
+          "tp": 67,
+          "fp": 89,
+          "fn": 176,
+          "f2": 0.2969858156028369
+        },
+        "ContactDetails": {
+          "support": 83,
+          "tp": 36,
+          "fp": 46,
+          "fn": 47,
+          "f2": 0.43478260869565216
+        },
+        "ProfessionalLife": {
+          "support": 7,
+          "tp": 0,
+          "fp": 3,
+          "fn": 7,
+          "f2": 0.0
+        },
+        "PersonalDataUncategorised": {
+          "support": 128,
+          "tp": 6,
+          "fp": 17,
+          "fn": 122,
+          "f2": 0.056074766355140186
+        }
+      },
+      "signalees_predites": 349,
+      "taux_repli_parmi_signalees": 0.0659025787965616,
+      "par_pli": {
+        "dolibarr": {
+          "colonnes": 602,
+          "f2_macro": 0.15456438079616427,
+          "f2_micro": 0.23958333333333334,
+          "exactitude": 0.8421926910299004,
+          "wilson_exactitude_ic95": [
+            0.8109125876989209,
+            0.8691333120332798
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 2,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 7,
+              "tp": 0,
+              "fp": 1,
+              "fn": 7,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 0,
+              "fp": 0,
+              "fn": 4,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 59,
+              "tp": 6,
+              "fp": 0,
+              "fn": 53,
+              "f2": 0.12396694214876033
+            },
+            "ContactDetails": {
+              "support": 24,
+              "tp": 17,
+              "fp": 18,
+              "fn": 7,
+              "f2": 0.648854961832061
+            },
+            "ProfessionalLife": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 10,
+              "tp": 0,
+              "fp": 0,
+              "fn": 10,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 44,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "glpi": {
+          "colonnes": 610,
+          "f2_macro": 0.23590686274509806,
+          "f2_micro": 0.4583333333333333,
+          "exactitude": 0.9688524590163935,
+          "wilson_exactitude_ic95": [
+            0.9518662722533393,
+            0.9799704287776556
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 14,
+              "tp": 10,
+              "fp": 2,
+              "fn": 4,
+              "f2": 0.7352941176470589
+            },
+            "ContactDetails": {
+              "support": 5,
+              "tp": 1,
+              "fp": 3,
+              "fn": 4,
+              "f2": 0.20833333333333334
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 5,
+              "tp": 0,
+              "fp": 0,
+              "fn": 5,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 16,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "openemr": {
+          "colonnes": 603,
+          "f2_macro": 0.21882818740967047,
+          "f2_micro": 0.1026694045174538,
+          "exactitude": 0.439469320066335,
+          "wilson_exactitude_ic95": [
+            0.40036178900855257,
+            0.47934319994428776
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 207,
+              "tp": 0,
+              "fp": 0,
+              "fn": 207,
+              "f2": 0.0
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 9,
+              "tp": 0,
+              "fp": 0,
+              "fn": 9,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 4,
+              "tp": 1,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.29411764705882354
+            },
+            "Identity": {
+              "support": 56,
+              "tp": 18,
+              "fp": 11,
+              "fn": 38,
+              "f2": 0.3557312252964427
+            },
+            "ContactDetails": {
+              "support": 25,
+              "tp": 8,
+              "fp": 1,
+              "fn": 17,
+              "f2": 0.3669724770642202
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 46,
+              "tp": 3,
+              "fp": 7,
+              "fn": 43,
+              "f2": 0.07731958762886598
+            }
+          },
+          "signalees_predites": 49,
+          "taux_repli_parmi_signalees": 0.20408163265306123
+        },
+        "sacoche": {
+          "colonnes": 548,
+          "f2_macro": 0.09140037593984962,
+          "f2_micro": 0.16423357664233576,
+          "exactitude": 0.7463503649635036,
+          "wilson_exactitude_ic95": [
+            0.7082930910874895,
+            0.78097786826984
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 1,
+              "tp": 0,
+              "fp": 2,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 3,
+              "tp": 2,
+              "fp": 50,
+              "fn": 1,
+              "f2": 0.15625
+            },
+            "NationalIdentifier": {
+              "support": 1,
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "f2": 0.0
+            },
+            "FinancialData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 6,
+              "tp": 0,
+              "fp": 0,
+              "fn": 6,
+              "f2": 0.0
+            },
+            "Identity": {
+              "support": 60,
+              "tp": 16,
+              "fp": 10,
+              "fn": 44,
+              "f2": 0.3007518796992481
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 0,
+              "fp": 0,
+              "fn": 10,
+              "f2": 0.0
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 36,
+              "tp": 0,
+              "fp": 0,
+              "fn": 36,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 80,
+          "taux_repli_parmi_signalees": 0.0
+        },
+        "paheko": {
+          "colonnes": 625,
+          "f2_macro": 0.3756421588401395,
+          "f2_micro": 0.37122969837587005,
+          "exactitude": 0.776,
+          "wilson_exactitude_ic95": [
+            0.7416842861521278,
+            0.8069436631146911
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 8,
+              "tp": 5,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.6756756756756757
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 5,
+              "tp": 3,
+              "fp": 6,
+              "fn": 2,
+              "f2": 0.5172413793103449
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 5,
+              "tp": 2,
+              "fp": 10,
+              "fn": 3,
+              "f2": 0.3125
+            },
+            "Identity": {
+              "support": 31,
+              "tp": 15,
+              "fp": 65,
+              "fn": 16,
+              "f2": 0.36764705882352944
+            },
+            "ContactDetails": {
+              "support": 9,
+              "tp": 7,
+              "fp": 24,
+              "fn": 2,
+              "f2": 0.5223880597014925
+            },
+            "ProfessionalLife": {
+              "support": 0,
+              "tp": 0,
+              "fp": 3,
+              "fn": 0,
+              "f2": null
+            },
+            "PersonalDataUncategorised": {
+              "support": 13,
+              "tp": 0,
+              "fp": 7,
+              "fn": 13,
+              "f2": 0.0
+            }
+          },
+          "signalees_predites": 147,
+          "taux_repli_parmi_signalees": 0.047619047619047616
+        },
+        "galette": {
+          "colonnes": 194,
+          "f2_macro": 0.32928161190095095,
+          "f2_micro": 0.1724137931034483,
+          "exactitude": 0.7164948453608248,
+          "wilson_exactitude_ic95": [
+            0.6493482378389522,
+            0.7752341549263561
+          ],
+          "par_categorie": {
+            "CriminalOffenceData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "HealthData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "SpecialCategoryData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "AuthenticationSecret": {
+              "support": 5,
+              "tp": 0,
+              "fp": 0,
+              "fn": 5,
+              "f2": 0.0
+            },
+            "NationalIdentifier": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "FinancialData": {
+              "support": 3,
+              "tp": 0,
+              "fp": 0,
+              "fn": 3,
+              "f2": 0.0
+            },
+            "LocationData": {
+              "support": 0,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "f2": null
+            },
+            "ConnectionData": {
+              "support": 1,
+              "tp": 1,
+              "fp": 0,
+              "fn": 0,
+              "f2": 1.0
+            },
+            "Identity": {
+              "support": 23,
+              "tp": 2,
+              "fp": 1,
+              "fn": 21,
+              "f2": 0.10526315789473684
+            },
+            "ContactDetails": {
+              "support": 10,
+              "tp": 3,
+              "fp": 0,
+              "fn": 7,
+              "f2": 0.3488372093023256
+            },
+            "ProfessionalLife": {
+              "support": 2,
+              "tp": 0,
+              "fp": 0,
+              "fn": 2,
+              "f2": 0.0
+            },
+            "PersonalDataUncategorised": {
+              "support": 18,
+              "tp": 3,
+              "fp": 3,
+              "fn": 15,
+              "f2": 0.19230769230769232
+            }
+          },
+          "signalees_predites": 13,
+          "taux_repli_parmi_signalees": 0.46153846153846156
+        }
+      },
+      "erreurs_par_degre": {},
+      "ecart_apparie_vs_base": {
+        "b": 10000,
+        "replicats_indefinis": 0,
+        "ic95": [
+          0.12804376852380908,
+          0.24859220037363272
+        ],
+        "mediane": 0.17877913535451695
+      }
+    }
+  },
+  "modele_cpu_graines": {
+    "f2_macro_par_graine": {
+      "1": 0.24642971447615764,
+      "2": 0.3270985950870039,
+      "3": 0.29270507290315495,
+      "4": 0.3002474181250038,
+      "5": 0.2859428764923572
+    },
+    "pire_graine": 1
+  },
+  "annotateur": {
+    "signalees": 738,
+    "taux_repli_parmi_signalees": 0.17344173441734417
+  },
+  "controle_dialecte": {
+    "colonnes_appariees": 194,
+    "colonnes_galette_pg": 194,
+    "ligne-de-base": {
+      "divergences": 0,
+      "detail": []
+    },
+    "regles-lexique-fr": {
+      "divergences": 2,
+      "detail": [
+        {
+          "table": "galette_field_types",
+          "colonne": "field_specifications",
+          "mysql": "Unflagged",
+          "pg": "PersonalDataUncategorised"
+        },
+        {
+          "table": "galette_searches",
+          "colonne": "parameters",
+          "mysql": "Unflagged",
+          "pg": "PersonalDataUncategorised"
+        }
+      ]
+    },
+    "regles-lexique-en": {
+      "divergences": 2,
+      "detail": [
+        {
+          "table": "galette_field_types",
+          "colonne": "field_specifications",
+          "mysql": "Unflagged",
+          "pg": "PersonalDataUncategorised"
+        },
+        {
+          "table": "galette_searches",
+          "colonne": "parameters",
+          "mysql": "Unflagged",
+          "pg": "PersonalDataUncategorised"
+        }
+      ]
+    },
+    "regles-lexique-fr-en": {
+      "divergences": 2,
+      "detail": [
+        {
+          "table": "galette_field_types",
+          "colonne": "field_specifications",
+          "mysql": "Unflagged",
+          "pg": "PersonalDataUncategorised"
+        },
+        {
+          "table": "galette_searches",
+          "colonne": "parameters",
+          "mysql": "Unflagged",
+          "pg": "PersonalDataUncategorised"
+        }
+      ]
+    },
+    "modele-cpu": {
+      "divergences": 0,
+      "detail": []
+    }
+  },
+  "plafond_annotation": {
+    "colonnes": 293,
+    "f2_macro_second_codeur": 0.839277893117608,
+    "f2_micro_second_codeur": 0.8611111111111112,
+    "regle_de_lecture": "si l'estimation ponctuelle du meilleur montage entre dans la bande de désaccord humain, tout progrès supplémentaire est inmesurable sur ce corpus"
+  }
+}
