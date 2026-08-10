@@ -199,3 +199,36 @@ du banc : où que le moteur atterrisse, aucun type de `Screening` n'atteindra `C
 ⚠️ L'[ADR-0002](./0002-deux-contextes-bornes-et-noyau-partage.md) **reste en vigueur**. Son titre est
 daté, ses décisions ne le sont pas. Celui-ci en étend la portée du garde ; il n'en révise aucune
 clause.
+
+## Suite — ce que la première ligne de `Screening` a montré (2026-08-10)
+
+Le « risque assumé » ci-dessus disait : *la première PR qui écrira du `Screening` est le premier
+moment où la règle mordra vraiment*. Elle a mordu, et sur autre chose que ce qui était prévu.
+
+⚠️ **Le garde lisait le paquet `Ardalis.SharedKernel` comme le noyau partagé du dépôt.**
+L'appartenance à un contexte se lit au **segment d'espace de noms**, et le segment `SharedKernel` de
+la bibliothèque d'où vient le marqueur `IAggregateRoot` répond au même test que
+`MicroserviceRgpd.Core.SharedKernel`. Le faux positif existait depuis toujours et **ne pouvait pas se
+voir** : les deux contextes qui portaient du code ont tous deux la traversée vers le noyau
+**permise**, si bien qu'il y était couvert par une permission légitime. `Screening`, à qui elle est
+refusée, se dénonce donc sur son premier agrégat — pour avoir implémenté le marqueur que les deux
+autres implémentent. L'appartenance est désormais bornée aux espaces de noms du dépôt. **La liste
+blanche n'a pas bougé et reste à deux lignes** : ce n'est pas une frontière élargie, c'est
+l'inspecteur qui cesse de confondre un paquet NuGet avec un contexte.
+
+⚠️ **Des témoins `Fixtures/Screening/` ont finalement été écrits**, contre la ligne « Alternatives
+écartées » qui les refusait. Le motif du rejet tenait — *ils prouveraient une seconde fois
+l'inspecteur, jamais la règle neuve* — et il ne couvre pas ce qu'ils font ici : ils tiennent la borne
+ci-dessus **des deux côtés**, un agrégat portant le marqueur de bibliothèque qui ne doit **pas** être
+vu, et un type atteignant `DataSubjectRight` qui doit **rester** vu. Sans le second, une borne posée
+sur les espaces de noms pourrait tout éteindre sans que rien ne passe au rouge.
+
+**Un garde de vacuité est ajouté** : la matrice doit trouver, pour chacun des noms qu'elle prétend
+garder, au moins un type de production qui l'habite. `ContextRosterTests` ancre le **nom** sur un
+glossaire ; il ne promet pas qu'un dossier de code le porte, et le vert d'un contexte pas encore
+écrit était indiscernable du vert d'un garde qui ne trouve rien.
+
+**Le dossier de code est `Screenings/`, au pluriel** — un type `Screening` dans un espace de noms
+`Screening` est un piège de résolution de noms, et `Qualifications/` avait déjà tranché pareil. La
+lecture par préfixe de l'inspecteur, écrite pour ce cas, l'absorbe sans changement. Voir
+`CONTEXT-MAP.md`, § *Où vivent les contextes dans le code*.

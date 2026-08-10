@@ -70,7 +70,7 @@ public class PersonalDataCategoryTests
   [Fact]
   public void SettlesTheHealthAndProfessionalCollisionOnHealth()
   {
-    var settled = PersonalDataCategory.Arbitrate(
+    var settled = PersonalDataCategory.MostCostlyToOmit(
       [PersonalDataCategory.ProfessionalLife, PersonalDataCategory.HealthData]);
 
     settled.ShouldBe(PersonalDataCategory.HealthData);
@@ -80,13 +80,13 @@ public class PersonalDataCategoryTests
   [Fact]
   public void SettlesTheContactAndProfessionalCollisionOnContactDetails()
   {
-    var settled = PersonalDataCategory.Arbitrate(
+    var settled = PersonalDataCategory.MostCostlyToOmit(
       [PersonalDataCategory.ProfessionalLife, PersonalDataCategory.ContactDetails]);
 
     settled.ShouldBe(PersonalDataCategory.ContactDetails);
   }
 
-  /// <summary>L'ordre de présentation des règles déclenchées ne change rien : l'arbitrage est celui du tableau.</summary>
+  /// <summary>L'ordre de présentation des règles déclenchées ne change rien : le départage est celui du tableau.</summary>
   [Fact]
   public void SettlesTheSameWayWhateverOrderTheRulesFiredIn()
   {
@@ -98,26 +98,26 @@ public class PersonalDataCategoryTests
       PersonalDataCategory.Identity,
     };
 
-    PersonalDataCategory.Arbitrate(candidates).ShouldBe(PersonalDataCategory.CriminalOffenceData);
-    PersonalDataCategory.Arbitrate(candidates.Reverse()).ShouldBe(PersonalDataCategory.CriminalOffenceData);
+    PersonalDataCategory.MostCostlyToOmit(candidates).ShouldBe(PersonalDataCategory.CriminalOffenceData);
+    PersonalDataCategory.MostCostlyToOmit(candidates.Reverse()).ShouldBe(PersonalDataCategory.CriminalOffenceData);
   }
 
-  /// <summary>Une seule règle déclenchée s'arbitre en elle-même, sans cas particulier.</summary>
+  /// <summary>Une seule règle déclenchée se départage en elle-même, sans cas particulier.</summary>
   [Fact]
   public void SettlesASingleTriggeredValueOnItself()
   {
-    PersonalDataCategory.Arbitrate([PersonalDataCategory.LocationData])
+    PersonalDataCategory.MostCostlyToOmit([PersonalDataCategory.LocationData])
       .ShouldBe(PersonalDataCategory.LocationData);
   }
 
   /// <summary>
-  /// « Rien n'a déclenché » ne se demande pas à l'arbitrage : c'est <c>Unflagged</c>, une valeur
-  /// nommée qu'on pose. Rendre une valeur par défaut ici ferait naître un signalement de nulle part.
+  /// « Rien n'a déclenché » ne se départage pas : c'est <c>Unflagged</c>, une valeur nommée qu'on
+  /// pose. Rendre une valeur par défaut ici ferait naître un signalement de nulle part.
   /// </summary>
   [Fact]
-  public void RefusesToArbitrateWhenNoRuleFiredAtAll()
+  public void RefusesToSettleWhenNoRuleFiredAtAll()
   {
-    Should.Throw<ArgumentException>(() => PersonalDataCategory.Arbitrate([]));
+    Should.Throw<ArgumentException>(() => PersonalDataCategory.MostCostlyToOmit([]));
   }
 
   /// <summary>

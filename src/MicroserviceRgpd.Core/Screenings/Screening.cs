@@ -214,10 +214,14 @@ public sealed class Screening : IAggregateRoot
   /// <remarks>
   /// <para>
   /// <b>C'est un calcul, et il est total.</b> Aucune écriture n'a lieu pour archiver quoi que ce
-  /// soit, et il ne peut pas y avoir deux courants — l'égalité de <see cref="LaunchedOn"/> est
-  /// départagée par l'identité, qui est ordonnée dans le temps. Sans ce départage, deux rapports
-  /// lancés sur le même tic rendraient le calcul dépendant de l'ordre d'énumération, ce qui est
-  /// exactement le mode de panne qu'un état aurait produit.
+  /// soit, et il ne peut pas y avoir deux courants : à égalité de <see cref="LaunchedOn"/>,
+  /// l'identité départage. ⚠️ <b>Ce second critère ne prétend rien de plus qu'être total et stable</b>
+  /// — l'ordre de <c>Guid</c> en .NET compare ses champs, et non ses octets, si bien que la monotonie
+  /// temporelle d'un identifiant de version 7 n'y survit pas. C'est sans importance ici : ce qu'on
+  /// exige d'un départage est qu'il désigne toujours le même, jamais qu'il désigne le plus récent —
+  /// la récence est déjà tranchée par le premier critère. Sans lui, deux rapports lancés sur le même
+  /// tic rendraient le calcul dépendant de l'ordre d'énumération, ce qui est exactement le mode de
+  /// panne qu'un état aurait produit.
   /// </para>
   /// <para>
   /// Un rapport archivé reste <b>intégralement lisible</b> — ce sont les mêmes lignes — et
@@ -238,10 +242,39 @@ public sealed class Screening : IAggregateRoot
   }
 
   /// <summary>Ce rapport est-il le courant du déploiement ? Un calcul, jamais une lecture d'état.</summary>
+  /// <remarks>
+  /// <para>
+  /// <b>La comparaison porte sur l'identité, jamais sur la référence.</b> EF Core rematérialise, et
+  /// deux instances du même rapport sont le même rapport : un contrôle de référence aurait répondu
+  /// « archivé » à un jumeau sorti d'un autre contexte de suivi.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Un rapport absent du lot est une programmation fautive, et il lève.</b> Répondre « archivé »
+  /// serait le mauvais côté sur lequel se tromper : l'écriture ne s'autorise que sur le courant, et un
+  /// faux « archivé » barrerait silencieusement l'arbitrage du seul rapport qu'on ait le droit
+  /// d'arbitrer. Répondre « courant » serait pire encore — c'est le mode de panne que le refus d'un
+  /// état <c>Archived</c> existe pour empêcher. La question n'a pas de bonne réponse par défaut ;
+  /// c'est donc qu'elle est mal posée.
+  /// </para>
+  /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="screenings"/> est absent.</exception>
+  /// <exception cref="ArgumentException">Ce rapport ne figure pas dans le lot où on lui demande de se situer.</exception>
   public bool IsCurrentAmong(IEnumerable<Screening> screenings)
   {
-    return ReferenceEquals(CurrentAmong(screenings), this);
+    ArgumentNullException.ThrowIfNull(screenings);
+
+    var deployment = screenings.ToList();
+
+    if (!deployment.Any(screening => screening.Id == Id))
+    {
+      throw new ArgumentException(
+        $"Le Screening {Id.Value} ne figure pas dans le lot où on lui demande s'il est le courant. "
+        + "« Courant » est un calcul sur les rapports d'un déploiement : hors du lot, la question n'a "
+        + "pas de réponse, et en inventer une ferait arbitrer le mauvais rapport ou barrerait le bon.",
+        nameof(screenings));
+    }
+
+    return CurrentAmong(deployment)!.Id == Id;
   }
 
   /// <summary>
@@ -281,6 +314,16 @@ public sealed class Screening : IAggregateRoot
   /// Porte l'issue qu'un humain vient de rendre sur une colonne, <b>signée et datée</b>. Il n'existe
   /// aucun autre chemin d'écriture, et celui-ci ne sait pas poser un état sans signature.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ce qui manque ici, écrit plutôt que découvert un jour de panne : « un archivé n'est pas
+  /// arbitrable » n'est pas tenu par l'agrégat, et ne peut pas l'être.</b> La restriction est réelle
+  /// — sans elle un <c>Operator</c> arbitre le mauvais rapport, ce qui est le mode de panne invoqué
+  /// pour refuser un état <c>Archived</c> — mais « courant » est un calcul <b>sur le lot</b> des
+  /// rapports d'un déploiement, et un agrégat ne voit pas ses frères. La lui faire voir demanderait
+  /// de passer le déploiement entier à chaque arbitrage d'une colonne, c'est-à-dire de charger cinq
+  /// mille lignes pour en écrire une. <b>Elle se pose donc au geste</b>, qui lit le courant avant
+  /// d'écrire — voir <see cref="IsCurrentAmong"/>, qui existe pour lui et lève plutôt que de deviner.
+  /// </remarks>
   /// <param name="identity">Le triplet de la colonne arbitrée.</param>
   /// <param name="ruling">Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>
   /// <param name="signedBy">Le nom saisi par celui qui tranche. Non authentifié, et non facultatif.</param>

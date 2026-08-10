@@ -106,6 +106,36 @@ public class ScreeningTests
     deployment.Count(screening => screening.IsCurrentAmong(deployment)).ShouldBe(1);
   }
 
+  /// <summary>
+  /// Deux instances du même rapport <b>sont</b> le même rapport : EF Core rematérialise, et un
+  /// contrôle de référence aurait répondu « archivé » à un jumeau sorti d'un autre contexte de suivi.
+  /// </summary>
+  [Fact]
+  public void RecognisesItselfThroughItsIdentityRatherThanThroughItsInstance()
+  {
+    var id = ScreeningId.Next();
+    var current = AScreening.LaunchedAt(Monday, id);
+    var rematerialised = AScreening.LaunchedAt(Monday, id);
+
+    rematerialised.IsCurrentAmong([current]).ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un rapport absent du lot lève, plutôt que d'être réputé archivé.</b> Répondre « archivé »
+  /// barrerait silencieusement l'arbitrage du seul rapport qu'on ait le droit d'arbitrer ; répondre
+  /// « courant » ferait arbitrer le mauvais, ce qui est le mode de panne que le refus d'un état
+  /// <c>Archived</c> existe pour empêcher. La question n'a pas de bonne réponse par défaut.
+  /// </summary>
+  [Fact]
+  public void RefusesToSituateItselfInADeploymentItDoesNotBelongTo()
+  {
+    var stranger = AScreening.LaunchedAt(Monday);
+    Screening[] elsewhere = [AScreening.LaunchedAt(Monday.AddDays(3))];
+
+    Should.Throw<ArgumentException>(() => stranger.IsCurrentAmong(elsewhere));
+    Should.Throw<ArgumentException>(() => stranger.IsArchivedAmong(elsewhere));
+  }
+
   /// <summary>Le tout premier démarrage chez un client : aucun rapport, donc aucun courant, et ce n'est pas une panne.</summary>
   [Fact]
   public void ReadsNoCurrentReportWhenTheDeploymentHasLaunchedNone()

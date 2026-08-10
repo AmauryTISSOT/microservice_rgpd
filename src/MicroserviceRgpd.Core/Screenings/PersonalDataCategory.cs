@@ -174,24 +174,37 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
   public int ArbitrationRank => Value;
 
   /// <summary>
-  /// Tranche entre plusieurs valeurs déclenchées et rend celle qui coûte le plus cher à omettre.
+  /// Parmi plusieurs valeurs déclenchées, celle qui <b>coûte le plus cher à omettre</b>.
   /// <c>arret_maladie</c> est santé <i>et</i> vie professionnelle ; <c>email_pro</c> est coordonnées
-  /// <i>et</i> vie professionnelle — et c'est l'ordre de la table qui tranche, du plus au moins
+  /// <i>et</i> vie professionnelle — et c'est l'ordre de la table qui départage, du plus au moins
   /// coûteux à omettre.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Jamais la <see cref="RuleStrength"/>.</b> Comparer deux degrés pour désigner un gagnant
-  /// serait un score qui produit une issue, ce que l'<c>Aide à la décision</c> interdit. Le motif,
-  /// lui, peut dire ce qui a été écarté — « la règle <i>vie professionnelle</i> a aussi déclenché ».
   /// <para>
-  /// <b>Les moteurs héritent cet ordre ; aucun ne le redécide.</b> C'est la raison pour laquelle
-  /// l'arbitrage vit ici et non dans le moteur : un second moteur qui recopierait l'ordre finirait
-  /// par en avoir un autre.
+  /// ⚠️ <b>Le nom dit un ordre, jamais une issue, et ce n'est pas une coquetterie.</b> Cette méthode
+  /// est appelée par un <b>moteur</b>, et la liste <c>_Avoid_</c> de l'<c>Aide à la décision</c>
+  /// interdit de nommer une issue que la <i>machine</i> produirait — un <c>ArbitrationEngine</c> y
+  /// tombe nommément. <c>Arbitrate</c> est réservé au geste de l'<c>Operator</c>, qui est seul à
+  /// produire une issue : voir <see cref="Screening.Arbitrate"/>. Choisir le même verbe ici aurait
+  /// donné un mot pour deux gestes dont tout le contexte s'emploie à dire qu'ils ne sont pas de même
+  /// nature. Le <b>nom</b> de l'ordre, lui, reste « ordre d'arbitrage » — c'est le glossaire qui
+  /// l'écrit — d'où <see cref="ArbitrationRank"/>.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Jamais la <see cref="RuleStrength"/>.</b> Comparer deux degrés pour désigner un gagnant
+  /// serait un score qui produit une issue, ce que l'<c>Aide à la décision</c> interdit tout autant.
+  /// Le motif, lui, peut dire ce qui a été écarté — « la règle <i>vie professionnelle</i> a aussi
+  /// déclenché ».
+  /// </para>
+  /// <para>
+  /// <b>Les moteurs héritent cet ordre ; aucun ne le redécide.</b> C'est la raison pour laquelle il
+  /// vit ici et non dans le moteur : un second moteur qui recopierait l'ordre finirait par en avoir
+  /// un autre.
   /// </para>
   /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="triggered"/> est absent.</exception>
   /// <exception cref="ArgumentException">Aucune valeur n'a déclenché — le dépistage rend alors <see cref="Unflagged"/>, jamais rien.</exception>
-  public static PersonalDataCategory Arbitrate(IEnumerable<PersonalDataCategory> triggered)
+  public static PersonalDataCategory MostCostlyToOmit(IEnumerable<PersonalDataCategory> triggered)
   {
     ArgumentNullException.ThrowIfNull(triggered);
 
@@ -201,7 +214,7 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
     {
       throw new ArgumentException(
         "Aucune valeur n'a déclenché. L'absence de signalement s'écrit Unflagged, qui est une "
-        + "valeur nommée : elle ne se demande pas à l'arbitrage, elle se pose.",
+        + "valeur nommée : elle ne se départage pas, elle se pose.",
         nameof(triggered));
     }
 
