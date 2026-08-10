@@ -2,7 +2,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
 /// Une ligne du <c>ColumnListing</c>, <b>recopiée telle quelle</b> : le triplet qui la nomme, son
-/// rang dans le schéma, et les quatre champs que le relevé porte à côté.
+/// rang dans le schéma, et les cinq champs que le relevé porte à côté.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -18,7 +18,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// existent ».
 /// </para>
 /// <para>
-/// ⚠️ <b>Les quatre champs sont gardés sur la ligne alors même qu'ils entrent « comme <i>filtre</i>,
+/// ⚠️ <b>Les cinq champs sont gardés sur la ligne alors même qu'ils entrent « comme <i>filtre</i>,
 /// jamais comme <i>signal</i> ».</b> Trois raisons : l'unité de travail de l'écran est la table
 /// <b>parce que</b> <see cref="TableComment"/> éclaire toutes ses colonnes ; un humain qui arbitre
 /// <c>livret_modaccomp_code</c> juge sur le type autant que sur le nom ; et les comptes de la
@@ -34,7 +34,8 @@ public sealed record ListedColumn
     string? dataType,
     bool? isNullable,
     string? columnComment,
-    string? tableComment)
+    string? tableComment,
+    string? referencedTable)
   {
     Identity = identity;
     Position = position;
@@ -42,6 +43,7 @@ public sealed record ListedColumn
     IsNullable = isNullable;
     ColumnComment = columnComment;
     TableComment = tableComment;
+    ReferencedTable = referencedTable;
   }
 
   /// <summary>Le triplet schéma / table / colonne.</summary>
@@ -69,6 +71,17 @@ public sealed record ListedColumn
   /// </summary>
   public string? TableComment { get; }
 
+  /// <summary>
+  /// La table que cette colonne référence, ou <c>null</c>. Lue <b>seulement pour écarter</b> : une
+  /// clé vers une table de référence exclut des catégories plutôt qu'elle n'en désigne une.
+  /// <para>
+  /// ⚠️ <b>La colonne pointée n'est pas recopiée, seulement la table.</b> <c>clients.id</c>
+  /// n'apprend rien que <c>clients</c> n'ait déjà dit, et la garder ferait croire que le relevé
+  /// porte la contrainte entière.
+  /// </para>
+  /// </summary>
+  public string? ReferencedTable { get; }
+
   /// <summary>Cette ligne porte-t-elle un commentaire, à un niveau ou à l'autre ?</summary>
   public bool CarriesAComment => ColumnComment is not null || TableComment is not null;
 
@@ -84,7 +97,8 @@ public sealed record ListedColumn
     string? dataType = null,
     bool? isNullable = null,
     string? columnComment = null,
-    string? tableComment = null)
+    string? tableComment = null,
+    string? referencedTable = null)
   {
     ArgumentNullException.ThrowIfNull(identity);
     ArgumentOutOfRangeException.ThrowIfNegative(position);
@@ -95,6 +109,7 @@ public sealed record ListedColumn
       ScreeningText.OrAbsent(dataType),
       isNullable,
       ScreeningText.OrAbsent(columnComment),
-      ScreeningText.OrAbsent(tableComment));
+      ScreeningText.OrAbsent(tableComment),
+      ScreeningText.OrAbsent(referencedTable));
   }
 }
