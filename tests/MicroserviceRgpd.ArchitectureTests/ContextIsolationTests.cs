@@ -27,8 +27,16 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// <para>
 /// ⚠️ Tant qu'un contexte n'a pas de code, ses règles ne trouvent rien à examiner : elles sont vertes
 /// par vacuité. C'est voulu — on pose le garde <b>avant</b> le contexte qu'il garde, pour que sa
-/// première ligne naisse déjà sous surveillance. C'était vrai de <c>Casework</c> en son temps ; ça
-/// l'est de <c>Screening</c> aujourd'hui, dont aucune des quatre couches ne porte encore un dossier.
+/// première ligne naisse déjà sous surveillance. C'était vrai de <c>Casework</c> en son temps, et de
+/// <c>Screening</c> jusqu'à <c>Core/Screenings/</c>, qui est le premier dossier qu'il porte.
+/// </para>
+/// <para>
+/// ⚠️ <b>Le premier code de <c>Screening</c> a immédiatement montré une chose que la vacuité
+/// cachait</b> : l'inspecteur lisait <c>Ardalis.SharedKernel</c> — le paquet d'où vient le marqueur
+/// <c>IAggregateRoot</c> — comme le noyau partagé du dépôt. Les deux contextes qui portaient du code
+/// ont tous deux la traversée vers le noyau <b>permise</b>, si bien que le faux positif y restait
+/// couvert ; <c>Screening</c>, à qui elle est refusée, se dénonçait sur son premier agrégat. La borne
+/// vit dans <see cref="ContextInspector"/>, et deux témoins la tiennent des deux côtés.
 /// </para>
 /// </summary>
 public class ContextIsolationTests
@@ -101,6 +109,34 @@ public class ContextIsolationTests
       ],
       "La liste blanche s'est élargie. Élargir une frontière est un geste de niveau ADR — " +
       "voir docs/adr/0003 — et non une ligne ajoutée en passant pour faire compiler.");
+  }
+
+  /// <summary>
+  /// <b>La matrice a vraiment quelque chose à examiner.</b> Un contexte sans code rend ses règles
+  /// vertes par vacuité, et <c>ContextRosterTests</c> n'attrape pas ce cas : il ancre le <b>nom</b>
+  /// sur un glossaire, il ne promet pas qu'un dossier de code le porte.
+  /// <para>
+  /// Le vert d'un contexte pas encore écrit et le vert d'un garde qui ne trouve rien sont exactement
+  /// le même vert. Ce test les sépare, et il le fait <b>par le nom que l'inspecteur emploie</b> : un
+  /// dossier <c>Screenings/</c> reconnu par préfixe compte, un <c>Depistage/</c> qui ne le serait pas
+  /// ferait rougir ici plutôt que de laisser un contexte entier hors surveillance.
+  /// </para>
+  /// </summary>
+  [Theory]
+  [InlineData(ContextInspector.Qualification)]
+  [InlineData(ContextInspector.Casework)]
+  [InlineData(ContextInspector.Screening)]
+  [InlineData(ContextInspector.SharedKernel)]
+  public void FindsTheContextItClaimsToGuardSomewhereInProduction(string context)
+  {
+    var inhabitants = ProductionAssembly.All
+      .SelectMany(assembly => ContextInspector.TypesIn(ProductionAssembly.PathOf(assembly), context))
+      .ToList();
+
+    inhabitants.ShouldNotBeEmpty(
+      $"Aucun type de production n'habite « {context} » : ses règles sont vertes parce qu'elles ne " +
+      "trouvent rien, et non parce que la frontière est tenue. Si le contexte a du code, c'est que " +
+      "l'inspecteur ne reconnaît pas son dossier — voir la lecture par préfixe d'espace de noms.");
   }
 
   /// <summary>

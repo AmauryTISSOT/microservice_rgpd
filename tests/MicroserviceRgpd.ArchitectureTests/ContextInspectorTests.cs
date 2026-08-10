@@ -1,4 +1,5 @@
 ﻿using MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+using MicroserviceRgpd.ArchitectureTests.Fixtures.Screening;
 
 namespace MicroserviceRgpd.ArchitectureTests;
 
@@ -94,6 +95,51 @@ public class ContextInspectorTests
       to: ContextInspector.Casework);
 
     backwards.ShouldBeEmpty();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un paquet n'est pas un contexte</b>, quel que soit le mot qu'il porte dans son espace de
+  /// noms. Le noyau partagé du dépôt est <c>MicroserviceRgpd.Core.SharedKernel</c> — la taxonomie
+  /// écrite par le RGPD — et non le <c>Ardalis.SharedKernel</c> d'où vient le marqueur
+  /// <c>IAggregateRoot</c> que les agrégats des trois contextes implémentent.
+  /// <para>
+  /// Le cas ne s'était jamais présenté : les deux contextes qui portaient du code ont tous deux la
+  /// traversée vers le noyau <b>permise</b>, si bien que le faux positif y restait couvert par une
+  /// permission légitime. <c>Screening</c>, à qui elle est refusée, est le premier à le découvrir —
+  /// et il l'aurait découvert sur son premier agrégat.
+  /// </para>
+  /// </summary>
+  [Fact]
+  public void TakesNoLibraryNamespaceForAContextOfThisRepository()
+  {
+    var crossings = ContextInspector.Inspect(
+      ThisAssembly,
+      from: ContextInspector.Screening,
+      to: ContextInspector.SharedKernel);
+
+    crossings.ShouldNotContain(
+      crossing => crossing.SourceType == typeof(AnAggregateCarryingALibraryMarker).FullName,
+      "Ardalis.SharedKernel se lit comme le noyau partagé du dépôt : le garde dénonce un agrégat " +
+      "pour avoir implémenté le marqueur de bibliothèque que les trois contextes utilisent.");
+  }
+
+  /// <summary>
+  /// L'exact pendant du précédent, et il est indispensable : une borne posée sur les espaces de noms
+  /// peut tout éteindre sans que rien ne passe au rouge. Le geste que <c>docs/adr/0003</c> interdit
+  /// nommément — rattacher une colonne à un <c>DataSubjectRight</c> — doit rester <b>vu</b>.
+  /// </summary>
+  [Fact]
+  public void StillSeesAScreeningTypeReachingTheRealSharedKernel()
+  {
+    var crossings = ContextInspector.Inspect(
+      ThisAssembly,
+      from: ContextInspector.Screening,
+      to: ContextInspector.SharedKernel);
+
+    crossings.ShouldContain(
+      crossing => crossing.SourceType == typeof(AScreeningTypeThatReachesTheSharedKernel).FullName,
+      "Screening atteint DataSubjectRight sans que le garde ne dise rien : une colonne « courriel » " +
+      "ne relève pas d'un droit plutôt qu'un autre, elle relève de tous.");
   }
 
   /// <summary>
