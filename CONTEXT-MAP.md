@@ -136,4 +136,12 @@ on supplante un ADR, on ne l'édite pas.
 et chaque contexte **traverse** les quatre. Il n'existe donc pas de `src/<contexte>/` où poser un
 `CONTEXT.md` — d'où `docs/contexts/<contexte>/`, qui s'écarte sciemment du layout multi-contexte
 générique. À l'intérieur des couches, les contextes se lisent au dossier : `Core/Qualifications/`,
-`Core/Casework/`, `Core/Screening/`, `Core/SharedKernel/`.
+`Core/Casework/`, `Core/Screenings/`, `Core/SharedKernel/`.
+
+⚠️ **Deux de ces dossiers sont au pluriel, et pour la même raison mécanique** : un type `Qualification`
+dans un espace de noms `Qualification`, un type `Screening` dans un espace de noms `Screening`, sont
+un piège de résolution de noms en C# — le compilateur doit départager le type et l'espace de noms à
+chaque usage, et il ne le fait pas partout de la même façon. Le dossier prend donc le pluriel là où le
+contexte a un type qui porte son nom, et le garde d'ADR-0003 lit l'appartenance **par préfixe** pour
+que ce pluriel ne lui échappe pas. `Casework` et `SharedKernel` restent au singulier : aucun type ne
+porte ces noms-là.

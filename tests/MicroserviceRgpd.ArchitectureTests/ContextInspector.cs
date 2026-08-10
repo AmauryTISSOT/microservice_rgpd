@@ -237,6 +237,25 @@ internal static class ContextInspector
   }
 
   /// <summary>
+  /// Le dépôt, et lui seul. Un type de bibliothèque n'habite <b>aucun</b> de nos contextes, quel que
+  /// soit le mot qu'il porte dans son espace de noms.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Sans cette borne, <c>Ardalis.SharedKernel.IAggregateRoot</c> se lit comme le noyau partagé
+  /// du dépôt</b>, et le premier agrégat de <c>Screening</c> se dénonce en implémentant un marqueur de
+  /// paquet. Le noyau partagé de ce dépôt est <c>MicroserviceRgpd.Core.SharedKernel</c> — la taxonomie
+  /// écrite par le RGPD — et c'est de lui, et de rien d'autre, que <c>docs/adr/0003</c> tient
+  /// <c>Screening</c> à l'écart. Le cas ne s'était jamais présenté : les deux contextes qui portaient
+  /// du code ont tous deux la traversée vers le noyau <b>permise</b>, et le faux positif y était
+  /// couvert par une permission légitime.
+  /// <para>
+  /// <b>Ce n'est pas un élargissement de la liste blanche</b>, qui reste à deux lignes : c'est
+  /// l'inspecteur qui cesse de confondre un paquet NuGet avec un contexte du dépôt.
+  /// </para>
+  /// </remarks>
+  private const string Repository = "MicroserviceRgpd.";
+
+  /// <summary>
   /// L'espace de noms d'un type imbriqué est vide : c'est celui du type qui l'entoure qui dit où il
   /// vit. Une fermeture engendrée dans un gestionnaire de <c>Casework</c> reste du <c>Casework</c>.
   /// </summary>
@@ -249,7 +268,14 @@ internal static class ContextInspector
       outermost = outermost.DeclaringType;
     }
 
-    return (outermost.Namespace ?? string.Empty)
+    var inhabited = outermost.Namespace ?? string.Empty;
+
+    if (!inhabited.StartsWith(Repository, StringComparison.Ordinal))
+    {
+      return false;
+    }
+
+    return inhabited
       .Split('.')
       .Any(segment => segment.StartsWith(context, StringComparison.Ordinal));
   }
