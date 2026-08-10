@@ -423,6 +423,33 @@ public class ColumnListingIngestionTests
     refusal.Observed.ShouldNotBeNullOrWhiteSpace();
   }
 
+  /// <summary>
+  /// ⚠️ <b>Les trois champs du filtre sont collectés, et aucun n'alimente un signal.</b> Un
+  /// <c>boolean</c>, un <c>decimal(10,2)</c>, une clé vers une table de référence <b>écartent</b> des
+  /// catégories plutôt qu'ils n'en désignent une. Le premier banc qui mesurera leur pouvoir prédictif
+  /// isolé conclura « inutiles » ; sans cette séparation écrite et testée, quelqu'un les retirera du
+  /// pivot et supprimera le filtre du même geste.
+  /// </summary>
+  [Theory]
+  [InlineData("type")]
+  [InlineData("nullab")]
+  [InlineData("référence")]
+  public void CollectsTheThreeFilterFieldsWithoutEverFeedingASignal(string field)
+  {
+    var listing = ColumnListingIngestion.Ingest(APivot.ASincerePaste()).Listing.ShouldNotBeNull();
+
+    listing.Columns.ShouldContain(column => column.DataType != null);
+    listing.Columns.ShouldContain(column => column.IsNullable != null);
+    listing.Columns.ShouldContain(column => column.ReferencedTable == "adherents");
+
+    var perimeter = IncompletenessClause
+      .For(AScreening.Of([.. listing.Columns.Select(ScreenedColumn.NothingSeen)]))
+      .Perimeter;
+
+    perimeter.ReadOnlyToFilter.ShouldContain(entry => entry.Contains(field, StringComparison.OrdinalIgnoreCase));
+    perimeter.ReadAsSignal.ShouldNotContain(entry => entry.Contains(field, StringComparison.OrdinalIgnoreCase));
+  }
+
   /// <summary>Les neuf cas de refus sont nommés, et chacun se distingue des huit autres.</summary>
   [Fact]
   public void NamesNineDistinctCauses()
