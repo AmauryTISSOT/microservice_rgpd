@@ -1,0 +1,38 @@
+{
+  "ticket": "https://github.com/AmauryTISSOT/microservice_rgpd/issues/156",
+  "chiffree_le": "2026-08-10",
+  "objet": "Borne d'admissibilité du coût machine des montages du banc #134, chiffrée avant la première exécution du banc, contre le profil de contention mesuré du sidecar de qualification (profil-contention-sidecar.json).",
+  "s_applique_a": "Chaque montage du banc, mesuré sur le pire cas réel du corpus : dolibarr, 5 382 colonnes.",
+  "conditions_de_mesure": {
+    "regime": "CPU seul, jamais à vide",
+    "contention": "Pendant toute la mesure du moteur, le sidecar de qualification tourne (moteur LLM éteint) et sert /opinions/lexicon en boucle fermée, un client, textes de corpus/demandes-rgpd.fr.jsonl — le dispositif de mesurer_contention.py, agresseur en moins, le moteur mesuré tenant ce rôle.",
+    "grandeurs": "latence médiane et p95 par colonne, jamais la moyenne ; durée totale ; mémoire résidente ; p95 du lexique pendant l'exécution ; journal des dépendances ajoutées"
+  },
+  "clauses": [
+    {
+      "id": "rythme-par-colonne",
+      "grandeur": "p95 de la latence par colonne du moteur, sous contention, en millisecondes",
+      "operateur": "<=",
+      "seuil_ms": 0.35,
+      "ancrage": "#136 : 7 s de moteur pour un dépôt au plafond de 20 000 colonnes (#128), soit 0,35 ms/colonne — le rythme qu'exige le pire dépôt licite, appliqué jusque dans la queue de distribution"
+    },
+    {
+      "id": "budget-du-geste",
+      "grandeur": "durée totale du moteur sur les 5 382 colonnes de dolibarr, sous contention, en millisecondes",
+      "operateur": "<=",
+      "seuil_ms": 7000,
+      "ancrage": "#136 : le budget moteur du dépôt synchrone est de 7 s quel que soit le relevé ; dolibarr est un dépôt licite et doit y tenir en entier"
+    },
+    {
+      "id": "non-famine-du-lexique",
+      "grandeur": "p95 de la latence de /opinions/lexicon pendant l'exécution du moteur, en millisecondes",
+      "operateur": "<=",
+      "seuil_ms": 5000,
+      "ancrage": "spec qualification § 7.5 : échéance .NET → /opinions/lexicon, 5 s — l'incident que la décision de cadrage 13 de #122 refuse",
+      "enveloppe_de_reference_ms": 10.036,
+      "enveloppe_note": "p95 mesuré du lexique sous 8 cœurs saturés (profil-contention-sidecar.json) ; la phrase de contention du banc doit citer l'écart entre la valeur mesurée et cette enveloppe, pas seulement le franchissement"
+    }
+  ],
+  "lecture": "La borne est tenue si et seulement si les trois clauses le sont. Elle est lue mécaniquement au rendu de #134 — non éliminatoire là : un montage qui la franchit arrive chez #135 étiqueté « inexploitable là où il paierait ». Elle est éliminatoire chez #135.",
+  "inamendable_apres": "le premier chiffre de moteur du banc — décalque de la borne anti-précédent posée par #154 sur les causes closes de #130"
+}
