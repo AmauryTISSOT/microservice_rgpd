@@ -1,0 +1,66 @@
+{
+  "machine": {
+    "coeurs": 8,
+    "noyau": "7.0.0-28-generic"
+  },
+  "sidecar": {
+    "pid": 816615,
+    "rss_kio_avant": 35780,
+    "rss_kio_apres": 35780
+  },
+  "corpus_requetes": {
+    "fichier": "../../corpus/demandes-rgpd.fr.jsonl",
+    "textes": 120
+  },
+  "duree_par_palier_s": 30.0,
+  "paliers": [
+    {
+      "coeurs_satures": 0,
+      "requetes": 13447,
+      "mediane_ms": 2.072,
+      "p95_ms": 3.085,
+      "max_ms": 27.584,
+      "rss_kio": 35780
+    },
+    {
+      "coeurs_satures": 2,
+      "requetes": 11221,
+      "mediane_ms": 2.455,
+      "p95_ms": 3.823,
+      "max_ms": 13.185,
+      "rss_kio": 35780
+    },
+    {
+      "coeurs_satures": 4,
+      "requetes": 8420,
+      "mediane_ms": 3.058,
+      "p95_ms": 6.181,
+      "max_ms": 34.856,
+      "rss_kio": 35780
+    },
+    {
+      "coeurs_satures": 6,
+      "requetes": 8864,
+      "mediane_ms": 2.769,
+      "p95_ms": 6.686,
+      "max_ms": 79.484,
+      "rss_kio": 35780
+    },
+    {
+      "coeurs_satures": 7,
+      "requetes": 9259,
+      "mediane_ms": 2.602,
+      "p95_ms": 6.617,
+      "max_ms": 45.126,
+      "rss_kio": 35780
+    },
+    {
+      "coeurs_satures": 8,
+      "requetes": 5692,
+      "mediane_ms": 4.933,
+      "p95_ms": 10.036,
+      "max_ms": 31.942,
+      "rss_kio": 35780
+    }
+  ]
+}
