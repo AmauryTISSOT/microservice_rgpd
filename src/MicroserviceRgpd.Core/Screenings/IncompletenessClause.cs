@@ -134,10 +134,11 @@ public sealed class IncompletenessClause
 /// au nom neutre ne pouvait pas être vue.
 /// <para>
 /// ⚠️ <b>Elle décrit ce que le dépistage a lu du <c>ColumnListing</c>, et non ce que la ligne
-/// retient.</b> Le relevé porte les contraintes de la colonne, dont la table qu'elle référence ; une
-/// <see cref="ListedColumn"/>, elle, n'en garde que quatre champs — ceux que l'écran d'arbitrage
-/// rend. Lire cette liste comme l'inventaire des colonnes de la table de persistance ferait conclure
-/// à tort que la clause promet un champ qui n'existe pas.
+/// retient.</b> Le relevé porte neuf champs par colonne, dont la table qu'une clé étrangère
+/// référence ; une <see cref="ListedColumn"/>, elle, n'en garde que ceux dont l'arbitrage ou le
+/// filtre a besoin — le schéma et la table, par exemple, vivent sur son <see cref="ColumnIdentity"/>
+/// et non à côté. Lire cette liste comme l'inventaire des colonnes de la table de persistance ferait
+/// conclure à tort que la clause promet un champ qui n'existe pas.
 /// </para>
 /// </param>
 /// <param name="ColumnsRead">Combien de colonnes ce relevé porte.</param>

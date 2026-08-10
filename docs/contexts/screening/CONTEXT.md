@@ -59,6 +59,9 @@ colonne n'a pas de commentaire » et « ce SGBD n'en rend jamais » se liraient 
 l'`Omission silencieuse` déplacée d'un cran ; avec lui, l'absence est **nommée**, et le `Screening`
 peut dire qu'il n'a pas regardé un signal qui n'existait pas plutôt que de laisser croire qu'il l'a
 regardé en vain.
+Sa forme exacte — les neuf champs, l'en-tête, la ligne de fin et les neuf cas de refus — vit dans
+[`pivot-format.md`](./pivot-format.md), parce qu'elle a deux producteurs (les requêtes par dialecte)
+et un consommateur, et que des clés qui ne sont écrites nulle part en toutes lettres divergent.
 _Avoid_ : Schema, Catalog, Inventory, Dump, Export, Snapshot, cartographie ⚠️ les cinq premiers sont
 sur la liste _Avoid_ de `Manifest`, qui garde la clause « déclaré, non découvert » : les reprendre
 ici ferait lire ce relevé comme un recensement du paysage du client, ce qu'il n'est pas.
