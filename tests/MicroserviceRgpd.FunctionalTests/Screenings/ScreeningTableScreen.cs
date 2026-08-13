@@ -73,13 +73,23 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     table.ShouldNotContain("<select");
     table.ShouldNotContain("type=\"checkbox\"");
 
-    // ⚠️ Les SEULS formulaires de l'écran sont les arbitrages, un par ligne, et chacun se reconnaît
-    // au triplet qu'il porte. Interdire tout <form> était tenable tant que l'écran était en lecture
-    // seule ; ce qui doit rester interdit est le formulaire qui MASQUE, jamais celui qui tranche.
-    Regex.Matches(table, "<form").Count.ShouldBe(
-      RowCountOf(table),
-      "Il y a un formulaire par colonne, et aucun autre : un formulaire de plus serait un filtre.");
+    // ⚠️ Les SEULS formulaires de l'écran sont les arbitrages — un par ligne, plus le geste de lot —
+    // et aucun ne masque quoi que ce soit. Interdire tout <form> était tenable tant que l'écran
+    // était en lecture seule ; ce qui doit rester interdit est le formulaire qui MASQUE, jamais
+    // celui qui tranche.
+    // ⚠️ Le compte attendu se DÉDUIT de la présence du geste de lot, qui n'est rendu que si la table
+    // a encore quelque chose à sa portée : figer « +1 » ferait tomber ce test le jour où un jeu de
+    // colonnes n'en offrirait plus aucune — et il tomberait pour une raison étrangère à ce qu'il garde.
+    var batchGestures = Regex.Matches(table, "handler=Batch").Count;
 
+    Regex.Matches(table, "<form").Count.ShouldBe(
+      RowCountOf(table) + batchGestures,
+      "Il y a un formulaire par colonne et au plus un geste de lot, et aucun autre : un formulaire "
+      + "de plus serait un filtre.");
+
+    // ⚠️ Et le lot n'en est un que par ce qu'il NE porte PAS : il ne nomme aucune colonne. Le compte
+    // reste donc celui des lignes — un name=\"Column\" de plus serait une liste de colonnes postée,
+    // c'est-à-dire le chemin par lequel un formulaire forgé écarterait en masse des signalées.
     Regex.Matches(table, "name=\"Column\"").Count.ShouldBe(RowCountOf(table));
 
     // Et le geste lui-même n'écoute aucun paramètre de filtre : le demander ne change rien.

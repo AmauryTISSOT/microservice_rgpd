@@ -399,4 +399,75 @@ public sealed class Screening : IAggregateRoot
 
     return column;
   }
+
+  /// <summary>
+  /// Le <b>geste de lot</b> : pose d'un seul coup, sur les colonnes d'<b>une</b> table où rien n'a été
+  /// vu et que personne n'a tranchées, <b>n arbitrages individuels</b> — un par colonne, chacun signé
+  /// du nom saisi et daté par le service.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Il existe pour qu'un rapport de cinq mille colonnes reste tenable</b> : un écran intenable
+  /// rétablit l'<c>Omission silencieuse</c> par l'épuisement, ce qui est le mode de panne le plus
+  /// probable de ce contexte — personne n'abandonne en déclarant qu'il abandonne.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Il est borné à la table nommée, et à elle seule.</b> Un lot qui porterait sur le rapport
+  /// entier trancherait d'un clic ce que l'<c>Operator</c> n'a pas sous les yeux, et la table est
+  /// l'unité de travail précisément parce que c'est l'unité qu'on lit.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Il n'atteint aucune colonne signalée</b>, ni aucune colonne déjà tranchée — voir
+  /// <see cref="ScreenedColumn.IsWithinReachOfABatchGesture"/>, où la règle est écrite une fois.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Ce ne sont pas des états de lot : ce sont n arbitrages.</b> Chaque ligne porte sa propre
+  /// signature et sa propre date, comme si l'<c>Operator</c> les avait posées une par une — un état
+  /// de lot aurait été une quatrième valeur d'arbitrage que rien du rapport ne rend, et le premier
+  /// réarbitrage individuel l'aurait fait mentir.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Un refus n'écrit pas une seule ligne.</b> La signature et l'issue se vérifient avant que
+  /// la première ne bouge : un lot à moitié posé laisserait l'<c>Operator</c> devant un refus sans
+  /// savoir où le geste s'est arrêté, sur une table de plusieurs dizaines de colonnes.
+  /// </para>
+  /// <para>
+  /// <b>Comme l'arbitrage à l'unité, il ne sait pas qu'un archivé n'est pas arbitrable</b> : un
+  /// agrégat ne voit pas ses frères, et la restriction se pose au geste, par la lecture — voir
+  /// <see cref="Arbitrate"/>.
+  /// </para>
+  /// </remarks>
+  /// <param name="table">La table ouverte. Le lot ne sort jamais d'elle.</param>
+  /// <param name="ruling">L'issue portée sur chacune. Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>
+  /// <param name="signedBy">Le nom saisi par celui qui tranche. Non authentifié, et non facultatif.</param>
+  /// <param name="signedOn">L'instant où il a tranché.</param>
+  /// <returns>Les colonnes que le lot a tranchées, dans l'ordre du relevé — vide s'il n'en atteignait aucune.</returns>
+  /// <exception cref="ArgumentNullException"><paramref name="table"/> ou <paramref name="ruling"/> est absent.</exception>
+  /// <exception cref="ArgumentException">L'état n'est pas une issue, ou la signature est vide, démesurée, ou porte un caractère de contrôle.</exception>
+  public IReadOnlyList<ScreenedColumn> ArbitrateInBatch(
+    TableIdentity table,
+    ScreenedColumnState ruling,
+    string? signedBy,
+    DateTimeOffset signedOn)
+  {
+    ArgumentNullException.ThrowIfNull(table);
+    ArgumentNullException.ThrowIfNull(ruling);
+
+    // ⚠️ Le refus se lève ICI, avant la moindre écriture, et l'arbitrage fabriqué est jeté : chaque
+    // ligne recevra le sien. Un arbitrage partagé entre n lignes aurait fait de n actes un seul
+    // objet — que la persistance refuse de poser sur n lignes possédées, et que le premier
+    // réarbitrage individuel aurait rendu faux partout ailleurs.
+    _ = Arbitration.Rendered(ruling, signedBy, signedOn);
+
+    var reached = ColumnsOf(table)
+      .Where(column => column.IsWithinReachOfABatchGesture)
+      .ToList();
+
+    foreach (var column in reached)
+    {
+      column.Arbitrate(ruling, signedBy, signedOn);
+    }
+
+    return reached;
+  }
 }

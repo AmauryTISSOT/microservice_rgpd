@@ -405,4 +405,186 @@ public class ScreeningTests
     screening.RetainedOnUnflaggedCount.ShouldBe(1);
     screening.RetainedCount.ShouldBe(2);
   }
+
+  /// <summary>
+  /// <b>Le geste de lot est borné à la table ouverte et à ses seules colonnes non signalées encore en
+  /// attente.</b> Un rapport de cinq mille colonnes doit rester tenable : un écran intenable rétablit
+  /// l'<c>Omission silencieuse</c> par l'épuisement.
+  /// </summary>
+  [Fact]
+  public void ReachesOnlyTheUnflaggedColumnsOfTheOpenTableThatAreStillAwaiting()
+  {
+    var screening = AScreening.Of(
+      AScreening.AFlaggedColumn("adr_l1", position: 1),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 2)),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("date_crea", position: 3)),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("montant", table: "cotisations")));
+
+    var arbitrated = screening.ArbitrateInBatch(
+      new TableIdentity("public", "adherents"),
+      ScreenedColumnState.SetAside,
+      "A. Tissot",
+      Monday);
+
+    arbitrated.Select(column => column.Identity.Column).ShouldBe(["id_adh", "date_crea"]);
+
+    // ⚠️ La table voisine n'a pas bougé : le lot ne franchit jamais la table ouverte.
+    screening.ColumnAt(ColumnIdentity.Of("public", "cotisations", "montant"))
+      .ShouldNotBeNull()
+      .State.ShouldBe(ScreenedColumnState.Awaiting);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Aucun geste de lot ne porte sur une colonne signalée.</b> Une suspicion ne s'écarte jamais
+  /// sans avoir été lue une par une : l'écarter en masse est très exactement ce que le rapport existe
+  /// pour empêcher.
+  /// </summary>
+  [Fact]
+  public void NeverLetsABatchGestureSettleAColumnTheScreeningFlagged()
+  {
+    var screening = AScreening.Of(
+      AScreening.AFlaggedColumn("adr_l1", position: 1),
+      AScreening.AFlaggedColumn("adr_l2", position: 2),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 3)));
+
+    screening.ArbitrateInBatch(
+      new TableIdentity("public", "adherents"),
+      ScreenedColumnState.SetAside,
+      "A. Tissot",
+      Monday);
+
+    screening.SetAsideCount.ShouldBe(1);
+
+    // Les deux signalées attendent toujours qu'on les lise, une par une.
+    screening.ColumnsOf(new TableIdentity("public", "adherents"))
+      .Where(column => column.IsFlagged)
+      .ShouldAllBe(column => column.AwaitsAnArbitration);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le lot pose n arbitrages individuels, jamais un état de lot</b> : chaque colonne porte sa
+  /// propre signature et sa propre date. Sans cela, la seule trace qu'un humain ait tranché serait
+  /// portée par un objet que le rapport ne rend nulle part.
+  /// </summary>
+  [Fact]
+  public void PosesOneSignedAndDatedArbitrationPerColumnRatherThanASingleBatchState()
+  {
+    var screening = AScreening.Of(
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("date_crea", position: 2)));
+
+    var arbitrated = screening.ArbitrateInBatch(
+      new TableIdentity("public", "adherents"),
+      ScreenedColumnState.Retained,
+      "A. Tissot",
+      Monday);
+
+    arbitrated.Count.ShouldBe(2);
+
+    foreach (var column in arbitrated)
+    {
+      var rendered = column.Arbitration.ShouldNotBeNull();
+
+      rendered.State.ShouldBe(ScreenedColumnState.Retained);
+      rendered.SignedBy.ShouldBe("A. Tissot");
+      rendered.SignedOn.ShouldBe(Monday);
+    }
+
+    // ⚠️ Chaque ligne porte le SIEN : une instance partagée aurait fait de n arbitrages un seul objet,
+    // et la persistance n'aurait plus eu n lignes à écrire.
+    arbitrated[0].Arbitration.ShouldNotBeSameAs(arbitrated[1].Arbitration);
+  }
+
+  /// <summary>
+  /// <b>Une colonne déjà tranchée dans la table ouverte n'est pas réécrite par le lot.</b> Le geste
+  /// sert à liquider ce qui attend, jamais à effacer sous un autre nom ce qu'un humain avait dit.
+  /// </summary>
+  [Fact]
+  public void LeavesAlreadyArbitratedColumnsOfTheOpenTableExactlyAsTheyWere()
+  {
+    var screening = AScreening.Of(
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("date_crea", position: 2)));
+
+    screening.Arbitrate(
+      ColumnIdentity.Of("public", "adherents", "id_adh"),
+      ScreenedColumnState.Retained,
+      "C. Roux",
+      Monday);
+
+    screening.ArbitrateInBatch(
+      new TableIdentity("public", "adherents"),
+      ScreenedColumnState.SetAside,
+      "A. Tissot",
+      Monday.AddDays(1));
+
+    var untouched = screening.ColumnAt(ColumnIdentity.Of("public", "adherents", "id_adh"))
+      .ShouldNotBeNull()
+      .Arbitration
+      .ShouldNotBeNull();
+
+    untouched.State.ShouldBe(ScreenedColumnState.Retained);
+    untouched.SignedBy.ShouldBe("C. Roux");
+    untouched.SignedOn.ShouldBe(Monday);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un lot refusé n'écrit rien du tout</b> — pas même sa première colonne. Un lot à moitié posé
+  /// serait le pire des deux mondes : l'<c>Operator</c> lirait un refus devant un écran déjà tranché
+  /// en partie, sans savoir où le geste s'est arrêté.
+  /// </summary>
+  [Theory]
+  [InlineData(null)]
+  [InlineData("")]
+  [InlineData("   ")]
+  public void WritesNotASingleColumnWhenTheBatchCarriesNoSignature(string? signedBy)
+  {
+    var screening = AScreening.Of(
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("date_crea", position: 2)));
+
+    Should.Throw<ArgumentException>(() => screening.ArbitrateInBatch(
+      new TableIdentity("public", "adherents"),
+      ScreenedColumnState.Retained,
+      signedBy,
+      Monday));
+
+    screening.AwaitingCount.ShouldBe(2);
+  }
+
+  /// <summary>
+  /// <b><c>Awaiting</c> n'est pas plus une issue en lot qu'à l'unité</b> : personne ne signe une
+  /// absence de décision, fût-elle répétée trente fois.
+  /// </summary>
+  [Fact]
+  public void RefusesToSignTheAbsenceOfADecisionAcrossAWholeTable()
+  {
+    var screening = AScreening.Of(
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)));
+
+    Should.Throw<ArgumentException>(() => screening.ArbitrateInBatch(
+      new TableIdentity("public", "adherents"),
+      ScreenedColumnState.Awaiting,
+      "A. Tissot",
+      Monday));
+
+    screening.AwaitingCount.ShouldBe(1);
+  }
+
+  /// <summary>
+  /// Une table que le rapport ne porte pas ne lève pas : elle n'atteint rien, et le dire est la
+  /// réponse — un écran affiché il y a une minute peut nommer une table qu'un second dépistage vient
+  /// d'emporter.
+  /// </summary>
+  [Fact]
+  public void ReachesNothingWhenTheNamedTableIsNotInTheReport()
+  {
+    var screening = AScreening.Of(AScreening.AFlaggedColumn());
+
+    screening.ArbitrateInBatch(
+      new TableIdentity("public", "cotisations"),
+      ScreenedColumnState.Retained,
+      "A. Tissot",
+      Monday).ShouldBeEmpty();
+  }
 }

@@ -46,10 +46,28 @@ else
   LE REFUS, EN TÊTE ET NOMMANT SA COLONNE. Un refus rendu au milieu d'un tableau de cinq mille
   lignes serait un refus qu'on ne voit pas : l'Operator repartirait en croyant avoir arbitré.
 *@
+@*
+  CE QUE LE GESTE DE LOT VIENT DE FAIRE. Un renvoi muet aurait obligé l'Operator à recompter à la
+  main ce que le geste venait de trancher, ce qui est exactement le coût qu'il achète.
+*@
+@if (Model.BatchNotice is not null)
+{
+  <p class="notice">@Model.BatchNotice</p>
+}
+
 @if (!ViewData.ModelState.IsValid)
 {
   <div class="refusals">
-    <p>Sur la colonne <strong>@Model.Column</strong> :</p>
+    @* Un refus de lot ne nomme aucune colonne : le geste n'en désigne pas. Le dire « sur la colonne
+       (rien) » aurait fait chercher une ligne qui n'existe pas. *@
+    @if (Model.Column is null)
+    {
+      <p>Sur le geste de lot :</p>
+    }
+    else
+    {
+      <p>Sur la colonne <strong>@Model.Column</strong> :</p>
+    }
     @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
     {
       <p class="refusal">@refusal.ErrorMessage</p>
@@ -86,6 +104,111 @@ else
   masquer. Ce sont elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part
   ailleurs.
 </p>
+
+@*
+  LE GESTE DE LOT, ET SES BORNES ÉCRITES À CÔTÉ DE SON BOUTON.
+
+  Il existe pour qu'un rapport de cinq mille colonnes reste tenable : un écran intenable rétablit
+  l'Omission silencieuse par l'épuisement, et personne n'abandonne en déclarant qu'il abandonne.
+
+  ⚠️ IL EST BORNÉ À CETTE TABLE ET À SES SEULES COLONNES OÙ RIEN N'A ÉTÉ VU QUI ATTENDENT ENCORE. Le
+  formulaire ne poste AUCUN nom de colonne : il nomme une table, et ce que le lot atteint dedans est
+  décidé par le domaine. Une liste de colonnes ici aurait ouvert le seul chemin par lequel un
+  formulaire forgé écarte en masse des colonnes signalées.
+
+  ⚠️ Et le compte est écrit avant le clic : un bouton qui ne dit pas sur combien de colonnes il va
+  signer est un bouton qu'on presse sans savoir ce qu'on signe.
+*@
+<section class="batch">
+  <h2>Trancher d'un geste les colonnes de cette table où rien n'a été vu</h2>
+
+  @if (read.WithinReachOfABatchGestureInThisTable == 0)
+  {
+    <p class="hint">
+      Aucune colonne de cette table n'est à la portée d'un geste de lot : celles où rien n'a été vu
+      ont toutes été relues.
+      @if (read.FlaggedStillAwaitingInThisTable > 0)
+      {
+        <text>
+          Il y reste @Counted(read.FlaggedStillAwaitingInThisTable, "colonne") signalée@(read.FlaggedStillAwaitingInThisTable == 1 ? "" : "s") à
+          lire une par une — aucun geste de lot ne les atteint.
+        </text>
+      }
+    </p>
+  }
+  else
+  {
+    <p class="hint">
+      Ce geste portera sur @(read.WithinReachOfABatchGestureInThisTable == 1 ? "la" : "les")
+      <strong>@Counted(read.WithinReachOfABatchGestureInThisTable, "colonne")</strong> de
+      <strong>@read.Identity</strong> où le dépistage n'a rien vu et que personne n'a encore
+      tranchées. Il pose un arbitrage par colonne, chacun signé de votre nom et daté par le service —
+      ce n'est pas un état de lot, et chacun se reprend ensuite ligne à ligne.
+      @if (read.FlaggedStillAwaitingInThisTable > 0)
+      {
+        <text>
+          @(read.FlaggedStillAwaitingInThisTable == 1 ? "La" : "Les") @Counted(read.FlaggedStillAwaitingInThisTable, "colonne") signalée@(read.FlaggedStillAwaitingInThisTable == 1 ? "" : "s") de cette
+          table <strong>@(read.FlaggedStillAwaitingInThisTable == 1 ? "restera intacte" : "resteront intactes")</strong> : une suspicion ne s'écarte
+          jamais sans avoir été lue une par une.
+        </text>
+      }
+    </p>
+
+    @*
+      ⚠️ LE SCHÉMA ET LA TABLE SONT RÉÉCRITS ICI, et ce n'est pas une redite. Les formes par colonne
+      plus bas sont des `<form method="post">` nus : sans attribut de tag helper, aucune `action`
+      n'est produite et le navigateur reposte sur l'URL courante, query string comprise. Dès qu'une
+      forme porte `asp-page-handler`, le tag helper FABRIQUE l'`action` — et la génération de lien ne
+      reprend que les valeurs de ROUTE. Or `@@page "/depistage/table"` n'a pas de paramètre de route :
+      `schema` et `table` vivent dans la query string. Sans ces deux lignes, l'action produite est
+      `/depistage/table?handler=Batch`, le geste arrive sans table nommée et se refuse lui-même.
+      Même raison qu'`asp-route-dialect` sur la forme de dépôt.
+    *@
+    <form method="post"
+          asp-page-handler="Batch"
+          asp-route-schema="@read.Identity.Schema"
+          asp-route-table="@read.Identity.Table">
+      @*
+        ⚠️ AUCUN CHAMP DE COLONNE ICI, et il ne doit jamais y en avoir : le geste nomme une table.
+        Le rapport lu voyage en revanche avec le clic, comme à l'unité — un collègue qui dépose un
+        relevé pendant la lecture ferait sinon atterrir cette signature-ci, d'un seul coup, sur des
+        dizaines de colonnes d'un rapport que personne n'a lu.
+      *@
+      <input type="hidden" name="Screening" value="@read.Screening.Value" />
+
+      <label for="sign-batch">
+        Votre nom
+        <span class="hint">Saisi, et <strong>non authentifié</strong>. Il signera chacune de ces colonnes.</span>
+      </label>
+      <input type="text"
+             id="sign-batch"
+             name="SignedBy"
+             value="@(Model.Column is null ? Model.SignedBy : null)"
+             maxlength="@MicroserviceRgpd.Core.Screenings.Arbitration.MaxSignatoryLength" />
+
+      @*
+        ⚠️ CE BOUTON EXISTE POUR LA TOUCHE ENTRÉE, et il est le PREMIER de la forme exprès — la même
+        raison qu'à l'unité, au facteur près : ici, taper son nom et valider aurait retenu des
+        dizaines de colonnes d'un coup. Il poste « personne n'a tranché », que le domaine refuse.
+      *@
+      <button type="submit"
+              name="Ruling"
+              value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting.Name"
+              hidden
+              aria-hidden="true"
+              tabindex="-1">
+        Ne rien trancher
+      </button>
+
+      <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Retained.Name">
+        Toutes les retenir
+      </button>
+      <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.SetAside.Name">
+        Toutes les écarter
+      </button>
+    </form>
+  }
+</section>
 
 <table class="queue columns">
   @* Ces trois comptes-ci sont ceux DE CETTE TABLE ; ceux du rapport entier sont plus bas, sous

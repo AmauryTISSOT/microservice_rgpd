@@ -59,6 +59,23 @@ public sealed record ScreenedTable(
   public int AwaitingCountInThisTable => Columns.Count(column => column.AwaitsAnArbitration);
 
   /// <summary>
+  /// Combien de colonnes de cette table le <b>geste de lot</b> atteindrait : celles où rien n'a été
+  /// vu et que personne n'a encore tranchées.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il dit à l'<c>Operator</c> la portée exacte du geste avant qu'il ne le pose.</b> Un bouton
+  /// qui ne dirait pas sur combien de colonnes il va signer serait un bouton qu'on presse sans savoir
+  /// ce qu'on signe — sur la seule trace que ce contexte garde d'un acte humain. Le compte est celui
+  /// du domaine, lu ligne par ligne : la règle n'est pas réécrite ici.
+  /// </remarks>
+  public int WithinReachOfABatchGestureInThisTable =>
+    Columns.Count(column => column.IsWithinReachOfABatchGesture);
+
+  /// <summary>Combien de colonnes <b>signalées</b> de cette table attendent encore d'être lues une par une.</summary>
+  public int FlaggedStillAwaitingInThisTable =>
+    Columns.Count(column => column.IsFlagged && column.AwaitsAnArbitration);
+
+  /// <summary>
   /// La table telle qu'on la rend, à l'instant où on la regarde.
   /// </summary>
   /// <remarks>

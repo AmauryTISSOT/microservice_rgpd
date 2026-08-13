@@ -307,6 +307,25 @@ dépassement est un calcul pour que jamais un retard non détecté ne devienne u
 L'avancement non plus n'est pas un état : « douze colonnes en attente » est un **compte** sur les
 `ScreenedColumn`, jamais un état de haut niveau rassurant.
 
+**Le geste de lot** — `ArbitrateInBatch` — existe pour qu'un rapport de 5 000 colonnes reste tenable :
+un écran intenable rétablit l'`Omission silencieuse` par épuisement, sans qu'aucune ligne de doctrine
+n'ait été modifiée. Il est **borné à la table ouverte**, et à ses seules colonnes `Unflagged` encore
+`Awaiting`.
+⚠️ **Aucun geste de lot ne porte sur une colonne signalée** : une suspicion ne s'écarte jamais sans
+avoir été lue une par une. La règle vit à un seul endroit, sur la ligne —
+`ScreenedColumn.IsWithinReachOfABatchGesture` — et non dans la requête qui charge le lot, où elle
+serait invisible à qui lit le domaine. Une ligne **déjà tranchée** est hors de portée elle aussi : le
+lot liquide ce qui attend, il n'écrase pas sous un autre nom ce qu'un humain avait dit.
+**Il pose n arbitrages individuels, jamais un état de lot** : chaque colonne atteinte porte sa propre
+signature et sa propre date de service, exactement comme si elle avait été tranchée seule. Un
+arbitrage partagé entre n lignes ferait de n actes un seul objet, et le premier réarbitrage individuel
+le rendrait faux partout ailleurs. La commande nomme **une table**, jamais une liste de colonnes : une
+liste de colonnes serait le seul chemin par lequel un formulaire forgé écarterait des colonnes
+signalées en masse.
+_Avoid_ : BulkArbitrate, ArbitrateAll, MassArbitrate, « valider tout » ⚠️ `All` ment sur la portée —
+le geste n'atteint ni les signalées ni les déjà tranchées — et `Bulk`/`Mass` laissent croire à un état
+de lot alors qu'il n'y a que n signatures.
+
 ### L'acteur
 
 **Operator** :

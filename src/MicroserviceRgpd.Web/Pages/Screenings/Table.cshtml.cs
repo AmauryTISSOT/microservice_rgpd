@@ -1,5 +1,6 @@
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
+using MicroserviceRgpd.UseCases.Screenings.ArbitrateTableInBatch;
 using MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -75,8 +76,26 @@ public class TableModel(IMediator mediator) : PageModel
   /// </remarks>
   internal const string NoticeKey = "Notice";
 
+  /// <summary>
+  /// La clé sous laquelle le <b>geste de lot</b> laisse à cet écran-ci ce qu'il vient de faire.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle est distincte de <see cref="NoticeKey"/> parce qu'elle s'écrit et se lit sur des
+  /// écrans différents.</b> Le lot réussi revient ICI — il n'y a rien à faire ailleurs après avoir
+  /// tranché une table — et sa phrase est le seul moyen de savoir combien de colonnes il a touchées :
+  /// un renvoi muet aurait fait relire la table entière pour compter à la main, ce qui est
+  /// exactement le coût que ce geste existe pour supprimer.
+  /// </remarks>
+  internal const string BatchNoticeKey = "BatchNotice";
+
   /// <summary>La table lue, et la clause qui l'accompagne obligatoirement.</summary>
   public ScreeningAnswer<ScreenedTable>? Answer { get; private set; }
+
+  /// <summary>
+  /// Ce que le geste de lot a fait, dit à celui qui vient de le poser. ⚠️ <b>La lecture consomme la
+  /// phrase</b>, et cet écran est le seul qui la lise.
+  /// </summary>
+  public string? BatchNotice => TempData[BatchNoticeKey] as string;
 
   public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
   {
@@ -178,13 +197,116 @@ public class TableModel(IMediator mediator) : PageModel
   }
 
   /// <summary>
+  /// Pose le <b>geste de lot</b> sur la table ouverte, puis <b>revient à cette table</b> en disant ce
+  /// qu'il a fait.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le formulaire ne poste aucun nom de colonne, et il ne doit jamais pouvoir en poster.</b>
+  /// Il nomme une table ; ce que le lot atteint dedans est décidé par le domaine. Une liste de
+  /// colonnes ici aurait ouvert le seul chemin par lequel un formulaire forgé écarte en masse des
+  /// colonnes signalées — <c>une suspicion ne s'écarte jamais sans avoir été lue une par une</c>.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le succès revient à la table, et il le dit.</b> Un renvoi muet aurait obligé
+  /// l'<c>Operator</c> à recompter à la main ce que le geste venait de trancher, ce qui est
+  /// exactement le coût qu'il achète.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnPostBatchAsync(CancellationToken cancellationToken)
+  {
+    if (string.IsNullOrWhiteSpace(Schema) || string.IsNullOrWhiteSpace(Table))
+    {
+      return NothingWasArbitrated(NothingDesignated);
+    }
+
+    // ⚠️ Un nom d'état inconnu se traite comme un formulaire forgé, comme à l'unité : les deux
+    // boutons sont la seule source de ce champ.
+    if (!ScreenedColumnState.TryFromName(Ruling ?? string.Empty, out var ruling))
+    {
+      return NothingWasArbitrated(NothingDesignated);
+    }
+
+    if (!Guid.TryParse(Screening, out var read) || read == Guid.Empty)
+    {
+      return NothingWasArbitrated(NothingDesignated);
+    }
+
+    var batch = await mediator.Send(
+      new ArbitrateTableInBatchCommand(
+        new TableIdentity(Schema, Table), ScreeningId.From(read), ruling, SignedBy),
+      cancellationToken);
+
+    if (batch.Status == ResultStatus.NotFound)
+    {
+      return NothingWasArbitrated(
+        "La table que vous veniez de trancher n'est plus dans le dépistage courant : rien n'a été "
+        + "enregistré. Voici le rapport tel qu'il est.");
+    }
+
+    // ⚠️ Un relevé a été déposé entre le rendu de l'écran et le clic : écrire aurait posé votre nom,
+    // d'un seul coup, sur des dizaines de colonnes d'un rapport que vous n'avez pas lu.
+    if (batch.Status == ResultStatus.Conflict)
+    {
+      return NothingWasArbitrated(
+        "Un dépistage plus récent a été déposé pendant que vous lisiez cette table : votre geste de "
+        + "lot n'a pas été enregistré, pour qu'il ne soit pas porté sur un rapport que vous n'avez "
+        + "pas lu. Voici le rapport courant.");
+    }
+
+    if (!batch.IsSuccess)
+    {
+      foreach (var refusal in batch.ValidationErrors)
+      {
+        ModelState.AddModelError(refusal.Identifier, refusal.ErrorMessage);
+      }
+
+      return await ReadTheTableAsync(cancellationToken);
+    }
+
+    TempData[BatchNoticeKey] = WhatTheBatchDid(batch.Value, ruling);
+
+    return RedirectToPage(new { Schema, Table });
+  }
+
+  /// <summary>
+  /// Ce que le lot vient de faire, en toutes lettres — <b>et ce qu'il n'a pas touché</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La seconde phrase est la moitié utile.</b> Un lot qui dirait seulement « 38 colonnes
+  /// tranchées » laisserait l'<c>Operator</c> devant une table qu'il croit finie alors que ses
+  /// suspicions, elles, n'ont pas bougé — et c'est l'épuisement même que ce geste existe pour éviter
+  /// qui les lui ferait oublier.
+  /// </remarks>
+  private static string WhatTheBatchDid(BatchArbitration batch, ScreenedColumnState ruling)
+  {
+    var done = batch.Arbitrated == 0
+      ? "Aucune colonne n'a été tranchée par ce geste : cette table n'avait plus de colonne où rien "
+        + "n'a été vu en attente."
+      : $"{batch.Arbitrated} colonne{(batch.Arbitrated == 1 ? "" : "s")} où rien n'avait été vu "
+        + $"{(batch.Arbitrated == 1 ? "a été" : "ont été")} {ruling.FrenchLabel}"
+        + $"{(batch.Arbitrated == 1 ? "" : "s")} sous votre nom, dans cette table et nulle part "
+        + "ailleurs — chacune signée et datée pour elle-même.";
+
+    return batch.FlaggedStillAwaiting == 0
+      ? done
+      : $"{done} {batch.FlaggedStillAwaiting} colonne{(batch.FlaggedStillAwaiting == 1 ? "" : "s")} "
+        + $"signalée{(batch.FlaggedStillAwaiting == 1 ? "" : "s")} y "
+        + $"{(batch.FlaggedStillAwaiting == 1 ? "attend" : "attendent")} toujours : aucun geste de "
+        + "lot ne les atteint, elles se lisent une par une.";
+  }
+
+  /// <summary>
   /// Ce que dit un renvoi au rapport quand le formulaire ne désignait rien d'arbitrable. ⚠️ <b>Une
-  /// seule phrase pour les quatre branches</b> : elles n'ont qu'une seule cause réelle — un
+  /// seule phrase pour toutes ces branches</b> : elles n'ont qu'une seule cause réelle — un
   /// formulaire qui n'est pas celui de cet écran — et les distinguer aurait dit à l'humain ce que
   /// son navigateur a mal fait, ce dont il ne peut rien faire.
+  /// ⚠️ <b>Elle ne nomme ni colonne ni table</b> : elle sert aussi le <b>geste de lot</b>, qui
+  /// désigne une table et jamais une colonne. Lui faire chercher « une colonne » dans un formulaire
+  /// qui n'en porte aucune l'enverrait chercher ce qui n'existe pas.
   /// </summary>
   private const string NothingDesignated =
-    "Aucun arbitrage n'a été enregistré : le formulaire envoyé ne désignait pas une colonne à "
+    "Aucun arbitrage n'a été enregistré : le formulaire envoyé ne désignait pas ce qu'il fallait "
     + "trancher. Rouvrez la table et reprenez le geste.";
 
   /// <summary>
