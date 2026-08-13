@@ -1,10 +1,12 @@
 ﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Ledger;
 using MicroserviceRgpd.Core.Qualifications.Audit;
+using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
+using MicroserviceRgpd.Infrastructure.Data.Screenings;
 using MicroserviceRgpd.Infrastructure.Qualifications;
 using MicroserviceRgpd.Infrastructure.Screenings;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -57,6 +59,11 @@ public static class InfrastructureServiceExtensions
     // remise les détruira sans réécrire le Case —, et le dépôt générique aurait fait d'un contenu
     // personnel une racine que tout le service pourrait charger.
     services.AddScoped<IRetrievedData, RetrievedDataStore>();
+
+    // Les colonnes dépistées non plus : elles ont leur propre DbSet sans être une racine, et l'écran
+    // n'en ouvre qu'une table à la fois. Le dépôt générique, contraint aux racines, aurait obligé à
+    // rematérialiser cinq mille lignes pour en montrer treize.
+    services.AddScoped<IScreenedColumns, ScreenedColumns>();
 
     // L'horloge est injectée pour que l'instant de l'acte se dicte en test, plutôt que d'être lu
     // sur la machine qui l'exécute.

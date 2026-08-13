@@ -48,6 +48,16 @@
     /* Le dépistage. Le verrou est en tête et se voit : sans lui, on croit le travail fini. */
     .unfinished { border-left: 3px solid #b3261e; font-weight: 600; margin: 1rem 0 2rem; padding-left: 0.75rem; }
     .listing-query { border: 1px solid rgba(127, 127, 127, 0.4); font-size: 0.85rem; max-height: 22rem; overflow: auto; padding: 0.75rem; }
+    /*
+      L'EXCEPTION DE LARGEUR, et c'est le MOTIF qui la réclame. La maquette d'arbitrage l'a tranché :
+      un motif replié derrière une infobulle est un motif qui n'existe plus, et c'est lui qui rend
+      l'arbitrage possible. Il lui faut sa colonne — ~26 rem —, ce que la largeur du dépôt ne donne
+      pas. L'exception est nommée plutôt qu'élargie partout : les autres écrans se lisent mieux
+      étroits, et une largeur unique aurait fait payer à tous la contrainte d'un seul.
+    */
+    body.wide { max-width: 86rem; }
+    table.columns { table-layout: fixed; }
+    table.columns td.reason, table.columns th.reason { min-width: 26rem; width: 26rem; }
     .dialects a { margin-right: 1rem; }
     .dialects a.chosen { font-weight: 700; }
     /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
@@ -58,7 +68,7 @@
     button { font: inherit; padding: 0.5rem 1.25rem; }
   </style>
 </head>
-<body>
+<body class="@(ViewData["Wide"] is true ? "wide" : null)">
   @RenderBody()
 </body>
 </html>

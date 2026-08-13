@@ -117,7 +117,25 @@ public sealed class IncompletenessClause
   {
     ArgumentNullException.ThrowIfNull(screening);
 
-    return new IncompletenessClause(ReadPerimeter.Of(screening));
+    return For(ScreeningCounts.Of(screening));
+  }
+
+  /// <summary>
+  /// La clause d'un rapport <b>qu'on n'a pas chargé</b> : le même texte constant, et les mêmes
+  /// comptes, obtenus de la base plutôt que de l'agrégat.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle existe pour l'écran d'une table, et elle n'affaiblit pas la règle.</b> La clause
+  /// reste inconstruisible sans les comptes de <b>ce</b> relevé ; ce qui change est seulement qui les
+  /// a calculés. Sans ce chemin, rendre une <see cref="ScreenedColumn"/> sans sa clause serait
+  /// devenu le chemin économe, et la clause serait tombée là où elle est le plus nécessaire.
+  /// </remarks>
+  /// <exception cref="ArgumentNullException"><paramref name="counts"/> est absent.</exception>
+  public static IncompletenessClause For(ScreeningCounts counts)
+  {
+    ArgumentNullException.ThrowIfNull(counts);
+
+    return new IncompletenessClause(ReadPerimeter.Of(counts));
   }
 }
 
@@ -177,7 +195,7 @@ public sealed record ReadPerimeter(
   public bool IsClosed => true;
 
   /// <summary>Le périmètre lu de ce rapport : le texte constant, et ses trois comptes.</summary>
-  internal static ReadPerimeter Of(Screening screening)
+  internal static ReadPerimeter Of(ScreeningCounts counts)
   {
     return new ReadPerimeter(
       [
@@ -191,9 +209,9 @@ public sealed record ReadPerimeter(
         "sa nullabilité",
         "la table qu'elle référence",
       ],
-      screening.ColumnCount,
-      screening.TableCount,
-      screening.ColumnsWithoutACommentCount);
+      counts.Columns,
+      counts.Tables,
+      counts.ColumnsWithoutAComment);
   }
 }
 

@@ -35,6 +35,12 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// <summary>L'écran du dépôt — le seul chemin par lequel un relevé entre.</summary>
   internal const string Deposit = "/depistage/depot";
 
+  /// <summary>
+  /// L'écran d'<b>une</b> table du rapport courant. Le schéma et la table passent en paramètres de
+  /// requête : un nom d'objet peut porter un point ou une barre oblique, que la base rend tels quels.
+  /// </summary>
+  internal const string Table = "/depistage/table";
+
   private static readonly DateTimeOffset GeneratedOn = new(2026, 8, 10, 9, 30, 0, TimeSpan.Zero);
 
   /// <summary>

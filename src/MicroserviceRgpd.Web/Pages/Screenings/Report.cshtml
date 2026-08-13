@@ -101,7 +101,12 @@ else
     @foreach (var table in summary.Tables)
     {
       <tr>
-        <th scope="row">@table.Identity.ToString()</th>
+        @* La table est l'unité de travail : d'ici, on l'ouvre — et on y lit TOUTES ses colonnes. *@
+        <th scope="row">
+          <a asp-page="Table"
+             asp-route-schema="@table.Identity.Schema"
+             asp-route-table="@table.Identity.Table">@table.Identity.ToString()</a>
+        </th>
         <td>@table.ColumnCount</td>
         <td>@table.FlaggedCount</td>
         <td>@table.AwaitingCount</td>

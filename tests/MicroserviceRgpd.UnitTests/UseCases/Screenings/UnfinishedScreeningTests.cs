@@ -1,4 +1,4 @@
-using MicroserviceRgpd.UseCases.Screenings.ReadCurrentScreening;
+using MicroserviceRgpd.UseCases.Screenings;
 
 namespace MicroserviceRgpd.UnitTests.UseCases.Screenings;
 

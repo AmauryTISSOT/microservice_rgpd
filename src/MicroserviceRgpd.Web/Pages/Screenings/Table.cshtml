@@ -1,0 +1,213 @@
+@page "/depistage/table"
+@model MicroserviceRgpd.Web.Pages.Screenings.TableModel
+@{
+  var answer = Model.Answer!;
+  var read = answer.Content;
+  var clause = answer.Clause;
+
+  ViewData["Title"] = $"La table {read.Identity}";
+
+  @*
+    L'EXCEPTION DE LARGEUR, et elle est réclamée par le motif. La maquette d'arbitrage l'a tranché :
+    un motif replié derrière une infobulle est un motif qui n'existe plus, et c'est lui qui rend
+    l'arbitrage possible. Il lui faut sa colonne, ~26 rem, ce que la largeur du dépôt ne donne pas.
+  *@
+  ViewData["Wide"] = true;
+
+  // Un compte et son nom, accordés : une surface qui se lit au compte ne peut pas écrire
+  // « 1 colonnes ».
+  string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+}
+
+<h1>@read.Identity</h1>
+
+@*
+  LE VERROU, EN TÊTE ET RECALCULÉ À CE RENDU, et il porte sur le RAPPORT ENTIER. C'est ici qu'il
+  compte le plus : une table relue jusqu'au bout est l'instant précis où l'on croit avoir fini.
+*@
+@if (read.Lock.IsUnfinished)
+{
+  <p class="unfinished">@read.Lock.Statement</p>
+}
+else
+{
+  <p class="hint">@read.Lock.Statement</p>
+}
+
+<dl class="banner">
+  <dt>Base</dt>
+  <dd>@read.Database</dd>
+  <dt>SGBD</dt>
+  <dd>@read.Dialect</dd>
+  <dt>Commentaire de la table</dt>
+  @* Le commentaire éclaire toutes les colonnes à la fois : c'est lui qui fait de la table l'unité
+     de travail. Son absence est le régime majoritaire, et elle se dit plutôt qu'elle ne se tait. *@
+  @if (read.Comment is null)
+  {
+    <dd class="none">Aucun — votre SGBD n'en rend pas, ou cette table n'en porte pas.</dd>
+  }
+  else
+  {
+    <dd>@read.Comment</dd>
+  }
+</dl>
+
+@*
+  TOUTES LES COLONNES, SANS FILTRE, ET DANS L'ORDRE DU RELEVÉ. Les Unflagged SONT l'écran : elles
+  font 92,5 % du contenu réel d'un relevé, et un écran qui ne rendrait que les signalées serait un
+  écran où l'omission a cessé d'être relisible. Il n'y a donc aucun bouton pour les masquer.
+*@
+<p class="hint">
+  Les <strong>@Counted(read.ColumnCount, "colonne")</strong> de cette table sont ici, dans l'ordre où
+  votre base les rend — celles où le dépistage n'a rien vu comprises, et il n'y a aucun moyen de les
+  masquer. Ce sont elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part
+  ailleurs.
+</p>
+
+<table class="queue columns">
+  <caption>
+    @Counted(read.ColumnCount, "colonne"), dont @read.FlaggedCount signalée@(read.FlaggedCount == 1 ? "" : "s")
+    — @Counted(read.AwaitingCount, "colonne") de cette table @(read.AwaitingCount == 1 ? "attend" : "attendent") encore
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col">Colonne</th>
+      <th scope="col">Type</th>
+      <th scope="col">Catégorie</th>
+      <th scope="col">Règle</th>
+      <th scope="col" class="reason">Motif</th>
+      <th scope="col">Arbitrage</th>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var column in read.Columns)
+    {
+      <tr>
+        <th scope="row">
+          @column.Identity.Column
+          @if (column.Listed.ColumnComment is not null)
+          {
+            <span class="hint">@column.Listed.ColumnComment</span>
+          }
+        </th>
+        <td>@(column.Listed.DataType ?? "—")</td>
+        @if (column.IsFlagged)
+        {
+          @* La catégorie et le NOM DE LA RÈGLE qui a déclenché — jamais un score, jamais une
+             échelle : l'arbitrage se fait sur pièces. *@
+          <td>@column.Category.FrenchLabel</td>
+          <td>
+            @column.Strength!.FrenchLabel
+            <span class="hint">@column.Strength.Rule</span>
+          </td>
+          @* LE MOTIF, EN CLAIR ET EN ENTIER. Replié derrière une infobulle, il n'existe plus. *@
+          <td class="reason">@column.Reason</td>
+        }
+        else
+        {
+          @* ⚠️ Rien n'a été vu — un constat sur le DÉPISTAGE, jamais sur la donnée, que le service
+             n'a jamais lue. Elle ne porte donc AUCUN motif : il n'y a rien à motiver. *@
+          <td class="none">Rien n'a été vu</td>
+          <td></td>
+          <td class="reason"></td>
+        }
+        <td>
+          @if (column.AwaitsAnArbitration)
+          {
+            <span class="none">En attente</span>
+          }
+          else
+          {
+            @column.Arbitration!.State.FrenchLabel
+            <span class="hint">
+              @column.Arbitration.SignedBy, le
+              @column.Arbitration.SignedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
+            </span>
+          }
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+<h2>Les comptes du dépistage</h2>
+
+@*
+  ILS PORTENT SUR LE RAPPORT ENTIER, jamais sur la table ouverte : des comptes bornés à ce qu'on a
+  sous les yeux auraient dit « rien n'attend » à qui a trente-neuf tables intactes.
+*@
+<dl class="banner tally">
+  <dt>Signalées</dt>
+  <dd>@read.Tally.Flagged</dd>
+  <dt>Retenues</dt>
+  <dd>@read.Tally.Retained</dd>
+  <dt>Écartées</dt>
+  <dd>@read.Tally.SetAside</dd>
+  <dt>En attente</dt>
+  <dd>@read.Tally.Awaiting</dd>
+  <dt>Retenues sur « rien signalé »</dt>
+  <dd>@read.Tally.RetainedOnUnflagged</dd>
+</dl>
+
+@*
+  LA CLAUSE D'INCOMPLÉTUDE — une PROPRIÉTÉ DE LA RÉPONSE, jamais une mention en pied de page, et
+  elle est due sur toute réponse rendant une ScreenedColumn. Cet écran en rend treize.
+*@
+<h2>Ce que ce dépistage n'a pas regardé</h2>
+
+<div class="clause">
+  <section>
+    <h3>Le périmètre lu</h3>
+    <p>@clause.Perimeter.Statement</p>
+    <p>Lus comme <strong>indice</strong> :</p>
+    <ul>
+      @foreach (var signal in clause.Perimeter.ReadAsSignal)
+      {
+        <li>@signal</li>
+      }
+    </ul>
+    <p>@clause.Perimeter.FilterStatement</p>
+    <ul>
+      @foreach (var filter in clause.Perimeter.ReadOnlyToFilter)
+      {
+        <li>@filter</li>
+      }
+    </ul>
+    <p>
+      Sur ce relevé : <strong>@Counted(clause.Perimeter.ColumnsRead, "colonne")</strong> lues dans
+      <strong>@Counted(clause.Perimeter.TablesRead, "table")</strong>, dont
+      <strong>@clause.Perimeter.ColumnsWithoutAComment sans aucun commentaire</strong> — ni au niveau
+      de la colonne, ni à celui de sa table.
+    </p>
+  </section>
+
+  <section>
+    <h3>Hors périmètre</h3>
+    <p>@clause.Beyond.Statement</p>
+    <ul>
+      @foreach (var example in clause.Beyond.Examples)
+      {
+        <li>@example</li>
+      }
+    </ul>
+    <p class="caveat">@clause.Beyond.OpennessStatement</p>
+  </section>
+
+  <section>
+    <h3>Hors de portée</h3>
+    <p>@clause.BeyondReach.Statement</p>
+    <ul>
+      @foreach (var category in clause.BeyondReach.Categories)
+      {
+        <li><strong>@category.Category.FrenchLabel</strong> — @category.Reason</li>
+      }
+    </ul>
+  </section>
+
+  <section>
+    <h3>Ce dépistage et votre catalogue</h3>
+    <p>@clause.RelationToManifest</p>
+  </section>
+</div>
+
+<p><a asp-page="Report">Revenir au rapport</a></p>
