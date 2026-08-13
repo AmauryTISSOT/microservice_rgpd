@@ -95,6 +95,7 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
     builder.Ignore(column => column.State);
     builder.Ignore(column => column.AwaitsAnArbitration);
     builder.Ignore(column => column.IsFlagged);
+    builder.Ignore(column => column.IsWithinReachOfABatchGesture);
     builder.Ignore(column => column.Identity);
   }
 

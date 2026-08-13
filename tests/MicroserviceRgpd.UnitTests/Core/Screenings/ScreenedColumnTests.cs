@@ -208,4 +208,38 @@ public class ScreenedColumnTests
       .CanWrite
       .ShouldBeFalse();
   }
+
+  /// <summary>
+  /// ⚠️ <b>Ce que le geste de lot atteint est écrit ici, sur la ligne, et à un seul endroit.</b> Une
+  /// ligne signalée n'est jamais à sa portée — <c>une suspicion ne s'écarte jamais sans avoir été lue
+  /// une par une</c> — et une ligne déjà tranchée non plus : le lot liquide ce qui attend, il
+  /// n'efface pas ce qu'un humain avait dit. Poser la règle dans une requête l'aurait rendue
+  /// invisible à qui lit le domaine, là où c'est très exactement une règle du domaine.
+  /// </summary>
+  [Theory]
+  [InlineData(false, false, true)]
+  [InlineData(true, false, false)]
+  [InlineData(false, true, false)]
+  [InlineData(true, true, false)]
+  public void SaysWhetherABatchGestureMayReachItAndOnlyEverReachesAnUnflaggedColumnStillAwaiting(
+    bool flagged,
+    bool alreadyArbitrated,
+    bool withinReach)
+  {
+    var screening = AScreening.Of(flagged
+      ? AScreening.AFlaggedColumn("adr_l1")
+      : ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh")));
+
+    var identity = ColumnIdentity.Of("public", "adherents", flagged ? "adr_l1" : "id_adh");
+
+    if (alreadyArbitrated)
+    {
+      screening.Arbitrate(identity, ScreenedColumnState.Retained, "A. Tissot", SignedOn);
+    }
+
+    screening.ColumnAt(identity)
+      .ShouldNotBeNull()
+      .IsWithinReachOfABatchGesture
+      .ShouldBe(withinReach);
+  }
 }

@@ -120,6 +120,56 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
     return await _client.PostAsync(address, new FormUrlEncodedContent(fields));
   }
 
+  /// <summary>
+  /// Pose le <b>geste de lot</b> sur une table <b>par le formulaire de son écran</b>, exactement
+  /// comme un clic sur l'un de ses deux boutons — jeton anti-rejeu compris.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il n'y a aucun paramètre pour désigner des colonnes, et il ne doit jamais y en avoir.</b>
+  /// Le geste nomme une table ; ce qu'il atteint dedans est décidé par le domaine. Un paramètre ici
+  /// aurait permis d'écrire un test vert contre un formulaire par lequel un lot écarte des colonnes
+  /// signalées.
+  /// </remarks>
+  /// <param name="signedBy">
+  /// Le nom saisi, ou <c>null</c> pour poster le formulaire <b>sans le champ</b> — ce que fait un
+  /// navigateur d'un champ vide.
+  /// </param>
+  /// <param name="screening">
+  /// Le rapport que l'écran rendait, ou <c>null</c> pour <b>le lire sur la page</b> comme le fait un
+  /// navigateur.
+  /// </param>
+  /// <param name="renderedFrom">
+  /// La table dont on lit le formulaire, quand ce n'est pas celle qu'on poste. ⚠️ <b>C'est le seul
+  /// moyen d'éprouver le clic d'un <c>Operator</c> dont l'écran nomme une table qu'un second
+  /// dépistage vient d'emporter</b> : cet écran-là ne se rend plus, et son formulaire est
+  /// inatteignable.
+  /// </param>
+  internal async Task<HttpResponseMessage> ArbitrateInBatchAsync(
+    string ruling,
+    string? signedBy,
+    string table = "adherents",
+    string schema = "public",
+    string? screening = null,
+    string? renderedFrom = null)
+  {
+    var address = TableOf(schema, table);
+    var rendered = await ReadAsync(TableOf(schema, renderedFrom ?? table));
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", TokenIn(rendered, address)),
+      new("Ruling", ruling),
+      new("Screening", screening ?? ScreeningIn(rendered, address)),
+    };
+
+    if (signedBy is not null)
+    {
+      fields.Add(new KeyValuePair<string, string>("SignedBy", signedBy));
+    }
+
+    return await _client.PostAsync($"{address}&handler=Batch", new FormUrlEncodedContent(fields));
+  }
+
   /// <summary>L'adresse de l'écran d'une table, ses deux membres échappés comme le fait un lien.</summary>
   internal static string TableOf(string schema = "public", string table = "adherents")
   {

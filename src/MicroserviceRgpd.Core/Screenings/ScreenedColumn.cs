@@ -96,6 +96,29 @@ public sealed class ScreenedColumn
   /// <summary>Le dépistage a-t-il signalé quelque chose ici ? Équivaut exactement à « elle porte un motif ».</summary>
   public bool IsFlagged => Category.IsFlagged;
 
+  /// <summary>
+  /// Le <b>geste de lot</b> peut-il atteindre cette ligne ? Il ne le peut que si rien n'y a été
+  /// signalé et que personne ne l'a encore tranchée.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Aucun geste de lot ne porte sur une colonne signalée</b> : une suspicion ne s'écarte jamais
+  /// sans avoir été lue une par une. C'est la borne entière du geste, et écarter en masse ce que le
+  /// dépistage a vu serait exactement ce que le rapport existe pour empêcher.
+  /// </para>
+  /// <para>
+  /// <b>Une ligne déjà tranchée est hors de portée elle aussi</b>, pour l'autre raison : le lot
+  /// liquide ce qui attend, il n'écrase pas sous un autre nom ce qu'un humain avait dit. Se raviser
+  /// reste possible, mais colonne par colonne — c'est-à-dire en le voyant.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>La règle vit ici, sur la ligne, et à un seul endroit.</b> La poser dans la requête qui
+  /// charge le lot l'aurait rendue invisible à qui lit le domaine, et un jour où quelqu'un
+  /// élargirait cette requête, rien n'aurait rougi.
+  /// </para>
+  /// </remarks>
+  public bool IsWithinReachOfABatchGesture => !IsFlagged && AwaitsAnArbitration;
+
   /// <summary>Ce qui nomme cette colonne : le triplet.</summary>
   public ColumnIdentity Identity => Listed.Identity;
 
