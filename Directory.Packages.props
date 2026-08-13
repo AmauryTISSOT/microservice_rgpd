@@ -54,5 +54,11 @@
     <PackageVersion Include="Vogen" Version="8.0.2" />
     <!-- Pins transitifs : corrigent des vulnerabilites remontees par NuGet audit -->
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
+    <!--
+      SSH.NET : tire transitivement par Testcontainers 4.13.0, qui exige encore 2025.1.0,
+      vulnerable (GHSA-q939-rpr3-3284, severite haute, corrigee en 2026.0.0).
+      A retirer des que Testcontainers publie une version dependant de SSH.NET >= 2026.0.0.
+    -->
+    <PackageVersion Include="SSH.NET" Version="2026.0.0" />
   </ItemGroup>
 </Project>
