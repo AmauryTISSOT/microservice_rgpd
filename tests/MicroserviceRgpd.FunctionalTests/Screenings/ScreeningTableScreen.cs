@@ -69,10 +69,18 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("id_adh", position: 1),
       ScreeningSurface.Column("email", position: 2));
 
-    // Aucun formulaire, aucune case, aucun sélecteur : la surface ne propose rien à cocher.
-    table.ShouldNotContain("<form");
+    // Aucune case, aucun sélecteur : la surface ne propose rien à cocher ni à choisir.
     table.ShouldNotContain("<select");
     table.ShouldNotContain("type=\"checkbox\"");
+
+    // ⚠️ Les SEULS formulaires de l'écran sont les arbitrages, un par ligne, et chacun se reconnaît
+    // au triplet qu'il porte. Interdire tout <form> était tenable tant que l'écran était en lecture
+    // seule ; ce qui doit rester interdit est le formulaire qui MASQUE, jamais celui qui tranche.
+    Regex.Matches(table, "<form").Count.ShouldBe(
+      RowCountOf(table),
+      "Il y a un formulaire par colonne, et aucun autre : un formulaire de plus serait un filtre.");
+
+    Regex.Matches(table, "name=\"Column\"").Count.ShouldBe(RowCountOf(table));
 
     // Et le geste lui-même n'écoute aucun paramètre de filtre : le demander ne change rien.
     var asked = WebUtility.HtmlDecode(await _surface.ReadAsync(

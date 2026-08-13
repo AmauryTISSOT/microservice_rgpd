@@ -66,6 +66,67 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
+  /// Arbitre une colonne <b>par le formulaire de l'écran de sa table</b>, exactement comme un clic
+  /// sur l'un des deux boutons — jeton anti-rejeu compris.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Aucune date n'est postée, et il n'y a pas de paramètre pour en poster une.</b> C'est le
+  /// point que ce ticket doit garder : l'instant vient du service. Un paramètre optionnel ici
+  /// aurait permis d'écrire un test vert contre un formulaire qui date les arbitrages.
+  /// </remarks>
+  /// <param name="signedBy">
+  /// Le nom saisi, ou <c>null</c> pour poster le formulaire <b>sans le champ</b> — ce que fait un
+  /// navigateur d'un champ vide, et le seul moyen d'éprouver le refus d'un arbitrage non signé.
+  /// </param>
+  /// <param name="alsoPosted">
+  /// Des champs que le formulaire de l'écran ne porte pas — le seul moyen d'éprouver ce qu'un
+  /// formulaire <b>forgé</b> obtient, et notamment qu'une date postée à la main ne date rien.
+  /// </param>
+  /// <param name="screening">
+  /// Le rapport que l'écran rendait, ou <c>null</c> pour <b>le lire sur la page</b> comme le fait un
+  /// navigateur. Le poser à la main est ce qui permet d'éprouver le clic d'un <c>Operator</c> dont
+  /// l'écran a vieilli sous lui.
+  /// </param>
+  internal async Task<HttpResponseMessage> ArbitrateAsync(
+    string column,
+    string ruling,
+    string? signedBy,
+    string table = "adherents",
+    string schema = "public",
+    IEnumerable<KeyValuePair<string, string>>? alsoPosted = null,
+    string? screening = null)
+  {
+    var address = TableOf(schema, table);
+    var rendered = await ReadAsync(address);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", TokenIn(rendered, address)),
+      new("Column", column),
+      new("Ruling", ruling),
+      new("Screening", screening ?? ScreeningIn(rendered, address)),
+    };
+
+    if (signedBy is not null)
+    {
+      fields.Add(new KeyValuePair<string, string>("SignedBy", signedBy));
+    }
+
+    if (alsoPosted is not null)
+    {
+      fields.AddRange(alsoPosted);
+    }
+
+    return await _client.PostAsync(address, new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>L'adresse de l'écran d'une table, ses deux membres échappés comme le fait un lien.</summary>
+  internal static string TableOf(string schema = "public", string table = "adherents")
+  {
+    return $"{Table}?schema={Uri.EscapeDataString(schema)}&table={Uri.EscapeDataString(table)}";
+  }
+
+  /// <summary>
   /// Colle un relevé, exige qu'il ait été <b>refusé</b>, et rend le refus tel qu'un
   /// <c>Operator</c> le lit — entités HTML résolues.
   /// </summary>
@@ -190,12 +251,31 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
 
   private async Task<string> AntiforgeryTokenOfAsync(string address)
   {
+    return TokenIn(await ReadAsync(address), address);
+  }
+
+  private static string TokenIn(string rendered, string address)
+  {
     var token = Regex.Match(
-      await ReadAsync(address),
+      rendered,
       @"<input name=""__RequestVerificationToken""[^>]*value=""([^""]+)""");
 
     token.Success.ShouldBeTrue($"Le formulaire de {address} ne porte aucun jeton anti-rejeu.");
 
     return token.Groups[1].Value;
+  }
+
+  /// <summary>
+  /// Le rapport que l'écran rendait, lu sur le formulaire lui-même — comme le fait un navigateur.
+  /// </summary>
+  private static string ScreeningIn(string rendered, string address)
+  {
+    var screening = Regex.Match(rendered, @"name=""Screening"" value=""([^""]+)""");
+
+    screening.Success.ShouldBeTrue(
+      $"Le formulaire de {address} ne dit pas quel rapport il rendait : un arbitrage posté depuis "
+      + "un écran vieilli atterrirait alors sur un rapport que personne n'a lu.");
+
+    return screening.Groups[1].Value;
   }
 }

@@ -14,6 +14,18 @@
 <h1>Le dépistage courant</h1>
 
 @*
+  CE QU'UN GESTE REFUSÉ AILLEURS A LAISSÉ À DIRE. Un arbitrage qui n'a pas eu lieu ramène ici :
+  sans cette phrase, le renvoi se lit comme une navigation ordinaire, et l'Operator repart en
+  croyant avoir tranché.
+*@
+@if (!string.IsNullOrWhiteSpace(Model.Notice))
+{
+  <div class="refusals">
+    <p class="refusal">@Model.Notice</p>
+  </div>
+}
+
+@*
   LE VERROU, EN TÊTE ET RECALCULÉ À CE RENDU. Sans lui, on déclare lues quarante tables, on croit
   le travail fini, et l'Omission relue n'a rien rattrapé : les colonnes signalées sont la minorité
   du rapport, et les relire toutes ne relit rien de ce qui a été omis.

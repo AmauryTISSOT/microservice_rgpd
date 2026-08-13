@@ -31,6 +31,17 @@ public class ReportModel(IMediator mediator) : PageModel
   /// <summary>Le sommaire du rapport courant, et la clause qui l'accompagne obligatoirement.</summary>
   public ScreeningAnswer<ScreeningSummary>? Answer { get; private set; }
 
+  /// <summary>
+  /// Ce qu'un geste refusé ailleurs a laissé à dire ici. ⚠️ <b>Un arbitrage qui n'a pas eu lieu
+  /// arrive sur cet écran</b>, et sans cette phrase le renvoi se lirait comme une navigation
+  /// ordinaire : l'<c>Operator</c> repartirait en croyant avoir tranché.
+  /// </summary>
+  /// <remarks>
+  /// <b>Elle se lit ici, et c'est le seul écran qui la lise</b> : la lecture consomme la phrase, et
+  /// une page qui la chargerait sans la rendre l'aurait fait disparaître en silence.
+  /// </remarks>
+  public string? Notice => TempData[TableModel.NoticeKey] as string;
+
   public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
   {
     Answer = await mediator.Send(new ReadCurrentScreeningQuery(), cancellationToken);

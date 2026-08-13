@@ -58,6 +58,16 @@
     body.wide { max-width: 86rem; }
     table.columns { table-layout: fixed; }
     table.columns td.reason, table.columns th.reason { min-width: 26rem; width: 26rem; }
+    /*
+      L'ARBITRAGE TIENT DANS SA CELLULE, et c'est une contrainte de volume : chacune des cinq mille
+      lignes d'un relevé porte ce formulaire. Les marges de formulaire du reste du service —
+      pensées pour une réserve par écran — auraient rendu une table haute de cent écrans.
+    */
+    table.columns td.ruling, table.columns th.ruling { min-width: 15rem; width: 15rem; }
+    td.ruling form { margin: 0.4rem 0 0; }
+    td.ruling label { font-weight: normal; }
+    td.ruling input[type="text"] { margin-bottom: 0.35rem; }
+    td.ruling button { padding: 0.3rem 0.7rem; }
     .dialects a { margin-right: 1rem; }
     .dialects a.chosen { font-weight: 700; }
     /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
