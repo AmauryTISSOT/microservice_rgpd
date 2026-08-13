@@ -129,4 +129,22 @@ else
 
 <partial name="_IncompletenessClause" model="clause" />
 
-<p><a asp-page="Deposit">Déposer un nouveau relevé</a></p>
+@*
+  CE QU'UN NOUVEAU DÉPÔT COÛTE, ÉCRIT À CÔTÉ DU LIEN QUI L'OFFRE. Le re-dépôt ne fusionne rien :
+  les arbitrages de ce rapport-ci ne seront pas repris, et le rapport qui les porte deviendra un
+  archivé qu'on relit sans pouvoir le reprendre. C'est un coût déclaré, pas une surprise.
+*@
+<p>
+  <a asp-page="Deposit">Déposer un nouveau relevé</a>
+  <span class="hint">
+    Un nouveau dépôt produit un dépistage neuf et range celui-ci dans l'historique. Il
+    <strong>ne reprend aucun</strong> des arbitrages posés ici : ce qui a été tranché sur ce rapport
+    reste sur lui, et se relit sans plus pouvoir se reprendre.
+  </span>
+</p>
+
+@*
+  L'HISTORIQUE ET LA SUPPRESSION SONT AILLEURS, et c'est délibéré : le geste qui efface un rapport,
+  ses colonnes et tous leurs arbitrages n'a pas sa place sur l'écran où l'on travaille.
+*@
+<p><a asp-page="History">L'historique des dépistages, et la suppression</a></p>

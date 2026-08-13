@@ -41,6 +41,15 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// </summary>
   internal const string Table = "/depistage/table";
 
+  /// <summary>L'historique : ce que le déploiement a lancé, et le seul écran qui supprime.</summary>
+  internal const string History = "/depistage/historique";
+
+  /// <summary>Le sommaire d'<b>un</b> dépistage archivé, nommé en paramètre de requête.</summary>
+  internal const string Archive = "/depistage/archive";
+
+  /// <summary>Une table d'un dépistage archivé.</summary>
+  internal const string ArchivedTable = "/depistage/archive/table";
+
   private static readonly DateTimeOffset GeneratedOn = new(2026, 8, 10, 9, 30, 0, TimeSpan.Zero);
 
   /// <summary>
@@ -174,6 +183,62 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   internal static string TableOf(string schema = "public", string table = "adherents")
   {
     return $"{Table}?schema={Uri.EscapeDataString(schema)}&table={Uri.EscapeDataString(table)}";
+  }
+
+  /// <summary>L'adresse du sommaire d'un dépistage archivé.</summary>
+  internal static string ArchiveOf(string screening)
+  {
+    return $"{Archive}?screening={Uri.EscapeDataString(screening)}";
+  }
+
+  /// <summary>L'adresse d'une table d'un dépistage archivé.</summary>
+  internal static string ArchivedTableOf(
+    string screening, string schema = "public", string table = "adherents")
+  {
+    return $"{ArchivedTable}?screening={Uri.EscapeDataString(screening)}"
+      + $"&schema={Uri.EscapeDataString(schema)}&table={Uri.EscapeDataString(table)}";
+  }
+
+  /// <summary>
+  /// Le rapport que l'écran courant rendait — lu sur le formulaire d'arbitrage de la table, comme le
+  /// fait un navigateur. C'est le seul moyen de retenir l'identité d'un rapport <b>avant</b> qu'un
+  /// second dépôt ne l'archive.
+  /// </summary>
+  internal async Task<string> CurrentScreeningAsync(
+    string schema = "public", string table = "adherents")
+  {
+    var address = TableOf(schema, table);
+
+    return ScreeningIn(await ReadAsync(address), address);
+  }
+
+  /// <summary>
+  /// Supprime un dépistage <b>par le formulaire de l'historique</b>, jeton anti-rejeu compris.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le nom de base se repose en clair</b>, exactement comme l'<c>Operator</c> le retape : il
+  /// n'existe aucun champ caché qui le porterait, et c'est ce qui fait de la confirmation un juge
+  /// plutôt qu'une cérémonie.
+  /// </remarks>
+  /// <param name="confirmedDatabase">
+  /// Le nom retapé, ou <c>null</c> pour poster le formulaire <b>sans le champ</b> — ce que fait un
+  /// navigateur d'un champ vide.
+  /// </param>
+  internal async Task<HttpResponseMessage> DeleteAsync(string screening, string? confirmedDatabase)
+  {
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(History)),
+      new("Screening", screening),
+    };
+
+    if (confirmedDatabase is not null)
+    {
+      fields.Add(new KeyValuePair<string, string>("ConfirmedDatabase", confirmedDatabase));
+    }
+
+    return await _client.PostAsync(
+      $"{History}?handler=Delete", new FormUrlEncodedContent(fields));
   }
 
   /// <summary>

@@ -341,6 +341,44 @@ public sealed class Screening : IAggregateRoot
     return !IsCurrentAmong(screenings);
   }
 
+  /// <summary>
+  /// Les rapports <b>archivés</b> parmi ceux qu'on lui donne : tous sauf le courant, du plus
+  /// récemment lancé au plus ancien.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>C'est le complément exact de <see cref="CurrentAmong"/>, et le même calcul.</b> Aucune
+  /// écriture n'archive quoi que ce soit : un rapport devient archivé par le seul fait qu'un plus
+  /// récent existe, et il le redevient courant si celui-là est supprimé. Écrire l'historique ici
+  /// plutôt que dans une requête est ce qui garantit que « archivé » ne se calcule jamais deux fois
+  /// de deux façons — le jour où les deux divergent, l'<c>Operator</c> arbitre le mauvais rapport.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le lot vide rend le lot vide, et le lot d'un seul rapport aussi.</b> Un déploiement qui
+  /// n'a lancé qu'un dépistage n'a pas d'historique : son unique rapport est le courant, et un
+  /// historique qui l'y ferait figurer laisserait croire qu'il existe une version antérieure à
+  /// relire.
+  /// </para>
+  /// </remarks>
+  /// <exception cref="ArgumentNullException"><paramref name="screenings"/> est absent.</exception>
+  public static IReadOnlyList<Screening> ArchivedAmong(IEnumerable<Screening> screenings)
+  {
+    ArgumentNullException.ThrowIfNull(screenings);
+
+    var deployment = screenings.ToList();
+    var current = CurrentAmong(deployment);
+
+    return
+    [
+      .. deployment
+        .Where(screening => current is null || screening.Id != current.Id)
+        // Le même ordre que le calcul du courant, renversé de personne : le plus récent des archivés
+        // vient en tête, parce que c'est celui dont l'Operator se souvient.
+        .OrderByDescending(screening => screening.LaunchedOn)
+        .ThenByDescending(screening => screening.Id.Value),
+    ];
+  }
+
   /// <summary>La ligne que ce triplet désigne, ou <c>null</c> s'il ne désigne rien dans ce rapport.</summary>
   /// <exception cref="ArgumentNullException"><paramref name="identity"/> est absent.</exception>
   public ScreenedColumn? ColumnAt(ColumnIdentity identity)
