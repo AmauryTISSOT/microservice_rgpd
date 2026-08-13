@@ -1,0 +1,94 @@
+@page "/depistage/depot"
+@model MicroserviceRgpd.Web.Pages.Screenings.DepositModel
+@using MicroserviceRgpd.Core.Screenings
+@{
+  ViewData["Title"] = "Déposer un relevé";
+}
+
+<h1>Déposer un relevé de colonnes</h1>
+
+@*
+  Le service NE SE CONNECTE À RIEN. C'est la première chose que l'écran dit, parce que c'est la
+  propriété qui rend ce contexte acceptable : aucune donnée personnelle réelle n'entre, et il
+  n'existe aucun chemin par lequel elle entrerait.
+*@
+<p class="caveat">
+  Le service <strong>ne se connecte à aucune base</strong> : vous exécutez la requête ci-dessous chez
+  vous et vous collez ce qu'elle rend. Il lit des <strong>noms</strong> de tables et de colonnes, des
+  types, des contraintes et des commentaires — <strong>jamais une valeur</strong>. Ce qu'il vous
+  rendra est un <strong>dépistage</strong> : des suspicions que vous retiendrez ou écarterez une par
+  une — et qui ne couvrent que ce qu'il a dépisté.
+</p>
+
+@if (!ViewData.ModelState.IsValid)
+{
+  <div class="refusals">
+    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+    {
+      <p class="refusal">@refusal.ErrorMessage</p>
+    }
+  </div>
+}
+
+<h2>1. La requête à exécuter</h2>
+
+@*
+  UNE SEULE SOURCE : ce texte est le fichier du dépôt, embarqué. C'est la requête qui a extrait le
+  corpus sur lequel le format pivot a été éprouvé — une copie aurait divergé au premier correctif.
+*@
+<p class="hint">
+  Choisissez votre SGBD, exécutez la requête telle quelle, et collez sa sortie entière. Elle produit
+  elle-même le format pivot <code>@ListingQuery.FormatVersion</code> — c'est ce qui lui permet de
+  déclarer combien de colonnes elle porte, et c'est ce qui rend une <strong>troncature au collage
+  détectable</strong>.
+</p>
+
+<p class="dialects">
+  @foreach (var query in ListingQuery.All)
+  {
+    <a asp-page="Deposit" asp-route-dialect="@query.Dialect"
+       class="@(query.Dialect == Model.Query.Dialect ? "chosen" : null)">@query.FrenchLabel</a>
+  }
+</p>
+
+<pre class="listing-query"><code>@Model.Query.Sql</code></pre>
+
+<h2>2. Le relevé, collé entier</h2>
+
+<form method="post" asp-route-dialect="@Model.Query.Dialect">
+  @*
+    IL EST ENTIER OU IL N'EXISTE PAS. Un relevé amputé est refusé EN BLOC — jamais ingéré en
+    partie, si petite que soit la part perdue : un dépistage bâti sur 99 % d'un relevé SE LIRAIT
+    COMME COMPLET, et les colonnes manquantes seraient précisément celles que personne ne relirait
+    jamais.
+  *@
+  <p class="caveat">
+    Collez la sortie <strong>entière</strong>, ligne d'en-tête et ligne de fin comprises. Un relevé
+    dont il manque un morceau est <strong>refusé en bloc</strong> : le service vous dira quelle ligne
+    l'a fait échouer, et vous n'aurez qu'à relancer la requête — <strong>aucun arbitrage n'est
+    perdu</strong>, puisqu'aucun n'a encore eu lieu.
+  </p>
+
+  <p>
+    <label for="paste">Le relevé pivot</label>
+    <span class="hint">
+      Au plus @ColumnListing.MaxColumns colonnes. Au-delà, il est <strong>refusé plutôt que
+      tronqué</strong>.
+    </span>
+    <textarea id="paste" name="Paste" rows="12" spellcheck="false">@Model.Paste</textarea>
+  </p>
+
+  @*
+    LE GESTE EST SYNCHRONE, ET C'EST UNE CONTRAINTE ASSUMÉE, pas une conséquence subie : rien ne
+    part en arrière-plan, parce qu'un dépistage interrompu rendrait un rapport vide et rassurant.
+  *@
+  <p class="hint">
+    Le dépistage se fait <strong>maintenant</strong>, pendant que vous attendez : rien ne part en
+    arrière-plan, et il n'y a aucun état à venir consulter. Un relevé de vingt mille colonnes tient
+    dans une dizaine de secondes.
+  </p>
+
+  <button type="submit">Déposer et dépister</button>
+</form>
+
+<p><a asp-page="Report">Revenir au dépistage courant</a></p>

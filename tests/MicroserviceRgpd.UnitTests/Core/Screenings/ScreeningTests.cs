@@ -147,6 +147,13 @@ public class ScreeningTests
   /// ⚠️ <b>Aucun état d'archivage n'existe sur l'agrégat</b>, et la surface est énumérée en toutes
   /// lettres pour que l'y ajouter soit un geste délibéré. « Courant » ne se lit que <i>parmi</i> des
   /// rapports — d'où <c>IsCurrentAmong</c>, qui exige ses frères et ne peut pas devenir un champ.
+  /// <para>
+  /// ⚠️ <b>Elle ne porte aucun booléen, et le verrou « ce dépistage est inachevé » n'en est pas
+  /// devenu un.</b> Il vit en <c>UnreadUnflaggedCount</c> : un <c>IsUnfinished</c> aurait été le
+  /// même calcul, mais un booléen sur un agrégat <b>se lit</b> comme l'état que #126 refuse, et le
+  /// jour où quelqu'un chercherait à le rendre plus rapide il le persisterait. Le compte, lui, ne
+  /// se persiste pas sans qu'on voie qu'on le fait — et il en dit plus à l'humain qui le lit.
+  /// </para>
   /// </summary>
   [Fact]
   public void OffersNoArchiveFlagNoStatusAndNoStateOfItsOwn()
@@ -170,9 +177,12 @@ public class ScreeningTests
       "Id",
       "LaunchedOn",
       "RetainedCount",
+      "RetainedOnUnflaggedCount",
       "SetAsideCount",
       "TableCount",
+      "Tables",
       "UncategorisedCount",
+      "UnreadUnflaggedCount",
     ]);
   }
 
@@ -255,5 +265,144 @@ public class ScreeningTests
       ScreenedColumnState.Retained,
       "A. Tissot",
       Monday).ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Les tables sont retriées par le service, dans l'ordre des octets</b> — et non dans celui
+  /// de la collation du SGBD source, qui range <c>_</c> à sa façon. Deux <c>Operator</c> collant le
+  /// même schéma depuis deux réplicas configurés différemment doivent lire le même écran.
+  /// </summary>
+  [Fact]
+  public void SortsTheTablesItselfRatherThanTrustingTheCollationOfTheSourceDatabase()
+  {
+    // L'ordre de collation d'une base range « llx_bom_bomline » avant « llx_bom_bom_extrafields » ;
+    // l'ordre des octets fait l'inverse, parce que « _ » précède « l ». Le relevé arrive donc ici
+    // dans l'ordre que la source lui a donné, et c'est celui qu'on refuse de garder.
+    var screening = AScreening.Of(
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("rowid", table: "llx_bom_bomline")),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("rowid", table: "llx_bom_bom_extrafields")),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("rowid", table: "adherents")));
+
+    screening.Tables
+      .Select(table => table.Table)
+      .ShouldBe(["adherents", "llx_bom_bom_extrafields", "llx_bom_bomline"]);
+  }
+
+  /// <summary>Une table n'est nommée qu'une fois, quel que soit le nombre de colonnes qu'elle porte.</summary>
+  [Fact]
+  public void NamesEachTableOnceHoweverManyColumnsItCarries()
+  {
+    var screening = AScreening.Of(
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)),
+      AScreening.AFlaggedColumn("adr_l1", position: 2),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("montant", table: "cotisations")));
+
+    screening.Tables.ShouldBe(
+    [
+      new TableIdentity("public", "adherents"),
+      new TableIdentity("public", "cotisations"),
+    ]);
+  }
+
+  /// <summary>
+  /// <b>Le verrou est un compte, et il se recalcule.</b> « Ce dépistage est inachevé » tant qu'une
+  /// colonne où rien n'a été vu n'a pas été relue : sans lui, un <c>Operator</c> qui a arbitré ses
+  /// lignes signalées croit le travail fini, et l'<c>Omission relue</c> n'a rien rattrapé.
+  /// </summary>
+  [Fact]
+  public void CountsTheColumnsWhereNothingWasSeenThatNobodyHasReReadYet()
+  {
+    var screening = AScreening.Of(
+      AScreening.AFlaggedColumn("adr_l1", position: 1),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 2)),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("date_crea", position: 3)));
+
+    screening.UnreadUnflaggedCount.ShouldBe(2);
+
+    screening.Arbitrate(
+      ColumnIdentity.Of("public", "adherents", "id_adh"),
+      ScreenedColumnState.SetAside,
+      "A. Tissot",
+      Monday);
+
+    screening.UnreadUnflaggedCount.ShouldBe(1);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Arbitrer toutes les colonnes signalées n'éteint pas le verrou</b>, et c'est très
+  /// exactement le mode de panne qu'il existe pour attraper : les signalées sont la minorité du
+  /// rapport, et les relire toutes ne relit rien de ce qui a été omis.
+  /// </summary>
+  [Fact]
+  public void KeepsTheLockOnWhenOnlyTheFlaggedColumnsHaveBeenArbitrated()
+  {
+    var screening = AScreening.Of(
+      AScreening.AFlaggedColumn("adr_l1", position: 1),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 2)));
+
+    screening.Arbitrate(
+      ColumnIdentity.Of("public", "adherents", "adr_l1"),
+      ScreenedColumnState.Retained,
+      "A. Tissot",
+      Monday);
+
+    screening.AwaitingCount.ShouldBe(1);
+    screening.UnreadUnflaggedCount.ShouldBe(1);
+  }
+
+  /// <summary>Le verrou tombe quand la dernière colonne où rien n'a été vu a été relue, et pas avant.</summary>
+  [Fact]
+  public void DropsTheLockOnlyOnceEveryColumnWhereNothingWasSeenHasBeenReRead()
+  {
+    var screening = AScreening.Of(
+      AScreening.AFlaggedColumn("adr_l1", position: 1),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 2)));
+
+    screening.Arbitrate(
+      ColumnIdentity.Of("public", "adherents", "id_adh"),
+      ScreenedColumnState.SetAside,
+      "A. Tissot",
+      Monday);
+
+    screening.UnreadUnflaggedCount.ShouldBe(0);
+  }
+
+  /// <summary>
+  /// <b>Ce que l'<c>Omission relue</c> a rattrapé se compte</b> : une colonne retenue par un humain
+  /// là où le service n'avait rien vu. Elle vaut zéro tant que personne n'a relu, et une colonne
+  /// <em>écartée</em> ne la fait pas monter — il n'y a rien à rattraper dans un écartement.
+  /// </summary>
+  [Fact]
+  public void CountsWhatAHumanRetainedWhereTheScreeningHadSeenNothing()
+  {
+    var screening = AScreening.Of(
+      AScreening.AFlaggedColumn("adr_l1", position: 1),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 2)),
+      ScreenedColumn.NothingSeen(AScreening.AListedColumn("date_crea", position: 3)));
+
+    screening.RetainedOnUnflaggedCount.ShouldBe(0);
+
+    screening.Arbitrate(
+      ColumnIdentity.Of("public", "adherents", "id_adh"),
+      ScreenedColumnState.Retained,
+      "A. Tissot",
+      Monday);
+
+    screening.Arbitrate(
+      ColumnIdentity.Of("public", "adherents", "date_crea"),
+      ScreenedColumnState.SetAside,
+      "A. Tissot",
+      Monday);
+
+    // Retenue par un humain sur une ligne signalée : c'est un accord avec le service, pas un
+    // rattrapage, et le compte ne bouge pas.
+    screening.Arbitrate(
+      ColumnIdentity.Of("public", "adherents", "adr_l1"),
+      ScreenedColumnState.Retained,
+      "A. Tissot",
+      Monday);
+
+    screening.RetainedOnUnflaggedCount.ShouldBe(1);
+    screening.RetainedCount.ShouldBe(2);
   }
 }

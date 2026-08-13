@@ -59,10 +59,13 @@ internal static class AScreening
   }
 
   /// <summary>La ligne signalée type : un préfixe reconnu, un degré qui dit quelle règle, un motif en prose.</summary>
-  internal static ScreenedColumn AFlaggedColumn(string column = "adr_l1", int position = 1)
+  internal static ScreenedColumn AFlaggedColumn(
+    string column = "adr_l1",
+    int position = 1,
+    string table = "adherents")
   {
     return ScreenedColumn.Flagged(
-      AListedColumn(column, position: position),
+      AListedColumn(column, table: table, position: position),
       PersonalDataCategory.ContactDetails,
       RuleStrength.Morphological,
       $"préfixe « adr » reconnu dans « {column} »");
