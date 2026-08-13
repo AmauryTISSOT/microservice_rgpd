@@ -131,12 +131,32 @@ la limite d'octets du corps de la requête HTTP doit être réglée **au-dessus*
 colonnes produisent, sans quoi le refus muet du serveur sur la taille du corps sortirait avant le
 refus lisible.
 
+### Le plafond d'octets, qui n'est pas un dixième cas
+
+Le geste de dépôt borne aussi le **poids** du collage — `DepositListingCommand.MaxPasteBytes`, 8 Mo,
+soit deux fois ce que pèse le pire relevé autorisé. Il est lu **avant l'ingestion**, et il refuse en
+français comme les neuf autres.
+
+⚠️ **Il ne prend pas de numéro de cas, et c'est délibéré.** Les neuf cas sont ceux du contrat de
+_format_ ; le poids est une borne du _geste_, qui peut bouger sans que le format bouge. Un dixième
+numéro ferait mentir toute la documentation qui en compte neuf.
+
+⚠️ **Le plafond du transport est posé au-dessus du plafond du geste, jamais au même octet.** Posés au
+même niveau, les deux se déclencheraient ensemble et celui qui sortirait serait le `413` nu — sans
+phrase, sans écran, sans « aucune colonne n'a été ingérée ». L'écart doit en outre couvrir l'enflure
+de l'**encodage de formulaire**, où les accolades et guillemets du pivot pèsent trois octets chacun
+(~1,45× mesuré sur une ligne réelle). ⚠️ Le `TestServer` des tests fonctionnels **n'applique pas**
+`RequestSizeLimit` : aucun test de surface ne peut voir ce `413`, et la propriété est donc épinglée
+sur les deux constantes elles-mêmes.
+
 ## Ce qui n'est pas ici
 
 - **Les trois fichiers de requête** — ils appartiennent à #129, qui les exécutera et donc les
   prouvera.
 - **Le rendu des messages de refus à l'écran** — un `RefusalCause` porte le cas, sa
-  `FrenchLabel` et son `Expectation` ; la phrase qui les assemble vient avec l'écran.
+  `FrenchLabel` et son `Expectation`, et rien de plus. La phrase qui les assemble vit avec le geste,
+  dans `DepositListingHandler` ; l'écran de dépôt la redit sans en rédiger aucune, parce que deux
+  rédactions d'une même règle finiraient par ne plus dire la même chose.
 - **La provenance du relevé.** Un relevé sincère, entier et bien formé, mais tiré de la base de
   recette, est **indiscernable du bon**. Aucun mécanisme n'attrape ce cas, et aucun ne doit prétendre
   l'attraper.

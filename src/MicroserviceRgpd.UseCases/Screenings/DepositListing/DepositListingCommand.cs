@@ -36,4 +36,25 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// Le relevé pivot, tel que l'<c>Operator</c> l'a collé. <c>null</c> et le vide sont des collages
 /// comme les autres : ils se refusent par le contrat de format, jamais par une garde en amont.
 /// </param>
-public sealed record DepositListingCommand(string? Paste) : ICommand<Result<ScreeningId>>;
+public sealed record DepositListingCommand(string? Paste) : ICommand<Result<ScreeningId>>
+{
+  /// <summary>
+  /// Le plafond d'octets <b>du geste</b>, mesuré sur le collage lui-même en UTF-8.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le plafond est ici, et non au transport seul, parce qu'un refus de transport est
+  /// muet.</b> Un <c>413</c> nu ne porte ni cas, ni phrase, ni l'écran de dépôt : il ne dit pas à
+  /// l'<c>Operator</c> que c'est le <em>poids</em> qui a refusé son relevé, et il ne lui dit surtout
+  /// pas que rien n'a été ingéré. Le plafond du transport est donc posé <b>au-dessus</b> de
+  /// celui-ci, pour que le refus qui sort soit toujours celui qui parle français.
+  /// </para>
+  /// <para>
+  /// <b>8 Mo est deux fois le pire cas autorisé</b> : vingt mille colonnes — le plafond de
+  /// <see cref="ColumnListing.MaxColumns"/> — pèsent environ 4 Mo. Un collage qui franchit celui-ci
+  /// sans franchir celui-là porte donc des noms ou des commentaires démesurés, et c'est un relevé
+  /// qu'on refuse plutôt qu'un relevé qu'on tronque.
+  /// </para>
+  /// </remarks>
+  public const long MaxPasteBytes = 8L * 1024 * 1024;
+}

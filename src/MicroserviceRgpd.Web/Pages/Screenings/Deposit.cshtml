@@ -71,9 +71,14 @@
 
   <p>
     <label for="paste">Le relevé pivot</label>
+    @*
+      LES DEUX PLAFONDS SE VOIENT AVANT D'ÊTRE FRANCHIS. Une limite qu'on ne découvre qu'en la
+      heurtant se subit ; annoncée, elle se prépare — et l'Operator qui la lit ici sait, avant de
+      lancer sa requête, qu'un relevé plus gros n'est pas à moitié accepté mais refusé en bloc.
+    *@
     <span class="hint">
-      Au plus @ColumnListing.MaxColumns colonnes. Au-delà, il est <strong>refusé plutôt que
-      tronqué</strong>.
+      Au plus @ColumnListing.MaxColumns colonnes et @DepositModel.CeilingInMegabytes Mo. Au-delà de
+      l'un ou de l'autre, il est <strong>refusé plutôt que tronqué</strong>.
     </span>
     <textarea id="paste" name="Paste" rows="12" spellcheck="false">@Model.Paste</textarea>
   </p>
