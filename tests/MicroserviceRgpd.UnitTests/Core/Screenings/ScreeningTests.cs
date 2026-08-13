@@ -144,6 +144,56 @@ public class ScreeningTests
   }
 
   /// <summary>
+  /// L'historique est le <b>complément</b> du courant, calculé au même endroit et par la même règle.
+  /// Un déploiement qui n'a qu'un rapport n'a aucun archivé : le courant n'est pas son propre passé.
+  /// </summary>
+  [Fact]
+  public void ReadsEveryReportButTheCurrentOneAsTheHistory()
+  {
+    var monday = AScreening.LaunchedAt(Monday);
+    var thursday = AScreening.LaunchedAt(Monday.AddDays(3));
+
+    Screening.ArchivedAmong([]).ShouldBeEmpty();
+    Screening.ArchivedAmong([thursday]).ShouldBeEmpty();
+    Screening.ArchivedAmong([monday, thursday]).ShouldBe([monday]);
+  }
+
+  /// <summary>
+  /// L'historique se lit du plus récent au plus ancien, et l'ordre dans lequel la base a rendu les
+  /// lignes ne le décide pas : deux lectures du même déploiement se lisent dans le même ordre.
+  /// </summary>
+  [Fact]
+  public void ReadsTheHistoryMostRecentFirstWhateverOrderTheReportsComeIn()
+  {
+    var monday = AScreening.LaunchedAt(Monday);
+    var tuesday = AScreening.LaunchedAt(Monday.AddDays(1));
+    var thursday = AScreening.LaunchedAt(Monday.AddDays(3));
+
+    Screening.ArchivedAmong([monday, thursday, tuesday]).ShouldBe([tuesday, monday]);
+    Screening.ArchivedAmong([tuesday, monday, thursday]).ShouldBe([tuesday, monday]);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Sur le même tic d'horloge, un seul rapport reste dehors</b> — le même que
+  /// <c>CurrentAmong</c> désigne, et pas un autre. Un historique qui aurait tranché la départie
+  /// autrement aurait rendu deux fois le même rapport : une fois comme courant, une fois comme
+  /// archivé.
+  /// </summary>
+  [Fact]
+  public void NeverLetsTheCurrentReportAppearInItsOwnHistoryEvenOnTheSameTick()
+  {
+    var first = AScreening.LaunchedAt(Monday, ScreeningId.From(new Guid("00000000-0000-0000-0000-000000000001")));
+    var second = AScreening.LaunchedAt(Monday, ScreeningId.From(new Guid("00000000-0000-0000-0000-000000000002")));
+    Screening[] deployment = [first, second];
+
+    var archived = Screening.ArchivedAmong(deployment);
+
+    archived.Count.ShouldBe(1);
+    archived.ShouldNotContain(Screening.CurrentAmong(deployment)!);
+    Screening.ArchivedAmong([second, first]).ShouldBe(archived);
+  }
+
+  /// <summary>
   /// ⚠️ <b>Aucun état d'archivage n'existe sur l'agrégat</b>, et la surface est énumérée en toutes
   /// lettres pour que l'y ajouter soit un geste délibéré. « Courant » ne se lit que <i>parmi</i> des
   /// rapports — d'où <c>IsCurrentAmong</c>, qui exige ses frères et ne peut pas devenir un champ.

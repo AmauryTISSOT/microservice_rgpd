@@ -1,0 +1,118 @@
+@page "/depistage/archive"
+@model MicroserviceRgpd.Web.Pages.Screenings.ArchiveModel
+@{
+  var answer = Model.Answer!;
+  var report = answer.Content;
+  var clause = answer.Clause;
+
+  ViewData["Title"] = $"Un dépistage archivé de {report.Database}";
+
+  // Un compte et son nom, accordés : une surface qui se lit au compte ne peut pas écrire
+  // « 1 tables ».
+  string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+}
+
+<h1>Un dépistage archivé</h1>
+
+@*
+  CE QUE CET ÉCRAN EST, DIT EN TÊTE ET NON EN PIED DE PAGE. Un rapport archivé a exactement la même
+  allure qu'un courant — mêmes lignes, mêmes comptes, même clause : sans cette phrase, un Operator
+  qui arrive ici par un lien croit lire le dépistage du jour, et cherche ses boutons.
+*@
+<p class="caveat">
+  Ce dépistage est <strong>archivé</strong> : un dépistage plus récent existe sur ce déploiement.
+  Il se lit ici <strong>en entier</strong> — toutes ses colonnes, et ce que vous en aviez dit — mais
+  il ne s'arbitre plus. Ses arbitrages n'ont pas été repris par le courant : un nouveau dépôt ne
+  fusionne rien.
+</p>
+
+<dl class="banner">
+  <dt>Base</dt>
+  <dd>
+    @report.Database
+    <span class="hint">
+      Le nom que le relevé rapportait, recopié tel quel — un repère pour vous, jamais une identité
+      sur laquelle bâtir une comparaison.
+    </span>
+  </dd>
+  <dt>SGBD</dt>
+  <dd>@report.Dialect</dd>
+  <dt>Lancé le</dt>
+  <dd>@report.LaunchedOn.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))</dd>
+  <dt>Moteur</dt>
+  <dd>
+    @report.Engine.Name, version @report.Engine.Version
+    <span class="hint">
+      C'est ce qui dit pourquoi un dépistage plus récent ne rend pas la même chose que celui-ci.
+    </span>
+  </dd>
+</dl>
+
+<h2>Les comptes de ce dépistage</h2>
+
+@*
+  LES COMPTES SONT CEUX D'ALORS, RECALCULÉS MAINTENANT : rien n'a été figé à l'archivage, puisque
+  l'archivage n'écrit rien. Ce qui a été tranché avant le re-dépôt est là, intact.
+*@
+<dl class="banner tally">
+  <dt>Signalées</dt>
+  <dd>
+    @report.Tally.Flagged
+    <span class="hint">
+      Le complément est ce que le dépistage <strong>n'avait pas vu</strong>, jamais ce qui serait
+      inoffensif : le service n'a jamais vu une seule valeur.
+    </span>
+  </dd>
+  <dt>Retenues</dt>
+  <dd>@report.Tally.Retained</dd>
+  <dt>Écartées</dt>
+  <dd>@report.Tally.SetAside</dd>
+  <dt>Jamais tranchées</dt>
+  <dd>
+    @report.Tally.Awaiting
+    <span class="hint">
+      Sur un rapport archivé, ce n'est pas du travail à finir : c'est du travail qui ne se fera plus
+      ici. Le dépistage courant est reparti d'une page blanche.
+    </span>
+  </dd>
+  <dt>Retenues sur « rien signalé »</dt>
+  <dd>@report.Tally.RetainedOnUnflagged</dd>
+</dl>
+
+<h2>Les tables</h2>
+
+<table class="queue">
+  <caption>@Counted(report.Tables.Count, "table"), @Counted(clause.Perimeter.ColumnsRead, "colonne")</caption>
+  <thead>
+    <tr>
+      <th scope="col">Table</th>
+      <th scope="col">Colonnes</th>
+      <th scope="col">Signalées</th>
+      <th scope="col">Jamais tranchées</th>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var table in report.Tables)
+    {
+      <tr>
+        @* La table reste l'unité de lecture : d'ici, on l'ouvre — et on y lit TOUTES ses colonnes. *@
+        <th scope="row">
+          <a asp-page="ArchivedTable"
+             asp-route-screening="@report.Id.Value"
+             asp-route-schema="@table.Identity.Schema"
+             asp-route-table="@table.Identity.Table">@table.Identity.ToString()</a>
+        </th>
+        <td>@table.ColumnCount</td>
+        <td>@table.FlaggedCount</td>
+        <td>@table.AwaitingCount</td>
+      </tr>
+    }
+  </tbody>
+</table>
+
+<partial name="_IncompletenessClause" model="clause" />
+
+<p>
+  <a asp-page="History">Revenir à l'historique</a> —
+  <a asp-page="Report">lire le dépistage courant</a>
+</p>
