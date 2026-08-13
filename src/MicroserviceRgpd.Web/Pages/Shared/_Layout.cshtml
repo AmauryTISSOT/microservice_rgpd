@@ -45,6 +45,16 @@
     .hint { display: block; font-weight: normal; opacity: 0.8; }
     .refusal { color: #b3261e; font-weight: 600; }
     .refusals { border: 1px solid #b3261e; margin-bottom: 1.5rem; padding: 0.75rem 1rem; }
+    /* Le dépistage. Le verrou est en tête et se voit : sans lui, on croit le travail fini. */
+    .unfinished { border-left: 3px solid #b3261e; font-weight: 600; margin: 1rem 0 2rem; padding-left: 0.75rem; }
+    .listing-query { border: 1px solid rgba(127, 127, 127, 0.4); font-size: 0.85rem; max-height: 22rem; overflow: auto; padding: 0.75rem; }
+    .dialects a { margin-right: 1rem; }
+    .dialects a.chosen { font-weight: 700; }
+    /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
+    .clause { border-top: 1px solid rgba(127, 127, 127, 0.4); display: grid; gap: 0 2rem; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); padding-top: 1rem; }
+    .clause h3 { font-size: 1rem; margin: 1rem 0 0.25rem; }
+    .clause ul { margin: 0.25rem 0; padding-left: 1.2rem; }
+    .clause p { margin: 0.25rem 0; }
     button { font: inherit; padding: 0.5rem 1.25rem; }
   </style>
 </head>

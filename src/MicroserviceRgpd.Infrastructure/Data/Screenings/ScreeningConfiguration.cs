@@ -139,5 +139,14 @@ public sealed class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
     builder.Ignore(screening => screening.ColumnCount);
     builder.Ignore(screening => screening.ColumnsWithoutACommentCount);
     builder.Ignore(screening => screening.TableCount);
+    builder.Ignore(screening => screening.RetainedOnUnflaggedCount);
+    builder.Ignore(screening => screening.UnreadUnflaggedCount);
+
+    // ⚠️ Les tables RETRIÉES sont un calcul sur les colonnes, et non une seconde table. EF Core y
+    // voit par convention une navigation vers un type qu'il faudrait persister — il a réclamé une
+    // clé primaire pour `TableIdentity` — alors qu'il n'existe aucune ligne à écrire : le retri se
+    // refait à chaque lecture, et une table mémorisée aurait eu besoin de quelque chose pour la
+    // mettre à jour.
+    builder.Ignore(screening => screening.Tables);
   }
 }

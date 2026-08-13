@@ -143,6 +143,60 @@ public sealed class Screening : IAggregateRoot
   public int TableCount => _columns.Select(column => column.Identity.TableIdentity).Distinct().Count();
 
   /// <summary>
+  /// Combien de colonnes un humain a retenues alors que le dépistage n'avait <b>rien vu</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est la mesure directe de ce que l'<c>Omission relue</c> a rattrapé</b>, et le seul
+  /// compte du rapport qui ne parle pas du dépistage mais de sa relecture : un <c>Retained</c> posé
+  /// sur une colonne <c>Unflagged</c> prouve qu'un <b>humain</b> l'a retenue, jamais que le service
+  /// l'avait vue. Il vaut zéro tant que personne n'a relu, et c'est très exactement ce qu'on lui
+  /// demande de dire.
+  /// </remarks>
+  public int RetainedOnUnflaggedCount => _columns.Count(column =>
+    column.State == ScreenedColumnState.Retained && !column.IsFlagged);
+
+  /// <summary>
+  /// Combien de colonnes où <b>rien n'a été vu</b> n'ont pas encore été relues — le compte que porte
+  /// le verrou « ce dépistage est inachevé ».
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est un compte, jamais un état</b>, et la nuance est celle que ce contexte relit trois
+  /// fois : le <c>Screening</c> n'a aucun état, mais il se compte. Sans ce verrou, un
+  /// <c>Operator</c> qui a arbitré ses tables signalées voit une surface qui se tait et
+  /// <b>croit le travail fini</b>, alors que l'<c>Omission relue</c> n'a précisément rien rattrapé.
+  /// Il se recalcule à chaque rendu : rien ne le mémorise, et rien n'aurait à le mettre à jour.
+  /// </remarks>
+  public int UnreadUnflaggedCount => _columns.Count(column =>
+    !column.IsFlagged && column.AwaitsAnArbitration);
+
+  /// <summary>
+  /// Les tables du rapport, <b>retriées par le service</b> — schéma puis table, dans l'ordre des
+  /// octets.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le pivot arrive déjà trié, mais selon la collation du SGBD source</b>, qui n'ordonne pas
+  /// <c>_</c> comme l'ordre des octets. Sans ce retri, deux <c>Operator</c> collant le même schéma
+  /// depuis deux réplicas configurés différemment voient deux écrans ordonnés différemment — sur une
+  /// surface qu'on reprend pendant trois jours et où l'on cherche une table de mémoire.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>C'est l'inverse de la règle des colonnes, et pour la bonne raison</b> : à l'intérieur
+  /// d'une table le voisinage porte du sens — <c>adr_l1</c>, <c>adr_l2</c>, <c>cp</c>,
+  /// <c>ville</c> —, et <see cref="ColumnsOf"/> garde donc l'ordre du schéma. Entre deux tables il
+  /// n'en porte aucun.
+  /// </para>
+  /// </remarks>
+  public IReadOnlyList<TableIdentity> Tables =>
+  [
+    .. _columns
+      .Select(column => column.Identity.TableIdentity)
+      .Distinct()
+      .OrderBy(table => table.Schema, StringComparer.Ordinal)
+      .ThenBy(table => table.Table, StringComparer.Ordinal),
+  ];
+
+  /// <summary>
   /// Lance un dépistage, ou refuse. Le refus est une <b>programmation fautive</b> : un relevé mal
   /// formé se refuse en bloc à l'ingestion, où le refus est lisible et où l'<c>Operator</c> n'a qu'à
   /// relancer sa requête.

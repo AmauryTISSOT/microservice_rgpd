@@ -23,6 +23,14 @@
     <PackageReference Include="Serilog.AspNetCore" />
   </ItemGroup>
 
+  <!-- Les requêtes de relevé par dialecte, embarquées depuis LEUR SEUL EXEMPLAIRE, à la racine du
+       dépôt. C'est la même source que celle qui a extrait le corpus : une copie dans ce projet
+       aurait divergé de la première requête corrigée, et l'écran aurait donné à l'Operator une
+       requête qui n'est plus celle dont le format pivot a été éprouvé. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\releves\*.sql" LogicalName="Releves.%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\MicroserviceRgpd.Infrastructure\MicroserviceRgpd.Infrastructure.csproj" />
     <ProjectReference Include="..\MicroserviceRgpd.UseCases\MicroserviceRgpd.UseCases.csproj" />
