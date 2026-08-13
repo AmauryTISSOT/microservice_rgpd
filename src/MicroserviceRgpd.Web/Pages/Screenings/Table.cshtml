@@ -58,16 +58,19 @@ else
   écran où l'omission a cessé d'être relisible. Il n'y a donc aucun bouton pour les masquer.
 *@
 <p class="hint">
-  Les <strong>@Counted(read.ColumnCount, "colonne")</strong> de cette table sont ici, dans l'ordre où
+  Les <strong>@Counted(read.ColumnCountInThisTable, "colonne")</strong> de cette table sont ici, dans l'ordre où
   votre base les rend — celles où le dépistage n'a rien vu comprises, et il n'y a aucun moyen de les
   masquer. Ce sont elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part
   ailleurs.
 </p>
 
 <table class="queue columns">
+  @* Ces trois comptes-ci sont ceux DE CETTE TABLE ; ceux du rapport entier sont plus bas, sous
+     leur propre titre. Les mêmes mots sous deux dénominateurs se disent, ou ne se lisent pas. *@
   <caption>
-    @Counted(read.ColumnCount, "colonne"), dont @read.FlaggedCount signalée@(read.FlaggedCount == 1 ? "" : "s")
-    — @Counted(read.AwaitingCount, "colonne") de cette table @(read.AwaitingCount == 1 ? "attend" : "attendent") encore
+    Dans cette table : @Counted(read.ColumnCountInThisTable, "colonne"), dont
+    @read.FlaggedCountInThisTable signalée@(read.FlaggedCountInThisTable == 1 ? "" : "s") —
+    @Counted(read.AwaitingCountInThisTable, "colonne") y @(read.AwaitingCountInThisTable == 1 ? "attend" : "attendent") encore
   </caption>
   <thead>
     <tr>
@@ -130,7 +133,7 @@ else
   </tbody>
 </table>
 
-<h2>Les comptes du dépistage</h2>
+<h2>Les comptes du dépistage entier</h2>
 
 @*
   ILS PORTENT SUR LE RAPPORT ENTIER, jamais sur la table ouverte : des comptes bornés à ce qu'on a
@@ -149,65 +152,6 @@ else
   <dd>@read.Tally.RetainedOnUnflagged</dd>
 </dl>
 
-@*
-  LA CLAUSE D'INCOMPLÉTUDE — une PROPRIÉTÉ DE LA RÉPONSE, jamais une mention en pied de page, et
-  elle est due sur toute réponse rendant une ScreenedColumn. Cet écran en rend treize.
-*@
-<h2>Ce que ce dépistage n'a pas regardé</h2>
-
-<div class="clause">
-  <section>
-    <h3>Le périmètre lu</h3>
-    <p>@clause.Perimeter.Statement</p>
-    <p>Lus comme <strong>indice</strong> :</p>
-    <ul>
-      @foreach (var signal in clause.Perimeter.ReadAsSignal)
-      {
-        <li>@signal</li>
-      }
-    </ul>
-    <p>@clause.Perimeter.FilterStatement</p>
-    <ul>
-      @foreach (var filter in clause.Perimeter.ReadOnlyToFilter)
-      {
-        <li>@filter</li>
-      }
-    </ul>
-    <p>
-      Sur ce relevé : <strong>@Counted(clause.Perimeter.ColumnsRead, "colonne")</strong> lues dans
-      <strong>@Counted(clause.Perimeter.TablesRead, "table")</strong>, dont
-      <strong>@clause.Perimeter.ColumnsWithoutAComment sans aucun commentaire</strong> — ni au niveau
-      de la colonne, ni à celui de sa table.
-    </p>
-  </section>
-
-  <section>
-    <h3>Hors périmètre</h3>
-    <p>@clause.Beyond.Statement</p>
-    <ul>
-      @foreach (var example in clause.Beyond.Examples)
-      {
-        <li>@example</li>
-      }
-    </ul>
-    <p class="caveat">@clause.Beyond.OpennessStatement</p>
-  </section>
-
-  <section>
-    <h3>Hors de portée</h3>
-    <p>@clause.BeyondReach.Statement</p>
-    <ul>
-      @foreach (var category in clause.BeyondReach.Categories)
-      {
-        <li><strong>@category.Category.FrenchLabel</strong> — @category.Reason</li>
-      }
-    </ul>
-  </section>
-
-  <section>
-    <h3>Ce dépistage et votre catalogue</h3>
-    <p>@clause.RelationToManifest</p>
-  </section>
-</div>
+<partial name="_IncompletenessClause" model="clause" />
 
 <p><a asp-page="Report">Revenir au rapport</a></p>

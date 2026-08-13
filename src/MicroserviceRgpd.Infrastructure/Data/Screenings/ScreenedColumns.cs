@@ -8,9 +8,9 @@ namespace MicroserviceRgpd.Infrastructure.Data.Screenings;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>C'est la lecture pour laquelle la seconde table existe.</b> L'index unique du triplet a pour
-/// colonnes de tête <c>(screening_id, schema_name, table_name)</c> : la table ouverte se lit par cet
-/// index, et rien d'autre du rapport n'est touché.
+/// <b>C'est la lecture pour laquelle la seconde table existe.</b> L'index sur <c>screening_id</c>
+/// borne la lecture au rapport, la table se filtre au serveur, et <b>rien du rapport n'est
+/// matérialisé</b> — treize colonnes remontent, pas cinq mille.
 /// </para>
 /// <para>
 /// ⚠️ <b>Les comptes sont calculés par la base, en une requête.</b> Les rapatrier pour les compter en

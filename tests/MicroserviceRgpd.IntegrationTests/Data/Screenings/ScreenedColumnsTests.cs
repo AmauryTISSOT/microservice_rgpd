@@ -173,6 +173,63 @@ public class ScreenedColumnsTests(PostgreSqlFixture postgres)
     dbContext.ChangeTracker.Entries<ScreenedColumn>().ShouldBeEmpty();
   }
 
+  /// <summary>
+  /// ⚠️ <b>Les deux producteurs des neuf comptes rendent les mêmes neuf nombres.</b> L'agrégat
+  /// chargé sert le sommaire, la base sert l'écran d'une table, et rien dans un type de neuf entiers
+  /// n'empêche les deux de diverger : retenues et écartées interverties d'un côté, l'
+  /// <c>Operator</c> lit deux écrans qui se contredisent sans qu'aucun ne paraisse faux.
+  /// </summary>
+  [Fact]
+  public async Task CountsTheSameNineNumbersFromTheDatabaseAsFromTheLoadedReport()
+  {
+    var screening = AScreening(
+      AFlaggedColumn("adr_l1", position: 1),
+      AFlaggedColumn("email", position: 2),
+      ANothingSeenColumn("id_adh", position: 3),
+      ANothingSeenColumn("nom", position: 4, tableComment: null),
+      ANothingSeenColumn("montant", position: 1, table: "cotisations"));
+
+    await SaveAsync(screening);
+
+    await ArbitrateAsync(screening.Id, "adherents", "adr_l1", ScreenedColumnState.Retained);
+    await ArbitrateAsync(screening.Id, "adherents", "id_adh", ScreenedColumnState.Retained);
+    await ArbitrateAsync(screening.Id, "cotisations", "montant", ScreenedColumnState.SetAside);
+
+    var fromTheDatabase = await ReadAsync(columns => columns.CountsOfAsync(screening.Id));
+
+    await using var dbContext = postgres.NewDbContext();
+    var loaded = await dbContext.Screenings
+      .Include(one => one.Columns)
+      .AsNoTracking()
+      .SingleAsync(one => one.Id == screening.Id);
+
+    // L'égalité porte sur le record entier : un compte ajouté un jour sans son équivalent SQL fera
+    // rougir ce test, ce qu'une liste de neuf assertions recopiées n'aurait pas fait.
+    fromTheDatabase.ShouldBe(ScreeningCounts.Of(loaded));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un rapport chargé sans ses colonnes refuse de rendre ses comptes.</b> Il en rendrait des
+  /// zéros sincères et faux — et le pire d'entre eux ferait dire au verrou « toutes les colonnes ont
+  /// été relues » sur un rapport que personne n'a ouvert.
+  /// </summary>
+  [Fact]
+  public async Task RefusesToCountAReportLoadedWithoutItsColumns()
+  {
+    var screening = AScreening(
+      AFlaggedColumn("email", position: 1),
+      ANothingSeenColumn("id_adh", position: 2));
+
+    await SaveAsync(screening);
+
+    await using var dbContext = postgres.NewDbContext();
+    var header = await dbContext.Screenings
+      .AsNoTracking()
+      .SingleAsync(one => one.Id == screening.Id);
+
+    Should.Throw<InvalidOperationException>(() => ScreeningCounts.Of(header));
+  }
+
   private static Screening AScreening(params ScreenedColumn[] columns)
   {
     return Screening.Of(

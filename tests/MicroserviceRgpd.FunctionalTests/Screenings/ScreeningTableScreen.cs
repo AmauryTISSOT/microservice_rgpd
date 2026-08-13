@@ -47,8 +47,54 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     // Au moins une de ces trois est une colonne où le moteur n'a rien vu, et elle est là quand même.
     table.ShouldContain("Rien n'a été vu");
 
+    // ⚠️ Et il y en a EXACTEMENT trois. Nommer trois lignes présentes ne dit rien d'une quatrième
+    // qu'on aurait laissée tomber — et la colonne qu'un écran laisse tomber est très exactement
+    // celle que personne ne relira jamais.
+    RowCountOf(table).ShouldBe(3);
+
     // Et la table voisine n'est pas de la partie : l'unité de travail est UNE table.
     RowOf(table, "date_crea").ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Il n'existe aucune commande pour masquer les colonnes.</b> Le filtre n'est pas absent par
+  /// oubli : un filtre, même refermable, rétablit l'<c>Omission silencieuse</c> — l'
+  /// <c>Operator</c> le pose une fois, ne le rouvre jamais, et l'écran redevient celui des seules
+  /// signalées sans qu'aucune ligne de doctrine n'ait bougé.
+  /// </summary>
+  [Fact]
+  public async Task OffersNoWayAtAllToHideTheColumnsWhereNothingWasSeen()
+  {
+    var table = await DepositAndOpenAsync(
+      ScreeningSurface.Column("id_adh", position: 1),
+      ScreeningSurface.Column("email", position: 2));
+
+    // Aucun formulaire, aucune case, aucun sélecteur : la surface ne propose rien à cocher.
+    table.ShouldNotContain("<form");
+    table.ShouldNotContain("<select");
+    table.ShouldNotContain("type=\"checkbox\"");
+
+    // Et le geste lui-même n'écoute aucun paramètre de filtre : le demander ne change rien.
+    var asked = WebUtility.HtmlDecode(await _surface.ReadAsync(
+      $"{ScreeningSurface.Table}?schema=public&table=adherents&flagged=true&filtre=signalees"));
+
+    RowCountOf(asked).ShouldBe(RowCountOf(table));
+    asked.ShouldContain("Rien n'a été vu");
+  }
+
+  /// <summary>
+  /// <b>Une adresse sans table nommée ne rend pas un écran vide</b> : elle ramène au rapport, d'où
+  /// les tables s'ouvrent par leur nom.
+  /// </summary>
+  [Fact]
+  public async Task SendsBackToTheReportWhenNoTableIsNamedAtAll()
+  {
+    await _surface.DepositAsync(ScreeningSurface.Paste(ScreeningSurface.Column("email")));
+
+    var response = await _surface.Client.GetAsync(ScreeningSurface.Table);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+    response.Headers.Location!.OriginalString.ShouldContain(ScreeningSurface.Report);
   }
 
   /// <summary>
@@ -102,6 +148,10 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
 
     // Le MOTIF, en clair : ni replié, ni tronqué. Replié derrière une infobulle, il n'existe plus.
     flagged.ShouldMatch("(?s)<td class=\"reason\">\\s*\\S");
+
+    // ⚠️ Et c'est le motif de CETTE colonne-ci, non un texte de remplissage : le moteur cite le
+    // jeton qui a déclenché, et un motif générique se lirait comme une pièce sans l'être.
+    ReasonOf(flagged).ShouldContain("email");
 
     // ⚠️ Le degré se lit comme une RÈGLE, jamais comme un score : la carte a exclu le nombre, et
     // l'écran ne le réintroduit pas par la bande — ni pourcentage, ni barre de progression.
@@ -219,6 +269,31 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     table.ShouldNotContain("scan", Case.Insensitive);
   }
 
+  /// <summary>
+  /// <b>Deux colonnes signalées par deux règles différentes portent deux noms de règle différents et
+  /// deux motifs différents.</b> Éprouvée sur une seule règle, la colonne « Règle » aurait pu être
+  /// une étiquette constante — et l'<c>Operator</c> aurait arbitré sur une pièce qui ne distingue
+  /// rien.
+  /// </summary>
+  [Fact]
+  public async Task TellsTwoDifferentRulesApartOnTheScreenRatherThanLabellingThemAlike()
+  {
+    var table = await DepositAndOpenAsync(
+      ScreeningSurface.Column("email", position: 1),
+      ScreeningSurface.Column(
+        "ref_x", position: 2, columnComment: "L'adresse postale de l'adhérent."));
+
+    var byName = RowOf(table, "email");
+    var byComment = RowOf(table, "ref_x");
+
+    byName.ShouldNotBeNull();
+    byComment.ShouldNotBeNull("Le commentaire porte « adresse » : le moteur réel doit la signaler.");
+
+    // Le motif de chacune cite ce qui a déclenché chez ELLE.
+    ReasonOf(byComment).ShouldContain("adresse");
+    ReasonOf(byName).ShouldNotBe(ReasonOf(byComment));
+  }
+
   /// <summary>Dépose un relevé, puis ouvre la table <c>public.adherents</c> du rapport qu'il rend.</summary>
   private async Task<string> DepositAndOpenAsync(params string[] columns)
   {
@@ -241,6 +316,22 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       RegexOptions.Singleline);
 
     return row.Success ? row.Value : null;
+  }
+
+  /// <summary>Combien de colonnes l'écran rend vraiment — la mesure que « celle-ci est là » ne donne pas.</summary>
+  private static int RowCountOf(string table)
+  {
+    return Regex.Matches(table, @"<tr>\s*<th scope=""row"">", RegexOptions.Singleline).Count;
+  }
+
+  /// <summary>Le motif tel que la ligne le rend, débarrassé de son balisage.</summary>
+  private static string ReasonOf(string row)
+  {
+    var reason = Regex.Match(row, @"<td class=""reason"">(.*?)</td>", RegexOptions.Singleline);
+
+    reason.Success.ShouldBeTrue("La ligne ne porte aucune cellule de motif.");
+
+    return reason.Groups[1].Value.Trim();
   }
 
   /// <summary>Ce qu'un compte du rapport vaut, lu là où l'écran le rend.</summary>

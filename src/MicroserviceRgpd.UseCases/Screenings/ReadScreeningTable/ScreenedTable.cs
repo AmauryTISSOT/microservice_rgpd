@@ -44,13 +44,19 @@ public sealed record ScreenedTable(
   UnfinishedScreening Lock)
 {
   /// <summary>Combien de colonnes cette table porte, <b>toutes</b>.</summary>
-  public int ColumnCount => Columns.Count;
+  /// <remarks>
+  /// ⚠️ <b>Les trois comptes qui suivent sont ceux de CETTE TABLE, et <see cref="Tally"/> porte les
+  /// mêmes mots pour le rapport ENTIER.</b> Leur nom dit lequel des deux dénominateurs il compte —
+  /// « douze signalées » sous deux dénominateurs différents dans le même écran est la façon la plus
+  /// simple de faire lire une table relue comme un rapport fini.
+  /// </remarks>
+  public int ColumnCountInThisTable => Columns.Count;
 
-  /// <summary>Combien le dépistage en a signalées.</summary>
-  public int FlaggedCount => Columns.Count(column => column.IsFlagged);
+  /// <summary>Combien le dépistage en a signalées, <b>dans cette table</b>.</summary>
+  public int FlaggedCountInThisTable => Columns.Count(column => column.IsFlagged);
 
-  /// <summary>Combien attendent encore qu'un humain les tranche, dans cette table.</summary>
-  public int AwaitingCount => Columns.Count(column => column.AwaitsAnArbitration);
+  /// <summary>Combien attendent encore qu'un humain les tranche, <b>dans cette table</b>.</summary>
+  public int AwaitingCountInThisTable => Columns.Count(column => column.AwaitsAnArbitration);
 
   /// <summary>
   /// La table telle qu'on la rend, à l'instant où on la regarde.
