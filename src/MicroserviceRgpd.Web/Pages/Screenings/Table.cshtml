@@ -17,6 +17,14 @@
   // Un compte et son nom, accordés : une surface qui se lit au compte ne peut pas écrire
   // « 1 colonnes ».
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+
+  @*
+    ⚠️ Le rang de la ligne, et NON le nom de la colonne, sert à coudre les identifiants HTML. Un nom
+    d'objet est recopié verbatim du SGBD : entre guillemets, il peut porter une espace ou un point,
+    et « id="sign-mon nom" » casse en silence l'association du label à son champ — l'étiquette
+    cesse alors de donner le focus, ce qui ne se voit jamais à la relecture du HTML.
+  *@
+  var rank = 0;
 }
 
 <h1>@read.Identity</h1>
@@ -32,6 +40,21 @@
 else
 {
   <p class="hint">@read.Lock.Statement</p>
+}
+
+@*
+  LE REFUS, EN TÊTE ET NOMMANT SA COLONNE. Un refus rendu au milieu d'un tableau de cinq mille
+  lignes serait un refus qu'on ne voit pas : l'Operator repartirait en croyant avoir arbitré.
+*@
+@if (!ViewData.ModelState.IsValid)
+{
+  <div class="refusals">
+    <p>Sur la colonne <strong>@Model.Column</strong> :</p>
+    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+    {
+      <p class="refusal">@refusal.ErrorMessage</p>
+    }
+  </div>
 }
 
 <dl class="banner">
@@ -79,12 +102,19 @@ else
       <th scope="col">Catégorie</th>
       <th scope="col">Règle</th>
       <th scope="col" class="reason">Motif</th>
-      <th scope="col">Arbitrage</th>
+      <th scope="col" class="ruling">Arbitrage</th>
     </tr>
   </thead>
   <tbody>
     @foreach (var column in read.Columns)
     {
+      var signatureField = $"sign-{++rank}";
+
+      @* Le nom saisi est REPOSÉ sur la seule ligne qu'un refus concerne : le perdre aurait obligé
+         l'Operator à retrouver sa ligne parmi cinq mille et à retaper, sur le seul chemin d'erreur
+         que ce formulaire ait. *@
+      var typed = column.Identity.Column == Model.Column ? Model.SignedBy : null;
+
       <tr>
         <th scope="row">
           @column.Identity.Column
@@ -114,7 +144,7 @@ else
           <td></td>
           <td class="reason"></td>
         }
-        <td>
+        <td class="ruling">
           @if (column.AwaitsAnArbitration)
           {
             <span class="none">En attente</span>
@@ -127,6 +157,65 @@ else
               @column.Arbitration.SignedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
             </span>
           }
+
+          @*
+            LES DEUX ISSUES SONT DEUX BOUTONS, et aucune n'est pré-sélectionnée : une liste où
+            « retenue » serait cochée d'avance ferait retenir d'un clic distrait, et le compte des
+            retenues est ce sur quoi la déclaration se construit ensuite.
+
+            ⚠️ LE FORMULAIRE RESTE APRÈS L'ARBITRAGE : se raviser doit être sans cérémonie, sur une
+            surface qu'on reprend pendant trois jours. Le nouvel état écrase l'ancien, et le coût —
+            qui avait dit quoi est effacé — est déclaré chez Arbitration.
+
+            ⚠️ AUCUN CHAMP DE DATE, ici ni ailleurs : l'instant vient du service. Et le nom est
+            resaisi ligne à ligne — un nom posé une fois pour toute la table aurait signé au nom de
+            l'humain les lignes qu'un autre a tranchées derrière le même écran.
+          *@
+          <form method="post">
+            <input type="hidden" name="Column" value="@column.Identity.Column" />
+
+            @*
+              ⚠️ LE RAPPORT LU VOYAGE AVEC LE CLIC, et il ne dit pas où écrire — le geste écrit
+              toujours le courant. Il dit sur quoi la lecture portait, et permet de REFUSER : un
+              collègue qui dépose un relevé pendant qu'on relit une table ferait sinon atterrir
+              cette signature-ci sur un rapport que personne n'a lu, motifs compris.
+            *@
+            <input type="hidden" name="Screening" value="@read.Screening.Value" />
+
+            <label for="@signatureField">
+              Votre nom
+              <span class="hint">Saisi, et <strong>non authentifié</strong>.</span>
+            </label>
+            <input type="text"
+                   id="@signatureField"
+                   name="SignedBy"
+                   value="@typed"
+                   maxlength="@MicroserviceRgpd.Core.Screenings.Arbitration.MaxSignatoryLength" />
+
+            @*
+              ⚠️ CE BOUTON EXISTE POUR LA TOUCHE ENTRÉE, et il est le PREMIER de la forme exprès.
+              Un formulaire à champ texte soumet, sur Entrée, son premier bouton d'envoi : sans
+              celui-ci, taper son nom et valider aurait RETENU la colonne — très exactement le clic
+              distrait contre lequel les deux boutons ont été écrits, et sur le compte dont la
+              déclaration se construit ensuite. Il poste « personne n'a tranché », que le domaine
+              refuse en toutes lettres.
+            *@
+            <button type="submit"
+                    name="Ruling"
+                    value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting.Name"
+                    hidden
+                    aria-hidden="true"
+                    tabindex="-1">
+              Ne rien trancher
+            </button>
+
+            <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Retained.Name">
+              Retenir
+            </button>
+            <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.SetAside.Name">
+              Écarter
+            </button>
+          </form>
         </td>
       </tr>
     }
