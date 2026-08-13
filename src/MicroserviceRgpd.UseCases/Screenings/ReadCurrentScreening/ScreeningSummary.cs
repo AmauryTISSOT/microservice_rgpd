@@ -62,6 +62,10 @@ public sealed record ScreeningSummary(
       .GroupBy(column => column.Identity.TableIdentity)
       .ToDictionary(group => group.Key, group => group.ToArray());
 
+    // Un seul balayage pour les neuf comptes, plutôt qu'un par lecteur : ils sont le même relevé vu
+    // deux fois, et les faire diverger n'aurait demandé qu'une distraction.
+    var counts = ScreeningCounts.Of(screening);
+
     return new ScreeningSummary(
       screening.Id,
       screening.Database,
@@ -71,8 +75,8 @@ public sealed record ScreeningSummary(
       // ⚠️ L'ORDRE reste celui de l'agrégat : c'est lui qui porte la règle du retri par le service.
       // Retrier ici aurait écrit la même règle à deux endroits, et l'un des deux aurait dérivé.
       [.. screening.Tables.Select(table => SummarisedTable.Of(table, columnsByTable[table]))],
-      ScreeningTally.Of(screening),
-      UnfinishedScreening.Of(screening));
+      ScreeningTally.Of(counts),
+      UnfinishedScreening.Of(counts));
   }
 }
 
@@ -97,105 +101,5 @@ public sealed record SummarisedTable(
       columns.Count,
       columns.Count(column => column.IsFlagged),
       columns.Count(column => column.AwaitsAnArbitration));
-  }
-}
-
-/// <summary>
-/// Les cinq comptes du rapport. <b>L'avancement est un compte, jamais un état de haut niveau
-/// rassurant</b> : « douze colonnes en attente » se lit, « en cours » ne se lit pas.
-/// </summary>
-/// <param name="Flagged">
-/// Combien de colonnes le dépistage a signalées. ⚠️ Le complément est ce qu'il <b>n'a pas vu</b>,
-/// jamais ce qui serait inoffensif : le service n'a jamais vu une seule valeur.
-/// </param>
-/// <param name="Retained">Combien un humain a retenues, sous son nom.</param>
-/// <param name="SetAside">Combien un humain a écartées, sous son nom.</param>
-/// <param name="Awaiting">Combien attendent encore qu'un humain les tranche.</param>
-/// <param name="RetainedOnUnflagged">
-/// Combien un humain a retenues là où le dépistage n'avait <b>rien vu</b>. ⚠️ <b>C'est la mesure
-/// directe de ce que l'<c>Omission relue</c> a rattrapé</b>, et elle vaut zéro tant que personne n'a
-/// relu — ce qui est très exactement ce qu'on lui demande de dire.
-/// </param>
-public sealed record ScreeningTally(
-  int Flagged,
-  int Retained,
-  int SetAside,
-  int Awaiting,
-  int RetainedOnUnflagged)
-{
-  internal static ScreeningTally Of(Screening screening)
-  {
-    return new ScreeningTally(
-      screening.FlaggedCount,
-      screening.RetainedCount,
-      screening.SetAsideCount,
-      screening.AwaitingCount,
-      screening.RetainedOnUnflaggedCount);
-  }
-}
-
-/// <summary>
-/// Le verrou « ce dépistage est inachevé », <b>recalculé à chaque rendu</b>.
-/// </summary>
-/// <remarks>
-/// <para>
-/// ⚠️ <b>C'est un compte, et non un état sur l'agrégat.</b> Un <c>Screening</c> n'en a aucun : il se
-/// compte. La nuance n'est pas de style — un état aurait eu besoin de quelque chose pour le mettre à
-/// jour, et ce quelque chose serait le processus de fond que ce dépôt interdit au niveau de l'IL.
-/// </para>
-/// <para>
-/// <b>Sans lui, la surface a un défaut propre et sérieux</b> : on déclare lues quarante tables, on
-/// croit le travail fini, et l'<c>Omission relue</c> n'a rien rattrapé — les colonnes signalées sont
-/// la minorité du rapport, et les relire toutes ne relit rien de ce qui a été omis.
-/// </para>
-/// </remarks>
-/// <param name="UnreadUnflagged">Combien de colonnes où rien n'a été vu n'ont pas encore été relues.</param>
-/// <param name="Awaiting">
-/// Combien de colonnes, <b>toutes confondues</b>, attendent encore qu'un humain les tranche. ⚠️ Il
-/// ne commande pas le verrou — il <b>interdit la phrase rassurante</b> tant qu'il n'est pas nul.
-/// </param>
-public sealed record UnfinishedScreening(int UnreadUnflagged, int Awaiting)
-{
-  /// <summary>Le dépistage est-il inachevé ? Vrai tant qu'il reste une colonne où rien n'a été vu à relire.</summary>
-  /// <remarks>
-  /// ⚠️ <b>Le verrou porte sur les seules colonnes non signalées, et c'est délibéré.</b> Il existe
-  /// pour l'<c>Omission relue</c> : ce qui échappe au dépistage n'est rattrapé que si quelqu'un relit
-  /// là où il n'a <em>rien</em> vu. Des colonnes signalées non tranchées sont du travail visible, que
-  /// le compte <c>En attente</c> dit déjà — elles n'ont pas besoin d'un verrou pour être vues.
-  /// </remarks>
-  public bool IsUnfinished => UnreadUnflagged > 0;
-
-  /// <summary>
-  /// Ce que le verrou dit à l'<c>Operator</c>, en toutes lettres. Il vit ici plutôt que dans l'écran
-  /// pour que le mot <b>dépistage</b> soit celui du glossaire partout où il se rend.
-  /// </summary>
-  /// <remarks>
-  /// ⚠️ <b>La phrase d'achèvement a trois branches, et la branche du milieu est celle qui compte.</b>
-  /// Écrite à deux, elle affirmait « toutes les colonnes ont été relues » dès que les non signalées
-  /// l'étaient — <b>y compris sur un rapport où personne n'avait rien tranché</b>, lorsque le relevé
-  /// n'a aucune colonne non signalée. L'<c>Operator</c> lisait alors le travail comme fini juste
-  /// au-dessus d'un compte <c>En attente</c> non nul, dans la même page : très exactement la surface
-  /// rassurante contre laquelle ce verrou a été écrit.
-  /// </remarks>
-  public string Statement => IsUnfinished
-    ? $"Ce dépistage est inachevé — {Counted(UnreadUnflagged, "colonne")} où rien n'a été vu "
-      + (UnreadUnflagged == 1 ? "n'a" : "n'ont") + " pas encore été relue"
-      + (UnreadUnflagged == 1 ? "." : "s.")
-    : Awaiting > 0
-      ? "Toutes les colonnes où rien n'a été vu ont été relues ; "
-        + $"{Counted(Awaiting, "colonne")} signalée{(Awaiting == 1 ? string.Empty : "s")} "
-        + (Awaiting == 1 ? "attend" : "attendent") + " encore d'être tranchée"
-        + (Awaiting == 1 ? "." : "s.")
-      : "Toutes les colonnes de ce dépistage ont été relues, y compris celles où rien n'a été vu.";
-
-  internal static UnfinishedScreening Of(Screening screening)
-  {
-    return new UnfinishedScreening(screening.UnreadUnflaggedCount, screening.AwaitingCount);
-  }
-
-  /// <summary>Un compte et son nom, accordés. Une surface qui se lit au compte ne peut pas écrire « 1 colonnes ».</summary>
-  private static string Counted(int count, string noun)
-  {
-    return count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
   }
 }

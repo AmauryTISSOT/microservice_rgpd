@@ -101,7 +101,12 @@ else
     @foreach (var table in summary.Tables)
     {
       <tr>
-        <th scope="row">@table.Identity.ToString()</th>
+        @* La table est l'unité de travail : d'ici, on l'ouvre — et on y lit TOUTES ses colonnes. *@
+        <th scope="row">
+          <a asp-page="Table"
+             asp-route-schema="@table.Identity.Schema"
+             asp-route-table="@table.Identity.Table">@table.Identity.ToString()</a>
+        </th>
         <td>@table.ColumnCount</td>
         <td>@table.FlaggedCount</td>
         <td>@table.AwaitingCount</td>
@@ -110,73 +115,6 @@ else
   </tbody>
 </table>
 
-@*
-  LA CLAUSE D'INCOMPLÉTUDE — une PROPRIÉTÉ DE LA RÉPONSE, jamais une mention en pied de page. Elle
-  est structurée plutôt qu'en prose pour une seule raison : qu'elle soit testable. Et elle ne se
-  replie derrière aucun « en savoir plus » : un Operator qui lance son troisième dépistage aurait
-  déjà cessé de la lire.
-*@
-<h2>Ce que ce dépistage n'a pas regardé</h2>
-
-<div class="clause">
-  <section>
-    <h3>Le périmètre lu</h3>
-    <p>@clause.Perimeter.Statement</p>
-    <p>Lus comme <strong>indice</strong> :</p>
-    <ul>
-      @foreach (var read in clause.Perimeter.ReadAsSignal)
-      {
-        <li>@read</li>
-      }
-    </ul>
-    <p>@clause.Perimeter.FilterStatement</p>
-    <ul>
-      @foreach (var read in clause.Perimeter.ReadOnlyToFilter)
-      {
-        <li>@read</li>
-      }
-    </ul>
-    @*
-      Ce que CE relevé-ci apprend à la clause, et non des généralités : le grain existe et se
-      calcule sans rien de neuf.
-    *@
-    <p>
-      Sur ce relevé : <strong>@Counted(clause.Perimeter.ColumnsRead, "colonne")</strong> lues dans
-      <strong>@Counted(clause.Perimeter.TablesRead, "table")</strong>, dont
-      <strong>@clause.Perimeter.ColumnsWithoutAComment sans aucun commentaire</strong> — ni au niveau
-      de la colonne, ni à celui de sa table.
-    </p>
-  </section>
-
-  <section>
-    <h3>Hors périmètre</h3>
-    <p>@clause.Beyond.Statement</p>
-    <ul>
-      @foreach (var example in clause.Beyond.Examples)
-      {
-        <li>@example</li>
-      }
-    </ul>
-    @* ⚠️ La liste est DÉCLARÉE OUVERTE : la lire comme un référentiel qu'on coche jusqu'au bout
-       serait exactement l'erreur qu'elle existe pour empêcher. *@
-    <p class="caveat">@clause.Beyond.OpennessStatement</p>
-  </section>
-
-  <section>
-    <h3>Hors de portée</h3>
-    <p>@clause.BeyondReach.Statement</p>
-    <ul>
-      @foreach (var category in clause.BeyondReach.Categories)
-      {
-        <li><strong>@category.Category.FrenchLabel</strong> — @category.Reason</li>
-      }
-    </ul>
-  </section>
-
-  <section>
-    <h3>Ce dépistage et votre catalogue</h3>
-    <p>@clause.RelationToManifest</p>
-  </section>
-</div>
+<partial name="_IncompletenessClause" model="clause" />
 
 <p><a asp-page="Deposit">Déposer un nouveau relevé</a></p>

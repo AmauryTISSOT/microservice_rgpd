@@ -242,6 +242,10 @@ public class IncompletenessClauseTests
       .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
       .ShouldBeEmpty();
 
-    Should.Throw<ArgumentNullException>(() => IncompletenessClause.For(null!));
+    // Les deux chemins, et il n'y en a que deux : le rapport chargé, et les comptes que la base
+    // calcule pour l'écran d'une table. ⚠️ Le second n'affaiblit pas la règle — la clause reste
+    // inconstruisible sans les comptes de CE relevé ; ce qui change est qui les a calculés.
+    Should.Throw<ArgumentNullException>(() => IncompletenessClause.For((Screening)null!));
+    Should.Throw<ArgumentNullException>(() => IncompletenessClause.For((ScreeningCounts)null!));
   }
 }
