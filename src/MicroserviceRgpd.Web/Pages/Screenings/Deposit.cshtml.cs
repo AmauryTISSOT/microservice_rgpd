@@ -23,28 +23,48 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 /// <para>
 /// ⚠️ <b>Le plafond d'octets est relevé sur ce geste seul.</b> Kestrel plafonne le service à 64 Kio,
 /// ce qui vaut ~335 colonnes : le refus muet du transport serait sorti <b>avant</b> le refus lisible
-/// du format, et un relevé tronqué n'aurait jamais pu être nommé comme tel. 8 Mo est deux fois le
-/// pire cas autorisé — 20 000 colonnes pèsent ~3,8 Mo —, si bien que le refus qui sort est toujours
-/// celui du contrat de format. Le plafond global reste en place pour les deux routes publiques
-/// qu'il protège.
+/// du format, et un relevé tronqué n'aurait jamais pu être nommé comme tel. Le plafond global reste
+/// en place pour les deux routes publiques qu'il protège.
+/// </para>
+/// <para>
+/// ⚠️ <b>Le plafond du transport est posé au-dessus de celui du geste, et l'écart n'est pas du
+/// confort.</b> C'est lui qui rend le refus de poids <b>lisible</b> : posés au même niveau, les deux
+/// plafonds se déclencheraient au même octet, et celui qui sortirait serait le <c>413</c> nu du
+/// transport — sans phrase, sans écran, sans « aucune colonne n'a été ingérée ». Deux raisons
+/// imposent l'écart plutôt qu'une marge symbolique : le collage arrive <b>encodé en formulaire</b>,
+/// où les accolades et les guillemets du pivot pèsent trois octets chacun (mesuré à ~1,45× sur une
+/// ligne réelle) ; et un collage qui franchit le plafond du geste doit malgré tout <b>arriver</b>
+/// pour se faire refuser en français.
 /// </para>
 /// <para>
 /// <b>Le mot est <em>dépistage</em></b> — jamais <em>recensement</em>, <em>cartographie</em> ni
 /// <em>scan</em> — dans tout ce que cet écran dit.
 /// </para>
 /// </remarks>
-[RequestSizeLimit(DepositModel.PasteCeilingInBytes)]
+[RequestSizeLimit(DepositModel.TransportCeilingInBytes)]
 [RequestFormLimits(
   ValueLengthLimit = int.MaxValue,
-  MultipartBodyLengthLimit = DepositModel.PasteCeilingInBytes)]
+  MultipartBodyLengthLimit = DepositModel.TransportCeilingInBytes)]
 public class DepositModel(IMediator mediator) : PageModel
 {
   /// <summary>
-  /// Le plafond d'octets de ce seul geste, en octets. ⚠️ <b>Il vaut deux fois le pire cas
-  /// autorisé</b> : c'est ce qui garantit qu'un relevé au-delà du plafond de colonnes se fasse
-  /// refuser <b>par son compte déclaré</b>, lisiblement, plutôt que par le transport, muettement.
+  /// Ce que le transport laisse entrer sur ce seul geste, en octets — <b>le double du plafond du
+  /// geste</b>, qui est celui qui refuse en français.
   /// </summary>
-  public const long PasteCeilingInBytes = 8L * 1024 * 1024;
+  /// <remarks>
+  /// ⚠️ <b>Ce n'est pas le plafond annoncé à l'<c>Operator</c></b>, et il ne doit jamais le devenir :
+  /// celui-là est <see cref="DepositListingCommand.MaxPasteBytes"/>, il vaut 8 Mo, et c'est lui qui
+  /// porte une phrase. Celui-ci n'existe que pour que le collage <b>arrive</b> — encodé en
+  /// formulaire, où le pivot enfle d'environ moitié — jusqu'au geste qui saura le refuser lisiblement.
+  /// </remarks>
+  public const long TransportCeilingInBytes = 2 * DepositListingCommand.MaxPasteBytes;
+
+  /// <summary>
+  /// Le plafond du geste en mégaoctets, tel que l'écran l'annonce — <b>dérivé de la constante du
+  /// geste, jamais réécrit</b> : un « 8 Mo » recopié dans le HTML aurait continué de s'afficher le
+  /// jour où le plafond bouge, et l'écran aurait promis autre chose que ce que le service accepte.
+  /// </summary>
+  public static long CeilingInMegabytes => DepositListingCommand.MaxPasteBytes / 1024 / 1024;
 
   /// <summary>Le relevé collé, tel quel. Le service ne le découpe ni ne le complète.</summary>
   [BindProperty]

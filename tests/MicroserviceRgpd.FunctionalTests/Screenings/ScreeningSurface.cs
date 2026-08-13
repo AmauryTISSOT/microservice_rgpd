@@ -59,6 +59,32 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
     return await _client.PostAsync(Deposit, new FormUrlEncodedContent(fields));
   }
 
+  /// <summary>
+  /// Colle un relevé, exige qu'il ait été <b>refusé</b>, et rend le refus tel qu'un
+  /// <c>Operator</c> le lit — entités HTML résolues.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le refus se relit sur l'écran de dépôt, il ne redirige nulle part.</b> Un refus qui
+  /// mènerait ailleurs ferait perdre le collage : l'<c>Operator</c> a fait un long trajet pour le
+  /// produire, et le seul geste raisonnable après un refus est de corriger devant le texte qui
+  /// l'explique.
+  /// <para>
+  /// Le rendu est <b>décodé</b> parce que Razor encode l'apostrophe en <c>&amp;#x27;</c> : chercher
+  /// « aucune colonne n'a été ingérée » dans le HTML brut échouerait sur une phrase pourtant
+  /// présente, et le test se serait mis à parler d'encodage plutôt que de refus.
+  /// </para>
+  /// </remarks>
+  internal async Task<string> DepositAndReadTheRefusalAsync(string paste)
+  {
+    var refused = await DepositAsync(paste);
+
+    refused.StatusCode.ShouldBe(
+      HttpStatusCode.OK,
+      "Un refus se relit sur l'écran de dépôt : il ne redirige pas, et il ne rend pas une erreur nue.");
+
+    return WebUtility.HtmlDecode(await refused.Content.ReadAsStringAsync());
+  }
+
   /// <summary>Colle un relevé, exige que le dépôt ait réussi, et rend le rapport qui en est sorti.</summary>
   internal async Task<string> DepositAndReadTheReportAsync(string paste)
   {
@@ -80,12 +106,36 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
     return await response.Content.ReadAsStringAsync();
   }
 
-  /// <summary>La ligne d'en-tête d'un collage sincère.</summary>
-  internal static string Header(string dialect = "postgresql", string database = "galette_prod")
+  /// <summary>
+  /// La ligne d'en-tête d'un collage sincère. <paramref name="format"/> se choisit pour fabriquer le
+  /// seul cas de refus qui porte sur la version déclarée.
+  /// </summary>
+  internal static string Header(
+    string dialect = "postgresql",
+    string database = "galette_prod",
+    string? format = null)
   {
     return $$"""
-      {"format":"{{ColumnListing.FormatVersion}}","dialecte":"{{dialect}}","base":"{{database}}","genere_le":"{{GeneratedOn.ToString("O", CultureInfo.InvariantCulture)}}"}
+      {"format":"{{format ?? ColumnListing.FormatVersion}}","dialecte":"{{dialect}}","base":"{{database}}","genere_le":"{{GeneratedOn.ToString("O", CultureInfo.InvariantCulture)}}"}
       """;
+  }
+
+  /// <summary>La ligne de fin, et le compte qu'elle annonce.</summary>
+  internal static string ClosingLine(long declaredColumnCount)
+  {
+    return $$"""{"fin":true,"colonnes":{{declaredColumnCount.ToString(CultureInfo.InvariantCulture)}}}""";
+  }
+
+  /// <summary>
+  /// Un collage assemblé ligne à ligne, sans qu'aucune ne soit posée d'office.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ C'est ce qui permet de fabriquer les collages <b>amputés</b> — sans en-tête, sans ligne de
+  /// fin — que <see cref="Paste(string[])"/> ne saurait pas produire, puisqu'il pose les deux.
+  /// </remarks>
+  internal static string Lines(params string[] lines)
+  {
+    return string.Join('\n', lines);
   }
 
   /// <summary>Une ligne de colonne, dans la forme que la requête de relevé émet.</summary>
@@ -124,7 +174,7 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// </summary>
   internal static string Paste(int declaredColumnCount, params string[] columns)
   {
-    return string.Join('\n', [Header(), .. columns, $$"""{"fin":true,"colonnes":{{declaredColumnCount}}}"""]);
+    return Lines([Header(), .. columns, ClosingLine(declaredColumnCount)]);
   }
 
   private static string Field(string key, string? value)
