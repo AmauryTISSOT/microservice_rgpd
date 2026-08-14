@@ -25,7 +25,7 @@ public class OpenCaseHandlerTests
   private readonly AClockStuckAt _clock = new(Now);
   private readonly IReadRepository<DeclaredSystem> _manifest = Substitute.For<IReadRepository<DeclaredSystem>>();
   private readonly IRepository<Case> _cases = Substitute.For<IRepository<Case>>();
-  private readonly IEvidenceLog _ledger = Substitute.For<IEvidenceLog>();
+  private readonly IEvidenceLog _evidenceLog = Substitute.For<IEvidenceLog>();
 
   /// <summary>
   /// <b>Le travail dû naît du catalogue</b> : un <c>Step</c> par (<c>Claim</c>,
@@ -86,18 +86,18 @@ public class OpenCaseHandlerTests
 
     await OpenAsync(ReceptionDate.Defaulted(Now), null, [DataSubjectRight.Access]);
 
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line =>
         line.OccurredAt == Now
         && line.ReceivedOn == Now.AddDays(-ReceptionDate.DaysHeldAlreadyRunByDefault)
         && line.ReceptionWasDefaulted == true),
       Arg.Any<CancellationToken>());
 
-    _ledger.ClearReceivedCalls();
+    _evidenceLog.ClearReceivedCalls();
 
     await OpenAsync(ReceptionDate.Declared(receivedLongBefore), null, [DataSubjectRight.Access]);
 
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line =>
         line.OccurredAt == Now
         && line.ReceivedOn == receivedLongBefore
@@ -124,14 +124,14 @@ public class OpenCaseHandlerTests
     // Le détail vit sur le dossier, où la clôture ira le détruire.
     opened.Value.Motivation!.Detail!.ShouldContain("Jean Dupont");
 
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line =>
         line.VerificationMethod == IdentityVerificationMethod.CallbackOnKnownContact),
       Arg.Any<CancellationToken>());
 
-    // Aucun emplacement pour la prose de la motivation : la seule prose du EvidenceLog est celle de
+    // Aucun emplacement pour la prose de la motivation : la seule prose de l'EvidenceLog est celle de
     // preuve, et cette ligne-ci n'en porte aucune.
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line => line.Prose == null),
       Arg.Any<CancellationToken>());
   }
@@ -147,7 +147,7 @@ public class OpenCaseHandlerTests
 
     await OpenAsync([DataSubjectRight.Access]);
 
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line => line.VerificationMethod == null),
       Arg.Any<CancellationToken>());
   }
@@ -168,7 +168,7 @@ public class OpenCaseHandlerTests
       Arg.Is<Case>(written => written.Id == opened.Value.Id),
       Arg.Any<CancellationToken>());
 
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line => line.Case == opened.Value.Id && line.Fact == EvidenceLogFact.CaseOpened),
       Arg.Any<CancellationToken>());
   }
@@ -188,7 +188,7 @@ public class OpenCaseHandlerTests
       Designation.Of(DesignationKind.Email, "jean.dupont@example.fr"),
       Designation.Of(DesignationKind.PersonName, "Jean Dupont"));
 
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line =>
         line.DesignationCount == 2
         && line.IdentityDeclaration == IdentityDeclaration.ApplicationSession
@@ -211,7 +211,7 @@ public class OpenCaseHandlerTests
     opened.ValidationErrors.ShouldContain(error => error.Identifier == "Rights");
 
     await _cases.DidNotReceive().AddAsync(Arg.Any<Case>(), Arg.Any<CancellationToken>());
-    await _ledger.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
+    await _evidenceLog.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
   }
 
   /// <summary>
@@ -228,7 +228,7 @@ public class OpenCaseHandlerTests
     opened.IsSuccess.ShouldBeTrue();
     opened.Value.Claims.ShouldBeEmpty();
 
-    await _ledger.Received(1).AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
+    await _evidenceLog.Received(1).AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
   }
 
   private void TheManifestDeclares(params DeclaredSystem[] systems)
@@ -249,7 +249,7 @@ public class OpenCaseHandlerTests
     DataSubjectRight[] rights,
     params Designation[] designations)
   {
-    var handler = new OpenCaseHandler(_manifest, _cases, _ledger, _clock);
+    var handler = new OpenCaseHandler(_manifest, _cases, _evidenceLog, _clock);
 
     return await handler.Handle(
       new OpenCaseCommand(

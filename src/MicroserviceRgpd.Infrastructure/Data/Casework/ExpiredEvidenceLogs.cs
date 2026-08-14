@@ -83,7 +83,7 @@ public sealed class ExpiredEvidenceLogs(AppDbContext dbContext) : IExpiredEviden
 
   /// <inheritdoc />
   public async Task<bool> DestroyAsync(
-    CaseId ledgerOf,
+    CaseId evidenceLogOf,
     DateTimeOffset observedAt,
     CancellationToken cancellationToken = default)
   {
@@ -91,7 +91,7 @@ public sealed class ExpiredEvidenceLogs(AppDbContext dbContext) : IExpiredEviden
     // part le clic : ce qui est irréversible ne se décide pas sur une page vieille d'une heure.
     var closedOn = await dbContext.Cases
       .AsNoTracking()
-      .Where(one => one.Id == ledgerOf)
+      .Where(one => one.Id == evidenceLogOf)
       .Select(one => one.ClosedOn)
       .SingleOrDefaultAsync(cancellationToken);
 
@@ -103,7 +103,7 @@ public sealed class ExpiredEvidenceLogs(AppDbContext dbContext) : IExpiredEviden
     // Toutes les lignes du dossier, en une seule instruction. ⚠️ Rien n'est écrit à la place : la
     // destruction ne laisse aucune trace d'elle-même, et on ne prouvera jamais avoir purgé.
     var destroyed = await dbContext.Set<EvidenceLogRow>()
-      .Where(row => row.CaseId == ledgerOf.Value)
+      .Where(row => row.CaseId == evidenceLogOf.Value)
       .ExecuteDeleteAsync(cancellationToken);
 
     return destroyed > 0;

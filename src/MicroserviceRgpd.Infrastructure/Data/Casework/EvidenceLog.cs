@@ -29,7 +29,7 @@ public sealed class EvidenceLog(AppDbContext dbContext) : IEvidenceLog
   {
     ArgumentNullException.ThrowIfNull(entry);
 
-    // `Set<T>()` plutôt qu'un `DbSet` du contexte : le contexte n'en expose aucun pour le EvidenceLog,
+    // `Set<T>()` plutôt qu'un `DbSet` du contexte : le contexte n'en expose aucun pour l'EvidenceLog,
     // afin que `Remove` et `Update` ne soient à portée de personne.
     dbContext.Set<EvidenceLogRow>().Add(RowOf(entry));
 

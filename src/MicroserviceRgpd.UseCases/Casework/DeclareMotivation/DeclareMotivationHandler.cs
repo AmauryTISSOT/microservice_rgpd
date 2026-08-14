@@ -10,19 +10,19 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 /// <remarks>
 /// <para>
 /// <b>L'ordre est : écrire le dossier, puis consigner</b> — comme partout ailleurs, et pour la même
-/// raison : le <c>EvidenceLog</c> est hors de l'agrégat, et les deux pannes ne se valent pas.
+/// raison : l'<c>EvidenceLog</c> est hors de l'agrégat, et les deux pannes ne se valent pas.
 /// </para>
 /// <para>
-/// <b>Rien n'est écrit si rien n'était réclamé.</b> Le <c>EvidenceLog</c> consigne les faits qui changent
+/// <b>Rien n'est écrit si rien n'était réclamé.</b> L'<c>EvidenceLog</c> consigne les faits qui changent
 /// quelque chose, jamais leur répétition, et cette règle est tenue par l'appelant : écraser une
 /// motivation déjà signée ferait réécrire ce que quelqu'un a affirmé, dans le seul dispositif dont
 /// l'invariant est qu'on ne le réécrit pas.
 /// </para>
 /// </remarks>
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'un acte se dicte en test.</param>
-public sealed class DeclareMotivationHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
+public sealed class DeclareMotivationHandler(IRepository<Case> cases, IEvidenceLog evidenceLog, TimeProvider clock)
   : ICommandHandler<DeclareMotivationCommand, Result>
 {
   /// <inheritdoc />
@@ -71,7 +71,7 @@ public sealed class DeclareMotivationHandler(IRepository<Case> cases, IEvidenceL
 
     await cases.UpdateAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(signed, cancellationToken);
+    await evidenceLog.AppendAsync(signed, cancellationToken);
 
     return Result.Success();
   }

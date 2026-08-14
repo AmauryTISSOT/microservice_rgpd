@@ -42,7 +42,7 @@ public class ReceptionDateTests
 
   /// <summary>
   /// <b>Le défaut se sait qu'il en est un.</b> C'est ce drapeau que l'écran nomme
-  /// « J+9 (défaut) » et que le <c>EvidenceLog</c> consigne : sans lui, la seule chose que le dossier
+  /// « J+9 (défaut) » et que l'<c>EvidenceLog</c> consigne : sans lui, la seule chose que le dossier
   /// porterait serait une date, indiscernable d'une date déclarée.
   /// </summary>
   [Fact]

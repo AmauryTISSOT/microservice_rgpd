@@ -76,7 +76,7 @@ public sealed class DeliveryLetter
   /// <remarks>
   /// <para>
   /// ⚠️ <b>Il ne s'écrit jamais sur la page.</b> C'est le <b>dénominateur</b> du « 2 systèmes sur 6 »
-  /// que le <c>EvidenceLog</c> garde, et son lecteur est le contrôle. Écrit à la personne, le même chiffre
+  /// que l'<c>EvidenceLog</c> garde, et son lecteur est le contrôle. Écrit à la personne, le même chiffre
   /// lui affirmerait que le client a exactement six systèmes.
   /// </para>
   /// <para>

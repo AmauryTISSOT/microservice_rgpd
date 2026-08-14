@@ -432,12 +432,12 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
   /// c'est ce qu'un navigateur envoie d'une case décochée, et le seul moyen d'éprouver la parade.
   /// ⚠️ <b>Aucun nom n'est envoyé</b> : le geste ne laisse aucune trace où l'écrire.
   /// </remarks>
-  internal async Task<HttpResponseMessage> DestroyEvidenceLogAsync(CaseId ledgerOf, bool confirmed = true)
+  internal async Task<HttpResponseMessage> DestroyEvidenceLogAsync(CaseId evidenceLogOf, bool confirmed = true)
   {
     var fields = new List<KeyValuePair<string, string>>
     {
       new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(Queue)),
-      new("Destruction.Case", ledgerOf.Value.ToString()),
+      new("Destruction.Case", evidenceLogOf.Value.ToString()),
     };
 
     if (confirmed)
@@ -477,9 +477,9 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
 
     await dbContext.SaveChangesAsync();
 
-    var ledger = scope.ServiceProvider.GetRequiredService<IEvidenceLog>();
+    var evidenceLog = scope.ServiceProvider.GetRequiredService<IEvidenceLog>();
 
-    await ledger.AppendAsync(EvidenceLogEntry.CaseClosed(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseClosed(
       opened.Id,
       closedOn,
       ClosingCause.Answered,

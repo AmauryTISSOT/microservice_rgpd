@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
 /// </para>
 /// <para>
 /// <b>Le nom et le régime voyagent ensemble.</b> La surface n'authentifie personne — choix de PoC
-/// assumé —, et le régime dit ce que valait ce nom : sans lui, le <c>EvidenceLog</c> d'aujourd'hui serait
+/// assumé —, et le régime dit ce que valait ce nom : sans lui, l'<c>EvidenceLog</c> d'aujourd'hui serait
 /// indiscernable de celui de demain.
 /// </para>
 /// <para>

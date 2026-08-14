@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 /// <remarks>
 /// <para>
 /// <b>L'ordre est : écrire le dossier, puis consigner</b> — comme partout ailleurs. Ce sont deux
-/// écritures et non une transaction, le <c>EvidenceLog</c> étant hors de l'agrégat, et les deux pannes ne
+/// écritures et non une transaction, l'<c>EvidenceLog</c> étant hors de l'agrégat, et les deux pannes ne
 /// se valent pas : une ligne de preuve pour un arbitrage que le dossier ne porte pas est un faux ; un
 /// arbitrage porté dont la ligne manque est <b>visible</b> à l'écran.
 /// </para>
@@ -27,9 +27,9 @@ namespace MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 /// </para>
 /// </remarks>
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'un acte se dicte en test.</param>
-public sealed class ArbitrateReservationHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
+public sealed class ArbitrateReservationHandler(IRepository<Case> cases, IEvidenceLog evidenceLog, TimeProvider clock)
   : ICommandHandler<ArbitrateReservationCommand, Result>
 {
   /// <inheritdoc />
@@ -76,7 +76,7 @@ public sealed class ArbitrateReservationHandler(IRepository<Case> cases, IEviden
 
     await cases.UpdateAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(
+    await evidenceLog.AppendAsync(
       EvidenceLogEntry.ReservationArbitrated(
         command.Case,
         clock.GetUtcNow(),

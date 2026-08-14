@@ -31,7 +31,7 @@ public class DeclareExtensionHandlerTests
   private static readonly DateTimeOffset Received = new(2026, 3, 2, 9, 0, 0, TimeSpan.Zero);
 
   private readonly IRepository<Case> _cases = Substitute.For<IRepository<Case>>();
-  private readonly IEvidenceLog _ledger = Substitute.For<IEvidenceLog>();
+  private readonly IEvidenceLog _evidenceLog = Substitute.For<IEvidenceLog>();
   private readonly IExpiredEvidenceLogs _expired = Substitute.For<IExpiredEvidenceLogs>();
 
   /// <summary>
@@ -90,7 +90,7 @@ public class DeclareExtensionHandlerTests
     deadline.On.ShouldBe(Received.AddMonths(1));
 
     // Et la preuve porte tout de même la ligne : c'est au contrôle de refaire le calcul.
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line => line.Fact == EvidenceLogFact.ExtensionDeclared),
       Arg.Any<CancellationToken>());
   }
@@ -108,7 +108,7 @@ public class DeclareExtensionHandlerTests
 
     await DeclaringAt(ACase(), declaredAt, informedOn);
 
-    await _ledger.Received(1).AppendAsync(
+    await _evidenceLog.Received(1).AppendAsync(
       Arg.Is<EvidenceLogEntry>(line =>
         line.OccurredAt == declaredAt
         && line.InformedOn == informedOn
@@ -135,7 +135,7 @@ public class DeclareExtensionHandlerTests
     opened.ExtensionDeclaration.ShouldBeNull();
 
     await _cases.DidNotReceive().UpdateAsync(Arg.Any<Case>(), Arg.Any<CancellationToken>());
-    await _ledger.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
+    await _evidenceLog.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
   }
 
   /// <summary>
@@ -166,20 +166,20 @@ public class DeclareExtensionHandlerTests
   [Fact]
   public async Task DestroysAnExpiredEvidenceLogWithoutWritingASingleLineAboutIt()
   {
-    var ledgerOf = CaseId.Next();
+    var evidenceLogOf = CaseId.Next();
     var gesture = new DateTimeOffset(2031, 6, 1, 8, 0, 0, TimeSpan.Zero);
 
-    _expired.DestroyAsync(ledgerOf, gesture, Arg.Any<CancellationToken>()).Returns(true);
+    _expired.DestroyAsync(evidenceLogOf, gesture, Arg.Any<CancellationToken>()).Returns(true);
 
     var destroyed = await new DestroyEvidenceLogHandler(_expired, new AClockStuckAt(gesture))
-      .Handle(new DestroyEvidenceLogCommand(ledgerOf), CancellationToken.None);
+      .Handle(new DestroyEvidenceLogCommand(evidenceLogOf), CancellationToken.None);
 
     destroyed.IsSuccess.ShouldBeTrue();
 
     // ⚠️ L'instant du geste est celui de l'horloge, pas celui de l'écran d'où part le clic — et rien
     // n'est ajouté à la place de ce qui est parti.
-    await _expired.Received(1).DestroyAsync(ledgerOf, gesture, Arg.Any<CancellationToken>());
-    await _ledger.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
+    await _expired.Received(1).DestroyAsync(evidenceLogOf, gesture, Arg.Any<CancellationToken>());
+    await _evidenceLog.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
   }
 
   /// <summary>
@@ -208,7 +208,7 @@ public class DeclareExtensionHandlerTests
     _cases.FirstOrDefaultAsync(Arg.Any<ISingleResultSpecification<Case>>(), Arg.Any<CancellationToken>())
       .Returns(opened);
 
-    var handler = new DeclareExtensionHandler(_cases, _ledger, new AClockStuckAt(declaredAt));
+    var handler = new DeclareExtensionHandler(_cases, _evidenceLog, new AClockStuckAt(declaredAt));
 
     return await handler.Handle(
       new DeclareExtensionCommand(

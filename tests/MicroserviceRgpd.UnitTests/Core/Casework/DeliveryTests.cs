@@ -87,7 +87,7 @@ public class DeliveryTests
   }
 
   /// <summary>
-  /// Le dénombrement que le <c>EvidenceLog</c> gardera porte sur <b>le même ensemble</b> que la page :
+  /// Le dénombrement que l'<c>EvidenceLog</c> gardera porte sur <b>le même ensemble</b> que la page :
   /// deux ensembles mesurés l'un contre l'autre écriraient « 6 sur 5 ».
   /// </summary>
   [Fact]

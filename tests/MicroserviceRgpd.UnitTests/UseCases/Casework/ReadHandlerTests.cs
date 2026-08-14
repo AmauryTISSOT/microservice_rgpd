@@ -33,7 +33,7 @@ public class ReadHandlerTests
   private readonly IAdapterCalls _calls = Substitute.For<IAdapterCalls>();
   private readonly IAdapterDisagreements _disagreements = Substitute.For<IAdapterDisagreements>();
   private readonly IRetrievedData _retrieved = Substitute.For<IRetrievedData>();
-  private readonly IEvidenceLog _ledger = Substitute.For<IEvidenceLog>();
+  private readonly IEvidenceLog _evidenceLog = Substitute.For<IEvidenceLog>();
 
   /// <summary>L'instant que le service lira. Il se <b>dicte</b>, et il avance quand le test veut faire passer une échéance.</summary>
   private DateTimeOffset _now = Now;
@@ -173,7 +173,7 @@ public class ReadHandlerTests
 
   /// <summary>
   /// La preuve garde <b>le compte de ce sous quoi on a lu</b>, et rien de la pièce : ni son type, ni
-  /// son nom, ni sa taille. Le <c>EvidenceLog</c> est lu par un contrôle ; il ne doit pas devenir un second
+  /// son nom, ni sa taille. L'<c>EvidenceLog</c> est lu par un contrôle ; il ne doit pas devenir un second
   /// endroit où les données de la personne transparaissent.
   /// </summary>
   [Fact]
@@ -212,7 +212,7 @@ public class ReadHandlerTests
     TheAdapterServes(SomeBytes);
 
     await ReadingIn(opened);
-    _ledger.ClearReceivedCalls();
+    _evidenceLog.ClearReceivedCalls();
     _retrieved.ClearReceivedCalls();
 
     await ReadingIn(opened);
@@ -389,9 +389,9 @@ public class ReadHandlerTests
     return new ReadHandler(
       _cases,
       _manifest,
-      new AdapterCallsForCase(_calls, _ledger, _disagreements, new AClockStuckAt(_now)),
+      new AdapterCallsForCase(_calls, _evidenceLog, _disagreements, new AClockStuckAt(_now)),
       _retrieved,
-      _ledger,
+      _evidenceLog,
       new AClockStuckAt(_now));
   }
 
@@ -425,7 +425,7 @@ public class ReadHandlerTests
   /// <summary>Toutes les lignes réellement écrites dans la preuve, dans l'ordre.</summary>
   private EvidenceLogEntry[] Written()
   {
-    return [.. _ledger.ReceivedCalls()
+    return [.. _evidenceLog.ReceivedCalls()
       .Where(call => call.GetMethodInfo().Name == nameof(IEvidenceLog.AppendAsync))
       .Select(call => (EvidenceLogEntry)call.GetArguments()[0]!)];
   }

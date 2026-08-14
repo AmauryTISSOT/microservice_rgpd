@@ -1,7 +1,7 @@
 ﻿namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// Qui a signé une ligne du <c>EvidenceLog</c> : un humain nommé, ou le canal applicatif — c'est-à-dire
+/// Qui a signé une ligne de l'<c>EvidenceLog</c> : un humain nommé, ou le canal applicatif — c'est-à-dire
 /// <b>personne</b>.
 /// </summary>
 /// <remarks>
@@ -19,7 +19,7 @@ public sealed class SignatoryKind : SmartEnum<SignatoryKind>
   public static readonly SignatoryKind Application = new(nameof(Application), 0, "l'application du client");
 
   /// <summary>
-  /// Un <c>Operator</c>, nommé. C'est ce nom que le <c>EvidenceLog</c> garde définitivement — « par
+  /// Un <c>Operator</c>, nommé. C'est ce nom que l'<c>EvidenceLog</c> garde définitivement — « par
   /// qui » étant un tiers de ce que le service prouve.
   /// </summary>
   public static readonly SignatoryKind Operator = new(nameof(Operator), 1, "un opérateur");

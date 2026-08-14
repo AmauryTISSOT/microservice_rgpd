@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// <para>
 /// <b>C'est du texte qui meurt.</b> Il dit quelle ligne appartient à qui, il nomme donc par
 /// nature des tiers non demandeurs, il vit sur le <see cref="Case"/> et <b>meurt à sa clôture</b>.
-/// Le <c>EvidenceLog</c> n'en garde que le fait daté — « 1 réserve arbitrée le 12/04 » — et il n'existe
+/// L'<c>EvidenceLog</c> n'en garde que le fait daté — « 1 réserve arbitrée le 12/04 » — et il n'existe
 /// aucune colonne où ce texte pourrait atterrir.
 /// </para>
 /// <para>

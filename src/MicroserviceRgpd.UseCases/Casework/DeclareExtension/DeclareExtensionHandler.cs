@@ -24,11 +24,11 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 /// </para>
 /// </remarks>
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une déclaration se dicte en test.</param>
 public sealed class DeclareExtensionHandler(
   IRepository<Case> cases,
-  IEvidenceLog ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<DeclareExtensionCommand, Result>
 {
@@ -86,7 +86,7 @@ public sealed class DeclareExtensionHandler(
 
     await cases.UpdateAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(signed, cancellationToken);
+    await evidenceLog.AppendAsync(signed, cancellationToken);
 
     return Result.Success();
   }

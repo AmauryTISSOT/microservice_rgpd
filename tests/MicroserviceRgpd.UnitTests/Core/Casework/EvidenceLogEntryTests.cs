@@ -7,7 +7,7 @@ using MicroserviceRgpd.Core.SharedKernel;
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 
 /// <summary>
-/// Ce que le <c>EvidenceLog</c> sait écrire, et ce qu'il est <b>incapable</b> d'écrire.
+/// Ce que l'<c>EvidenceLog</c> sait écrire, et ce qu'il est <b>incapable</b> d'écrire.
 /// <para>
 /// Ces tests portent sur la <b>forme des types</b> plutôt que sur un comportement, et c'est
 /// délibéré : « anonyme par construction, jamais par expurgation » est une promesse qu'on ne peut
@@ -246,7 +246,7 @@ public class EvidenceLogEntryTests
   }
 
   /// <summary>
-  /// Le <c>EvidenceLog</c> ne consigne ici que des <b>refus</b>. Un appel servi ou différé n'a pas de
+  /// L'<c>EvidenceLog</c> ne consigne ici que des <b>refus</b>. Un appel servi ou différé n'a pas de
   /// fait à lui : ce qu'il devient appartient au dossier, pas à la preuve du transport.
   /// </summary>
   [Theory]
@@ -277,7 +277,7 @@ public class EvidenceLogEntryTests
       property => property.PropertyType == typeof(Designation)
                   || property.PropertyType == typeof(DesignationKind)
                   || property.PropertyType.IsAssignableTo(typeof(IEnumerable<Designation>)),
-      "Le EvidenceLog n'accepte aucune Designation, dès la première ligne.");
+      "L'EvidenceLog n'accepte aucune Designation, dès la première ligne.");
 
     // La seule prose du dossier qui survive est le texte qui reste, écrite à un point de décision et
     // non nominative par nature. Les chaînes de la ligne sont donc énumérées en toutes lettres : en

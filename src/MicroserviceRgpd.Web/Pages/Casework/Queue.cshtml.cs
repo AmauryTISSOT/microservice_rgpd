@@ -69,7 +69,7 @@ public class QueueModel(IMediator mediator) : PageModel
   /// </para>
   /// <para>
   /// <b>Aucun nom n'est demandé</b>, contrairement à tous les autres gestes du dispositif : il
-  /// n'existe plus une ligne où l'écrire, le <c>EvidenceLog</c> détruit étant le seul endroit qui aurait
+  /// n'existe plus une ligne où l'écrire, l'<c>EvidenceLog</c> détruit étant le seul endroit qui aurait
   /// pu le porter. Réclamer une signature pour ne l'écrire nulle part aurait été la façade d'une
   /// preuve.
   /// </para>
@@ -84,7 +84,7 @@ public class QueueModel(IMediator mediator) : PageModel
   {
     // Une adresse qui ne désigne aucun dossier n'est pas un formulaire mal rempli : c'est un envoi
     // forgé, et le domaine refuse le GUID vide comme il refuse le reste.
-    if (!CaseId.TryFrom(Destruction.Case, out var ledgerOf))
+    if (!CaseId.TryFrom(Destruction.Case, out var evidenceLogOf))
     {
       return NotFound();
     }
@@ -102,7 +102,7 @@ public class QueueModel(IMediator mediator) : PageModel
       return Page();
     }
 
-    await mediator.Send(new DestroyEvidenceLogCommand(ledgerOf), cancellationToken);
+    await mediator.Send(new DestroyEvidenceLogCommand(evidenceLogOf), cancellationToken);
 
     // Une redirection après l'écriture : recharger la page ne redétruit rien — et la file qui
     // revient est celle d'après la destruction, seule à pouvoir dire ce qui reste.

@@ -6,13 +6,13 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
 {
     /// <summary>
     /// Renomme le vocabulaire de la preuve et de l'avis du lexique. Elle <b>renomme</b>, elle ne
-    /// recree pas : aucune ligne existante n'est perdue.
+    /// recrée pas : aucune ligne existante n'est perdue.
     /// </summary>
     /// <remarks>
-    /// L'echafaudage d'EF proposait un <c>DropTable</c> suivi d'un <c>CreateTable</c>, parce que le
-    /// type CLR de la ligne a change de nom en meme temps que la table. C'aurait detruit la preuve
-    /// de chaque <c>Case</c> deja ouvert. Les gestes ci-dessous sont ecrits a la main pour cette
-    /// raison, et le <c>Down</c> les defait un a un.
+    /// L'échafaudage d'EF proposait un <c>DropTable</c> suivi d'un <c>CreateTable</c>, parce que le
+    /// type CLR de la ligne a changé de nom en même temps que la table. C'aurait détruit la preuve
+    /// de chaque <c>Case</c> déjà ouvert. Les gestes ci-dessous sont écrits à la main pour cette
+    /// raison, et le <c>Down</c> les défait un à un.
     /// </remarks>
     public partial class RenameEvidenceLogVocabulary : Migration
     {

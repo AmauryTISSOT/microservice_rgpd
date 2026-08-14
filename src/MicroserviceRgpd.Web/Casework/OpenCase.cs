@@ -59,7 +59,7 @@ public class OpenCase(IMediator mediator, TimeProvider clock) : Endpoint<OpenCas
       summary.Responses[201] = "Dossier ouvert, et sa première ligne écrite au EvidenceLog";
       summary.Responses[400] =
         "Désignation malformée, droit hors taxonomie, ou OutOfScope réclamé comme s'il était un droit";
-      summary.Responses[500] = "Défaillance interne, y compris l'échec d'écriture du dossier ou du EvidenceLog";
+      summary.Responses[500] = "Défaillance interne, y compris l'échec d'écriture du dossier ou de l'EvidenceLog";
     });
 
     Tags("Casework");

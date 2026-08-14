@@ -3,7 +3,7 @@ using MicroserviceRgpd.Core.Casework.EvidenceLog;
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 
 /// <summary>
-/// La vie du <c>EvidenceLog</c> : <b>cinq ans à compter de la clôture</b>, et rien d'autre.
+/// La vie de l'<c>EvidenceLog</c> : <b>cinq ans à compter de la clôture</b>, et rien d'autre.
 /// </summary>
 /// <remarks>
 /// <para>

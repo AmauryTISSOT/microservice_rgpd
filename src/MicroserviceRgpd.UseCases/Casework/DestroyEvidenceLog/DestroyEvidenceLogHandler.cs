@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DestroyEvidenceLog;
 /// <b>Aucune ligne de preuve n'est ajoutée, ici ou ailleurs.</b> C'est le seul gestionnaire du
 /// dispositif qui ne consigne rien, et c'est assumé : la seule ligne possible serait dans le
 /// <c>EvidenceLog</c> qu'on détruit. On ne prouvera donc jamais avoir purgé — l'alternative aurait été un
-/// second étage d'anonymisation, qui rouvrirait l'expurgation que la définition du <c>EvidenceLog</c>
+/// second étage d'anonymisation, qui rouvrirait l'expurgation que la définition de l'<c>EvidenceLog</c>
 /// ferme.
 /// </para>
 /// <para>

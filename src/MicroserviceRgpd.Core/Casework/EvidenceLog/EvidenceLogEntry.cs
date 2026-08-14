@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 /// <para>
 /// <b>Anonyme par construction, jamais par expurgation.</b> Aucune <see cref="Designation"/>,
 /// aucun nom de personne concernée n'entre ici — <b>dès la première ligne</b>, et non à la
-/// clôture. Anonymiser plus tard aurait exigé de réécrire le <c>EvidenceLog</c> : la seule structure du
+/// clôture. Anonymiser plus tard aurait exigé de réécrire l'<c>EvidenceLog</c> : la seule structure du
 /// dispositif dont l'invariant est précisément qu'on ne la réécrit pas. La règle tient par la
 /// <b>forme du type</b> — il n'existe aucun emplacement où une désignation pourrait atterrir — et
 /// non par la discipline de qui l'écrit.
@@ -84,7 +84,7 @@ public sealed record EvidenceLogEntry
 
   /// <summary>
   /// Le dossier dont cette ligne est la preuve. <b>Il lui survit</b> : le <c>Case</c> est détruit
-  /// de son nominatif à la clôture, le <c>EvidenceLog</c> vit cinq ans de plus.
+  /// de son nominatif à la clôture, l'<c>EvidenceLog</c> vit cinq ans de plus.
   /// </summary>
   public CaseId Case { get; }
 
@@ -95,7 +95,7 @@ public sealed record EvidenceLogEntry
   /// ⚠️ Sur une ouverture, c'est l'instant du <b>dépôt</b> et non la date de réception : le dépôt
   /// manuel transcrit un courriel reçu il y a trois semaines, et dater la ligne d'il y a trois
   /// semaines ferait dire à la preuve que le service savait depuis trois semaines. Ce qu'il a su et
-  /// quand est précisément ce que le <c>EvidenceLog</c> est là pour établir. La date de réception, elle,
+  /// quand est précisément ce que l'<c>EvidenceLog</c> est là pour établir. La date de réception, elle,
   /// a sa colonne propre — voir <see cref="ReceivedOn"/>.
   /// </remarks>
   public DateTimeOffset OccurredAt { get; }
@@ -146,7 +146,7 @@ public sealed record EvidenceLogEntry
   /// </summary>
   /// <remarks>
   /// <para>
-  /// ⚠️ <b>C'est le seul champ de prose libre du <c>EvidenceLog</c>, et son régime est écrit ici.</b> Le
+  /// ⚠️ <b>C'est le seul champ de prose libre de l'<c>EvidenceLog</c>, et son régime est écrit ici.</b> Le
   /// texte qui reste dit <i>pourquoi on a décidé cela</i>, n'est pas nominatif par nature, et
   /// survit. Le <b>texte qui meurt</b> — celui qui dit quelle ligne appartient à qui, et qui nomme
   /// des tiers — n'a <b>aucun emplacement ici</b> : il vit sur le <c>Case</c> et meurt à la
@@ -372,7 +372,7 @@ public sealed record EvidenceLogEntry
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Elle ne remplace pas la ligne d'ouverture, elle s'ajoute à elle.</b> Le <c>EvidenceLog</c> est en
+  /// <b>Elle ne remplace pas la ligne d'ouverture, elle s'ajoute à elle.</b> L'<c>EvidenceLog</c> est en
   /// ajout seul : la déclaration d'aujourd'hui ne réécrit pas la preuve d'hier, et l'<b>écart</b>
   /// entre les deux dates est précisément ce que le contrôle doit pouvoir voir — un accès ouvert
   /// lundi sur la foi de rien, pesé vendredi, n'est pas un accès pesé avant d'être ouvert.
@@ -573,7 +573,7 @@ public sealed record EvidenceLogEntry
   /// <b>Le compte est la seule mesure, et il porte sur la recherche — jamais sur ce qu'on a
   /// trouvé.</b> « Recherché sous 2 désignations » dit l'ampleur de ce que le service a tenté, ce que
   /// le contrôle vient juger ; dénombrer les rattachements ferait entrer dans la preuve une mesure des
-  /// données de la personne, que le <c>EvidenceLog</c> ne porte jamais. Aucune valeur de désignation
+  /// données de la personne, que l'<c>EvidenceLog</c> ne porte jamais. Aucune valeur de désignation
   /// n'entre ici, et il n'existe aucune colonne où elle pourrait atterrir.
   /// </para>
   /// <para>

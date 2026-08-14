@@ -114,7 +114,7 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
 
     queue.ShouldNotContain("prolongée (art. 12.3)");
 
-    // ⚠️ LE FAIT EST TOUT DE MÊME AU LEDGER, sans mention particulière : la ligne dit ce qui a été
+    // ⚠️ LE FAIT EST TOUT DE MÊME A L'EVIDENCELOG, sans mention particulière : la ligne dit ce qui a été
     // déclaré et quand, et c'est au contrôle de refaire le calcul.
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();

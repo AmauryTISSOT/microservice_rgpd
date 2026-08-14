@@ -111,7 +111,7 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La signature se fait en saisissant un nom, et le <c>EvidenceLog</c> enregistre le nom <em>et</em> le
+  /// <b>La signature se fait en saisissant un nom, et l'<c>EvidenceLog</c> enregistre le nom <em>et</em> le
   /// régime « non authentifié ».</b> Sans le régime, la preuve d'aujourd'hui serait indiscernable de
   /// celle du jour où la GUI authentifiera son <c>Operator</c>.
   /// </summary>
@@ -150,7 +150,7 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
     line.StepState.ShouldBe("Untreated");
     line.DataSubjectRight.ShouldBe("Access");
 
-    // Le texte qui reste survit dans le EvidenceLog, mot pour mot.
+    // Le texte qui reste survit dans l'EvidenceLog, mot pour mot.
     line.Prose.ShouldBe(Finding);
 
     // Anonyme côté personne concernée, dès cette ligne comme dès la première.

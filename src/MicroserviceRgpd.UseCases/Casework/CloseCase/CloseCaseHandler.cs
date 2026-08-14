@@ -23,7 +23,7 @@ namespace MicroserviceRgpd.UseCases.Casework.CloseCase;
 /// qu'un dossier clos dont rien ne dirait qu'il l'a été.
 /// </para>
 /// <para>
-/// ⚠️ <b>Le <c>EvidenceLog</c> n'est pas touché par la clôture</b>, et continue de nommer
+/// ⚠️ <b>L'<c>EvidenceLog</c> n'est pas touché par la clôture</b>, et continue de nommer
 /// l'<c>Operator</c> : la preuve d'une procédure ne peut pas dépendre du consentement de qui l'a
 /// instruite, et son effacement se refuse légitimement. Elle vivra cinq ans à compter d'ici.
 /// </para>
@@ -34,12 +34,12 @@ namespace MicroserviceRgpd.UseCases.Casework.CloseCase;
 /// </remarks>
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="retrieved">Les pièces détenues, hors de l'agrégat : c'est ici qu'elles meurent toutes.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul — elle survit au dossier de cinq ans.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul — elle survit au dossier de cinq ans.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une clôture se dicte en test.</param>
 public sealed class CloseCaseHandler(
   IRepository<Case> cases,
   IRetrievedData retrieved,
-  IEvidenceLog ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<CloseCaseCommand, Result>
 {
@@ -97,7 +97,7 @@ public sealed class CloseCaseHandler(
     // Une seule écriture, et tout le nominatif du dossier tombe avec elle.
     await cases.UpdateAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(signed, cancellationToken);
+    await evidenceLog.AppendAsync(signed, cancellationToken);
 
     // En dernier, et au grain du dossier : ce sont les données de la personne telles que les
     // systèmes du client les ont rendues — les plus concentrées du dispositif, et les dernières à

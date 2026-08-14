@@ -30,7 +30,7 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 /// Le <b>seul</b> dépôt de ce contexte : il n'en existe aucun pour un <c>Claim</c> ni pour un
 /// <c>Step</c>, et les règles sont écrites une fois sur la racine.
 /// </param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">
 /// L'horloge, injectée pour que la date d'un acte se dicte en test plutôt que d'être lue sur la
 /// machine qui l'exécute.
@@ -38,7 +38,7 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 public sealed class OpenCaseHandler(
   IReadRepository<DeclaredSystem> manifest,
   IRepository<Case> cases,
-  IEvidenceLog ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<OpenCaseCommand, Result<Case>>
 {
@@ -70,7 +70,7 @@ public sealed class OpenCaseHandler(
 
     await cases.AddAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(
+    await evidenceLog.AppendAsync(
       EvidenceLogEntry.CaseOpened(
         opened.Id,
         // L'instant du DÉPÔT, et non la date de réception : une demande transcrite d'une boîte aux

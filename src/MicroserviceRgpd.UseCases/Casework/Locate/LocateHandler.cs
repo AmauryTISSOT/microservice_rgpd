@@ -27,7 +27,7 @@ namespace MicroserviceRgpd.UseCases.Casework.Locate;
 /// <para>
 /// <b>Ce qui entre au <c>EvidenceLog</c> est ce qui change.</b> Rouvrir un dossier relance les appels, et
 /// trente-cinq passages rendant le même verdict n'ont aucun signataire — c'est un affichage qui les a
-/// déclenchés, non un humain. La règle est tenue <b>ici</b>, par l'appelant, le <c>EvidenceLog</c> ne se
+/// déclenchés, non un humain. La règle est tenue <b>ici</b>, par l'appelant, l'<c>EvidenceLog</c> ne se
 /// relisant jamais.
 /// </para>
 /// <para>
@@ -39,13 +39,13 @@ namespace MicroserviceRgpd.UseCases.Casework.Locate;
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="manifest">Le catalogue, relu à chaque passage — il vieillit exprès.</param>
 /// <param name="calls">Les appels sortants au titre d'un dossier, tentatives refusées comprises.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une tentative se dicte en test.</param>
 public sealed class LocateHandler(
   IRepository<Case> cases,
   IReadRepository<DeclaredSystem> manifest,
   AdapterCallsForCase calls,
-  IEvidenceLog ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<LocateCommand, Result>
 {
@@ -88,7 +88,7 @@ public sealed class LocateHandler(
 
     foreach (var entry in consigned)
     {
-      await ledger.AppendAsync(entry, cancellationToken);
+      await evidenceLog.AppendAsync(entry, cancellationToken);
     }
 
     return Result.Success();
@@ -258,7 +258,7 @@ public sealed class LocateHandler(
     }
 
     // Un refus se répare ailleurs — dans la configuration de déploiement, ou dans le Manifest — et
-    // l'ouverture du dossier est le geste par lequel on va voir si ça l'a été. Le EvidenceLog, lui, ne
+    // l'ouverture du dossier est le geste par lequel on va voir si ça l'a été. L'EvidenceLog, lui, ne
     // gardera que le verdict qui change.
     return known.LastOutcome.IsRefusal;
   }

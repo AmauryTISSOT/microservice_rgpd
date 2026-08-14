@@ -118,7 +118,7 @@ public class CasesPost
   }
 
   /// <summary>
-  /// <b>La premiere ligne du <c>EvidenceLog</c> est ecrite, et elle ne porte aucune designation</b> —
+  /// <b>La premiere ligne de l'<c>EvidenceLog</c> est ecrite, et elle ne porte aucune designation</b> —
   /// seulement leur nombre. Anonyme par construction, des la premiere ligne.
   /// </summary>
   [Fact]
@@ -128,7 +128,7 @@ public class CasesPost
     {
       designations = new[]
       {
-        new { kind = "email", value = "au.ledger@example.fr" },
+        new { kind = "email", value = "au.evidence.log@example.fr" },
         new { kind = "reference", value = "1203" },
       },
       rights = new[] { "Access" },
@@ -139,7 +139,7 @@ public class CasesPost
     using var scope = _factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    // `Set<T>()` : le contexte n expose aucun `DbSet` du EvidenceLog, pour que `Remove` et `Update` ne
+    // `Set<T>()` : le contexte n expose aucun `DbSet` de l'EvidenceLog, pour que `Remove` et `Update` ne
     // soient a portee de personne.
     var line = await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()

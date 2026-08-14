@@ -45,7 +45,7 @@ public static class InfrastructureServiceExtensions
     // agrégats racines, et l'emprunter aurait déclaré agrégat ce qui n'est que l'écrit d'un acte.
     services.AddScoped<IQualificationAuditTrail, QualificationAuditTrail>();
 
-    // Le EvidenceLog non plus : il est hors de l'agrégat par construction — il survit au Case de cinq
+    // L'EvidenceLog non plus : il est hors de l'agrégat par construction — il survit au Case de cinq
     // ans — et le dépôt générique lui aurait rendu la mise à jour et la suppression ligne à ligne
     // que sa définition ferme.
     services.AddScoped<IEvidenceLog, EvidenceLog>();

@@ -99,7 +99,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
   /// </para>
   /// <para>
   /// ⚠️ <b>Le détail est du nominatif, et il est là où la clôture ira le détruire</b> : sur la ligne
-  /// du dossier. Il n'existe aucune colonne pour lui dans le <c>EvidenceLog</c>, qui survit cinq ans.
+  /// du dossier. Il n'existe aucune colonne pour lui dans l'<c>EvidenceLog</c>, qui survit cinq ans.
   /// </para>
   /// </remarks>
   private static void ConfigureTheMotivation(EntityTypeBuilder<Case> builder)

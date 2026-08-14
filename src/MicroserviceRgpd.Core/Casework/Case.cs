@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// évident.
 /// </para>
 /// <para>
-/// <b>Hors de l'agrégat</b> : le <c>EvidenceLog</c>, en ajout seul et survivant au dossier, et les
+/// <b>Hors de l'agrégat</b> : l'<c>EvidenceLog</c>, en ajout seul et survivant au dossier, et les
 /// <c>RetrievedData</c>, qui ont leur durée de vie propre. <b>Dedans</b> : ce qui meurt avec le
 /// dossier.
 /// </para>
@@ -214,7 +214,7 @@ public sealed class Case : IAggregateRoot
   /// pas deux gestes.
   /// </summary>
   /// <remarks>
-  /// C'est de lui que court la vie du <c>EvidenceLog</c> — cinq ans à compter de la clôture — et c'est
+  /// C'est de lui que court la vie de l'<c>EvidenceLog</c> — cinq ans à compter de la clôture — et c'est
   /// pourquoi il est <b>porté par le dossier</b> plutôt que recalculé depuis la preuve : le dossier
   /// clos est ce qu'un humain relit, la preuve est ce que le contrôle relit.
   /// </remarks>
@@ -338,7 +338,7 @@ public sealed class Case : IAggregateRoot
 
     var claim = _claims.SingleOrDefault(one => one.Right == right);
 
-    // Rien à confirmer se dit faux, et non vrai : le EvidenceLog consigne les faits qui CHANGENT quelque
+    // Rien à confirmer se dit faux, et non vrai : l'EvidenceLog consigne les faits qui CHANGENT quelque
     // chose, jamais leur répétition, et cette règle est tenue par l'appelant. Rendre vrai sur un
     // droit déjà confirmé lui ferait écrire une seconde ligne identique — du bruit de mécanique dans
     // ce que le contrôle vient lire.
@@ -519,7 +519,7 @@ public sealed class Case : IAggregateRoot
   /// </para>
   /// <para>
   /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat :
-  /// le <c>EvidenceLog</c> survit au dossier de cinq ans, et le faire écrire d'ici l'aurait attaché à la
+  /// l'<c>EvidenceLog</c> survit au dossier de cinq ans, et le faire écrire d'ici l'aurait attaché à la
   /// durée de vie de ce qu'il doit précisément survivre.
   /// </para>
   /// <para>
@@ -764,7 +764,7 @@ public sealed class Case : IAggregateRoot
 
     foreach (var designation in arbitrated.Designations)
     {
-      // Ce qui est déjà au sac n'y entre pas deux fois : le compte du EvidenceLog mesure l'ampleur d'une
+      // Ce qui est déjà au sac n'y entre pas deux fois : le compte de l'EvidenceLog mesure l'ampleur d'une
       // recherche, et un doublon la gonflerait sans qu'aucune porte de plus ne s'ouvre.
       if (!_designations.Contains(designation))
       {

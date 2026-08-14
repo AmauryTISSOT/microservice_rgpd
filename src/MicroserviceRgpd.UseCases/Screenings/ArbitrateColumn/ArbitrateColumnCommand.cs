@@ -26,7 +26,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 /// donc qu'à <b>refuser</b>, jamais à viser.
 /// </para>
 /// <para>
-/// <b>Un second arbitrage écrase le premier, sans cérémonie.</b> Il n'y a pas de <c>EvidenceLog</c> ici :
+/// <b>Un second arbitrage écrase le premier, sans cérémonie.</b> Il n'y a pas de l'<c>EvidenceLog</c> ici :
 /// la trace <b>est</b> l'état courant seul, et se raviser doit rester possible sur une surface qu'on
 /// reprend pendant trois jours. Le coût est déclaré — qui avait dit quoi est effacé.
 /// </para>

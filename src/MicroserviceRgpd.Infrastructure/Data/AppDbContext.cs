@@ -41,8 +41,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// </summary>
   public DbSet<ScreenedColumn> ScreenedColumns => Set<ScreenedColumn>();
 
-  // ⚠️ Aucun DbSet du EvidenceLog, et c'est délibéré. Il en existe un pour la trace d'audit, qui n'a
-  // qu'un invariant d'écriture seule ; le EvidenceLog, lui, promet qu'aucune opération de mise à jour ni
+  // ⚠️ Aucun DbSet de l'EvidenceLog, et c'est délibéré. Il en existe un pour la trace d'audit, qui n'a
+  // qu'un invariant d'écriture seule ; l'EvidenceLog, lui, promet qu'aucune opération de mise à jour ni
   // de suppression ligne à ligne n'existe sur lui — et un DbSet public rendrait `Remove` et
   // `Update` à quiconque tient ce contexte, c'est-à-dire à tout le service. EF Core connaît la
   // table par sa configuration d'entité, qui suffit ; le seul chemin d'écriture est l'adaptateur

@@ -1,7 +1,7 @@
 ﻿namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// La vie du <c>EvidenceLog</c> : <b>cinq ans à compter de la clôture du dossier</b>, et le calcul de son
+/// La vie de l'<c>EvidenceLog</c> : <b>cinq ans à compter de la clôture du dossier</b>, et le calcul de son
 /// échéance.
 /// </summary>
 /// <remarks>
@@ -32,7 +32,7 @@ public static class EvidenceLogRetention
   public const int Years = 5;
 
   /// <summary>Le jour où la preuve d'un dossier clos ce jour-là cesse d'être due.</summary>
-  /// <param name="closedOn">L'instant de la clôture — d'où court la vie du <c>EvidenceLog</c>.</param>
+  /// <param name="closedOn">L'instant de la clôture — d'où court la vie de l'<c>EvidenceLog</c>.</param>
   public static DateTimeOffset ExpiryOf(DateTimeOffset closedOn) => closedOn.AddYears(Years);
 
   /// <summary>

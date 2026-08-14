@@ -1,7 +1,7 @@
 ﻿namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La ligne du <c>EvidenceLog</c> telle qu'elle est écrite : la projection à plat de
+/// La ligne de l'<c>EvidenceLog</c> telle qu'elle est écrite : la projection à plat de
 /// <see cref="Core.Casework.EvidenceLog.EvidenceLogEntry"/>.
 /// </summary>
 /// <remarks>

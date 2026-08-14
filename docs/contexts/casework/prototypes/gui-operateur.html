@@ -357,14 +357,14 @@
   .closing-claim { font-size: 13.5px; display: flex; gap: 8px; align-items: baseline; }
   .closing-claim::before { content: "→"; color: var(--st-todo); font-family: var(--mono); flex: none; }
 
-  .ledger {
+  .evidenceLog {
     background: var(--surface-2); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 11px 13px;
     font-family: var(--mono); font-size: 11.5px; line-height: 1.75;
     color: var(--ink-muted); overflow-x: auto;
   }
 
-  .ledger .sig { color: var(--stamp); }
+  .evidenceLog .sig { color: var(--stamp); }
 
   /* ── Notes ───────────────────────────────────────────────── */
 
@@ -463,7 +463,7 @@
       <div class="v">
         <span class="v-k">Authentification</span>
         <span class="v-v">Aucune — PoC assumé</span>
-        <span class="v-why">Le <code>EvidenceLog</code> signe un nom saisi, et marque le régime « non authentifié ».</span>
+        <span class="v-why">L'<code>EvidenceLog</code> signe un nom saisi, et le marque « non authentifié ».</span>
       </div>
       <div class="v">
         <span class="v-k">Vues</span>
@@ -537,7 +537,7 @@
             </div>
             <span class="qwhy">Clos le 11/04/2021 · échu depuis le 11/04/2026</span>
             <p class="step-sub" style="margin:8px 0 0; font-size:12px">
-              ⚠ Irréversible et sans trace. &nbsp; [ Détruire ce EvidenceLog ]
+              ⚠ Irréversible et sans trace. &nbsp; [ Détruire cet EvidenceLog ]
             </p>
           </div>
         </div>
@@ -668,7 +668,7 @@
           </div>
         </div>
 
-        <div class="ledger">
+        <div class="evidenceLog">
           12/04 08:55 · Case ouvert · date de réception non déclarée, défaut appliqué · <span class="sig">Sophie Martin (non authentifié)</span><br>
           18/04 09:12 · Locate · base · 1 certain, 1 réserve · <span class="sig">Adapter brocanto-prod</span><br>
           18/04 09:41 · réserve confirmée, désignation ajoutée · <span class="sig">Sophie Martin (non authentifié)</span><br>
@@ -709,7 +709,7 @@
         <h3>La date de réception supposée</h3>
         <p>
           Le délai s'affiche <strong>J+9 (défaut)</strong>, jamais <strong>J+9</strong> tout court,
-          et le <code>EvidenceLog</code> consigne « date non déclarée, défaut appliqué ».
+          et l'<code>EvidenceLog</code> consigne « date non déclarée, défaut appliqué ».
           Enregistrer un vide plutôt que fabriquer un faux — la même règle que pour la signature
           non authentifiée.
         </p>

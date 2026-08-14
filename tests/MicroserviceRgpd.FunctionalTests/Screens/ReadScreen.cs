@@ -156,7 +156,7 @@ public class ReadScreen(CustomWebApplicationFactory<Program> factory)
       .Where(line => line.Fact == nameof(EvidenceLogFact.ReadServed))
       .ToArray();
 
-    // Une ligne par système lu, et une seule : le EvidenceLog ne consigne que ce qui change.
+    // Une ligne par système lu, et une seule : l'EvidenceLog ne consigne que ce qui change.
     written.Select(line => line.DeclaredSystem)
       .OrderBy(system => system, StringComparer.Ordinal)
       .ShouldBe([ABrocantoOnTheWire.Boutique, ABrocantoOnTheWire.Journal]);
@@ -168,7 +168,7 @@ public class ReadScreen(CustomWebApplicationFactory<Program> factory)
     line.SignatoryName.ShouldBeNull();
     line.Prose.ShouldBeNull();
 
-    // Aucune colonne du EvidenceLog ne porte le contenu servi ; on le dit en le cherchant partout.
+    // Aucune colonne de l'EvidenceLog ne porte le contenu servi ; on le dit en le cherchant partout.
     (await EvidenceLogOf(opened)).ShouldNotContain(one =>
       one.Prose != null && one.Prose.Contains("csv", StringComparison.OrdinalIgnoreCase));
   }

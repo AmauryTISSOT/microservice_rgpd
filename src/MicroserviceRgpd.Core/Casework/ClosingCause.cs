@@ -75,7 +75,7 @@ public sealed class ClosingCause : SmartEnum<ClosingCause>
   /// <para>
   /// <b>C'est du texte qui reste</b> : il est écrit à un point de décision, il dit
   /// <i>pourquoi on a décidé cela</i>, il n'est pas nominatif par nature — et il <b>survit</b>
-  /// dans le <c>EvidenceLog</c>, quand tout le reste du dossier tombe.
+  /// dans l'<c>EvidenceLog</c>, quand tout le reste du dossier tombe.
   /// </para>
   /// <para>
   /// ⚠️ <b>Ce n'est pas un blocage de la clôture.</b> Ce qui est exigé est un motif, jamais un état

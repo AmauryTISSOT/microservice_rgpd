@@ -12,9 +12,9 @@ namespace MicroserviceRgpd.UseCases.Casework.AnswerClaim;
 /// Mêler les deux aurait fait disparaître un paquet que personne n'avait encore tendu.
 /// </remarks>
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une réponse se dicte en test.</param>
-public sealed class AnswerClaimHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
+public sealed class AnswerClaimHandler(IRepository<Case> cases, IEvidenceLog evidenceLog, TimeProvider clock)
   : ICommandHandler<AnswerClaimCommand, Result>
 {
   /// <inheritdoc />
@@ -63,7 +63,7 @@ public sealed class AnswerClaimHandler(IRepository<Case> cases, IEvidenceLog led
 
     await cases.UpdateAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(signed, cancellationToken);
+    await evidenceLog.AppendAsync(signed, cancellationToken);
 
     return Result.Success();
   }

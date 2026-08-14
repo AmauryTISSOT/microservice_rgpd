@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DestroyEvidenceLog;
 /// ⚠️ <b>Elle ne porte pas de signataire, et ce n'est pas un oubli.</b> La destruction ne laisse
 /// <b>aucune trace d'elle-même</b> : un <c>EvidenceLog</c> détruit ne peut pas consigner sa propre
 /// destruction, et écrire ce nom ailleurs — dans une seconde table, dans un journal — aurait
-/// rouvert l'expurgation que la définition du <c>EvidenceLog</c> ferme, ou promis une preuve que le
+/// rouvert l'expurgation que la définition de l'<c>EvidenceLog</c> ferme, ou promis une preuve que le
 /// service ne tiendrait pas. Réclamer un nom pour ne l'écrire nulle part aurait été pire : la
 /// façade d'une signature. La parade du geste irréversible est <b>dans l'écran</b>, comme celle de
 /// la clôture : une case cochée délibérément.

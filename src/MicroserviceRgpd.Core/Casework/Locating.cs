@@ -21,9 +21,9 @@ namespace MicroserviceRgpd.Core.Casework;
 /// <see cref="OpenQuestion"/> sur le dossier.
 /// </para>
 /// <para>
-/// <b>Elle garde ce qu'il faut pour ne pas répéter le <c>EvidenceLog</c>, et rien de plus.</b>
+/// <b>Elle garde ce qu'il faut pour ne pas répéter l'<c>EvidenceLog</c>, et rien de plus.</b>
 /// <see cref="LastOutcome"/> est ce que l'<c>Adapter</c> a répondu la dernière fois : c'est
-/// l'<b>appelant</b> qui s'en sert pour ne consigner qu'un verdict qui change, le <c>EvidenceLog</c> ne se
+/// l'<b>appelant</b> qui s'en sert pour ne consigner qu'un verdict qui change, l'<c>EvidenceLog</c> ne se
 /// relisant jamais lui-même. <see cref="DesignationsAtCall"/> est ce sous quoi on a cherché : le sac
 /// s'enrichit, et un appel mené sous deux désignations n'a pas répondu à la question qu'on pose sous
 /// trois.

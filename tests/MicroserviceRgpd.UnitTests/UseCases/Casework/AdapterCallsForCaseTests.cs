@@ -14,14 +14,14 @@ namespace MicroserviceRgpd.UnitTests.UseCases.Casework;
 /// </summary>
 /// <remarks>
 /// Le fait cardinal : <b>un appel refusé n'est pas une affaire de <c>Case</c></b>. Rien n'y bouge ;
-/// le <c>EvidenceLog</c> consigne la tentative datée, et le désaccord se signale une fois, au grain du
+/// l'<c>EvidenceLog</c> consigne la tentative datée, et le désaccord se signale une fois, au grain du
 /// déploiement.
 /// </remarks>
 public class AdapterCallsForCaseTests
 {
   private static readonly DateTimeOffset Now = new(2026, 8, 3, 14, 30, 0, TimeSpan.Zero);
 
-  private readonly IEvidenceLog _ledger = Substitute.For<IEvidenceLog>();
+  private readonly IEvidenceLog _evidenceLog = Substitute.For<IEvidenceLog>();
   private readonly IAdapterDisagreements _disagreements = Substitute.For<IAdapterDisagreements>();
   private readonly IAdapterCalls _calls = Substitute.For<IAdapterCalls>();
 
@@ -79,7 +79,7 @@ public class AdapterCallsForCaseTests
 
   /// <summary>
   /// Servir et différer ne laissent <b>rien</b> ici : ce qu'ils deviennent appartient à qui a
-  /// demandé l'appel, et le <c>EvidenceLog</c> ne consigne pas la mécanique d'un aller-retour.
+  /// demandé l'appel, et l'<c>EvidenceLog</c> ne consigne pas la mécanique d'un aller-retour.
   /// </summary>
   [Fact]
   public async Task LeavesNothingBehindWhenTheAdapterAnswers()
@@ -91,7 +91,7 @@ public class AdapterCallsForCaseTests
     answer.Outcome.ShouldBe(AdapterOutcome.Deferred);
     answer.DeclaredDeadline.ShouldBe(Now.AddHours(6));
 
-    await _ledger.DidNotReceiveWithAnyArgs().AppendAsync(default!);
+    await _evidenceLog.DidNotReceiveWithAnyArgs().AppendAsync(default!);
     _disagreements.DidNotReceiveWithAnyArgs().Signal(DeclaredSystemId.From("peu-importe"), AdapterOutcome.SecretRefused);
   }
 
@@ -118,7 +118,7 @@ public class AdapterCallsForCaseTests
 
   private AdapterCallsForCase Calling()
   {
-    return new AdapterCallsForCase(_calls, _ledger, _disagreements, new AClockStuckAt(Now));
+    return new AdapterCallsForCase(_calls, _evidenceLog, _disagreements, new AClockStuckAt(Now));
   }
 
   private void TheAdapterAnswers(AdapterAnswer<Found> answer)
@@ -129,7 +129,7 @@ public class AdapterCallsForCaseTests
   /// <summary>La ligne réellement écrite, ou l'échec du test s'il n'y en a pas exactement une.</summary>
   private EvidenceLogEntry Written()
   {
-    return _ledger.ReceivedCalls()
+    return _evidenceLog.ReceivedCalls()
       .Where(call => call.GetMethodInfo().Name == nameof(IEvidenceLog.AppendAsync))
       .Select(call => (EvidenceLogEntry)call.GetArguments()[0]!)
       .ToArray()

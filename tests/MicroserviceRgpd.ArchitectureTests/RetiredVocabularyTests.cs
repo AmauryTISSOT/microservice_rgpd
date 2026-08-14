@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
@@ -42,8 +40,10 @@ public class RetiredVocabularyTests
   /// </summary>
   /// <remarks>
   /// <para>
-  /// Les identifiants C# sont cherchés <b>à la casse</b> : ils sont anglais, et une occurrence
-  /// minuscule est un mot de la base ou d'un tiers, pas un identifiant du dépôt.
+  /// L'ancien mot du journal est cherché <b>sans égard à la casse</b>, et c'est délibéré : il vivait
+  /// aussi en variable locale, en paramètre et dans des commentaires criés en majuscules, qu'une
+  /// recherche à la casse aurait laissés passer. Ses seules occurrences minuscules légitimes sont
+  /// celles d'un tiers, dans <c>corpus/</c>, et ce dossier n'est pas balayé.
   /// </para>
   /// <para>
   /// Les clauses de doctrine sont cherchées <b>sans égard à la casse</b> : elles vivent dans de la
@@ -56,7 +56,7 @@ public class RetiredVocabularyTests
   /// </remarks>
   private static readonly RetiredTerm[] RetiredTerms =
   [
-    new("Ledger", "EvidenceLog", CaseSensitive: true),
+    new("ledger", "EvidenceLog", CaseSensitive: false),
     new("CoverSheet", "DeliveryLetter", CaseSensitive: true),
     new("SignatureRegime", "SignerVerification", CaseSensitive: true),
     new("WitnessOpinion", "LexiconOpinion", CaseSensitive: true),
@@ -74,35 +74,57 @@ public class RetiredVocabularyTests
   ];
 
   /// <summary>
-  /// <b>L'exception assumée, écrite plutôt que découverte un jour de panne.</b> Ces quatre noms de
-  /// classe de migration portent <c>Ledger</c> et sont <b>inéditables</b> : ils sont écrits dans
-  /// <c>__EFMigrationsHistory</c> de chaque déploiement, et les renommer ferait rejouer des
-  /// migrations déjà appliquées.
-  /// <para>
-  /// Le motif retenu : une migration porte <b>une date dans son nom</b>, donc un lecteur comprend
-  /// sans effort qu'elle parle avec les mots de sa date.
-  /// </para>
-  /// <para>
-  /// ⚠️ L'exemption porte sur <b>ces quatre chaînes</b>, et non sur les fichiers qui les portent :
-  /// elles sont retirées du texte avant le balayage, et tout le reste de ces fichiers reste gardé.
-  /// Elle est écrite en dur, comme celle de <see cref="ContextIsolationTests"/>, pour que
-  /// l'élargir demande un geste délibéré.
-  /// </para>
-  /// </summary>
-  private static readonly string[] ExemptMigrationNames =
-  [
-    "CreateCasesAndLedger",
-    "AddDeclaredSystemToLedger",
-    "AddDeliveryGesturesAndLedgerCounts",
-    "AddExtensionDeclarationAndLedgerIndex",
-  ];
-
-  /// <summary>
   /// Les dossiers qu'on ne balaie pas : ni l'histoire de Git, ni ce que le compilateur a écrit, ni
   /// ce qu'un outil a déposé. Aucun d'eux n'est du texte que quelqu'un relit.
   /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <c>corpus/</c> porte des schémas de <b>logiciels tiers</b>, où <c>ledger_account</c> est le
+  /// nom d'une table de comptabilité chez Dolibarr. Ce ne sont pas nos mots, et les renommer serait
+  /// mentir sur ce que le client exploite.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b><c>Migrations/</c> est l'exception assumée du renommage, écrite ici plutôt que
+  /// découverte un jour de panne.</b> Elle recouvre trois choses qu'on ne peut pas éditer :
+  /// </para>
+  /// <list type="bullet">
+  /// <item>
+  /// Les <b>quatre noms de classe</b> d'août 2026 qui portent l'ancien mot —
+  /// <c>CreateCasesAndLedger</c>, <c>AddDeclaredSystemToLedger</c>,
+  /// <c>AddDeliveryGesturesAndLedgerCounts</c>, <c>AddExtensionDeclarationAndLedgerIndex</c> — qui
+  /// sont écrits dans <c>__EFMigrationsHistory</c> de chaque déploiement : les renommer ferait
+  /// rejouer des migrations déjà appliquées.
+  /// </item>
+  /// <item>
+  /// Le <b>corps</b> de ces migrations et de leurs voisines, qui nomme la table telle qu'elle
+  /// s'appelait à leur date. Une migration passée décrit un geste déjà appliqué ; la réécrire lui
+  /// ferait décrire un geste qui n'a jamais eu lieu.
+  /// </item>
+  /// <item>
+  /// La migration de renommage elle-même, qui <b>doit</b> nommer l'ancienne table — c'est
+  /// précisément ce qu'elle renomme.
+  /// </item>
+  /// </list>
+  /// <para>
+  /// Le motif qui les réunit : une migration porte <b>une date dans son nom</b>, donc un lecteur
+  /// comprend sans effort qu'elle parle avec les mots de sa date. C'est le seul dossier de code
+  /// dont la prose ne se relit pas — il n'y en a pas.
+  /// </para>
+  /// </remarks>
   private static readonly string[] SkippedDirectories =
-    [".git", "bin", "obj", "node_modules", "TestResults", ".vs", ".idea", ".claude", "artifacts"];
+  [
+    ".git", "bin", "obj", "node_modules", "TestResults", ".vs", ".idea", ".claude", "artifacts",
+    "corpus", "Migrations",
+  ];
+
+  /// <summary>
+  /// ⚠️ <b>Les instantanés de modèle qu'EF écrit ne sont pas balayés, et le motif compte.</b> Un
+  /// <c>.Designer.cs</c> décrit le modèle <b>tel qu'il était</b> à la date de sa migration. Le
+  /// réécrire avec les mots d'aujourd'hui lui ferait décrire un état que sa migration n'a jamais
+  /// produit — et le garde, sans cette exclusion, pousserait chaque contributeur à retoucher de
+  /// l'histoire immuable.
+  /// </summary>
+  private const string GeneratedSnapshotSuffix = ".Designer.cs";
 
   /// <summary>Les extensions qu'on ne lit pas : elles ne portent pas de prose.</summary>
   private static readonly string[] SkippedExtensions =
@@ -130,7 +152,7 @@ public class RetiredVocabularyTests
     {
       scanned++;
 
-      var content = Exempted(ReadText(file));
+      var content = ReadText(file);
 
       foreach (var term in RetiredTerms)
       {
@@ -154,22 +176,6 @@ public class RetiredVocabularyTests
       string.Join(Environment.NewLine, offences.Order(StringComparer.Ordinal)) +
       Environment.NewLine +
       "Voir l'entrée correspondante des glossaires de docs/contexts/ ou de CONTEXT-MAP.md.");
-  }
-
-  /// <summary>
-  /// Retire du texte les quatre noms de classe de migration exemptés, pour que ce qui reste soit
-  /// gardé — y compris dans les fichiers qui les portent.
-  /// </summary>
-  private static string Exempted(string content)
-  {
-    var builder = new StringBuilder(content);
-
-    foreach (var name in ExemptMigrationNames)
-    {
-      builder.Replace(name, string.Empty);
-    }
-
-    return builder.ToString();
   }
 
   /// <summary>
@@ -198,6 +204,7 @@ public class RetiredVocabularyTests
         var name = Path.GetFileName(file);
 
         if (name.Equals(GuardFileName, StringComparison.Ordinal)
+          || name.EndsWith(GeneratedSnapshotSuffix, StringComparison.Ordinal)
           || SkippedExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
         {
           continue;

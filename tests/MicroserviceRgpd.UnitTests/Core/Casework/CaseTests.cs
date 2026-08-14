@@ -409,7 +409,7 @@ public class CaseTests
 
     opened.Claims[0].AwaitsConfirmation.ShouldBeFalse();
 
-    // Un second geste ne change RIEN, et se dit faux : le EvidenceLog consigne les faits qui changent
+    // Un second geste ne change RIEN, et se dit faux : l'EvidenceLog consigne les faits qui changent
     // quelque chose, jamais leur répétition, et cette règle est tenue par l'appelant. Rendre vrai
     // ici lui ferait écrire une seconde ligne identique.
     opened.Confirm(DataSubjectRight.Access).ShouldBeFalse();

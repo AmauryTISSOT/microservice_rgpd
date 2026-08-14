@@ -32,7 +32,7 @@ public class ClosureScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Le test d'acceptation du lot.</b> Un dossier se clôt avec un <c>Step</c> resté <c>ToDo</c> ;
-  /// tout le nominatif est détruit à l'instant ; le <c>EvidenceLog</c>, lui, est intact et continue de
+  /// tout le nominatif est détruit à l'instant ; l'<c>EvidenceLog</c>, lui, est intact et continue de
   /// nommer l'<c>Operator</c>.
   /// </summary>
   [Fact]
@@ -103,7 +103,7 @@ public class ClosureScreen(CustomWebApplicationFactory<Program> factory)
     claim.Steps.Single(step => step.DeclaredSystem == DeclaredSystemId.From("boutique-cloture"))
       .State.ShouldBe(StepState.Untreated);
 
-    // LE LEDGER EST INTACT. Sa ligne d'hier est là, mot pour mot, et la clôture n'a fait qu'en
+    // L'EVIDENCELOG EST INTACT. Sa ligne d'hier est là, mot pour mot, et la clôture n'a fait qu'en
     // ajouter une : la preuve d'une procédure ne dépend pas du sort du dossier qu'elle documente.
     var lines = await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()

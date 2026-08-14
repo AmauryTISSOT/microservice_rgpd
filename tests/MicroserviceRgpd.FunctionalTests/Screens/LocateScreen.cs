@@ -136,11 +136,11 @@ public class LocateScreen(CustomWebApplicationFactory<Program> factory)
       nameof(ReservationState.Attached),
       "Claire Martin");
 
-    var ledger = await EvidenceLogOf(opened);
+    var evidenceLog = await EvidenceLogOf(opened);
 
-    ledger.Single(line => line.Fact == nameof(EvidenceLogFact.ReservationSetAside)).DesignationCount.ShouldBe(1);
+    evidenceLog.Single(line => line.Fact == nameof(EvidenceLogFact.ReservationSetAside)).DesignationCount.ShouldBe(1);
 
-    var attached = ledger.Single(line => line.Fact == nameof(EvidenceLogFact.ReservationAttached));
+    var attached = evidenceLog.Single(line => line.Fact == nameof(EvidenceLogFact.ReservationAttached));
 
     attached.SignatoryName.ShouldBe("Claire Martin");
     attached.SignerVerification.ShouldBe(nameof(SignerVerification.Unauthenticated));

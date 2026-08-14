@@ -180,9 +180,9 @@ public class ExpiredEvidenceLogTests(PostgreSqlFixture postgres)
 
     await dbContext.SaveChangesAsync();
 
-    var ledger = new EvidenceLog(dbContext);
+    var evidenceLog = new EvidenceLog(dbContext);
 
-    await ledger.AppendAsync(EvidenceLogEntry.CaseOpened(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseOpened(
       opened.Id,
       Closed.AddMonths(-1),
       Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated),
@@ -190,7 +190,7 @@ public class ExpiredEvidenceLogTests(PostgreSqlFixture postgres)
       designationCount: 1,
       reception: ReceptionDate.Declared(Closed.AddMonths(-1))));
 
-    await ledger.AppendAsync(EvidenceLogEntry.CaseClosed(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseClosed(
       opened.Id,
       Closed,
       ClosingCause.Answered,

@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 /// <param name="Case">Le dossier dont le délai est prolongé.</param>
 /// <param name="Motive">
 /// Pourquoi. <b>Exigé</b> : l'art. 12.3 met la raison à la charge de qui prolonge. <b>Prose de
-/// preuve</b> — elle survit dans le <c>EvidenceLog</c> quand tout le dossier tombe.
+/// preuve</b> — elle survit dans l'<c>EvidenceLog</c> quand tout le dossier tombe.
 /// </param>
 /// <param name="InformedOn">
 /// Le jour où l'<c>Operator</c> déclare avoir informé la personne. <b>Exigé</b>, et jamais constaté

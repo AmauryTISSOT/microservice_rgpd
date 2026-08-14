@@ -8,7 +8,7 @@ namespace MicroserviceRgpd.Core.Casework.Adapters;
 /// <para>
 /// <b>C'est un résultat d'exploitation, jamais une affaire de dossier.</b> Un <c>Adapter</c> nu est
 /// un fait du déploiement : il vaut pour tous les <c>Case</c> à la fois, et rien de ce qu'il dit
-/// n'appartient à l'un d'eux. Le <c>EvidenceLog</c> n'en sait donc rien, et n'a pas à en savoir quelque
+/// n'appartient à l'un d'eux. L'<c>EvidenceLog</c> n'en sait donc rien, et n'a pas à en savoir quelque
 /// chose.
 /// </para>
 /// <para>

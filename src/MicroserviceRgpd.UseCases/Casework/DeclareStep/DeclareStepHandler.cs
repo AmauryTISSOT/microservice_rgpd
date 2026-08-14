@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
 /// <remarks>
 /// <para>
 /// <b>L'ordre est : écrire le dossier, puis consigner</b> — comme à l'ouverture, et pour la même
-/// raison. Ce sont deux écritures et non une transaction, le <c>EvidenceLog</c> étant hors de l'agrégat ;
+/// raison. Ce sont deux écritures et non une transaction, l'<c>EvidenceLog</c> étant hors de l'agrégat ;
 /// et les deux pannes ne se valent pas. Une ligne de preuve pour un état que le dossier ne porte pas
 /// est un faux ; un état porté dont la ligne manque est un état <b>visible</b> à l'écran, que
 /// l'<c>Operator</c> voit.
@@ -23,9 +23,9 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
 /// </para>
 /// </remarks>
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'un acte se dicte en test.</param>
-public sealed class DeclareStepHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
+public sealed class DeclareStepHandler(IRepository<Case> cases, IEvidenceLog evidenceLog, TimeProvider clock)
   : ICommandHandler<DeclareStepCommand, Result>
 {
   /// <inheritdoc />
@@ -60,7 +60,7 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, IEvidenceLog led
 
     await cases.UpdateAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(signed.Value, cancellationToken);
+    await evidenceLog.AppendAsync(signed.Value, cancellationToken);
 
     return Result.Success();
   }

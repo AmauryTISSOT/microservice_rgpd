@@ -88,7 +88,7 @@ public sealed class Claim
   /// <c>Unverified</c>, et le rappel passé vendredi ne le rend pas rétroactivement propre.
   /// </para>
   /// <para>
-  /// La copie vit ici plutôt que dans le <c>EvidenceLog</c> seul parce que l'écran doit pouvoir la
+  /// La copie vit ici plutôt que dans l'<c>EvidenceLog</c> seul parce que l'écran doit pouvoir la
   /// montrer à côté du droit qu'elle concerne, sans faire relire à l'<c>Operator</c> la preuve pour
   /// savoir ce qu'il a sous les yeux.
   /// </para>
@@ -125,7 +125,7 @@ public sealed class Claim
   /// </summary>
   /// <remarks>
   /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat,
-  /// pour la même raison qu'ailleurs : le <c>EvidenceLog</c> survit au dossier de cinq ans.
+  /// pour la même raison qu'ailleurs : l'<c>EvidenceLog</c> survit au dossier de cinq ans.
   /// </remarks>
   internal void Confirm() => Confirmed = true;
 
@@ -155,7 +155,7 @@ public sealed class Claim
   /// </para>
   /// <para>
   /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat,
-  /// parce que le <c>EvidenceLog</c> survit au dossier de cinq ans.
+  /// parce que l'<c>EvidenceLog</c> survit au dossier de cinq ans.
   /// </para>
   /// </remarks>
   /// <returns><c>true</c> si le droit vient de passer à <c>Answered</c> ; <c>false</c> s'il était déjà clos.</returns>

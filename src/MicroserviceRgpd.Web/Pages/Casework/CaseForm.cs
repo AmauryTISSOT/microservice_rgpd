@@ -12,7 +12,7 @@ namespace MicroserviceRgpd.Web.Pages.Casework;
 /// <remarks>
 /// <para>
 /// <b>Un seul champ de prose, et c'est celui du texte qui reste.</b> Le constat dit <i>pourquoi on
-/// a déclaré cela</i>, n'est pas nominatif par nature, et survit dans le <c>EvidenceLog</c>. Le
+/// a déclaré cela</i>, n'est pas nominatif par nature, et survit dans l'<c>EvidenceLog</c>. Le
 /// <b>texte qui meurt</b> — celui qui dit quelle ligne appartient à qui, et qui nomme donc des tiers
 /// non demandeurs — n'a <b>aucun champ ici</b> : il se saisit ailleurs sur l'écran, vit sur le
 /// <c>Case</c> et meurt à la clôture. La règle tient par le <b>placement</b>, et non par la
@@ -140,7 +140,7 @@ public sealed class ConfirmationForm
 /// <para>
 /// <b>Aucun champ de prose, et c'est délibéré.</b> Le motif de la réserve est écrit par
 /// l'application et lu par l'humain ; ce que l'humain rend est une <b>issue</b> — rattachée, ou
-/// écartée — et le <c>EvidenceLog</c> en garde le fait, la date et le nom. Réclamer une prose ici ferait
+/// écartée — et l'<c>EvidenceLog</c> en garde le fait, la date et le nom. Réclamer une prose ici ferait
 /// écrire une ligne de rien à chaque arbitrage, et le constat qui compte se noierait dans les autres.
 /// </para>
 /// <para>

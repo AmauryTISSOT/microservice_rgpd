@@ -4,13 +4,13 @@ using MicroserviceRgpd.Core.Casework.EvidenceLog;
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>EvidenceLog</c> : vingt et une colonnes, et pas une de plus où un nom de personne concernée
+/// La table de l'<c>EvidenceLog</c> : vingt et une colonnes, et pas une de plus où un nom de personne concernée
 /// pourrait entrer. La seule prose est le <b>texte qui reste</b> ; le texte qui meurt, qui nomme par
 /// nature, n'a aucune colonne ici.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : le <c>EvidenceLog</c> survit
+/// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : l'<c>EvidenceLog</c> survit
 /// au dossier de cinq ans, et une contrainte référentielle rendrait la destruction du dossier
 /// impossible — ou, pire, emporterait la preuve avec lui. Le <c>case_id</c> est une référence
 /// <b>libre</b>, et il le restera.

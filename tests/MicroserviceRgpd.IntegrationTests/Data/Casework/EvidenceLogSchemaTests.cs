@@ -203,7 +203,7 @@ public class EvidenceLogSchemaTests(PostgreSqlFixture postgres)
 
   /// <summary>
   /// <b>Aucune <c>Designation</c> n'est stockable, dès la première ligne.</b> Ni valeur, ni nature,
-  /// ni sac : la seule chose que le <c>EvidenceLog</c> sait de la recherche est son <b>nombre</b>, et il
+  /// ni sac : la seule chose que l'<c>EvidenceLog</c> sait de la recherche est son <b>nombre</b>, et il
   /// est typé <c>integer</c> — un texte ne peut pas s'y ranger.
   /// </summary>
   [Fact]
@@ -259,7 +259,7 @@ public class EvidenceLogSchemaTests(PostgreSqlFixture postgres)
   }
 
   /// <summary>
-  /// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : le <c>EvidenceLog</c> survit
+  /// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : l'<c>EvidenceLog</c> survit
   /// au dossier de cinq ans, et une contrainte référentielle rendrait la clôture impossible — ou,
   /// pire, emporterait la preuve avec le dossier qu'elle sert à défendre.
   /// </summary>
@@ -285,11 +285,11 @@ public class EvidenceLogSchemaTests(PostgreSqlFixture postgres)
   {
     await using var dbContext = postgres.NewDbContext();
 
-    var ledger = new EvidenceLog(dbContext);
+    var evidenceLog = new EvidenceLog(dbContext);
     var first = CaseId.Next();
     var second = CaseId.Next();
 
-    await ledger.AppendAsync(EvidenceLogEntry.CaseOpened(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseOpened(
       first,
       Opened,
       Signatory.Application,
@@ -297,7 +297,7 @@ public class EvidenceLogSchemaTests(PostgreSqlFixture postgres)
       designationCount: 2,
       reception: ReceptionDate.Declared(Opened)));
 
-    await ledger.AppendAsync(EvidenceLogEntry.CaseOpened(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseOpened(
       second,
       Opened,
       Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated),
@@ -349,10 +349,10 @@ public class EvidenceLogSchemaTests(PostgreSqlFixture postgres)
       .ShouldBe(["AppendAsync", "RowOf"], ignoreOrder: true);
 
     // La ligne n'est jamais déclarée agrégat racine : le dépôt générique lui aurait rendu la mise à
-    // jour et la suppression que la définition du EvidenceLog ferme.
+    // jour et la suppression que la définition de l'EvidenceLog ferme.
     typeof(EvidenceLogRow).IsAssignableTo(typeof(IAggregateRoot)).ShouldBeFalse();
 
-    // Et le contexte n'expose aucun `DbSet` du EvidenceLog : il en existe un pour la trace d'audit, qui
+    // Et le contexte n'expose aucun `DbSet` de l'EvidenceLog : il en existe un pour la trace d'audit, qui
     // n'a qu'un invariant d'écriture seule, mais un `DbSet` public rendrait ici `Remove` et
     // `Update` à quiconque tient le contexte — c'est-à-dire à tout le service.
     typeof(AppDbContext).GetProperties()

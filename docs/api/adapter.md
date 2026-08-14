@@ -424,9 +424,9 @@ rendre impossible.
   regarde. Le service repasse après l'échéance que vous avez déclarée, mais seulement quand un
   opérateur ouvre le dossier.
 - **Corriger son `Manifest`** sur ce que vous répondez.
-- **Vérifier ce que vous déclarez.** Le service enregistre, il ne vérifie jamais : une réponse est une
-  affirmation datée et attribuable, jamais un fait vérifié. Un travail déclaré fait prouve qu'on a
-  déclaré l'avoir fait.
+- **Vérifier ce que vous déclarez.** `Enregistré, jamais vérifié` : une réponse est une affirmation
+  datée et attribuable, jamais un fait vérifié. Un travail déclaré fait prouve qu'on a déclaré
+  l'avoir fait.
 - **Parler à la personne concernée.** Elle n'atteint jamais le service, et le service ne lui écrit
   jamais.
 

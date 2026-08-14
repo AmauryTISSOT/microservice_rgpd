@@ -21,7 +21,7 @@
 /// ⚠️ <b>La destruction ne laisse aucune trace d'elle-même.</b> Un <c>EvidenceLog</c> détruit ne peut pas
 /// consigner sa propre destruction, et rien n'est écrit ailleurs pour lui : on ne prouvera jamais
 /// avoir purgé. C'est un coût assumé — l'alternative serait un second étage d'anonymisation, qui
-/// rouvrirait l'expurgation que la définition du <c>EvidenceLog</c> ferme.
+/// rouvrirait l'expurgation que la définition de l'<c>EvidenceLog</c> ferme.
 /// </para>
 /// </remarks>
 public interface IExpiredEvidenceLogs
@@ -42,7 +42,7 @@ public interface IExpiredEvidenceLogs
     CancellationToken cancellationToken = default);
 
   /// <summary>
-  /// Détruit <b>en entier</b> le <c>EvidenceLog</c> d'un dossier, si et seulement si sa conservation est
+  /// Détruit <b>en entier</b> l'<c>EvidenceLog</c> d'un dossier, si et seulement si sa conservation est
   /// échue à cet instant.
   /// </summary>
   /// <remarks>
@@ -50,12 +50,12 @@ public interface IExpiredEvidenceLogs
   /// clic a pu être affiché il y a une heure comme il y a un an ; ce qui est irréversible ne se
   /// décide pas sur une page vieille d'une minute.
   /// </remarks>
-  /// <param name="ledgerOf">Le dossier dont la preuve est détruite.</param>
+  /// <param name="evidenceLogOf">Le dossier dont la preuve est détruite.</param>
   /// <param name="observedAt">L'instant du geste, sur lequel l'échéance est éprouvée.</param>
   /// <param name="cancellationToken">L'annulation de l'échange en cours.</param>
   /// <returns><c>true</c> si une preuve échue vient d'être détruite ; <c>false</c> s'il n'y avait rien à détruire.</returns>
   Task<bool> DestroyAsync(
-    CaseId ledgerOf,
+    CaseId evidenceLogOf,
     DateTimeOffset observedAt,
     CancellationToken cancellationToken = default);
 }

@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.Web.Pages.Casework;
 /// base 64, ni URL à récupérer — pas plus ici que sur le canal API. Aucune pièce d'identité n'entre
 /// dans le service, tous canaux confondus (CEPD § 79) : un champ qui pourrait en porter une serait un
 /// champ dans lequel une pièce finirait par entrer, et le service aurait alors à prouver qu'il ne l'a
-/// pas gardée. Le <c>EvidenceLog</c> ne garde qu'un <b>fait</b> de vérification, jamais la pièce.
+/// pas gardée. L'<c>EvidenceLog</c> ne garde qu'un <b>fait</b> de vérification, jamais la pièce.
 /// </para>
 /// <para>
 /// <b>Le sac de désignations a la forme du canal API, exactement.</b> Une paire nature/valeur, dans
@@ -69,7 +69,7 @@ public sealed class DepositForm
 
   /// <summary>
   /// Le détail de la motivation, en prose libre. <b>Texte qui meurt</b> : nominatif par nature, il
-  /// vit sur le dossier et meurt à sa clôture. Il n'a aucun chemin vers le <c>EvidenceLog</c>.
+  /// vit sur le dossier et meurt à sa clôture. Il n'a aucun chemin vers l'<c>EvidenceLog</c>.
   /// </summary>
   public string? MotivationDetail { get; set; }
 
@@ -221,7 +221,7 @@ public sealed class DepositForm
     if (string.IsNullOrWhiteSpace(ReceivedOn))
     {
       // Personne ne l'a déclarée : le service tient neuf jours pour déjà courus, et le drapeau part
-      // avec la date pour que l'écran et le EvidenceLog la nomment comme une hypothèse, jamais un fait.
+      // avec la date pour que l'écran et l'EvidenceLog la nomment comme une hypothèse, jamais un fait.
       return ReceptionDate.Defaulted(depositedAt);
     }
 

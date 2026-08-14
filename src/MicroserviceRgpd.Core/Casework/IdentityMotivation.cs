@@ -48,14 +48,14 @@ public sealed record IdentityMotivation
 
   /// <summary>
   /// La méthode, dans un vocabulaire fermé. <b>Elle se compte, et elle survit</b> : c'est elle, et
-  /// elle seule, que le <c>EvidenceLog</c> garde.
+  /// elle seule, que l'<c>EvidenceLog</c> garde.
   /// </summary>
   public IdentityVerificationMethod Method { get; private set; }
 
   /// <summary>
   /// Le détail, en prose libre, ou <c>null</c> quand l'humain n'en a pas écrit. <b>Prose de
   /// travail</b> : nominatif par nature, il vit sur le <see cref="Case"/> et meurt à sa clôture. Il
-  /// n'a aucun chemin vers le <c>EvidenceLog</c>.
+  /// n'a aucun chemin vers l'<c>EvidenceLog</c>.
   /// </summary>
   public string? Detail { get; private set; }
 

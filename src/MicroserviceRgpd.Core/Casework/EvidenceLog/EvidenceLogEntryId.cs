@@ -3,7 +3,7 @@
 namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// L'identité d'une ligne du <c>EvidenceLog</c>, engendrée au moment de l'écrire.
+/// L'identité d'une ligne de l'<c>EvidenceLog</c>, engendrée au moment de l'écrire.
 /// </summary>
 /// <remarks>
 /// <b>Ce n'est pas un numéro de séquence.</b> Un rang ne se déduit d'aucune ligne antérieure ici :
@@ -20,7 +20,7 @@ public readonly partial struct EvidenceLogEntryId
   private static Validation Validate(Guid value)
   {
     return value == Guid.Empty
-      ? Validation.Invalid("L'identifiant de la ligne du EvidenceLog est vide.")
+      ? Validation.Invalid("L'identifiant de la ligne de l'EvidenceLog est vide.")
       : Validation.Ok;
   }
 }

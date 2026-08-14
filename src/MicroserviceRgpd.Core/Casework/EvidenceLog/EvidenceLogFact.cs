@@ -1,12 +1,12 @@
 ﻿namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// Ce qu'une ligne du <c>EvidenceLog</c> consigne. Vocabulaire <b>fermé</b>, pour que le contrôle
+/// Ce qu'une ligne de l'<c>EvidenceLog</c> consigne. Vocabulaire <b>fermé</b>, pour que le contrôle
 /// dénombre des faits plutôt qu'il ne lise de la prose.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Le <c>EvidenceLog</c> consigne les faits qui changent quelque chose, jamais leur répétition.</b>
+/// <b>L'<c>EvidenceLog</c> consigne les faits qui changent quelque chose, jamais leur répétition.</b>
 /// Un appel s'y inscrira s'il rend un verdict différent du précédent, et pas autrement : trente-cinq
 /// relances rendant le même <c>202</c> n'ont aucun signataire — c'est un affichage qui les a
 /// déclenchées, non un humain — et noieraient sous du bruit de mécanique ce que le contrôle vient
@@ -76,7 +76,7 @@ public sealed class EvidenceLogFact : SmartEnum<EvidenceLogFact>
   /// <remarks>
   /// ⚠️ <b>Elle ne s'inscrit que si le verdict change.</b> Rouvrir un dossier relance les appels, et
   /// trente-cinq passages rendant le même « servi » n'ont aucun signataire — c'est un affichage qui
-  /// les a déclenchés, non un humain. La règle est tenue par l'<b>appelant</b> : le <c>EvidenceLog</c> ne
+  /// les a déclenchés, non un humain. La règle est tenue par l'<b>appelant</b> : l'<c>EvidenceLog</c> ne
   /// se relit jamais.
   /// </remarks>
   public static readonly EvidenceLogFact LocateServed = new(nameof(LocateServed), 6, "localisation servie");
@@ -116,7 +116,7 @@ public sealed class EvidenceLogFact : SmartEnum<EvidenceLogFact>
   /// <summary>
   /// Un <c>Adapter</c> a <b>servi</b> un <c>Read</c>. La ligne dit le système, le <b>droit au titre
   /// duquel</b> on a lu, et sous combien de désignations — <b>jamais ce qu'il y avait dans la
-  /// pièce</b>, ni son type, ni son nom, ni sa taille. Le <c>EvidenceLog</c> ne porte aucun contenu, et
+  /// pièce</b>, ni son type, ni son nom, ni sa taille. L'<c>EvidenceLog</c> ne porte aucun contenu, et
   /// il n'existe aucune colonne où il pourrait atterrir.
   /// </summary>
   /// <remarks>

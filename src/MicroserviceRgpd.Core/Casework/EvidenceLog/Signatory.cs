@@ -1,20 +1,20 @@
 ﻿namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// Qui a déclaré ce qu'une ligne du <c>EvidenceLog</c> consigne. Le <c>EvidenceLog</c> est <b>daté et
+/// Qui a déclaré ce qu'une ligne de l'<c>EvidenceLog</c> consigne. L'<c>EvidenceLog</c> est <b>daté et
 /// signé</b> — « par qui » est un tiers de ce que le service prouve.
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>C'est le seul endroit du <c>EvidenceLog</c> où un nom de personne est permis, et ce n'est
-/// jamais celui de la personne concernée.</b> Le <c>EvidenceLog</c> nomme l'<c>Operator</c>,
+/// ⚠️ <b>C'est le seul endroit de l'<c>EvidenceLog</c> où un nom de personne est permis, et ce n'est
+/// jamais celui de la personne concernée.</b> L'<c>EvidenceLog</c> nomme l'<c>Operator</c>,
 /// définitivement : c'est un fichier de données personnelles sur les salariés du client, et son
 /// effacement leur est légitimement refusé.
 /// </para>
 /// <para>
 /// <b>Un nom n'est pas une authentification</b>, et le service ne prétend pas le contraire. Il
 /// enregistre ce qu'un humain a saisi <b>et</b> le <see cref="SignerVerification"/> sous lequel il l'a
-/// saisi — dans le même objet, par le même geste, pour que le <c>EvidenceLog</c> d'aujourd'hui ne soit pas
+/// saisi — dans le même objet, par le même geste, pour que l'<c>EvidenceLog</c> d'aujourd'hui ne soit pas
 /// indiscernable de celui de demain.
 /// </para>
 /// </remarks>

@@ -6,7 +6,7 @@
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Un nom n'est pas une authentification, et le <c>EvidenceLog</c> le dit plutôt que de le taire.</b>
+/// <b>Un nom n'est pas une authentification, et l'<c>EvidenceLog</c> le dit plutôt que de le taire.</b>
 /// La surface de l'<c>Operator</c> n'authentifie personne — choix de PoC assumé et écrit —, et une
 /// preuve qui garderait seulement le nom saisi serait relue dans dix ans comme si quelqu'un s'était
 /// identifié.
@@ -14,7 +14,7 @@
 /// <para>
 /// <b>Une seule valeur aujourd'hui, et c'est exactement la raison d'être du type.</b> Le jour où la
 /// GUI authentifiera son <c>Operator</c>, une seconde valeur entrera ici et les lignes d'hier
-/// resteront lisibles pour ce qu'elles sont — sans quoi le <c>EvidenceLog</c> d'aujourd'hui serait
+/// resteront lisibles pour ce qu'elles sont — sans quoi l'<c>EvidenceLog</c> d'aujourd'hui serait
 /// indiscernable de celui de demain.
 /// </para>
 /// </remarks>

@@ -29,13 +29,13 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="manifest">Le catalogue, relu à chaque passage — il donne le dénombrement du jour.</param>
 /// <param name="retrieved">Les pièces détenues, hors de l'agrégat : c'est ici qu'elles meurent.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une remise se dicte en test.</param>
 public sealed class DeclareDeliveryHandler(
   IRepository<Case> cases,
   IReadRepository<DeclaredSystem> manifest,
   IRetrievedData retrieved,
-  IEvidenceLog ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<DeclareDeliveryCommand, Result>
 {
@@ -105,7 +105,7 @@ public sealed class DeclareDeliveryHandler(
 
     await cases.UpdateAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(signed, cancellationToken);
+    await evidenceLog.AppendAsync(signed, cancellationToken);
 
     // En dernier, et sans réécrire le dossier : c'est très exactement pourquoi ces pièces vivent
     // hors de l'agrégat. Le séjour est inévitable ; il s'arrête ici.

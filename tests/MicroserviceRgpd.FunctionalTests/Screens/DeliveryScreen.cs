@@ -20,7 +20,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// <remarks>
 /// <para>
 /// <b>Le second geste seul date la remise et détruit les pièces.</b> C'est ce que cette classe
-/// éprouve sur le vrai fil : après le premier clic, les pièces sont toujours là et le <c>EvidenceLog</c>
+/// éprouve sur le vrai fil : après le premier clic, les pièces sont toujours là et l'<c>EvidenceLog</c>
 /// ne porte aucune remise ; après le second, la remise est datée et il ne reste plus un octet.
 /// </para>
 /// <para>

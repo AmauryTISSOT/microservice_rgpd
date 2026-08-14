@@ -44,14 +44,14 @@ namespace MicroserviceRgpd.UseCases.Casework.Read;
 /// <param name="manifest">Le catalogue, relu à chaque passage — il vieillit exprès.</param>
 /// <param name="calls">Les appels sortants au titre d'un dossier, tentatives refusées comprises.</param>
 /// <param name="retrieved">Les pièces détenues, hors de l'agrégat et pour une durée qui n'est pas la sienne.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une tentative se dicte en test.</param>
 public sealed class ReadHandler(
   IRepository<Case> cases,
   IReadRepository<DeclaredSystem> manifest,
   AdapterCallsForCase calls,
   IRetrievedData retrieved,
-  IEvidenceLog ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<ReadCommand, Result>
 {
@@ -98,7 +98,7 @@ public sealed class ReadHandler(
 
     foreach (var entry in consigned)
     {
-      await ledger.AppendAsync(entry, cancellationToken);
+      await evidenceLog.AppendAsync(entry, cancellationToken);
     }
 
     return Result.Success();
