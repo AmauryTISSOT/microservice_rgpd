@@ -4,7 +4,7 @@ using MicroserviceRgpd.Core.SharedKernel;
 namespace MicroserviceRgpd.Infrastructure.Qualifications;
 
 /// <summary>
-/// Le moteur témoin, vu du domaine : un lexique déterministe qui vit dans le sidecar Python et
+/// Le moteur lexical, vu du domaine : un lexique déterministe qui vit dans le sidecar Python et
 /// qu'on joint en HTTP.
 /// </summary>
 /// <remarks>

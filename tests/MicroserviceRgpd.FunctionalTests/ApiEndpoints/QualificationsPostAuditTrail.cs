@@ -28,7 +28,7 @@ public class QualificationsPostAuditTrail
     _client = factory.CreateClient();
 
     factory.Verdict.Reset();
-    factory.Witness.Reset();
+    factory.Lexicon.Reset();
     factory.AuditTrail.Reset();
   }
 
@@ -40,7 +40,7 @@ public class QualificationsPostAuditTrail
   public async Task HasAlreadyWrittenTheTraceWhenTheAnswerArrives()
   {
     _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
 
     var response = await _client.PostAsJsonAsync(
       "/qualifications",
@@ -72,7 +72,7 @@ public class QualificationsPostAuditTrail
   public async Task RendersFiveHundredWhenTheTraceCannotBeWritten()
   {
     _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
     _factory.AuditTrail.Refusal = new InvalidOperationException("La base est indisponible.");
 
     var response = await _client.PostAsJsonAsync("/qualifications", new { text = "Supprimez mes donnees." });
@@ -93,7 +93,7 @@ public class QualificationsPostAuditTrail
   public async Task RendersFiveHundredWhenTheTraceCannotBeWrittenEvenForADegradedQualification()
   {
     _factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a repondu 503.");
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
     _factory.AuditTrail.Refusal = new InvalidOperationException("La base est indisponible.");
 
     var response = await _client.PostAsJsonAsync("/qualifications", new { text = "Supprimez mes donnees." });
@@ -109,7 +109,7 @@ public class QualificationsPostAuditTrail
   public async Task LeavesNoRowWhenNeitherEngineRenderedAnOpinion()
   {
     _factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a repondu 504.");
-    _factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a repondu 500.");
+    _factory.Lexicon.Silence = new QualificationEngineFailure("Le moteur lexical a repondu 500.");
 
     var before = await CountRowsAsync();
 
@@ -127,7 +127,7 @@ public class QualificationsPostAuditTrail
   public async Task ExposesNoWayToReadTheTraceBack()
   {
     _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
 
     var response = await _client.PostAsJsonAsync("/qualifications", new { text = "Supprimez mes donnees." });
 

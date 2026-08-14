@@ -58,7 +58,7 @@ public sealed class QualificationAuditTrail(AppDbContext dbContext) : IQualifica
       TraceId = entry.TraceId,
       TotalLatencyMs = MillisecondsOf(entry.TotalLatency),
       VerdictLatencyMs = entry.VerdictLatency is { } verdict ? MillisecondsOf(verdict) : null,
-      LexiconLatencyMs = entry.LexiconLatency is { } witness ? MillisecondsOf(witness) : null,
+      LexiconLatencyMs = entry.LexiconLatency is { } lexicon ? MillisecondsOf(lexicon) : null,
     };
   }
 

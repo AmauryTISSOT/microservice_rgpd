@@ -44,7 +44,7 @@ public sealed class QualificationAuditRow
   /// <summary>L'urgence à relire, par son nom.</summary>
   public required string ReviewSignal { get; init; }
 
-  /// <summary>L'avis du moteur de verdict, ou <c>null</c> — et c'est le repli sur le témoin.</summary>
+  /// <summary>L'avis du moteur de verdict, ou <c>null</c> — et c'est le repli sur le lexique.</summary>
   public string[]? VerdictRights { get; init; }
 
   /// <summary>La confiance que ce moteur a déclarée, par son nom, s'il en déclare une.</summary>
@@ -56,17 +56,17 @@ public sealed class QualificationAuditRow
   /// <summary>La version que ce moteur a déclarée d'elle-même.</summary>
   public string? VerdictEngineVersion { get; init; }
 
-  /// <summary>L'avis du moteur témoin, ou <c>null</c> — et c'est un verdict resté sans contrôle.</summary>
+  /// <summary>L'avis du moteur lexical, ou <c>null</c> — et c'est un verdict resté sans contrôle.</summary>
   public string[]? LexiconRights { get; init; }
 
   /// <summary>
-  /// La confiance que le moteur témoin a déclarée, s'il en déclare une — le lexique n'en déclare
-  /// aucune, mais la colonne existe parce que rien dans le domaine n'interdit à un témoin d'en
+  /// La confiance que le moteur lexical a déclarée, s'il en déclare une — le lexique n'en déclare
+  /// aucune, mais la colonne existe parce que rien dans le domaine n'interdit à un lexique d'en
   /// avoir : la perdre en silence le jour où les rôles changent priverait la trace d'une prémisse.
   /// </summary>
   public string? LexiconDeclaredConfidence { get; init; }
 
-  /// <summary>Le nom du moteur qui a tenu le rôle de témoin.</summary>
+  /// <summary>Le nom du moteur qui a tenu le rôle de lexique.</summary>
   public string? LexiconEngineName { get; init; }
 
   /// <summary>La version que ce moteur a déclarée d'elle-même.</summary>
@@ -87,6 +87,6 @@ public sealed class QualificationAuditRow
   /// <summary>Le temps qu'a pris le moteur de verdict, ou rien s'il n'a pas rendu d'avis.</summary>
   public int? VerdictLatencyMs { get; init; }
 
-  /// <summary>Le temps qu'a pris le moteur témoin, ou rien s'il n'a pas rendu d'avis.</summary>
+  /// <summary>Le temps qu'a pris le moteur lexical, ou rien s'il n'a pas rendu d'avis.</summary>
   public int? LexiconLatencyMs { get; init; }
 }

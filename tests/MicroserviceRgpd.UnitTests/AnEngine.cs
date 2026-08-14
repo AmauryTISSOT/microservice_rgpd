@@ -15,6 +15,6 @@ public static class AnEngine
   /// <summary>L'identité déclarée par le moteur qui tient le rôle de verdict.</summary>
   public static readonly QualificationEngineIdentity HoldingTheVerdict = new("llm", "qwen3:8b");
 
-  /// <summary>L'identité déclarée par le moteur qui tient le rôle de témoin.</summary>
-  public static readonly QualificationEngineIdentity HoldingTheWitness = new("lexicon", "1.0.0");
+  /// <summary>L'identité déclarée par le moteur qui tient le rôle de lexique.</summary>
+  public static readonly QualificationEngineIdentity HoldingTheLexicon = new("lexicon", "1.0.0");
 }

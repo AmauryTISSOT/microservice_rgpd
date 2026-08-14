@@ -12,7 +12,7 @@ namespace MicroserviceRgpd.FunctionalTests;
 /// tient indifferemment l un ou l autre role — c est precisement ce que « le meme port » veut dire.
 /// </remarks>
 /// <param name="confidence">
-/// La confiance que ce moteur declare par defaut. Absente pour le temoin : le lexique n a aucun avis
+/// La confiance que ce moteur declare par defaut. Absente pour le lexique : le lexique n a aucun avis
 /// sur sa propre fiabilite, et la doublure ne doit pas rendre atteignable en test un etat que le
 /// vrai moteur n atteint jamais.
 /// </param>

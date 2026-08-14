@@ -20,7 +20,7 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
     RightsRequestText.From("Supprimez toutes les données que vous avez sur moi.");
 
   private static readonly QualificationEngineIdentity HoldingTheVerdict = new("llm", "qwen3:8b+prompt.1");
-  private static readonly QualificationEngineIdentity HoldingTheWitness = new("lexicon", "1.0.0");
+  private static readonly QualificationEngineIdentity HoldingTheLexicon = new("lexicon", "1.0.0");
 
   /// <summary>
   /// La ligne conserve le verdict <b>et ses prémisses</b> : les deux avis bruts, avec le nom et la
@@ -42,7 +42,7 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
     row.VerdictEngineName.ShouldBe("llm");
     row.VerdictEngineVersion.ShouldBe("qwen3:8b+prompt.1");
     row.LexiconRights.ShouldBe(["Access", "Erasure"]);
-    // Le témoin n'en déclare aucune : la colonne reste nulle plutôt que de porter une confiance
+    // Le lexique n'en déclare aucune : la colonne reste nulle plutôt que de porter une confiance
     // constante, que le domaine refuse d'inventer pour lui.
     row.LexiconDeclaredConfidence.ShouldBeNull();
     row.LexiconEngineName.ShouldBe("lexicon");
@@ -62,7 +62,7 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
   /// absent laissent deux formes de ligne distinguables, là où le booléen les recouvre.
   /// </summary>
   [Fact]
-  public async Task DistinguishesTheLexicalFallbackFromTheMissingWitnessByNullityAlone()
+  public async Task DistinguishesTheLexicalFallbackFromTheMissingLexiconByNullityAlone()
   {
     var fallback = NominalEntry() with
     {
@@ -160,7 +160,7 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
         "Le texte demande la suppression des données."),
       new QualificationOpinion(
         Qualification.Of([DataSubjectRight.Erasure, DataSubjectRight.Access]),
-        HoldingTheWitness),
+        HoldingTheLexicon),
       "Le texte demande la suppression des données.",
       "DSAR-8871",
       "4bf92f3577b34da6a3ce929d0e0e4736",
