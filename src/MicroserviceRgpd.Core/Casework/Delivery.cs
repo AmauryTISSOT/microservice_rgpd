@@ -4,7 +4,7 @@ namespace MicroserviceRgpd.Core.Casework;
 
 /// <summary>
 /// Ce que le service tend à l'<c>Operator</c> au titre d'<b>un</b> <see cref="Claim"/> : la
-/// <see cref="CoverSheet"/> et les <see cref="RetrievedData"/> de ce droit, rassemblées.
+/// <see cref="DeliveryLetter"/> et les <see cref="RetrievedData"/> de ce droit, rassemblées.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,16 +25,16 @@ namespace MicroserviceRgpd.Core.Casework;
 /// dossier, le catalogue et les pièces détenues : la garder aurait fait exister un troisième
 /// exemplaire des données de quelqu'un, et daté d'hier un paquet que la remise décrit aujourd'hui.
 /// Ce qui survit d'elle est ailleurs — les deux gestes sur le <see cref="Claim"/>, la remise au
-/// <c>Ledger</c>.
+/// <c>EvidenceLog</c>.
 /// </para>
 /// </remarks>
 public sealed class Delivery
 {
-  private Delivery(CaseId caseId, DataSubjectRight right, CoverSheet coverSheet, IReadOnlyList<RetrievedData> pieces)
+  private Delivery(CaseId caseId, DataSubjectRight right, DeliveryLetter deliveryLetter, IReadOnlyList<RetrievedData> pieces)
   {
     Case = caseId;
     Right = right;
-    CoverSheet = coverSheet;
+    DeliveryLetter = deliveryLetter;
     Pieces = pieces;
   }
 
@@ -45,7 +45,7 @@ public sealed class Delivery
   public DataSubjectRight Right { get; }
 
   /// <summary>La page que le service écrit lui-même, seul texte du paquet dont il soit l'auteur.</summary>
-  public CoverSheet CoverSheet { get; }
+  public DeliveryLetter DeliveryLetter { get; }
 
   /// <summary>
   /// Les pièces, <b>côte à côte</b> : une par <see cref="DeclaredSystem"/> qui en a servi une de
@@ -53,7 +53,7 @@ public sealed class Delivery
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Ce sont exactement celles que la première liste de la <see cref="CoverSheet"/> annonce.</b>
+  /// <b>Ce sont exactement celles que la première liste de la <see cref="DeliveryLetter"/> annonce.</b>
   /// Une pièce vide n'est pas une réponse : la joindre ferait tendre à la personne un fichier de
   /// zéro octet que la page de garde range, elle, parmi les systèmes interrogés sans rattachement —
   /// deux dires contradictoires dans le même envoi. Le fait qu'on ait interrogé ce système est dit
@@ -93,6 +93,6 @@ public sealed class Delivery
       .OrderBy(piece => piece.DeclaredSystem.Value, StringComparer.Ordinal)
       .ToArray();
 
-    return new Delivery(opened.Id, right, CoverSheet.Compose(opened, right, manifest, held), pieces);
+    return new Delivery(opened.Id, right, DeliveryLetter.Compose(opened, right, manifest, held), pieces);
   }
 }

@@ -88,7 +88,7 @@ public sealed class Claim
   /// <c>Unverified</c>, et le rappel passé vendredi ne le rend pas rétroactivement propre.
   /// </para>
   /// <para>
-  /// La copie vit ici plutôt que dans le <c>Ledger</c> seul parce que l'écran doit pouvoir la
+  /// La copie vit ici plutôt que dans le <c>EvidenceLog</c> seul parce que l'écran doit pouvoir la
   /// montrer à côté du droit qu'elle concerne, sans faire relire à l'<c>Operator</c> la preuve pour
   /// savoir ce qu'il a sous les yeux.
   /// </para>
@@ -125,7 +125,7 @@ public sealed class Claim
   /// </summary>
   /// <remarks>
   /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat,
-  /// pour la même raison qu'ailleurs : le <c>Ledger</c> survit au dossier de cinq ans.
+  /// pour la même raison qu'ailleurs : le <c>EvidenceLog</c> survit au dossier de cinq ans.
   /// </remarks>
   internal void Confirm() => Confirmed = true;
 
@@ -155,7 +155,7 @@ public sealed class Claim
   /// </para>
   /// <para>
   /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat,
-  /// parce que le <c>Ledger</c> survit au dossier de cinq ans.
+  /// parce que le <c>EvidenceLog</c> survit au dossier de cinq ans.
   /// </para>
   /// </remarks>
   /// <returns><c>true</c> si le droit vient de passer à <c>Answered</c> ; <c>false</c> s'il était déjà clos.</returns>
@@ -177,7 +177,7 @@ public sealed class Claim
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Il ne date rien de ce que le service prouve</b>, et n'entre donc pas au <c>Ledger</c> :
+  /// <b>Il ne date rien de ce que le service prouve</b>, et n'entre donc pas au <c>EvidenceLog</c> :
   /// prendre le paquet n'est pas remettre, et confondre les deux ferait dater la preuve du moment où
   /// un fichier a quitté un serveur. Ce qu'il sert est la <b>file</b> — une remise commencée et non
   /// déclarée doit rester une ligne vue tous les jours, plutôt qu'une ligne manquante.
@@ -192,12 +192,12 @@ public sealed class Claim
 
   /// <summary>
   /// L'instant où un humain a <b>déclaré la remise</b> de ce droit, ou <c>null</c> si personne ne l'a
-  /// déclarée. C'est le <b>second</b> geste, et lui seul date la remise au <c>Ledger</c> et détruit
+  /// déclarée. C'est le <b>second</b> geste, et lui seul date la remise au <c>EvidenceLog</c> et détruit
   /// les <see cref="RetrievedData"/>.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>La remise est une affirmation, pas un transfert d'octets.</b> Le service ne prouvera
-  /// jamais que la personne a reçu quoi que ce soit — greffier, pas témoin.
+  /// jamais que la personne a reçu quoi que ce soit — <c>Enregistré, jamais vérifié</c>.
   /// </remarks>
   public DateTimeOffset? DeliveryDeclaredOn { get; private set; }
 

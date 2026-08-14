@@ -62,7 +62,7 @@ public sealed record AdapterAnswer<TServed>
   /// L'<c>Adapter</c> a différé, et déclare quand il aura fini.
   /// </summary>
   /// <remarks>
-  /// L'instant est ramené en UTC, comme celui du <c>Ledger</c> : une échéance relue dans le fuseau
+  /// L'instant est ramené en UTC, comme celui du <c>EvidenceLog</c> : une échéance relue dans le fuseau
   /// de la machine qui l'a reçue serait une échéance différente d'un serveur à l'autre.
   /// </remarks>
   public static AdapterAnswer<TServed> Deferring(DateTimeOffset declaredDeadline)

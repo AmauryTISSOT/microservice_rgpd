@@ -18,7 +18,7 @@
 /// </para>
 /// <para>
 /// <b>C'est du nominatif, et il meurt à la clôture.</b> Aucune valeur de ce type n'entre au
-/// <c>Ledger</c> — qui n'en garde jamais que le <b>compte</b> et la provenance.
+/// <c>EvidenceLog</c> — qui n'en garde jamais que le <b>compte</b> et la provenance.
 /// </para>
 /// </remarks>
 public sealed record Designation

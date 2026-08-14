@@ -66,7 +66,7 @@ côtés **sans exception**. `Capability` échoue au test et reste dans `Casework
 dans un corps de méthode — et la promesse « le second contexte se démontre sans GPU » deviendrait
 invérifiable, avec un lot 1 traînant Ollama derrière lui.
 
-**Pourquoi un test au niveau de l'IL, et pas des signatures.** Un test par réflexion ne lit que des
+**Pourquoi un test du code compilé, et pas des signatures.** Un test par réflexion ne lit que des
 signatures. Il attraperait un `Case` portant un `ReviewSignal` en propriété, mais **passerait au
 vert** sur un gestionnaire à la signature propre qui appelle le moteur dans son corps — c'est-à-dire
 sur le mode de fuite exact que l'on craint. La carte a refusé plusieurs gardes pour ce motif précis :
@@ -117,7 +117,7 @@ Le noyau partagé, lui, ne bouge pas : sa liste est celle du législateur.
 | Alternative | Motif du rejet |
 | --- | --- |
 | **Un seul contexte étendu** | forcerait `Aide à la décision` et le régime d'erreur à signifier deux choses ; la justification « une erreur coûte peu » est **fausse** dans la durée |
-| **Contexte nommé `Fulfilment`** (le mot du terrain) | promet l'accomplissement dans le nom même, contredisant « greffier, pas témoin » dans chaque `using` — la raison exacte qui a fait refuser un état `Honoré` |
+| **Contexte nommé `Fulfilment`** (le mot du terrain) | promet l'accomplissement dans le nom même, contredisant « enregistré, jamais vérifié » dans chaque `using` — la raison exacte qui a fait refuser un état `Honoré` |
 | **Langage publié** entre les deux contextes | paie une frontière de déploiement inexistante ; deux types à tenir contre une dérive que le type unique rend impossible |
 | **Noyau partagé élargi** (`Capability`, taxonomie des états) | recouplerait les contextes en douce ; échoue au critère « vrai des deux côtés sans exception » |
 | **Conformist** (`Casework` prend le modèle de `Qualification` tel quel) | tuerait l'optionnalité : plus de `Casework` sans qualification, donc plus de démonstration sans GPU |
@@ -128,7 +128,7 @@ Le noyau partagé, lui, ne bouge pas : sa liste est celle du législateur.
 ## Portée de cet ADR
 
 Cet ADR décide **de quoi le service est fait** — le critère posé par la « Portée » de l'ADR-0001. Le
-reste des décisions de #67 — les identifiants `Case`, `Claim`, `Step`, `Ledger`, `RetrievedData` et
+reste des décisions de #67 — les identifiants `Case`, `Claim`, `Step`, `EvidenceLog`, `RetrievedData` et
 les autres — décrit **ce que fait** le service : c'est du glossaire, et il vit dans les `CONTEXT.md`
 et dans le commentaire de résolution de #67, qui fait foi sur le *pourquoi*.
 

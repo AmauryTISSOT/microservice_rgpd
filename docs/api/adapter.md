@@ -424,7 +424,7 @@ rendre impossible.
   regarde. Le service repasse après l'échéance que vous avez déclarée, mais seulement quand un
   opérateur ouvre le dossier.
 - **Corriger son `Manifest`** sur ce que vous répondez.
-- **Vérifier ce que vous déclarez.** Le service est greffier, pas témoin : une réponse est une
+- **Vérifier ce que vous déclarez.** Le service enregistre, il ne vérifie jamais : une réponse est une
   affirmation datée et attribuable, jamais un fait vérifié. Un travail déclaré fait prouve qu'on a
   déclaré l'avoir fait.
 - **Parler à la personne concernée.** Elle n'atteint jamais le service, et le service ne lui écrit
@@ -478,7 +478,7 @@ qu'il ne touche pas.
 - L'arbitrage d'une réserve par un humain nommé, et le sac qu'il enrichit :
   [`ArbitrateReservationHandler`](../../src/MicroserviceRgpd.UseCases/Casework/ArbitrateReservation/ArbitrateReservationHandler.cs),
   [`Case.Arbitrate`](../../src/MicroserviceRgpd.Core/Casework/Case.cs).
-- La vérification du `Manifest` et la sonde à secret délibérément faux :
+- La vérification du `Manifest` et l'appel au faux secret :
   [`VerifyManifestHandler`](../../src/MicroserviceRgpd.UseCases/Casework/VerifyManifest/VerifyManifestHandler.cs),
   [`IAdapterProbes`](../../src/MicroserviceRgpd.Core/Casework/Adapters/IAdapterProbes.cs),
   [`HttpAdapterProbes`](../../src/MicroserviceRgpd.Infrastructure/Casework/Adapters/HttpAdapterProbes.cs).

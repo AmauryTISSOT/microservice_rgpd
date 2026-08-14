@@ -61,7 +61,7 @@ public class QualificationsPostAuditTrail
     row.Rights.ShouldBe(["Erasure"]);
     row.CallerReference.ShouldBe("DSAR-4412");
     row.VerdictEngineName.ShouldNotBeNullOrWhiteSpace();
-    row.WitnessEngineName.ShouldNotBeNullOrWhiteSpace();
+    row.LexiconEngineName.ShouldNotBeNullOrWhiteSpace();
   }
 
   /// <summary>

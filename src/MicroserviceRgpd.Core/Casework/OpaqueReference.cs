@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// </para>
 /// <para>
 /// <b>C'est du nominatif par ricochet</b> — elle désigne les données de quelqu'un — et elle meurt
-/// avec le <see cref="Case"/>. Aucune valeur de ce type n'entre au <c>Ledger</c>.
+/// avec le <see cref="Case"/>. Aucune valeur de ce type n'entre au <c>EvidenceLog</c>.
 /// </para>
 /// </remarks>
 public sealed record OpaqueReference

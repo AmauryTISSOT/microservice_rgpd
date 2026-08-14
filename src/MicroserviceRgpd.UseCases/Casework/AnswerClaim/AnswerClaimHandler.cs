@@ -1,5 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.AnswerClaim;
 
@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.UseCases.Casework.AnswerClaim;
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="ledger">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une réponse se dicte en test.</param>
-public sealed class AnswerClaimHandler(IRepository<Case> cases, ILedger ledger, TimeProvider clock)
+public sealed class AnswerClaimHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
   : ICommandHandler<AnswerClaimCommand, Result>
 {
   /// <inheritdoc />
@@ -31,15 +31,15 @@ public sealed class AnswerClaimHandler(IRepository<Case> cases, ILedger ledger, 
 
     // La ligne de preuve est forgée d'abord : c'est elle qui exige un nom, et rien ne doit bouger si
     // la signature manque. La règle vit dans le type de la preuve, jamais ici.
-    LedgerEntry signed;
+    EvidenceLogEntry signed;
 
     try
     {
-      signed = LedgerEntry.ClaimAnswered(
+      signed = EvidenceLogEntry.ClaimAnswered(
         command.Case,
         clock.GetUtcNow(),
         command.Right,
-        Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated));
+        Signatory.Operator(command.SignedBy, SignerVerification.Unauthenticated));
     }
     catch (ArgumentException refusal)
     {

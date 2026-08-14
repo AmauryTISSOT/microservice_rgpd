@@ -28,8 +28,8 @@ namespace MicroserviceRgpd.UseCases.Casework.CloseCase;
 /// <param name="Cause">Ce par quoi il se clôt, nommé par l'humain qui signe.</param>
 /// <param name="Motive">
 /// Le motif en prose libre. <b>Exigé si — et seulement si</b> — la cause le réclame, ce qui est le
-/// cas d'<c>Abandoned</c> et de lui seul. <b>Prose de preuve</b> : elle survit dans le
-/// <c>Ledger</c> quand tout le dossier tombe.
+/// cas d'<c>Abandoned</c> et de lui seul. <b>Texte qui reste</b> : il survit dans le
+/// <c>EvidenceLog</c> quand tout le dossier tombe.
 /// </param>
 /// <param name="SignedBy">
 /// Le nom que l'<c>Operator</c> a saisi. Non authentifié — la preuve garde le nom <b>et</b> ce

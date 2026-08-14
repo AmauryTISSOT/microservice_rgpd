@@ -225,7 +225,7 @@ public class DepositScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Aucun emplacement pour une pièce jointe sur ce canal non plus</b> (CEPD § 79). Ni champ de
-  /// fichier, ni case pour un numéro de pièce : le <c>Ledger</c> ne garde jamais qu'un <b>fait</b> de
+  /// fichier, ni case pour un numéro de pièce : le <c>EvidenceLog</c> ne garde jamais qu'un <b>fait</b> de
   /// vérification, jamais la pièce.
   /// </summary>
   [Fact]

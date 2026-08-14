@@ -7,10 +7,10 @@ namespace MicroserviceRgpd.Core.Casework;
 /// de celui qui l'a déclaré — « l'export commercial transmis chaque mois à notre agence ».
 /// <para>
 /// <b>Le champ n'est pas décoratif, et c'est pourquoi il est obligatoire.</b> C'est avec ses mots
-/// que la <c>CoverSheet</c> nommera les systèmes non couverts, dans une langue que la personne
+/// que la <c>DeliveryLetter</c> nommera les systèmes non couverts, dans une langue que la personne
 /// concernée comprend : nommer « l'export commercial transmis chaque mois à notre agence » est
 /// actionnable là où un identifiant technique ne lui apprend rien. Un système déclaré sans prose
-/// serait un système que la <c>CoverSheet</c> ne saurait pas nommer.
+/// serait un système que la <c>DeliveryLetter</c> ne saurait pas nommer.
 /// </para>
 /// </summary>
 /// <remarks>

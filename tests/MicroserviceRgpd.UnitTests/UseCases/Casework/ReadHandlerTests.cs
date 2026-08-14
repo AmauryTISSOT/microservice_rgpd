@@ -1,7 +1,7 @@
 using Ardalis.Specification;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Casework.CallAdapter;
 using MicroserviceRgpd.UseCases.Casework.Read;
@@ -33,7 +33,7 @@ public class ReadHandlerTests
   private readonly IAdapterCalls _calls = Substitute.For<IAdapterCalls>();
   private readonly IAdapterDisagreements _disagreements = Substitute.For<IAdapterDisagreements>();
   private readonly IRetrievedData _retrieved = Substitute.For<IRetrievedData>();
-  private readonly ILedger _ledger = Substitute.For<ILedger>();
+  private readonly IEvidenceLog _ledger = Substitute.For<IEvidenceLog>();
 
   /// <summary>L'instant que le service lira. Il se <b>dicte</b>, et il avance quand le test veut faire passer une échéance.</summary>
   private DateTimeOffset _now = Now;
@@ -173,7 +173,7 @@ public class ReadHandlerTests
 
   /// <summary>
   /// La preuve garde <b>le compte de ce sous quoi on a lu</b>, et rien de la pièce : ni son type, ni
-  /// son nom, ni sa taille. Le <c>Ledger</c> est lu par un contrôle ; il ne doit pas devenir un second
+  /// son nom, ni sa taille. Le <c>EvidenceLog</c> est lu par un contrôle ; il ne doit pas devenir un second
   /// endroit où les données de la personne transparaissent.
   /// </summary>
   [Fact]
@@ -189,12 +189,12 @@ public class ReadHandlerTests
 
     var written = Written().ShouldHaveSingleItem();
 
-    written.Fact.ShouldBe(LedgerFact.ReadServed);
+    written.Fact.ShouldBe(EvidenceLogFact.ReadServed);
     written.DeclaredSystem.ShouldBe(Boutique);
     written.Right.ShouldBe(DataSubjectRight.Access);
     written.DesignationCount.ShouldBe(1);
     written.Signatory.ShouldBe(Signatory.Application);
-    written.EvidenceProse.ShouldBeNull();
+    written.Prose.ShouldBeNull();
   }
 
   /// <summary>
@@ -249,7 +249,7 @@ public class ReadHandlerTests
 
     var written = Written().ShouldHaveSingleItem();
 
-    written.Fact.ShouldBe(LedgerFact.ReadDeferred);
+    written.Fact.ShouldBe(EvidenceLogFact.ReadDeferred);
     written.DeclaredDeadline.ShouldBe(Now.AddHours(6));
 
     // Aucune pièce n'est détenue : différer n'est pas servir un corps vide.
@@ -289,7 +289,7 @@ public class ReadHandlerTests
     await _calls.Received(2).ReadAsync(
       Arg.Any<AdapterCall>(), Arg.Any<DataSubjectRight>(), Arg.Any<CancellationToken>());
 
-    Written().ShouldHaveSingleItem().Fact.ShouldBe(LedgerFact.AdapterDidNotServeTheSystem);
+    Written().ShouldHaveSingleItem().Fact.ShouldBe(EvidenceLogFact.AdapterDidNotServeTheSystem);
     Kept().ShouldBeEmpty();
 
     // Le désaccord, lui, se signale à chaque fois : son grain est le déploiement, pas le dossier.
@@ -423,11 +423,11 @@ public class ReadHandlerTests
   }
 
   /// <summary>Toutes les lignes réellement écrites dans la preuve, dans l'ordre.</summary>
-  private LedgerEntry[] Written()
+  private EvidenceLogEntry[] Written()
   {
     return [.. _ledger.ReceivedCalls()
-      .Where(call => call.GetMethodInfo().Name == nameof(ILedger.AppendAsync))
-      .Select(call => (LedgerEntry)call.GetArguments()[0]!)];
+      .Where(call => call.GetMethodInfo().Name == nameof(IEvidenceLog.AppendAsync))
+      .Select(call => (EvidenceLogEntry)call.GetArguments()[0]!)];
   }
 
   private static RetrievedPiece APiece(byte[] content, string? contentType = null, string? fileName = null)

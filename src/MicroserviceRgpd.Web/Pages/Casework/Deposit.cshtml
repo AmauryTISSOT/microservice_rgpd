@@ -1,7 +1,7 @@
 @page "/dossiers/depot"
 @model DepositModel
 @using MicroserviceRgpd.Core.Casework
-@using MicroserviceRgpd.Core.Casework.Ledger
+@using MicroserviceRgpd.Core.Casework.EvidenceLog
 @using MicroserviceRgpd.Core.SharedKernel
 @{
   ViewData["Title"] = "Le dépôt manuel";
@@ -166,7 +166,7 @@
   @*
     LA MOTIVATION, EN DEUX CHAMPS QUI NE SE CONFONDENT PAS.
 
-    La MÉTHODE est fermée : elle se compte, son lecteur est le contrôle, et elle entre au Ledger où
+    La MÉTHODE est fermée : elle se compte, son lecteur est le contrôle, et elle entre au EvidenceLog où
     elle SURVIT à la clôture. Le DÉTAIL est de la prose libre : il dit qui a été rappelé et sur quoi,
     il est nominatif par nature, et il MEURT avec le dossier. Un champ unique aurait fait choisir
     entre compter et raconter. La règle tient par ce placement, jamais par la discipline.
@@ -224,7 +224,7 @@
 
   @*
     Aucun champ de pièce jointe sur cet écran, et l'absence est structurelle : le formulaire n'a
-    aucune propriété qui pourrait en porter une. Le Ledger ne garde jamais qu'un FAIT de
+    aucune propriété qui pourrait en porter une. Le EvidenceLog ne garde jamais qu'un FAIT de
     vérification, jamais la pièce (CEPD § 79).
   *@
   <p class="caveat">

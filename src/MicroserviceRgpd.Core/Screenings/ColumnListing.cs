@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// personne ne relirait jamais.
 /// </para>
 /// <para>
-/// ⚠️ <b>Recopié tel quel, jamais vérifié ni complété.</b> <c>Greffier, pas témoin</c> : le service
+/// ⚠️ <b>Recopié tel quel, jamais vérifié ni complété.</b> <c>Enregistré, jamais vérifié</c> : le service
 /// ne sait pas d'où vient ce relevé. Un relevé sincère, entier et bien formé, mais tiré de la base
 /// de recette ou de celle d'hier, est <b>indiscernable du bon</b>. Aucun mécanisme n'attrape ce cas,
 /// et aucun ne doit prétendre l'attraper — c'est pourquoi <see cref="Database"/> est recopié et

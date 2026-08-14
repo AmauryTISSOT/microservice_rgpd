@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.UseCases.Casework.CallAdapter;
 
 // Shouldly porte un type du même nom, réservé à ses propres tables de cas.
@@ -14,14 +14,14 @@ namespace MicroserviceRgpd.UnitTests.UseCases.Casework;
 /// </summary>
 /// <remarks>
 /// Le fait cardinal : <b>un appel refusé n'est pas une affaire de <c>Case</c></b>. Rien n'y bouge ;
-/// le <c>Ledger</c> consigne la tentative datée, et le désaccord se signale une fois, au grain du
+/// le <c>EvidenceLog</c> consigne la tentative datée, et le désaccord se signale une fois, au grain du
 /// déploiement.
 /// </remarks>
 public class AdapterCallsForCaseTests
 {
   private static readonly DateTimeOffset Now = new(2026, 8, 3, 14, 30, 0, TimeSpan.Zero);
 
-  private readonly ILedger _ledger = Substitute.For<ILedger>();
+  private readonly IEvidenceLog _ledger = Substitute.For<IEvidenceLog>();
   private readonly IAdapterDisagreements _disagreements = Substitute.For<IAdapterDisagreements>();
   private readonly IAdapterCalls _calls = Substitute.For<IAdapterCalls>();
 
@@ -31,8 +31,8 @@ public class AdapterCallsForCaseTests
   /// geste d'aucun humain nommé.
   /// </summary>
   [Theory]
-  [InlineData(nameof(AdapterOutcome.SecretRefused), nameof(LedgerFact.AdapterRefusedTheSecret))]
-  [InlineData(nameof(AdapterOutcome.SystemNotServed), nameof(LedgerFact.AdapterDidNotServeTheSystem))]
+  [InlineData(nameof(AdapterOutcome.SecretRefused), nameof(EvidenceLogFact.AdapterRefusedTheSecret))]
+  [InlineData(nameof(AdapterOutcome.SystemNotServed), nameof(EvidenceLogFact.AdapterDidNotServeTheSystem))]
   public async Task WritesTheDatedAttemptWhenTheAdapterRefuses(string outcome, string expected)
   {
     var caseId = CaseId.Next();
@@ -43,7 +43,7 @@ public class AdapterCallsForCaseTests
     var written = Written();
 
     written.Case.ShouldBe(caseId);
-    written.Fact.ShouldBe(LedgerFact.FromName(expected));
+    written.Fact.ShouldBe(EvidenceLogFact.FromName(expected));
     written.OccurredAt.ShouldBe(Now);
     written.DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
     written.Signatory.ShouldBe(Signatory.Application);
@@ -79,7 +79,7 @@ public class AdapterCallsForCaseTests
 
   /// <summary>
   /// Servir et différer ne laissent <b>rien</b> ici : ce qu'ils deviennent appartient à qui a
-  /// demandé l'appel, et le <c>Ledger</c> ne consigne pas la mécanique d'un aller-retour.
+  /// demandé l'appel, et le <c>EvidenceLog</c> ne consigne pas la mécanique d'un aller-retour.
   /// </summary>
   [Fact]
   public async Task LeavesNothingBehindWhenTheAdapterAnswers()
@@ -127,11 +127,11 @@ public class AdapterCallsForCaseTests
   }
 
   /// <summary>La ligne réellement écrite, ou l'échec du test s'il n'y en a pas exactement une.</summary>
-  private LedgerEntry Written()
+  private EvidenceLogEntry Written()
   {
     return _ledger.ReceivedCalls()
-      .Where(call => call.GetMethodInfo().Name == nameof(ILedger.AppendAsync))
-      .Select(call => (LedgerEntry)call.GetArguments()[0]!)
+      .Where(call => call.GetMethodInfo().Name == nameof(IEvidenceLog.AppendAsync))
+      .Select(call => (EvidenceLogEntry)call.GetArguments()[0]!)
       .ToArray()
       .ShouldHaveSingleItem();
   }

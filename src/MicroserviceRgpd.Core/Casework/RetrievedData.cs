@@ -28,7 +28,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// système deux pièces différentes selon qu'on lit sous l'art. 15 ou sous l'art. 20.
 /// </para>
 /// <para>
-/// ⚠️ <b>Le corps ne s'ouvre jamais, et il n'entre jamais au <c>Ledger</c>.</b> La preuve dit « un
+/// ⚠️ <b>Le corps ne s'ouvre jamais, et il n'entre jamais au <c>EvidenceLog</c>.</b> La preuve dit « un
 /// fichier a été remis le 12/04 couvrant 2 systèmes sur 6 », jamais ce qu'il y avait dedans.
 /// </para>
 /// </remarks>
@@ -96,7 +96,7 @@ public sealed class RetrievedData
   /// <remarks>
   /// <b>Vide n'est pas absent.</b> Une pièce vide dit « interrogé, rien » et porte sa date ; une
   /// pièce absente dit qu'on n'a rien obtenu de ce système. Les confondre ferait écrire sur la
-  /// <c>CoverSheet</c> un constat que personne n'a fait.
+  /// <c>DeliveryLetter</c> un constat que personne n'a fait.
   /// </remarks>
   public bool IsEmpty => Content.Length == 0;
 

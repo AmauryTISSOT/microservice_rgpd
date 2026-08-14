@@ -1,5 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 
@@ -20,7 +20,7 @@ namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 /// </remarks>
 /// <param name="cases">Les dossiers, en lecture seule.</param>
 /// <param name="expired">
-/// Les <c>Ledger</c> échus. ⚠️ <b>Ils sont demandés à chaque affichage</b>, comme tout le reste :
+/// Les <c>EvidenceLog</c> échus. ⚠️ <b>Ils sont demandés à chaque affichage</b>, comme tout le reste :
 /// c'est une lecture, et la seule échéance du dispositif qui fasse naître une ligne.
 /// </param>
 /// <param name="clock">
@@ -29,7 +29,7 @@ namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 /// </param>
 public sealed class ReadQueueHandler(
   IReadRepository<Case> cases,
-  IExpiredLedgers expired,
+  IExpiredEvidenceLogs expired,
   TimeProvider clock)
   : IQueryHandler<ReadQueueQuery, OperatorQueue>
 {

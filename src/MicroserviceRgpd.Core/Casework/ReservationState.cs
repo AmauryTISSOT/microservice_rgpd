@@ -15,7 +15,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// <para>
 /// ⚠️ <b>Aucune valeur ne se pose toute seule.</b> Ni la fusion à tort — irréversible, et portant sur
 /// la donnée d'un tiers — ni l'exclusion par prudence n'appartiennent au service : l'<c>Operator</c>
-/// est seul à produire une issue, et la sienne est nommée et datée au <c>Ledger</c>.
+/// est seul à produire une issue, et la sienne est nommée et datée au <c>EvidenceLog</c>.
 /// </para>
 /// </remarks>
 public sealed class ReservationState : SmartEnum<ReservationState>

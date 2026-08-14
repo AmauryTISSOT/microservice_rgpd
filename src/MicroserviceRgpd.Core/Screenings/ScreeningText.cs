@@ -7,7 +7,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <remarks>
 /// <para>
 /// <b>Trois exigences, et pas une de plus.</b> Non vide, borné, et sans caractère de contrôle. Au
-/// delà, <b>rien n'est validé</b> : <c>Greffier, pas témoin</c> — le service enregistre ce qu'on lui
+/// delà, <b>rien n'est validé</b> : <c>Enregistré, jamais vérifié</c> — le service enregistre ce qu'on lui
 /// a mis dans la main et n'en juge jamais la valeur.
 /// </para>
 /// <para>

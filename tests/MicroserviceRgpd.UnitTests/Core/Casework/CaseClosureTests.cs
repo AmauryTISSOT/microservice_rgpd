@@ -132,8 +132,8 @@ public class CaseClosureTests
   }
 
   /// <summary>
-  /// <b>Les questions ouvertes meurent avec le dossier.</b> Elles sont de la prose de travail : ce
-  /// qui manquait aujourd'hui n'a plus de lecteur demain, et le <c>Ledger</c> en garde le jour.
+  /// <b>Les questions ouvertes meurent avec le dossier.</b> Elles sont du texte qui meurt : ce
+  /// qui manquait aujourd'hui n'a plus de lecteur demain, et le <c>EvidenceLog</c> en garde le jour.
   /// </summary>
   [Fact]
   public void DestroysTheOpenQuestions()

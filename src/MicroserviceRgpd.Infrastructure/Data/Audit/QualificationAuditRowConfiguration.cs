@@ -59,10 +59,10 @@ public sealed class QualificationAuditRowConfiguration : IEntityTypeConfiguratio
     builder.Property(row => row.VerdictEngineName).HasColumnName("verdict_engine_name");
     builder.Property(row => row.VerdictEngineVersion).HasColumnName("verdict_engine_version");
 
-    builder.Property(row => row.WitnessRights).HasColumnName("witness_rights");
-    builder.Property(row => row.WitnessDeclaredConfidence).HasColumnName("witness_declared_confidence");
-    builder.Property(row => row.WitnessEngineName).HasColumnName("witness_engine_name");
-    builder.Property(row => row.WitnessEngineVersion).HasColumnName("witness_engine_version");
+    builder.Property(row => row.LexiconRights).HasColumnName("lexicon_rights");
+    builder.Property(row => row.LexiconDeclaredConfidence).HasColumnName("lexicon_declared_confidence");
+    builder.Property(row => row.LexiconEngineName).HasColumnName("lexicon_engine_name");
+    builder.Property(row => row.LexiconEngineVersion).HasColumnName("lexicon_engine_version");
 
     builder.Property(row => row.Justification).HasColumnName("justification");
 
@@ -79,6 +79,6 @@ public sealed class QualificationAuditRowConfiguration : IEntityTypeConfiguratio
 
     builder.Property(row => row.TotalLatencyMs).HasColumnName("total_latency_ms").IsRequired();
     builder.Property(row => row.VerdictLatencyMs).HasColumnName("verdict_latency_ms");
-    builder.Property(row => row.WitnessLatencyMs).HasColumnName("witness_latency_ms");
+    builder.Property(row => row.LexiconLatencyMs).HasColumnName("lexicon_latency_ms");
   }
 }

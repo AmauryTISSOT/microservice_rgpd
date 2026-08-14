@@ -1,4 +1,4 @@
-﻿using MicroserviceRgpd.Core.Casework.Ledger;
+﻿using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
@@ -22,16 +22,16 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// repli qui rendrait un dossier ouvert dont la preuve n'a rien enregistré.
 /// </para>
 /// </remarks>
-public sealed class Ledger(AppDbContext dbContext) : ILedger
+public sealed class EvidenceLog(AppDbContext dbContext) : IEvidenceLog
 {
   /// <inheritdoc />
-  public async Task AppendAsync(LedgerEntry entry, CancellationToken cancellationToken = default)
+  public async Task AppendAsync(EvidenceLogEntry entry, CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(entry);
 
-    // `Set<T>()` plutôt qu'un `DbSet` du contexte : le contexte n'en expose aucun pour le Ledger,
+    // `Set<T>()` plutôt qu'un `DbSet` du contexte : le contexte n'en expose aucun pour le EvidenceLog,
     // afin que `Remove` et `Update` ne soient à portée de personne.
-    dbContext.Set<LedgerRow>().Add(RowOf(entry));
+    dbContext.Set<EvidenceLogRow>().Add(RowOf(entry));
 
     await dbContext.SaveChangesAsync(cancellationToken);
   }
@@ -40,9 +40,9 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
   /// Met l'écrit à plat. La traduction ne décide de rien : ce qui est nul dans l'écrit l'est dans
   /// la ligne, et aucune valeur n'est complétée ni devinée.
   /// </summary>
-  private static LedgerRow RowOf(LedgerEntry entry)
+  private static EvidenceLogRow RowOf(EvidenceLogEntry entry)
   {
-    return new LedgerRow
+    return new EvidenceLogRow
     {
       EntryId = entry.Id.Value,
       CaseId = entry.Case.Value,
@@ -53,10 +53,10 @@ public sealed class Ledger(AppDbContext dbContext) : ILedger
       IdentityDeclaration = entry.IdentityDeclaration?.Name,
       DesignationCount = entry.DesignationCount,
       DeclaredSystem = entry.DeclaredSystem?.Value,
-      SignatureRegime = entry.Signatory.Regime?.Name,
+      SignerVerification = entry.Signatory.Verification?.Name,
       DataSubjectRight = entry.Right?.Name,
       StepState = entry.DeclaredState?.Name,
-      EvidenceProse = entry.EvidenceProse,
+      Prose = entry.Prose,
       ReceptionWasDefaulted = entry.ReceptionWasDefaulted,
       ReceivedOn = entry.ReceivedOn,
       IdentityVerificationMethod = entry.VerificationMethod?.Name,

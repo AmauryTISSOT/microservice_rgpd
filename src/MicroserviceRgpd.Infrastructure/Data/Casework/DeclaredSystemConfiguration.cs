@@ -47,7 +47,7 @@ public sealed class DeclaredSystemConfiguration : IEntityTypeConfiguration<Decla
       .IsRequired();
 
     // La prose est obligatoire jusque dans la base : un système sans elle serait un système que la
-    // CoverSheet ne saurait pas nommer à la personne concernée.
+    // DeliveryLetter ne saurait pas nommer à la personne concernée.
     builder.Property(system => system.Contents)
       .HasColumnName("contents")
       .HasMaxLength(SystemContents.MaxLength)

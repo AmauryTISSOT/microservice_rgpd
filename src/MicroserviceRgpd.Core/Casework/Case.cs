@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// évident.
 /// </para>
 /// <para>
-/// <b>Hors de l'agrégat</b> : le <c>Ledger</c>, en ajout seul et survivant au dossier, et les
+/// <b>Hors de l'agrégat</b> : le <c>EvidenceLog</c>, en ajout seul et survivant au dossier, et les
 /// <c>RetrievedData</c>, qui ont leur durée de vie propre. <b>Dedans</b> : ce qui meurt avec le
 /// dossier.
 /// </para>
@@ -214,7 +214,7 @@ public sealed class Case : IAggregateRoot
   /// pas deux gestes.
   /// </summary>
   /// <remarks>
-  /// C'est de lui que court la vie du <c>Ledger</c> — cinq ans à compter de la clôture — et c'est
+  /// C'est de lui que court la vie du <c>EvidenceLog</c> — cinq ans à compter de la clôture — et c'est
   /// pourquoi il est <b>porté par le dossier</b> plutôt que recalculé depuis la preuve : le dossier
   /// clos est ce qu'un humain relit, la preuve est ce que le contrôle relit.
   /// </remarks>
@@ -338,7 +338,7 @@ public sealed class Case : IAggregateRoot
 
     var claim = _claims.SingleOrDefault(one => one.Right == right);
 
-    // Rien à confirmer se dit faux, et non vrai : le Ledger consigne les faits qui CHANGENT quelque
+    // Rien à confirmer se dit faux, et non vrai : le EvidenceLog consigne les faits qui CHANGENT quelque
     // chose, jamais leur répétition, et cette règle est tenue par l'appelant. Rendre vrai sur un
     // droit déjà confirmé lui ferait écrire une seconde ligne identique — du bruit de mécanique dans
     // ce que le contrôle vient lire.
@@ -519,7 +519,7 @@ public sealed class Case : IAggregateRoot
   /// </para>
   /// <para>
   /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat :
-  /// le <c>Ledger</c> survit au dossier de cinq ans, et le faire écrire d'ici l'aurait attaché à la
+  /// le <c>EvidenceLog</c> survit au dossier de cinq ans, et le faire écrire d'ici l'aurait attaché à la
   /// durée de vie de ce qu'il doit précisément survivre.
   /// </para>
   /// <para>
@@ -598,7 +598,7 @@ public sealed class Case : IAggregateRoot
   /// <remarks>
   /// <b>Elle ne consigne rien.</b> La ligne de preuve est écrite par l'appelant, hors de l'agrégat —
   /// et c'est lui, et lui seul, qui décide de ne pas consigner un verdict identique au précédent : le
-  /// <c>Ledger</c> ne se relit jamais.
+  /// <c>EvidenceLog</c> ne se relit jamais.
   /// </remarks>
   /// <param name="declaredSystem">Le système qu'on a interrogé.</param>
   /// <param name="findings">Ce qu'il a rendu — <see cref="LocateFindings.Nothing"/> compris.</param>
@@ -724,7 +724,7 @@ public sealed class Case : IAggregateRoot
   /// <b>Aucun rattachement n'est décidé par le service.</b> Ni la fusion à tort — irréversible, et
   /// portant sur la donnée d'un tiers — ni l'exclusion par prudence, qui est l'<c>Omission
   /// silencieuse</c>. Cette méthode ne fait que porter l'issue d'un humain, que l'appelant datera et
-  /// signera au <c>Ledger</c>.
+  /// signera au <c>EvidenceLog</c>.
   /// </para>
   /// <para>
   /// <b>Seules les <see cref="Designation"/> entrent au sac, et seulement sur un rattachement.</b> La
@@ -764,7 +764,7 @@ public sealed class Case : IAggregateRoot
 
     foreach (var designation in arbitrated.Designations)
     {
-      // Ce qui est déjà au sac n'y entre pas deux fois : le compte du Ledger mesure l'ampleur d'une
+      // Ce qui est déjà au sac n'y entre pas deux fois : le compte du EvidenceLog mesure l'ampleur d'une
       // recherche, et un doublon la gonflerait sans qu'aucune porte de plus ne s'ouvre.
       if (!_designations.Contains(designation))
       {
@@ -812,14 +812,14 @@ public sealed class Case : IAggregateRoot
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Une question ouverte est de la prose de travail : elle dit ce qui manque aujourd'hui.</b>
+  /// <b>Une question ouverte est du texte qui meurt : elle dit ce qui manque aujourd'hui.</b>
   /// La laisser après que la désignation a été trouvée en ferait un bandeau permanent, et un
   /// bandeau permanent s'apprend à ne plus se voir — la seule chose qu'un écran ne doive jamais
   /// enseigner. C'est la mécanique qui vaut déjà pour la réclamation d'une
   /// <c>IdentityMotivation</c>, et pour la même raison.
   /// </para>
   /// <para>
-  /// <b>Rien n'est perdu de la preuve.</b> Le jour où la question s'est posée est au <c>Ledger</c>,
+  /// <b>Rien n'est perdu de la preuve.</b> Le jour où la question s'est posée est au <c>EvidenceLog</c>,
   /// daté, et il y reste ; ce qui y a répondu — un <c>Locate</c> servi, une réserve rattachée —
   /// porte sa propre ligne datée. Le contrôle lit donc l'écart entre les deux sans qu'aucune ligne
   /// n'ait été réécrite, et l'écran, lui, ne montre que ce qui attend encore.
@@ -948,7 +948,7 @@ public sealed class Case : IAggregateRoot
   /// la cause et la date qu'un humain a signées, sans rien rendre de ce qui est détruit.
   /// </para>
   /// <para>
-  /// <b>Elle ne consigne rien, et ne touche pas au <c>Ledger</c>.</b> La preuve est écrite par
+  /// <b>Elle ne consigne rien, et ne touche pas au <c>EvidenceLog</c>.</b> La preuve est écrite par
   /// l'appelant et <b>survit au dossier de cinq ans</b> — elle continue de nommer l'<c>Operator</c>,
   /// dont l'effacement se refuse légitimement. Les <c>RetrievedData</c>, qui vivent hors de
   /// l'agrégat, sont détruites par l'appelant dans la même transaction.
@@ -976,11 +976,11 @@ public sealed class Case : IAggregateRoot
 
     // Les localisations portent les désignations qu'une réserve proposait et le motif que
     // l'application en a écrit — du nominatif, quelle que soit l'opacité de leur forme. Ce que le
-    // service a trouvé, et où, est déjà au Ledger sous forme de comptes.
+    // service a trouvé, et où, est déjà au EvidenceLog sous forme de comptes.
     _locatings.Clear();
 
-    // Les questions ouvertes disent ce qui manquait aujourd'hui : de la prose de travail, sans
-    // lecteur demain. Le jour où chacune s'est posée reste daté au Ledger.
+    // Les questions ouvertes disent ce qui manquait aujourd'hui : du texte qui meurt, sans
+    // lecteur demain. Le jour où chacune s'est posée reste daté au EvidenceLog.
     _questions.Clear();
 
     // La méthode survit, le détail meurt : le premier se compte et son lecteur est le contrôle, le

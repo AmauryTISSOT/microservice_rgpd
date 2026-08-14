@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MicroserviceRgpd.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260806132333_AddExtensionDeclarationAndLedgerIndex")]
-    partial class AddExtensionDeclarationAndLedgerIndex
+    [Migration("20260814124053_RenameEvidenceLogVocabulary")]
+    partial class RenameEvidenceLogVocabulary
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -128,6 +128,77 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.ToTable("case_retrieved_data", (string)null);
                 });
 
+            modelBuilder.Entity("MicroserviceRgpd.Core.Screenings.ScreenedColumn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ScreeningId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("screening_id");
+
+                    b.Property<string>("Strength")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("strength");
+
+                    b.HasKey("Id")
+                        .HasName("pk_screened_columns");
+
+                    b.HasIndex("ScreeningId")
+                        .HasDatabaseName("ix_screened_columns_screening_id");
+
+                    b.ToTable("screened_columns", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_screened_columns_arbitration", "(state is null and signed_by is null and signed_on is null) or (state is not null and signed_by is not null and signed_on is not null)");
+                        });
+                });
+
+            modelBuilder.Entity("MicroserviceRgpd.Core.Screenings.Screening", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Database")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("database_name");
+
+                    b.Property<int>("DeclaredColumnCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("declared_column_count");
+
+                    b.Property<string>("Dialect")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("dialect");
+
+                    b.Property<DateTimeOffset>("LaunchedOn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("launched_on");
+
+                    b.HasKey("Id")
+                        .HasName("pk_screenings");
+
+                    b.ToTable("screenings", (string)null);
+                });
+
             modelBuilder.Entity("MicroserviceRgpd.Infrastructure.Data.Audit.QualificationAuditRow", b =>
                 {
                     b.Property<Guid>("QualificationId")
@@ -142,6 +213,26 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.Property<string>("Justification")
                         .HasColumnType("text")
                         .HasColumnName("justification");
+
+                    b.Property<string>("LexiconDeclaredConfidence")
+                        .HasColumnType("text")
+                        .HasColumnName("lexicon_declared_confidence");
+
+                    b.Property<string>("LexiconEngineName")
+                        .HasColumnType("text")
+                        .HasColumnName("lexicon_engine_name");
+
+                    b.Property<string>("LexiconEngineVersion")
+                        .HasColumnType("text")
+                        .HasColumnName("lexicon_engine_version");
+
+                    b.Property<int?>("LexiconLatencyMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("lexicon_latency_ms");
+
+                    b.PrimitiveCollection<string[]>("LexiconRights")
+                        .HasColumnType("text[]")
+                        .HasColumnName("lexicon_rights");
 
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("timestamp with time zone")
@@ -192,26 +283,6 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("verdict_rights");
 
-                    b.Property<string>("WitnessDeclaredConfidence")
-                        .HasColumnType("text")
-                        .HasColumnName("witness_declared_confidence");
-
-                    b.Property<string>("WitnessEngineName")
-                        .HasColumnType("text")
-                        .HasColumnName("witness_engine_name");
-
-                    b.Property<string>("WitnessEngineVersion")
-                        .HasColumnType("text")
-                        .HasColumnName("witness_engine_version");
-
-                    b.Property<int?>("WitnessLatencyMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("witness_latency_ms");
-
-                    b.PrimitiveCollection<string[]>("WitnessRights")
-                        .HasColumnType("text[]")
-                        .HasColumnName("witness_rights");
-
                     b.HasKey("QualificationId")
                         .HasName("pk_qualification_audit_entries");
 
@@ -259,11 +330,6 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("designation_count");
 
-                    b.Property<string>("EvidenceProse")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("evidence_prose");
-
                     b.Property<string>("Fact")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -288,6 +354,11 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_at");
 
+                    b.Property<string>("Prose")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("evidence_prose");
+
                     b.Property<DateTimeOffset?>("ReceivedOn")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_on");
@@ -310,7 +381,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.Property<string>("SignerVerification")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("signature_regime");
+                        .HasColumnName("signer_verification");
 
                     b.Property<string>("StepState")
                         .HasMaxLength(64)
@@ -318,12 +389,12 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnName("step_state");
 
                     b.HasKey("EntryId")
-                        .HasName("pk_ledger_entries");
+                        .HasName("pk_evidence_log_entries");
 
                     b.HasIndex("CaseId")
-                        .HasDatabaseName("ix_ledger_entries_case_id");
+                        .HasDatabaseName("ix_evidence_log_entries_case_id");
 
-                    b.ToTable("ledger_entries", (string)null);
+                    b.ToTable("evidence_log_entries", (string)null);
                 });
 
             modelBuilder.Entity("MicroserviceRgpd.Core.Casework.Case", b =>
@@ -785,6 +856,155 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
 
                     b.Navigation("Envelope")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MicroserviceRgpd.Core.Screenings.ScreenedColumn", b =>
+                {
+                    b.HasOne("MicroserviceRgpd.Core.Screenings.Screening", null)
+                        .WithMany("Columns")
+                        .HasForeignKey("ScreeningId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_screened_columns_screenings");
+
+                    b.OwnsOne("MicroserviceRgpd.Core.Screenings.Arbitration", "Arbitration", b1 =>
+                        {
+                            b1.Property<Guid>("ScreenedColumnId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("SignedBy")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("signed_by");
+
+                            b1.Property<DateTimeOffset>("SignedOn")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("signed_on");
+
+                            b1.Property<string>("State")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character varying(64)")
+                                .HasColumnName("state");
+
+                            b1.HasKey("ScreenedColumnId");
+
+                            b1.ToTable("screened_columns");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ScreenedColumnId");
+                        });
+
+                    b.OwnsOne("MicroserviceRgpd.Core.Screenings.ListedColumn", "Listed", b1 =>
+                        {
+                            b1.Property<Guid>("ScreenedColumnId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("ColumnComment")
+                                .HasColumnType("text")
+                                .HasColumnName("column_comment");
+
+                            b1.Property<string>("DataType")
+                                .HasColumnType("text")
+                                .HasColumnName("data_type");
+
+                            b1.Property<bool?>("IsNullable")
+                                .HasColumnType("boolean")
+                                .HasColumnName("is_nullable");
+
+                            b1.Property<int>("Position")
+                                .HasColumnType("integer")
+                                .HasColumnName("position");
+
+                            b1.Property<string>("ReferencedTable")
+                                .HasColumnType("text")
+                                .HasColumnName("referenced_table");
+
+                            b1.Property<string>("TableComment")
+                                .HasColumnType("text")
+                                .HasColumnName("table_comment");
+
+                            b1.HasKey("ScreenedColumnId");
+
+                            b1.ToTable("screened_columns");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ScreenedColumnId");
+
+                            b1.OwnsOne("MicroserviceRgpd.Core.Screenings.ColumnIdentity", "Identity", b2 =>
+                                {
+                                    b2.Property<Guid>("ListedColumnScreenedColumnId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Column")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("column_name");
+
+                                    b2.Property<string>("Schema")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("schema_name");
+
+                                    b2.Property<string>("Table")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("character varying(100)")
+                                        .HasColumnName("table_name");
+
+                                    b2.HasKey("ListedColumnScreenedColumnId");
+
+                                    b2.ToTable("screened_columns");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ListedColumnScreenedColumnId");
+                                });
+
+                            b1.Navigation("Identity")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("Arbitration");
+
+                    b.Navigation("Listed")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MicroserviceRgpd.Core.Screenings.Screening", b =>
+                {
+                    b.OwnsOne("MicroserviceRgpd.Core.Screenings.ScreeningEngineIdentity", "Engine", b1 =>
+                        {
+                            b1.Property<Guid>("ScreeningId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("engine_name");
+
+                            b1.Property<string>("Version")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("engine_version");
+
+                            b1.HasKey("ScreeningId");
+
+                            b1.ToTable("screenings");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ScreeningId");
+                        });
+
+                    b.Navigation("Engine")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MicroserviceRgpd.Core.Screenings.Screening", b =>
+                {
+                    b.Navigation("Columns");
                 });
 #pragma warning restore 612, 618
         }

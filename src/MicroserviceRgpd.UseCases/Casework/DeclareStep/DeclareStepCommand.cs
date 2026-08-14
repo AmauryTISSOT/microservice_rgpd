@@ -14,12 +14,12 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
 /// </para>
 /// <para>
 /// <b>Le nom et le régime voyagent ensemble.</b> La surface n'authentifie personne — choix de PoC
-/// assumé —, et le régime dit ce que valait ce nom : sans lui, le <c>Ledger</c> d'aujourd'hui serait
+/// assumé —, et le régime dit ce que valait ce nom : sans lui, le <c>EvidenceLog</c> d'aujourd'hui serait
 /// indiscernable de celui de demain.
 /// </para>
 /// <para>
-/// <b>Le constat est de la prose de preuve, et il est le seul texte que cette commande porte.</b> La
-/// prose de travail — celle qui nomme des tiers — n'a aucun champ ici : elle vit sur le <c>Case</c> et
+/// <b>Le constat est du texte qui reste, et il est la seule prose que cette commande porte.</b> Le
+/// texte qui meurt — celui qui nomme des tiers — n'a aucun champ ici : il vit sur le <c>Case</c> et
 /// meurt à la clôture. La règle tient par le placement.
 /// </para>
 /// </remarks>

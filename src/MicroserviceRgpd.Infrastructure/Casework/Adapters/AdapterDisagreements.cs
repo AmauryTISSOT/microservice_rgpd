@@ -15,7 +15,7 @@ namespace MicroserviceRgpd.Infrastructure.Casework.Adapters;
 /// à réparer.
 /// </para>
 /// <para>
-/// <b>Ce qui est tu n'est pas perdu.</b> Chaque tentative refusée entre au <c>Ledger</c>, datée,
+/// <b>Ce qui est tu n'est pas perdu.</b> Chaque tentative refusée entre au <c>EvidenceLog</c>, datée,
 /// dans le dossier au titre duquel elle est partie : la preuve les garde toutes, l'exploitation
 /// n'en lit qu'une.
 /// </para>
@@ -49,7 +49,7 @@ public sealed class AdapterDisagreements(ILogger<AdapterDisagreements> logger) :
 
     logger.LogError(
       "Désaccord Manifest/Adapter sur le système « {DeclaredSystem} » : {Refusal}. Signalé une "
-      + "seule fois, au grain du déploiement ; les tentatives, elles, sont datées au Ledger de "
+      + "seule fois, au grain du déploiement ; les tentatives, elles, sont datées au EvidenceLog de "
       + "chaque dossier.",
       declaredSystem.Value,
       refusal.FrenchLabel);

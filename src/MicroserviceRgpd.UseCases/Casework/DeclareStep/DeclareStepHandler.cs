@@ -1,5 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
 
@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
 /// <remarks>
 /// <para>
 /// <b>L'ordre est : écrire le dossier, puis consigner</b> — comme à l'ouverture, et pour la même
-/// raison. Ce sont deux écritures et non une transaction, le <c>Ledger</c> étant hors de l'agrégat ;
+/// raison. Ce sont deux écritures et non une transaction, le <c>EvidenceLog</c> étant hors de l'agrégat ;
 /// et les deux pannes ne se valent pas. Une ligne de preuve pour un état que le dossier ne porte pas
 /// est un faux ; un état porté dont la ligne manque est un état <b>visible</b> à l'écran, que
 /// l'<c>Operator</c> voit.
@@ -25,7 +25,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareStep;
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="ledger">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'un acte se dicte en test.</param>
-public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, TimeProvider clock)
+public sealed class DeclareStepHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
   : ICommandHandler<DeclareStepCommand, Result>
 {
   /// <inheritdoc />
@@ -69,12 +69,12 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, 
   /// La ligne de preuve, ou les refus nommés champ par champ. Les messages viennent des types du
   /// domaine : deux rédactions d'une même règle finiraient par ne plus dire la même chose.
   /// </summary>
-  private Result<LedgerEntry> Signed(DeclareStepCommand command, bool findingIsDemanded)
+  private Result<EvidenceLogEntry> Signed(DeclareStepCommand command, bool findingIsDemanded)
   {
     // Le régime accompagne le nom, et il est posé ici : la surface n'authentifie personne, et c'est ce
     // que la preuve doit garder pour ne pas être relue comme une identification.
     var signatory = Read(
-      () => Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated),
+      () => Signatory.Operator(command.SignedBy, SignerVerification.Unauthenticated),
       nameof(DeclareStepCommand.SignedBy),
       out var nameRefused);
 
@@ -82,16 +82,16 @@ public sealed class DeclareStepHandler(IRepository<Case> cases, ILedger ledger, 
     // allers-retours pour deux cases vides feraient perdre à l'Operator la prose qu'il vient d'écrire,
     // et lui feraient découvrir le second refus après avoir corrigé le premier.
     Read(
-      () => LedgerEntry.FindingOrThrow(command.Finding, findingIsDemanded),
+      () => EvidenceLogEntry.FindingOrThrow(command.Finding, findingIsDemanded),
       nameof(DeclareStepCommand.Finding),
       out var findingRefused);
 
     if (signatory is null || findingRefused.Length > 0)
     {
-      return Result<LedgerEntry>.Invalid([.. nameRefused, .. findingRefused]);
+      return Result<EvidenceLogEntry>.Invalid([.. nameRefused, .. findingRefused]);
     }
 
-    return Result<LedgerEntry>.Success(LedgerEntry.StepDeclared(
+    return Result<EvidenceLogEntry>.Success(EvidenceLogEntry.StepDeclared(
       command.Case,
       clock.GetUtcNow(),
       command.DeclaredSystem,

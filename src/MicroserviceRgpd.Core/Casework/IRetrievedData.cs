@@ -59,7 +59,7 @@ public interface IRetrievedData
   /// </para>
   /// <para>
   /// <b>Rien à détruire n'est pas une panne.</b> Un droit dont aucune lecture n'a rien rapporté se
-  /// remet quand même — la <c>CoverSheet</c> seule est déjà une réponse.
+  /// remet quand même — la <c>DeliveryLetter</c> seule est déjà une réponse.
   /// </para>
   /// </remarks>
   /// <param name="caseId">Le dossier dont on remet un droit.</param>

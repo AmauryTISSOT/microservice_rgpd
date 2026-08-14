@@ -1,23 +1,23 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La table du <c>Ledger</c> : vingt et une colonnes, et pas une de plus où un nom de personne concernée
-/// pourrait entrer. La seule prose est celle de <b>preuve</b> ; la prose de travail, qui nomme par
+/// La table du <c>EvidenceLog</c> : vingt et une colonnes, et pas une de plus où un nom de personne concernée
+/// pourrait entrer. La seule prose est le <b>texte qui reste</b> ; le texte qui meurt, qui nomme par
 /// nature, n'a aucune colonne ici.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : le <c>Ledger</c> survit
+/// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : le <c>EvidenceLog</c> survit
 /// au dossier de cinq ans, et une contrainte référentielle rendrait la destruction du dossier
 /// impossible — ou, pire, emporterait la preuve avec lui. Le <c>case_id</c> est une référence
 /// <b>libre</b>, et il le restera.
 /// </para>
 /// <para>
 /// <b>Un seul index secondaire, et il est daté.</b> Il est posé sur <c>case_id</c> le jour où
-/// l'écran de la file s'est mis à lire les <c>Ledger</c> échus : c'est par lui que la file demande
+/// l'écran de la file s'est mis à lire les <c>EvidenceLog</c> échus : c'est par lui que la file demande
 /// quels dossiers clos portent encore une preuve, et par lui que la destruction emporte un dossier
 /// de preuve entier. Il n'y en a pas d'autre — rien d'autre ne lit cette table.
 /// </para>
@@ -25,26 +25,26 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// <b>Le <c>snake_case</c> est déclaré ici, explicitement</b>, comme sur les autres tables du dépôt.
 /// </para>
 /// </remarks>
-public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
+public sealed class EvidenceLogRowConfiguration : IEntityTypeConfiguration<EvidenceLogRow>
 {
   /// <inheritdoc />
-  public void Configure(EntityTypeBuilder<LedgerRow> builder)
+  public void Configure(EntityTypeBuilder<EvidenceLogRow> builder)
   {
     ArgumentNullException.ThrowIfNull(builder);
 
-    builder.ToTable("ledger_entries");
+    builder.ToTable("evidence_log_entries");
 
     // La clé est l'identité de la ligne, forgée en GUID v7 : ordonnée dans le temps, donc sans
     // fragmentation d'index à l'insertion, et sans qu'aucune ligne n'ait eu à en compter une autre.
-    builder.HasKey(row => row.EntryId).HasName("pk_ledger_entries");
+    builder.HasKey(row => row.EntryId).HasName("pk_evidence_log_entries");
     builder.Property(row => row.EntryId).HasColumnName("entry_id").ValueGeneratedNever();
 
     builder.Property(row => row.CaseId).HasColumnName("case_id").IsRequired();
 
     // Le seul index secondaire de la table. La file demande, à chaque affichage, quels dossiers clos
-    // portent encore une preuve ; et la destruction d'un Ledger échu emporte toutes les lignes d'un
+    // portent encore une preuve ; et la destruction d'un EvidenceLog échu emporte toutes les lignes d'un
     // même dossier d'un coup. Les deux se lisent par cette colonne, et par elle seule.
-    builder.HasIndex(row => row.CaseId).HasDatabaseName("ix_ledger_entries_case_id");
+    builder.HasIndex(row => row.CaseId).HasDatabaseName("ix_evidence_log_entries_case_id");
 
     builder.Property(row => row.OccurredAt).HasColumnName("occurred_at").IsRequired();
 
@@ -77,8 +77,8 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
       .HasColumnName("declared_system")
       .HasMaxLength(DeclaredSystemId.MaxLength);
 
-    builder.Property(row => row.SignatureRegime)
-      .HasColumnName("signature_regime")
+    builder.Property(row => row.SignerVerification)
+      .HasColumnName("signer_verification")
       .HasMaxLength(CaseworkSchema.ClosedVocabularyLength);
 
     builder.Property(row => row.DataSubjectRight)
@@ -92,9 +92,9 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     // Le plafond de la prose vit une seule fois, là où le domaine le déclare. La colonne est bornée
     // plutôt que libre : ce qui descend ici survit cinq ans à la clôture, et une colonne sans
     // plafond serait la seule de la table à ne pas dire ce qu'elle accepte.
-    builder.Property(row => row.EvidenceProse)
+    builder.Property(row => row.Prose)
       .HasColumnName("evidence_prose")
-      .HasMaxLength(LedgerEntry.MaxEvidenceProseLength);
+      .HasMaxLength(EvidenceLogEntry.MaxEvidenceProseLength);
 
     builder.Property(row => row.ReceptionWasDefaulted).HasColumnName("reception_was_defaulted");
 
@@ -121,7 +121,7 @@ public sealed class LedgerRowConfiguration : IEntityTypeConfiguration<LedgerRow>
     builder.Property(row => row.DeclaredSystemCount).HasColumnName("declared_system_count");
 
     // Par son nom, jamais par un entier, comme tous les vocabulaires fermés de ce dépôt. Le motif
-    // qui l'accompagne parfois n'a pas de colonne à lui : c'est de la prose de preuve, et elle
+    // qui l'accompagne parfois n'a pas de colonne à lui : c'est du texte qui reste, et il
     // partage evidence_prose avec les constats.
     builder.Property(row => row.ClosingCause)
       .HasColumnName("closing_cause")

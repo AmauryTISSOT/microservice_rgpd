@@ -1,5 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.UseCases.Casework.DestroyLedger;
+using MicroserviceRgpd.UseCases.Casework.DestroyEvidenceLog;
 using MicroserviceRgpd.UseCases.Casework.ReadQueue;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Casework;
 
 /// <summary>
-/// La file : les dossiers ouverts, rangés par échéance, et — <b>à part</b> — les <c>Ledger</c> dont
+/// La file : les dossiers ouverts, rangés par échéance, et — <b>à part</b> — les <c>EvidenceLog</c> dont
 /// la conservation est échue. <b>C'est une requête, jamais un processus.</b>
 /// </summary>
 /// <remarks>
@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.Web.Pages.Casework;
 /// <c>BackgroundService</c>, aucun <c>cron</c>, aucune minuterie, aucun drapeau persisté
 /// d'échéance : tout se recalcule à l'instant où l'<c>Operator</c> regarde. Un processus de fond
 /// interrompu rendrait une file <b>vide et rassurante</b>, soit l'<c>Omission silencieuse</c> sous sa
-/// forme la plus dangereuse. <b>C'est vrai de la destruction des <c>Ledger</c> échus aussi</b> :
+/// forme la plus dangereuse. <b>C'est vrai de la destruction des <c>EvidenceLog</c> échus aussi</b> :
 /// elle n'a lieu que sous le clic d'un humain.
 /// </para>
 /// <para>
@@ -33,7 +33,7 @@ namespace MicroserviceRgpd.Web.Pages.Casework;
 /// ⚠️ <b>Elle n'offre aucun geste SUR UN DOSSIER.</b> Chaque ligne de dossier mène au dossier, et
 /// c'est là que l'<c>Operator</c> agit : une action depuis la liste ferait signer quelqu'un sans
 /// qu'il ait ouvert ce qu'il signe. Le <b>seul</b> geste de cet écran est la destruction d'un
-/// <c>Ledger</c> échu, qui n'a aucun dossier où vivre — le sien est clos depuis cinq ans —, et son
+/// <c>EvidenceLog</c> échu, qui n'a aucun dossier où vivre — le sien est clos depuis cinq ans —, et son
 /// bouton est tenu <b>loin</b> des lignes de dossiers, dans une section qui lui est propre.
 /// </para>
 /// </remarks>
@@ -46,11 +46,11 @@ public class QueueModel(IMediator mediator) : PageModel
   public OperatorQueue Queue { get; private set; } = new([], [], DateTimeOffset.MinValue);
 
   /// <summary>
-  /// Ce que l'humain envoie pour <b>détruire un <c>Ledger</c> échu</b> — un geste irréversible et
+  /// Ce que l'humain envoie pour <b>détruire un <c>EvidenceLog</c> échu</b> — un geste irréversible et
   /// sans trace.
   /// </summary>
   [BindProperty]
-  public LedgerDestructionForm Destruction { get; set; } = new();
+  public EvidenceLogDestructionForm Destruction { get; set; } = new();
 
   public async Task OnGetAsync(CancellationToken cancellationToken)
   {
@@ -58,7 +58,7 @@ public class QueueModel(IMediator mediator) : PageModel
   }
 
   /// <summary>
-  /// Détruit un <c>Ledger</c> échu, en entier — et n'écrit rien à la place.
+  /// Détruit un <c>EvidenceLog</c> échu, en entier — et n'écrit rien à la place.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -69,18 +69,18 @@ public class QueueModel(IMediator mediator) : PageModel
   /// </para>
   /// <para>
   /// <b>Aucun nom n'est demandé</b>, contrairement à tous les autres gestes du dispositif : il
-  /// n'existe plus une ligne où l'écrire, le <c>Ledger</c> détruit étant le seul endroit qui aurait
+  /// n'existe plus une ligne où l'écrire, le <c>EvidenceLog</c> détruit étant le seul endroit qui aurait
   /// pu le porter. Réclamer une signature pour ne l'écrire nulle part aurait été la façade d'une
   /// preuve.
   /// </para>
   /// <para>
   /// <b>Un refus du domaine ne s'affiche pas.</b> Une preuve encore due, un dossier inconnu, un
-  /// <c>Ledger</c> qu'un autre écran vient d'emporter : aucun de ces cas n'est une panne, et la file
+  /// <c>EvidenceLog</c> qu'un autre écran vient d'emporter : aucun de ces cas n'est une panne, et la file
   /// rechargée dit d'elle-même ce qui reste. C'est la seule chose vraie qu'on puisse afficher d'un
   /// geste qui ne se consigne pas.
   /// </para>
   /// </remarks>
-  public async Task<IActionResult> OnPostDestroyLedgerAsync(CancellationToken cancellationToken)
+  public async Task<IActionResult> OnPostDestroyEvidenceLogAsync(CancellationToken cancellationToken)
   {
     // Une adresse qui ne désigne aucun dossier n'est pas un formulaire mal rempli : c'est un envoi
     // forgé, et le domaine refuse le GUID vide comme il refuse le reste.
@@ -92,7 +92,7 @@ public class QueueModel(IMediator mediator) : PageModel
     if (!Destruction.Confirmed)
     {
       ModelState.AddModelError(
-        $"{DestructionPrefix}.{nameof(LedgerDestructionForm.Confirmed)}",
+        $"{DestructionPrefix}.{nameof(EvidenceLogDestructionForm.Confirmed)}",
         "La destruction emporte toute la preuve de ce dossier, ne se défait pas, et ne laisse "
         + "aucune trace d'elle-même. Cochez la case pour confirmer que c'est bien ce que vous "
         + "voulez faire.");
@@ -102,7 +102,7 @@ public class QueueModel(IMediator mediator) : PageModel
       return Page();
     }
 
-    await mediator.Send(new DestroyLedgerCommand(ledgerOf), cancellationToken);
+    await mediator.Send(new DestroyEvidenceLogCommand(ledgerOf), cancellationToken);
 
     // Une redirection après l'écriture : recharger la page ne redétruit rien — et la file qui
     // revient est celle d'après la destruction, seule à pouvoir dire ce qui reste.
@@ -111,14 +111,14 @@ public class QueueModel(IMediator mediator) : PageModel
 }
 
 /// <summary>
-/// Ce qu'un <c>Operator</c> envoie pour détruire un <c>Ledger</c> échu : le dossier dont c'est la
+/// Ce qu'un <c>Operator</c> envoie pour détruire un <c>EvidenceLog</c> échu : le dossier dont c'est la
 /// preuve, et une confirmation délibérée.
 /// </summary>
 /// <remarks>
 /// <b>Aucun champ de signature, et ce n'est pas un oubli.</b> Le geste ne laisse aucune trace de
 /// lui-même : il n'existe plus une ligne où un nom pourrait s'écrire.
 /// </remarks>
-public sealed class LedgerDestructionForm
+public sealed class EvidenceLogDestructionForm
 {
   /// <summary>Le dossier dont la preuve est détruite. Il n'a plus une désignation depuis cinq ans.</summary>
   public Guid Case { get; set; }

@@ -8,7 +8,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// <remarks>
 /// <para>
 /// <b>Elle est fermée pour survivre à la clôture.</b> C'est cette moitié-là qui entre au
-/// <c>Ledger</c> : le contrôle juge une <i>pratique</i> en dénombrant des valeurs — « douze accès
+/// <c>EvidenceLog</c> : le contrôle juge une <i>pratique</i> en dénombrant des valeurs — « douze accès
 /// ouverts sous <c>None</c> » est un fait qu'on lit d'un coup d'œil — là où l'autre moitié, le
 /// détail en prose, est irréductiblement nominative et meurt avec le <see cref="Case"/>.
 /// </para>
@@ -21,8 +21,8 @@ namespace MicroserviceRgpd.Core.Casework;
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucune de ces valeurs ne prétend qu'une identité a été vérifiée.</b> Le service ne vérifie
-/// lui-même aucune identité — greffier, pas témoin : il enregistre ce qu'un humain déclare avoir
-/// fait, et n'en juge jamais la valeur.
+/// lui-même aucune identité — <c>Enregistré, jamais vérifié</c> : il enregistre ce qu'un humain
+/// déclare avoir fait, et n'en juge jamais la valeur.
 /// </para>
 /// </remarks>
 public sealed class IdentityVerificationMethod : SmartEnum<IdentityVerificationMethod>

@@ -1,6 +1,6 @@
 using System.Net;
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// <para>
 /// Ce que ces tests gardent est l'équilibre exact du dispositif : <b>la clôture détruit tout ce qui
 /// nomme, et ne recouvre rien de ce qui manque</b>. Un <c>Step</c> laissé <c>ToDo</c> le reste, le
-/// <c>Ledger</c> n'a pas bougé, et il n'y a plus une désignation nulle part.
+/// <c>EvidenceLog</c> n'a pas bougé, et il n'y a plus une désignation nulle part.
 /// </para>
 /// <para>
 /// C'est aussi le seul geste irréversible du dispositif, et sa parade est ici : une case à cocher
@@ -32,11 +32,11 @@ public class ClosureScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Le test d'acceptation du lot.</b> Un dossier se clôt avec un <c>Step</c> resté <c>ToDo</c> ;
-  /// tout le nominatif est détruit à l'instant ; le <c>Ledger</c>, lui, est intact et continue de
+  /// tout le nominatif est détruit à l'instant ; le <c>EvidenceLog</c>, lui, est intact et continue de
   /// nommer l'<c>Operator</c>.
   /// </summary>
   [Fact]
-  public async Task ClosesACaseWithWorkLeftUndoneDestroysItsNamesAndLeavesTheLedgerIntact()
+  public async Task ClosesACaseWithWorkLeftUndoneDestroysItsNamesAndLeavesTheEvidenceLogIntact()
   {
     var opened = await _surface.OpenAsync(
       ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
@@ -105,15 +105,15 @@ public class ClosureScreen(CustomWebApplicationFactory<Program> factory)
 
     // LE LEDGER EST INTACT. Sa ligne d'hier est là, mot pour mot, et la clôture n'a fait qu'en
     // ajouter une : la preuve d'une procédure ne dépend pas du sort du dossier qu'elle documente.
-    var lines = await dbContext.Set<LedgerRow>()
+    var lines = await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
       .Where(row => row.CaseId == opened.Value)
       .ToListAsync();
 
-    lines.Single(row => row.Fact == nameof(LedgerFact.StepDeclared))
-      .EvidenceProse.ShouldBe("Personne n'a lancé la requête avant l'échéance.");
+    lines.Single(row => row.Fact == nameof(EvidenceLogFact.StepDeclared))
+      .Prose.ShouldBe("Personne n'a lancé la requête avant l'échéance.");
 
-    var closure = lines.Single(row => row.Fact == nameof(LedgerFact.CaseClosed));
+    var closure = lines.Single(row => row.Fact == nameof(EvidenceLogFact.CaseClosed));
 
     closure.ClosingCause.ShouldBe(nameof(ClosingCause.Answered));
 
@@ -167,8 +167,8 @@ public class ClosureScreen(CustomWebApplicationFactory<Program> factory)
     untouched.State.ShouldBe(CaseState.Open);
     untouched.Designations.ShouldNotBeEmpty();
 
-    (await dbContext.Set<LedgerRow>().AsNoTracking()
-      .AnyAsync(row => row.CaseId == opened.Value && row.Fact == nameof(LedgerFact.CaseClosed)))
+    (await dbContext.Set<EvidenceLogRow>().AsNoTracking()
+      .AnyAsync(row => row.CaseId == opened.Value && row.Fact == nameof(EvidenceLogFact.CaseClosed)))
       .ShouldBeFalse();
   }
 
@@ -214,11 +214,11 @@ public class ClosureScreen(CustomWebApplicationFactory<Program> factory)
     abandoned.Designations.ShouldBeEmpty();
 
     // Le motif survit dans la preuve, quand tout le reste du dossier tombe.
-    var closure = await reread.Set<LedgerRow>()
+    var closure = await reread.Set<EvidenceLogRow>()
       .AsNoTracking()
-      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(LedgerFact.CaseClosed));
+      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(EvidenceLogFact.CaseClosed));
 
-    closure.EvidenceProse.ShouldBe("La personne s'est ravisée et a demandé l'effacement de son dossier.");
+    closure.Prose.ShouldBe("La personne s'est ravisée et a demandé l'effacement de son dossier.");
   }
 
   /// <summary>
@@ -256,9 +256,9 @@ public class ClosureScreen(CustomWebApplicationFactory<Program> factory)
     closed.Claims.Single(claim => claim.Right == DataSubjectRight.Portability)
       .State.ShouldBe(ClaimState.Open);
 
-    var answered = await dbContext.Set<LedgerRow>()
+    var answered = await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
-      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(LedgerFact.ClaimAnswered));
+      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(EvidenceLogFact.ClaimAnswered));
 
     answered.DataSubjectRight.ShouldBe(nameof(DataSubjectRight.Access));
     answered.SignatoryName.ShouldBe("Camille Roy");

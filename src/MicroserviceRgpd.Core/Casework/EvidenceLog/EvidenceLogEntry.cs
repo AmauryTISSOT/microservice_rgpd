@@ -1,7 +1,7 @@
 ﻿using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.SharedKernel;
 
-namespace MicroserviceRgpd.Core.Casework.Ledger;
+namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
 /// Une ligne de la matière de preuve d'un <see cref="Case"/> : qui a déclaré quoi, et quand.
@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.Core.Casework.Ledger;
 /// <para>
 /// <b>Anonyme par construction, jamais par expurgation.</b> Aucune <see cref="Designation"/>,
 /// aucun nom de personne concernée n'entre ici — <b>dès la première ligne</b>, et non à la
-/// clôture. Anonymiser plus tard aurait exigé de réécrire le <c>Ledger</c> : la seule structure du
+/// clôture. Anonymiser plus tard aurait exigé de réécrire le <c>EvidenceLog</c> : la seule structure du
 /// dispositif dont l'invariant est précisément qu'on ne la réécrit pas. La règle tient par la
 /// <b>forme du type</b> — il n'existe aucun emplacement où une désignation pourrait atterrir — et
 /// non par la discipline de qui l'écrit.
@@ -29,20 +29,20 @@ namespace MicroserviceRgpd.Core.Casework.Ledger;
 /// qui lirait la ligne d'avant serait une écriture qu'une ligne d'avant pourrait faire mentir.
 /// </para>
 /// </remarks>
-public sealed record LedgerEntry
+public sealed record EvidenceLogEntry
 {
-  private LedgerEntry(
-    LedgerEntryId id,
+  private EvidenceLogEntry(
+    EvidenceLogEntryId id,
     CaseId caseId,
     DateTimeOffset occurredAt,
-    LedgerFact fact,
+    EvidenceLogFact fact,
     Signatory signatory,
     IdentityDeclaration? identityDeclaration,
     int? designationCount,
     DeclaredSystemId? declaredSystem,
     DataSubjectRight? right = null,
     StepState? declaredState = null,
-    string? evidenceProse = null,
+    string? prose = null,
     bool? receptionWasDefaulted = null,
     IdentityVerificationMethod? verificationMethod = null,
     DateTimeOffset? receivedOn = null,
@@ -66,7 +66,7 @@ public sealed record LedgerEntry
     DeclaredSystem = declaredSystem;
     Right = right;
     DeclaredState = declaredState;
-    EvidenceProse = evidenceProse;
+    Prose = prose;
     ReceptionWasDefaulted = receptionWasDefaulted;
     VerificationMethod = verificationMethod;
     ReceivedOn = receivedOn;
@@ -74,17 +74,17 @@ public sealed record LedgerEntry
   }
 
   /// <summary>
-  /// Le plafond de la prose de preuve, en unités UTF-16. Un constat, un motif — pas un dossier
+  /// Le plafond du texte qui reste, en unités UTF-16. Un constat, un motif — pas un dossier
   /// entier recopié dans la preuve.
   /// </summary>
   public const int MaxEvidenceProseLength = 2000;
 
   /// <summary>L'identité de cette ligne. Jamais un rang, jamais un compteur.</summary>
-  public LedgerEntryId Id { get; }
+  public EvidenceLogEntryId Id { get; }
 
   /// <summary>
   /// Le dossier dont cette ligne est la preuve. <b>Il lui survit</b> : le <c>Case</c> est détruit
-  /// de son nominatif à la clôture, le <c>Ledger</c> vit cinq ans de plus.
+  /// de son nominatif à la clôture, le <c>EvidenceLog</c> vit cinq ans de plus.
   /// </summary>
   public CaseId Case { get; }
 
@@ -95,13 +95,13 @@ public sealed record LedgerEntry
   /// ⚠️ Sur une ouverture, c'est l'instant du <b>dépôt</b> et non la date de réception : le dépôt
   /// manuel transcrit un courriel reçu il y a trois semaines, et dater la ligne d'il y a trois
   /// semaines ferait dire à la preuve que le service savait depuis trois semaines. Ce qu'il a su et
-  /// quand est précisément ce que le <c>Ledger</c> est là pour établir. La date de réception, elle,
+  /// quand est précisément ce que le <c>EvidenceLog</c> est là pour établir. La date de réception, elle,
   /// a sa colonne propre — voir <see cref="ReceivedOn"/>.
   /// </remarks>
   public DateTimeOffset OccurredAt { get; }
 
   /// <summary>Ce que cette ligne consigne, dans un vocabulaire fermé.</summary>
-  public LedgerFact Fact { get; }
+  public EvidenceLogFact Fact { get; }
 
   /// <summary>Qui l'a déclaré — un <c>Operator</c> nommé, ou l'application, c'est-à-dire personne.</summary>
   public Signatory Signatory { get; }
@@ -141,15 +141,15 @@ public sealed record LedgerEntry
   public StepState? DeclaredState { get; }
 
   /// <summary>
-  /// La <b>prose de preuve</b> — le constat, le motif — écrite par l'<c>Operator</c> au point de
+  /// Le <b>texte qui reste</b> — le constat, le motif — écrit par l'<c>Operator</c> au point de
   /// décision, et <c>null</c> pour les faits qu'aucun humain n'a motivés.
   /// </summary>
   /// <remarks>
   /// <para>
-  /// ⚠️ <b>C'est le seul champ de prose libre du <c>Ledger</c>, et son régime est écrit ici.</b> La
-  /// prose de preuve dit <i>pourquoi on a décidé cela</i>, n'est pas nominative par nature, et
-  /// survit. La <b>prose de travail</b> — celle qui dit quelle ligne appartient à qui, et qui nomme
-  /// des tiers — n'a <b>aucun emplacement ici</b> : elle vit sur le <c>Case</c> et meurt à la
+  /// ⚠️ <b>C'est le seul champ de prose libre du <c>EvidenceLog</c>, et son régime est écrit ici.</b> Le
+  /// texte qui reste dit <i>pourquoi on a décidé cela</i>, n'est pas nominatif par nature, et
+  /// survit. Le <b>texte qui meurt</b> — celui qui dit quelle ligne appartient à qui, et qui nomme
+  /// des tiers — n'a <b>aucun emplacement ici</b> : il vit sur le <c>Case</c> et meurt à la
   /// clôture. La règle tient par le <b>placement</b> — deux champs à deux endroits, dont un seul
   /// survit — et non par la discipline de l'<c>Operator</c>.
   /// </para>
@@ -158,7 +158,7 @@ public sealed record LedgerEntry
   /// service ne l'échappera pour personne.
   /// </para>
   /// </remarks>
-  public string? EvidenceProse { get; }
+  public string? Prose { get; }
 
   /// <summary>
   /// La date de réception du dossier était-elle <b>tenue pour défaut</b> ? Renseignée à l'ouverture,
@@ -226,7 +226,7 @@ public sealed record LedgerEntry
   /// <remarks>
   /// ⚠️ <b>C'est une mesure de la couverture, jamais un compte de données de la personne.</b> Son
   /// lecteur est le contrôle, qui juge une pratique — et il <b>ne descend jamais</b> dans la
-  /// <c>CoverSheet</c>, où le même chiffre affirmerait à la personne que le client a exactement six
+  /// <c>DeliveryLetter</c>, où le même chiffre affirmerait à la personne que le client a exactement six
   /// systèmes.
   /// </remarks>
   public int? CoveredSystemCount { get; }
@@ -244,8 +244,8 @@ public sealed record LedgerEntry
   /// <remarks>
   /// <b>C'est un vocabulaire fermé, et c'est pourquoi il a sa colonne.</b> Il se compte — combien de
   /// dossiers abandonnés cette année — là où une prose ne se compterait pas. Le <b>motif</b> qui
-  /// l'accompagne parfois, lui, va dans <see cref="EvidenceProse"/> : c'est de la prose de preuve,
-  /// elle dit <i>pourquoi on a décidé cela</i>, et elle survit ici quand tout le dossier tombe.
+  /// l'accompagne parfois, lui, va dans <see cref="Prose"/> : c'est du texte qui reste,
+  /// il dit <i>pourquoi on a décidé cela</i>, et il survit ici quand tout le dossier tombe.
   /// </remarks>
   public ClosingCause? ClosingCause { get; }
 
@@ -285,7 +285,7 @@ public sealed record LedgerEntry
   /// </param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
-  public static LedgerEntry CaseOpened(
+  public static EvidenceLogEntry CaseOpened(
     CaseId caseId,
     DateTimeOffset occurredAt,
     Signatory signatory,
@@ -299,13 +299,13 @@ public sealed record LedgerEntry
     ArgumentNullException.ThrowIfNull(reception);
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       // L'instant est ramené en UTC : `timestamptz` ne conserve pas le décalage, et laisser passer
       // une heure locale ferait dépendre la preuve du fuseau de la machine qui l'a écrite.
       occurredAt.ToUniversalTime(),
-      LedgerFact.CaseOpened,
+      EvidenceLogFact.CaseOpened,
       signatory,
       identityDeclaration,
       designationCount,
@@ -338,7 +338,7 @@ public sealed record LedgerEntry
   /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
-  public static LedgerEntry ClaimConfirmed(
+  public static EvidenceLogEntry ClaimConfirmed(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DataSubjectRight right,
@@ -355,11 +355,11 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.ClaimConfirmed,
+      EvidenceLogFact.ClaimConfirmed,
       signatory,
       identityDeclaration: null,
       designationCount: null,
@@ -372,7 +372,7 @@ public sealed record LedgerEntry
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Elle ne remplace pas la ligne d'ouverture, elle s'ajoute à elle.</b> Le <c>Ledger</c> est en
+  /// <b>Elle ne remplace pas la ligne d'ouverture, elle s'ajoute à elle.</b> Le <c>EvidenceLog</c> est en
   /// ajout seul : la déclaration d'aujourd'hui ne réécrit pas la preuve d'hier, et l'<b>écart</b>
   /// entre les deux dates est précisément ce que le contrôle doit pouvoir voir — un accès ouvert
   /// lundi sur la foi de rien, pesé vendredi, n'est pas un accès pesé avant d'être ouvert.
@@ -388,7 +388,7 @@ public sealed record LedgerEntry
   /// <param name="signatory">L'humain qui signe, et le régime sous lequel il a saisi son nom.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
-  public static LedgerEntry MotivationDeclared(
+  public static EvidenceLogEntry MotivationDeclared(
     CaseId caseId,
     DateTimeOffset occurredAt,
     IdentityVerificationMethod verificationMethod,
@@ -405,11 +405,11 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.MotivationDeclared,
+      EvidenceLogFact.MotivationDeclared,
       signatory,
       identityDeclaration: null,
       designationCount: null,
@@ -444,8 +444,8 @@ public sealed record LedgerEntry
   /// <param name="declaredSystem">Le système sur lequel le travail était dû.</param>
   /// <param name="right">Le droit au titre duquel il l'était.</param>
   /// <param name="state">L'état déclaré, <c>Untreated</c> compris.</param>
-  /// <param name="evidenceProse">
-  /// Le constat de l'<c>Operator</c> — prose de preuve, qui survit. Exigé lorsque l'état le réclame,
+  /// <param name="prose">
+  /// Le constat de l'<c>Operator</c> — texte qui reste, qui survit. Exigé lorsque l'état le réclame,
   /// accueilli sinon.
   /// </param>
   /// <param name="findingIsDemanded">
@@ -460,13 +460,13 @@ public sealed record LedgerEntry
   /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où l'état le réclame ; ou
   /// la ligne n'est signée par aucun humain.
   /// </exception>
-  public static LedgerEntry StepDeclared(
+  public static EvidenceLogEntry StepDeclared(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
     DataSubjectRight right,
     StepState state,
-    string? evidenceProse,
+    string? prose,
     bool findingIsDemanded,
     Signatory signatory)
   {
@@ -483,18 +483,18 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.StepDeclared,
+      EvidenceLogFact.StepDeclared,
       signatory,
       identityDeclaration: null,
       designationCount: null,
       declaredSystem,
       right,
       state,
-      FindingOrThrow(evidenceProse, findingIsDemanded));
+      FindingOrThrow(prose, findingIsDemanded));
   }
 
   /// <summary>
@@ -508,16 +508,16 @@ public sealed record LedgerEntry
   /// du <see cref="Case"/> — voir <see cref="Case.FindingIsDemandedBy"/> —, parce qu'elle a besoin
   /// des rattachements que seul le dossier détient.
   /// </remarks>
-  /// <param name="evidenceProse">Ce que l'humain a écrit, ou rien.</param>
+  /// <param name="prose">Ce que l'humain a écrit, ou rien.</param>
   /// <param name="findingIsDemanded">Le dossier réclame-t-il un constat pour cette déclaration ?</param>
   /// <exception cref="ArgumentException">
   /// Le constat est démesuré, porte un caractère de contrôle, ou manque là où il est réclamé.
   /// </exception>
-  public static string? FindingOrThrow(string? evidenceProse, bool findingIsDemanded)
+  public static string? FindingOrThrow(string? prose, bool findingIsDemanded)
   {
-    if (findingIsDemanded || !string.IsNullOrWhiteSpace(evidenceProse))
+    if (findingIsDemanded || !string.IsNullOrWhiteSpace(prose))
     {
-      return DeclaredText.OrThrow(evidenceProse, "Le constat", MaxEvidenceProseLength, nameof(evidenceProse));
+      return DeclaredText.OrThrow(prose, "Le constat", MaxEvidenceProseLength, nameof(prose));
     }
 
     // Rien à consigner, et rien n'était réclamé : la colonne reste vide plutôt que de porter une
@@ -547,14 +547,14 @@ public sealed record LedgerEntry
   /// <param name="refusal">Lequel des deux refus l'<c>Adapter</c> a rendu.</param>
   /// <exception cref="ArgumentNullException"><paramref name="refusal"/> est absent.</exception>
   /// <exception cref="ArgumentException">La réponse donnée n'est pas un refus.</exception>
-  public static LedgerEntry AdapterRefused(
+  public static EvidenceLogEntry AdapterRefused(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
     AdapterOutcome refusal)
   {
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
       FactOf(AdapterOutcome.RefusalOrThrow(refusal, nameof(refusal))),
@@ -573,7 +573,7 @@ public sealed record LedgerEntry
   /// <b>Le compte est la seule mesure, et il porte sur la recherche — jamais sur ce qu'on a
   /// trouvé.</b> « Recherché sous 2 désignations » dit l'ampleur de ce que le service a tenté, ce que
   /// le contrôle vient juger ; dénombrer les rattachements ferait entrer dans la preuve une mesure des
-  /// données de la personne, que le <c>Ledger</c> ne porte jamais. Aucune valeur de désignation
+  /// données de la personne, que le <c>EvidenceLog</c> ne porte jamais. Aucune valeur de désignation
   /// n'entre ici, et il n'existe aucune colonne où elle pourrait atterrir.
   /// </para>
   /// <para>
@@ -586,7 +586,7 @@ public sealed record LedgerEntry
   /// <param name="declaredSystem">Le système où l'on a cherché.</param>
   /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
-  public static LedgerEntry LocateServed(
+  public static EvidenceLogEntry LocateServed(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
@@ -594,11 +594,11 @@ public sealed record LedgerEntry
   {
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.LocateServed,
+      EvidenceLogFact.LocateServed,
       Signatory.Application,
       identityDeclaration: null,
       designationCount,
@@ -620,7 +620,7 @@ public sealed record LedgerEntry
   /// <param name="declaredDeadline">L'échéance que l'<c>Adapter</c> a déclarée.</param>
   /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
-  public static LedgerEntry LocateDeferred(
+  public static EvidenceLogEntry LocateDeferred(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
@@ -629,11 +629,11 @@ public sealed record LedgerEntry
   {
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.LocateDeferred,
+      EvidenceLogFact.LocateDeferred,
       Signatory.Application,
       identityDeclaration: null,
       designationCount,
@@ -666,7 +666,7 @@ public sealed record LedgerEntry
   /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
   /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
-  public static LedgerEntry ReadServed(
+  public static EvidenceLogEntry ReadServed(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
@@ -676,11 +676,11 @@ public sealed record LedgerEntry
     ArgumentNullException.ThrowIfNull(right);
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.ReadServed,
+      EvidenceLogFact.ReadServed,
       Signatory.Application,
       identityDeclaration: null,
       designationCount,
@@ -704,7 +704,7 @@ public sealed record LedgerEntry
   /// <param name="designationCount">Le nombre de désignations portées par l'appel — jamais lesquelles.</param>
   /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
-  public static LedgerEntry ReadDeferred(
+  public static EvidenceLogEntry ReadDeferred(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
@@ -715,11 +715,11 @@ public sealed record LedgerEntry
     ArgumentNullException.ThrowIfNull(right);
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.ReadDeferred,
+      EvidenceLogFact.ReadDeferred,
       Signatory.Application,
       identityDeclaration: null,
       designationCount,
@@ -757,7 +757,7 @@ public sealed record LedgerEntry
   /// L'issue n'est pas un arbitrage, ou la ligne n'est signée par aucun humain.
   /// </exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
-  public static LedgerEntry ReservationArbitrated(
+  public static EvidenceLogEntry ReservationArbitrated(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DeclaredSystemId declaredSystem,
@@ -776,13 +776,13 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
       ReservationState.RulingOrThrow(ruling, nameof(ruling)) == ReservationState.Attached
-        ? LedgerFact.ReservationAttached
-        : LedgerFact.ReservationSetAside,
+        ? EvidenceLogFact.ReservationAttached
+        : EvidenceLogFact.ReservationSetAside,
       signatory,
       identityDeclaration: null,
       designationCount,
@@ -814,15 +814,15 @@ public sealed record LedgerEntry
   /// <param name="occurredAt">L'instant du constat, qui est aussi la date de la question.</param>
   /// <param name="designationCount">Le nombre de désignations sous lesquelles on a cherché.</param>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="designationCount"/> est négatif.</exception>
-  public static LedgerEntry QuestionRaised(CaseId caseId, DateTimeOffset occurredAt, int designationCount)
+  public static EvidenceLogEntry QuestionRaised(CaseId caseId, DateTimeOffset occurredAt, int designationCount)
   {
     ArgumentOutOfRangeException.ThrowIfNegative(designationCount);
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.QuestionRaised,
+      EvidenceLogFact.QuestionRaised,
       Signatory.Application,
       identityDeclaration: null,
       designationCount,
@@ -837,7 +837,7 @@ public sealed record LedgerEntry
   /// <para>
   /// <b>C'est ici, et nulle part ailleurs, que « 2 systèmes sur 6 » s'écrit.</b> Les deux nombres
   /// sont une mesure destinée au contrôle, qui juge une pratique. Ils ne descendent <b>jamais</b>
-  /// dans la <c>CoverSheet</c> : écrits à la personne, ils lui affirmeraient que le client a
+  /// dans la <c>DeliveryLetter</c> : écrits à la personne, ils lui affirmeraient que le client a
   /// exactement six systèmes, donnant à une déclaration qui vieillit exprès l'autorité d'un
   /// recensement.
   /// </para>
@@ -867,7 +867,7 @@ public sealed record LedgerEntry
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
   /// <exception cref="ArgumentOutOfRangeException">L'un des deux comptes est négatif.</exception>
-  public static LedgerEntry DeliveryDeclared(
+  public static EvidenceLogEntry DeliveryDeclared(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DataSubjectRight right,
@@ -892,11 +892,11 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.DeliveryDeclared,
+      EvidenceLogFact.DeliveryDeclared,
       signatory,
       identityDeclaration: null,
       designationCount: null,
@@ -931,7 +931,7 @@ public sealed record LedgerEntry
   /// <param name="signatory">L'humain qui le déclare, et le régime sous lequel il a saisi son nom.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
-  public static LedgerEntry ClaimAnswered(
+  public static EvidenceLogEntry ClaimAnswered(
     CaseId caseId,
     DateTimeOffset occurredAt,
     DataSubjectRight right,
@@ -948,11 +948,11 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.ClaimAnswered,
+      EvidenceLogFact.ClaimAnswered,
       signatory,
       identityDeclaration: null,
       designationCount: null,
@@ -995,7 +995,7 @@ public sealed record LedgerEntry
   /// <exception cref="ArgumentException">
   /// La ligne n'est signée par aucun humain, ou le motif manque là où la cause le réclame.
   /// </exception>
-  public static LedgerEntry CaseClosed(
+  public static EvidenceLogEntry CaseClosed(
     CaseId caseId,
     DateTimeOffset occurredAt,
     ClosingCause cause,
@@ -1013,16 +1013,16 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.CaseClosed,
+      EvidenceLogFact.CaseClosed,
       signatory,
       identityDeclaration: null,
       designationCount: null,
       declaredSystem: null,
-      evidenceProse: MotiveOrThrow(motive, cause),
+      prose: MotiveOrThrow(motive, cause),
       closingCause: cause);
   }
 
@@ -1034,14 +1034,14 @@ public sealed record LedgerEntry
   /// <para>
   /// <b>Elle porte la charge probatoire de l'art. 12.3, et rien de plus.</b> Le service n'a écrit à
   /// personne : cette ligne atteste qu'un humain a <b>déclaré</b> avoir informé la personne, jamais
-  /// qu'elle l'ait été. C'est la même distinction que partout ailleurs — le service est greffier,
-  /// pas témoin.
+  /// qu'elle l'ait été. C'est la même distinction que partout ailleurs —
+  /// <c>Enregistré, jamais vérifié</c>.
   /// </para>
   /// <para>
   /// ⚠️ <b>Elle ne dit pas si le délai a bougé, et s'écrit même quand il n'a pas bougé.</b> Une
   /// prolongation déclarée hors délai est consignée telle quelle : on garde un fait laid plutôt
   /// qu'on ne fabrique un faux. Le contrôle refait le calcul depuis <see cref="OccurredAt"/> et la
-  /// date de réception, toutes deux au <c>Ledger</c>.
+  /// date de réception, toutes deux au <c>EvidenceLog</c>.
   /// </para>
   /// <para>
   /// ⚠️ <b>Le signataire est un <c>Operator</c>, obligatoirement.</b> Aucune machine ne prolonge un
@@ -1054,7 +1054,7 @@ public sealed record LedgerEntry
   /// <param name="signatory">L'humain qui prolonge, et le régime sous lequel il a saisi son nom.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">La ligne n'est signée par aucun humain.</exception>
-  public static LedgerEntry ExtensionDeclared(
+  public static EvidenceLogEntry ExtensionDeclared(
     CaseId caseId,
     DateTimeOffset occurredAt,
     ExtensionDeclaration declaration,
@@ -1071,18 +1071,18 @@ public sealed record LedgerEntry
         nameof(signatory));
     }
 
-    return new LedgerEntry(
-      LedgerEntryId.Next(),
+    return new EvidenceLogEntry(
+      EvidenceLogEntryId.Next(),
       caseId,
       occurredAt.ToUniversalTime(),
-      LedgerFact.ExtensionDeclared,
+      EvidenceLogFact.ExtensionDeclared,
       signatory,
       identityDeclaration: null,
       designationCount: null,
       declaredSystem: null,
-      // Le motif est de la prose de preuve : il dit pourquoi on a décidé cela, il n'est pas
+      // Le motif est du texte qui reste : il dit pourquoi on a décidé cela, il n'est pas
       // nominatif par nature, et il partage sa colonne avec les constats et les motifs de clôture.
-      evidenceProse: declaration.Motive,
+      prose: declaration.Motive,
       informedOn: declaration.InformedOn);
   }
 
@@ -1119,12 +1119,12 @@ public sealed record LedgerEntry
   /// preuve</b> : ils ne se réparent pas au même endroit, et un « appel refusé » unique ferait
   /// chercher au mauvais endroit qui relira.
   /// </summary>
-  private static LedgerFact FactOf(AdapterOutcome refusal)
+  private static EvidenceLogFact FactOf(AdapterOutcome refusal)
   {
     // Le refus est déjà garanti par l'appelant ; ce qui reste est la seule correspondance du
     // dispositif entre ce que le transport a répondu et ce que la preuve en garde.
     return refusal == AdapterOutcome.SecretRefused
-      ? LedgerFact.AdapterRefusedTheSecret
-      : LedgerFact.AdapterDidNotServeTheSystem;
+      ? EvidenceLogFact.AdapterRefusedTheSecret
+      : EvidenceLogFact.AdapterDidNotServeTheSystem;
   }
 }

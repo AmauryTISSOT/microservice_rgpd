@@ -1,5 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 
@@ -9,7 +9,7 @@ namespace MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 /// </summary>
 /// <remarks>
 /// <b>L'ordre est : écrire le dossier, puis consigner</b> — comme à l'ouverture et à la déclaration,
-/// et pour la même raison. Ce sont deux écritures et non une transaction, le <c>Ledger</c> étant hors
+/// et pour la même raison. Ce sont deux écritures et non une transaction, le <c>EvidenceLog</c> étant hors
 /// de l'agrégat, et les deux pannes ne se valent pas : une ligne de preuve pour une confirmation que
 /// le dossier ne porte pas est un faux ; une confirmation portée dont la ligne manque est
 /// <b>visible</b> à l'écran.
@@ -17,7 +17,7 @@ namespace MicroserviceRgpd.UseCases.Casework.ConfirmClaim;
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="ledger">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'un acte se dicte en test.</param>
-public sealed class ConfirmClaimHandler(IRepository<Case> cases, ILedger ledger, TimeProvider clock)
+public sealed class ConfirmClaimHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
   : ICommandHandler<ConfirmClaimCommand, Result>
 {
   /// <inheritdoc />
@@ -34,17 +34,17 @@ public sealed class ConfirmClaimHandler(IRepository<Case> cases, ILedger ledger,
 
     // La ligne de preuve est forgée d'abord : c'est elle qui exige un nom, et rien du dossier ne doit
     // bouger si la signature manque. La règle vit dans le type de la preuve, jamais ici.
-    LedgerEntry signed;
+    EvidenceLogEntry signed;
 
     try
     {
-      signed = LedgerEntry.ClaimConfirmed(
+      signed = EvidenceLogEntry.ClaimConfirmed(
         command.Case,
         clock.GetUtcNow(),
         command.Right,
         // Le régime accompagne le nom, et il est posé ici : la surface n'authentifie personne, et
         // c'est ce que la preuve doit garder pour ne pas être relue comme une identification.
-        Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated));
+        Signatory.Operator(command.SignedBy, SignerVerification.Unauthenticated));
     }
     catch (ArgumentException refusal)
     {

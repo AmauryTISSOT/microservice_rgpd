@@ -1,6 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 using Microsoft.EntityFrameworkCore;
@@ -8,12 +8,12 @@ using Microsoft.EntityFrameworkCore;
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
 /// <summary>
-/// La <b>section propre</b> des <c>Ledger</c> échus, sur l'écran de la file, et le geste
+/// La <b>section propre</b> des <c>EvidenceLog</c> échus, sur l'écran de la file, et le geste
 /// irréversible qu'elle porte.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Ce que ces tests gardent est la <b>séparation</b> : un <c>Ledger</c> échu n'a ni personne, ni
+/// Ce que ces tests gardent est la <b>séparation</b> : un <c>EvidenceLog</c> échu n'a ni personne, ni
 /// droit, ni délai — son dossier est clos depuis cinq ans —, et son bouton, définitif et sans trace,
 /// ne doit jamais voisiner les lignes de dossiers. C'est aussi la seule échéance du dispositif qui
 /// fasse <b>naître</b> une ligne.
@@ -24,7 +24,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// </para>
 /// </remarks>
 [Collection(WebCollection.Name)]
-public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
+public class ExpiredEvidenceLogSection(CustomWebApplicationFactory<Program> factory)
 {
   private readonly OperatorSurface _surface = new(factory);
 
@@ -46,7 +46,7 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Un <c>Ledger</c> échu fait NAÎTRE une ligne</b> — la seule échéance du dispositif à le
+  /// <b>Un <c>EvidenceLog</c> échu fait NAÎTRE une ligne</b> — la seule échéance du dispositif à le
   /// faire —, et elle ne porte ni personne, ni droit, ni délai : deux dates et un dossier clos.
   /// </summary>
   [Fact]
@@ -82,7 +82,7 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
 
     var frontier = screen.IndexOf("À détruire", StringComparison.Ordinal);
 
-    frontier.ShouldBeGreaterThan(-1, "La section des Ledger échus a disparu de l'écran.");
+    frontier.ShouldBeGreaterThan(-1, "La section des EvidenceLog échus a disparu de l'écran.");
 
     var cases = screen[..frontier];
 
@@ -109,7 +109,7 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
   {
     var expired = await _surface.CloseLongAgoAsync(DateTimeOffset.UtcNow.AddYears(-6));
 
-    var destroying = await _surface.DestroyLedgerAsync(expired);
+    var destroying = await _surface.DestroyEvidenceLogAsync(expired);
 
     destroying.StatusCode.ShouldBe(HttpStatusCode.Found);
 
@@ -117,7 +117,7 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
     // ⚠️ PLUS UNE LIGNE, ET AUCUNE ÉCRITE À LA PLACE. On ne prouvera jamais avoir purgé.
-    (await dbContext.Set<LedgerRow>().AsNoTracking().AnyAsync(row => row.CaseId == expired.Value))
+    (await dbContext.Set<EvidenceLogRow>().AsNoTracking().AnyAsync(row => row.CaseId == expired.Value))
       .ShouldBeFalse();
 
     // La ligne de l'écran est partie avec la preuve, et le dossier clos est resté : il ne nomme
@@ -136,7 +136,7 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
   {
     var expired = await _surface.CloseLongAgoAsync(DateTimeOffset.UtcNow.AddYears(-6));
 
-    var destroying = await _surface.DestroyLedgerAsync(expired, confirmed: false);
+    var destroying = await _surface.DestroyEvidenceLogAsync(expired, confirmed: false);
 
     // Pas de redirection : l'écran revient avec son refus, sous le nom de la case.
     destroying.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -145,7 +145,7 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    (await dbContext.Set<LedgerRow>().AsNoTracking().AnyAsync(row => row.CaseId == expired.Value))
+    (await dbContext.Set<EvidenceLogRow>().AsNoTracking().AnyAsync(row => row.CaseId == expired.Value))
       .ShouldBeTrue();
   }
 
@@ -164,7 +164,7 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
 
     var recent = await _surface.CloseLongAgoAsync(DateTimeOffset.UtcNow.AddYears(-1));
 
-    var destroying = await _surface.DestroyLedgerAsync(recent);
+    var destroying = await _surface.DestroyEvidenceLogAsync(recent);
 
     // La file rechargée dit d'elle-même ce qui reste : c'est la seule chose vraie qu'on puisse
     // afficher d'un geste qui ne se consigne pas.
@@ -173,9 +173,9 @@ public class ExpiredLedgerSection(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    (await dbContext.Set<LedgerRow>()
+    (await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
-      .AnyAsync(row => row.CaseId == recent.Value && row.Fact == nameof(LedgerFact.CaseClosed)))
+      .AnyAsync(row => row.CaseId == recent.Value && row.Fact == nameof(EvidenceLogFact.CaseClosed)))
       .ShouldBeTrue();
   }
 

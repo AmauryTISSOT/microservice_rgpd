@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.Core.Casework.Adapters;
 /// </para>
 /// </remarks>
 /// <param name="DeclaredSystem">Le système confronté, tel que le <c>Manifest</c> le nomme.</param>
-/// <param name="Exposure">Ce que la sonde à secret délibérément faux a appris de son <c>Adapter</c>.</param>
+/// <param name="Exposure">Ce que l'appel au faux secret a appris de son <c>Adapter</c>.</param>
 /// <param name="Capabilities">
 /// Les capacités en cause, dans l'ordre du catalogue : celles que le <c>Manifest</c> déclare, et
 /// celles que l'<c>Adapter</c> sert sans qu'il les déclare.

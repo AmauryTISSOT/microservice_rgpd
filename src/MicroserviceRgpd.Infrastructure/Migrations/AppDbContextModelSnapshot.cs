@@ -211,6 +211,26 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("justification");
 
+                    b.Property<string>("LexiconDeclaredConfidence")
+                        .HasColumnType("text")
+                        .HasColumnName("lexicon_declared_confidence");
+
+                    b.Property<string>("LexiconEngineName")
+                        .HasColumnType("text")
+                        .HasColumnName("lexicon_engine_name");
+
+                    b.Property<string>("LexiconEngineVersion")
+                        .HasColumnType("text")
+                        .HasColumnName("lexicon_engine_version");
+
+                    b.Property<int?>("LexiconLatencyMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("lexicon_latency_ms");
+
+                    b.PrimitiveCollection<string[]>("LexiconRights")
+                        .HasColumnType("text[]")
+                        .HasColumnName("lexicon_rights");
+
                     b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_at");
@@ -260,33 +280,13 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("verdict_rights");
 
-                    b.Property<string>("WitnessDeclaredConfidence")
-                        .HasColumnType("text")
-                        .HasColumnName("witness_declared_confidence");
-
-                    b.Property<string>("WitnessEngineName")
-                        .HasColumnType("text")
-                        .HasColumnName("witness_engine_name");
-
-                    b.Property<string>("WitnessEngineVersion")
-                        .HasColumnType("text")
-                        .HasColumnName("witness_engine_version");
-
-                    b.Property<int?>("WitnessLatencyMs")
-                        .HasColumnType("integer")
-                        .HasColumnName("witness_latency_ms");
-
-                    b.PrimitiveCollection<string[]>("WitnessRights")
-                        .HasColumnType("text[]")
-                        .HasColumnName("witness_rights");
-
                     b.HasKey("QualificationId")
                         .HasName("pk_qualification_audit_entries");
 
                     b.ToTable("qualification_audit_entries", (string)null);
                 });
 
-            modelBuilder.Entity("MicroserviceRgpd.Infrastructure.Data.Casework.LedgerRow", b =>
+            modelBuilder.Entity("MicroserviceRgpd.Infrastructure.Data.Casework.EvidenceLogRow", b =>
                 {
                     b.Property<Guid>("EntryId")
                         .HasColumnType("uuid")
@@ -327,11 +327,6 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("designation_count");
 
-                    b.Property<string>("EvidenceProse")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("evidence_prose");
-
                     b.Property<string>("Fact")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -356,6 +351,11 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("occurred_at");
 
+                    b.Property<string>("Prose")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("evidence_prose");
+
                     b.Property<DateTimeOffset?>("ReceivedOn")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_on");
@@ -375,10 +375,10 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("signatory_name");
 
-                    b.Property<string>("SignatureRegime")
+                    b.Property<string>("SignerVerification")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
-                        .HasColumnName("signature_regime");
+                        .HasColumnName("signer_verification");
 
                     b.Property<string>("StepState")
                         .HasMaxLength(64)
@@ -386,12 +386,12 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnName("step_state");
 
                     b.HasKey("EntryId")
-                        .HasName("pk_ledger_entries");
+                        .HasName("pk_evidence_log_entries");
 
                     b.HasIndex("CaseId")
-                        .HasDatabaseName("ix_ledger_entries_case_id");
+                        .HasDatabaseName("ix_evidence_log_entries_case_id");
 
-                    b.ToTable("ledger_entries", (string)null);
+                    b.ToTable("evidence_log_entries", (string)null);
                 });
 
             modelBuilder.Entity("MicroserviceRgpd.Core.Casework.Case", b =>

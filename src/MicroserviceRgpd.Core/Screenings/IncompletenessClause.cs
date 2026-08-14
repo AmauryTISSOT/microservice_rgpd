@@ -95,7 +95,7 @@ public sealed class IncompletenessClause
 
   /// <summary>
   /// <b>Partie 4 — la relation au <c>Manifest</c>.</b> Elle est écrite ici et pas seulement au
-  /// glossaire : la borne <c>Suggéré, jamais déclaré</c> lie le <b>code</b> et n'empêche que le pont
+  /// glossaire : la borne <c>Aucune modification vers le Manifest</c> lie le <b>code</b> et n'empêche que le pont
   /// technique. Rien en elle n'empêche un <c>Operator</c> pressé de lire le rapport comme son
   /// paysage, et c'est précisément le grief — une décision tenue dans le code et perdue dans l'usage.
   /// La renvoyer à l'écran l'aurait de plus laissée hors de toute réponse qui n'est pas l'écran.

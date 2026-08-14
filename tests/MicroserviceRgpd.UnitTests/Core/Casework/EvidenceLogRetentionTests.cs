@@ -1,9 +1,9 @@
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 
 /// <summary>
-/// La vie du <c>Ledger</c> : <b>cinq ans à compter de la clôture</b>, et rien d'autre.
+/// La vie du <c>EvidenceLog</c> : <b>cinq ans à compter de la clôture</b>, et rien d'autre.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.UnitTests.Core.Casework;
 /// un humain détruit d'un geste délibéré : rien ne tourne, donc rien ne peut purger en silence.
 /// </para>
 /// </remarks>
-public class LedgerRetentionTests
+public class EvidenceLogRetentionTests
 {
   private static readonly DateTimeOffset Closed = new(2021, 4, 11, 9, 0, 0, TimeSpan.Zero);
 
@@ -24,7 +24,7 @@ public class LedgerRetentionTests
   [Fact]
   public void ExpiresFiveYearsAfterTheClosure()
   {
-    LedgerRetention.ExpiryOf(Closed).ShouldBe(new DateTimeOffset(2026, 4, 11, 9, 0, 0, TimeSpan.Zero));
+    EvidenceLogRetention.ExpiryOf(Closed).ShouldBe(new DateTimeOffset(2026, 4, 11, 9, 0, 0, TimeSpan.Zero));
   }
 
   /// <summary>
@@ -42,7 +42,7 @@ public class LedgerRetentionTests
   [InlineData(4000, true)]
   public void ComputesTheExpiryAtTheInstantSomebodyLooks(int daysLater, bool expired)
   {
-    LedgerRetention.IsExpiredAt(Closed, Closed.AddDays(daysLater)).ShouldBe(expired);
+    EvidenceLogRetention.IsExpiredAt(Closed, Closed.AddDays(daysLater)).ShouldBe(expired);
   }
 
   /// <summary>
@@ -60,16 +60,16 @@ public class LedgerRetentionTests
     // Le 28 février 2025 à dix heures, la preuve close ce 29 février n'est plus due.
     var looking = new DateTimeOffset(2025, 2, 28, 10, 0, 0, TimeSpan.Zero);
 
-    LedgerRetention.IsExpiredAt(leap, looking).ShouldBeTrue();
+    EvidenceLogRetention.IsExpiredAt(leap, looking).ShouldBeTrue();
 
     // Et la borne que la base applique la laisse passer, là où observedAt.AddYears(-5) l'aurait
     // écartée d'une heure.
-    LedgerRetention.ClosedNoLaterThan(looking).ShouldBeGreaterThanOrEqualTo(leap);
+    EvidenceLogRetention.ClosedNoLaterThan(looking).ShouldBeGreaterThanOrEqualTo(leap);
   }
 
   /// <summary>
   /// <b>La borne large n'écarte jamais rien d'échu</b>, quel que soit le jour de clôture — c'est la
-  /// seule chose qu'on lui demande. Ce qu'elle laisse passer, <see cref="LedgerRetention.IsExpiredAt"/>
+  /// seule chose qu'on lui demande. Ce qu'elle laisse passer, <see cref="EvidenceLogRetention.IsExpiredAt"/>
   /// le tranche derrière elle ; ce qu'elle écarterait à tort ne serait jamais rattrapé.
   /// </summary>
   [Fact]
@@ -77,13 +77,13 @@ public class LedgerRetentionTests
   {
     var looking = new DateTimeOffset(2025, 2, 28, 10, 0, 0, TimeSpan.Zero);
 
-    var bound = LedgerRetention.ClosedNoLaterThan(looking);
+    var bound = EvidenceLogRetention.ClosedNoLaterThan(looking);
 
     // Quatre ans de clôtures possibles, un jour après l'autre : aucune échue ne doit tomber du côté
     // écarté de la borne.
     for (var closedOn = looking.AddYears(-7); closedOn < looking; closedOn = closedOn.AddDays(1))
     {
-      if (LedgerRetention.IsExpiredAt(closedOn, looking))
+      if (EvidenceLogRetention.IsExpiredAt(closedOn, looking))
       {
         closedOn.ShouldBeLessThanOrEqualTo(bound);
       }
@@ -97,10 +97,10 @@ public class LedgerRetentionTests
   [Fact]
   public void OffersNobodyAWayToShortenOrLengthenIt()
   {
-    LedgerRetention.Years.ShouldBe(5);
+    EvidenceLogRetention.Years.ShouldBe(5);
 
-    typeof(LedgerRetention).GetMethods()
-      .Where(method => method.DeclaringType == typeof(LedgerRetention))
+    typeof(EvidenceLogRetention).GetMethods()
+      .Where(method => method.DeclaringType == typeof(EvidenceLogRetention))
       .SelectMany(method => method.GetParameters())
       .Select(parameter => parameter.ParameterType)
       .ShouldAllBe(type => type == typeof(DateTimeOffset));

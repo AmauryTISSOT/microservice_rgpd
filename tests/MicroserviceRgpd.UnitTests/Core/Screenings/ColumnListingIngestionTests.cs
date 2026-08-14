@@ -12,7 +12,7 @@ public class ColumnListingIngestionTests
 {
   /// <summary>
   /// Le cas nominal, et il porte deux promesses : l'ordre du relevé est celui du schéma, et l'en-tête
-  /// est recopié tel quel — <c>Greffier, pas témoin</c>, rien n'est vérifié.
+  /// est recopié tel quel — <c>Enregistré, jamais vérifié</c>, rien n'est vérifié.
   /// </summary>
   [Fact]
   public void AcceptsASincerePasteAndKeepsTheListingOrder()

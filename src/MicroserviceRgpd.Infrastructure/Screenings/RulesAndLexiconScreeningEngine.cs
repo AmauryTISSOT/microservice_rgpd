@@ -24,7 +24,7 @@ namespace MicroserviceRgpd.Infrastructure.Screenings;
 /// <para>
 /// ⚠️ <b>Les degrés survivent comme ordre, pas comme promesse</b> : au banc, <c>exacte</c> se trompe
 /// à 70 % et <c>morphologique</c> à 94 %. Le moteur ne promet donc rien de plus que la règle qui a
-/// déclenché — et le motif, qui est de la prose de travail, dit laquelle.
+/// déclenché — et le motif, qui est du texte qui meurt, dit laquelle.
 /// </para>
 /// <para>
 /// <b>Il est déterministe et local</b> : aucun réseau, aucun état, aucun aléa, aucune horloge. Deux

@@ -13,7 +13,7 @@
 /// <para>
 /// <b>Les deux régimes ne se confondent pas, et c'est tout le propos de ce type.</b> Une date nue
 /// serait indiscernable d'une date affirmée par un humain : l'écran nommerait un fait là où il n'y a
-/// qu'une hypothèse du service, et le <c>Ledger</c> garderait la même trace des deux. Le drapeau
+/// qu'une hypothèse du service, et le <c>EvidenceLog</c> garderait la même trace des deux. Le drapeau
 /// vit donc à côté de la date, dans le même objet, où aucun chemin d'écriture ne peut poser l'une
 /// sans l'autre.
 /// </para>
@@ -49,7 +49,7 @@ public sealed record ReceptionDate
 
   /// <summary>
   /// Le service l'a-t-il <b>tenue pour défaut</b> ? Ce drapeau est ce que l'écran nomme
-  /// « J+9 (défaut) » et ce que le <c>Ledger</c> consigne : le défaut doit être visible <b>comme un
+  /// « J+9 (défaut) » et ce que le <c>EvidenceLog</c> consigne : le défaut doit être visible <b>comme un
   /// défaut</b>, jamais confondu avec un fait déclaré.
   /// </summary>
   public bool IsDefault { get; private set; }

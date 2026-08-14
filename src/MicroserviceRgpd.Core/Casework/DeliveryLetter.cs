@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// <b>Elle énumère et ne compte jamais.</b> Pas de total, pas de ratio, pas de dénominateur : nommer
 /// « l'export commercial transmis chaque mois à notre agence » est actionnable pour la personne là
 /// où « 4 sur 6 » ne lui apprend rien et lui ment sur l'exhaustivité du recensement. Le chiffre
-/// s'arrête au <c>Ledger</c>, dont le lecteur est le contrôle.
+/// s'arrête au <c>EvidenceLog</c>, dont le lecteur est le contrôle.
 /// </para>
 /// <para>
 /// <b>Trois listes, et elles ne fusionnent pas.</b> Une pièce jointe, un système interrogé sans
@@ -35,12 +35,12 @@ namespace MicroserviceRgpd.Core.Casework;
 /// vieillit exprès prendrait l'autorité d'un recensement.
 /// </para>
 /// </remarks>
-public sealed class CoverSheet
+public sealed class DeliveryLetter
 {
   /// <summary>Le nom du fichier sous lequel la page entre dans le paquet. Il est lu par un humain.</summary>
   public const string FileName = "page-de-garde.txt";
 
-  private CoverSheet(
+  private DeliveryLetter(
     DataSubjectRight right,
     IReadOnlyList<NamedSystem> joined,
     IReadOnlyList<NamedSystem> queriedWithoutAttachment,
@@ -76,7 +76,7 @@ public sealed class CoverSheet
   /// <remarks>
   /// <para>
   /// ⚠️ <b>Il ne s'écrit jamais sur la page.</b> C'est le <b>dénominateur</b> du « 2 systèmes sur 6 »
-  /// que le <c>Ledger</c> garde, et son lecteur est le contrôle. Écrit à la personne, le même chiffre
+  /// que le <c>EvidenceLog</c> garde, et son lecteur est le contrôle. Écrit à la personne, le même chiffre
   /// lui affirmerait que le client a exactement six systèmes.
   /// </para>
   /// <para>
@@ -116,7 +116,7 @@ public sealed class CoverSheet
   /// </param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">Le dossier ne porte pas ce droit.</exception>
-  public static CoverSheet Compose(
+  public static DeliveryLetter Compose(
     Case opened,
     DataSubjectRight right,
     Manifest manifest,
@@ -169,7 +169,7 @@ public sealed class CoverSheet
       (QueriedForNothing(opened.LocatingIn(id)) ? queried : uncovered).Add(named);
     }
 
-    return new CoverSheet(right, joined, queried, uncovered);
+    return new DeliveryLetter(right, joined, queried, uncovered);
   }
 
   /// <summary>
@@ -266,7 +266,7 @@ public sealed class CoverSheet
 }
 
 /// <summary>
-/// Un système tel que la <see cref="CoverSheet"/> le nomme : <b>dans les mots de celui qui l'a
+/// Un système tel que la <see cref="DeliveryLetter"/> le nomme : <b>dans les mots de celui qui l'a
 /// déclaré</b>, et non par un identifiant technique qui n'apprendrait rien à la personne.
 /// </summary>
 /// <remarks>

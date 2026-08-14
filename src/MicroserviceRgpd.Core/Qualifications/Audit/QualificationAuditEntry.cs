@@ -38,7 +38,7 @@
 /// L'avis du moteur qui fait verdict, tel qu'il est arrivé — <c>null</c> quand ce moteur n'a rien
 /// rendu, et c'est alors le repli sur le témoin que la ligne enregistre.
 /// </param>
-/// <param name="WitnessOpinion">
+/// <param name="LexiconOpinion">
 /// L'avis du moteur témoin, tel qu'il est arrivé — <c>null</c> quand ce moteur n'a rien rendu, et
 /// c'est alors un verdict resté sans contrôle que la ligne enregistre.
 /// </param>
@@ -52,7 +52,7 @@
 /// </param>
 /// <param name="TotalLatency">Le temps qu'a pris la qualification entière, hors écriture de la trace.</param>
 /// <param name="VerdictLatency">Le temps qu'a pris le moteur de verdict, ou rien s'il n'a pas rendu d'avis.</param>
-/// <param name="WitnessLatency">Le temps qu'a pris le moteur témoin, ou rien s'il n'a pas rendu d'avis.</param>
+/// <param name="LexiconLatency">Le temps qu'a pris le moteur témoin, ou rien s'il n'a pas rendu d'avis.</param>
 public sealed record QualificationAuditEntry(
   Guid QualificationId,
   DateTimeOffset OccurredAt,
@@ -60,10 +60,10 @@ public sealed record QualificationAuditEntry(
   Qualification Qualification,
   ReviewSignal ReviewSignal,
   QualificationOpinion? VerdictOpinion,
-  QualificationOpinion? WitnessOpinion,
+  QualificationOpinion? LexiconOpinion,
   string? Justification,
   string? CallerReference,
   string? TraceId,
   TimeSpan TotalLatency,
   TimeSpan? VerdictLatency,
-  TimeSpan? WitnessLatency);
+  TimeSpan? LexiconLatency);

@@ -1,5 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 
@@ -10,10 +10,10 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 /// <remarks>
 /// <para>
 /// <b>L'ordre est : écrire le dossier, puis consigner</b> — comme partout ailleurs, et pour la même
-/// raison : le <c>Ledger</c> est hors de l'agrégat, et les deux pannes ne se valent pas.
+/// raison : le <c>EvidenceLog</c> est hors de l'agrégat, et les deux pannes ne se valent pas.
 /// </para>
 /// <para>
-/// <b>Rien n'est écrit si rien n'était réclamé.</b> Le <c>Ledger</c> consigne les faits qui changent
+/// <b>Rien n'est écrit si rien n'était réclamé.</b> Le <c>EvidenceLog</c> consigne les faits qui changent
 /// quelque chose, jamais leur répétition, et cette règle est tenue par l'appelant : écraser une
 /// motivation déjà signée ferait réécrire ce que quelqu'un a affirmé, dans le seul dispositif dont
 /// l'invariant est qu'on ne le réécrit pas.
@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareMotivation;
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="ledger">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'un acte se dicte en test.</param>
-public sealed class DeclareMotivationHandler(IRepository<Case> cases, ILedger ledger, TimeProvider clock)
+public sealed class DeclareMotivationHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
   : ICommandHandler<DeclareMotivationCommand, Result>
 {
   /// <inheritdoc />
@@ -39,16 +39,16 @@ public sealed class DeclareMotivationHandler(IRepository<Case> cases, ILedger le
 
     // La ligne de preuve est forgée d'abord : c'est elle qui exige un nom, et rien du dossier ne doit
     // bouger si la signature manque. La règle vit dans le type de la preuve, jamais ici.
-    LedgerEntry signed;
+    EvidenceLogEntry signed;
 
     try
     {
-      signed = LedgerEntry.MotivationDeclared(
+      signed = EvidenceLogEntry.MotivationDeclared(
         command.Case,
         clock.GetUtcNow(),
         command.Motivation.Method,
         // Le régime accompagne le nom, et il est posé ici : la surface n'authentifie personne.
-        Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated));
+        Signatory.Operator(command.SignedBy, SignerVerification.Unauthenticated));
     }
     catch (ArgumentException refusal)
     {

@@ -178,7 +178,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.ToTable("qualification_audit_entries", (string)null);
                 });
 
-            modelBuilder.Entity("MicroserviceRgpd.Infrastructure.Data.Casework.LedgerRow", b =>
+            modelBuilder.Entity("MicroserviceRgpd.Infrastructure.Data.Casework.EvidenceLogRow", b =>
                 {
                     b.Property<Guid>("EntryId")
                         .HasColumnType("uuid")
@@ -237,7 +237,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("signatory_name");
 
-                    b.Property<string>("SignatureRegime")
+                    b.Property<string>("SignerVerification")
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("signature_regime");

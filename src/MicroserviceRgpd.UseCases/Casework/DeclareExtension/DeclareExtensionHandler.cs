@@ -1,5 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 
@@ -18,7 +18,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 /// pu tomber de part et d'autre de l'échéance du mois.
 /// </para>
 /// <para>
-/// ⚠️ <b>Il ne dit nulle part si l'échéance a bougé.</b> Ni au dossier, ni au <c>Ledger</c> : le
+/// ⚠️ <b>Il ne dit nulle part si l'échéance a bougé.</b> Ni au dossier, ni au <c>EvidenceLog</c> : le
 /// déplacement est un calcul refait à l'affichage, et l'écrire une fois pour toutes serait le
 /// dénominateur persisté que ce contexte refuse.
 /// </para>
@@ -28,7 +28,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 /// <param name="clock">L'horloge, injectée pour que la date d'une déclaration se dicte en test.</param>
 public sealed class DeclareExtensionHandler(
   IRepository<Case> cases,
-  ILedger ledger,
+  IEvidenceLog ledger,
   TimeProvider clock)
   : ICommandHandler<DeclareExtensionCommand, Result>
 {
@@ -61,15 +61,15 @@ public sealed class DeclareExtensionHandler(
 
     // La ligne de preuve est forgée avant que rien ne bouge : c'est elle qui exige un nom, et une
     // prolongation sans signataire ne doit rien poser sur le dossier.
-    LedgerEntry signed;
+    EvidenceLogEntry signed;
 
     try
     {
-      signed = LedgerEntry.ExtensionDeclared(
+      signed = EvidenceLogEntry.ExtensionDeclared(
         command.Case,
         declaredAt,
         declaration,
-        Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated));
+        Signatory.Operator(command.SignedBy, SignerVerification.Unauthenticated));
     }
     catch (ArgumentException refusal)
     {

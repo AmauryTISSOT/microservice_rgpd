@@ -6,7 +6,7 @@
 /// jamais d'un droit.
 /// <para>
 /// <b>Le service enregistre la déclaration et n'en juge jamais la valeur</b> ; il ne vérifie
-/// lui-même aucune identité. Greffier, pas témoin.
+/// lui-même aucune identité. <c>Enregistré, jamais vérifié</c>.
 /// </para>
 /// </summary>
 /// <remarks>
@@ -16,7 +16,7 @@
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucune pièce d'identité n'entre dans le service</b>, tous canaux confondus. Le
-/// <c>Ledger</c> consigne le fait qu'une pièce est passée, jamais la pièce.
+/// <c>EvidenceLog</c> consigne le fait qu'une pièce est passée, jamais la pièce.
 /// </para>
 /// </remarks>
 public sealed class IdentityDeclaration : SmartEnum<IdentityDeclaration>

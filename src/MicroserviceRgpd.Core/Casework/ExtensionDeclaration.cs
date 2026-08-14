@@ -1,4 +1,4 @@
-﻿using MicroserviceRgpd.Core.Casework.Ledger;
+﻿using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.Core.Casework;
 
@@ -41,8 +41,8 @@ public sealed record ExtensionDeclaration
   }
 
   /// <summary>
-  /// Pourquoi le délai est prolongé, dans les mots de l'humain qui prolonge. <b>Prose de preuve</b> :
-  /// elle descend au <c>Ledger</c> et y survit au dossier de cinq ans — rien de ce qui nomme la
+  /// Pourquoi le délai est prolongé, dans les mots de l'humain qui prolonge. <b>Texte qui reste</b> :
+  /// elle descend au <c>EvidenceLog</c> et y survit au dossier de cinq ans — rien de ce qui nomme la
   /// personne ou un tiers n'a à y entrer.
   /// </summary>
   public string Motive { get; private set; } = null!;
@@ -77,9 +77,9 @@ public sealed record ExtensionDeclaration
   /// </exception>
   public static ExtensionDeclaration Of(string? motive, DateTimeOffset informedOn, DateTimeOffset declaredOn)
   {
-    // Le plafond est celui de la colonne qui la recevra : ce motif est de la prose de preuve, et il
+    // Le plafond est celui de la colonne qui la recevra : ce motif est du texte qui reste, et il
     // n'existe qu'un seul plafond pour elle dans tout le dispositif.
-    var declared = DeclaredText.OrThrow(motive, "Le motif de la prolongation", LedgerEntry.MaxEvidenceProseLength, nameof(motive));
+    var declared = DeclaredText.OrThrow(motive, "Le motif de la prolongation", EvidenceLogEntry.MaxEvidenceProseLength, nameof(motive));
 
     var informed = informedOn.ToUniversalTime();
     var made = declaredOn.ToUniversalTime();

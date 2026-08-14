@@ -50,7 +50,7 @@ public class DesignationTests
 
   /// <summary>
   /// Deux désignations de même nature et de même valeur sont <b>la même</b> : c'est ce qui permet
-  /// au sac de ne pas compter deux fois la même chose, et donc au <c>Ledger</c> de ne pas mentir
+  /// au sac de ne pas compter deux fois la même chose, et donc au <c>EvidenceLog</c> de ne pas mentir
   /// sur l'ampleur d'une recherche.
   /// </summary>
   [Fact]

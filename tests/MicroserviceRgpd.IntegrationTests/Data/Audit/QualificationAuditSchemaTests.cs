@@ -27,6 +27,11 @@ public class QualificationAuditSchemaTests(PostgreSqlFixture postgres)
     [
       "caller_reference",
       "justification",
+      "lexicon_declared_confidence",
+      "lexicon_engine_name",
+      "lexicon_engine_version",
+      "lexicon_latency_ms",
+      "lexicon_rights",
       "occurred_at",
       "qualification_id",
       "review_signal",
@@ -39,11 +44,6 @@ public class QualificationAuditSchemaTests(PostgreSqlFixture postgres)
       "verdict_engine_version",
       "verdict_latency_ms",
       "verdict_rights",
-      "witness_declared_confidence",
-      "witness_engine_name",
-      "witness_engine_version",
-      "witness_latency_ms",
-      "witness_rights",
     ]);
   }
 
@@ -68,10 +68,10 @@ public class QualificationAuditSchemaTests(PostgreSqlFixture postgres)
     columns["verdict_declared_confidence"].Nullable.ShouldBeTrue();
     columns["verdict_engine_name"].Nullable.ShouldBeTrue();
     columns["verdict_engine_version"].Nullable.ShouldBeTrue();
-    columns["witness_rights"].Nullable.ShouldBeTrue();
-    columns["witness_declared_confidence"].Nullable.ShouldBeTrue();
-    columns["witness_engine_name"].Nullable.ShouldBeTrue();
-    columns["witness_engine_version"].Nullable.ShouldBeTrue();
+    columns["lexicon_rights"].Nullable.ShouldBeTrue();
+    columns["lexicon_declared_confidence"].Nullable.ShouldBeTrue();
+    columns["lexicon_engine_name"].Nullable.ShouldBeTrue();
+    columns["lexicon_engine_version"].Nullable.ShouldBeTrue();
 
     // Et rien qui nomme le mode dégradé : la nullité ci-dessus est son seul enregistrement.
     columns.Keys.ShouldNotContain(name => name.Contains("degrad", StringComparison.OrdinalIgnoreCase));
@@ -88,7 +88,7 @@ public class QualificationAuditSchemaTests(PostgreSqlFixture postgres)
 
     columns["rights"].DataType.ShouldBe("ARRAY");
     columns["verdict_rights"].DataType.ShouldBe("ARRAY");
-    columns["witness_rights"].DataType.ShouldBe("ARRAY");
+    columns["lexicon_rights"].DataType.ShouldBe("ARRAY");
 
     columns["text"].MaxLength.ShouldBe(10_000);
     columns["caller_reference"].MaxLength.ShouldBe(64);

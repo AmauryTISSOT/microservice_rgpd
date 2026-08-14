@@ -73,9 +73,9 @@ public sealed class ClosingCause : SmartEnum<ClosingCause>
   /// d'instruire sans dire pourquoi, le jour même où tout le nominatif disparaît.
   /// </para>
   /// <para>
-  /// <b>C'est de la prose de preuve</b> : elle est écrite à un point de décision, elle dit
-  /// <i>pourquoi on a décidé cela</i>, elle n'est pas nominative par nature — et elle <b>survit</b>
-  /// dans le <c>Ledger</c>, quand tout le reste du dossier tombe.
+  /// <b>C'est du texte qui reste</b> : il est écrit à un point de décision, il dit
+  /// <i>pourquoi on a décidé cela</i>, il n'est pas nominatif par nature — et il <b>survit</b>
+  /// dans le <c>EvidenceLog</c>, quand tout le reste du dossier tombe.
   /// </para>
   /// <para>
   /// ⚠️ <b>Ce n'est pas un blocage de la clôture.</b> Ce qui est exigé est un motif, jamais un état

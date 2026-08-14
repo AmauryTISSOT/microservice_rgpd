@@ -1,6 +1,6 @@
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.UseCases.Casework.CallAdapter;
 
 namespace MicroserviceRgpd.UseCases.Casework.Locate;
@@ -25,9 +25,9 @@ namespace MicroserviceRgpd.UseCases.Casework.Locate;
 /// repart pas : sa réponse est encore la réponse à la question qu'on pose.
 /// </para>
 /// <para>
-/// <b>Ce qui entre au <c>Ledger</c> est ce qui change.</b> Rouvrir un dossier relance les appels, et
+/// <b>Ce qui entre au <c>EvidenceLog</c> est ce qui change.</b> Rouvrir un dossier relance les appels, et
 /// trente-cinq passages rendant le même verdict n'ont aucun signataire — c'est un affichage qui les a
-/// déclenchés, non un humain. La règle est tenue <b>ici</b>, par l'appelant, le <c>Ledger</c> ne se
+/// déclenchés, non un humain. La règle est tenue <b>ici</b>, par l'appelant, le <c>EvidenceLog</c> ne se
 /// relisant jamais.
 /// </para>
 /// <para>
@@ -45,7 +45,7 @@ public sealed class LocateHandler(
   IRepository<Case> cases,
   IReadRepository<DeclaredSystem> manifest,
   AdapterCallsForCase calls,
-  ILedger ledger,
+  IEvidenceLog ledger,
   TimeProvider clock)
   : ICommandHandler<LocateCommand, Result>
 {
@@ -74,7 +74,7 @@ public sealed class LocateHandler(
       .OrderBy(system => system.Id.Value, StringComparer.Ordinal)
       .ToArray();
 
-    var consigned = new List<LedgerEntry>();
+    var consigned = new List<EvidenceLogEntry>();
     var askedAt = clock.GetUtcNow();
 
     foreach (var system in reachable)
@@ -98,7 +98,7 @@ public sealed class LocateHandler(
     Case opened,
     DeclaredSystem system,
     DateTimeOffset askedAt,
-    List<LedgerEntry> consigned,
+    List<EvidenceLogEntry> consigned,
     CancellationToken cancellationToken)
   {
     var known = opened.LocatingIn(system.Id);
@@ -152,7 +152,7 @@ public sealed class LocateHandler(
 
       if (changes)
       {
-        consigned.Add(LedgerEntry.LocateServed(opened.Id, askedAt, system.Id, opened.Designations.Count));
+        consigned.Add(EvidenceLogEntry.LocateServed(opened.Id, askedAt, system.Id, opened.Designations.Count));
       }
 
       return;
@@ -167,7 +167,7 @@ public sealed class LocateHandler(
       if (changes)
       {
         consigned.Add(
-          LedgerEntry.LocateDeferred(opened.Id, askedAt, system.Id, deadline, opened.Designations.Count));
+          EvidenceLogEntry.LocateDeferred(opened.Id, askedAt, system.Id, deadline, opened.Designations.Count));
       }
 
       return;
@@ -202,12 +202,12 @@ public sealed class LocateHandler(
   /// </para>
   /// <para>
   /// <b>Le retrait n'écrit aucune ligne, et ce n'est pas un oubli.</b> Le jour de la question est
-  /// au <c>Ledger</c> et y reste ; ce qui y répond — un <c>Locate</c> servi, une réserve rattachée —
+  /// au <c>EvidenceLog</c> et y reste ; ce qui y répond — un <c>Locate</c> servi, une réserve rattachée —
   /// porte déjà sa propre ligne datée. Une ligne « question levée » n'apprendrait au contrôle rien
   /// qu'il ne lise dans l'écart entre les deux.
   /// </para>
   /// </remarks>
-  private static IEnumerable<LedgerEntry> QuestionOf(
+  private static IEnumerable<EvidenceLogEntry> QuestionOf(
     Case opened,
     IReadOnlyList<DeclaredSystem> reachable,
     DateTimeOffset askedOn)
@@ -229,7 +229,7 @@ public sealed class LocateHandler(
 
     if (opened.Ask(OpenQuestionSubject.Designation, askedOn))
     {
-      yield return LedgerEntry.QuestionRaised(opened.Id, askedOn, opened.Designations.Count);
+      yield return EvidenceLogEntry.QuestionRaised(opened.Id, askedOn, opened.Designations.Count);
     }
   }
 
@@ -258,7 +258,7 @@ public sealed class LocateHandler(
     }
 
     // Un refus se répare ailleurs — dans la configuration de déploiement, ou dans le Manifest — et
-    // l'ouverture du dossier est le geste par lequel on va voir si ça l'a été. Le Ledger, lui, ne
+    // l'ouverture du dossier est le geste par lequel on va voir si ça l'a été. Le EvidenceLog, lui, ne
     // gardera que le verdict qui change.
     return known.LastOutcome.IsRefusal;
   }

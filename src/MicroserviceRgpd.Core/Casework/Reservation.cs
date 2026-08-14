@@ -19,9 +19,9 @@ namespace MicroserviceRgpd.Core.Casework;
 /// n'apprendra jamais ce que « #1203 » désigne, et c'est très bien ainsi.
 /// </para>
 /// <para>
-/// <b>C'est de la prose de travail.</b> Elle dit quelle ligne appartient à qui, elle nomme donc par
-/// nature des tiers non demandeurs, elle vit sur le <see cref="Case"/> et <b>meurt à sa clôture</b>.
-/// Le <c>Ledger</c> n'en garde que le fait daté — « 1 réserve arbitrée le 12/04 » — et il n'existe
+/// <b>C'est du texte qui meurt.</b> Il dit quelle ligne appartient à qui, il nomme donc par
+/// nature des tiers non demandeurs, il vit sur le <see cref="Case"/> et <b>meurt à sa clôture</b>.
+/// Le <c>EvidenceLog</c> n'en garde que le fait daté — « 1 réserve arbitrée le 12/04 » — et il n'existe
 /// aucune colonne où ce texte pourrait atterrir.
 /// </para>
 /// <para>

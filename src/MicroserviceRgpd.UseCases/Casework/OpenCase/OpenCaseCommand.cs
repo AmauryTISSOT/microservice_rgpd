@@ -1,5 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UseCases.Casework.OpenCase;

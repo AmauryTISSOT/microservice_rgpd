@@ -77,8 +77,8 @@ public class NoApiScreensADatabase(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// ⚠️ <b>Et aucune route ne pré-remplit le <c>Manifest</c> depuis un dépistage.</b> C'est le geste
-  /// que la clause <c>Suggéré, jamais déclaré</c> bannit nommément — un <c>Manifest</c> pré-rempli
-  /// par une machine <b>se lirait comme complet</b>, ce qui est l'<c>Omission silencieuse</c> sous sa
+  /// que la clause <c>Aucune modification vers le Manifest</c> bannit nommément — un
+  /// <c>Manifest</c> pré-rempli par une machine <b>se lirait comme complet</b>, ce qui est l'<c>Omission silencieuse</c> sous sa
   /// forme la plus dangereuse. La liste <em>Avoid</em> du glossaire dit d'elle-même qu'elle est le
   /// seul garde-fou qui accroche une revue de code sur une route de ce genre ; celui-ci la double.
   /// <para>

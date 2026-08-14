@@ -1,15 +1,15 @@
 ﻿namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 
 /// <summary>
-/// La ligne du <c>Ledger</c> telle qu'elle est écrite : la projection à plat de
-/// <see cref="Core.Casework.Ledger.LedgerEntry"/>.
+/// La ligne du <c>EvidenceLog</c> telle qu'elle est écrite : la projection à plat de
+/// <see cref="Core.Casework.EvidenceLog.EvidenceLogEntry"/>.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>Elle est confinée à l'infrastructure, et n'est jamais déclarée agrégat racine.</b> Le dépôt
 /// générique est contraint à <c>IAggregateRoot</c> ; marquer cette classe l'aurait fait s'appliquer
 /// à elle, et aurait déclaré agrégat ce qui est <b>hors de l'agrégat</b> par construction — le
-/// <c>Ledger</c> survit au <c>Case</c> de cinq ans, et un dépôt lui aurait rendu la mise à jour et
+/// <c>EvidenceLog</c> survit au <c>Case</c> de cinq ans, et un dépôt lui aurait rendu la mise à jour et
 /// la suppression ligne à ligne que sa définition ferme.
 /// </para>
 /// <para>
@@ -23,7 +23,7 @@
 /// classe n'existe que pour qu'EF Core ait des colonnes à remplir.
 /// </para>
 /// </remarks>
-public sealed class LedgerRow
+public sealed class EvidenceLogRow
 {
   /// <summary>L'identité de la ligne. Jamais un rang, jamais un compteur.</summary>
   public required Guid EntryId { get; init; }
@@ -71,7 +71,7 @@ public sealed class LedgerRow
   /// appelé. Il s'écrit <b>en même temps</b> que le nom : sans lui, la ligne d'aujourd'hui serait
   /// indiscernable de celle de demain.
   /// </summary>
-  public string? SignatureRegime { get; init; }
+  public string? SignerVerification { get; init; }
 
   /// <summary>
   /// Le droit au titre duquel le fait a eu lieu, quand il en concerne un. Un mot de la taxonomie du
@@ -83,11 +83,11 @@ public sealed class LedgerRow
   public string? StepState { get; init; }
 
   /// <summary>
-  /// La <b>prose de preuve</b> : le constat, le motif. C'est la seule prose que cette table porte, et
-  /// la prose de <em>travail</em> n'y a <b>aucune colonne</b> — elle vit sur le <c>Case</c> et meurt à
+  /// Le <b>texte qui reste</b> : le constat, le motif. C'est la seule prose que cette table porte, et
+  /// le <em>texte qui meurt</em> n'y a <b>aucune colonne</b> — il vit sur le <c>Case</c> et meurt à
   /// la clôture.
   /// </summary>
-  public string? EvidenceProse { get; init; }
+  public string? Prose { get; init; }
 
   /// <summary>
   /// La date de réception du dossier était-elle tenue pour défaut ? Ce que le service a <b>supposé</b>,
@@ -121,7 +121,7 @@ public sealed class LedgerRow
   /// <summary>
   /// Combien de <c>DeclaredSystem</c> recensés la réponse remise <b>couvrait</b>. Le numérateur du
   /// « 2 sur 6 » que le contrôle vient lire, et qui ne descend <b>jamais</b> dans la
-  /// <c>CoverSheet</c> : écrit à la personne, il affirmerait que le client a exactement six systèmes.
+  /// <c>DeliveryLetter</c> : écrit à la personne, il affirmerait que le client a exactement six systèmes.
   /// </summary>
   public int? CoveredSystemCount { get; init; }
 
@@ -138,7 +138,7 @@ public sealed class LedgerRow
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Le motif qui l'accompagne parfois n'a pas de colonne propre</b> : c'est de la prose de
-  /// preuve, et elle va dans <see cref="EvidenceProse"/> avec les constats des <c>Step</c>. Une
+  /// preuve, et elle va dans <see cref="Prose"/> avec les constats des <c>Step</c>. Une
   /// seconde colonne de prose aurait fait chercher un motif à deux endroits.
   /// </remarks>
   public string? ClosingCause { get; init; }

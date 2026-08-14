@@ -1,5 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 
@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 /// <remarks>
 /// <para>
 /// <b>L'ordre est : écrire le dossier, puis consigner</b> — comme partout ailleurs. Ce sont deux
-/// écritures et non une transaction, le <c>Ledger</c> étant hors de l'agrégat, et les deux pannes ne
+/// écritures et non une transaction, le <c>EvidenceLog</c> étant hors de l'agrégat, et les deux pannes ne
 /// se valent pas : une ligne de preuve pour un arbitrage que le dossier ne porte pas est un faux ; un
 /// arbitrage porté dont la ligne manque est <b>visible</b> à l'écran.
 /// </para>
@@ -29,7 +29,7 @@ namespace MicroserviceRgpd.UseCases.Casework.ArbitrateReservation;
 /// <param name="cases">Le seul dépôt de ce contexte : les règles sont écrites une fois, sur la racine.</param>
 /// <param name="ledger">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'un acte se dicte en test.</param>
-public sealed class ArbitrateReservationHandler(IRepository<Case> cases, ILedger ledger, TimeProvider clock)
+public sealed class ArbitrateReservationHandler(IRepository<Case> cases, IEvidenceLog ledger, TimeProvider clock)
   : ICommandHandler<ArbitrateReservationCommand, Result>
 {
   /// <inheritdoc />
@@ -52,7 +52,7 @@ public sealed class ArbitrateReservationHandler(IRepository<Case> cases, ILedger
     {
       // Le régime accompagne le nom, et il est posé ici : la surface n'authentifie personne, et c'est
       // ce que la preuve doit garder pour ne pas être relue comme une identification.
-      signatory = Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated);
+      signatory = Signatory.Operator(command.SignedBy, SignerVerification.Unauthenticated);
     }
     catch (ArgumentException refusal)
     {
@@ -77,7 +77,7 @@ public sealed class ArbitrateReservationHandler(IRepository<Case> cases, ILedger
     await cases.UpdateAsync(opened, cancellationToken);
 
     await ledger.AppendAsync(
-      LedgerEntry.ReservationArbitrated(
+      EvidenceLogEntry.ReservationArbitrated(
         command.Case,
         clock.GetUtcNow(),
         command.DeclaredSystem,

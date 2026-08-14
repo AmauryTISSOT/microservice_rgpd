@@ -176,7 +176,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.ToTable("qualification_audit_entries", (string)null);
                 });
 
-            modelBuilder.Entity("MicroserviceRgpd.Infrastructure.Data.Casework.LedgerRow", b =>
+            modelBuilder.Entity("MicroserviceRgpd.Infrastructure.Data.Casework.EvidenceLogRow", b =>
                 {
                     b.Property<Guid>("EntryId")
                         .HasColumnType("uuid")

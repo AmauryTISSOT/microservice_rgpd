@@ -1,7 +1,7 @@
 using System.Text;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.FunctionalTests.Platform;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -152,11 +152,11 @@ public class ReadScreen(CustomWebApplicationFactory<Program> factory)
 
     await _surface.ReadTextAsync(address);
 
-    var written = (await LedgerOf(opened))
-      .Where(line => line.Fact == nameof(LedgerFact.ReadServed))
+    var written = (await EvidenceLogOf(opened))
+      .Where(line => line.Fact == nameof(EvidenceLogFact.ReadServed))
       .ToArray();
 
-    // Une ligne par système lu, et une seule : le Ledger ne consigne que ce qui change.
+    // Une ligne par système lu, et une seule : le EvidenceLog ne consigne que ce qui change.
     written.Select(line => line.DeclaredSystem)
       .OrderBy(system => system, StringComparer.Ordinal)
       .ShouldBe([ABrocantoOnTheWire.Boutique, ABrocantoOnTheWire.Journal]);
@@ -166,11 +166,11 @@ public class ReadScreen(CustomWebApplicationFactory<Program> factory)
     line.DataSubjectRight.ShouldBe(nameof(MicroserviceRgpd.Core.SharedKernel.DataSubjectRight.Access));
     line.DesignationCount.ShouldBe(2);
     line.SignatoryName.ShouldBeNull();
-    line.EvidenceProse.ShouldBeNull();
+    line.Prose.ShouldBeNull();
 
-    // Aucune colonne du Ledger ne porte le contenu servi ; on le dit en le cherchant partout.
-    (await LedgerOf(opened)).ShouldNotContain(one =>
-      one.EvidenceProse != null && one.EvidenceProse.Contains("csv", StringComparison.OrdinalIgnoreCase));
+    // Aucune colonne du EvidenceLog ne porte le contenu servi ; on le dit en le cherchant partout.
+    (await EvidenceLogOf(opened)).ShouldNotContain(one =>
+      one.Prose != null && one.Prose.Contains("csv", StringComparison.OrdinalIgnoreCase));
   }
 
   /// <summary>
@@ -245,12 +245,12 @@ public class ReadScreen(CustomWebApplicationFactory<Program> factory)
     return await dbContext.Cases.AsNoTracking().SingleAsync(one => one.Id == opened);
   }
 
-  private async Task<IReadOnlyList<LedgerRow>> LedgerOf(CaseId opened)
+  private async Task<IReadOnlyList<EvidenceLogRow>> EvidenceLogOf(CaseId opened)
   {
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    return await dbContext.Set<LedgerRow>()
+    return await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
       .Where(row => row.CaseId == opened.Value)
       .ToListAsync();

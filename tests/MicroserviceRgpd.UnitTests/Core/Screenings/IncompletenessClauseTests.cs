@@ -127,8 +127,8 @@ public class IncompletenessClauseTests
 
   /// <summary>
   /// La relation au <c>Manifest</c> vit <b>dans la clause</b>, et pas seulement au glossaire : la
-  /// borne <c>Suggéré, jamais déclaré</c> n'empêche que le pont technique, et rien en elle n'empêche
-  /// un <c>Operator</c> pressé de lire le rapport comme son paysage.
+  /// borne <c>Aucune modification vers le Manifest</c> n'empêche que le pont technique, et rien en
+  /// elle n'empêche un <c>Operator</c> pressé de lire le rapport comme son paysage.
   /// </summary>
   [Fact]
   public void SaysInTheAnswerItselfThatTheListingIsNotTheManifest()

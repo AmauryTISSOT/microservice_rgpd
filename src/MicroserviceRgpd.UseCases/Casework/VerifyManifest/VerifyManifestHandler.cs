@@ -5,7 +5,7 @@ namespace MicroserviceRgpd.UseCases.Casework.VerifyManifest;
 
 /// <summary>
 /// Confronte, système par système, ce que le <c>Manifest</c> déclare et ce que l'<c>Adapter</c> sert
-/// — et porte la <b>sonde à secret délibérément faux</b>.
+/// — et porte l'<b>appel au faux secret</b>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,7 +15,7 @@ namespace MicroserviceRgpd.UseCases.Casework.VerifyManifest;
 /// catalogue qu'il a déclaré, ou le programme qui le sert.
 /// </para>
 /// <para>
-/// <b>Rien n'entre au <c>Ledger</c>.</b> Ce qui est constaté ici vaut pour le déploiement entier :
+/// <b>Rien n'entre au <c>EvidenceLog</c>.</b> Ce qui est constaté ici vaut pour le déploiement entier :
 /// l'attacher à un <c>Case</c> ferait dépendre la matière de preuve d'un geste d'exploitation, et
 /// écrirait dans N dossiers ce qu'il n'y a qu'une fois à réparer.
 /// </para>
@@ -65,7 +65,7 @@ public sealed class VerifyManifestHandler(
   }
 
   /// <summary>
-  /// Confronte un système à son <c>Adapter</c> : la sonde à secret faux d'abord, le plancher
+  /// Confronte un système à son <c>Adapter</c> : l'appel au faux secret d'abord, le plancher
   /// ensuite.
   /// </summary>
   /// <remarks>

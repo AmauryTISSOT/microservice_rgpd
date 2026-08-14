@@ -1,10 +1,10 @@
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 
 /// <summary>
-/// Date la remise au <c>Ledger</c> et <b>détruit</b> les pièces du droit remis.
+/// Date la remise au <c>EvidenceLog</c> et <b>détruit</b> les pièces du droit remis.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,13 +16,13 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// </para>
 /// <para>
 /// <b>Le « 2 sur 6 » est écrit ici, et il s'arrête ici.</b> Son lecteur est le contrôle, qui juge
-/// une pratique ; la <c>CoverSheet</c> n'en porte pas un chiffre. Le dénominateur est <b>gardé</b>
+/// une pratique ; la <c>DeliveryLetter</c> n'en porte pas un chiffre. Le dénominateur est <b>gardé</b>
 /// plutôt que relu plus tard : le recensement vieillit exprès, et le relire dans trois ans jugerait
 /// la pratique d'hier au paysage de demain.
 /// </para>
 /// <para>
 /// <b>Rien à détruire n'est pas une panne.</b> Un droit dont aucune lecture n'a rien rapporté se
-/// remet quand même : la <c>CoverSheet</c> seule est déjà une réponse, et elle nomme les systèmes
+/// remet quand même : la <c>DeliveryLetter</c> seule est déjà une réponse, et elle nomme les systèmes
 /// que cette réponse ne couvre pas.
 /// </para>
 /// </remarks>
@@ -35,7 +35,7 @@ public sealed class DeclareDeliveryHandler(
   IRepository<Case> cases,
   IReadRepository<DeclaredSystem> manifest,
   IRetrievedData retrieved,
-  ILedger ledger,
+  IEvidenceLog ledger,
   TimeProvider clock)
   : ICommandHandler<DeclareDeliveryCommand, Result>
 {
@@ -69,22 +69,22 @@ public sealed class DeclareDeliveryHandler(
 
     // La ligne de preuve est forgée d'abord : c'est elle qui exige un nom, et rien ne doit bouger si
     // la signature manque. La règle vit dans le type de la preuve, jamais ici.
-    LedgerEntry signed;
+    EvidenceLogEntry signed;
 
     try
     {
-      signed = LedgerEntry.DeliveryDeclared(
+      signed = EvidenceLogEntry.DeliveryDeclared(
         command.Case,
         clock.GetUtcNow(),
         command.Right,
         // Ce que la réponse couvrait : les systèmes dont une pièce est jointe, et eux seuls. Une
         // pièce vide est une réponse datée, mais elle ne couvre rien.
-        delivery.CoverSheet.Joined.Count,
+        delivery.DeliveryLetter.Joined.Count,
         // Le dénominateur est pris sur LE MÊME ensemble que le numérateur — celui que la page de
         // garde énumère —, et non sur le catalogue du jour : mesurer l'un contre l'autre écrirait
         // « 6 sur 5 » le jour où quelqu'un retire du catalogue un système que ce dossier portait.
-        delivery.CoverSheet.RecordedSystemCount,
-        Signatory.Operator(command.SignedBy, SignatureRegime.Unauthenticated));
+        delivery.DeliveryLetter.RecordedSystemCount,
+        Signatory.Operator(command.SignedBy, SignerVerification.Unauthenticated));
     }
     catch (ArgumentException refusal)
     {

@@ -23,7 +23,7 @@ public class ContextInspectorTests
     return ContextInspector.Inspect(ThisAssembly, from: ContextInspector.Casework, to: ContextInspector.Qualification);
   }
 
-  /// <summary>La raison d'être du contrôle au niveau de l'IL, tenue par un test.</summary>
+  /// <summary>La raison d'être du contrôle du code compilé, tenue par un test.</summary>
   [Fact]
   public void SeesACrossingHiddenInAMethodBody()
   {
