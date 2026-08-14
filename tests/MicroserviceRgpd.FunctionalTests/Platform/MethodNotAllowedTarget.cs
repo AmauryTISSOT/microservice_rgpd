@@ -12,6 +12,11 @@ namespace MicroserviceRgpd.FunctionalTests.Platform;
 /// ici est celui que produit ce pipeline. Une route posee a cote sortirait du pipeline, et le test
 /// passerait au vert en affirmant autre chose que ce qu'il annonce.
 /// </para>
+/// <para>
+/// Aucun cablage n'est necessaire pour qu'elle soit montee : la decouverte de FastEndpoints balaie
+/// les assemblys charges de l'<c>AppDomain</c>, hors une liste de prefixes exclus a laquelle celui
+/// de la suite n'appartient pas.
+/// </para>
 /// </summary>
 public class MethodNotAllowedTarget : EndpointWithoutRequest
 {

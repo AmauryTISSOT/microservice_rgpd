@@ -45,5 +45,6 @@ Content-Type: application/json
 
 ###
 
-// Preuve de vie, exposee par les ServiceDefaults Aspire.
+// Preuve de vie, exposee par les ServiceDefaults Aspire — en Development SEULEMENT.
+// Hors Development, MapDefaultEndpoints ne monte pas la route et ceci rend 404.
 GET {{host}}:{{port}}/health
