@@ -22,6 +22,13 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// afficher vert</b> : l'absence de racine et un balayage anormalement court sont l'un et l'autre
 /// un échec bruyant.
 /// </para>
+/// <para>
+/// L'exemption de vocabulaire tient en <see cref="ExemptedMigrationClassNames"/> — les quatre noms
+/// de migration d'août 2026 — et en <see cref="HistoricalSqlIdentifiers"/>, les noms SQL d'avant le
+/// renommage, tolérés dans les seuls fichiers dont le sujet <b>est</b> l'état d'avant. Toutes deux
+/// sont écrites en dur, et <see cref="EveryExemptedMigrationStillExistsOnDisk"/> tient qu'elles ne
+/// s'élargissent ni ne pourrissent.
+/// </para>
 /// </summary>
 public class RetiredVocabularyTests
 {
@@ -78,51 +85,97 @@ public class RetiredVocabularyTests
   /// ce qu'un outil a déposé. Aucun d'eux n'est du texte que quelqu'un relit.
   /// </summary>
   /// <remarks>
-  /// <para>
   /// ⚠️ <c>corpus/</c> porte des schémas de <b>logiciels tiers</b>, où <c>ledger_account</c> est le
   /// nom d'une table de comptabilité chez Dolibarr. Ce ne sont pas nos mots, et les renommer serait
   /// mentir sur ce que le client exploite.
-  /// </para>
-  /// <para>
-  /// ⚠️ <b><c>Migrations/</c> est l'exception assumée du renommage, écrite ici plutôt que
-  /// découverte un jour de panne.</b> Elle recouvre trois choses qu'on ne peut pas éditer :
-  /// </para>
-  /// <list type="bullet">
-  /// <item>
-  /// Les <b>quatre noms de classe</b> d'août 2026 qui portent l'ancien mot —
-  /// <c>CreateCasesAndLedger</c>, <c>AddDeclaredSystemToLedger</c>,
-  /// <c>AddDeliveryGesturesAndLedgerCounts</c>, <c>AddExtensionDeclarationAndLedgerIndex</c> — qui
-  /// sont écrits dans <c>__EFMigrationsHistory</c> de chaque déploiement : les renommer ferait
-  /// rejouer des migrations déjà appliquées.
-  /// </item>
-  /// <item>
-  /// Le <b>corps</b> de ces migrations et de leurs voisines, qui nomme la table telle qu'elle
-  /// s'appelait à leur date. Une migration passée décrit un geste déjà appliqué ; la réécrire lui
-  /// ferait décrire un geste qui n'a jamais eu lieu.
-  /// </item>
-  /// <item>
-  /// La migration de renommage elle-même, qui <b>doit</b> nommer l'ancienne table — c'est
-  /// précisément ce qu'elle renomme.
-  /// </item>
-  /// </list>
-  /// <para>
-  /// Le motif qui les réunit : une migration porte <b>une date dans son nom</b>, donc un lecteur
-  /// comprend sans effort qu'elle parle avec les mots de sa date. C'est le seul dossier de code
-  /// dont la prose ne se relit pas — il n'y en a pas.
-  /// </para>
   /// </remarks>
   private static readonly string[] SkippedDirectories =
   [
     ".git", "bin", "obj", "node_modules", "TestResults", ".vs", ".idea", ".claude", "artifacts",
-    "corpus", "Migrations",
+    "corpus",
+  ];
+
+  /// <summary>
+  /// Le dossier dont les fichiers décrivent des gestes <b>déjà appliqués</b>. Il est désigné par son
+  /// chemin et non par son nom de feuille : un autre dossier qu'on appellerait un jour
+  /// <c>Migrations</c> — un second <c>DbContext</c>, un dossier de documentation — n'hériterait pas
+  /// de la tolérance écrite ici.
+  /// </summary>
+  private static readonly string[] MigrationsPath =
+    ["src", "MicroserviceRgpd.Infrastructure", "Migrations"];
+
+  /// <summary>
+  /// ⚠️ <b>La liste d'exemption : les quatre noms de classe de migration d'août 2026, et eux
+  /// seuls.</b> Ils portent l'ancien mot du journal et sont <b>inéditables</b> — ils sont écrits
+  /// dans <c>__EFMigrationsHistory</c> de chaque déploiement, et les renommer ferait rejouer des
+  /// migrations déjà appliquées.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// Elle est écrite en dur, comme celle de <see cref="ContextIsolationTests"/> : l'élargir doit
+  /// demander un geste délibéré, et l'exception doit être <b>écrite plutôt que découverte un jour
+  /// de panne</b>.
+  /// </para>
+  /// <para>
+  /// Motif retenu : une migration porte <b>une date dans son nom</b>, donc un lecteur comprend sans
+  /// effort qu'elle parle avec les mots de sa date.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>L'exemption ne dispense pas le dossier du balayage</b> — c'est ce qui la distingue d'un
+  /// dossier écarté. Les fichiers de <c>Migrations/</c> sont lus comme les autres ; seules ces
+  /// quatre chaînes-ci et les <see cref="HistoricalSqlIdentifiers"/> y sont tolérées. Tout autre
+  /// terme retiré qu'on y écrirait — une clause de doctrine en commentaire, par exemple — fait
+  /// rougir le garde.
+  /// </para>
+  /// </remarks>
+  private static readonly string[] ExemptedMigrationClassNames =
+  [
+    "CreateCasesAndLedger",
+    "AddDeclaredSystemToLedger",
+    "AddDeliveryGesturesAndLedgerCounts",
+    "AddExtensionDeclarationAndLedgerIndex",
+  ];
+
+  /// <summary>
+  /// Les noms d'objets SQL tels qu'ils s'appelaient avant le renommage. Une migration passée décrit
+  /// un geste <b>déjà appliqué</b> : la réécrire lui ferait décrire un geste qui n'a jamais eu lieu.
+  /// Et la migration de renommage elle-même <b>doit</b> nommer l'ancienne table — c'est
+  /// précisément ce qu'elle renomme.
+  /// </summary>
+  /// <remarks>
+  /// Tolérés dans les seuls <see cref="FilesSpeakingThePreRenameSchema"/> <b>et nulle part
+  /// ailleurs</b> : partout ailleurs dans le dépôt, <c>ledger_entries</c> reste un terme retiré.
+  /// </remarks>
+  private static readonly string[] HistoricalSqlIdentifiers =
+  [
+    "ix_ledger_entries_case_id",
+    "pk_ledger_entries",
+    "ledger_entries",
+  ];
+
+  /// <summary>
+  /// Les fichiers qui parlent le schéma <b>d'avant</b> le renommage parce que c'est leur sujet :
+  /// les migrations, et le test qui prouve qu'une ligne écrite avant le renommage lui survit. Ce
+  /// dernier <b>doit</b> insérer dans l'ancienne table, puis vérifier qu'elle a disparu — écrit
+  /// avec les mots d'aujourd'hui, il ne prouverait plus rien.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Chemins <b>ancrés à la racine</b>, et non noms de feuille : c'est ce qui empêche un futur
+  /// dossier appelé <c>Migrations</c> d'hériter d'une tolérance que personne ne lui a accordée.
+  /// </remarks>
+  private static readonly string[][] FilesSpeakingThePreRenameSchema =
+  [
+    ["tests", "MicroserviceRgpd.IntegrationTests", "Migrations", "VocabularyRenameSurvivalTests.cs"],
   ];
 
   /// <summary>
   /// ⚠️ <b>Les instantanés de modèle qu'EF écrit ne sont pas balayés, et le motif compte.</b> Un
-  /// <c>.Designer.cs</c> décrit le modèle <b>tel qu'il était</b> à la date de sa migration. Le
-  /// réécrire avec les mots d'aujourd'hui lui ferait décrire un état que sa migration n'a jamais
-  /// produit — et le garde, sans cette exclusion, pousserait chaque contributeur à retoucher de
-  /// l'histoire immuable.
+  /// <c>.Designer.cs</c> décrit le modèle <b>tel qu'il était</b> à la date de sa migration —
+  /// jusqu'aux noms de types et de propriétés d'alors, <c>LedgerRow</c> et <c>SignatureRegime</c>
+  /// compris. Le réécrire avec les mots d'aujourd'hui lui ferait décrire un état que sa migration
+  /// n'a jamais produit, et le garde, sans cette exclusion, pousserait chaque contributeur à
+  /// retoucher de l'histoire immuable. Ce n'est pas de la prose : personne ne relit un instantané,
+  /// et personne ne l'écrit à la main.
   /// </summary>
   private const string GeneratedSnapshotSuffix = ".Designer.cs";
 
@@ -152,7 +205,7 @@ public class RetiredVocabularyTests
     {
       scanned++;
 
-      var content = ReadText(file);
+      var content = ReadText(file, root);
 
       foreach (var term in RetiredTerms)
       {
@@ -176,6 +229,53 @@ public class RetiredVocabularyTests
       string.Join(Environment.NewLine, offences.Order(StringComparer.Ordinal)) +
       Environment.NewLine +
       "Voir l'entrée correspondante des glossaires de docs/contexts/ ou de CONTEXT-MAP.md.");
+  }
+
+  /// <summary>
+  /// <b>Une exemption qui ne désigne plus rien est une exemption qui ment.</b> Les quatre noms
+  /// d'août 2026 sont tolérés parce qu'ils sont inéditables ; le jour où l'un d'eux disparaît du
+  /// disque, la ligne qui l'exempte devient une porte ouverte sur un mot que plus rien ne justifie.
+  /// Ce test tient que la liste reste <b>exactement</b> celle du ticket, et que chacun de ses noms
+  /// désigne encore une migration réelle.
+  /// </summary>
+  [Fact]
+  public void EveryExemptedMigrationStillExistsOnDisk()
+  {
+    var root = RepositoryRoot();
+
+    var migrations = Directory
+      .EnumerateFiles(MigrationsDirectoryIn(root), "*.cs")
+      .Select(Path.GetFileNameWithoutExtension)
+      .ToArray();
+
+    ExemptedMigrationClassNames.ShouldBe(
+      [
+        "CreateCasesAndLedger",
+        "AddDeclaredSystemToLedger",
+        "AddDeliveryGesturesAndLedgerCounts",
+        "AddExtensionDeclarationAndLedgerIndex",
+      ],
+      "La liste d'exemption doit contenir les quatre noms de migration d'août 2026, et eux seuls. " +
+      "En changer un est un geste délibéré, qui se discute en revue — le compte seul ne suffit " +
+      "pas : échanger un nom contre un autre garderait quatre lignes et exempterait une migration " +
+      "dont personne n'a parlé.");
+
+    foreach (var exempted in ExemptedMigrationClassNames)
+    {
+      migrations.ShouldContain(
+        migration => migration!.EndsWith("_" + exempted, StringComparison.Ordinal),
+        $"Aucune migration nommée « {exempted} » sur le disque, alors que la liste d'exemption la " +
+        "tolère. Retirez la ligne : elle n'exempte plus rien et laisse passer l'ancien mot.");
+    }
+
+    foreach (var path in FilesSpeakingThePreRenameSchema)
+    {
+      var file = Path.Combine([root, .. path]);
+
+      File.Exists(file).ShouldBeTrue(
+        $"Aucun fichier « {Path.Combine(path)} » sur le disque, alors qu'il est autorisé à nommer " +
+        "l'ancien schéma. Retirez la ligne : elle n'exempte plus rien.");
+    }
   }
 
   /// <summary>
@@ -220,9 +320,54 @@ public class RetiredVocabularyTests
   /// normalisation, <c>Test au niveau de l'IL</c> passerait au travers du garde le jour où
   /// quelqu'un le recopie depuis un traitement de texte.
   /// </summary>
-  private static string ReadText(string file)
+  /// <remarks>
+  /// Dans <c>Migrations/</c>, les chaînes exemptées sont <b>effacées avant la recherche</b> plutôt
+  /// que le fichier écarté : le reste du fichier est balayé comme n'importe quel autre.
+  /// </remarks>
+  private static string ReadText(string file, string root)
   {
-    return Normalized(File.ReadAllText(file));
+    var content = Normalized(File.ReadAllText(file));
+
+    foreach (var exempted in Exemptions(file, root))
+    {
+      content = content.Replace(exempted, string.Empty, StringComparison.Ordinal);
+    }
+
+    return content;
+  }
+
+  /// <summary>
+  /// Ce qu'un fichier a le droit de dire encore. Les quatre noms de classe ne sont tolérés que
+  /// <b>dans les migrations</b> — nulle part ailleurs, pas même dans le test de survie, qui n'a
+  /// aucune raison de les citer.
+  /// </summary>
+  private static IEnumerable<string> Exemptions(string file, string root)
+  {
+    if (IsUnderMigrations(file, root))
+    {
+      return ExemptedMigrationClassNames.Concat(HistoricalSqlIdentifiers);
+    }
+
+    return SpeaksThePreRenameSchema(file, root) ? HistoricalSqlIdentifiers : [];
+  }
+
+  private static bool IsUnderMigrations(string file, string root)
+  {
+    return string.Equals(
+      Path.GetDirectoryName(file),
+      MigrationsDirectoryIn(root),
+      StringComparison.Ordinal);
+  }
+
+  private static bool SpeaksThePreRenameSchema(string file, string root)
+  {
+    return FilesSpeakingThePreRenameSchema.Any(
+      path => string.Equals(file, Path.Combine([root, .. path]), StringComparison.Ordinal));
+  }
+
+  private static string MigrationsDirectoryIn(string root)
+  {
+    return Path.Combine([root, .. MigrationsPath]);
   }
 
   private static string Normalized(string text)
