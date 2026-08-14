@@ -118,8 +118,11 @@ Sans ce prérequis, le container refuse de démarrer — c'est délibéré : le 
 processeur donnait une pile qui « marche » mais dont personne n'attend les réponses.
 
 Les tests d'intégration et fonctionnels utilisent Testcontainers : **Docker doit être démarré**.
-Voir [`TESTCONTAINERS_IMPLEMENTATION.md`](TESTCONTAINERS_IMPLEMENTATION.md). **Aucun test ne
+Voir [`docs/testing/testcontainers.md`](docs/testing/testcontainers.md). **Aucun test ne
 démarre Ollama, ni ne s'approche d'un GPU.**
+
+Pour l'exécution des tests en parallèle et sa configuration, voir
+[`docs/testing/parallel-execution.md`](docs/testing/parallel-execution.md).
 
 ### Migrations EF Core
 

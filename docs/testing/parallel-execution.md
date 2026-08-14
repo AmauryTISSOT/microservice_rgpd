@@ -2,6 +2,10 @@
 
 This workspace is configured to run all four test projects in parallel in Visual Studio Test Explorer.
 
+`tests/` holds a fifth directory, `MicroserviceRgpd.AspireTests`, which is **not** a test project:
+it carries `IsTestProject=false` and is deliberately empty. Its missing `xunit.runner.json` is not
+an oversight — read the comment in its `.csproj` before adding anything to it.
+
 ## Configuration Files
 
 ### `.runsettings` (Solution Root)
@@ -13,19 +17,19 @@ This workspace is configured to run all four test projects in parallel in Visual
 Each test project contains an `xunit.runner.json` file with:
 - `parallelizeAssembly: true` - Allows tests from this assembly to run in parallel with other assemblies
 - `parallelizeTestCollections: true` - Runs test collections within the assembly in parallel
-- `maxParallelThreads: 0` - Uses xUnit's default algorithm (processors � 2)
+- `maxParallelThreads: 0` - Uses xUnit's default algorithm (processors × 2)
 
 ## How to Use in Visual Studio
 
 ### Option 1: Configure via Test Explorer Settings
-1. Open **Test Explorer** (Test ? Test Explorer)
-2. Click the settings icon (??) in the toolbar
-3. Select **Configure Run Settings** ? **Select Solution Wide runsettings File**
+1. Open **Test Explorer** (Test → Test Explorer)
+2. Click the settings icon (⚙) in the toolbar
+3. Select **Configure Run Settings** → **Select Solution Wide runsettings File**
 4. Browse to and select the `.runsettings` file at the solution root
 
 ### Option 2: Configure via Visual Studio Settings
-1. Go to **Tools** ? **Options**
-2. Navigate to **Test** ? **General**
+1. Go to **Tools** → **Options**
+2. Navigate to **Test** → **General**
 3. Under **Run Settings File**, browse and select the `.runsettings` file
 
 ### Option 3: Automatic Detection
