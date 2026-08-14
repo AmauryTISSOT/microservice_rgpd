@@ -54,7 +54,7 @@ public class EngineResiliencePipelineTests
   /// </summary>
   [Theory]
   [InlineData(QualificationEngineRole.Verdict)]
-  [InlineData(QualificationEngineRole.Witness)]
+  [InlineData(QualificationEngineRole.Lexicon)]
   public async Task NeverReplaysAnEngineThatFailed(string role)
   {
     var sidecar = new CountingSidecar(HttpStatusCode.InternalServerError, "{}");
@@ -109,12 +109,12 @@ public class EngineResiliencePipelineTests
   }
 
   /// <summary>
-  /// Chaque moteur porte <b>son</b> échéance, et non une échéance partagée : celle du témoin est
+  /// Chaque moteur porte <b>son</b> échéance, et non une échéance partagée : celle du lexique est
   /// franchement plus courte, au point qu'il ne puisse jamais rallonger le temps de réponse du
   /// service, là où celle du verdict doit laisser une génération aboutir.
   /// </summary>
   [Fact]
-  public async Task GivesTheWitnessADeadlineShortEnoughToNeverLengthenTheService()
+  public async Task GivesTheLexiconADeadlineShortEnoughToNeverLengthenTheService()
   {
     var sidecar = new SlowSidecar(ValidLexiconOpinion);
     using var services = Registered(sidecar, llmDeadlineSeconds: 30, lexiconDeadlineSeconds: 0.2);
@@ -122,9 +122,9 @@ public class EngineResiliencePipelineTests
     var elapsed = Stopwatch.StartNew();
 
     await Should.ThrowAsync<QualificationEngineDeadlineExceeded>(
-      () => Engine(services, QualificationEngineRole.Witness).QualifyAsync(Text, CancellationToken.None));
+      () => Engine(services, QualificationEngineRole.Lexicon).QualifyAsync(Text, CancellationToken.None));
 
-    // Le témoin a renoncé sur *sa* propre échéance ; celle du verdict, cent cinquante fois plus
+    // Le lexique a renoncé sur *sa* propre échéance ; celle du verdict, cent cinquante fois plus
     // longue, aurait laissé le service attendre.
     elapsed.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(10));
   }
@@ -152,7 +152,7 @@ public class EngineResiliencePipelineTests
   /// </summary>
   [Theory]
   [InlineData(QualificationEngineRole.Verdict)]
-  [InlineData(QualificationEngineRole.Witness)]
+  [InlineData(QualificationEngineRole.Lexicon)]
   public void LeavesTheDeadlineToThePipelineRatherThanToTheClient(string role)
   {
     using var services = Registered(new CountingSidecar(HttpStatusCode.OK, ValidLlmOpinion));

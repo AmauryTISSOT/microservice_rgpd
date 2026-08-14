@@ -17,8 +17,8 @@
 /// </para>
 /// <para>
 /// <b>Aucun champ ne nomme le mode dégradé</b> : la nullité des deux avis l'enregistre, et elle dit
-/// davantage que le booléen public — un avis de verdict absent signe le repli sur le témoin, un avis
-/// témoin absent signe le contrôle manquant. Le booléen recouvre les deux ; la trace les distingue.
+/// davantage que le booléen public — un avis de verdict absent signe le repli sur le lexique, un avis
+/// du lexique absent signe le contrôle manquant. Le booléen recouvre les deux ; la trace les distingue.
 /// </para>
 /// <para>
 /// <b>Les deux avis ne sont jamais absents ensemble</b> : sans avis il n'y a pas de verdict, donc
@@ -36,10 +36,10 @@
 /// <param name="ReviewSignal">L'urgence à relire, telle qu'elle a été rendue.</param>
 /// <param name="VerdictOpinion">
 /// L'avis du moteur qui fait verdict, tel qu'il est arrivé — <c>null</c> quand ce moteur n'a rien
-/// rendu, et c'est alors le repli sur le témoin que la ligne enregistre.
+/// rendu, et c'est alors le repli sur le lexique que la ligne enregistre.
 /// </param>
 /// <param name="LexiconOpinion">
-/// L'avis du moteur témoin, tel qu'il est arrivé — <c>null</c> quand ce moteur n'a rien rendu, et
+/// L'avis du moteur lexical, tel qu'il est arrivé — <c>null</c> quand ce moteur n'a rien rendu, et
 /// c'est alors un verdict resté sans contrôle que la ligne enregistre.
 /// </param>
 /// <param name="Justification">La phrase rendue à l'opérateur, quand il y en a eu une.</param>
@@ -52,7 +52,7 @@
 /// </param>
 /// <param name="TotalLatency">Le temps qu'a pris la qualification entière, hors écriture de la trace.</param>
 /// <param name="VerdictLatency">Le temps qu'a pris le moteur de verdict, ou rien s'il n'a pas rendu d'avis.</param>
-/// <param name="LexiconLatency">Le temps qu'a pris le moteur témoin, ou rien s'il n'a pas rendu d'avis.</param>
+/// <param name="LexiconLatency">Le temps qu'a pris le moteur lexical, ou rien s'il n'a pas rendu d'avis.</param>
 public sealed record QualificationAuditEntry(
   Guid QualificationId,
   DateTimeOffset OccurredAt,

@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.Core.Qualifications;
 /// container. Un handler qui l'aurait absorbée la rendrait indissociable de HTTP.
 /// </para>
 /// <para>
-/// <b>Elle ne nomme aucun moteur.</b> Il y a l'avis qui fait verdict et l'avis témoin, deux rôles ;
+/// <b>Elle ne nomme aucun moteur.</b> Il y a l'avis qui fait verdict et l'avis du lexique, deux rôles ;
 /// qu'un LLM tienne le premier et un lexique le second est un fait d'infrastructure. Un troisième
 /// moteur, ou l'abandon du lexique, laisse cette règle intacte.
 /// </para>
@@ -24,8 +24,8 @@ namespace MicroserviceRgpd.Core.Qualifications;
 /// </para>
 /// </remarks>
 /// <param name="Qualification">
-/// Le verdict rendu. Celui du moteur principal en marche nominale — le témoin est
-/// <b>détecteur, jamais contributeur</b> — et celui du témoin quand le principal n'a rien rendu.
+/// Le verdict rendu. Celui du moteur principal en marche nominale — le lexique est
+/// <b>détecteur, jamais contributeur</b> — et celui du lexique quand le principal n'a rien rendu.
 /// Les deux rôles ne coexistent jamais : l'union de deux avis serait indéfinissable,
 /// <see cref="DataSubjectRight.OutOfScope"/> étant exclusif.
 /// </param>
@@ -33,7 +33,7 @@ namespace MicroserviceRgpd.Core.Qualifications;
 /// <param name="Degraded">Vrai dès qu'un des deux avis manque, <b>quel que soit celui qui manque</b>.</param>
 /// <param name="Justification">
 /// La phrase que le moteur principal oppose à l'opérateur, quand il en a rendu une. Absente en repli
-/// témoin : lui en fabriquer une mentirait à l'opérateur au moment où le service se trompe le plus.
+/// lexique : lui en fabriquer une mentirait à l'opérateur au moment où le service se trompe le plus.
 /// </param>
 public sealed record Corroboration(
   Qualification Qualification,
@@ -48,16 +48,16 @@ public sealed record Corroboration(
   /// L'avis du moteur principal, celui qui fait verdict — absent quand ce moteur n'a rien rendu,
   /// quelle qu'en soit la raison.
   /// </param>
-  /// <param name="witness">
-  /// L'avis témoin, celui qui contrôle — absent quand le moteur qui le rend n'a rien rendu.
+  /// <param name="lexicon">
+  /// L'avis du lexique, celui qui contrôle — absent quand le moteur qui le rend n'a rien rendu.
   /// </param>
   /// <exception cref="ArgumentException">
   /// Les deux avis sont absents : il n'y a rien à qualifier, et forger un verdict que personne n'a
   /// prononcé serait pire que de refuser.
   /// </exception>
-  public static Corroboration Between(QualificationOpinion? verdict, QualificationOpinion? witness)
+  public static Corroboration Between(QualificationOpinion? verdict, QualificationOpinion? lexicon)
   {
-    if (verdict is null && witness is null)
+    if (verdict is null && lexicon is null)
     {
       throw new ArgumentException(
         "Aucun moteur n'a rendu d'avis : il n'y a rien à corroborer, et rien à qualifier.",
@@ -66,22 +66,22 @@ public sealed record Corroboration(
 
     if (verdict is null)
     {
-      // Repli sur le témoin : il tient lieu de verdict, le signal ne peut être que « à relire », et
-      // la réponse est muette — le témoin ne justifie rien, et le service n'invente pas pour lui.
-      return new Corroboration(witness!.Qualification, ReviewSignal.NeedsReview, Degraded: true, Justification: null);
+      // Repli sur le lexique : il tient lieu de verdict, le signal ne peut être que « à relire », et
+      // la réponse est muette — le lexique ne justifie rien, et le service n'invente pas pour lui.
+      return new Corroboration(lexicon!.Qualification, ReviewSignal.NeedsReview, Degraded: true, Justification: null);
     }
 
-    if (witness is null)
+    if (lexicon is null)
     {
       // Le verdict est normal, mais il n'a reçu aucun contrôle. Le dire est ce qui empêche un
-      // moteur témoin mort de s'éteindre en silence.
+      // moteur lexical mort de s'éteindre en silence.
       return new Corroboration(
         verdict.Qualification, ReviewSignal.NeedsReview, Degraded: true, verdict.Justification);
     }
 
     return new Corroboration(
       verdict.Qualification,
-      SignalOf(verdict, witness),
+      SignalOf(verdict, lexicon),
       Degraded: false,
       verdict.Justification);
   }
@@ -94,9 +94,9 @@ public sealed record Corroboration(
   /// contraire ferait dépendre le signal de l'ordre dans lequel un moteur énumère ses droits, qui
   /// n'a aucun sens.
   /// </remarks>
-  private static ReviewSignal SignalOf(QualificationOpinion verdict, QualificationOpinion witness)
+  private static ReviewSignal SignalOf(QualificationOpinion verdict, QualificationOpinion lexicon)
   {
-    if (!verdict.Qualification.Equals(witness.Qualification))
+    if (!verdict.Qualification.Equals(lexicon.Qualification))
     {
       return ReviewSignal.Contested;
     }

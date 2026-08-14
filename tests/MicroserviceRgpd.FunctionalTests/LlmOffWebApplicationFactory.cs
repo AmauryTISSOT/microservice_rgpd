@@ -6,7 +6,7 @@ namespace MicroserviceRgpd.FunctionalTests;
 /// par rien.
 /// </summary>
 /// <remarks>
-/// Seul le role temoin est substitue. Laisser le role de verdict au cablage reel est ce qui donne
+/// Seul le role du lexique est substitue. Laisser le role de verdict au cablage reel est ce qui donne
 /// au test sa valeur : une doublure posee par-dessus prouverait la presence de cette doublure, et
 /// rien du drapeau. Rien ne se pose non plus sur le fil HTTP — un role qui n existe pas n a aucun
 /// appel a emettre.

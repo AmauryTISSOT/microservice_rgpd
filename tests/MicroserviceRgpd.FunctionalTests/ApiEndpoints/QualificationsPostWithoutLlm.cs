@@ -28,7 +28,7 @@ public class QualificationsPostWithoutLlm
     _factory = factory;
     _client = factory.CreateClient();
 
-    factory.Witness.Reset();
+    factory.Lexicon.Reset();
     factory.AuditTrail.Reset();
   }
 
@@ -54,7 +54,7 @@ public class QualificationsPostWithoutLlm
   [Fact]
   public async Task RendersTheVerdictOfTheLexiconAloneMarkedDegraded()
   {
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
 
     var body = await QualifyAsync();
 
@@ -71,7 +71,7 @@ public class QualificationsPostWithoutLlm
   [Fact]
   public async Task CarriesNoJustificationAtAllRatherThanAFabricatedOne()
   {
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
 
     var body = await QualifyAsync();
 
@@ -85,7 +85,7 @@ public class QualificationsPostWithoutLlm
   [Fact]
   public async Task RendersTheSameShapeAsAServiceThatHasItsTwoEngines()
   {
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Access]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Access]);
 
     var body = await QualifyAsync(callerReference: "DSAR-4412");
 
@@ -101,8 +101,8 @@ public class QualificationsPostWithoutLlm
   [Fact]
   public async Task NeverPresentsAVerdictAsCorroborated()
   {
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    _factory.Witness.DeclaredConfidence = DeclaredConfidence.High;
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.DeclaredConfidence = DeclaredConfidence.High;
 
     var body = await QualifyAsync();
 
@@ -118,8 +118,8 @@ public class QualificationsPostWithoutLlm
   [Fact]
   public async Task WritesARowCarryingTheLexiconOpinionAndNoVerdictAtAll()
   {
-    _factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    _factory.Witness.Engine = new QualificationEngineIdentity("lexicon", "1.0.0");
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Engine = new QualificationEngineIdentity("lexicon", "1.0.0");
 
     var body = await QualifyAsync(callerReference: "DSAR-4412");
     var qualificationId = body.GetProperty("qualificationId").GetGuid();
@@ -151,7 +151,7 @@ public class QualificationsPostWithoutLlm
   [Fact]
   public async Task RendersAFailureWhenTheLexiconItselfHasNothingToSay()
   {
-    _factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a repondu 500.");
+    _factory.Lexicon.Silence = new QualificationEngineFailure("Le moteur lexical a repondu 500.");
 
     var response = await _client.PostAsJsonAsync("/qualifications", new { text = "Supprimez mes donnees." });
 

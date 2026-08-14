@@ -38,7 +38,7 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// manquant. Le domaine ne reçoit aucune règle nouvelle : le repli existant fait tout le travail.
 /// </para>
 /// </remarks>
-/// <param name="witness">Le moteur qui contrôle le verdict, déclaré par le port et par son rôle.</param>
+/// <param name="lexicon">Le moteur qui contrôle le verdict, déclaré par le port et par son rôle.</param>
 /// <param name="auditTrail">
 /// L'écrit de l'acte. Il est demandé <b>avant</b> de répondre, jamais après : un verdict rendu sans
 /// trace serait un verdict dont plus personne ne pourrait répondre.
@@ -56,7 +56,7 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// ce rôle peut n'être pourvu par personne, et le handler doit alors qualifier quand même.
 /// </param>
 public sealed class QualifyHandler(
-  [FromKeyedServices(QualificationEngineRole.Witness)] IQualificationEngine witness,
+  [FromKeyedServices(QualificationEngineRole.Lexicon)] IQualificationEngine lexicon,
   IQualificationAuditTrail auditTrail,
   TimeProvider clock,
   ILogger<QualifyHandler> logger,
@@ -82,11 +82,11 @@ public sealed class QualifyHandler(
       ? Task.FromResult(EngineAnswer.Unprovisioned)
       : AskAsync(verdictEngine, QualificationEngineRole.Verdict, command.Text, cancellationToken);
 
-    var witnessAnswer = AskAsync(witness, QualificationEngineRole.Witness, command.Text, cancellationToken);
+    var lexiconAnswer = AskAsync(lexicon, QualificationEngineRole.Lexicon, command.Text, cancellationToken);
 
-    await Task.WhenAll(verdictAnswer, witnessAnswer);
+    await Task.WhenAll(verdictAnswer, lexiconAnswer);
 
-    var corroboration = Corroborate(verdictAnswer.Result, witnessAnswer.Result);
+    var corroboration = Corroborate(verdictAnswer.Result, lexiconAnswer.Result);
 
     var outcome = new QualificationOutcome(
       // Ordonné dans le temps, donc sans fragmentation d'index puisque la trace d'audit en fait sa
@@ -103,7 +103,7 @@ public sealed class QualifyHandler(
     // quand la qualification elle-même l'était. Une base indisponible est une panne du service, pas
     // un mode dégradé.
     await auditTrail.RecordAsync(
-      EntryOf(command, outcome, occurredAt, verdictAnswer.Result, witnessAnswer.Result, clock.GetElapsedTime(started)),
+      EntryOf(command, outcome, occurredAt, verdictAnswer.Result, lexiconAnswer.Result, clock.GetElapsedTime(started)),
       cancellationToken);
 
     return outcome;
@@ -123,7 +123,7 @@ public sealed class QualifyHandler(
     QualificationOutcome outcome,
     DateTimeOffset occurredAt,
     EngineAnswer verdict,
-    EngineAnswer witness,
+    EngineAnswer lexicon,
     TimeSpan totalLatency)
   {
     return new QualificationAuditEntry(
@@ -133,7 +133,7 @@ public sealed class QualifyHandler(
       outcome.Qualification,
       outcome.ReviewSignal,
       verdict.Opinion,
-      witness.Opinion,
+      lexicon.Opinion,
       outcome.Justification,
       outcome.CallerReference,
       // La trace de télémétrie est prise telle qu'elle est, et jamais fabriquée : son absence dit
@@ -143,20 +143,20 @@ public sealed class QualifyHandler(
       // La latence d'un moteur muet reste nulle, comme son avis : mesurer le temps qu'il a mis à ne
       // rien rendre ferait passer une panne pour une lenteur.
       verdict.Opinion is null ? null : verdict.Latency,
-      witness.Opinion is null ? null : witness.Latency);
+      lexicon.Opinion is null ? null : lexicon.Latency);
   }
 
   /// <summary>
   /// Confronte les deux réponses, ou présente la panne du moteur principal quand aucune n'est un avis.
   /// </summary>
-  private static Corroboration Corroborate(EngineAnswer verdict, EngineAnswer witness)
+  private static Corroboration Corroborate(EngineAnswer verdict, EngineAnswer lexicon)
   {
-    if (verdict.Opinion is null && witness.Opinion is null)
+    if (verdict.Opinion is null && lexicon.Opinion is null)
     {
       // La panne du moteur principal prime : le service suit le mode de défaillance de celui dont
-      // l'avis aurait fait verdict, et non celui du témoin qui n'a fait que tomber en même temps.
-      // Rôle non pourvu, il n'y a aucune panne de ce côté, et c'est celle du témoin qui reste.
-      var failure = verdict.Failure ?? witness.Failure!;
+      // l'avis aurait fait verdict, et non celui du lexique qui n'a fait que tomber en même temps.
+      // Rôle non pourvu, il n'y a aucune panne de ce côté, et c'est celle du lexique qui reste.
+      var failure = verdict.Failure ?? lexicon.Failure!;
 
       if (failure is QualificationEngineFailure named)
       {
@@ -171,7 +171,7 @@ public sealed class QualifyHandler(
         "Aucun moteur n'a rendu d'avis : il ne reste rien à qualifier.", failure);
     }
 
-    return Corroboration.Between(verdict.Opinion, witness.Opinion);
+    return Corroboration.Between(verdict.Opinion, lexicon.Opinion);
   }
 
   /// <summary>

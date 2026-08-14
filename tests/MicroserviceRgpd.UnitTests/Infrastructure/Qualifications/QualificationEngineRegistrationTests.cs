@@ -25,7 +25,7 @@ public class QualificationEngineRegistrationTests
 
     services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Verdict)
       .ShouldBeOfType<LlmQualificationEngine>();
-    services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Witness)
+    services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Lexicon)
       .ShouldBeOfType<LexiconQualificationEngine>();
   }
 
@@ -39,9 +39,9 @@ public class QualificationEngineRegistrationTests
     using var services = Registered();
 
     var verdict = services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Verdict);
-    var witness = services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Witness);
+    var lexicon = services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Lexicon);
 
-    verdict.ShouldNotBeSameAs(witness);
+    verdict.ShouldNotBeSameAs(lexicon);
   }
 
   /// <summary>
@@ -82,13 +82,13 @@ public class QualificationEngineRegistrationTests
     services.GetService<LlmQualificationEngine>().ShouldBeNull();
   }
 
-  /// <summary>Éteint ou allumé, le témoin est pourvu : c'est lui qui fait tourner le service sans matériel.</summary>
+  /// <summary>Éteint ou allumé, le lexique est pourvu : c'est lui qui fait tourner le service sans matériel.</summary>
   [Fact]
-  public void StillProvidesTheWitnessRoleWhenTheLlmIsOff()
+  public void StillProvidesTheLexiconRoleWhenTheLlmIsOff()
   {
     using var services = Registered(llm: null);
 
-    services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Witness)
+    services.GetRequiredKeyedService<IQualificationEngine>(QualificationEngineRole.Lexicon)
       .ShouldBeOfType<LexiconQualificationEngine>();
   }
 

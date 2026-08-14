@@ -13,7 +13,7 @@ public class CorroborationTests
   private static readonly QualificationOpinion Erasure =
     Reasoned([DataSubjectRight.Erasure], DeclaredConfidence.High);
 
-  private static readonly QualificationOpinion WitnessErasure = Witness(DataSubjectRight.Erasure);
+  private static readonly QualificationOpinion LexiconErasure = Lexicon(DataSubjectRight.Erasure);
 
   /// <summary>
   /// Première ligne du tableau, et <b>première évaluée</b> : la divergence l'emporte sur la
@@ -22,7 +22,7 @@ public class CorroborationTests
   [Fact]
   public void CallsTwoOpinionsThatDisagreeContested()
   {
-    var corroboration = Corroboration.Between(Erasure, Witness(DataSubjectRight.Objection));
+    var corroboration = Corroboration.Between(Erasure, Lexicon(DataSubjectRight.Objection));
 
     corroboration.ReviewSignal.ShouldBe(ReviewSignal.Contested);
   }
@@ -30,7 +30,7 @@ public class CorroborationTests
   [Fact]
   public void CallsTwoAgreeingOpinionsCorroboratedWhenTheConfidenceIsHigh()
   {
-    var corroboration = Corroboration.Between(Erasure, WitnessErasure);
+    var corroboration = Corroboration.Between(Erasure, LexiconErasure);
 
     corroboration.ReviewSignal.ShouldBe(ReviewSignal.Corroborated);
   }
@@ -47,7 +47,7 @@ public class CorroborationTests
   {
     var corroboration = Corroboration.Between(
       Reasoned([DataSubjectRight.Erasure], confidence),
-      WitnessErasure);
+      LexiconErasure);
 
     corroboration.ReviewSignal.ShouldBe(ReviewSignal.NeedsReview);
   }
@@ -60,7 +60,7 @@ public class CorroborationTests
   public void CallsALoneOpinionNeedsReviewWhicheverEngineIsMissing()
   {
     Corroboration.Between(Erasure, null).ReviewSignal.ShouldBe(ReviewSignal.NeedsReview);
-    Corroboration.Between(null, WitnessErasure).ReviewSignal.ShouldBe(ReviewSignal.NeedsReview);
+    Corroboration.Between(null, LexiconErasure).ReviewSignal.ShouldBe(ReviewSignal.NeedsReview);
   }
 
   /// <summary>
@@ -73,31 +73,31 @@ public class CorroborationTests
   {
     var corroboration = Corroboration.Between(
       Reasoned([DataSubjectRight.Access, DataSubjectRight.Erasure], DeclaredConfidence.High),
-      Witness(DataSubjectRight.Erasure, DataSubjectRight.Access));
+      Lexicon(DataSubjectRight.Erasure, DataSubjectRight.Access));
 
     corroboration.ReviewSignal.ShouldBe(ReviewSignal.Corroborated);
   }
 
   /// <summary>
-  /// Le témoin est <b>détecteur, jamais contributeur</b> en marche nominale : il conteste le verdict,
+  /// Le lexique est <b>détecteur, jamais contributeur</b> en marche nominale : il conteste le verdict,
   /// il ne le corrige pas, et les droits rendus restent ceux du moteur principal.
   /// </summary>
   [Fact]
-  public void RendersTheVerdictOfThePrincipalEngineEvenWhenTheWitnessDisagrees()
+  public void RendersTheVerdictOfThePrincipalEngineEvenWhenTheLexiconDisagrees()
   {
-    var corroboration = Corroboration.Between(Erasure, Witness(DataSubjectRight.Objection));
+    var corroboration = Corroboration.Between(Erasure, Lexicon(DataSubjectRight.Objection));
 
     corroboration.Qualification.ShouldBe(Qualification.Of([DataSubjectRight.Erasure]));
   }
 
   /// <summary>
-  /// L'autre rôle du témoin, et il n'arrive que seul : contributeur de dernier recours, quand le
+  /// L'autre rôle du lexique, et il n'arrive que seul : contributeur de dernier recours, quand le
   /// verdict manque. Les deux rôles ne coexistent jamais dans une même réponse.
   /// </summary>
   [Fact]
-  public void FallsBackOnTheWitnessVerdictWhenNoPrincipalOpinionCame()
+  public void FallsBackOnTheLexiconVerdictWhenNoPrincipalOpinionCame()
   {
-    var corroboration = Corroboration.Between(null, Witness(DataSubjectRight.Objection));
+    var corroboration = Corroboration.Between(null, Lexicon(DataSubjectRight.Objection));
 
     corroboration.Qualification.ShouldBe(Qualification.Of([DataSubjectRight.Objection]));
   }
@@ -105,39 +105,39 @@ public class CorroborationTests
   [Fact]
   public void SaysTheServiceWasWholeOnlyWhenBothOpinionsCame()
   {
-    Corroboration.Between(Erasure, WitnessErasure).Degraded.ShouldBeFalse();
+    Corroboration.Between(Erasure, LexiconErasure).Degraded.ShouldBeFalse();
     Corroboration.Between(Erasure, null).Degraded.ShouldBeTrue();
-    Corroboration.Between(null, WitnessErasure).Degraded.ShouldBeTrue();
+    Corroboration.Between(null, LexiconErasure).Degraded.ShouldBeTrue();
   }
 
   /// <summary>
   /// Contrainte de contrat, non négociable et vérifiée <b>quel que soit le chemin</b> : aucun mode
   /// dégradé ne peut se présenter comme corroboré. Une confiance haute survivant à l'absence du
-  /// témoin suffirait à l'obtenir si la règle lisait la confiance avant de compter les avis.
+  /// lexique suffirait à l'obtenir si la règle lisait la confiance avant de compter les avis.
   /// </summary>
   [Fact]
   public void NeverPresentsADegradedQualificationAsCorroborated()
   {
     Corroboration.Between(Erasure, null).ReviewSignal.ShouldNotBe(ReviewSignal.Corroborated);
-    Corroboration.Between(null, WitnessErasure).ReviewSignal.ShouldNotBe(ReviewSignal.Corroborated);
+    Corroboration.Between(null, LexiconErasure).ReviewSignal.ShouldNotBe(ReviewSignal.Corroborated);
   }
 
   [Fact]
   public void CarriesTheJustificationOfThePrincipalEngineWhenItRenderedOne()
   {
-    var corroboration = Corroboration.Between(Erasure, WitnessErasure);
+    var corroboration = Corroboration.Between(Erasure, LexiconErasure);
 
     corroboration.Justification.ShouldBe("Le texte demande la suppression des données.");
   }
 
   /// <summary>
-  /// Le repli lexical est <b>muet</b> : le témoin ne justifie rien, et lui fabriquer une phrase
+  /// Le repli lexical est <b>muet</b> : le lexique ne justifie rien, et lui fabriquer une phrase
   /// mentirait à l'opérateur au moment précis où le service se trompe le plus.
   /// </summary>
   [Fact]
-  public void StaysSilentWhenTheWitnessAloneRenderedTheVerdict()
+  public void StaysSilentWhenTheLexiconAloneRenderedTheVerdict()
   {
-    var corroboration = Corroboration.Between(null, WitnessErasure);
+    var corroboration = Corroboration.Between(null, LexiconErasure);
 
     corroboration.Justification.ShouldBeNull();
   }
@@ -163,9 +163,9 @@ public class CorroborationTests
       "Le texte demande la suppression des données.");
   }
 
-  /// <summary>Le témoin tel qu'il est réellement : des droits, et pas un mot de plus.</summary>
-  private static QualificationOpinion Witness(params DataSubjectRight[] rights)
+  /// <summary>Le lexique tel qu'il est réellement : des droits, et pas un mot de plus.</summary>
+  private static QualificationOpinion Lexicon(params DataSubjectRight[] rights)
   {
-    return new QualificationOpinion(Qualification.Of(rights), AnEngine.HoldingTheWitness);
+    return new QualificationOpinion(Qualification.Of(rights), AnEngine.HoldingTheLexicon);
   }
 }

@@ -93,7 +93,7 @@ public class Qualify(IMediator mediator, IProblemDetailsService problemDetails)
     catch (QualificationEngineFailure doubleFailure)
     {
       // Les deux moteurs se sont tus : il n'y a rien à qualifier, et la panne qui remonte est celle
-      // du **moteur principal** — c'est son mode de défaillance qui décide du code, celle du témoin
+      // du **moteur principal** — c'est son mode de défaillance qui décide du code, celle du lexique
       // n'ayant fait que priver le service de son filet. Un moteur seul muet n'arrive jamais ici :
       // le repli l'a déjà absorbé en un 200 dégradé.
       await SendDoubleFailureAsync(doubleFailure is QualificationEngineDeadlineExceeded);

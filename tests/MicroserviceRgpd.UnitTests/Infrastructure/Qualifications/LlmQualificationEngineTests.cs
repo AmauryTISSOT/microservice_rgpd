@@ -145,7 +145,7 @@ public class LlmQualificationEngineTests
   /// Le sidecar a renoncé à attendre son amont et le dit par un code à lui : <b>la lenteur arrive
   /// nommée</b>, plutôt que confondue avec un serveur éteint. C'est ce que l'ordre strict des deux
   /// échéances achète, et c'est de cette distinction que dépendra le code rendu à l'appelant le jour
-  /// où le témoin tombera en même temps.
+  /// où le lexique tombera en même temps.
   /// </summary>
   [Fact]
   public async Task NamesTheDeadlineTheSidecarAlreadyGaveUpOnRatherThanACommonFailure()

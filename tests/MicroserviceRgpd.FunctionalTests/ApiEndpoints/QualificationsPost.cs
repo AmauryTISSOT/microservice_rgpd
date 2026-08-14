@@ -32,7 +32,7 @@ public class QualificationsPost
     // collection. Les doublures repartent donc d un etat connu, plutot que de celui du test
     // precedent.
     factory.Verdict.Reset();
-    factory.Witness.Reset();
+    factory.Lexicon.Reset();
   }
 
   [Fact]
@@ -47,20 +47,20 @@ public class QualificationsPost
   }
 
   /// <summary>
-  /// Les deux moteurs sont appelés, et le verdict rendu est celui du moteur principal : le témoin
+  /// Les deux moteurs sont appelés, et le verdict rendu est celui du moteur principal : le lexique
   /// est <b>détecteur, jamais contributeur</b> en marche nominale.
   /// </summary>
   [Fact]
   public async Task RendersTheVerdictOfThePrincipalEngineAndAsksBothForTheirOpinion()
   {
     factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Objection]);
+    factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Objection]);
 
     var body = await QualifyAsync(new { text = "Supprimez mes données." });
 
     Rights(body).ShouldBe(["Erasure"]);
     factory.Verdict.CallCount.ShouldBe(1);
-    factory.Witness.CallCount.ShouldBe(1);
+    factory.Lexicon.CallCount.ShouldBe(1);
   }
 
   /// <summary>
@@ -102,7 +102,7 @@ public class QualificationsPost
   public async Task LetsATextWrittenInEnglishComeOutContestedWithoutAnyLanguageDetector()
   {
     factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    factory.Witness.Qualification = Qualification.OutOfScope;
+    factory.Lexicon.Qualification = Qualification.OutOfScope;
 
     var body = await QualifyAsync(new { text = "Please delete all the data you hold about me." });
 
@@ -150,16 +150,16 @@ public class QualificationsPost
   }
 
   /// <summary>
-  /// Le repli lexical dans sa forme définitive : le moteur principal muet, le témoin produit le
+  /// Le repli lexical dans sa forme définitive : le moteur principal muet, le lexique produit le
   /// verdict, le signal vaut « à relire », et la réponse est <b>muette</b> — lui fabriquer une
   /// justification serait mentir à l'opérateur au moment précis où il aurait le plus besoin de lire
   /// quelque chose.
   /// </summary>
   [Fact]
-  public async Task FallsBackOnTheWitnessAndStaysSilentWhenThePrincipalEngineRendersNothing()
+  public async Task FallsBackOnTheLexiconAndStaysSilentWhenThePrincipalEngineRendersNothing()
   {
     factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a répondu 503.");
-    factory.Witness.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
 
     var body = await QualifyAsync(new { text = "Supprimez mes données." });
 
@@ -174,10 +174,10 @@ public class QualificationsPost
   /// est normal — justification comprise —, mais il n'a reçu aucun contrôle indépendant.
   /// </summary>
   [Fact]
-  public async Task RaisesTheDegradationFlagWhenItIsTheWitnessThatRendersNothing()
+  public async Task RaisesTheDegradationFlagWhenItIsTheLexiconThatRendersNothing()
   {
     factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
-    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+    factory.Lexicon.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
 
     var body = await QualifyAsync(new { text = "Supprimez mes données." });
 
@@ -198,17 +198,17 @@ public class QualificationsPost
 
     factory.Verdict.Reset();
     factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Objection]);
-    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
-    var withoutTheWitness = await QualifyAsync(new { text = "Je m'oppose à la prospection." });
+    factory.Lexicon.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+    var withoutTheLexicon = await QualifyAsync(new { text = "Je m'oppose à la prospection." });
 
     withoutThePrincipalEngine.GetProperty("reviewSignal").GetString().ShouldNotBe("Corroborated");
-    withoutTheWitness.GetProperty("reviewSignal").GetString().ShouldNotBe("Corroborated");
+    withoutTheLexicon.GetProperty("reviewSignal").GetString().ShouldNotBe("Corroborated");
   }
 
   /// <summary>
   /// La <b>double panne</b> dont le moteur principal a dépassé son échéance : le service rend un
   /// dépassement, et lui seul. Le code suit le mode de panne du moteur dont l'avis aurait fait
-  /// verdict ; celle du témoin n'a fait que priver le service de son filet.
+  /// verdict ; celle du lexique n'a fait que priver le service de son filet.
   /// </summary>
   /// <remarks>
   /// <b>Branche délibérée.</b> Elle est inatteignable en usage normal — sa seconde condition ne peut
@@ -219,7 +219,7 @@ public class QualificationsPost
   public async Task RendersADeadlineExceededWhenBothEnginesFellSilentAndThePrincipalOneWasTooSlow()
   {
     factory.Verdict.Silence = new QualificationEngineDeadlineExceeded("Le moteur LLM a répondu 504.");
-    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+    factory.Lexicon.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
 
     var response = await PostAsync(new { text = "Supprimez mes données." });
 
@@ -234,7 +234,7 @@ public class QualificationsPost
   public async Task RendersAnUnavailabilityForEveryOtherDoubleFailure()
   {
     factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a répondu 503.");
-    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+    factory.Lexicon.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
 
     var response = await PostAsync(new { text = "Supprimez mes données." });
 
@@ -242,15 +242,15 @@ public class QualificationsPost
   }
 
   /// <summary>
-  /// Le code suit le moteur <b>principal</b>, jamais le témoin : un témoin trop lent alors que le
+  /// Le code suit le moteur <b>principal</b>, jamais le lexique : un lexique trop lent alors que le
   /// moteur principal est tombé pour une autre raison rend une indisponibilité, et non un
   /// dépassement d'échéance qui enverrait l'exploitant chercher une lenteur là où il n'y en a pas.
   /// </summary>
   [Fact]
-  public async Task NeverLetsTheWitnessDecideTheCodeOfADoubleFailure()
+  public async Task NeverLetsTheLexiconDecideTheCodeOfADoubleFailure()
   {
     factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a répondu 502.");
-    factory.Witness.Silence = new QualificationEngineDeadlineExceeded("Le moteur lexical a dépassé son échéance.");
+    factory.Lexicon.Silence = new QualificationEngineDeadlineExceeded("Le moteur lexical a dépassé son échéance.");
 
     var response = await PostAsync(new { text = "Supprimez mes données." });
 
@@ -266,7 +266,7 @@ public class QualificationsPost
   public async Task NeverNamesTheEnginesInADoubleFailure()
   {
     factory.Verdict.Silence = new QualificationEngineFailure("Le moteur LLM a répondu 503.");
-    factory.Witness.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
+    factory.Lexicon.Silence = new QualificationEngineFailure("Le moteur lexical a répondu 500.");
 
     var response = await PostAsync(new { text = "Supprimez mes données." });
     var body = await response.Content.ReadAsStringAsync();
@@ -284,7 +284,7 @@ public class QualificationsPost
   public async Task InterruptsTheWorkOfBothEnginesWhenTheCallerLeaves()
   {
     factory.Verdict.Delay = TimeSpan.FromSeconds(30);
-    factory.Witness.Delay = TimeSpan.FromSeconds(30);
+    factory.Lexicon.Delay = TimeSpan.FromSeconds(30);
 
     using var departure = new CancellationTokenSource();
 
@@ -294,14 +294,14 @@ public class QualificationsPost
       departure.Token);
 
     await factory.Verdict.Started.WaitAsync(TimeSpan.FromSeconds(10));
-    await factory.Witness.Started.WaitAsync(TimeSpan.FromSeconds(10));
+    await factory.Lexicon.Started.WaitAsync(TimeSpan.FromSeconds(10));
 
     await departure.CancelAsync();
 
     await Should.ThrowAsync<OperationCanceledException>(() => qualifying);
 
     // Les deux moteurs ont vu leur travail s'arrêter, et non leur réponse être ignorée.
-    await WaitUntilAsync(() => factory.Verdict.Interrupted && factory.Witness.Interrupted);
+    await WaitUntilAsync(() => factory.Verdict.Interrupted && factory.Lexicon.Interrupted);
   }
 
   /// <summary>
@@ -348,7 +348,7 @@ public class QualificationsPost
 
     Rights(body).ShouldBe(["OutOfScope"]);
     factory.Verdict.ReceivedText!.Value.Value.ShouldBe(text);
-    factory.Witness.ReceivedText!.Value.Value.ShouldBe(text);
+    factory.Lexicon.ReceivedText!.Value.Value.ShouldBe(text);
   }
 
   [Fact]
@@ -483,7 +483,7 @@ public class QualificationsPost
 
     await ShouldBeProblemDetailsAsync(response, HttpStatusCode.BadRequest);
     factory.Verdict.CallCount.ShouldBe(0);
-    factory.Witness.CallCount.ShouldBe(0);
+    factory.Lexicon.CallCount.ShouldBe(0);
   }
 
   /// <summary>
@@ -502,7 +502,7 @@ public class QualificationsPost
   private void BothEnginesSee(params DataSubjectRight[] rights)
   {
     factory.Verdict.Qualification = Qualification.Of(rights);
-    factory.Witness.Qualification = Qualification.Of(rights);
+    factory.Lexicon.Qualification = Qualification.Of(rights);
   }
 
   private async Task<JsonElement> QualifyAsync(object payload)

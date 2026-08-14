@@ -34,8 +34,8 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
     Core.Qualifications.DeclaredConfidence.High,
     "Le texte demande la suppression des donnees.");
 
-  /// <summary>Le moteur temoin, substitue lui aussi : ni confiance, ni justification.</summary>
-  public QualificationEngineDouble Witness { get; } = new();
+  /// <summary>Le moteur lexical, substitue lui aussi : ni confiance, ni justification.</summary>
+  public QualificationEngineDouble Lexicon { get; } = new();
 
   /// <summary>
   /// De quoi faire echouer l ecriture de la trace. La trace elle-meme n est pas substituee : elle
@@ -121,7 +121,7 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   /// le demande. Tout le reste est l application telle quelle : elle resout elle-meme sa chaine de
   /// connexion depuis <c>ConnectionStrings:DefaultConnection</c>, exactement comme hors tests.
   /// <para>
-  /// Un hote demarre LLM eteint ne substitue que le temoin, et laisse le role de verdict au cablage
+  /// Un hote demarre LLM eteint ne substitue que le lexique, et laisse le role de verdict au cablage
   /// reel — qui ne le pourvoit alors par rien. Aucune doublure ne se pose sur le fil HTTP dans un
   /// cas comme dans l autre : aucun test .NET n approche un modele.
   /// </para>
@@ -130,8 +130,8 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   {
     builder.ConfigureTestServices(services =>
     {
-      services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Witness);
-      services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Witness, Witness);
+      services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Lexicon);
+      services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Lexicon, Lexicon);
 
       if (SubstitutesTheVerdictRole)
       {

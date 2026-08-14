@@ -21,19 +21,19 @@ public class QualifyHandlerTests
     RightsRequestText.From("Supprimez toutes les données que vous avez sur moi.");
 
   private readonly IQualificationEngine _verdictEngine = Substitute.For<IQualificationEngine>();
-  private readonly IQualificationEngine _witness = Substitute.For<IQualificationEngine>();
+  private readonly IQualificationEngine _lexicon = Substitute.For<IQualificationEngine>();
   private readonly RecordingAuditTrail _auditTrail = new();
   private readonly RecordingLogger _logger = new();
 
   /// <summary>
-  /// Le témoin est <b>détecteur, jamais contributeur</b> en marche nominale : les droits rendus sont
-  /// ceux du moteur principal, même quand le témoin en voit d'autres.
+  /// Le lexique est <b>détecteur, jamais contributeur</b> en marche nominale : les droits rendus sont
+  /// ceux du moteur principal, même quand le lexique en voit d'autres.
   /// </summary>
   [Fact]
-  public async Task RendersTheVerdictOfThePrincipalEngineAndNeverThatOfTheWitness()
+  public async Task RendersTheVerdictOfThePrincipalEngineAndNeverThatOfTheLexicon()
   {
     GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Objection);
+    GiveTheLexicon(DataSubjectRight.Objection);
 
     var outcome = await HandleAsync();
 
@@ -55,14 +55,14 @@ public class QualifyHandlerTests
       AnEngine.HoldingTheVerdict,
       DeclaredConfidence.High,
       "Suppression demandée."));
-    var witness = new GatedEngine(
-      new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.HoldingTheWitness));
+    var lexicon = new GatedEngine(
+      new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.HoldingTheLexicon));
 
-    principal.AnswerOnce(witness.Called);
-    witness.AnswerOnce(principal.Called);
+    principal.AnswerOnce(lexicon.Called);
+    lexicon.AnswerOnce(principal.Called);
 
     var handling = new QualifyHandler(
-        witness, _auditTrail, TimeProvider.System, NullLogger<QualifyHandler>.Instance, principal)
+        lexicon, _auditTrail, TimeProvider.System, NullLogger<QualifyHandler>.Instance, principal)
       .Handle(new QualifyCommand(Text, null), CancellationToken.None)
       .AsTask();
 
@@ -79,7 +79,7 @@ public class QualifyHandlerTests
   public async Task CarriesTheJustificationOfThePrincipalEngine()
   {
     GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
 
     var outcome = await HandleAsync();
 
@@ -89,14 +89,14 @@ public class QualifyHandlerTests
 
   /// <summary>
   /// Le repli lexical, dans sa forme définitive : quand le moteur principal ne rend aucun avis —
-  /// <b>quelle qu'en soit la raison</b> —, le témoin produit le verdict, le signal vaut « à relire »,
+  /// <b>quelle qu'en soit la raison</b> —, le lexique produit le verdict, le signal vaut « à relire »,
   /// et la réponse est muette.
   /// </summary>
   [Fact]
-  public async Task FallsBackOnTheWitnessWhenThePrincipalEngineRendersNoOpinion()
+  public async Task FallsBackOnTheLexiconWhenThePrincipalEngineRendersNoOpinion()
   {
     GiveThePrincipalEngine(new QualificationEngineFailure("Le moteur LLM a répondu 503."));
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
 
     var outcome = await HandleAsync();
 
@@ -113,9 +113,9 @@ public class QualifyHandlerTests
   /// muet. Le domaine ne reçoit aucune règle nouvelle, le repli existant fait tout le travail.
   /// </summary>
   [Fact]
-  public async Task FallsBackOnTheWitnessWhenNoEngineHoldsTheVerdictRole()
+  public async Task FallsBackOnTheLexiconWhenNoEngineHoldsTheVerdictRole()
   {
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
 
     var outcome = await HandleAsync(HandlerWithoutAVerdictEngine());
 
@@ -134,7 +134,7 @@ public class QualifyHandlerTests
   [Fact]
   public async Task WarnsOfNoEngineFailureWhenTheVerdictRoleIsSimplyNotProvisioned()
   {
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
 
     await HandleAsync(HandlerWithoutAVerdictEngine());
 
@@ -149,24 +149,24 @@ public class QualifyHandlerTests
   [Fact]
   public async Task RecordsTheUnprovisionedVerdictRoleAsAMissingOpinionWithoutLatency()
   {
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
 
     await HandleAsync(HandlerWithoutAVerdictEngine());
 
     var entry = _auditTrail.Entries.ShouldHaveSingleItem();
     entry.VerdictOpinion.ShouldBeNull();
     entry.VerdictLatency.ShouldBeNull();
-    entry.LexiconOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
+    entry.LexiconOpinion!.Engine.ShouldBe(AnEngine.HoldingTheLexicon);
   }
 
   /// <summary>
-  /// Rôle non pourvu <b>et</b> témoin muet : il ne reste rien à qualifier, et la panne du témoin est
+  /// Rôle non pourvu <b>et</b> lexique muet : il ne reste rien à qualifier, et la panne du lexique est
   /// la seule qu'il y ait à présenter.
   /// </summary>
   [Fact]
-  public async Task PresentsTheFailureOfTheWitnessWhenItIsSilentAndNoEngineHoldsTheVerdictRole()
+  public async Task PresentsTheFailureOfTheLexiconWhenItIsSilentAndNoEngineHoldsTheVerdictRole()
   {
-    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+    GiveTheLexicon(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
 
     var failure = await Should.ThrowAsync<QualificationEngineFailure>(
       () => HandleAsync(HandlerWithoutAVerdictEngine()));
@@ -180,10 +180,10 @@ public class QualifyHandlerTests
   /// est normal, mais il n'a reçu aucun contrôle, et le booléen de dégradation le dit.
   /// </summary>
   [Fact]
-  public async Task RaisesTheDegradationFlagWhenItIsTheWitnessThatIsMissing()
+  public async Task RaisesTheDegradationFlagWhenItIsTheLexiconThatIsMissing()
   {
     GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
-    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+    GiveTheLexicon(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
 
     var outcome = await HandleAsync();
 
@@ -201,7 +201,7 @@ public class QualifyHandlerTests
   public async Task PresentsTheFailureOfThePrincipalEngineWhenNeitherRenderedAnOpinion()
   {
     GiveThePrincipalEngine(new QualificationEngineFailure("Le moteur LLM a répondu 504."));
-    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+    GiveTheLexicon(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
 
     var failure = await Should.ThrowAsync<QualificationEngineFailure>(() => HandleAsync());
 
@@ -220,7 +220,7 @@ public class QualifyHandlerTests
   public async Task KeepsTheDeadlineFailureOfThePrincipalEngineDistinctFromAnyOtherFailure()
   {
     GiveThePrincipalEngine(new QualificationEngineDeadlineExceeded("Le moteur LLM a dépassé son échéance."));
-    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+    GiveTheLexicon(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
 
     await Should.ThrowAsync<QualificationEngineDeadlineExceeded>(() => HandleAsync());
   }
@@ -235,7 +235,7 @@ public class QualifyHandlerTests
   {
     var unforeseen = new InvalidOperationException("Le socle HTTP n'a jamais laissé partir l'appel.");
     GiveThePrincipalEngine(unforeseen);
-    GiveTheWitness(new TimeoutException("Le témoin non plus."));
+    GiveTheLexicon(new TimeoutException("Le lexique non plus."));
 
     var failure = await Should.ThrowAsync<QualificationEngineFailure>(() => HandleAsync());
 
@@ -255,7 +255,7 @@ public class QualifyHandlerTests
 
     _verdictEngine.QualifyAsync(Text, Arg.Any<CancellationToken>())
       .Returns(Task.FromCanceled<QualificationOpinion>(cancellation.Token));
-    _witness.QualifyAsync(Text, Arg.Any<CancellationToken>())
+    _lexicon.QualifyAsync(Text, Arg.Any<CancellationToken>())
       .Returns(Task.FromCanceled<QualificationOpinion>(cancellation.Token));
 
     await Should.ThrowAsync<OperationCanceledException>(
@@ -275,19 +275,19 @@ public class QualifyHandlerTests
   {
     using var cancellation = new CancellationTokenSource();
     GiveThePrincipalEngine(DataSubjectRight.Access, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Access);
+    GiveTheLexicon(DataSubjectRight.Access);
 
     await Handler().Handle(new QualifyCommand(Text, null), cancellation.Token);
 
     await _verdictEngine.Received(1).QualifyAsync(Text, cancellation.Token);
-    await _witness.Received(1).QualifyAsync(Text, cancellation.Token);
+    await _lexicon.Received(1).QualifyAsync(Text, cancellation.Token);
   }
 
   [Fact]
   public async Task EchoesTheCallerReferenceWithoutTouchingIt()
   {
     GiveThePrincipalEngine(DataSubjectRight.Access, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Access);
+    GiveTheLexicon(DataSubjectRight.Access);
 
     var outcome = await HandleAsync(callerReference: "  DSAR-8871 ");
 
@@ -302,7 +302,7 @@ public class QualifyHandlerTests
   public async Task ForgesATimeOrderedIdentifier()
   {
     GiveThePrincipalEngine(DataSubjectRight.Access, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Access);
+    GiveTheLexicon(DataSubjectRight.Access);
 
     var outcome = await HandleAsync();
 
@@ -318,7 +318,7 @@ public class QualifyHandlerTests
   public async Task ForgesAFreshIdentifierForEachCallEvenUnderTheSameCallerReference()
   {
     GiveThePrincipalEngine(DataSubjectRight.Access, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Access);
+    GiveTheLexicon(DataSubjectRight.Access);
 
     var first = await HandleAsync(callerReference: "DSAR-8871");
     var second = await HandleAsync(callerReference: "DSAR-8871");
@@ -335,7 +335,7 @@ public class QualifyHandlerTests
   public async Task WritesTheVerdictAndBothRawOpinionsToTheTrace()
   {
     GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
 
     var outcome = await HandleAsync(callerReference: "DSAR-8871");
 
@@ -348,7 +348,7 @@ public class QualifyHandlerTests
 
     entry.VerdictOpinion!.Engine.ShouldBe(AnEngine.HoldingTheVerdict);
     entry.VerdictOpinion.DeclaredConfidence.ShouldBe(DeclaredConfidence.High);
-    entry.LexiconOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
+    entry.LexiconOpinion!.Engine.ShouldBe(AnEngine.HoldingTheLexicon);
   }
 
   /// <summary>
@@ -359,7 +359,7 @@ public class QualifyHandlerTests
   public async Task RecordsTheFallbackByTheAbsenceOfTheVerdictOpinion()
   {
     GiveThePrincipalEngine(new QualificationEngineFailure("Le moteur LLM a répondu 503."));
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
 
     await HandleAsync();
 
@@ -374,10 +374,10 @@ public class QualifyHandlerTests
   /// booléen public recouvre les deux situations ; la trace les sépare.
   /// </summary>
   [Fact]
-  public async Task RecordsTheMissingWitnessByTheAbsenceOfTheLexiconOpinion()
+  public async Task RecordsTheMissingLexiconByTheAbsenceOfTheLexiconOpinion()
   {
     GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
-    GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
+    GiveTheLexicon(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
 
     await HandleAsync();
 
@@ -395,7 +395,7 @@ public class QualifyHandlerTests
   public async Task FailsWhenTheTraceCannotBeWritten()
   {
     GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
     _auditTrail.Refuse(new InvalidOperationException("La base est indisponible."));
 
     await Should.ThrowAsync<InvalidOperationException>(() => HandleAsync());
@@ -410,7 +410,7 @@ public class QualifyHandlerTests
   public async Task FailsWhenTheTraceCannotBeWrittenEvenForADegradedQualification()
   {
     GiveThePrincipalEngine(new QualificationEngineFailure("Le moteur LLM a répondu 503."));
-    GiveTheWitness(DataSubjectRight.Erasure);
+    GiveTheLexicon(DataSubjectRight.Erasure);
     _auditTrail.Refuse(new InvalidOperationException("La base est indisponible."));
 
     await Should.ThrowAsync<InvalidOperationException>(() => HandleAsync());
@@ -419,13 +419,13 @@ public class QualifyHandlerTests
   private QualifyHandler Handler()
   {
     return new QualifyHandler(
-      _witness, _auditTrail, TimeProvider.System, _logger, _verdictEngine);
+      _lexicon, _auditTrail, TimeProvider.System, _logger, _verdictEngine);
   }
 
   /// <summary>Le handler tel que le construit un service où le rôle de verdict n'est pourvu par rien.</summary>
   private QualifyHandler HandlerWithoutAVerdictEngine()
   {
-    return new QualifyHandler(_witness, _auditTrail, TimeProvider.System, _logger);
+    return new QualifyHandler(_lexicon, _auditTrail, TimeProvider.System, _logger);
   }
 
   private async Task<QualificationOutcome> HandleAsync(string? callerReference = null)
@@ -460,18 +460,18 @@ public class QualifyHandlerTests
       .Returns(Task.FromException<QualificationOpinion>(failure));
   }
 
-  private void GiveTheWitness(DataSubjectRight verdict)
+  private void GiveTheLexicon(DataSubjectRight verdict)
   {
     // Ni confiance, ni justification : le lexique n'en produit pas, et la doublure ne doit pas rendre
     // atteignable en test un état que le vrai moteur n'atteint jamais.
-    _witness
+    _lexicon
       .QualifyAsync(Text, Arg.Any<CancellationToken>())
-      .Returns(new QualificationOpinion(Qualification.Of([verdict]), AnEngine.HoldingTheWitness));
+      .Returns(new QualificationOpinion(Qualification.Of([verdict]), AnEngine.HoldingTheLexicon));
   }
 
-  private void GiveTheWitness(Exception failure)
+  private void GiveTheLexicon(Exception failure)
   {
-    _witness
+    _lexicon
       .QualifyAsync(Text, Arg.Any<CancellationToken>())
       .Returns(Task.FromException<QualificationOpinion>(failure));
   }

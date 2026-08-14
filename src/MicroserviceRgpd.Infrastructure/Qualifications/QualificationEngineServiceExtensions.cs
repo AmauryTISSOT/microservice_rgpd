@@ -83,12 +83,12 @@ public static class QualificationEngineServiceExtensions
 
     // Requis même LLM éteint : le lexique vit dans ce même sidecar, et éteindre le moteur génératif
     // ne retire pas cette dépendance. Échéance franchement plus courte que celle du LLM, ce qui
-    // garantit que le témoin ne puisse jamais rallonger le temps de réponse du service. Au-delà, son
+    // garantit que le lexique ne puisse jamais rallonger le temps de réponse du service. Au-delà, son
     // avis est traité comme absent.
     services.AddEngineClient<LexiconQualificationEngine>(address, Deadline(configuration, LexiconDeadlineKey));
 
     services.AddKeyedTransient<IQualificationEngine>(
-      QualificationEngineRole.Witness,
+      QualificationEngineRole.Lexicon,
       (provider, _) => provider.GetRequiredService<LexiconQualificationEngine>());
 
     if (!LlmIsOn(configuration))

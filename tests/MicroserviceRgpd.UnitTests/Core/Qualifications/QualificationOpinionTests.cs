@@ -14,13 +14,13 @@ public class QualificationOpinionTests
   {
     var verdict = Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]);
 
-    new QualificationOpinion(verdict, AnEngine.HoldingTheWitness).Qualification.ShouldBe(verdict);
+    new QualificationOpinion(verdict, AnEngine.HoldingTheLexicon).Qualification.ShouldBe(verdict);
   }
 
   [Fact]
   public void LeavesConfidenceAndJustificationAbsentWhenTheEngineDeclaresNeither()
   {
-    var opinion = new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.HoldingTheWitness);
+    var opinion = new QualificationOpinion(Qualification.Of([DataSubjectRight.Erasure]), AnEngine.HoldingTheLexicon);
 
     opinion.DeclaredConfidence.ShouldBeNull();
     opinion.Justification.ShouldBeNull();
@@ -47,9 +47,9 @@ public class QualificationOpinionTests
   public void EqualsAnotherOpinionCarryingTheSameVerdictInAnyOrder()
   {
     var one = new QualificationOpinion(
-      Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]), AnEngine.HoldingTheWitness);
+      Qualification.Of([DataSubjectRight.Access, DataSubjectRight.Erasure]), AnEngine.HoldingTheLexicon);
     var other = new QualificationOpinion(
-      Qualification.Of([DataSubjectRight.Erasure, DataSubjectRight.Access]), AnEngine.HoldingTheWitness);
+      Qualification.Of([DataSubjectRight.Erasure, DataSubjectRight.Access]), AnEngine.HoldingTheLexicon);
 
     one.ShouldBe(other);
   }

@@ -24,7 +24,7 @@ namespace MicroserviceRgpd.UseCases.Qualifications.Qualify;
 /// </param>
 /// <param name="Justification">
 /// La phrase que le moteur principal oppose à l'opérateur humain, quand il en a rendu une. Absente
-/// en repli sur le témoin : celui-ci ne justifie rien, et lui fabriquer une phrase mentirait à
+/// en repli sur le lexique : celui-ci ne justifie rien, et lui fabriquer une phrase mentirait à
 /// l'opérateur au moment précis où le service se trompe le plus.
 /// </param>
 /// <param name="CallerReference">La référence de l'appelant, rendue verbatim, ou absente si elle ne fut pas fournie.</param>
