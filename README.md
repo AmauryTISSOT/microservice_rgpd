@@ -26,7 +26,8 @@ tests/
 ```
 
 L'agrégat de démonstration du template a été supprimé. Le service expose `POST /qualifications`,
-qui rend une qualification RGPD **dans le même échange**, et `GET /hello` en endpoint de fumée.
+qui rend une qualification RGPD **dans le même échange**. La preuve de vie est portée par `/health`
+et `/alive`, exposés par les `ServiceDefaults` Aspire.
 Il n'existe **aucun `GET`** sur la ressource de qualification : c'est un acte dont on repart avec
 le résultat, jamais une ressource qu'on relit.
 

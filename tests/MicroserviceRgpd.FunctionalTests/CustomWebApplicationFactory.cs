@@ -5,6 +5,7 @@ using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.FunctionalTests.Platform;
+using FastEndpoints;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -128,6 +129,12 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   /// </summary>
   protected override void ConfigureWebHost(IWebHostBuilder builder)
   {
+    // Les endpoints que la suite se donne a elle-meme — voir <see cref="MethodNotAllowedTarget"/> —
+    // vivent dans l assembly de test, que le scan de l application ne connait pas. L option est posee
+    // ici plutot que dans Program : le service n a pas a savoir qu une suite de tests existe.
+    builder.ConfigureServices(services =>
+      services.AddFastEndpoints(o => o.Assemblies = [typeof(CustomWebApplicationFactory<TProgram>).Assembly]));
+
     builder.ConfigureTestServices(services =>
     {
       services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Lexicon);

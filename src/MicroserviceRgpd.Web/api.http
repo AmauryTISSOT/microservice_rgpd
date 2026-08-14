@@ -45,5 +45,5 @@ Content-Type: application/json
 
 ###
 
-// Endpoint de fumee : confirme que l API repond, sans toucher a la base.
-GET {{host}}:{{port}}/hello
+// Preuve de vie, exposee par les ServiceDefaults Aspire.
+GET {{host}}:{{port}}/health
