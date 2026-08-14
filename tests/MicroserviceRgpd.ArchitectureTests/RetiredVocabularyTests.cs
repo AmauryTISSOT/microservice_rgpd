@@ -23,10 +23,11 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// un échec bruyant.
 /// </para>
 /// <para>
-/// Une seule exemption de vocabulaire existe — <see cref="ExemptedMigrationClassNames"/>, les
-/// quatre noms de migration d'août 2026 — et
-/// <see cref="EveryExemptedMigrationStillExistsOnDisk"/> tient qu'elle ne s'élargisse ni ne
-/// pourrisse.
+/// L'exemption de vocabulaire tient en <see cref="ExemptedMigrationClassNames"/> — les quatre noms
+/// de migration d'août 2026 — et en <see cref="HistoricalSqlIdentifiers"/>, les noms SQL d'avant le
+/// renommage, tolérés dans les seuls fichiers dont le sujet <b>est</b> l'état d'avant. Toutes deux
+/// sont écrites en dur, et <see cref="EveryExemptedMigrationStillExistsOnDisk"/> tient qu'elles ne
+/// s'élargissent ni ne pourrissent.
 /// </para>
 /// </summary>
 public class RetiredVocabularyTests
@@ -94,8 +95,14 @@ public class RetiredVocabularyTests
     "corpus",
   ];
 
-  /// <summary>Le dossier dont les fichiers décrivent des gestes déjà appliqués.</summary>
-  private const string MigrationsDirectory = "Migrations";
+  /// <summary>
+  /// Le dossier dont les fichiers décrivent des gestes <b>déjà appliqués</b>. Il est désigné par son
+  /// chemin et non par son nom de feuille : un autre dossier qu'on appellerait un jour
+  /// <c>Migrations</c> — un second <c>DbContext</c>, un dossier de documentation — n'hériterait pas
+  /// de la tolérance écrite ici.
+  /// </summary>
+  private static readonly string[] MigrationsPath =
+    ["src", "MicroserviceRgpd.Infrastructure", "Migrations"];
 
   /// <summary>
   /// ⚠️ <b>La liste d'exemption : les quatre noms de classe de migration d'août 2026, et eux
@@ -136,14 +143,29 @@ public class RetiredVocabularyTests
   /// précisément ce qu'elle renomme.
   /// </summary>
   /// <remarks>
-  /// Tolérés dans <c>Migrations/</c> <b>et nulle part ailleurs</b> : partout ailleurs dans le
-  /// dépôt, <c>ledger_entries</c> reste un terme retiré.
+  /// Tolérés dans les seuls <see cref="FilesSpeakingThePreRenameSchema"/> <b>et nulle part
+  /// ailleurs</b> : partout ailleurs dans le dépôt, <c>ledger_entries</c> reste un terme retiré.
   /// </remarks>
   private static readonly string[] HistoricalSqlIdentifiers =
   [
     "ix_ledger_entries_case_id",
     "pk_ledger_entries",
     "ledger_entries",
+  ];
+
+  /// <summary>
+  /// Les fichiers qui parlent le schéma <b>d'avant</b> le renommage parce que c'est leur sujet :
+  /// les migrations, et le test qui prouve qu'une ligne écrite avant le renommage lui survit. Ce
+  /// dernier <b>doit</b> insérer dans l'ancienne table, puis vérifier qu'elle a disparu — écrit
+  /// avec les mots d'aujourd'hui, il ne prouverait plus rien.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Chemins <b>ancrés à la racine</b>, et non noms de feuille : c'est ce qui empêche un futur
+  /// dossier appelé <c>Migrations</c> d'hériter d'une tolérance que personne ne lui a accordée.
+  /// </remarks>
+  private static readonly string[][] FilesSpeakingThePreRenameSchema =
+  [
+    ["tests", "MicroserviceRgpd.IntegrationTests", "Migrations", "VocabularyRenameSurvivalTests.cs"],
   ];
 
   /// <summary>
@@ -183,7 +205,7 @@ public class RetiredVocabularyTests
     {
       scanned++;
 
-      var content = ReadText(file);
+      var content = ReadText(file, root);
 
       foreach (var term in RetiredTerms)
       {
@@ -219,17 +241,24 @@ public class RetiredVocabularyTests
   [Fact]
   public void EveryExemptedMigrationStillExistsOnDisk()
   {
+    var root = RepositoryRoot();
+
     var migrations = Directory
-      .EnumerateFiles(
-        Path.Combine(RepositoryRoot(), "src", "MicroserviceRgpd.Infrastructure", MigrationsDirectory),
-        "*.cs")
+      .EnumerateFiles(MigrationsDirectoryIn(root), "*.cs")
       .Select(Path.GetFileNameWithoutExtension)
       .ToArray();
 
-    ExemptedMigrationClassNames.Length.ShouldBe(
-      4,
+    ExemptedMigrationClassNames.ShouldBe(
+      [
+        "CreateCasesAndLedger",
+        "AddDeclaredSystemToLedger",
+        "AddDeliveryGesturesAndLedgerCounts",
+        "AddExtensionDeclarationAndLedgerIndex",
+      ],
       "La liste d'exemption doit contenir les quatre noms de migration d'août 2026, et eux seuls. " +
-      "L'élargir est un geste délibéré, qui se discute en revue.");
+      "En changer un est un geste délibéré, qui se discute en revue — le compte seul ne suffit " +
+      "pas : échanger un nom contre un autre garderait quatre lignes et exempterait une migration " +
+      "dont personne n'a parlé.");
 
     foreach (var exempted in ExemptedMigrationClassNames)
     {
@@ -237,6 +266,15 @@ public class RetiredVocabularyTests
         migration => migration!.EndsWith("_" + exempted, StringComparison.Ordinal),
         $"Aucune migration nommée « {exempted} » sur le disque, alors que la liste d'exemption la " +
         "tolère. Retirez la ligne : elle n'exempte plus rien et laisse passer l'ancien mot.");
+    }
+
+    foreach (var path in FilesSpeakingThePreRenameSchema)
+    {
+      var file = Path.Combine([root, .. path]);
+
+      File.Exists(file).ShouldBeTrue(
+        $"Aucun fichier « {Path.Combine(path)} » sur le disque, alors qu'il est autorisé à nommer " +
+        "l'ancien schéma. Retirez la ligne : elle n'exempte plus rien.");
     }
   }
 
@@ -286,16 +324,11 @@ public class RetiredVocabularyTests
   /// Dans <c>Migrations/</c>, les chaînes exemptées sont <b>effacées avant la recherche</b> plutôt
   /// que le fichier écarté : le reste du fichier est balayé comme n'importe quel autre.
   /// </remarks>
-  private static string ReadText(string file)
+  private static string ReadText(string file, string root)
   {
     var content = Normalized(File.ReadAllText(file));
 
-    if (!IsUnderMigrations(file))
-    {
-      return content;
-    }
-
-    foreach (var exempted in ExemptedMigrationClassNames.Concat(HistoricalSqlIdentifiers))
+    foreach (var exempted in Exemptions(file, root))
     {
       content = content.Replace(exempted, string.Empty, StringComparison.Ordinal);
     }
@@ -303,11 +336,38 @@ public class RetiredVocabularyTests
     return content;
   }
 
-  private static bool IsUnderMigrations(string file)
+  /// <summary>
+  /// Ce qu'un fichier a le droit de dire encore. Les quatre noms de classe ne sont tolérés que
+  /// <b>dans les migrations</b> — nulle part ailleurs, pas même dans le test de survie, qui n'a
+  /// aucune raison de les citer.
+  /// </summary>
+  private static IEnumerable<string> Exemptions(string file, string root)
   {
-    var directory = Path.GetFileName(Path.GetDirectoryName(file));
+    if (IsUnderMigrations(file, root))
+    {
+      return ExemptedMigrationClassNames.Concat(HistoricalSqlIdentifiers);
+    }
 
-    return string.Equals(directory, MigrationsDirectory, StringComparison.Ordinal);
+    return SpeaksThePreRenameSchema(file, root) ? HistoricalSqlIdentifiers : [];
+  }
+
+  private static bool IsUnderMigrations(string file, string root)
+  {
+    return string.Equals(
+      Path.GetDirectoryName(file),
+      MigrationsDirectoryIn(root),
+      StringComparison.Ordinal);
+  }
+
+  private static bool SpeaksThePreRenameSchema(string file, string root)
+  {
+    return FilesSpeakingThePreRenameSchema.Any(
+      path => string.Equals(file, Path.Combine([root, .. path]), StringComparison.Ordinal));
+  }
+
+  private static string MigrationsDirectoryIn(string root)
+  {
+    return Path.Combine([root, .. MigrationsPath]);
   }
 
   private static string Normalized(string text)
