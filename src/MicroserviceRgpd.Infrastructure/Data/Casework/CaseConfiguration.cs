@@ -1,6 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.Infrastructure.Data.Casework;
@@ -99,7 +99,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
   /// </para>
   /// <para>
   /// ⚠️ <b>Le détail est du nominatif, et il est là où la clôture ira le détruire</b> : sur la ligne
-  /// du dossier. Il n'existe aucune colonne pour lui dans le <c>Ledger</c>, qui survit cinq ans.
+  /// du dossier. Il n'existe aucune colonne pour lui dans l'<c>EvidenceLog</c>, qui survit cinq ans.
   /// </para>
   /// </remarks>
   private static void ConfigureTheMotivation(EntityTypeBuilder<Case> builder)
@@ -138,7 +138,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
   /// ce que quelqu'un ait pensé à le recalculer.
   /// </para>
   /// <para>
-  /// <b>Le motif survit à la clôture au <c>Ledger</c>, jamais ici.</b> Cette ligne-ci meurt avec le
+  /// <b>Le motif survit à la clôture au <c>EvidenceLog</c>, jamais ici.</b> Cette ligne-ci meurt avec le
   /// dossier ; c'est la ligne de preuve qui porte le motif pendant cinq ans.
   /// </para>
   /// </remarks>
@@ -146,11 +146,11 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
   {
     builder.OwnsOne(opened => opened.ExtensionDeclaration, extension =>
     {
-      // Le plafond est celui de la prose de preuve, déclaré là où la colonne qui la reçoit vit : ce
-      // motif descend au Ledger, et deux plafonds finiraient par ne plus valoir la même chose.
+      // Le plafond est celui du texte qui reste, déclaré là où la colonne qui le reçoit vit : ce
+      // motif descend au EvidenceLog, et deux plafonds finiraient par ne plus valoir la même chose.
       extension.Property(one => one.Motive)
         .HasColumnName("extension_motive")
-        .HasMaxLength(LedgerEntry.MaxEvidenceProseLength)
+        .HasMaxLength(EvidenceLogEntry.MaxEvidenceProseLength)
         .IsRequired();
 
       extension.Property(one => one.InformedOn).HasColumnName("extension_informed_on").IsRequired();
@@ -316,7 +316,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
   /// ⚠️ <b>Tout ce qui descend ici est nominatif ou le devient</b> : une référence opaque désigne les
   /// données de quelqu'un, un motif de réserve nomme des tiers non demandeurs. Ces tables sont donc du
   /// <b>dossier</b>, possédées par lui, et la clôture les emportera. Rien de leur contenu n'a de
-  /// colonne dans <c>ledger_entries</c>, qui survit cinq ans.
+  /// colonne dans <c>evidence_log_entries</c>, qui survit cinq ans.
   /// </para>
   /// </remarks>
   private static void ConfigureTheLocatings(EntityTypeBuilder<Case> builder)
@@ -389,8 +389,8 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
   /// <c>Designation</c> qu'elles proposent de verser au sac.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Le motif est de la prose de TRAVAIL, et sa colonne est ici — jamais dans le
-  /// <c>Ledger</c>.</b> Il dit quelle ligne appartient à qui, il nomme donc par nature des tiers non
+  /// ⚠️ <b>Le motif est du TEXTE QUI MEURT, et sa colonne est ici — jamais dans le
+  /// <c>EvidenceLog</c>.</b> Il dit quelle ligne appartient à qui, il nomme donc par nature des tiers non
   /// demandeurs, et il meurt avec le dossier. La règle tient par ce <b>placement</b> : il n'existe
   /// aucune colonne où il pourrait atterrir dans la preuve.
   /// </remarks>

@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.FunctionalTests.Platform;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -331,7 +331,7 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
   }
 
   /// <summary>
-  /// <b>Second geste</b> : déclare la remise. Ce clic seul date la remise au <c>Ledger</c> et
+  /// <b>Second geste</b> : déclare la remise. Ce clic seul date la remise au <c>EvidenceLog</c> et
   /// détruit les pièces.
   /// </summary>
   internal async Task<HttpResponseMessage> DeclareDeliveryAsync(
@@ -425,19 +425,19 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
   }
 
   /// <summary>
-  /// <b>Détruit un <c>Ledger</c> échu</b>, depuis la section propre de l'écran de la file.
+  /// <b>Détruit un <c>EvidenceLog</c> échu</b>, depuis la section propre de l'écran de la file.
   /// </summary>
   /// <remarks>
   /// La case de confirmation est un champ comme les autres, et <c>confirmed: false</c> l'omet :
   /// c'est ce qu'un navigateur envoie d'une case décochée, et le seul moyen d'éprouver la parade.
   /// ⚠️ <b>Aucun nom n'est envoyé</b> : le geste ne laisse aucune trace où l'écrire.
   /// </remarks>
-  internal async Task<HttpResponseMessage> DestroyLedgerAsync(CaseId ledgerOf, bool confirmed = true)
+  internal async Task<HttpResponseMessage> DestroyEvidenceLogAsync(CaseId evidenceLogOf, bool confirmed = true)
   {
     var fields = new List<KeyValuePair<string, string>>
     {
       new("__RequestVerificationToken", await AntiforgeryTokenOfAsync(Queue)),
-      new("Destruction.Case", ledgerOf.Value.ToString()),
+      new("Destruction.Case", evidenceLogOf.Value.ToString()),
     };
 
     if (confirmed)
@@ -445,7 +445,7 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
       fields.Add(new("Destruction.Confirmed", "true"));
     }
 
-    return await _client.PostAsync($"{Queue}?handler=DestroyLedger", new FormUrlEncodedContent(fields));
+    return await _client.PostAsync($"{Queue}?handler=DestroyEvidenceLog", new FormUrlEncodedContent(fields));
   }
 
   /// <summary>
@@ -477,14 +477,14 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
 
     await dbContext.SaveChangesAsync();
 
-    var ledger = scope.ServiceProvider.GetRequiredService<ILedger>();
+    var evidenceLog = scope.ServiceProvider.GetRequiredService<IEvidenceLog>();
 
-    await ledger.AppendAsync(LedgerEntry.CaseClosed(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseClosed(
       opened.Id,
       closedOn,
       ClosingCause.Answered,
       motive: null,
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated)));
 
     return opened.Id;
   }

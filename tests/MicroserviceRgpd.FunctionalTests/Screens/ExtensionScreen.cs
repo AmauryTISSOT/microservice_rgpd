@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Net;
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 using Microsoft.EntityFrameworkCore;
@@ -65,11 +65,11 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    var line = await dbContext.Set<LedgerRow>()
+    var line = await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
-      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(LedgerFact.ExtensionDeclared));
+      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(EvidenceLogFact.ExtensionDeclared));
 
-    line.EvidenceProse.ShouldBe("Le prestataire de paie ne rend la main qu'au trimestre.");
+    line.Prose.ShouldBe("Le prestataire de paie ne rend la main qu'au trimestre.");
     line.SignatoryName.ShouldBe("Camille Roy");
     line.SignatoryKind.ShouldBe(nameof(SignatoryKind.Operator));
 
@@ -84,7 +84,7 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// ⚠️ <b>Déclarée après le mois, la prolongation s'inscrit — et ne déplace rien.</b> Le fait est
-  /// gardé au dossier et au <c>Ledger</c> ; le dépassement acquis reste dépassé. Un clic ne blanchit
+  /// gardé au dossier et au <c>EvidenceLog</c> ; le dépassement acquis reste dépassé. Un clic ne blanchit
   /// pas ce qui est déjà advenu, et refuser la déclaration aurait perdu le fait.
   /// </summary>
   [Fact]
@@ -114,15 +114,15 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
 
     queue.ShouldNotContain("prolongée (art. 12.3)");
 
-    // ⚠️ LE FAIT EST TOUT DE MÊME AU LEDGER, sans mention particulière : la ligne dit ce qui a été
+    // ⚠️ LE FAIT EST TOUT DE MÊME A L'EVIDENCELOG, sans mention particulière : la ligne dit ce qui a été
     // déclaré et quand, et c'est au contrôle de refaire le calcul.
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    (await dbContext.Set<LedgerRow>()
+    (await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
-      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(LedgerFact.ExtensionDeclared)))
-      .EvidenceProse.ShouldBe("Personne n'a vu passer le dossier avant la fin du mois.");
+      .SingleAsync(row => row.CaseId == opened.Value && row.Fact == nameof(EvidenceLogFact.ExtensionDeclared)))
+      .Prose.ShouldBe("Personne n'a vu passer le dossier avant la fin du mois.");
   }
 
   /// <summary>
@@ -160,9 +160,9 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
 
     (await dbContext.Cases.AsNoTracking().SingleAsync(one => one.Id == opened)).ExtensionDeclaration.ShouldBeNull();
 
-    (await dbContext.Set<LedgerRow>()
+    (await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
-      .AnyAsync(row => row.CaseId == opened.Value && row.Fact == nameof(LedgerFact.ExtensionDeclared)))
+      .AnyAsync(row => row.CaseId == opened.Value && row.Fact == nameof(EvidenceLogFact.ExtensionDeclared)))
       .ShouldBeFalse();
   }
 

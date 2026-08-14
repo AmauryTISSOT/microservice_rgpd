@@ -179,7 +179,7 @@ public class ScreenedColumnTests
 
   /// <summary>
   /// <b>Un second arbitrage écrase le premier</b>, et le coût est déclaré : qui avait dit quoi est
-  /// effacé. C'est l'écart assumé au précédent de <c>Reservation</c>, dont un <c>Ledger</c> gardait
+  /// effacé. C'est l'écart assumé au précédent de <c>Reservation</c>, dont un <c>EvidenceLog</c> gardait
   /// la trace — il n'y en a aucun ici.
   /// </summary>
   [Fact]

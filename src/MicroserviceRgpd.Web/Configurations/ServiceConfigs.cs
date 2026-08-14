@@ -14,7 +14,7 @@ public static class ServiceConfigs
 
     // L'appel d'un Adapter au titre d'un Case. Il vit ici plutôt qu'avec le client HTTP :
     // l'Infrastructure ne connaît pas les use cases, et c'est ce qui l'empêche d'apprendre qu'un
-    // dossier existe. Scoped, comme le Ledger dont il écrit la ligne.
+    // dossier existe. Scoped, comme l'EvidenceLog dont il écrit la ligne.
     services.AddScoped<AdapterCallsForCase>();
 
     if (builder.Environment.IsDevelopment())

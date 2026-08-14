@@ -139,9 +139,9 @@ public class QualificationsPostWithoutLlm
     row.VerdictEngineName.ShouldBeNull();
     row.VerdictLatencyMs.ShouldBeNull();
 
-    row.WitnessRights.ShouldBe(["Erasure"]);
-    row.WitnessEngineName.ShouldBe("lexicon");
-    row.WitnessEngineVersion.ShouldBe("1.0.0");
+    row.LexiconRights.ShouldBe(["Erasure"]);
+    row.LexiconEngineName.ShouldBe("lexicon");
+    row.LexiconEngineVersion.ShouldBe("1.0.0");
   }
 
   /// <summary>

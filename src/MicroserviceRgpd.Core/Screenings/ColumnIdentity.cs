@@ -15,7 +15,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <b>La comparaison est ordinale, et le service ne replie aucune casse.</b> Les SGBD ne s'accordent
 /// pas sur ce qu'ils replient — PostgreSQL abaisse ce qui n'est pas entre guillemets, MySQL dépend
 /// de son système de fichiers. Choisir un repli ici reviendrait à trancher à la place du SGBD source
-/// sur un fait que le relevé rapporte déjà tel qu'il est. <c>Greffier, pas témoin</c> : on recopie.
+/// sur un fait que le relevé rapporte déjà tel qu'il est. <c>Enregistré, jamais vérifié</c> : on recopie.
 /// </para>
 /// </remarks>
 public sealed record ColumnIdentity

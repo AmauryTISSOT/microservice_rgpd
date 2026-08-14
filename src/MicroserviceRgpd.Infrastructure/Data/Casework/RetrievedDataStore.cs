@@ -20,7 +20,7 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// plus des données de quelqu'un — c'est-à-dire l'inverse exact du séjour minimal qu'on lui doit.
 /// </para>
 /// <para>
-/// <b>Aucun <c>DbSet</c> ne l'expose sur le contexte</b>, comme pour le <c>Ledger</c> : EF Core
+/// <b>Aucun <c>DbSet</c> ne l'expose sur le contexte</b>, comme pour l'<c>EvidenceLog</c> : EF Core
 /// connaît la table par sa configuration d'entité, et les gestes disponibles sur ces octets sont
 /// ceux de ce fichier, pas ceux que tout porteur du contexte se serait trouvé avoir.
 /// </para>

@@ -139,7 +139,7 @@
             <input type="text"
                    id="motivation-signedby"
                    name="Motivation.SignedBy"
-                   maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+                   maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
           </p>
 
           <button type="submit">Déclarer et signer</button>
@@ -302,7 +302,7 @@
             <input type="text"
                    id="confirm-signedby-@claim.Right.Name"
                    name="Confirmation.SignedBy"
-                   maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+                   maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
           </p>
 
           <button type="submit">Confirmer et signer</button>
@@ -404,8 +404,8 @@
           </p>
 
           @*
-            LA SIGNATURE. Le constat — prose de PREUVE — se saisit ici, au point de décision, avec le
-            nom : il entre dans le Ledger et survit à la clôture. La prose de TRAVAIL a son propre
+            LA SIGNATURE. Le constat — TEXTE QUI RESTE — se saisit ici, au point de décision, avec le
+            nom : il entre dans l'EvidenceLog et survit à la clôture. Le TEXTE QUI MEURT a son propre
             endroit, plus bas, et n'entre jamais dans la preuve. La règle tient par ce placement.
           *@
           <fieldset class="signature">
@@ -423,7 +423,7 @@
               <textarea id="finding-@claim.Right.Name-@step.DeclaredSystem.Value"
                         name="Form.Finding"
                         rows="3"
-                        maxlength="@MicroserviceRgpd.Core.Casework.Ledger.LedgerEntry.MaxEvidenceProseLength">@(submitted ? Model.Form.Finding : null)</textarea>
+                        maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.EvidenceLogEntry.MaxEvidenceProseLength">@(submitted ? Model.Form.Finding : null)</textarea>
             </p>
 
             <p>
@@ -442,7 +442,7 @@
               <input type="text"
                      id="signedby-@claim.Right.Name-@step.DeclaredSystem.Value"
                      name="Form.SignedBy"
-                     maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+                     maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
             </p>
 
             <button type="submit">Déclarer et signer</button>
@@ -533,7 +533,7 @@
                 <input type="text"
                        id="declaration-signedby-@claim.Right.Name"
                        name="Declaration.SignedBy"
-                       maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+                       maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
               </p>
 
               <button type="submit">Déclarer remis et signer</button>
@@ -576,7 +576,7 @@
             <input type="text"
                    id="outcome-signedby-@claim.Right.Name"
                    name="Outcome.SignedBy"
-                   maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+                   maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
           </p>
 
           <button type="submit">Déclarer répondu et signer</button>
@@ -586,12 +586,12 @@
   </div>
 }
 
-<h2>La prose de travail</h2>
+<h2>Le texte qui meurt</h2>
 
 @*
   Le SECOND endroit, et il est délibérément séparé du premier. Ce qui se lit ici dit quelle ligne
   appartient à qui, nomme donc par nature des tiers non demandeurs, vit sur le dossier et MEURT à la
-  clôture — le Ledger n'en garde que le fait daté. Aucun champ de cette section n'a de chemin vers la
+  clôture — l'EvidenceLog n'en garde que le fait daté. Aucun champ de cette section n'a de chemin vers la
   preuve, et c'est ce placement, et non la discipline de l'Operator, qui tient la règle.
 *@
 @if (onScreen.IsClosed)
@@ -800,7 +800,7 @@ else if (onScreen.Locatings.Count == 0)
                   <input type="text"
                          id="arbitrate-signedby-@located.DeclaredSystem.Value-@reservation.Reference.Value"
                          name="Arbitration.SignedBy"
-                         maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+                         maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
                 </p>
 
                 <button type="submit" name="Arbitration.Ruling" value="@ReservationState.Attached.Name">
@@ -859,7 +859,7 @@ else if (onScreen.Locatings.Count == 0)
         <textarea id="extension-motive"
                   name="Extension.Motive"
                   rows="3"
-                  maxlength="@MicroserviceRgpd.Core.Casework.Ledger.LedgerEntry.MaxEvidenceProseLength">@Model.Extension.Motive</textarea>
+                  maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.EvidenceLogEntry.MaxEvidenceProseLength">@Model.Extension.Motive</textarea>
       </p>
 
       <p>
@@ -885,7 +885,7 @@ else if (onScreen.Locatings.Count == 0)
         <input type="text"
                id="extension-signedby"
                name="Extension.SignedBy"
-               maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength"
+               maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength"
                value="@Model.Extension.SignedBy" />
       </p>
 
@@ -997,7 +997,7 @@ else
       </p>
 
       @*
-        LE MOTIF EST DE LA PROSE DE PREUVE, et le seul champ de prose de cet écran qui SURVIT au
+        LE MOTIF EST DU TEXTE QUI RESTE, et le seul champ de prose de cet écran qui SURVIT au
         dossier : il dit pourquoi on a décidé cela, et il n'est pas nominatif par nature. Il est
         exigé pour « abandonné » seul — les deux autres causes se relisent sur le dossier, et leur
         réclamer une prose ferait écrire une ligne de rien à chaque clôture.
@@ -1013,7 +1013,7 @@ else
         <textarea id="closing-motive"
                   name="Closing.Motive"
                   rows="3"
-                  maxlength="@MicroserviceRgpd.Core.Casework.Ledger.LedgerEntry.MaxEvidenceProseLength"></textarea>
+                  maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.EvidenceLogEntry.MaxEvidenceProseLength"></textarea>
       </p>
 
       <p>
@@ -1027,7 +1027,7 @@ else
         <input type="text"
                id="closing-signedby"
                name="Closing.SignedBy"
-               maxlength="@MicroserviceRgpd.Core.Casework.Ledger.Signatory.MaxNameLength" />
+               maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
       </p>
 
       @*

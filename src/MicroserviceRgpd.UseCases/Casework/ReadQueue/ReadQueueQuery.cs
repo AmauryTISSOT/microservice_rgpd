@@ -1,5 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
@@ -36,11 +36,11 @@ public sealed record ReadQueueQuery : IQuery<OperatorQueue>;
 /// impossible à produire — il l'est ici parce qu'aucun compte n'existe.
 /// </remarks>
 /// <param name="Cases">Les dossiers ouverts, dans l'ordre où il faut les prendre.</param>
-/// <param name="ExpiredLedgers">
-/// Les <c>Ledger</c> dont la conservation est échue, <b>à part des dossiers</b>.
+/// <param name="ExpiredEvidenceLogs">
+/// Les <c>EvidenceLog</c> dont la conservation est échue, <b>à part des dossiers</b>.
 /// <para>
 /// ⚠️ <b>C'est la seule échéance du dispositif qui fait naître une ligne</b>, et c'est pourquoi elle
-/// a sa liste plutôt qu'une colonne : un <c>Ledger</c> échu n'a ni personne, ni droit, ni délai —
+/// a sa liste plutôt qu'une colonne : un <c>EvidenceLog</c> échu n'a ni personne, ni droit, ni délai —
 /// son dossier est clos depuis cinq ans —, et le geste qu'il porte est irréversible et sans trace.
 /// Son bouton ne doit jamais voisiner ceux des <c>Case</c>.
 /// </para>
@@ -56,7 +56,7 @@ public sealed record ReadQueueQuery : IQuery<OperatorQueue>;
 /// </param>
 public sealed record OperatorQueue(
   IReadOnlyList<QueuedCase> Cases,
-  IReadOnlyList<ExpiredLedger> ExpiredLedgers,
+  IReadOnlyList<ExpiredEvidenceLog> ExpiredEvidenceLogs,
   DateTimeOffset ObservedAt);
 
 /// <summary>

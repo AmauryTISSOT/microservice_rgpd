@@ -22,7 +22,7 @@ il ne parle pas du tout des droits que le RGPD ouvre aux personnes concernées.
 
 [#126](https://github.com/AmauryTISSOT/microservice_rgpd/issues/126) l'a nommé **`Screening`** et lui
 a écrit son glossaire, son régime d'erreur propre — l'`Omission relue` — et ses deux bornes,
-`Suggéré, jamais déclaré` et `Le nom, jamais la valeur`. Il a aussi établi le fait qui commande cet
+`Aucune modification vers le Manifest` et `Aucune donnée réelle n'entre`. Il a aussi établi le fait qui commande cet
 ADR : **`Screening` n'a aucune intersection avec les deux autres contextes, pas même le noyau
 partagé.**
 
@@ -40,7 +40,7 @@ qu'il permet plutôt que par ce qu'il interdit.**
    seulement écrit.
 4. **Sa taxonomie, `PersonalDataCategory`, n'entre pas au `SharedKernel`** et lui appartient en
    propre.
-5. **Le garde s'énonce en liste blanche.** Aucun contexte n'en atteint un autre, **sauf** les deux
+5. **Le garde s'énonce en « tout interdit sauf exceptions écrites ».** Aucun contexte n'en atteint un autre, **sauf** les deux
    traversées écrites ici en toutes lettres :
 
    | | → `Qualification` | → `Casework` | → `Screening` | → `SharedKernel` |
@@ -93,7 +93,7 @@ que le premier sens reviendrait à garder celui dont on n'a pas peur.
 écrire. Six interdits énumérés auraient laissé quatre traversées ouvertes en silence —
 `Qualification → Casework`, et les trois par lesquelles le noyau partagé aurait pu se mettre à
 dépendre d'un contexte — et un quatrième contexte serait né **non gardé** jusqu'à ce que quelqu'un
-pense à allonger la liste. La liste blanche inverse la charge : rien ne traverse sauf preuve écrite,
+pense à allonger la liste. « Tout interdit sauf exceptions écrites » inverse la charge : rien ne traverse sans preuve écrite,
 un contexte neuf entre interdit partout, et c'est à lui d'écrire sa dérogation. Elle rend aussi
 l'absence totale d'intersection de `Screening` lisible d'un coup d'œil — une ligne de la matrice sans
 un seul « permis » — au lieu d'être six règles qu'il faut recouper.
@@ -223,7 +223,7 @@ ci-dessus **des deux côtés**, un agrégat portant le marqueur de bibliothèque
 vu, et un type atteignant `DataSubjectRight` qui doit **rester** vu. Sans le second, une borne posée
 sur les espaces de noms pourrait tout éteindre sans que rien ne passe au rouge.
 
-**Un garde de vacuité est ajouté** : la matrice doit trouver, pour chacun des noms qu'elle prétend
+**Un garde contre le vert vide est ajouté** : la matrice doit trouver, pour chacun des noms qu'elle prétend
 garder, au moins un type de production qui l'habite. `ContextRosterTests` ancre le **nom** sur un
 glossaire ; il ne promet pas qu'un dossier de code le porte, et le vert d'un contexte pas encore
 écrit était indiscernable du vert d'un garde qui ne trouve rien.

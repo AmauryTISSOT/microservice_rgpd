@@ -10,7 +10,7 @@ réclame quoi que ce soit. C'est pourquoi il ne partage rien avec eux — voir *
 
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages,
 documentation d'API — sont en français. La prose française porte les identifiants anglais tels
-quels : on écrit « la `Qualification` », « le `Ledger` ».
+quels : on écrit « la `Qualification` », « le `EvidenceLog` ».
 
 ## Contextes
 
@@ -55,8 +55,8 @@ quels : on écrit « la `Qualification` », « le `Ledger` ».
   du dépôt qui n'a **aucune** intersection avec les autres : pas de noyau partagé, pas de fournisseur
   amont, pas même un identifiant opaque qui traverserait comme le `qualificationId` que porte un
   `Case`. Il vit avant, il ne connaît aucune demande, et rien de ce qu'il produit ne descend nulle
-  part. En particulier, **rien ne va du `Screening` au `Manifest`** — c'est la clause `Suggéré, jamais
-  déclaré`, écrite dans son glossaire : un `Manifest` pré-rempli par une machine se lirait comme
+  part. En particulier, **rien ne va du `Screening` au `Manifest`** — c'est la clause `Aucune modification vers
+  le Manifest`, écrite dans son glossaire : un `Manifest` pré-rempli par une machine se lirait comme
   complet, ce qui est l'`Omission silencieuse` sous sa forme la plus dangereuse.
 
 - **Aucune dépendance de compilation entre `Screening` et les deux autres, dans les deux sens.** Le
@@ -66,13 +66,13 @@ quels : on écrit « la `Qualification` », « le `Ledger` ».
   résister à une tentation réelle.
 
 - **Separate Ways pour tout le reste.** Rien d'autre ne traverse la frontière. `QualificationOpinion`,
-  `WitnessOpinion`, `ReviewSignal`, `DeclaredConfidence`, `Mode dégradé` n'ont aucun sens dans la
+  `LexiconOpinion`, `ReviewSignal`, `DeclaredConfidence`, `Mode dégradé` n'ont aucun sens dans la
   durée. Un `Case` référence un `qualificationId` **opaque**, qu'il ne déréférence jamais. Il n'y a
   donc aucune couche anticorruption : on ne traduit pas un opaque.
 
 - **Aucune dépendance de compilation `Casework` → `Qualification`.** C'est l'optionnalité rendue
   vérifiable : sans cette règle, la promesse « le second contexte se démontre sans GPU » ne serait
-  qu'une intention. Elle est gardée par un test au niveau de l'IL — un test de signatures seules
+  qu'une intention. Elle est gardée par un test du code compilé — un test de signatures seules
   afficherait vert sur un gestionnaire qui appelle le moteur dans un corps de méthode, c'est-à-dire
   sur la fuite même que l'on craint. Le garde vit dans `tests/MicroserviceRgpd.ArchitectureTests/`,
   et il est posé **avant** le contexte qu'il garde : la première ligne de `Casework` naîtra déjà

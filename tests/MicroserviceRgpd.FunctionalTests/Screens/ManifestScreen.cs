@@ -48,7 +48,7 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// La prose « contient » se relit <b>telle quelle</b> : c'est avec ces mots-là que la
-  /// <c>CoverSheet</c> nommera plus tard ce système à la personne concernée.
+  /// <c>DeliveryLetter</c> nommera plus tard ce système à la personne concernée.
   /// </summary>
   [Fact]
   public async Task GivesBackTheProseWordForWordBecauseItIsWhatWillNameTheSystemToThePerson()
@@ -126,7 +126,7 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// Le champ « contient » est obligatoire : un système sans prose serait un système que la
-  /// <c>CoverSheet</c> ne saurait pas nommer.
+  /// <c>DeliveryLetter</c> ne saurait pas nommer.
   /// </summary>
   [Fact]
   public async Task RefusesASystemDeclaredWithoutTheProseThatWouldNameIt()

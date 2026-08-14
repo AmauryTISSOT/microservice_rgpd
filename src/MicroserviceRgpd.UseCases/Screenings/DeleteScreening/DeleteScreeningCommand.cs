@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.DeleteScreening;
 /// porter un geste irréversible sur un rapport qu'un collègue vient peut-être de déposer.
 /// </para>
 /// <para>
-/// ⚠️ <b>Elle est irréversible et sans trace.</b> Il n'y a pas de <c>Ledger</c> ici — le grain est
+/// ⚠️ <b>Elle est irréversible et sans trace.</b> Il n'y a pas de l'<c>EvidenceLog</c> ici — le grain est
 /// le déploiement — et rien ne consigne qu'un rapport a existé : après ce geste, le travail
 /// d'arbitrage qu'il portait n'est nulle part. C'est un coût déclaré, pas un oubli.
 /// </para>

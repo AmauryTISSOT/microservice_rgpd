@@ -49,16 +49,16 @@ public sealed class QualificationAuditTrail(AppDbContext dbContext) : IQualifica
       VerdictDeclaredConfidence = entry.VerdictOpinion?.DeclaredConfidence?.ToString(),
       VerdictEngineName = entry.VerdictOpinion?.Engine.Name,
       VerdictEngineVersion = entry.VerdictOpinion?.Engine.Version,
-      WitnessRights = entry.WitnessOpinion is null ? null : NamesOf(entry.WitnessOpinion.Qualification),
-      WitnessDeclaredConfidence = entry.WitnessOpinion?.DeclaredConfidence?.ToString(),
-      WitnessEngineName = entry.WitnessOpinion?.Engine.Name,
-      WitnessEngineVersion = entry.WitnessOpinion?.Engine.Version,
+      LexiconRights = entry.LexiconOpinion is null ? null : NamesOf(entry.LexiconOpinion.Qualification),
+      LexiconDeclaredConfidence = entry.LexiconOpinion?.DeclaredConfidence?.ToString(),
+      LexiconEngineName = entry.LexiconOpinion?.Engine.Name,
+      LexiconEngineVersion = entry.LexiconOpinion?.Engine.Version,
       Justification = entry.Justification,
       CallerReference = entry.CallerReference,
       TraceId = entry.TraceId,
       TotalLatencyMs = MillisecondsOf(entry.TotalLatency),
       VerdictLatencyMs = entry.VerdictLatency is { } verdict ? MillisecondsOf(verdict) : null,
-      WitnessLatencyMs = entry.WitnessLatency is { } witness ? MillisecondsOf(witness) : null,
+      LexiconLatencyMs = entry.LexiconLatency is { } witness ? MillisecondsOf(witness) : null,
     };
   }
 

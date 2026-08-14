@@ -49,7 +49,7 @@ public class DeclaredSystemPersistenceTests(PostgreSqlFixture postgres)
   /// <summary>
   /// L'adresse d'<c>Adapter</c> est la <b>seule</b> colonne facultative : un système sans capacité
   /// et sans adresse est le régime normal, mais un système sans prose « contient » ne serait pas
-  /// nommable par la <c>CoverSheet</c>.
+  /// nommable par la <c>DeliveryLetter</c>.
   /// </summary>
   [Fact]
   public async Task LeavesOnlyTheAdapterAddressOptional()

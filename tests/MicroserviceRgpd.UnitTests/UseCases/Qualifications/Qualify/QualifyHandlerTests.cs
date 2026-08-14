@@ -156,7 +156,7 @@ public class QualifyHandlerTests
     var entry = _auditTrail.Entries.ShouldHaveSingleItem();
     entry.VerdictOpinion.ShouldBeNull();
     entry.VerdictLatency.ShouldBeNull();
-    entry.WitnessOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
+    entry.LexiconOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
   }
 
   /// <summary>
@@ -348,7 +348,7 @@ public class QualifyHandlerTests
 
     entry.VerdictOpinion!.Engine.ShouldBe(AnEngine.HoldingTheVerdict);
     entry.VerdictOpinion.DeclaredConfidence.ShouldBe(DeclaredConfidence.High);
-    entry.WitnessOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
+    entry.LexiconOpinion!.Engine.ShouldBe(AnEngine.HoldingTheWitness);
   }
 
   /// <summary>
@@ -366,7 +366,7 @@ public class QualifyHandlerTests
     var entry = _auditTrail.Entries.ShouldHaveSingleItem();
     entry.VerdictOpinion.ShouldBeNull();
     entry.VerdictLatency.ShouldBeNull();
-    entry.WitnessOpinion.ShouldNotBeNull();
+    entry.LexiconOpinion.ShouldNotBeNull();
   }
 
   /// <summary>
@@ -374,7 +374,7 @@ public class QualifyHandlerTests
   /// booléen public recouvre les deux situations ; la trace les sépare.
   /// </summary>
   [Fact]
-  public async Task RecordsTheMissingWitnessByTheAbsenceOfTheWitnessOpinion()
+  public async Task RecordsTheMissingWitnessByTheAbsenceOfTheLexiconOpinion()
   {
     GiveThePrincipalEngine(DataSubjectRight.Erasure, DeclaredConfidence.High);
     GiveTheWitness(new QualificationEngineFailure("Le moteur lexical a répondu 500."));
@@ -382,8 +382,8 @@ public class QualifyHandlerTests
     await HandleAsync();
 
     var entry = _auditTrail.Entries.ShouldHaveSingleItem();
-    entry.WitnessOpinion.ShouldBeNull();
-    entry.WitnessLatency.ShouldBeNull();
+    entry.LexiconOpinion.ShouldBeNull();
+    entry.LexiconLatency.ShouldBeNull();
     entry.VerdictOpinion.ShouldNotBeNull();
   }
 

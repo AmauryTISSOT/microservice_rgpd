@@ -8,7 +8,7 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Rien n'est consigné, rien n'est détruit.</b> Ce handler ne touche ni le <c>Ledger</c> ni les
+/// <b>Rien n'est consigné, rien n'est détruit.</b> Ce handler ne touche ni l'<c>EvidenceLog</c> ni les
 /// pièces : c'est ce qui distingue les deux gestes, et les réunir aurait daté la preuve à l'instant
 /// où quelqu'un vérifiait.
 /// </para>

@@ -1,20 +1,20 @@
-﻿namespace MicroserviceRgpd.Core.Casework.Ledger;
+﻿namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// Qui a déclaré ce qu'une ligne du <c>Ledger</c> consigne. Le <c>Ledger</c> est <b>daté et
+/// Qui a déclaré ce qu'une ligne de l'<c>EvidenceLog</c> consigne. L'<c>EvidenceLog</c> est <b>daté et
 /// signé</b> — « par qui » est un tiers de ce que le service prouve.
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>C'est le seul endroit du <c>Ledger</c> où un nom de personne est permis, et ce n'est
-/// jamais celui de la personne concernée.</b> Le <c>Ledger</c> nomme l'<c>Operator</c>,
+/// ⚠️ <b>C'est le seul endroit de l'<c>EvidenceLog</c> où un nom de personne est permis, et ce n'est
+/// jamais celui de la personne concernée.</b> L'<c>EvidenceLog</c> nomme l'<c>Operator</c>,
 /// définitivement : c'est un fichier de données personnelles sur les salariés du client, et son
 /// effacement leur est légitimement refusé.
 /// </para>
 /// <para>
 /// <b>Un nom n'est pas une authentification</b>, et le service ne prétend pas le contraire. Il
-/// enregistre ce qu'un humain a saisi <b>et</b> le <see cref="SignatureRegime"/> sous lequel il l'a
-/// saisi — dans le même objet, par le même geste, pour que le <c>Ledger</c> d'aujourd'hui ne soit pas
+/// enregistre ce qu'un humain a saisi <b>et</b> le <see cref="SignerVerification"/> sous lequel il l'a
+/// saisi — dans le même objet, par le même geste, pour que l'<c>EvidenceLog</c> d'aujourd'hui ne soit pas
 /// indiscernable de celui de demain.
 /// </para>
 /// </remarks>
@@ -23,11 +23,11 @@ public sealed record Signatory
   /// <summary>Le plafond, en unités UTF-16. Un nom saisi à la main, pas un paragraphe.</summary>
   public const int MaxNameLength = 200;
 
-  private Signatory(SignatoryKind kind, string? name, SignatureRegime? regime)
+  private Signatory(SignatoryKind kind, string? name, SignerVerification? verification)
   {
     Kind = kind;
     Name = name;
-    Regime = regime;
+    Verification = verification;
   }
 
   /// <summary>Le constructeur qu'EF Core emprunte pour rematérialiser une ligne. Il ne rejoue aucun invariant.</summary>
@@ -54,14 +54,14 @@ public sealed record Signatory
   /// régime serait relu dans dix ans comme si quelqu'un s'était identifié.
   /// </para>
   /// </summary>
-  public SignatureRegime? Regime { get; private set; }
+  public SignerVerification? Verification { get; private set; }
 
   /// <summary>
   /// L'application du client, appelant depuis une session qu'elle a elle-même authentifiée.
   /// <b>Aucun humain n'a signé</b>, et la ligne le dit plutôt que de le taire.
   /// </summary>
   public static Signatory Application { get; } =
-    new(SignatoryKind.Application, name: null, regime: null);
+    new(SignatoryKind.Application, name: null, verification: null);
 
   /// <summary>
   /// L'<c>Operator</c> qui signe, sous le nom qu'il a saisi et sous le régime qui dit ce que ce nom
@@ -80,16 +80,16 @@ public sealed record Signatory
   /// </para>
   /// </remarks>
   /// <param name="name">Le nom saisi par l'humain qui signe.</param>
-  /// <param name="regime">Ce que valait ce nom au moment où il a été saisi.</param>
-  /// <exception cref="ArgumentNullException"><paramref name="regime"/> est absent.</exception>
+  /// <param name="verification">Ce que valait ce nom au moment où il a été saisi.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="verification"/> est absent.</exception>
   /// <exception cref="ArgumentException">Le nom est absent, vide, démesuré, ou porte un caractère de contrôle.</exception>
-  public static Signatory Operator(string? name, SignatureRegime regime)
+  public static Signatory Operator(string? name, SignerVerification verification)
   {
-    ArgumentNullException.ThrowIfNull(regime);
+    ArgumentNullException.ThrowIfNull(verification);
 
     return new Signatory(
       SignatoryKind.Operator,
       DeclaredText.OrThrow(name, "Le nom du signataire", MaxNameLength, nameof(name)),
-      regime);
+      verification);
   }
 }

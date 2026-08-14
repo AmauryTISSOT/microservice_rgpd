@@ -7,7 +7,7 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 
 /// <summary>
 /// Une <see cref="Delivery"/> rangée dans une archive : <b>un dossier par système</b>, et la
-/// <c>CoverSheet</c> à la racine. C'est ce que l'<c>Operator</c> télécharge.
+/// <c>DeliveryLetter</c> à la racine. C'est ce que l'<c>Operator</c> télécharge.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -63,12 +63,12 @@ public sealed record DeliveryArchive(string FileName, byte[] Content)
 
     using (var archive = new ZipArchive(bytes, ZipArchiveMode.Create, leaveOpen: true))
     {
-      var page = archive.CreateEntry(CoverSheet.FileName, CompressionLevel.Optimal);
+      var page = archive.CreateEntry(DeliveryLetter.FileName, CompressionLevel.Optimal);
       page.LastWriteTime = assembledAt;
 
       using (var writing = new StreamWriter(page.Open(), Utf8WithSignature))
       {
-        writing.Write(delivery.CoverSheet.Write());
+        writing.Write(delivery.DeliveryLetter.Write());
       }
 
       foreach (var piece in delivery.Pieces)

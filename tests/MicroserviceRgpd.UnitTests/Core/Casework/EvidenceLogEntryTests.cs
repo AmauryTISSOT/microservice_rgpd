@@ -1,13 +1,13 @@
 ﻿using System.Reflection;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 
 /// <summary>
-/// Ce que le <c>Ledger</c> sait écrire, et ce qu'il est <b>incapable</b> d'écrire.
+/// Ce que l'<c>EvidenceLog</c> sait écrire, et ce qu'il est <b>incapable</b> d'écrire.
 /// <para>
 /// Ces tests portent sur la <b>forme des types</b> plutôt que sur un comportement, et c'est
 /// délibéré : « anonyme par construction, jamais par expurgation » est une promesse qu'on ne peut
@@ -15,7 +15,7 @@ namespace MicroserviceRgpd.UnitTests.Core.Casework;
 /// vérifie qu'il n'existe <b>aucun emplacement</b> où une désignation pourrait atterrir.
 /// </para>
 /// </summary>
-public class LedgerEntryTests
+public class EvidenceLogEntryTests
 {
   private static readonly DateTimeOffset Opened = new(2026, 8, 3, 14, 30, 0, TimeSpan.Zero);
 
@@ -28,7 +28,7 @@ public class LedgerEntryTests
   {
     var caseId = CaseId.Next();
 
-    var entry = LedgerEntry.CaseOpened(
+    var entry = EvidenceLogEntry.CaseOpened(
       caseId,
       Opened,
       Signatory.Application,
@@ -37,7 +37,7 @@ public class LedgerEntryTests
       reception: ReceptionDate.Declared(Opened));
 
     entry.Case.ShouldBe(caseId);
-    entry.Fact.ShouldBe(LedgerFact.CaseOpened);
+    entry.Fact.ShouldBe(EvidenceLogFact.CaseOpened);
     entry.OccurredAt.ShouldBe(Opened);
     entry.IdentityDeclaration.ShouldBe(IdentityDeclaration.ApplicationSession);
     entry.DesignationCount.ShouldBe(2);
@@ -51,7 +51,7 @@ public class LedgerEntryTests
   [Fact]
   public void WritesADefaultedReceptionDateAsADefaultRatherThanAsADeclaredFact()
   {
-    var defaulted = LedgerEntry.CaseOpened(
+    var defaulted = EvidenceLogEntry.CaseOpened(
       CaseId.Next(),
       Opened,
       Signatory.Application,
@@ -59,7 +59,7 @@ public class LedgerEntryTests
       designationCount: 1,
       reception: ReceptionDate.Defaulted(Opened));
 
-    var declared = LedgerEntry.CaseOpened(
+    var declared = EvidenceLogEntry.CaseOpened(
       CaseId.Next(),
       Opened,
       Signatory.Application,
@@ -73,12 +73,12 @@ public class LedgerEntryTests
 
   /// <summary>
   /// Un constat déclaré : l'état, le système, le droit, le nom de l'humain, <b>le régime sous lequel
-  /// il a saisi ce nom</b>, et sa prose de preuve.
+  /// il a saisi ce nom</b>, et son texte qui reste.
   /// </summary>
   [Fact]
   public void WritesAFindingUnderTheNameAndTheRegimeUnderWhichItWasTyped()
   {
-    var entry = LedgerEntry.StepDeclared(
+    var entry = EvidenceLogEntry.StepDeclared(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("boutique"),
@@ -86,16 +86,16 @@ public class LedgerEntryTests
       StepState.Done,
       "Requête lancée le 3, deux comptes trouvés, export joint.",
       findingIsDemanded: true,
-      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated));
 
-    entry.Fact.ShouldBe(LedgerFact.StepDeclared);
+    entry.Fact.ShouldBe(EvidenceLogFact.StepDeclared);
     entry.DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
     entry.Right.ShouldBe(DataSubjectRight.Access);
     entry.DeclaredState.ShouldBe(StepState.Done);
-    entry.EvidenceProse.ShouldBe("Requête lancée le 3, deux comptes trouvés, export joint.");
+    entry.Prose.ShouldBe("Requête lancée le 3, deux comptes trouvés, export joint.");
 
     entry.Signatory.Name.ShouldBe("Claire Berger");
-    entry.Signatory.Regime.ShouldBe(SignatureRegime.Unauthenticated);
+    entry.Signatory.Verification.ShouldBe(SignerVerification.Unauthenticated);
 
     // Ce fait ne mesure aucune recherche : un compte se lirait comme une ampleur qu'il n'a pas.
     entry.DesignationCount.ShouldBeNull();
@@ -109,7 +109,7 @@ public class LedgerEntryTests
   [Fact]
   public void NeverRefusesTheAdmissionThatNobodyDidTheWork()
   {
-    var entry = LedgerEntry.StepDeclared(
+    var entry = EvidenceLogEntry.StepDeclared(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("export-agence"),
@@ -117,7 +117,7 @@ public class LedgerEntryTests
       StepState.Untreated,
       "L'export part chez l'agence ; personne ne l'a traité pour cette demande.",
       findingIsDemanded: false,
-      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated));
 
     entry.DeclaredState.ShouldBe(StepState.Untreated);
   }
@@ -133,7 +133,7 @@ public class LedgerEntryTests
   {
     StepState.Done.DemandsAFinding(anAttachmentIsHeld: false).ShouldBeTrue();
 
-    Should.Throw<ArgumentException>(() => LedgerEntry.StepDeclared(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.StepDeclared(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("boutique"),
@@ -141,7 +141,7 @@ public class LedgerEntryTests
       StepState.Done,
       "   ",
       findingIsDemanded: true,
-      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated)));
+      Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated)));
   }
 
   /// <summary>
@@ -155,17 +155,17 @@ public class LedgerEntryTests
   {
     StepState.Done.DemandsAFinding(anAttachmentIsHeld: true).ShouldBeFalse();
 
-    var entry = LedgerEntry.StepDeclared(
+    var entry = EvidenceLogEntry.StepDeclared(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("boutique"),
       DataSubjectRight.Access,
       StepState.Done,
-      evidenceProse: null,
+      prose: null,
       findingIsDemanded: false,
-      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated));
 
-    entry.EvidenceProse.ShouldBeNull();
+    entry.Prose.ShouldBeNull();
   }
 
   /// <summary>
@@ -180,19 +180,19 @@ public class LedgerEntryTests
   [InlineData(nameof(StepState.Untreated))]
   public void AsksForNoFindingOnAStateThatDoesNotClaimOne(string state)
   {
-    var entry = LedgerEntry.StepDeclared(
+    var entry = EvidenceLogEntry.StepDeclared(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("boutique"),
       DataSubjectRight.Access,
       StepState.FromName(state),
-      evidenceProse: null,
+      prose: null,
       findingIsDemanded: false,
-      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated));
 
     // La colonne reste vide plutôt que de porter une chaîne vide, qui se lirait comme un constat
     // qu'on aurait effacé.
-    entry.EvidenceProse.ShouldBeNull();
+    entry.Prose.ShouldBeNull();
   }
 
   /// <summary>
@@ -202,7 +202,7 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesAFindingThatNoHumanSigned()
   {
-    Should.Throw<ArgumentException>(() => LedgerEntry.StepDeclared(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.StepDeclared(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("boutique"),
@@ -219,20 +219,20 @@ public class LedgerEntryTests
   /// ferait chercher au mauvais endroit qui relira.
   /// </summary>
   [Theory]
-  [InlineData(nameof(AdapterOutcome.SecretRefused), nameof(LedgerFact.AdapterRefusedTheSecret))]
-  [InlineData(nameof(AdapterOutcome.SystemNotServed), nameof(LedgerFact.AdapterDidNotServeTheSystem))]
+  [InlineData(nameof(AdapterOutcome.SecretRefused), nameof(EvidenceLogFact.AdapterRefusedTheSecret))]
+  [InlineData(nameof(AdapterOutcome.SystemNotServed), nameof(EvidenceLogFact.AdapterDidNotServeTheSystem))]
   public void WritesTheDatedAttemptOfARefusedCall(string outcome, string expected)
   {
     var caseId = CaseId.Next();
 
-    var entry = LedgerEntry.AdapterRefused(
+    var entry = EvidenceLogEntry.AdapterRefused(
       caseId,
       Opened,
       DeclaredSystemId.From("boutique"),
       AdapterOutcome.FromName(outcome));
 
     entry.Case.ShouldBe(caseId);
-    entry.Fact.ShouldBe(LedgerFact.FromName(expected));
+    entry.Fact.ShouldBe(EvidenceLogFact.FromName(expected));
     entry.OccurredAt.ShouldBe(Opened);
     entry.DeclaredSystem.ShouldBe(DeclaredSystemId.From("boutique"));
 
@@ -246,7 +246,7 @@ public class LedgerEntryTests
   }
 
   /// <summary>
-  /// Le <c>Ledger</c> ne consigne ici que des <b>refus</b>. Un appel servi ou différé n'a pas de
+  /// L'<c>EvidenceLog</c> ne consigne ici que des <b>refus</b>. Un appel servi ou différé n'a pas de
   /// fait à lui : ce qu'il devient appartient au dossier, pas à la preuve du transport.
   /// </summary>
   [Theory]
@@ -254,7 +254,7 @@ public class LedgerEntryTests
   [InlineData(nameof(AdapterOutcome.Deferred))]
   public void RefusesToWriteACallThatWasNotRefused(string outcome)
   {
-    Should.Throw<ArgumentException>(() => LedgerEntry.AdapterRefused(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.AdapterRefused(
       CaseId.Next(),
       Opened,
       DeclaredSystemId.From("boutique"),
@@ -269,7 +269,7 @@ public class LedgerEntryTests
   [Fact]
   public void OffersNoPlaceWhereADesignationCouldEverLand()
   {
-    var carried = typeof(LedgerEntry)
+    var carried = typeof(EvidenceLogEntry)
       .GetProperties(BindingFlags.Public | BindingFlags.Instance)
       .ToArray();
 
@@ -277,9 +277,9 @@ public class LedgerEntryTests
       property => property.PropertyType == typeof(Designation)
                   || property.PropertyType == typeof(DesignationKind)
                   || property.PropertyType.IsAssignableTo(typeof(IEnumerable<Designation>)),
-      "Le Ledger n'accepte aucune Designation, dès la première ligne.");
+      "L'EvidenceLog n'accepte aucune Designation, dès la première ligne.");
 
-    // La seule prose du dossier qui survive est la prose de preuve, écrite à un point de décision et
+    // La seule prose du dossier qui survive est le texte qui reste, écrite à un point de décision et
     // non nominative par nature. Les chaînes de la ligne sont donc énumérées en toutes lettres : en
     // ajouter une doit être un geste délibéré, parce que c'est par un champ de texte non qualifié
     // qu'un nom de personne concernée finirait par passer — et la prose de *travail*, qui nomme des
@@ -287,7 +287,7 @@ public class LedgerEntryTests
     carried
       .Where(property => property.PropertyType == typeof(string))
       .Select(property => property.Name)
-      .ShouldBe([nameof(LedgerEntry.EvidenceProse)]);
+      .ShouldBe([nameof(EvidenceLogEntry.Prose)]);
   }
 
   /// <summary>
@@ -300,7 +300,7 @@ public class LedgerEntryTests
     Signatory.Application.Kind.ShouldBe(SignatoryKind.Application);
     Signatory.Application.Name.ShouldBeNull();
 
-    var signed = Signatory.Operator("  Claire Berger  ", SignatureRegime.Unauthenticated);
+    var signed = Signatory.Operator("  Claire Berger  ", SignerVerification.Unauthenticated);
 
     signed.Kind.ShouldBe(SignatoryKind.Operator);
     signed.Name.ShouldBe("Claire Berger");
@@ -310,7 +310,7 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesAnOperatorWhoSignedWithNothing()
   {
-    Should.Throw<ArgumentException>(() => Signatory.Operator("   ", SignatureRegime.Unauthenticated));
+    Should.Throw<ArgumentException>(() => Signatory.Operator("   ", SignerVerification.Unauthenticated));
   }
 
   /// <summary>
@@ -331,11 +331,11 @@ public class LedgerEntryTests
       .GetParameters()
       .ShouldNotContain(parameter => parameter.HasDefaultValue);
 
-    Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated).Regime
-      .ShouldBe(SignatureRegime.Unauthenticated);
+    Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated).Verification
+      .ShouldBe(SignerVerification.Unauthenticated);
 
     // L'application n'a saisi aucun nom : un régime de signature ne dirait rien d'elle.
-    Signatory.Application.Regime.ShouldBeNull();
+    Signatory.Application.Verification.ShouldBeNull();
   }
 
   /// <summary>
@@ -345,7 +345,7 @@ public class LedgerEntryTests
   [Fact]
   public void BringsTheInstantBackToUtcRatherThanTrustingTheMachinesTimeZone()
   {
-    var entry = LedgerEntry.CaseOpened(
+    var entry = EvidenceLogEntry.CaseOpened(
       CaseId.Next(),
       new DateTimeOffset(2026, 8, 3, 16, 30, 0, TimeSpan.FromHours(2)),
       Signatory.Application,
@@ -366,16 +366,16 @@ public class LedgerEntryTests
   {
     var caseId = CaseId.Next();
 
-    var entry = LedgerEntry.DeliveryDeclared(
+    var entry = EvidenceLogEntry.DeliveryDeclared(
       caseId,
       Opened,
       DataSubjectRight.Access,
       coveredSystemCount: 2,
       declaredSystemCount: 6,
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated));
 
     entry.Case.ShouldBe(caseId);
-    entry.Fact.ShouldBe(LedgerFact.DeliveryDeclared);
+    entry.Fact.ShouldBe(EvidenceLogFact.DeliveryDeclared);
     entry.OccurredAt.ShouldBe(Opened);
     entry.Right.ShouldBe(DataSubjectRight.Access);
     entry.CoveredSystemCount.ShouldBe(2);
@@ -385,7 +385,7 @@ public class LedgerEntryTests
     // Rien du fichier : ni système, ni prose, ni compte de désignations. La preuve dit qu'un fichier
     // a été remis, jamais ce qu'il y avait dedans.
     entry.DeclaredSystem.ShouldBeNull();
-    entry.EvidenceProse.ShouldBeNull();
+    entry.Prose.ShouldBeNull();
     entry.DesignationCount.ShouldBeNull();
   }
 
@@ -397,7 +397,7 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesAHandoverThatNoOneSigned()
   {
-    Should.Throw<ArgumentException>(() => LedgerEntry.DeliveryDeclared(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.DeliveryDeclared(
       CaseId.Next(),
       Opened,
       DataSubjectRight.Access,
@@ -405,13 +405,13 @@ public class LedgerEntryTests
       declaredSystemCount: 6,
       Signatory.Application));
 
-    Should.Throw<ArgumentException>(() => LedgerEntry.DeliveryDeclared(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.DeliveryDeclared(
       CaseId.Next(),
       Opened,
       DataSubjectRight.Access,
       coveredSystemCount: 2,
       declaredSystemCount: 6,
-      Signatory.Operator(" ", SignatureRegime.Unauthenticated)));
+      Signatory.Operator(" ", SignerVerification.Unauthenticated)));
   }
 
   /// <summary>
@@ -422,13 +422,13 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesToCoverMoreSystemsThanTheAnswerHadToAnswerFor()
   {
-    Should.Throw<ArgumentOutOfRangeException>(() => LedgerEntry.DeliveryDeclared(
+    Should.Throw<ArgumentOutOfRangeException>(() => EvidenceLogEntry.DeliveryDeclared(
       CaseId.Next(),
       Opened,
       DataSubjectRight.Access,
       coveredSystemCount: 6,
       declaredSystemCount: 5,
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated)));
   }
 
   /// <summary>
@@ -440,14 +440,14 @@ public class LedgerEntryTests
   {
     var caseId = CaseId.Next();
 
-    var entry = LedgerEntry.ClaimAnswered(
+    var entry = EvidenceLogEntry.ClaimAnswered(
       caseId,
       Opened,
       DataSubjectRight.Access,
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated));
 
     entry.Case.ShouldBe(caseId);
-    entry.Fact.ShouldBe(LedgerFact.ClaimAnswered);
+    entry.Fact.ShouldBe(EvidenceLogFact.ClaimAnswered);
     entry.OccurredAt.ShouldBe(Opened);
     entry.Right.ShouldBe(DataSubjectRight.Access);
     entry.Signatory.Name.ShouldBe("Camille Roy");
@@ -456,7 +456,7 @@ public class LedgerEntryTests
     // contenu d'une réponse est le paquet remis — il n'entre jamais dans la preuve.
     entry.CoveredSystemCount.ShouldBeNull();
     entry.DeclaredSystemCount.ShouldBeNull();
-    entry.EvidenceProse.ShouldBeNull();
+    entry.Prose.ShouldBeNull();
     entry.ClosingCause.ShouldBeNull();
   }
 
@@ -467,7 +467,7 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesAnAnswerThatNoOneSigned()
   {
-    Should.Throw<ArgumentException>(() => LedgerEntry.ClaimAnswered(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.ClaimAnswered(
       CaseId.Next(),
       Opened,
       DataSubjectRight.Access,
@@ -483,22 +483,22 @@ public class LedgerEntryTests
   {
     var caseId = CaseId.Next();
 
-    var entry = LedgerEntry.CaseClosed(
+    var entry = EvidenceLogEntry.CaseClosed(
       caseId,
       Opened,
       ClosingCause.Answered,
       motive: null,
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated));
 
     entry.Case.ShouldBe(caseId);
-    entry.Fact.ShouldBe(LedgerFact.CaseClosed);
+    entry.Fact.ShouldBe(EvidenceLogFact.CaseClosed);
     entry.OccurredAt.ShouldBe(Opened);
     entry.ClosingCause.ShouldBe(ClosingCause.Answered);
     entry.Signatory.Name.ShouldBe("Camille Roy");
 
     // Aucun motif là où la cause n'en réclame pas : la colonne reste vide plutôt que de porter une
     // chaîne vide, qui se lirait comme un motif qu'on aurait effacé.
-    entry.EvidenceProse.ShouldBeNull();
+    entry.Prose.ShouldBeNull();
 
     // Et rien du dossier détruit : ni droit, ni système, ni compte de désignations.
     entry.Right.ShouldBeNull();
@@ -514,21 +514,21 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesAnAbandonmentNoOneExplained()
   {
-    Should.Throw<ArgumentException>(() => LedgerEntry.CaseClosed(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.CaseClosed(
       CaseId.Next(),
       Opened,
       ClosingCause.Abandoned,
       motive: null,
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated)));
 
-    var explained = LedgerEntry.CaseClosed(
+    var explained = EvidenceLogEntry.CaseClosed(
       CaseId.Next(),
       Opened,
       ClosingCause.Abandoned,
       "La personne s'est ravisée et a demandé l'effacement de son dossier.",
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated));
 
-    explained.EvidenceProse.ShouldBe("La personne s'est ravisée et a demandé l'effacement de son dossier.");
+    explained.Prose.ShouldBe("La personne s'est ravisée et a demandé l'effacement de son dossier.");
   }
 
   /// <summary>
@@ -538,14 +538,14 @@ public class LedgerEntryTests
   [Fact]
   public void WelcomesAMotiveOnACauseThatDoesNotDemandOne()
   {
-    var entry = LedgerEntry.CaseClosed(
+    var entry = EvidenceLogEntry.CaseClosed(
       CaseId.Next(),
       Opened,
       ClosingCause.NotApplicable,
       "Le courriel demandait l'horaire de la déchèterie.",
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated));
 
-    entry.EvidenceProse.ShouldBe("Le courriel demandait l'horaire de la déchèterie.");
+    entry.Prose.ShouldBe("Le courriel demandait l'horaire de la déchèterie.");
   }
 
   /// <summary>
@@ -555,7 +555,7 @@ public class LedgerEntryTests
   [Fact]
   public void RefusesAClosureThatNoOneSigned()
   {
-    Should.Throw<ArgumentException>(() => LedgerEntry.CaseClosed(
+    Should.Throw<ArgumentException>(() => EvidenceLogEntry.CaseClosed(
       CaseId.Next(),
       Opened,
       ClosingCause.Answered,
@@ -570,7 +570,7 @@ public class LedgerEntryTests
   [Fact]
   public void ExposesNothingButAnAppend()
   {
-    typeof(ILedger).GetMethods().Select(method => method.Name).ShouldBe(["AppendAsync"]);
+    typeof(IEvidenceLog).GetMethods().Select(method => method.Name).ShouldBe(["AppendAsync"]);
   }
 
   /// <summary>
@@ -581,20 +581,20 @@ public class LedgerEntryTests
   [Fact]
   public void NeedsNoEarlierLineToWriteALine()
   {
-    var append = typeof(ILedger).GetMethod(nameof(ILedger.AppendAsync))!;
+    var append = typeof(IEvidenceLog).GetMethod(nameof(IEvidenceLog.AppendAsync))!;
 
     append.GetParameters()
       .Select(parameter => parameter.ParameterType)
-      .ShouldBe([typeof(LedgerEntry), typeof(CancellationToken)]);
+      .ShouldBe([typeof(EvidenceLogEntry), typeof(CancellationToken)]);
 
     // Aucune fabrique de ligne ne prend de ligne : le rang n'existe pas, et l'identité de la ligne
     // est engendrée plutôt que comptée.
-    typeof(LedgerEntry)
+    typeof(EvidenceLogEntry)
       .GetMethods(BindingFlags.Public | BindingFlags.Static)
       // Les opérateurs d'égalité qu'un `record` engendre comparent deux lignes ; ils n'en écrivent
       // aucune, et ce sont les fabriques qu'on lit ici.
       .Where(factory => !factory.IsSpecialName)
       .SelectMany(factory => factory.GetParameters())
-      .ShouldNotContain(parameter => parameter.ParameterType == typeof(LedgerEntry));
+      .ShouldNotContain(parameter => parameter.ParameterType == typeof(EvidenceLogEntry));
   }
 }

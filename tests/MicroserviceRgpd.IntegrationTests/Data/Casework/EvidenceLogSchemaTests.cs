@@ -1,18 +1,18 @@
 ﻿using System.Data.Common;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 
 // Shouldly porte un type du même nom, réservé à ses propres tables de cas.
 using Case = MicroserviceRgpd.Core.Casework.Case;
-using Ledger = MicroserviceRgpd.Infrastructure.Data.Casework.Ledger;
+using EvidenceLog = MicroserviceRgpd.Infrastructure.Data.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.IntegrationTests.Data.Casework;
 
 /// <summary>
-/// La forme que la migration a réellement donnée au <c>Ledger</c>, et ce qu'elle rend
+/// La forme que la migration a réellement donnée au <c>EvidenceLog</c>, et ce qu'elle rend
 /// <b>impossible</b>.
 /// </summary>
 /// <remarks>
@@ -26,7 +26,7 @@ namespace MicroserviceRgpd.IntegrationTests.Data.Casework;
 /// </para>
 /// </remarks>
 [Collection(PostgreSqlCollection.Name)]
-public class LedgerSchemaTests(PostgreSqlFixture postgres)
+public class EvidenceLogSchemaTests(PostgreSqlFixture postgres)
 {
   private static readonly DateTimeOffset Opened = new(2026, 8, 3, 14, 30, 0, TimeSpan.Zero);
 
@@ -41,15 +41,15 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   /// </para>
   /// <para>
   /// Cinq sont arrivées avec la surface de l'<c>Operator</c>, et chacune pour une raison écrite :
-  /// <c>signature_regime</c>, pour que le nom saisi sans authentification ne soit pas relu comme une
+  /// <c>signer_verification</c>, pour que le nom saisi sans authentification ne soit pas relu comme une
   /// identification ; <c>reception_was_defaulted</c>, pour qu'une date tenue pour défaut ne se lise pas
   /// comme un fait déclaré ; <c>data_subject_right</c> et <c>step_state</c>, qui disent de quel travail
   /// dû un constat parle ; et <c>evidence_prose</c>, <b>seule colonne de prose de la table</b>.
   /// </para>
   /// <para>
-  /// ⚠️ <c>evidence_prose</c> ne porte que la <b>prose de preuve</b> — écrite à un point de décision,
-  /// non nominative par nature, et qui survit. La <b>prose de travail</b>, qui nomme des tiers, n'a
-  /// aucune colonne ici : elle vit sur le <c>Case</c> et meurt à la clôture. La règle tient par ce
+  /// ⚠️ <c>evidence_prose</c> ne porte que le <b>texte qui reste</b> — écrit à un point de décision,
+  /// non nominatif par nature, et qui survit. Le <b>texte qui meurt</b>, qui nomme des tiers, n'a
+  /// aucune colonne ici : il vit sur le <c>Case</c> et meurt à la clôture. La règle tient par ce
   /// <b>placement</b>, et l'écran offre les deux champs à deux endroits distincts.
   /// </para>
   /// <para>
@@ -61,7 +61,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   /// </para>
   /// <para>
   /// ⚠️ Le <b>détail</b> de la motivation n'a, lui, aucune colonne ici, et c'est le même placement
-  /// que pour la prose de travail : il dit qui a été rappelé et sur quoi, il nomme donc par nature,
+  /// que pour le texte qui meurt : il dit qui a été rappelé et sur quoi, il nomme donc par nature,
   /// il vit sur le <c>Case</c> et meurt à la clôture. Le contrôle juge la pratique sans qu'un seul
   /// nom lui survive.
   /// </para>
@@ -125,7 +125,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       "reception_was_defaulted",
       "signatory_kind",
       "signatory_name",
-      "signature_regime",
+      "signer_verification",
       "step_state",
     ]);
   }
@@ -141,8 +141,8 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
     var refused = CaseId.Next();
 
-    await new Ledger(dbContext).AppendAsync(
-      LedgerEntry.AdapterRefused(
+    await new EvidenceLog(dbContext).AppendAsync(
+      EvidenceLogEntry.AdapterRefused(
         refused,
         Opened,
         DeclaredSystemId.From("boutique"),
@@ -150,7 +150,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
     await using var reread = postgres.NewDbContext();
 
-    var line = await reread.Set<LedgerRow>()
+    var line = await reread.Set<EvidenceLogRow>()
       .AsNoTracking()
       .SingleAsync(row => row.CaseId == refused.Value);
 
@@ -162,7 +162,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   }
 
   /// <summary>
-  /// La clôture fait l'aller-retour : la cause dans sa colonne, le motif dans la prose de preuve,
+  /// La clôture fait l'aller-retour : la cause dans sa colonne, le motif dans le texte qui reste,
   /// et le nom de l'humain qui a signé. <b>C'est ce qui survit au dossier détruit.</b>
   /// </summary>
   [Fact]
@@ -172,28 +172,28 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
     var closed = CaseId.Next();
 
-    await new Ledger(dbContext).AppendAsync(
-      LedgerEntry.CaseClosed(
+    await new EvidenceLog(dbContext).AppendAsync(
+      EvidenceLogEntry.CaseClosed(
         closed,
         Opened,
         ClosingCause.Abandoned,
         "La personne s'est ravisée et a demandé l'effacement de son dossier.",
-        Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+        Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated)));
 
     await using var reread = postgres.NewDbContext();
 
-    var line = await reread.Set<LedgerRow>()
+    var line = await reread.Set<EvidenceLogRow>()
       .AsNoTracking()
       .SingleAsync(row => row.CaseId == closed.Value);
 
-    line.Fact.ShouldBe(nameof(LedgerFact.CaseClosed));
+    line.Fact.ShouldBe(nameof(EvidenceLogFact.CaseClosed));
     line.ClosingCause.ShouldBe(nameof(ClosingCause.Abandoned));
-    line.EvidenceProse!.ShouldContain("demandé l'effacement");
+    line.Prose!.ShouldContain("demandé l'effacement");
 
     // Elle nomme l'Operator, définitivement : la preuve d'une procédure ne peut pas dépendre du
     // consentement de qui l'a instruite.
     line.SignatoryName.ShouldBe("Camille Roy");
-    line.SignatureRegime.ShouldBe(nameof(SignatureRegime.Unauthenticated));
+    line.SignerVerification.ShouldBe(nameof(SignerVerification.Unauthenticated));
 
     // Et rien du dossier qu'elle vient de vider.
     line.DesignationCount.ShouldBeNull();
@@ -203,7 +203,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
   /// <summary>
   /// <b>Aucune <c>Designation</c> n'est stockable, dès la première ligne.</b> Ni valeur, ni nature,
-  /// ni sac : la seule chose que le <c>Ledger</c> sait de la recherche est son <b>nombre</b>, et il
+  /// ni sac : la seule chose que l'<c>EvidenceLog</c> sait de la recherche est son <b>nombre</b>, et il
   /// est typé <c>integer</c> — un texte ne peut pas s'y ranger.
   /// </summary>
   [Fact]
@@ -259,7 +259,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   }
 
   /// <summary>
-  /// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : le <c>Ledger</c> survit
+  /// <b>Aucune clé étrangère vers <c>cases</c>.</b> Ce n'est pas un oubli : l'<c>EvidenceLog</c> survit
   /// au dossier de cinq ans, et une contrainte référentielle rendrait la clôture impossible — ou,
   /// pire, emporterait la preuve avec le dossier qu'elle sert à défendre.
   /// </summary>
@@ -270,7 +270,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       """
       select constraint_type
       from information_schema.table_constraints
-      where table_name = 'ledger_entries' and constraint_type = 'FOREIGN KEY'
+      where table_name = 'evidence_log_entries' and constraint_type = 'FOREIGN KEY'
       """);
 
     constraints.ShouldBeEmpty();
@@ -285,11 +285,11 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   {
     await using var dbContext = postgres.NewDbContext();
 
-    var ledger = new Ledger(dbContext);
+    var evidenceLog = new EvidenceLog(dbContext);
     var first = CaseId.Next();
     var second = CaseId.Next();
 
-    await ledger.AppendAsync(LedgerEntry.CaseOpened(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseOpened(
       first,
       Opened,
       Signatory.Application,
@@ -297,17 +297,17 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       designationCount: 2,
       reception: ReceptionDate.Declared(Opened)));
 
-    await ledger.AppendAsync(LedgerEntry.CaseOpened(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseOpened(
       second,
       Opened,
-      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated),
+      Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated),
       IdentityDeclaration.Unverified,
       designationCount: 0,
       reception: ReceptionDate.Defaulted(Opened)));
 
     await using var reread = postgres.NewDbContext();
 
-    var lines = await reread.Set<LedgerRow>()
+    var lines = await reread.Set<EvidenceLogRow>()
       .AsNoTracking()
       .Where(row => row.CaseId == first.Value || row.CaseId == second.Value)
       .ToListAsync();
@@ -327,9 +327,9 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
 
     // Le nom et son régime descendent ensemble : un nom sans régime serait relu comme une
     // identification, et la date tenue pour défaut serait relue comme un fait déclaré.
-    byOperator.SignatureRegime.ShouldBe("Unauthenticated");
+    byOperator.SignerVerification.ShouldBe("Unauthenticated");
     byOperator.ReceptionWasDefaulted.ShouldBe(true);
-    byApplication.SignatureRegime.ShouldBeNull();
+    byApplication.SignerVerification.ShouldBeNull();
     byApplication.ReceptionWasDefaulted.ShouldBe(false);
   }
 
@@ -341,23 +341,23 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
   [Fact]
   public void OffersNoUpdateAndNoLineByLineDeletion()
   {
-    typeof(Ledger)
+    typeof(EvidenceLog)
       .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
                   | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static)
-      .Where(method => method.DeclaringType == typeof(Ledger))
+      .Where(method => method.DeclaringType == typeof(EvidenceLog))
       .Select(method => method.Name)
       .ShouldBe(["AppendAsync", "RowOf"], ignoreOrder: true);
 
     // La ligne n'est jamais déclarée agrégat racine : le dépôt générique lui aurait rendu la mise à
-    // jour et la suppression que la définition du Ledger ferme.
-    typeof(LedgerRow).IsAssignableTo(typeof(IAggregateRoot)).ShouldBeFalse();
+    // jour et la suppression que la définition de l'EvidenceLog ferme.
+    typeof(EvidenceLogRow).IsAssignableTo(typeof(IAggregateRoot)).ShouldBeFalse();
 
-    // Et le contexte n'expose aucun `DbSet` du Ledger : il en existe un pour la trace d'audit, qui
+    // Et le contexte n'expose aucun `DbSet` de l'EvidenceLog : il en existe un pour la trace d'audit, qui
     // n'a qu'un invariant d'écriture seule, mais un `DbSet` public rendrait ici `Remove` et
     // `Update` à quiconque tient le contexte — c'est-à-dire à tout le service.
     typeof(AppDbContext).GetProperties()
       .Select(property => property.PropertyType)
-      .ShouldNotContain(typeof(DbSet<LedgerRow>));
+      .ShouldNotContain(typeof(DbSet<EvidenceLogRow>));
   }
 
   /// <summary>
@@ -407,7 +407,7 @@ public class LedgerSchemaTests(PostgreSqlFixture postgres)
       """
       select column_name, is_nullable, data_type, character_maximum_length
       from information_schema.columns
-      where table_name = 'ledger_entries'
+      where table_name = 'evidence_log_entries'
       """);
 
     var columns = new Dictionary<string, ColumnShape>(StringComparer.Ordinal);

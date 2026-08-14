@@ -10,15 +10,15 @@ namespace MicroserviceRgpd.Core.Casework;
 /// <para>
 /// <b>Deux champs parce qu'ils n'ont ni le même lecteur ni la même durée de vie.</b> La
 /// <see cref="Method"/> est un vocabulaire fermé : elle <b>se compte</b>, son lecteur est le contrôle,
-/// et elle entre au <c>Ledger</c> où elle <b>survit à la clôture</b>. Le <see cref="Detail"/> est de
+/// et elle entre au <c>EvidenceLog</c> où elle <b>survit à la clôture</b>. Le <see cref="Detail"/> est de
 /// la prose libre : il dit <i>qui</i> a été rappelé et <i>sur quoi</i>, il est donc irréductiblement
 /// nominatif, son lecteur est l'<c>Operator</c> d'à côté, et il <b>meurt avec le <see cref="Case"/></b>.
 /// Un champ unique aurait fait choisir entre compter et raconter, et le contrôle aurait dû lire de la
 /// prose nominative pour juger une pratique.
 /// </para>
 /// <para>
-/// ⚠️ <b>La règle tient par le placement, jamais par la discipline.</b> C'est le même régime que la
-/// prose de travail et la prose de preuve : deux champs à deux endroits, dont un seul survit.
+/// ⚠️ <b>La règle tient par le placement, jamais par la discipline.</b> C'est le même régime que le
+/// texte qui meurt et le texte qui reste : deux champs à deux endroits, dont un seul survit.
 /// </para>
 /// <para>
 /// <b>Elle est réclamée, elle ne barre jamais la route.</b> Un dossier ouvert sans elle est un
@@ -48,14 +48,14 @@ public sealed record IdentityMotivation
 
   /// <summary>
   /// La méthode, dans un vocabulaire fermé. <b>Elle se compte, et elle survit</b> : c'est elle, et
-  /// elle seule, que le <c>Ledger</c> garde.
+  /// elle seule, que l'<c>EvidenceLog</c> garde.
   /// </summary>
   public IdentityVerificationMethod Method { get; private set; }
 
   /// <summary>
   /// Le détail, en prose libre, ou <c>null</c> quand l'humain n'en a pas écrit. <b>Prose de
   /// travail</b> : nominatif par nature, il vit sur le <see cref="Case"/> et meurt à sa clôture. Il
-  /// n'a aucun chemin vers le <c>Ledger</c>.
+  /// n'a aucun chemin vers l'<c>EvidenceLog</c>.
   /// </summary>
   public string? Detail { get; private set; }
 
@@ -87,12 +87,12 @@ public sealed record IdentityMotivation
   /// <remarks>
   /// <para>
   /// <b>Ce n'est pas un oubli de la méthode.</b> Elle se compte, son lecteur est le contrôle, elle
-  /// est déjà au <c>Ledger</c> — la faire disparaître du dossier clos ferait perdre <i>sous quel
+  /// est déjà au <c>EvidenceLog</c> — la faire disparaître du dossier clos ferait perdre <i>sous quel
   /// régime</i> ce dossier a été instruit, au moment même où l'on veut pouvoir en juger la pratique.
   /// </para>
   /// <para>
   /// <b>Le détail, lui, nomme.</b> Il dit qui a été rappelé et sur quoi ; il n'a aucun chemin vers le
-  /// <c>Ledger</c>, et rien ne justifierait qu'il survive à la personne dont il parle.
+  /// <c>EvidenceLog</c>, et rien ne justifierait qu'il survive à la personne dont il parle.
   /// </para>
   /// <para>
   /// ⚠️ Elle rend un <b>nouvel</b> exemplaire plutôt que d'effacer sur place : le type est un

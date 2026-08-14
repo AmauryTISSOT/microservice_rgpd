@@ -12,7 +12,7 @@ namespace MicroserviceRgpd.UnitTests.Core.Casework;
 /// Ce qu'une <c>Delivery</c> rassemble — et ce qu'elle refuse de joindre.
 /// </summary>
 /// <remarks>
-/// <b>Ses pièces sont exactement celles que la première liste de la <c>CoverSheet</c> annonce.</b>
+/// <b>Ses pièces sont exactement celles que la première liste de la <c>DeliveryLetter</c> annonce.</b>
 /// Joindre un fichier que la page range ailleurs ferait deux dires contradictoires dans le même
 /// envoi, à la personne la moins bien placée pour les départager.
 /// </remarks>
@@ -61,8 +61,8 @@ public class DeliveryTests
     delivery.Pieces.Select(piece => piece.DeclaredSystem).ShouldBe([Boutique]);
 
     // Et la page, elle, ne perd pas ce système : elle le range dans sa deuxième liste.
-    delivery.CoverSheet.Joined.Select(system => system.DeclaredSystem).ShouldBe([Boutique]);
-    delivery.CoverSheet.QueriedWithoutAttachment
+    delivery.DeliveryLetter.Joined.Select(system => system.DeclaredSystem).ShouldBe([Boutique]);
+    delivery.DeliveryLetter.QueriedWithoutAttachment
       .Select(system => system.DeclaredSystem)
       .ShouldContain(Journal);
   }
@@ -72,7 +72,7 @@ public class DeliveryTests
   /// l'archive et la page ne peuvent pas se contredire.
   /// </summary>
   [Fact]
-  public void JoinsExactlyWhatItsCoverSheetAnnounces()
+  public void JoinsExactlyWhatItsDeliveryLetterAnnounces()
   {
     var opened = ACase();
 
@@ -83,11 +83,11 @@ public class DeliveryTests
       [APiece(opened, Journal, "des lignes"), APiece(opened, Boutique, "nom;prénom")]);
 
     delivery.Pieces.Select(piece => piece.DeclaredSystem)
-      .ShouldBe(delivery.CoverSheet.Joined.Select(system => system.DeclaredSystem), ignoreOrder: true);
+      .ShouldBe(delivery.DeliveryLetter.Joined.Select(system => system.DeclaredSystem), ignoreOrder: true);
   }
 
   /// <summary>
-  /// Le dénombrement que le <c>Ledger</c> gardera porte sur <b>le même ensemble</b> que la page :
+  /// Le dénombrement que l'<c>EvidenceLog</c> gardera porte sur <b>le même ensemble</b> que la page :
   /// deux ensembles mesurés l'un contre l'autre écriraient « 6 sur 5 ».
   /// </summary>
   [Fact]
@@ -99,7 +99,7 @@ public class DeliveryTests
       opened,
       DataSubjectRight.Access,
       ALandscape(),
-      [APiece(opened, Boutique, "nom;prénom")]).CoverSheet;
+      [APiece(opened, Boutique, "nom;prénom")]).DeliveryLetter;
 
     sheet.RecordedSystemCount.ShouldBe(
       sheet.Joined.Count + sheet.QueriedWithoutAttachment.Count + sheet.NotCovered.Count);

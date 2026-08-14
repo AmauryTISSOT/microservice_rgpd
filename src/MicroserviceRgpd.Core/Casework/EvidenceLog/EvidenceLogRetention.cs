@@ -1,7 +1,7 @@
-﻿namespace MicroserviceRgpd.Core.Casework.Ledger;
+﻿namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// La vie du <c>Ledger</c> : <b>cinq ans à compter de la clôture du dossier</b>, et le calcul de son
+/// La vie de l'<c>EvidenceLog</c> : <b>cinq ans à compter de la clôture du dossier</b>, et le calcul de son
 /// échéance.
 /// </summary>
 /// <remarks>
@@ -23,7 +23,7 @@
 /// au-delà de cinq ans : c'est un coût assumé, visible, et jamais barré.
 /// </para>
 /// </remarks>
-public static class LedgerRetention
+public static class EvidenceLogRetention
 {
   /// <summary>
   /// Cinq ans, écrits en dur. La seule façon de changer cette durée est de changer ce fichier —
@@ -32,7 +32,7 @@ public static class LedgerRetention
   public const int Years = 5;
 
   /// <summary>Le jour où la preuve d'un dossier clos ce jour-là cesse d'être due.</summary>
-  /// <param name="closedOn">L'instant de la clôture — d'où court la vie du <c>Ledger</c>.</param>
+  /// <param name="closedOn">L'instant de la clôture — d'où court la vie de l'<c>EvidenceLog</c>.</param>
   public static DateTimeOffset ExpiryOf(DateTimeOffset closedOn) => closedOn.AddYears(Years);
 
   /// <summary>

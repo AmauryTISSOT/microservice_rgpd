@@ -1,7 +1,7 @@
 using Ardalis.Specification;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Casework.CallAdapter;
 using MicroserviceRgpd.UseCases.Casework.Locate;
@@ -30,7 +30,7 @@ public class LocateHandlerTests
   private readonly IReadRepository<DeclaredSystem> _manifest = Substitute.For<IReadRepository<DeclaredSystem>>();
   private readonly IAdapterCalls _calls = Substitute.For<IAdapterCalls>();
   private readonly IAdapterDisagreements _disagreements = Substitute.For<IAdapterDisagreements>();
-  private readonly ILedger _ledger = Substitute.For<ILedger>();
+  private readonly IEvidenceLog _evidenceLog = Substitute.For<IEvidenceLog>();
   /// <summary>
   /// L'instant que le service lira. Il se <b>dicte</b>, et il avance quand le test veut faire passer
   /// une échéance déclarée : c'est la seule chose qui fasse repartir un <c>202</c>, et la lire sur la
@@ -84,7 +84,7 @@ public class LocateHandlerTests
 
   /// <summary>
   /// Ce qui a été servi entre dans le dossier, et la preuve garde le <b>compte</b> de ce sous quoi on
-  /// a cherché — jamais ce qu'on a trouvé : le <c>Ledger</c> mesure l'ampleur d'une recherche, il ne
+  /// a cherché — jamais ce qu'on a trouvé : l'<c>EvidenceLog</c> mesure l'ampleur d'une recherche, il ne
   /// dénombre pas les données de la personne.
   /// </summary>
   [Fact]
@@ -100,15 +100,15 @@ public class LocateHandlerTests
 
     var written = Written().ShouldHaveSingleItem();
 
-    written.Fact.ShouldBe(LedgerFact.LocateServed);
+    written.Fact.ShouldBe(EvidenceLogFact.LocateServed);
     written.DeclaredSystem.ShouldBe(Boutique);
     written.DesignationCount.ShouldBe(1);
     written.Signatory.ShouldBe(Signatory.Application);
-    written.EvidenceProse.ShouldBeNull();
+    written.Prose.ShouldBeNull();
   }
 
   /// <summary>
-  /// <b>Le <c>Ledger</c> ne consigne un appel que s'il rend un verdict différent du précédent.</b>
+  /// <b>L'<c>EvidenceLog</c> ne consigne un appel que s'il rend un verdict différent du précédent.</b>
   /// Rouvrir un dossier relance les appels, et trente-cinq passages rendant le même « servi » n'ont
   /// aucun signataire — c'est un affichage qui les a déclenchés, non un humain.
   /// </summary>
@@ -120,7 +120,7 @@ public class LocateHandlerTests
     TheAdapterServes(LocateFindings.Nothing);
 
     await LocatingIn(opened);
-    _ledger.ClearReceivedCalls();
+    _evidenceLog.ClearReceivedCalls();
 
     // Un second passage : le Locate est déjà servi sous ce sac, et rien ne repart.
     await LocatingIn(opened);
@@ -146,7 +146,7 @@ public class LocateHandlerTests
 
     var written = Written().ShouldHaveSingleItem();
 
-    written.Fact.ShouldBe(LedgerFact.LocateDeferred);
+    written.Fact.ShouldBe(EvidenceLogFact.LocateDeferred);
     written.DeclaredDeadline.ShouldBe(Now.AddHours(6));
 
     // L'échéance n'est pas passée : on ne repasse pas.
@@ -205,7 +205,7 @@ public class LocateHandlerTests
     question.Subject.ShouldBe(OpenQuestionSubject.Designation);
     question.AskedOn.ShouldBe(Now);
 
-    var raised = Written().Single(line => line.Fact == LedgerFact.QuestionRaised);
+    var raised = Written().Single(line => line.Fact == EvidenceLogFact.QuestionRaised);
 
     raised.DesignationCount.ShouldBe(1);
     raised.DeclaredSystem.ShouldBeNull();
@@ -229,7 +229,7 @@ public class LocateHandlerTests
     await LocatingIn(opened);
 
     opened.Questions.ShouldBeEmpty();
-    Written().ShouldNotContain(line => line.Fact == LedgerFact.QuestionRaised);
+    Written().ShouldNotContain(line => line.Fact == EvidenceLogFact.QuestionRaised);
   }
 
   /// <summary>
@@ -251,7 +251,7 @@ public class LocateHandlerTests
     await LocatingIn(opened);
 
     opened.Questions.ShouldBeEmpty();
-    Written().ShouldNotContain(line => line.Fact == LedgerFact.QuestionRaised);
+    Written().ShouldNotContain(line => line.Fact == EvidenceLogFact.QuestionRaised);
   }
 
   /// <summary>
@@ -259,7 +259,7 @@ public class LocateHandlerTests
   /// </summary>
   /// <remarks>
   /// La laisser en ferait un bandeau permanent, et un bandeau permanent s'apprend à ne plus se
-  /// voir. Rien n'est perdu : le jour où elle s'est posée est au <c>Ledger</c>, daté, et ce qui y a
+  /// voir. Rien n'est perdu : le jour où elle s'est posée est au <c>EvidenceLog</c>, daté, et ce qui y a
   /// répondu porte sa propre ligne datée — le contrôle lit l'écart entre les deux.
   /// </remarks>
   [Fact]
@@ -283,7 +283,7 @@ public class LocateHandlerTests
     opened.Questions.ShouldBeEmpty();
 
     // La preuve, elle, garde le jour où la question s'est posée.
-    Written().ShouldContain(line => line.Fact == LedgerFact.QuestionRaised);
+    Written().ShouldContain(line => line.Fact == EvidenceLogFact.QuestionRaised);
   }
 
   /// <summary>
@@ -381,7 +381,7 @@ public class LocateHandlerTests
     // Deux appels — un refus se répare ailleurs, et rouvrir le dossier est le geste par lequel on va
     // voir si ça l'a été —, mais une seule ligne de preuve.
     await _calls.Received(2).AskAsync<LocateOnTheWire>(Arg.Any<AdapterCall>(), Arg.Any<CancellationToken>());
-    Written().ShouldHaveSingleItem().Fact.ShouldBe(LedgerFact.AdapterDidNotServeTheSystem);
+    Written().ShouldHaveSingleItem().Fact.ShouldBe(EvidenceLogFact.AdapterDidNotServeTheSystem);
 
     // Le désaccord, lui, se signale à chaque fois : son grain est le déploiement, pas le dossier.
     _disagreements.Received(2).Signal(Boutique, AdapterOutcome.SystemNotServed);
@@ -407,8 +407,8 @@ public class LocateHandlerTests
     return new LocateHandler(
       _cases,
       _manifest,
-      new AdapterCallsForCase(_calls, _ledger, _disagreements, new AClockStuckAt(_now)),
-      _ledger,
+      new AdapterCallsForCase(_calls, _evidenceLog, _disagreements, new AClockStuckAt(_now)),
+      _evidenceLog,
       new AClockStuckAt(_now));
   }
 
@@ -432,11 +432,11 @@ public class LocateHandlerTests
   }
 
   /// <summary>Toutes les lignes réellement écrites dans la preuve, dans l'ordre.</summary>
-  private LedgerEntry[] Written()
+  private EvidenceLogEntry[] Written()
   {
-    return [.. _ledger.ReceivedCalls()
-      .Where(call => call.GetMethodInfo().Name == nameof(ILedger.AppendAsync))
-      .Select(call => (LedgerEntry)call.GetArguments()[0]!)];
+    return [.. _evidenceLog.ReceivedCalls()
+      .Where(call => call.GetMethodInfo().Name == nameof(IEvidenceLog.AppendAsync))
+      .Select(call => (EvidenceLogEntry)call.GetArguments()[0]!)];
   }
 
   private static LocateFindings AFinding(

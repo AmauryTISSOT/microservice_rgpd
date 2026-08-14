@@ -118,7 +118,7 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
   /// ⚠️ <b>Elle dit ce que le service n'a pas fait, jamais ce que la colonne est.</b> Une colonne
   /// <see cref="Unflagged"/> n'est pas une colonne sans données personnelles — c'est une colonne où
   /// <b>rien n'a été vu</b>, ce qui est un constat sur le dépistage et non sur la donnée. Le service
-  /// n'a jamais vu la donnée. C'est <c>Greffier, pas témoin</c> appliqué au seul endroit de ce
+  /// n'a jamais vu la donnée. C'est <c>Enregistré, jamais vérifié</c> appliqué au seul endroit de ce
   /// contexte où il serait tentant de l'oublier : une machine qui déclare une colonne inoffensive
   /// porte très exactement le témoignage qu'elle n'a pas les moyens de porter.
   /// </para>

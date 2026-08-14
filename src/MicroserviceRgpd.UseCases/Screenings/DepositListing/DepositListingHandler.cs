@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// </para>
 /// <para>
 /// <b>Le nom de base et le dialecte sont recopiés du relevé, jamais vérifiés.</b>
-/// <c>Greffier, pas témoin</c> : le service ne sait pas d'où vient ce relevé, et un relevé sincère
+/// <c>Enregistré, jamais vérifié</c> : le service ne sait pas d'où vient ce relevé, et un relevé sincère
 /// mais tiré de la base de recette est indiscernable du bon. Aucun mécanisme n'attrape ce cas ici,
 /// et aucun ne doit prétendre l'attraper.
 /// </para>

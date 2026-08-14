@@ -24,7 +24,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <para>
 /// <b>Il est détenu et vit plusieurs jours</b> : un relevé s'arbitre en plusieurs fois, colonne par
 /// colonne. Son grain est le <b>déploiement</b>, jamais le dossier ; il n'écrit rien au
-/// <c>Ledger</c>, n'a aucune échéance et vit jusqu'à ce qu'un <c>Operator</c> le supprime.
+/// <c>EvidenceLog</c>, n'a aucune échéance et vit jusqu'à ce qu'un <c>Operator</c> le supprime.
 /// </para>
 /// <para>
 /// ⚠️ <b>Il est entier ou il n'existe pas.</b> Le relevé déclare le nombre de colonnes qu'il porte,

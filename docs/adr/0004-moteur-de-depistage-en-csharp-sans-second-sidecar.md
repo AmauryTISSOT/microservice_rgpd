@@ -30,9 +30,9 @@ Le banc ([#134](https://github.com/AmauryTISSOT/microservice_rgpd/issues/134), r
 
 ## Justification
 
-**Le verdict commande l'emplacement.** La règle écrite d'avance liait l'emplacement à la famille gagnante ; la famille gagnante est un dictionnaire, et la seule famille qui aurait payé un sidecar est inexploitable sur cette machine pour ce geste. Il n'y a rien à héberger en Python.
+**Le banc décide où vit le moteur.** La règle écrite d'avance liait l'emplacement à la famille gagnante ; la famille gagnante est un dictionnaire, et la seule famille qui aurait payé un sidecar est inexploitable sur cette machine pour ce geste. Il n'y a rien à héberger en Python.
 
-**La clause de revoyure de l'ADR-0001 est examinée et ne se déclenche pas.** L'ADR-0001 a écarté le port C# du lexique de qualification « au seul motif de la frontière anticipée vers l'apprentissage automatique », en ajoutant : « si ce motif tombait, cette décision serait à revoir ». Ce motif **ne se transporte pas** au dépistage : le banc a mesuré qu'il n'existe pas, sur cette machine, de candidat ML exploitable à anticiper. ⚠️ **Cet ADR n'est pas une révision rampante de l'ADR-0001** : pour la qualification, le LLM est réel, la frontière est effective, et la décision du sidecar de qualification **ne se rouvre pas**.
+**La clause de réexamen de l'ADR-0001 est examinée et ne se déclenche pas.** L'ADR-0001 a écarté le port C# du lexique de qualification « au seul motif de la frontière anticipée vers l'apprentissage automatique », en ajoutant : « si ce motif tombait, cette décision serait à revoir ». Ce motif **ne se transporte pas** au dépistage : le banc a mesuré qu'il n'existe pas, sur cette machine, de candidat ML exploitable à anticiper. ⚠️ **Cet ADR n'est pas une révision rampante de l'ADR-0001** : pour la qualification, le LLM est réel, la frontière est effective, et la décision du sidecar de qualification **ne se rouvre pas**.
 
 **Payer le sidecar d'avance serait payer une facture certaine pour un gain hypothétique.** Un troisième écosystème dans la chaîne de test, une image, un empaquetage, un démarrage à froid — l'ADR-0001 note que cette question ne s'est pas résolue toute seule pour le premier sidecar — pour héberger un dictionnaire. Et si un moteur IA devait s'ajouter un jour, il serait en Python quoi qu'il arrive et viendrait avec **son** sidecar **à ce moment-là, pour le même prix** : le choix C# d'aujourd'hui ne renchérit pas ce futur, grâce au contrat `IScreeningEngine`. Le seul avantage du sidecar-maintenant — la plomberie déjà en place le jour J — est marginal contre un coût certain et immédiat.
 
@@ -63,4 +63,4 @@ Le banc ([#134](https://github.com/AmauryTISSOT/microservice_rgpd/issues/134), r
 
 ## Portée de cet ADR
 
-Il tranche l'**emplacement** du moteur de dépistage et le contrat qui le rend réversible. Il ne dit rien de la valeur d'usage du moteur (#131), rien de la forme d'implémentation (règles, chargement des lexiques, câblage), et ne révise **aucune** décision de l'ADR-0001, dont la clause de revoyure est examinée ci-dessus et laissée intacte.
+Il tranche l'**emplacement** du moteur de dépistage et le contrat qui le rend réversible. Il ne dit rien de la valeur d'usage du moteur (#131), rien de la forme d'implémentation (règles, chargement des lexiques, câblage), et ne révise **aucune** décision de l'ADR-0001, dont la clause de réexamen est examinée ci-dessus et laissée intacte.

@@ -6,7 +6,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Le service ne vérifie ni ne complète rien.</b> <c>Greffier, pas témoin</c> : il ne sait pas
+/// <b>Le service ne vérifie ni ne complète rien.</b> <c>Enregistré, jamais vérifié</c> : il ne sait pas
 /// d'où vient ce relevé, et un relevé sincère mais tiré de la base de recette est indiscernable du
 /// bon. Aucun mécanisme n'attrape ce cas, et aucun ne doit prétendre l'attraper.
 /// </para>

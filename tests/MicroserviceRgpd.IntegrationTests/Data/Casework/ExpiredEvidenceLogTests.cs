@@ -1,24 +1,24 @@
 ﻿using System.Data.Common;
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 
 // Shouldly porte un type du même nom, réservé à ses propres tables de cas.
 using Case = MicroserviceRgpd.Core.Casework.Case;
-using Ledger = MicroserviceRgpd.Infrastructure.Data.Casework.Ledger;
+using EvidenceLog = MicroserviceRgpd.Infrastructure.Data.Casework.EvidenceLog;
 
 namespace MicroserviceRgpd.IntegrationTests.Data.Casework;
 
 /// <summary>
-/// La <b>seule suppression du dispositif</b>, éprouvée sur la vraie base : un <c>Ledger</c> échu,
+/// La <b>seule suppression du dispositif</b>, éprouvée sur la vraie base : un <c>EvidenceLog</c> échu,
 /// détruit en entier, et rien d'autre.
 /// </summary>
 /// <remarks>
 /// <para>
 /// Ce qui se garde ici est l'équilibre du geste : il emporte <b>toutes</b> les lignes d'un dossier —
-/// un <c>Ledger</c> amputé se lirait comme complet, ce qui est pire qu'un <c>Ledger</c> absent —,
+/// un <c>EvidenceLog</c> amputé se lirait comme complet, ce qui est pire qu'un <c>EvidenceLog</c> absent —,
 /// il n'en emporte <b>aucune</b> d'un autre dossier, et il refuse tout ce qui n'est pas échu.
 /// </para>
 /// <para>
@@ -27,7 +27,7 @@ namespace MicroserviceRgpd.IntegrationTests.Data.Casework;
 /// </para>
 /// </remarks>
 [Collection(PostgreSqlCollection.Name)]
-public class ExpiredLedgerTests(PostgreSqlFixture postgres)
+public class ExpiredEvidenceLogTests(PostgreSqlFixture postgres)
 {
   private static readonly DateTimeOffset Closed = new(2021, 4, 11, 9, 0, 0, TimeSpan.Zero);
 
@@ -39,18 +39,18 @@ public class ExpiredLedgerTests(PostgreSqlFixture postgres)
 
     await using var dbContext = postgres.NewDbContext();
 
-    var expired = new ExpiredLedgers(dbContext);
+    var expired = new ExpiredEvidenceLogs(dbContext);
 
-    var due = await expired.ListAsync(LedgerRetention.ExpiryOf(Closed));
+    var due = await expired.ListAsync(EvidenceLogRetention.ExpiryOf(Closed));
 
     due.ShouldNotContain(line => line.Case == closed);
 
-    var overdue = await expired.ListAsync(LedgerRetention.ExpiryOf(Closed).AddDays(1));
+    var overdue = await expired.ListAsync(EvidenceLogRetention.ExpiryOf(Closed).AddDays(1));
 
     var line = overdue.Single(one => one.Case == closed);
 
     line.ClosedOn.ShouldBe(Closed);
-    line.ExpiredOn.ShouldBe(LedgerRetention.ExpiryOf(Closed));
+    line.ExpiredOn.ShouldBe(EvidenceLogRetention.ExpiryOf(Closed));
   }
 
   /// <summary>
@@ -64,17 +64,17 @@ public class ExpiredLedgerTests(PostgreSqlFixture postgres)
 
     await using var dbContext = postgres.NewDbContext();
 
-    (await new ExpiredLedgers(dbContext).DestroyAsync(closed, Closed.AddYears(1)))
+    (await new ExpiredEvidenceLogs(dbContext).DestroyAsync(closed, Closed.AddYears(1)))
       .ShouldBeFalse();
 
     await using var reread = postgres.NewDbContext();
 
-    (await reread.Set<LedgerRow>().CountAsync(row => row.CaseId == closed.Value)).ShouldBe(2);
+    (await reread.Set<EvidenceLogRow>().CountAsync(row => row.CaseId == closed.Value)).ShouldBe(2);
   }
 
   /// <summary>
-  /// <b>La destruction emporte tout le dossier de preuve, et rien du voisin.</b> Un <c>Ledger</c>
-  /// amputé se lirait comme complet ; un <c>Ledger</c> voisin emporté serait une preuve détruite
+  /// <b>La destruction emporte tout le dossier de preuve, et rien du voisin.</b> Un <c>EvidenceLog</c>
+  /// amputé se lirait comme complet ; un <c>EvidenceLog</c> voisin emporté serait une preuve détruite
   /// avant son terme.
   /// </summary>
   [Fact]
@@ -85,21 +85,21 @@ public class ExpiredLedgerTests(PostgreSqlFixture postgres)
 
     await using var dbContext = postgres.NewDbContext();
 
-    (await new ExpiredLedgers(dbContext).DestroyAsync(expired, Closed.AddYears(6)))
+    (await new ExpiredEvidenceLogs(dbContext).DestroyAsync(expired, Closed.AddYears(6)))
       .ShouldBeTrue();
 
     await using var reread = postgres.NewDbContext();
 
-    (await reread.Set<LedgerRow>().AnyAsync(row => row.CaseId == expired.Value)).ShouldBeFalse();
-    (await reread.Set<LedgerRow>().CountAsync(row => row.CaseId == neighbour.Value)).ShouldBe(2);
+    (await reread.Set<EvidenceLogRow>().AnyAsync(row => row.CaseId == expired.Value)).ShouldBeFalse();
+    (await reread.Set<EvidenceLogRow>().CountAsync(row => row.CaseId == neighbour.Value)).ShouldBe(2);
 
     // ⚠️ RIEN N'A ÉTÉ ÉCRIT À LA PLACE. La destruction ne consigne pas sa propre destruction : la
     // seule ligne où elle aurait pu s'écrire est celle qui vient de disparaître.
-    (await reread.Set<LedgerRow>().AnyAsync(row => row.CaseId == expired.Value)).ShouldBeFalse();
+    (await reread.Set<EvidenceLogRow>().AnyAsync(row => row.CaseId == expired.Value)).ShouldBeFalse();
 
     // Et la ligne de l'écran s'en va avec la preuve : c'est ainsi, faute de trace, que le geste se
     // voit avoir été fait.
-    (await new ExpiredLedgers(reread).ListAsync(Closed.AddYears(6)))
+    (await new ExpiredEvidenceLogs(reread).ListAsync(Closed.AddYears(6)))
       .ShouldNotContain(line => line.Case == expired);
 
     // Le dossier clos, lui, n'est pas touché : il ne nomme plus personne depuis cinq ans, et ce
@@ -121,7 +121,7 @@ public class ExpiredLedgerTests(PostgreSqlFixture postgres)
       """
       select indexname
       from pg_indexes
-      where tablename = 'ledger_entries'
+      where tablename = 'evidence_log_entries'
       """);
 
     var indexes = new List<string>();
@@ -133,7 +133,7 @@ public class ExpiredLedgerTests(PostgreSqlFixture postgres)
       indexes.Add(reader.GetString(0));
     }
 
-    indexes.Order().ShouldBe(["ix_ledger_entries_case_id", "pk_ledger_entries"]);
+    indexes.Order().ShouldBe(["ix_evidence_log_entries_case_id", "pk_evidence_log_entries"]);
   }
 
   /// <summary>
@@ -143,17 +143,17 @@ public class ExpiredLedgerTests(PostgreSqlFixture postgres)
   [Fact]
   public void OffersNoWayToWriteAProofNorToDeleteASingleLine()
   {
-    typeof(ExpiredLedgers)
+    typeof(ExpiredEvidenceLogs)
       .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
                   | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static)
-      .Where(method => method.DeclaringType == typeof(ExpiredLedgers))
+      .Where(method => method.DeclaringType == typeof(ExpiredEvidenceLogs))
       .Select(method => method.Name)
       .ShouldBe(["ListAsync", "DestroyAsync"], ignoreOrder: true);
 
-    typeof(Ledger)
+    typeof(EvidenceLog)
       .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
                   | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static)
-      .Where(method => method.DeclaringType == typeof(Ledger))
+      .Where(method => method.DeclaringType == typeof(EvidenceLog))
       .Select(method => method.Name)
       .ShouldNotContain(name => name.Contains("Destroy", StringComparison.Ordinal)
                                 || name.Contains("Delete", StringComparison.Ordinal));
@@ -180,22 +180,22 @@ public class ExpiredLedgerTests(PostgreSqlFixture postgres)
 
     await dbContext.SaveChangesAsync();
 
-    var ledger = new Ledger(dbContext);
+    var evidenceLog = new EvidenceLog(dbContext);
 
-    await ledger.AppendAsync(LedgerEntry.CaseOpened(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseOpened(
       opened.Id,
       Closed.AddMonths(-1),
-      Signatory.Operator("Claire Berger", SignatureRegime.Unauthenticated),
+      Signatory.Operator("Claire Berger", SignerVerification.Unauthenticated),
       IdentityDeclaration.Unverified,
       designationCount: 1,
       reception: ReceptionDate.Declared(Closed.AddMonths(-1))));
 
-    await ledger.AppendAsync(LedgerEntry.CaseClosed(
+    await evidenceLog.AppendAsync(EvidenceLogEntry.CaseClosed(
       opened.Id,
       Closed,
       ClosingCause.Answered,
       motive: null,
-      Signatory.Operator("Camille Roy", SignatureRegime.Unauthenticated)));
+      Signatory.Operator("Camille Roy", SignerVerification.Unauthenticated)));
 
     return opened.Id;
   }

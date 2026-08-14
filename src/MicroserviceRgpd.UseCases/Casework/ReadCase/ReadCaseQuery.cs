@@ -32,7 +32,7 @@ public sealed record ReadCaseQuery(CaseId Case) : IQuery<CaseOnScreen?>;
 /// </param>
 /// <param name="Motivation">
 /// Ce que l'humain a pesé avant d'ouvrir ces droits sous cette identité, ou <c>null</c> si personne
-/// ne l'a pesé. La méthode se lit à l'écran comme au <c>Ledger</c> ; le détail ne se lit qu'ici, et
+/// ne l'a pesé. La méthode se lit à l'écran comme au <c>EvidenceLog</c> ; le détail ne se lit qu'ici, et
 /// meurt avec le dossier.
 /// </param>
 /// <param name="AwaitsAMotivation">
@@ -180,7 +180,7 @@ public sealed record LocatingOnScreen(
 /// </param>
 /// <param name="DeliveryDeclaredOn">
 /// Le jour où un <c>Operator</c> a affirmé avoir rendu la réponse, ou <c>null</c> tant que personne
-/// ne l'a affirmé. <b>Ce second geste seul</b> date la remise au <c>Ledger</c> et détruit les pièces.
+/// ne l'a affirmé. <b>Ce second geste seul</b> date la remise au <c>EvidenceLog</c> et détruit les pièces.
 /// </param>
 public sealed record ClaimedRight(
   DataSubjectRight Right,

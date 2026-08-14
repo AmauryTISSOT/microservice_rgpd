@@ -10,7 +10,7 @@ using Case = MicroserviceRgpd.Core.Casework.Case;
 namespace MicroserviceRgpd.UnitTests.Core.Casework;
 
 /// <summary>
-/// La composition de la <c>CoverSheet</c> à partir du <c>Manifest</c> et des <c>Step</c> — et ce
+/// La composition de la <c>DeliveryLetter</c> à partir du <c>Manifest</c> et des <c>Step</c> — et ce
 /// qu'elle refuse d'écrire.
 /// </summary>
 /// <remarks>
@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.UnitTests.Core.Casework;
 /// actionnable — « l'export commercial transmis chaque mois à notre agence » — d'un « 4 sur 6 » qui
 /// n'apprend rien à la personne et lui ment sur l'exhaustivité du recensement.
 /// </remarks>
-public class CoverSheetTests
+public class DeliveryLetterTests
 {
   private static readonly DateTimeOffset Opened = new(2026, 4, 10, 9, 0, 0, TimeSpan.Zero);
   private static readonly DeclaredSystemId Boutique = DeclaredSystemId.From("brocanto-boutique");
@@ -37,7 +37,7 @@ public class CoverSheetTests
   {
     var opened = ACase();
 
-    var sheet = CoverSheet.Compose(
+    var sheet = DeliveryLetter.Compose(
       opened,
       DataSubjectRight.Access,
       ALandscape(),
@@ -55,7 +55,7 @@ public class CoverSheetTests
   {
     var opened = ACase();
 
-    var sheet = CoverSheet.Compose(
+    var sheet = DeliveryLetter.Compose(
       opened,
       DataSubjectRight.Access,
       ALandscape(),
@@ -76,7 +76,7 @@ public class CoverSheetTests
 
     opened.LocateServed(Journal, NothingFoundIn(Journal), Opened);
 
-    var sheet = CoverSheet.Compose(opened, DataSubjectRight.Access, ALandscape(), []);
+    var sheet = DeliveryLetter.Compose(opened, DataSubjectRight.Access, ALandscape(), []);
 
     sheet.QueriedWithoutAttachment.Select(system => system.DeclaredSystem).ShouldBe([Journal]);
   }
@@ -93,7 +93,7 @@ public class CoverSheetTests
 
     opened.LocateServed(Journal, AReservationIn(Journal), Opened);
 
-    var sheet = CoverSheet.Compose(opened, DataSubjectRight.Access, ALandscape(), []);
+    var sheet = DeliveryLetter.Compose(opened, DataSubjectRight.Access, ALandscape(), []);
 
     sheet.QueriedWithoutAttachment.ShouldBeEmpty();
     sheet.NotCovered.Select(system => system.DeclaredSystem).ShouldContain(Journal);
@@ -108,7 +108,7 @@ public class CoverSheetTests
   {
     var opened = ACase();
 
-    var sheet = CoverSheet.Compose(opened, DataSubjectRight.Access, ALandscape(), []);
+    var sheet = DeliveryLetter.Compose(opened, DataSubjectRight.Access, ALandscape(), []);
 
     var agence = sheet.NotCovered.Single(system => system.DeclaredSystem == Agence);
 
@@ -129,7 +129,7 @@ public class CoverSheetTests
 
     opened.LocateServed(Journal, NothingFoundIn(Journal), Opened);
 
-    var sheet = CoverSheet.Compose(
+    var sheet = DeliveryLetter.Compose(
       opened,
       DataSubjectRight.Access,
       ALandscape(),
@@ -157,7 +157,7 @@ public class CoverSheetTests
     var opened = ACase();
     var late = DeclaredSystemId.From("brocanto-tardif");
 
-    var sheet = CoverSheet.Compose(
+    var sheet = DeliveryLetter.Compose(
       opened,
       DataSubjectRight.Access,
       Manifest.Of(
@@ -180,7 +180,7 @@ public class CoverSheetTests
   {
     var opened = ACase(DataSubjectRight.Access, DataSubjectRight.Portability);
 
-    var sheet = CoverSheet.Compose(
+    var sheet = DeliveryLetter.Compose(
       opened,
       DataSubjectRight.Access,
       ALandscape(),
@@ -199,7 +199,7 @@ public class CoverSheetTests
   {
     var opened = ACase();
 
-    var sheet = CoverSheet.Compose(opened, DataSubjectRight.Access, Manifest.Empty, []);
+    var sheet = DeliveryLetter.Compose(opened, DataSubjectRight.Access, Manifest.Empty, []);
 
     sheet.NotCovered.Count.ShouldBe(3);
     sheet.Write().ShouldContain(Agence.Value);
@@ -207,7 +207,7 @@ public class CoverSheetTests
 
   /// <summary>
   /// <b>Aucun chiffre.</b> Ni compte, ni taux, ni « N sur M », ni même le numéro de l'article : « 2
-  /// sur 6 » reste au <c>Ledger</c>, dont le lecteur est le contrôle. Le dire en cherchant un chiffre
+  /// sur 6 » reste au <c>EvidenceLog</c>, dont le lecteur est le contrôle. Le dire en cherchant un chiffre
   /// <b>partout</b> plutôt qu'en vérifiant une formule est ce qui rend la règle tenable.
   /// </summary>
   [Fact]
@@ -217,7 +217,7 @@ public class CoverSheetTests
 
     opened.LocateServed(Journal, NothingFoundIn(Journal), Opened);
 
-    var page = CoverSheet.Compose(
+    var page = DeliveryLetter.Compose(
       opened,
       DataSubjectRight.Access,
       ALandscape(),
@@ -238,7 +238,7 @@ public class CoverSheetTests
 
     opened.LocateServed(Journal, NothingFoundIn(Journal), Opened);
 
-    var page = CoverSheet.Compose(opened, DataSubjectRight.Access, ALandscape(), []).Write();
+    var page = DeliveryLetter.Compose(opened, DataSubjectRight.Access, ALandscape(), []).Write();
 
     page.ShouldContain("sans trouver de rattachement sous les éléments dont nous disposons");
     page.ShouldContain("communiquez-la-nous");
@@ -251,7 +251,7 @@ public class CoverSheetTests
   [Fact]
   public void ClosesOnTheClauseThatTheCensusGuaranteesNothing()
   {
-    var page = CoverSheet.Compose(ACase(), DataSubjectRight.Access, ALandscape(), []).Write();
+    var page = DeliveryLetter.Compose(ACase(), DataSubjectRight.Access, ALandscape(), []).Write();
 
     page.ShouldContain("systèmes recensés par le responsable de traitement");
     page.ShouldContain("ne");
@@ -262,7 +262,7 @@ public class CoverSheetTests
   [Fact]
   public void NamesTheRightInFrench()
   {
-    CoverSheet.Compose(ACase(), DataSubjectRight.Access, ALandscape(), [])
+    DeliveryLetter.Compose(ACase(), DataSubjectRight.Access, ALandscape(), [])
       .Write()
       .ShouldContain("droit d'accès");
   }
@@ -272,7 +272,7 @@ public class CoverSheetTests
   public void RefusesToComposeARightTheCaseDoesNotCarry()
   {
     Should.Throw<ArgumentException>(() =>
-      CoverSheet.Compose(ACase(), DataSubjectRight.Erasure, ALandscape(), []));
+      DeliveryLetter.Compose(ACase(), DataSubjectRight.Erasure, ALandscape(), []));
   }
 
   private static Case ACase(params DataSubjectRight[] rights)
@@ -290,7 +290,7 @@ public class CoverSheetTests
 
   /// <summary>
   /// Trois systèmes recensés : deux joignables, et l'export mensuel que rien n'atteint — celui-là
-  /// même dont la <c>CoverSheet</c> existe pour dire le nom.
+  /// même dont la <c>DeliveryLetter</c> existe pour dire le nom.
   /// </summary>
   private static Manifest ALandscape()
   {

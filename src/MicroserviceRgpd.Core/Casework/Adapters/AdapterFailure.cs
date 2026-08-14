@@ -10,7 +10,7 @@
 /// réponse claire de l'<c>Adapter</c> — on la consigne, on la signale, et l'exploitant sait où
 /// aller. Une panne ne dit rien de plus que « ça n'a pas marché », et elle n'a donc aucune valeur
 /// dans <see cref="AdapterOutcome"/> : la mettre au même rang ferait entrer au vocabulaire fermé du
-/// <c>Ledger</c> un fait dont personne ne sait quoi conclure.
+/// <c>EvidenceLog</c> un fait dont personne ne sait quoi conclure.
 /// </para>
 /// <para>
 /// <b>Un différé sans échéance lisible est une panne, pas un différé.</b> Le service ne complète

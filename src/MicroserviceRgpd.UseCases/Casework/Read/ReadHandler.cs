@@ -1,6 +1,6 @@
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Casework.CallAdapter;
 
@@ -44,14 +44,14 @@ namespace MicroserviceRgpd.UseCases.Casework.Read;
 /// <param name="manifest">Le catalogue, relu à chaque passage — il vieillit exprès.</param>
 /// <param name="calls">Les appels sortants au titre d'un dossier, tentatives refusées comprises.</param>
 /// <param name="retrieved">Les pièces détenues, hors de l'agrégat et pour une durée qui n'est pas la sienne.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">L'horloge, injectée pour que la date d'une tentative se dicte en test.</param>
 public sealed class ReadHandler(
   IRepository<Case> cases,
   IReadRepository<DeclaredSystem> manifest,
   AdapterCallsForCase calls,
   IRetrievedData retrieved,
-  ILedger ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<ReadCommand, Result>
 {
@@ -80,7 +80,7 @@ public sealed class ReadHandler(
       .OrderBy(system => system.Id.Value, StringComparer.Ordinal)
       .ToArray();
 
-    var consigned = new List<LedgerEntry>();
+    var consigned = new List<EvidenceLogEntry>();
     var askedAt = clock.GetUtcNow();
 
     // L'ordre est celui de la taxonomie puis du catalogue, et non celui de la saisie : deux dossiers
@@ -98,7 +98,7 @@ public sealed class ReadHandler(
 
     foreach (var entry in consigned)
     {
-      await ledger.AppendAsync(entry, cancellationToken);
+      await evidenceLog.AppendAsync(entry, cancellationToken);
     }
 
     return Result.Success();
@@ -109,7 +109,7 @@ public sealed class ReadHandler(
     DataSubjectRight right,
     DeclaredSystem system,
     DateTimeOffset askedAt,
-    List<LedgerEntry> consigned,
+    List<EvidenceLogEntry> consigned,
     CancellationToken cancellationToken)
   {
     var known = opened.ReadingIn(right, system.Id);
@@ -160,7 +160,7 @@ public sealed class ReadHandler(
       if (changes)
       {
         consigned.Add(
-          LedgerEntry.ReadServed(opened.Id, askedAt, system.Id, right, opened.Designations.Count));
+          EvidenceLogEntry.ReadServed(opened.Id, askedAt, system.Id, right, opened.Designations.Count));
       }
 
       return;
@@ -175,7 +175,7 @@ public sealed class ReadHandler(
       if (changes)
       {
         consigned.Add(
-          LedgerEntry.ReadDeferred(opened.Id, askedAt, system.Id, right, deadline, opened.Designations.Count));
+          EvidenceLogEntry.ReadDeferred(opened.Id, askedAt, system.Id, right, deadline, opened.Designations.Count));
       }
 
       return;

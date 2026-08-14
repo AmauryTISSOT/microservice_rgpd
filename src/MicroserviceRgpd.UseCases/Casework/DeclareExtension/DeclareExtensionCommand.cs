@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 /// </para>
 /// <para>
 /// ⚠️ <b>Elle ne barre pas la route à une déclaration tardive.</b> Passé le mois, la déclaration
-/// s'inscrit au dossier et au <c>Ledger</c> — le fait est gardé —, et le dénominateur ne bouge pas.
+/// s'inscrit au dossier et au <c>EvidenceLog</c> — le fait est gardé —, et le dénominateur ne bouge pas.
 /// Refuser aurait perdu le fait ; déplacer l'échéance aurait blanchi un dépassement déjà acquis.
 /// Aucune des deux n'est un service rendu à la personne.
 /// </para>
@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.UseCases.Casework.DeclareExtension;
 /// <param name="Case">Le dossier dont le délai est prolongé.</param>
 /// <param name="Motive">
 /// Pourquoi. <b>Exigé</b> : l'art. 12.3 met la raison à la charge de qui prolonge. <b>Prose de
-/// preuve</b> — elle survit dans le <c>Ledger</c> quand tout le dossier tombe.
+/// preuve</b> — elle survit dans l'<c>EvidenceLog</c> quand tout le dossier tombe.
 /// </param>
 /// <param name="InformedOn">
 /// Le jour où l'<c>Operator</c> déclare avoir informé la personne. <b>Exigé</b>, et jamais constaté

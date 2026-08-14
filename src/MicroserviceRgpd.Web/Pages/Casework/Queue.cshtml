@@ -85,7 +85,7 @@ else
               @*
                 Le dénominateur porté à trois mois par une prolongation déclarée DANS le mois. Une
                 prolongation déclarée après ne se voit pas ici, et c'est le propos : elle est
-                inscrite au dossier et au Ledger, mais elle n'a rien déplacé.
+                inscrite au dossier et au EvidenceLog, mais elle n'a rien déplacé.
               *@
               <span class="extended">prolongée (art. 12.3)</span>
             }
@@ -141,8 +141,8 @@ else
 
 @*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
-  LES LEDGER ÉCHUS. Une SECTION PROPRE, et loin des dossiers — c'est la raison même de son
-  existence. Un Ledger échu n'a ni personne, ni droit, ni délai : son dossier est clos depuis cinq
+  LES EVIDENCELOG ÉCHUS. Une SECTION PROPRE, et loin des dossiers — c'est la raison même de son
+  existence. Un EvidenceLog échu n'a ni personne, ni droit, ni délai : son dossier est clos depuis cinq
   ans. Et le bouton qu'il porte est définitif ET sans trace, donc le pire du dispositif à avoir
   sous la main d'un mauvais clic. Il ne voisine jamais les lignes de dossiers.
 
@@ -154,14 +154,14 @@ else
 <h2>À détruire — conservation échue</h2>
 
 <p class="caveat">
-  Le <code>Ledger</code> vit <strong>cinq ans à compter de la clôture</strong>, et cette durée ne se
+  Le <code>EvidenceLog</code> vit <strong>cinq ans à compter de la clôture</strong>, et cette durée ne se
   règle pas. Passé ce terme, la preuve n'est plus due : elle apparaît ici, et <strong>rien ne la
   détruira qu'un geste de votre part</strong>. Aucun processus ne purge quoi que ce soit derrière
   cet écran — un service qui purgerait tout seul afficherait la même liste vide qu'un service
   arrêté.
 </p>
 
-@if (Model.Queue.ExpiredLedgers.Count == 0)
+@if (Model.Queue.ExpiredEvidenceLogs.Count == 0)
 {
   @*
     LA SECTION RESTE AFFICHÉE, ET VIDE. Les années où rien n'est échu, elle ne disparaît pas : une
@@ -175,8 +175,8 @@ else
 }
 else
 {
-  <ul class="expired-ledgers">
-    @foreach (var overdue in Model.Queue.ExpiredLedgers)
+  <ul class="expired-evidence-logs">
+    @foreach (var overdue in Model.Queue.ExpiredEvidenceLogs)
     {
       <li>
         @*
@@ -189,7 +189,7 @@ else
           échue depuis le @overdue.ExpiredOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture).
         </p>
 
-        <form method="post" asp-page-handler="DestroyLedger">
+        <form method="post" asp-page-handler="DestroyEvidenceLog">
           <fieldset class="signature destruction">
             <legend>Détruire cette preuve</legend>
 
@@ -216,7 +216,7 @@ else
 
             @if (Model.Destruction.Case == overdue.Case.Value)
             {
-              @Html.ValidationMessage($"{QueueModel.DestructionPrefix}.{nameof(LedgerDestructionForm.Confirmed)}",
+              @Html.ValidationMessage($"{QueueModel.DestructionPrefix}.{nameof(EvidenceLogDestructionForm.Confirmed)}",
                 new { @class = "refusal" })
             }
 

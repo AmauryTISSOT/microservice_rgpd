@@ -365,7 +365,7 @@ public class CaseModel(IMediator mediator) : PageModel
   /// </summary>
   /// <remarks>
   /// <b>Aucune redirection, et aucune trace.</b> Ce qui part est un fichier, pas une page ; rien
-  /// n'est daté au <c>Ledger</c>, et rien n'est détruit. La preuve attend le second geste.
+  /// n'est daté au <c>EvidenceLog</c>, et rien n'est détruit. La preuve attend le second geste.
   /// </remarks>
   public async Task<IActionResult> OnPostTakeAsync(Guid id, CancellationToken cancellationToken)
   {
@@ -401,7 +401,7 @@ public class CaseModel(IMediator mediator) : PageModel
 
   /// <summary>
   /// <b>Second geste</b> : l'<c>Operator</c> affirme avoir rendu la réponse. Ce clic seul date la
-  /// remise au <c>Ledger</c> et détruit les pièces.
+  /// remise au <c>EvidenceLog</c> et détruit les pièces.
   /// </summary>
   /// <remarks>
   /// <b>Le service ne remet rien à personne.</b> Aucun lien à jeton, aucun SMTP : ce qui est

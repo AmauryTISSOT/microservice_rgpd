@@ -41,19 +41,19 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
     row.VerdictDeclaredConfidence.ShouldBe("High");
     row.VerdictEngineName.ShouldBe("llm");
     row.VerdictEngineVersion.ShouldBe("qwen3:8b+prompt.1");
-    row.WitnessRights.ShouldBe(["Access", "Erasure"]);
+    row.LexiconRights.ShouldBe(["Access", "Erasure"]);
     // Le témoin n'en déclare aucune : la colonne reste nulle plutôt que de porter une confiance
     // constante, que le domaine refuse d'inventer pour lui.
-    row.WitnessDeclaredConfidence.ShouldBeNull();
-    row.WitnessEngineName.ShouldBe("lexicon");
-    row.WitnessEngineVersion.ShouldBe("1.0.0");
+    row.LexiconDeclaredConfidence.ShouldBeNull();
+    row.LexiconEngineName.ShouldBe("lexicon");
+    row.LexiconEngineVersion.ShouldBe("1.0.0");
     row.Justification.ShouldBe("Le texte demande la suppression des données.");
     row.CallerReference.ShouldBe("DSAR-8871");
     row.TraceId.ShouldBe("4bf92f3577b34da6a3ce929d0e0e4736");
     row.OccurredAt.ShouldBe(entry.OccurredAt);
     row.TotalLatencyMs.ShouldBe(1_400);
     row.VerdictLatencyMs.ShouldBe(1_390);
-    row.WitnessLatencyMs.ShouldBe(2);
+    row.LexiconLatencyMs.ShouldBe(2);
   }
 
   /// <summary>
@@ -76,8 +76,8 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
     var uncontrolled = NominalEntry() with
     {
       QualificationId = Guid.CreateVersion7(),
-      WitnessOpinion = null,
-      WitnessLatency = null,
+      LexiconOpinion = null,
+      LexiconLatency = null,
       ReviewSignal = ReviewSignal.NeedsReview,
     };
 
@@ -90,14 +90,14 @@ public class QualificationAuditTrailTests(PostgreSqlFixture postgres)
     replied.VerdictEngineVersion.ShouldBeNull();
     replied.VerdictDeclaredConfidence.ShouldBeNull();
     replied.VerdictLatencyMs.ShouldBeNull();
-    replied.WitnessRights.ShouldNotBeNull();
+    replied.LexiconRights.ShouldNotBeNull();
 
     var uncontrolledRow = await RowOfAsync(uncontrolled.QualificationId);
-    uncontrolledRow.WitnessRights.ShouldBeNull();
-    uncontrolledRow.WitnessDeclaredConfidence.ShouldBeNull();
-    uncontrolledRow.WitnessEngineName.ShouldBeNull();
-    uncontrolledRow.WitnessEngineVersion.ShouldBeNull();
-    uncontrolledRow.WitnessLatencyMs.ShouldBeNull();
+    uncontrolledRow.LexiconRights.ShouldBeNull();
+    uncontrolledRow.LexiconDeclaredConfidence.ShouldBeNull();
+    uncontrolledRow.LexiconEngineName.ShouldBeNull();
+    uncontrolledRow.LexiconEngineVersion.ShouldBeNull();
+    uncontrolledRow.LexiconLatencyMs.ShouldBeNull();
     uncontrolledRow.VerdictRights.ShouldNotBeNull();
 
     // Et dans les deux cas le verdict, lui, est écrit : la dégradation n'ampute pas la ligne de ce

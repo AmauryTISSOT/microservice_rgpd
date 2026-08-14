@@ -1,5 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -45,15 +45,15 @@ public static class InfrastructureServiceExtensions
     // agrégats racines, et l'emprunter aurait déclaré agrégat ce qui n'est que l'écrit d'un acte.
     services.AddScoped<IQualificationAuditTrail, QualificationAuditTrail>();
 
-    // Le Ledger non plus : il est hors de l'agrégat par construction — il survit au Case de cinq
+    // L'EvidenceLog non plus : il est hors de l'agrégat par construction — il survit au Case de cinq
     // ans — et le dépôt générique lui aurait rendu la mise à jour et la suppression ligne à ligne
     // que sa définition ferme.
-    services.AddScoped<ILedger, Ledger>();
+    services.AddScoped<IEvidenceLog, EvidenceLog>();
 
     // La seule suppression du dispositif vit dans son propre type, à part de l'ajout : l'adaptateur
     // qui écrit la preuve ne sait toujours ni la relire ni l'effacer, et celui qui détruit un
-    // Ledger échu ne sait rien écrire. ⚠️ Rien ne l'appelle qu'un clic d'Operator.
-    services.AddScoped<IExpiredLedgers, ExpiredLedgers>();
+    // EvidenceLog échu ne sait rien écrire. ⚠️ Rien ne l'appelle qu'un clic d'Operator.
+    services.AddScoped<IExpiredEvidenceLogs, ExpiredEvidenceLogs>();
 
     // Les pièces lues non plus : elles sont hors de l'agrégat, avec leur durée de vie propre — la
     // remise les détruira sans réécrire le Case —, et le dépôt générique aurait fait d'un contenu

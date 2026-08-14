@@ -193,7 +193,7 @@ public class CaseTests
 
   /// <summary>
   /// Le sac garde ce qu'on lui a donné, dans l'ordre où on le lui a donné, <b>sans qu'une
-  /// désignation y figure deux fois</b> : compter deux fois la même mentirait au <c>Ledger</c> sur
+  /// désignation y figure deux fois</b> : compter deux fois la même mentirait au <c>EvidenceLog</c> sur
   /// l'ampleur de la recherche.
   /// </summary>
   [Fact]
@@ -409,7 +409,7 @@ public class CaseTests
 
     opened.Claims[0].AwaitsConfirmation.ShouldBeFalse();
 
-    // Un second geste ne change RIEN, et se dit faux : le Ledger consigne les faits qui changent
+    // Un second geste ne change RIEN, et se dit faux : l'EvidenceLog consigne les faits qui changent
     // quelque chose, jamais leur répétition, et cette règle est tenue par l'appelant. Rendre vrai
     // ici lui ferait écrire une seconde ligne identique.
     opened.Confirm(DataSubjectRight.Access).ShouldBeFalse();

@@ -55,7 +55,7 @@ public class ManifestFieldsTests
   }
 
   /// <summary>
-  /// Le champ « contient » est <b>obligatoire</b> : c'est avec ses mots que la <c>CoverSheet</c>
+  /// Le champ « contient » est <b>obligatoire</b> : c'est avec ses mots que la <c>DeliveryLetter</c>
   /// nommera un système non couvert, et un système sans prose serait un système qu'elle ne saurait
   /// pas nommer.
   /// </summary>

@@ -12,7 +12,7 @@
 /// dépendre le volume du signal du nombre de demandes en cours, qui n'en dit rien.
 /// </para>
 /// <para>
-/// <b>C'est un signal d'exploitation, pas une matière de preuve.</b> Ce qui entre au <c>Ledger</c>
+/// <b>C'est un signal d'exploitation, pas une matière de preuve.</b> Ce qui entre au <c>EvidenceLog</c>
 /// est la <b>tentative datée</b>, dans le dossier au titre duquel elle a eu lieu ; ce qui sort
 /// d'ici s'adresse à qui exploite le service, et ne survit pas au processus qui l'a émis.
 /// </para>

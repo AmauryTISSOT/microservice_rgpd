@@ -1,4 +1,4 @@
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.UseCases.Casework.OpenCase;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -68,7 +68,7 @@ public class DepositModel(IMediator mediator, TimeProvider clock) : PageModel
 
     try
     {
-      signatory = Signatory.Operator(deposited.SignedBy, SignatureRegime.Unauthenticated);
+      signatory = Signatory.Operator(deposited.SignedBy, SignerVerification.Unauthenticated);
     }
     catch (ArgumentException refusal)
     {

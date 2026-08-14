@@ -158,7 +158,8 @@ public class ContextIsolationTests
         "s'ouvre et se clôt. Un fournisseur amont qui connaît son aval n'est plus optionnel.",
 
       (ContextInspector.Screening, ContextInspector.Casework) =>
-        "Screening ne confronte jamais le Manifest — c'est la borne « Suggéré, jamais déclaré ». " +
+        "Screening ne confronte jamais le Manifest — c'est la clause " +
+        "« Aucune modification vers le Manifest ». " +
         "Un dépistage qui sait ce qui est déjà déclaré est un pré-remplissage, et un Manifest " +
         "pré-rempli par une machine se lit comme complet.",
 

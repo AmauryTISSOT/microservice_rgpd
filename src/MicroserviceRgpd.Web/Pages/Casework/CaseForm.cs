@@ -11,10 +11,10 @@ namespace MicroserviceRgpd.Web.Pages.Casework;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Un seul champ de prose, et c'est celui de la prose de preuve.</b> Le constat dit <i>pourquoi on
-/// a déclaré cela</i>, n'est pas nominatif par nature, et survit dans le <c>Ledger</c>. La prose de
-/// <b>travail</b> — celle qui dit quelle ligne appartient à qui, et qui nomme donc des tiers non
-/// demandeurs — n'a <b>aucun champ ici</b> : elle se saisit ailleurs sur l'écran, vit sur le
+/// <b>Un seul champ de prose, et c'est celui du texte qui reste.</b> Le constat dit <i>pourquoi on
+/// a déclaré cela</i>, n'est pas nominatif par nature, et survit dans l'<c>EvidenceLog</c>. Le
+/// <b>texte qui meurt</b> — celui qui dit quelle ligne appartient à qui, et qui nomme donc des tiers
+/// non demandeurs — n'a <b>aucun champ ici</b> : il se saisit ailleurs sur l'écran, vit sur le
 /// <c>Case</c> et meurt à la clôture. La règle tient par le <b>placement</b>, et non par la
 /// discipline d'un <c>Operator</c> à qui l'on demanderait de s'auto-censurer dans un champ unique.
 /// </para>
@@ -38,7 +38,7 @@ public sealed class CaseForm
   /// </summary>
   public string? State { get; set; }
 
-  /// <summary>Le constat de l'<c>Operator</c>, en prose libre. <b>Prose de preuve</b> : elle survit.</summary>
+  /// <summary>Le constat de l'<c>Operator</c>, en prose libre. <b>Texte qui reste</b> : il survit.</summary>
   public string? Finding { get; set; }
 
   /// <summary>Le nom que l'<c>Operator</c> saisit pour signer. Sans authentification, et sans mémoire.</summary>
@@ -106,7 +106,7 @@ public sealed class MotivationForm
   public string? VerificationMethod { get; set; }
 
   /// <summary>
-  /// Le détail, en prose libre et facultatif. <b>Prose de travail</b> : il nomme par nature, vit sur
+  /// Le détail, en prose libre et facultatif. <b>Texte qui meurt</b> : il nomme par nature, vit sur
   /// le dossier et meurt à sa clôture.
   /// </summary>
   public string? Detail { get; set; }
@@ -140,7 +140,7 @@ public sealed class ConfirmationForm
 /// <para>
 /// <b>Aucun champ de prose, et c'est délibéré.</b> Le motif de la réserve est écrit par
 /// l'application et lu par l'humain ; ce que l'humain rend est une <b>issue</b> — rattachée, ou
-/// écartée — et le <c>Ledger</c> en garde le fait, la date et le nom. Réclamer une prose ici ferait
+/// écartée — et l'<c>EvidenceLog</c> en garde le fait, la date et le nom. Réclamer une prose ici ferait
 /// écrire une ligne de rien à chaque arbitrage, et le constat qui compte se noierait dans les autres.
 /// </para>
 /// <para>
@@ -239,7 +239,7 @@ public sealed class ExtensionForm
 {
   /// <summary>
   /// Le motif, en prose libre. <b>Exigé</b> : l'art. 12.3 met la raison à la charge de qui prolonge.
-  /// <b>Prose de preuve</b> — elle survit au dossier.
+  /// <b>Texte qui reste</b> — il survit au dossier.
   /// </summary>
   public string? Motive { get; set; }
 
@@ -304,12 +304,12 @@ public sealed class ExtensionForm
 /// parade est un geste <b>délibéré dans l'écran</b> plutôt que de la donnée gardée en réserve. La
 /// case n'est ni pré-cochée ni mémorisée : elle est la seconde affirmation d'une personne qui vient
 /// de lire ce qu'elle s'apprête à détruire. Le seul autre geste du dispositif à en porter une est
-/// la destruction d'un <c>Ledger</c> échu, à l'écran de la file.
+/// la destruction d'un <c>EvidenceLog</c> échu, à l'écran de la file.
 /// </para>
 /// <para>
 /// <b>Le motif est un champ de prose, et c'est de la prose de <em>preuve</em>.</b> Il dit
 /// <i>pourquoi on a décidé cela</i>, il n'est pas nominatif par nature, et il <b>survit</b> dans le
-/// <c>Ledger</c> quand tout le dossier tombe. C'est le seul champ de prose de cet écran dont
+/// <c>EvidenceLog</c> quand tout le dossier tombe. C'est le seul champ de prose de cet écran dont
 /// l'écriture soit parfois exigée — <c>Abandoned</c>, et lui seul.
 /// </para>
 /// </remarks>
@@ -345,7 +345,7 @@ public sealed class ClosingForm
 /// <param name="Right">Le droit au titre duquel le travail était dû.</param>
 /// <param name="DeclaredSystem">Le système sur lequel il l'était.</param>
 /// <param name="State">L'état déclaré.</param>
-/// <param name="Finding">Le constat — prose de preuve, exigée par le type de la preuve.</param>
+/// <param name="Finding">Le constat — texte qui reste, exigé par le type de la preuve.</param>
 /// <param name="SignedBy">Le nom saisi, exigé par le type de la signature.</param>
 public sealed record DeclaredFinding(
   DataSubjectRight Right,

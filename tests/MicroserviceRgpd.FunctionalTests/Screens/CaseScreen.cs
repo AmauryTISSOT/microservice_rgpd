@@ -111,12 +111,12 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La signature se fait en saisissant un nom, et le <c>Ledger</c> enregistre le nom <em>et</em> le
+  /// <b>La signature se fait en saisissant un nom, et l'<c>EvidenceLog</c> enregistre le nom <em>et</em> le
   /// régime « non authentifié ».</b> Sans le régime, la preuve d'aujourd'hui serait indiscernable de
   /// celle du jour où la GUI authentifiera son <c>Operator</c>.
   /// </summary>
   [Fact]
-  public async Task WritesTheTypedNameAndTheUnauthenticatedRegimeToTheLedger()
+  public async Task WritesTheTypedNameAndTheUnauthenticatedRegimeToTheEvidenceLog()
   {
     var opened = await _surface.OpenAsync(
       ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
@@ -137,21 +137,21 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    var line = await dbContext.Set<LedgerRow>()
+    var line = await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
       .SingleAsync(row => row.CaseId == opened.Value && row.Fact == "StepDeclared");
 
     line.SignatoryKind.ShouldBe("Operator");
     line.SignatoryName.ShouldBe("Claire Berger");
-    line.SignatureRegime.ShouldBe("Unauthenticated");
+    line.SignerVerification.ShouldBe("Unauthenticated");
 
     // L'aveu que personne ne l'a fait s'enregistre comme le reste : le service ne bloque jamais la
     // trace la plus précieuse du dispositif.
     line.StepState.ShouldBe("Untreated");
     line.DataSubjectRight.ShouldBe("Access");
 
-    // La prose de preuve survit dans le Ledger, mot pour mot.
-    line.EvidenceProse.ShouldBe(Finding);
+    // Le texte qui reste survit dans l'EvidenceLog, mot pour mot.
+    line.Prose.ShouldBe(Finding);
 
     // Anonyme côté personne concernée, dès cette ligne comme dès la première.
     line.DesignationCount.ShouldBeNull();
@@ -195,7 +195,7 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    (await dbContext.Set<LedgerRow>().AsNoTracking()
+    (await dbContext.Set<EvidenceLogRow>().AsNoTracking()
       .AnyAsync(row => row.CaseId == opened.Value && row.Fact == "StepDeclared"))
       .ShouldBeFalse();
 
@@ -230,13 +230,13 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    var line = await dbContext.Set<LedgerRow>()
+    var line = await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
       .SingleAsync(row => row.CaseId == opened.Value && row.Fact == "StepDeclared");
 
     // La colonne reste vide plutôt que de porter une chaîne vide, qui se lirait comme un constat
     // qu'on aurait effacé.
-    line.EvidenceProse.ShouldBeNull();
+    line.Prose.ShouldBeNull();
   }
 
   /// <summary>
@@ -326,12 +326,12 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Prose de travail et prose de preuve sont deux champs à deux endroits distincts</b> : la règle
+  /// <b>Texte qui meurt et texte qui reste sont deux champs à deux endroits distincts</b> : la règle
   /// tient par le <b>placement</b>, et non par la discipline de l'<c>Operator</c>. Le seul champ de
   /// prose que le formulaire de signature porte est le constat, et l'écran dit de chacun où il va.
   /// </summary>
   [Fact]
-  public async Task KeepsTheProseOfWorkAndTheProseOfProofInTwoDistinctPlaces()
+  public async Task KeepsTheTextThatDiesAndTheTextThatRemainsInTwoDistinctPlaces()
   {
     var opened = await _surface.OpenAsync(
       ReceptionDate.Declared(DateTimeOffset.UtcNow.AddDays(-3)),
@@ -340,12 +340,12 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
 
     var screen = await _surface.ReadTextAsync(OperatorSurface.AddressOf(opened));
 
-    // Le point de décision : la prose de preuve, avec le nom, et l'écran dit qu'elle survit.
+    // Le point de décision : le texte qui reste, avec le nom, et l'écran dit qu'il survit.
     screen.ShouldContain("Signer ce constat");
     screen.ShouldContain("entre dans la matière de preuve et survit au dossier");
 
-    // L'autre endroit : la prose de travail, dont l'écran dit qu'elle meurt à la clôture.
-    screen.ShouldContain("La prose de travail");
+    // L'autre endroit : le texte qui meurt, dont l'écran dit qu'il meurt à la clôture.
+    screen.ShouldContain("Le texte qui meurt");
     screen.ShouldContain("disparaît à sa clôture");
     screen.ShouldContain("Rien de cette section n'entre dans la matière de preuve");
 

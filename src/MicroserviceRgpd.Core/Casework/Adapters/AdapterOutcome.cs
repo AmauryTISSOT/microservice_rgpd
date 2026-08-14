@@ -61,7 +61,7 @@ public sealed class AdapterOutcome : SmartEnum<AdapterOutcome>
   public string FrenchLabel { get; }
 
   /// <summary>
-  /// L'appel a-t-il été refusé ? C'est ce qui décide qu'une tentative datée entre au <c>Ledger</c>
+  /// L'appel a-t-il été refusé ? C'est ce qui décide qu'une tentative datée entre au <c>EvidenceLog</c>
   /// et qu'un désaccord est signalé, jamais qu'un <c>Step</c> bouge : <b>un appel refusé n'est pas
   /// une affaire de <c>Case</c></b>.
   /// </summary>

@@ -15,13 +15,13 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <para>
 /// <b>Le nom est saisi, jamais authentifié</b> — il n'existe aucune authentification dans le
 /// service, et la question « qui a le droit » n'a aucun mécanisme sur lequel se poser. C'est
-/// <c>Greffier, pas témoin</c> : le service enregistre une déclaration et n'en juge jamais la
+/// <c>Enregistré, jamais vérifié</c> : le service enregistre une déclaration et n'en juge jamais la
 /// valeur. Il est en revanche <b>non nullable</b>, contre le <c>string?</c> de <c>Casework</c> : ici
 /// une signature manquante n'est pas un champ vide, c'est un arbitrage qui n'a pas eu lieu.
 /// </para>
 /// <para>
 /// ⚠️ <b>Il n'y a pas d'histoire.</b> La trace est l'état courant seul, et un second arbitrage
-/// l'écrase. Une histoire demanderait une troisième table, c'est-à-dire un <c>Ledger</c> sous un
+/// l'écrase. Une histoire demanderait une troisième table, c'est-à-dire un <c>EvidenceLog</c> sous un
 /// autre nom, au grain que ce contexte refuse — et un re-dépistage détruit de toute façon <i>tous</i>
 /// les arbitrages, si bien qu'une histoire fine à l'intérieur d'un rapport serait une précision
 /// absurde dans un dispositif qui jette le rapport complet. <b>Le coût est réel et déclaré</b> : un

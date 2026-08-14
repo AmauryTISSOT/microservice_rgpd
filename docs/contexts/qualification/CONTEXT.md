@@ -66,7 +66,7 @@ _Avoid_ : certitude, probabilité, score de confiance, fiabilité
 Le nom et la version qu'un moteur joint à sa `QualificationOpinion` — celle de ses règles pour un lexique, celle du modèle servi pour un LLM. Elle ne sert qu'à la `Trace d'audit`, qui conserve les avis avec le moteur dont ils relèvent ; le domaine ne l'interprète jamais et aucune réponse publique ne la porte.
 _Avoid_ : modèle, moteur, provenance, signature
 
-**WitnessOpinion** :
+**LexiconOpinion** :
 La `QualificationOpinion` du lexique. En marche nominale elle sert exclusivement à corroborer ou contester celle du LLM, sans jamais contribuer à la `Qualification` rendue. Elle ne devient elle-même la `Qualification` qu'en `Mode dégradé`, quand le LLM n'a rendu aucun avis. Les deux rôles ne coexistent jamais : elle ne vote pas aux côtés du LLM, l'union de deux avis étant indéfinissable puisque `OutOfScope` est exclusif.
 _Avoid_ : second avis, avis secondaire, vote, contre-expertise
 
@@ -87,7 +87,7 @@ Les deux moteurs s'accordent et la `DeclaredConfidence` du LLM est `High`. Inatt
 _Avoid_ : validé, confirmé, certain
 
 **Mode dégradé** :
-L'état d'une `Qualification` rendue alors que le service n'était pas entier — un des deux moteurs n'ayant pas produit d'avis. Il recouvre deux situations que le contrat public ne distingue pas, le booléen `degraded` étant sa seule expression vers l'appelant : le LLM absent, auquel cas la `WitnessOpinion` tient lieu de `Qualification` et rien n'est justifié ; ou le lexique absent, auquel cas le verdict est normal mais sans contrôle. La `Trace d'audit` les distingue, elle, par la nullité de l'avis manquant. Un moteur peut n'avoir rendu aucun avis pour deux raisons que le mode ne distingue pas davantage : il a défailli, ou bien son rôle n'est **délibérément pas pourvu** par ce déploiement — configuré sans moteur LLM, le service qualifie en `Mode dégradé` à chaque appel, alors que rien n'est en panne. Sa portée s'arrête en revanche aux moteurs : une base de données indisponible est une panne du service, pas un mode dégradé.
+L'état d'une `Qualification` rendue alors que le service n'était pas entier — un des deux moteurs n'ayant pas produit d'avis. Il recouvre deux situations que le contrat public ne distingue pas, le booléen `degraded` étant sa seule expression vers l'appelant : le LLM absent, auquel cas la `LexiconOpinion` tient lieu de `Qualification` et rien n'est justifié ; ou le lexique absent, auquel cas le verdict est normal mais sans contrôle. La `Trace d'audit` les distingue, elle, par la nullité de l'avis manquant. Un moteur peut n'avoir rendu aucun avis pour deux raisons que le mode ne distingue pas davantage : il a défailli, ou bien son rôle n'est **délibérément pas pourvu** par ce déploiement — configuré sans moteur LLM, le service qualifie en `Mode dégradé` à chaque appel, alors que rien n'est en panne. Sa portée s'arrête en revanche aux moteurs : une base de données indisponible est une panne du service, pas un mode dégradé.
 _Avoid_ : mode secours, repli, fallback, panne partielle
 
 ### Les bornes de ce contexte

@@ -1,6 +1,6 @@
 using System.Net;
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.FunctionalTests.Platform;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -109,7 +109,7 @@ public class LocateScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Une réserve tranchée est signée et datée au <c>Ledger</c>, et le compte du sac l'accompagne</b>
+  /// <b>Une réserve tranchée est signée et datée au <c>EvidenceLog</c>, et le compte du sac l'accompagne</b>
   /// — jamais ses valeurs, ni la prose de motif, ni la référence de l'application. Le contrôle lit
   /// « recherché sous 2 désignations, dont 1 ajoutée par arbitrage » sans qu'un seul nom lui survive.
   /// </summary>
@@ -136,19 +136,19 @@ public class LocateScreen(CustomWebApplicationFactory<Program> factory)
       nameof(ReservationState.Attached),
       "Claire Martin");
 
-    var ledger = await LedgerOf(opened);
+    var evidenceLog = await EvidenceLogOf(opened);
 
-    ledger.Single(line => line.Fact == nameof(LedgerFact.ReservationSetAside)).DesignationCount.ShouldBe(1);
+    evidenceLog.Single(line => line.Fact == nameof(EvidenceLogFact.ReservationSetAside)).DesignationCount.ShouldBe(1);
 
-    var attached = ledger.Single(line => line.Fact == nameof(LedgerFact.ReservationAttached));
+    var attached = evidenceLog.Single(line => line.Fact == nameof(EvidenceLogFact.ReservationAttached));
 
     attached.SignatoryName.ShouldBe("Claire Martin");
-    attached.SignatureRegime.ShouldBe(nameof(SignatureRegime.Unauthenticated));
+    attached.SignerVerification.ShouldBe(nameof(SignerVerification.Unauthenticated));
     attached.DeclaredSystem.ShouldBe(ABrocantoOnTheWire.Boutique);
     attached.DesignationCount.ShouldBe(2);
 
-    // Aucune prose : le motif de la réserve est de la prose de TRAVAIL, et il n'a aucune colonne ici.
-    attached.EvidenceProse.ShouldBeNull();
+    // Aucune prose : le motif de la réserve est du texte qui MEURT, et il n'a aucune colonne ici.
+    attached.Prose.ShouldBeNull();
   }
 
   /// <summary>
@@ -180,7 +180,7 @@ public class LocateScreen(CustomWebApplicationFactory<Program> factory)
     (await RereadAsync(opened)).Questions.ShouldHaveSingleItem()
       .Subject.ShouldBe(OpenQuestionSubject.Designation);
 
-    (await LedgerOf(opened)).ShouldContain(line => line.Fact == nameof(LedgerFact.QuestionRaised));
+    (await EvidenceLogOf(opened)).ShouldContain(line => line.Fact == nameof(EvidenceLogFact.QuestionRaised));
   }
 
   /// <summary>
@@ -258,12 +258,12 @@ public class LocateScreen(CustomWebApplicationFactory<Program> factory)
     return (await dbContext.Cases.AsNoTracking().SingleAsync(one => one.Id == opened));
   }
 
-  private async Task<IReadOnlyList<LedgerRow>> LedgerOf(CaseId opened)
+  private async Task<IReadOnlyList<EvidenceLogRow>> EvidenceLogOf(CaseId opened)
   {
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    return await dbContext.Set<LedgerRow>()
+    return await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
       .Where(row => row.CaseId == opened.Value)
       .ToListAsync();

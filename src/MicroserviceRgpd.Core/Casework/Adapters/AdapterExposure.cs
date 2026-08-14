@@ -1,14 +1,14 @@
 namespace MicroserviceRgpd.Core.Casework.Adapters;
 
 /// <summary>
-/// Ce que la <b>sonde à secret délibérément faux</b> a appris d'un <c>Adapter</c> : garde-t-il sa
+/// Ce que l'<b>appel au faux secret</b> a appris d'un <c>Adapter</c> : garde-t-il sa
 /// porte, ou est-il <b>nu</b> — c'est-à-dire ouvert à qui l'atteint ?
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>C'est un résultat d'exploitation, jamais une affaire de dossier.</b> Un <c>Adapter</c> nu est
 /// un fait du déploiement : il vaut pour tous les <c>Case</c> à la fois, et rien de ce qu'il dit
-/// n'appartient à l'un d'eux. Le <c>Ledger</c> n'en sait donc rien, et n'a pas à en savoir quelque
+/// n'appartient à l'un d'eux. L'<c>EvidenceLog</c> n'en sait donc rien, et n'a pas à en savoir quelque
 /// chose.
 /// </para>
 /// <para>

@@ -46,7 +46,7 @@ public sealed class Step
   public StepState State { get; private set; }
 
   /// <summary>
-  /// Porte l'état que l'<c>Operator</c> vient de <b>déclarer</b>. Le service est greffier :
+  /// Porte l'état que l'<c>Operator</c> vient de <b>déclarer</b>. <c>Enregistré, jamais vérifié</c> :
   /// <see cref="StepState.Done"/> prouve qu'on a déclaré l'avoir fait, jamais que ce soit vrai.
   /// </summary>
   /// <remarks>
@@ -54,7 +54,7 @@ public sealed class Step
   /// de barrer la route : un <c>Step</c> qu'on ramène de <see cref="StepState.Done"/> à
   /// <see cref="StepState.Untreated"/> est un aveu, et le refuser ferait choisir à l'<c>Operator</c>
   /// entre la vérité et le formulaire. Ce qui garde la trace n'est pas l'interdiction, c'est le
-  /// <c>Ledger</c> : chaque déclaration s'y inscrit datée et signée, celle-ci comme la précédente.
+  /// <c>EvidenceLog</c> : chaque déclaration s'y inscrit datée et signée, celle-ci comme la précédente.
   /// </remarks>
   internal void Declare(StepState state)
   {

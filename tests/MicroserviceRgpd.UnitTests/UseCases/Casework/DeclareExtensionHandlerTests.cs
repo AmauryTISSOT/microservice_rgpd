@@ -1,10 +1,10 @@
 using Ardalis.Result;
 using Ardalis.Specification;
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Casework.DeclareExtension;
-using MicroserviceRgpd.UseCases.Casework.DestroyLedger;
+using MicroserviceRgpd.UseCases.Casework.DestroyEvidenceLog;
 
 // Shouldly porte un type du même nom, réservé à ses propres tables de cas.
 using Case = MicroserviceRgpd.Core.Casework.Case;
@@ -12,7 +12,7 @@ using Case = MicroserviceRgpd.Core.Casework.Case;
 namespace MicroserviceRgpd.UnitTests.UseCases.Casework;
 
 /// <summary>
-/// La prolongation de l'art. 12.3 et la destruction d'un <c>Ledger</c> échu, <b>horloge dictée</b>.
+/// La prolongation de l'art. 12.3 et la destruction d'un <c>EvidenceLog</c> échu, <b>horloge dictée</b>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,8 +31,8 @@ public class DeclareExtensionHandlerTests
   private static readonly DateTimeOffset Received = new(2026, 3, 2, 9, 0, 0, TimeSpan.Zero);
 
   private readonly IRepository<Case> _cases = Substitute.For<IRepository<Case>>();
-  private readonly ILedger _ledger = Substitute.For<ILedger>();
-  private readonly IExpiredLedgers _expired = Substitute.For<IExpiredLedgers>();
+  private readonly IEvidenceLog _evidenceLog = Substitute.For<IEvidenceLog>();
+  private readonly IExpiredEvidenceLogs _expired = Substitute.For<IExpiredEvidenceLogs>();
 
   /// <summary>
   /// <b>Déclarée dans le mois, elle porte le dénominateur à trois mois</b> — et l'échéance se
@@ -90,8 +90,8 @@ public class DeclareExtensionHandlerTests
     deadline.On.ShouldBe(Received.AddMonths(1));
 
     // Et la preuve porte tout de même la ligne : c'est au contrôle de refaire le calcul.
-    await _ledger.Received(1).AppendAsync(
-      Arg.Is<LedgerEntry>(line => line.Fact == LedgerFact.ExtensionDeclared),
+    await _evidenceLog.Received(1).AppendAsync(
+      Arg.Is<EvidenceLogEntry>(line => line.Fact == EvidenceLogFact.ExtensionDeclared),
       Arg.Any<CancellationToken>());
   }
 
@@ -108,8 +108,8 @@ public class DeclareExtensionHandlerTests
 
     await DeclaringAt(ACase(), declaredAt, informedOn);
 
-    await _ledger.Received(1).AppendAsync(
-      Arg.Is<LedgerEntry>(line =>
+    await _evidenceLog.Received(1).AppendAsync(
+      Arg.Is<EvidenceLogEntry>(line =>
         line.OccurredAt == declaredAt
         && line.InformedOn == informedOn
         && line.DeclaredDeadline == null
@@ -135,7 +135,7 @@ public class DeclareExtensionHandlerTests
     opened.ExtensionDeclaration.ShouldBeNull();
 
     await _cases.DidNotReceive().UpdateAsync(Arg.Any<Case>(), Arg.Any<CancellationToken>());
-    await _ledger.DidNotReceive().AppendAsync(Arg.Any<LedgerEntry>(), Arg.Any<CancellationToken>());
+    await _evidenceLog.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
   }
 
   /// <summary>
@@ -160,26 +160,26 @@ public class DeclareExtensionHandlerTests
   }
 
   /// <summary>
-  /// <b>La destruction d'un <c>Ledger</c> échu ne consigne rien</b>, et c'est écrit ici : le seul
+  /// <b>La destruction d'un <c>EvidenceLog</c> échu ne consigne rien</b>, et c'est écrit ici : le seul
   /// endroit où le nom se serait écrit est la preuve qui disparaît.
   /// </summary>
   [Fact]
-  public async Task DestroysAnExpiredLedgerWithoutWritingASingleLineAboutIt()
+  public async Task DestroysAnExpiredEvidenceLogWithoutWritingASingleLineAboutIt()
   {
-    var ledgerOf = CaseId.Next();
+    var evidenceLogOf = CaseId.Next();
     var gesture = new DateTimeOffset(2031, 6, 1, 8, 0, 0, TimeSpan.Zero);
 
-    _expired.DestroyAsync(ledgerOf, gesture, Arg.Any<CancellationToken>()).Returns(true);
+    _expired.DestroyAsync(evidenceLogOf, gesture, Arg.Any<CancellationToken>()).Returns(true);
 
-    var destroyed = await new DestroyLedgerHandler(_expired, new AClockStuckAt(gesture))
-      .Handle(new DestroyLedgerCommand(ledgerOf), CancellationToken.None);
+    var destroyed = await new DestroyEvidenceLogHandler(_expired, new AClockStuckAt(gesture))
+      .Handle(new DestroyEvidenceLogCommand(evidenceLogOf), CancellationToken.None);
 
     destroyed.IsSuccess.ShouldBeTrue();
 
     // ⚠️ L'instant du geste est celui de l'horloge, pas celui de l'écran d'où part le clic — et rien
     // n'est ajouté à la place de ce qui est parti.
-    await _expired.Received(1).DestroyAsync(ledgerOf, gesture, Arg.Any<CancellationToken>());
-    await _ledger.DidNotReceive().AppendAsync(Arg.Any<LedgerEntry>(), Arg.Any<CancellationToken>());
+    await _expired.Received(1).DestroyAsync(evidenceLogOf, gesture, Arg.Any<CancellationToken>());
+    await _evidenceLog.DidNotReceive().AppendAsync(Arg.Any<EvidenceLogEntry>(), Arg.Any<CancellationToken>());
   }
 
   /// <summary>
@@ -192,8 +192,8 @@ public class DeclareExtensionHandlerTests
     var gesture = new DateTimeOffset(2031, 6, 1, 8, 0, 0, TimeSpan.Zero);
 
     // Rien n'est stubé : l'adaptateur qui ne détruit pas rend false, et c'est cela qu'on lit.
-    var destroyed = await new DestroyLedgerHandler(_expired, new AClockStuckAt(gesture))
-      .Handle(new DestroyLedgerCommand(CaseId.Next()), CancellationToken.None);
+    var destroyed = await new DestroyEvidenceLogHandler(_expired, new AClockStuckAt(gesture))
+      .Handle(new DestroyEvidenceLogCommand(CaseId.Next()), CancellationToken.None);
 
     destroyed.Status.ShouldBe(ResultStatus.NotFound);
   }
@@ -208,7 +208,7 @@ public class DeclareExtensionHandlerTests
     _cases.FirstOrDefaultAsync(Arg.Any<ISingleResultSpecification<Case>>(), Arg.Any<CancellationToken>())
       .Returns(opened);
 
-    var handler = new DeclareExtensionHandler(_cases, _ledger, new AClockStuckAt(declaredAt));
+    var handler = new DeclareExtensionHandler(_cases, _evidenceLog, new AClockStuckAt(declaredAt));
 
     return await handler.Handle(
       new DeclareExtensionCommand(

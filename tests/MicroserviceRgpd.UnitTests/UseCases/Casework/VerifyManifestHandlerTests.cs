@@ -12,7 +12,7 @@ namespace MicroserviceRgpd.UnitTests.UseCases.Casework;
 /// <remarks>
 /// Les faits cardinaux : elle <b>ne corrige jamais</b> le catalogue, elle n'exerce <b>jamais</b>
 /// autre chose qu'un <c>Locate</c>, et ce qu'elle constate est du <b>déploiement</b> — aucun
-/// <c>Case</c>, aucun <c>Ledger</c>.
+/// <c>Case</c>, aucun <c>EvidenceLog</c>.
 /// </remarks>
 public class VerifyManifestHandlerTests
 {
@@ -84,7 +84,7 @@ public class VerifyManifestHandlerTests
   }
 
   /// <summary>
-  /// La sonde à secret délibérément faux : un <c>Adapter</c> qui a servi sous un secret invalide est
+  /// L'appel au faux secret : un <c>Adapter</c> qui a servi sous un secret invalide est
   /// <b>nu</b>, et cela se lit avant tout le reste.
   /// </summary>
   [Fact]

@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.FunctionalTests.Platform;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -20,11 +20,11 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// <remarks>
 /// <para>
 /// <b>Le second geste seul date la remise et détruit les pièces.</b> C'est ce que cette classe
-/// éprouve sur le vrai fil : après le premier clic, les pièces sont toujours là et le <c>Ledger</c>
+/// éprouve sur le vrai fil : après le premier clic, les pièces sont toujours là et l'<c>EvidenceLog</c>
 /// ne porte aucune remise ; après le second, la remise est datée et il ne reste plus un octet.
 /// </para>
 /// <para>
-/// <b>Le « 2 sur 3 » s'arrête au <c>Ledger</c>.</b> La page de garde nomme les systèmes un par un,
+/// <b>Le « 2 sur 3 » s'arrête au <c>EvidenceLog</c>.</b> La page de garde nomme les systèmes un par un,
 /// avec les mots de leur champ « contient », et ne porte <b>pas un seul chiffre</b>.
 /// </para>
 /// </remarks>
@@ -42,7 +42,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>La couture entière</b> : lire, télécharger, déclarer remis. Les pièces survivent au premier
-  /// geste et meurent au second, la remise est datée au <c>Ledger</c> par le second seul.
+  /// geste et meurent au second, la remise est datée au <c>EvidenceLog</c> par le second seul.
   /// </summary>
   [Fact]
   public async Task DestroysThePiecesAndDatesTheDeliveryOnTheSecondGestureAlone()
@@ -66,9 +66,9 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
 
     (await HeldForAsync(opened)).Count.ShouldBe(held.Count);
 
-    (await LedgerOf(opened)).ShouldNotContain(line => line.Fact == nameof(LedgerFact.DeliveryDeclared));
+    (await EvidenceLogOf(opened)).ShouldNotContain(line => line.Fact == nameof(EvidenceLogFact.DeliveryDeclared));
 
-    var systemsNamedOnThePage = (await CoverSheetOfAsync(opened))
+    var systemsNamedOnThePage = (await DeliveryLetterOfAsync(opened))
       .Split(Environment.NewLine)
       .Count(line => line.StartsWith("- ", StringComparison.Ordinal));
 
@@ -82,12 +82,12 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
 
     (await HeldForAsync(opened)).ShouldBeEmpty();
 
-    var line = (await LedgerOf(opened))
-      .Single(one => one.Fact == nameof(LedgerFact.DeliveryDeclared));
+    var line = (await EvidenceLogOf(opened))
+      .Single(one => one.Fact == nameof(EvidenceLogFact.DeliveryDeclared));
 
     line.DataSubjectRight.ShouldBe(nameof(DataSubjectRight.Access));
     line.SignatoryName.ShouldBe("Claire Martin");
-    line.SignatureRegime.ShouldBe(nameof(SignatureRegime.Unauthenticated));
+    line.SignerVerification.ShouldBe(nameof(SignerVerification.Unauthenticated));
 
     // Le rapport que le contrôle vient lire. Le numérateur est le compte des pièces PLEINES ; le
     // dénominateur est celui des systèmes que la page de garde énumère — le MÊME ensemble, une ligne
@@ -99,7 +99,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
 
     // Et rien de ce qui a été remis : ni système, ni nom de fichier, ni prose.
     line.DeclaredSystem.ShouldBeNull();
-    line.EvidenceProse.ShouldBeNull();
+    line.Prose.ShouldBeNull();
   }
 
   /// <summary>
@@ -126,7 +126,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
       [
         .. held
           .Select(piece => $"{piece.DeclaredSystem.Value}/{piece.Envelope.FileName}")
-          .Append(CoverSheet.FileName)
+          .Append(DeliveryLetter.FileName)
           .OrderBy(name => name, StringComparer.Ordinal),
       ]);
 
@@ -153,7 +153,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
 
     await ReadEverythingAsync(opened);
 
-    var page = await CoverSheetOfAsync(opened);
+    var page = await DeliveryLetterOfAsync(opened);
 
     // Première liste : les systèmes dont une pièce est jointe.
     page.ShouldContain("La boutique");
@@ -177,7 +177,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
     page.ShouldContain("garantit pas qu'il n'en existe pas d'autres.");
 
     // ⚠️ AUCUN CHIFFRE DE LA MAIN DU SERVICE. Ni compte, ni taux, ni « N sur M » : le « 2 sur 3 »
-    // vit au Ledger, et descendre ici donnerait à un recensement faussable en silence l'autorité
+    // vit au EvidenceLog, et descendre ici donnerait à un recensement faussable en silence l'autorité
     // d'un inventaire. Les lignes qui NOMMENT un système sont hors du compte : leurs mots sont ceux
     // du client, et le service ne réécrit pas ce qu'un humain a déclaré.
     var written = page
@@ -243,7 +243,7 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
     declared.StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
     (await HeldForAsync(opened)).ShouldNotBeEmpty();
-    (await LedgerOf(opened)).ShouldNotContain(line => line.Fact == nameof(LedgerFact.DeliveryDeclared));
+    (await EvidenceLogOf(opened)).ShouldNotContain(line => line.Fact == nameof(EvidenceLogFact.DeliveryDeclared));
   }
 
   /// <summary>
@@ -278,11 +278,11 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// La page de garde, telle qu'elle sort de l'archive téléchargée.
   /// </summary>
-  private async Task<string> CoverSheetOfAsync(CaseId opened)
+  private async Task<string> DeliveryLetterOfAsync(CaseId opened)
   {
     using var archive = await ArchiveOfAsync(opened);
 
-    await using var reading = archive.GetEntry(CoverSheet.FileName).ShouldNotBeNull().Open();
+    await using var reading = archive.GetEntry(DeliveryLetter.FileName).ShouldNotBeNull().Open();
     using var text = new StreamReader(reading, Encoding.UTF8);
 
     return await text.ReadToEndAsync();
@@ -351,12 +351,12 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
     return await scope.ServiceProvider.GetRequiredService<IRetrievedData>().HeldForAsync(opened);
   }
 
-  private async Task<IReadOnlyList<LedgerRow>> LedgerOf(CaseId opened)
+  private async Task<IReadOnlyList<EvidenceLogRow>> EvidenceLogOf(CaseId opened)
   {
     using var scope = factory.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    return await dbContext.Set<LedgerRow>()
+    return await dbContext.Set<EvidenceLogRow>()
       .AsNoTracking()
       .Where(row => row.CaseId == opened.Value)
       .ToListAsync();

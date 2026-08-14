@@ -39,7 +39,7 @@ Traitement effectif de la demande · authentification de l'application tierce ·
 | `Qualification` | le verdict : l'ensemble des droits reconnus | type de `Core` |
 | `DataSubjectRight` | la taxonomie fermée | **`SmartEnum<DataSubjectRight>`** scellé |
 | `QualificationOpinion` | l'avis d'un moteur | type de `Core` |
-| `WitnessOpinion` | l'avis témoin du lexique, en marche nominale | rôle, glosé dans `CONTEXT.md` |
+| `LexiconOpinion` | l'avis témoin du lexique, en marche nominale | rôle, glosé dans `CONTEXT.md` |
 | `ReviewSignal` | le signal de relecture rendu à l'appelant | énumération à trois valeurs |
 
 ### 2.2 La taxonomie
@@ -537,22 +537,22 @@ Le chemin explique la forme. Une **empreinte HMAC-SHA256 à clé** avec texte en
 | `verdict_declared_confidence` | `text` | **nullable**, par son nom |
 | `verdict_engine_name` | `text` | **nullable** |
 | `verdict_engine_version` | `text` | **nullable** |
-| `witness_rights` | `text[]` | **nullable** |
-| `witness_declared_confidence` | `text` | **nullable**, par son nom |
-| `witness_engine_name` | `text` | **nullable** |
-| `witness_engine_version` | `text` | **nullable** |
+| `lexicon_rights` | `text[]` | **nullable** |
+| `lexicon_declared_confidence` | `text` | **nullable**, par son nom |
+| `lexicon_engine_name` | `text` | **nullable** |
+| `lexicon_engine_version` | `text` | **nullable** |
 | `justification` | `text` | **nullable** |
 | `caller_reference` | `varchar(64)` | **nullable** |
 | `trace_id` | `varchar(64)` | **nullable** |
 | `total_latency_ms` | `integer` | |
 | `verdict_latency_ms` | `integer` | **nullable** |
-| `witness_latency_ms` | `integer` | **nullable** |
+| `lexicon_latency_ms` | `integer` | **nullable** |
 
 Trois de ces choix portent plus que de la technique :
 
 - **Les deux avis bruts sont stockés, alors que le contrat public les refuse à l'appelant.** La logique s'inverse parce que la trace est **interne** : les avis sont ce qui *explique* le `review_signal` ; sans eux la trace enregistrerait une conclusion sans ses prémisses.
 - **Nom et version des deux moteurs figurent sur chaque ligne.** La trace permet donc de savoir quelles qualifications relèvent de quelle version de `qwen3:8b` ou du lexique.
-- **Les colonnes d'avis nomment un rôle, jamais une technologie** — révision de la première rédaction, qui les nommait `llm_*` et `lexicon_*`. Le rôle tenu par chaque moteur est une décision d'enregistrement de services ([#26](https://github.com/AmauryTISSOT/microservice_rgpd/issues/26)) : un nommage par technologie ferait mentir la table le jour où les rôles s'échangent. Rien n'est perdu, puisque `verdict_engine_name` et `witness_engine_name` disent sur chaque ligne *qui* a parlé.
+- **Les colonnes d'avis nomment un rôle, jamais une technologie** — révision de la première rédaction, qui les nommait `llm_*` et `lexicon_*`. Le rôle tenu par chaque moteur est une décision d'enregistrement de services ([#26](https://github.com/AmauryTISSOT/microservice_rgpd/issues/26)) : un nommage par technologie ferait mentir la table le jour où les rôles s'échangent. Rien n'est perdu, puisque `verdict_engine_name` et `lexicon_engine_name` disent sur chaque ligne *qui* a parlé.
 - **`caller_reference` est conservée en clair.** C'est la clé de corrélation de l'appelant ; sans elle il ne retrouve pas son propre appel et la redevabilité tombe. Mais elle est *opaque* : rien n'empêche l'application tierce d'y placer un identifiant de personne. **Contrainte de documentation, explicitement inapplicable techniquement** (§ 4.2) — elle pèse sur le responsable de traitement.
 
 La `justification` paraphrase le texte en le citant ; elle avait été rangée en éphémère avec lui. Sans purge, la question tombe : elle est conservée comme le reste.
@@ -714,7 +714,7 @@ Ordre proposé, chaque étape laissant la solution compilable et verte. **TDD st
 9. **L'`AppHost`** : ajout d'`Aspire.Hosting.Python` à `Directory.Packages.props`, déclaration du sidecar et du container Ollama. **Vider `AspireTests`.**
 10. **La documentation** : commande de test unique, phrases obligatoires de la doc d'API (§ 4.2 idempotence, § 4.2 donnée personnelle dans `callerReference`, § 4.5 rareté des `503`/`504`, § 7.6 bruit adverse), reformulation du commentaire d'`AppDbContext`, mise à jour de `TESTCONTAINERS_IMPLEMENTATION.md`.
 
-**Préalables hors code.** Fusionner le brouillon [#17](https://github.com/AmauryTISSOT/microservice_rgpd/pull/17), qui porte l'extension du glossaire (`QualificationOpinion`, `DeclaredConfidence`, `WitnessOpinion`, `ReviewSignal`) **et la révision de la règle « détecteur, jamais contributeur »** — cette phrase corrigée n'existe **nulle part ailleurs**. Le brouillon [#15](https://github.com/AmauryTISSOT/microservice_rgpd/pull/15) porte les prototypes, dont `moteur_lexique.py`, `prompt_llm.md` et `evaluer.py` : c'est le **matériau de départ du sidecar**, à fusionner ou à reprendre avant l'étape 4.
+**Préalables hors code.** Fusionner le brouillon [#17](https://github.com/AmauryTISSOT/microservice_rgpd/pull/17), qui porte l'extension du glossaire (`QualificationOpinion`, `DeclaredConfidence`, `LexiconOpinion`, `ReviewSignal`) **et la révision de la règle « détecteur, jamais contributeur »** — cette phrase corrigée n'existe **nulle part ailleurs**. Le brouillon [#15](https://github.com/AmauryTISSOT/microservice_rgpd/pull/15) porte les prototypes, dont `moteur_lexique.py`, `prompt_llm.md` et `evaluer.py` : c'est le **matériau de départ du sidecar**, à fusionner ou à reprendre avant l'étape 4.
 
 ---
 

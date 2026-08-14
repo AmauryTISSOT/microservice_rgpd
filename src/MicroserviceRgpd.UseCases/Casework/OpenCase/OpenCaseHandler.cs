@@ -1,5 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
@@ -17,7 +17,7 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 /// </para>
 /// <para>
 /// <b>L'ordre est : ouvrir, puis consigner.</b> Ce sont deux écritures, et non une transaction : le
-/// <c>Ledger</c> est <b>hors de l'agrégat</b> et son adaptateur écrit pour lui seul. L'ordre est
+/// <c>EvidenceLog</c> est <b>hors de l'agrégat</b> et son adaptateur écrit pour lui seul. L'ordre est
 /// celui-ci parce que les deux pannes ne se valent pas — une ligne de preuve pour un dossier qui
 /// n'existe pas est un faux, un dossier dont la première ligne manque est un dossier <b>présent</b>
 /// dans la file, que l'<c>Operator</c> voit. On enregistre un fait laid plutôt qu'on ne fabrique un
@@ -30,7 +30,7 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 /// Le <b>seul</b> dépôt de ce contexte : il n'en existe aucun pour un <c>Claim</c> ni pour un
 /// <c>Step</c>, et les règles sont écrites une fois sur la racine.
 /// </param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="clock">
 /// L'horloge, injectée pour que la date d'un acte se dicte en test plutôt que d'être lue sur la
 /// machine qui l'exécute.
@@ -38,7 +38,7 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 public sealed class OpenCaseHandler(
   IReadRepository<DeclaredSystem> manifest,
   IRepository<Case> cases,
-  ILedger ledger,
+  IEvidenceLog evidenceLog,
   TimeProvider clock)
   : ICommandHandler<OpenCaseCommand, Result<Case>>
 {
@@ -70,8 +70,8 @@ public sealed class OpenCaseHandler(
 
     await cases.AddAsync(opened, cancellationToken);
 
-    await ledger.AppendAsync(
-      LedgerEntry.CaseOpened(
+    await evidenceLog.AppendAsync(
+      EvidenceLogEntry.CaseOpened(
         opened.Id,
         // L'instant du DÉPÔT, et non la date de réception : une demande transcrite d'une boîte aux
         // lettres a été reçue avant d'entrer ici, et dater la ligne de sa réception ferait dire à la

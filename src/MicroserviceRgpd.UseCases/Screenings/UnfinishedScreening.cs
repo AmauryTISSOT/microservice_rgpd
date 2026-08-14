@@ -9,7 +9,7 @@ namespace MicroserviceRgpd.UseCases.Screenings;
 /// <para>
 /// ⚠️ <b>C'est un compte, et non un état sur l'agrégat.</b> Un <c>Screening</c> n'en a aucun : il se
 /// compte. La nuance n'est pas de style — un état aurait eu besoin de quelque chose pour le mettre à
-/// jour, et ce quelque chose serait le processus de fond que ce dépôt interdit au niveau de l'IL.
+/// jour, et ce quelque chose serait le processus de fond que ce dépôt interdit dans le code compilé.
 /// </para>
 /// <para>
 /// <b>Sans lui, la surface a un défaut propre et sérieux</b> : on déclare lues quarante tables, on

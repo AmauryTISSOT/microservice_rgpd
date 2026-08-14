@@ -1,5 +1,5 @@
 ﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Casework.OpenCase;
 
@@ -20,8 +20,8 @@ namespace MicroserviceRgpd.Web.Casework;
 /// <para>
 /// <b>Le dossier naît en portant <c>ApplicationSession</c>, sans vérification supplémentaire de
 /// l'appelant.</b> C'est l'application qui a authentifié la session ; le service enregistre cette
-/// déclaration et n'en juge jamais la valeur — greffier, pas témoin. La valeur n'est pas un champ de
-/// la requête : une application qui pourrait déclarer autre chose ferait enregistrer un faux au
+/// déclaration et n'en juge jamais la valeur — <c>Enregistré, jamais vérifié</c>. La valeur n'est
+/// pas un champ de la requête : une application qui pourrait déclarer autre chose ferait enregistrer un faux au
 /// service sur la foi d'un appelant qu'il ne vérifie pas.
 /// </para>
 /// <para>
@@ -56,10 +56,10 @@ public class OpenCase(IMediator mediator, TimeProvider clock) : Endpoint<OpenCas
         "**Cette route fait entrer, elle n'instruit jamais.** Aucune route publique n'arbitre, ne " +
         "motive, ne constate ni ne clôt un dossier — le seul chemin vers l'instruction est la " +
         "surface de l'opérateur, livrée par le service.";
-      summary.Responses[201] = "Dossier ouvert, et sa première ligne écrite au Ledger";
+      summary.Responses[201] = "Dossier ouvert, et sa première ligne écrite au EvidenceLog";
       summary.Responses[400] =
         "Désignation malformée, droit hors taxonomie, ou OutOfScope réclamé comme s'il était un droit";
-      summary.Responses[500] = "Défaillance interne, y compris l'échec d'écriture du dossier ou du Ledger";
+      summary.Responses[500] = "Défaillance interne, y compris l'échec d'écriture du dossier ou de l'EvidenceLog";
     });
 
     Tags("Casework");

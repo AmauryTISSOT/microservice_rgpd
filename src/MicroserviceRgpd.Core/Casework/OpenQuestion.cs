@@ -59,7 +59,7 @@ public sealed class OpenQuestion
 /// <b>Une seule valeur aujourd'hui, et c'est la raison d'être du type.</b> La question du contenu d'un
 /// droit s'accrochera à un <see cref="Claim"/> le jour où <c>Read</c> sera exercé, et elle entrera
 /// ici sans que la question d'aujourd'hui devienne indiscernable de celle de demain — même mécanique
-/// que <c>SignatureRegime</c>.
+/// que <c>SignerVerification</c>.
 /// </remarks>
 public sealed class OpenQuestionSubject : SmartEnum<OpenQuestionSubject>
 {

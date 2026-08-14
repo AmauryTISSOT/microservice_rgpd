@@ -5,7 +5,7 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 
 /// <summary>
 /// <b>Second geste</b> de la remise : l'<c>Operator</c> affirme avoir rendu la réponse à la
-/// personne. Ce clic <b>seul</b> date la remise au <c>Ledger</c> et détruit les pièces.
+/// personne. Ce clic <b>seul</b> date la remise au <c>EvidenceLog</c> et détruit les pièces.
 /// </summary>
 /// <remarks>
 /// <para>

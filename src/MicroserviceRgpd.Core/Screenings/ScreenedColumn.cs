@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// ce qui sépare « rien vu » de « vu et écarté ».
 /// </para>
 /// <para>
-/// <b>Le motif est de la prose de travail, lue telle quelle et jamais analysée.</b>
+/// <b>Le motif est du texte qui meurt, lu tel quel et jamais analysé.</b>
 /// « <c>adr_l1</c> → <c>ContactDetails</c>, degré bas, motif : préfixe <c>adr</c> reconnu »
 /// s'arbitre ; « <c>ContactDetails</c>, 0,72 » ne s'arbitre pas.
 /// </para>
@@ -184,8 +184,8 @@ public sealed class ScreenedColumn
   /// </summary>
   /// <remarks>
   /// <b>Un second arbitrage écrase le premier</b>, à l'inverse de <c>Reservation</c> dont « le
-  /// premier arbitrage est le bon » parce qu'un <c>Ledger</c> en garde la trace. Ici il n'y a pas de
-  /// <c>Ledger</c> : la trace <b>est</b> l'état courant, et se raviser doit rester possible sur une
+  /// premier arbitrage est le bon » parce qu'un <c>EvidenceLog</c> en garde la trace. Ici il n'y a pas de
+  /// <c>EvidenceLog</c> : la trace <b>est</b> l'état courant, et se raviser doit rester possible sur une
   /// surface qu'on reprend pendant trois jours. Le coût est déclaré — qui avait dit quoi est effacé.
   /// </remarks>
   /// <param name="ruling">Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>

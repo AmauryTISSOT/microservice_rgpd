@@ -11,7 +11,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 /// <b>C'est le seul chemin par lequel une issue se pose</b>, et il passe par un humain nommé. Le
 /// service signale ; il ne retient ni n'écarte jamais. Un <c>Retained</c> prouve qu'un humain l'a
 /// déclaré retenu — jamais que la colonne porte réellement des données personnelles :
-/// <c>Greffier, pas témoin</c>.
+/// <c>Enregistré, jamais vérifié</c>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Elle ne porte pas de date, et elle ne doit jamais en porter.</b> L'instant est posé par le
@@ -26,7 +26,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 /// donc qu'à <b>refuser</b>, jamais à viser.
 /// </para>
 /// <para>
-/// <b>Un second arbitrage écrase le premier, sans cérémonie.</b> Il n'y a pas de <c>Ledger</c> ici :
+/// <b>Un second arbitrage écrase le premier, sans cérémonie.</b> Il n'y a pas de l'<c>EvidenceLog</c> ici :
 /// la trace <b>est</b> l'état courant seul, et se raviser doit rester possible sur une surface qu'on
 /// reprend pendant trois jours. Le coût est déclaré — qui avait dit quoi est effacé.
 /// </para>

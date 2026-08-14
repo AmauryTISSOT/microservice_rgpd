@@ -30,7 +30,7 @@ aura trois dans un an.
 Le relevé que l'`Operator` colle : une ligne par colonne — table, colonne, type, commentaire,
 contraintes — produit par la requête que le service lui fournit. Le service ne se connecte à rien ;
 l'humain colle, le service lit ce qu'on lui a mis dans la main.
-⚠️ **Recopié tel quel, jamais vérifié ni complété.** `Greffier, pas témoin` vaut ici aussi : le
+⚠️ **Recopié tel quel, jamais vérifié ni complété.** `Enregistré, jamais vérifié` vaut ici aussi : le
 service ne sait pas d'où vient ce relevé. Il en enregistre le nom de base que le SGBD lui a donné
 sans jamais le vérifier ni s'en servir pour identifier quoi que ce soit — c'est un repère pour
 l'humain qui relit un `Screening` trois jours plus tard, jamais une identité sur laquelle bâtir une
@@ -71,7 +71,7 @@ Ce qu'un dépistage a rendu sur un `ColumnListing` : une `ScreenedColumn` par co
 l'agrégat de ce contexte. C'est **l'acte et son résultat**, comme une `Qualification` — il n'existe
 pas d'objet « lancement » distinct de l'objet rendu.
 Il est **détenu** et vit plusieurs jours : un recensement s'arbitre en plusieurs fois, colonne par
-colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au `Ledger`, n'a
+colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au `EvidenceLog`, n'a
 aucune échéance et vit jusqu'à ce qu'un `Operator` le supprime.
 ⚠️ **Un re-scan ne fusionne pas.** Relancer un `Screening` en produit un neuf ; les arbitrages du
 précédent ne sont pas repris. C'est un écart assumé au précédent de `Reservation`, dont les réserves
@@ -128,8 +128,8 @@ absente du `Screening` serait une colonne que personne ne relit jamais.
 ⚠️ **Le motif est obligatoire dès que la ligne est signalée**, sur le modèle exact de `Reservation`,
 dont le glossaire dit qu'« une réserve **sans** motif est une panne du contrat, pas une réserve ».
 « `adr_l1` → `ContactDetails`, degré bas, motif : préfixe `adr` reconnu » s'arbitre ;
-« `ContactDetails`, 0,72 » ne s'arbitre pas. C'est de la prose de travail, lue telle quelle et jamais
-analysée.
+« `ContactDetails`, 0,72 » ne s'arbitre pas. C'est du texte qui meurt, lu tel quel et jamais
+analysé.
 Symétriquement, une ligne `Unflagged` n'a **pas** de motif : il n'y a rien à motiver, et c'est ce qui
 distingue « rien vu » de « vu et écarté ».
 _Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et `Candidate` sont
@@ -232,7 +232,7 @@ avec aucune autre.
 ⚠️ **Elle dit ce que le service n'a pas fait, jamais ce que la colonne est.** Une colonne `Unflagged`
 n'est pas une colonne sans données personnelles — c'est une colonne où **rien n'a été vu**, ce qui
 est un constat sur le dépistage et non sur la donnée. Le service n'a jamais vu la donnée. C'est
-`Greffier, pas témoin` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
+`Enregistré, jamais vérifié` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
 parce qu'une machine qui déclare une colonne inoffensive est très exactement le témoignage qu'elle
 n'a pas les moyens de porter.
 ⚠️ **Elle n'est pas le repli `PersonalDataUncategorised`**, et les confondre coûterait cher : celle-ci
@@ -292,7 +292,7 @@ feraient de l'`Operator` le validateur d'un avis de la machine, alors qu'il est 
 une issue ; `Rejected` et `Ignored` diraient qu'on a jeté la ligne, alors qu'elle reste au rapport.
 
 **La signature vit à côté de l'état, et aucun chemin d'écriture ne peut poser l'un sans l'autre.**
-Qui a arbitré et quand vivent sur la `ScreenedColumn` elle-même — il n'y a pas de `Ledger` ici, le
+Qui a arbitré et quand vivent sur la `ScreenedColumn` elle-même — il n'y a pas de `EvidenceLog` ici, le
 `Screening` n'en écrit aucune ligne et son grain est le déploiement. Il n'existe donc **ni `Retained`
 ni `SetAside` non signé** : `Awaiting` est par construction le seul état sans signature, et une
 signature manquante n'est pas un champ vide, c'est un état qui n'a pas eu lieu. Même mécanique que le
@@ -359,7 +359,7 @@ en SaaS, les tableurs partagés, les journaux, les exports du service commercial
 à chaque rendu, et comme une propriété de la réponse, jamais comme une mention en pied de page.
 _Avoid_ : faux négatif, angle mort, oubli, erreur bénigne, erreur rattrapable
 
-**Suggéré, jamais déclaré** :
+**Aucune modification vers le Manifest** :
 Le `Screening` ne touche **jamais** au `Manifest`. Il produit une suggestion qu'un humain lit
 **pendant** qu'il déclare ses `DeclaredSystem` à la main : aucun pré-remplissage, aucun export, aucune
 confrontation, aucun bouton. C'est le décalque inverse et explicite du « déclaré, non découvert » que
@@ -373,7 +373,7 @@ alimentation ⚠️ cette liste n'est pas du style : elle est le seul garde-fou 
 code sur un `ScreeningExportService` ou un `POST /manifest/prefill-from-screening`, qui autrement
 passeraient pour d'aimables raccourcis.
 
-**Le nom, jamais la valeur** :
+**Aucune donnée réelle n'entre** :
 Le service lit des noms de tables et de colonnes, des types, des contraintes et des commentaires.
 **Aucune donnée personnelle réelle n'entre**, et il n'existe aucun chemin par lequel elle entrerait :
 pas de chaîne de connexion, pas de socket vers la production du client, pas d'échantillon de valeurs,

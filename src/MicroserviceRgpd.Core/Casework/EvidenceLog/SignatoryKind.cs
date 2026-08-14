@@ -1,12 +1,12 @@
-﻿namespace MicroserviceRgpd.Core.Casework.Ledger;
+﻿namespace MicroserviceRgpd.Core.Casework.EvidenceLog;
 
 /// <summary>
-/// Qui a signé une ligne du <c>Ledger</c> : un humain nommé, ou le canal applicatif — c'est-à-dire
+/// Qui a signé une ligne de l'<c>EvidenceLog</c> : un humain nommé, ou le canal applicatif — c'est-à-dire
 /// <b>personne</b>.
 /// </summary>
 /// <remarks>
 /// <b>Les deux ne se confondent pas, et l'absence d'humain ne s'écrit pas par un nom vide.</b> Le
-/// <c>Ledger</c> prouve « par qui », et un champ laissé vide se lirait comme un nom qu'on a oublié
+/// <c>EvidenceLog</c> prouve « par qui », et un champ laissé vide se lirait comme un nom qu'on a oublié
 /// de saisir là où il s'agit d'un fait : aucun humain n'a signé cette ligne-là, et il n'y avait
 /// aucune raison qu'il en signe une.
 /// </remarks>
@@ -19,7 +19,7 @@ public sealed class SignatoryKind : SmartEnum<SignatoryKind>
   public static readonly SignatoryKind Application = new(nameof(Application), 0, "l'application du client");
 
   /// <summary>
-  /// Un <c>Operator</c>, nommé. C'est ce nom que le <c>Ledger</c> garde définitivement — « par
+  /// Un <c>Operator</c>, nommé. C'est ce nom que l'<c>EvidenceLog</c> garde définitivement — « par
   /// qui » étant un tiers de ce que le service prouve.
   /// </summary>
   public static readonly SignatoryKind Operator = new(nameof(Operator), 1, "un opérateur");

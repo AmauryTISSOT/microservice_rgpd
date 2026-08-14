@@ -1,6 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Casework.Ledger;
+using MicroserviceRgpd.Core.Casework.EvidenceLog;
 using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.UseCases.Casework.CallAdapter;
@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.UseCases.Casework.CallAdapter;
 /// identité, et n'a donc rien à faire avancer.
 /// </para>
 /// <para>
-/// <b>Deux destinataires, deux grains.</b> Le <c>Ledger</c> reçoit la tentative, datée, dans le
+/// <b>Deux destinataires, deux grains.</b> L'<c>EvidenceLog</c> reçoit la tentative, datée, dans le
 /// dossier au titre duquel elle est partie — c'est de la matière de preuve, et le contrôle la lit
 /// dossier par dossier. Le signalement de désaccord, lui, s'adresse à qui exploite le service et
 /// vaut pour le déploiement entier : une panne unique n'est pas N pannes.
@@ -29,7 +29,7 @@ namespace MicroserviceRgpd.UseCases.Casework.CallAdapter;
 /// — rouvrir un dossier fait repartir les appels —, et trente-cinq passages rendant le même refus
 /// n'ont aucun signataire : c'est un affichage qui les a déclenchés, non un humain, et ils
 /// noieraient sous du bruit de mécanique ce que le contrôle vient lire. La règle est tenue par
-/// l'<b>appelant</b>, qui dit ce qu'il avait obtenu la fois d'avant : le <c>Ledger</c>, lui, ne se
+/// l'<b>appelant</b>, qui dit ce qu'il avait obtenu la fois d'avant : l'<c>EvidenceLog</c>, lui, ne se
 /// relit pas — une écriture qui lirait la ligne d'avant serait une écriture qu'une ligne d'avant
 /// pourrait faire mentir.
 /// </para>
@@ -40,7 +40,7 @@ namespace MicroserviceRgpd.UseCases.Casework.CallAdapter;
 /// </para>
 /// </remarks>
 /// <param name="calls">Les appels sortants. Le sens est unique : le service appelle, l'application ne rappelle jamais.</param>
-/// <param name="ledger">La matière de preuve, en ajout seul.</param>
+/// <param name="evidenceLog">La matière de preuve, en ajout seul.</param>
 /// <param name="disagreements">Le signalement des désaccords <c>Manifest</c>/<c>Adapter</c>, au grain du déploiement.</param>
 /// <param name="clock">
 /// L'horloge, injectée pour que la date d'une tentative se dicte en test plutôt que d'être lue sur
@@ -48,7 +48,7 @@ namespace MicroserviceRgpd.UseCases.Casework.CallAdapter;
 /// </param>
 public sealed class AdapterCallsForCase(
   IAdapterCalls calls,
-  ILedger ledger,
+  IEvidenceLog evidenceLog,
   IAdapterDisagreements disagreements,
   TimeProvider clock)
 {
@@ -66,7 +66,7 @@ public sealed class AdapterCallsForCase(
   /// <param name="call">Ce qu'on demande, et à qui.</param>
   /// <param name="previously">
   /// Ce que ce même <c>Adapter</c> avait répondu la dernière fois sur ce système, ou <c>null</c> si
-  /// on ne l'avait jamais appelé. C'est ce que l'<b>appelant</b> sait et que le <c>Ledger</c> ne
+  /// on ne l'avait jamais appelé. C'est ce que l'<b>appelant</b> sait et que l'<c>EvidenceLog</c> ne
   /// saura jamais : celui-ci ne se relit pas, une écriture qui lirait la ligne d'avant étant une
   /// écriture qu'une ligne d'avant pourrait faire mentir.
   /// </param>
@@ -141,8 +141,8 @@ public sealed class AdapterCallsForCase(
       return answer;
     }
 
-    await ledger.AppendAsync(
-      LedgerEntry.AdapterRefused(caseId, clock.GetUtcNow(), call.DeclaredSystem, answer.Outcome),
+    await evidenceLog.AppendAsync(
+      EvidenceLogEntry.AdapterRefused(caseId, clock.GetUtcNow(), call.DeclaredSystem, answer.Outcome),
       cancellationToken);
 
     disagreements.Signal(call.DeclaredSystem, answer.Outcome);

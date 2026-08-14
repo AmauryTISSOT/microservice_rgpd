@@ -27,7 +27,7 @@ namespace MicroserviceRgpd.Core.Casework.Adapters;
 /// </para>
 /// <para>
 /// ⚠️ <b>Ce port ne connaît aucun <c>Case</c></b>, et ce qu'il rapporte n'entre dans aucun
-/// <c>Ledger</c> : une vérification est un fait du déploiement, et la consigner dossier par dossier
+/// <c>EvidenceLog</c> : une vérification est un fait du déploiement, et la consigner dossier par dossier
 /// ferait dépendre la preuve d'une opération d'exploitation.
 /// </para>
 /// </remarks>

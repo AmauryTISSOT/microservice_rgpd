@@ -259,7 +259,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
   /// <summary>
   /// <b>Les deux moitiés de la motivation tiennent en deux colonnes du dossier</b> — celle qui se
   /// compte et celle qui nomme — et toutes deux sont là où la clôture ira les détruire. La méthode
-  /// survit ailleurs, dans le <c>Ledger</c>, et jamais ici.
+  /// survit ailleurs, dans l'<c>EvidenceLog</c>, et jamais ici.
   /// </summary>
   [Fact]
   public async Task WritesTheMotivationInTwoColumnsThatBothDieWithTheCase()

@@ -15,8 +15,8 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Casework;
 /// <b>La doublure est posée sur le fil, et pas au-dessus.</b> Ce qui est vérifié ici est ce que
 /// l'intégrateur a implémenté — l'en-tête de secret comparé, le <c>system_id</c> en paramètre, le
 /// <c>401</c> et le <c>404</c> qui ne se confondent pas. Doubler le port du domaine aurait fait
-/// prouver à ces tests le comportement d'une doublure, alors que <b>la sonde à secret délibérément
-/// faux n'existe que pour ce qui se passe sur le fil</b>.
+/// prouver à ces tests le comportement d'une doublure, alors que <b>l'appel au faux secret
+/// n'existe que pour ce qui se passe sur le fil</b>.
 /// </para>
 /// <para>
 /// Les trois cas du contrat s'y lisent : un <c>Adapter</c> conforme, un <c>Adapter</c> en écart, et
