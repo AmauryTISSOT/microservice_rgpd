@@ -26,7 +26,12 @@ tests/
 ```
 
 L'agrégat de démonstration du template a été supprimé. Le service expose `POST /qualifications`,
-qui rend une qualification RGPD **dans le même échange**, et `GET /hello` en endpoint de fumée.
+qui rend une qualification RGPD **dans le même échange**.
+
+Les `ServiceDefaults` Aspire exposent `/health` et `/alive`, mais **uniquement en Development** :
+`MapDefaultEndpoints` les monte derrière un `IsDevelopment()`, par prudence sur ce qu'un health
+check révèle. Hors Development, ces deux routes rendent 404 et **le service n'offre aucune preuve
+de vie** ; l'ouvrir en déploiement est une décision à prendre, pas un acquis.
 Il n'existe **aucun `GET`** sur la ressource de qualification : c'est un acte dont on repart avec
 le résultat, jamais une ressource qu'on relit.
 

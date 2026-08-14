@@ -24,7 +24,7 @@ public class ProblemDetailsErrorFormat(CustomWebApplicationFactory<Program> fact
   [Fact]
   public async Task UnsupportedMethodIsTheSameShape()
   {
-    var response = await _client.PostAsync("/hello", content: null);
+    var response = await _client.PostAsync(MethodNotAllowedTarget.Route, content: null);
 
     await ShouldBeProblemDetailsAsync(response, HttpStatusCode.MethodNotAllowed);
   }
