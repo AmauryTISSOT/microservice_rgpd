@@ -7,7 +7,7 @@
 /// <remarks>
 /// <para>
 /// <b>Il vit dans l'infrastructure, jamais dans le domaine.</b> Le <c>Manifest</c> décrit le
-/// paysage déclaré du client et se relit à l'écran ; un secret n'y a aucun emplacement, et n'en
+/// catalogue déclaré du client et se relit à l'écran ; un secret n'y a aucun emplacement, et n'en
 /// aura pas — <c>AdapterAddress</c> le dit déjà en toutes lettres.
 /// </para>
 /// <para>

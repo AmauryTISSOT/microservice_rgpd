@@ -3,7 +3,7 @@
 namespace MicroserviceRgpd.UseCases.Casework.DeclareSystem;
 
 /// <summary>
-/// Faire entrer un système de plus dans le paysage déclaré du client.
+/// Faire entrer un système de plus dans le catalogue déclaré du client.
 /// </summary>
 /// <remarks>
 /// <b>La date de déclaration n'est pas un paramètre.</b> Elle est lue sur l'horloge du service au

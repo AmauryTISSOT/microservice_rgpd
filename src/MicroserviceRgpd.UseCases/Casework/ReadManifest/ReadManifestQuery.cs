@@ -3,7 +3,7 @@
 namespace MicroserviceRgpd.UseCases.Casework.ReadManifest;
 
 /// <summary>
-/// Relire le paysage déclaré, en entier.
+/// Relire le catalogue déclaré, en entier.
 /// </summary>
 /// <remarks>
 /// <b>Aucune pagination, aucun filtre, aucun tri au choix.</b> Un catalogue se lit d'un bloc :

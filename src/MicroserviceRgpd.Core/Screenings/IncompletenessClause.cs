@@ -99,10 +99,41 @@ public sealed class IncompletenessClause
   /// technique. Rien en elle n'empêche un <c>Operator</c> pressé de lire le rapport comme son
   /// paysage, et c'est précisément le grief — une décision tenue dans le code et perdue dans l'usage.
   /// La renvoyer à l'écran l'aurait de plus laissée hors de toute réponse qui n'est pas l'écran.
+  /// <para>
+  /// ⚠️ <b>Le texte est gelé par ADR-0006, et c'est une réécriture, pas un renommage.</b> L'ancienne
+  /// phrase portait <b>les deux mots retirés à la fois</b>, et son renommage mécanique n'aurait rien
+  /// voulu dire. Trois choses s'y tiennent et ne se défont pas en passant :
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le nom défini part, le verbe reste</b> — « ne recense pas… c'est vous qui les recensez ».
+  /// Le défini d'identité (« le recensement <b>est</b> le <c>Manifest</c> ») conférait l'autorité même
+  /// que l'<c>Omission silencieuse</c> redoute ; la forme verbale la retire sans supprimer le mot, et
+  /// le témoin d'écran l'autorise mécaniquement — il ne bannit « recensement » que dans ce qui
+  /// <b>nomme</b>, jamais dans la prose d'un paragraphe.
+  /// </para>
+  /// <para>
+  /// <b>« à la main » est gardé mot pour mot</b>, délibérément : c'est ce qui dit que la liste ne se
+  /// remplit pas toute seule. Et <b>le mot retenu pour la chose est « liste »</b>, par précédent — la
+  /// lettre remise à la personne concernée (<c>DeliveryLetter</c>) écrit déjà « Cette liste… ne
+  /// garantit pas qu'il n'en existe pas d'autres ». Le service tient le même langage des deux côtés.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>L'identifiant <c>Manifest</c> en clair est retiré du texte</b> — non parce qu'un client le
+  /// lirait, mais parce qu'ADR-0006 le fait désigner un écran qui ne portera plus ce nom : un
+  /// <c>Operator</c> devra chercher « Configuration du microservice RGPD » dans la barre.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Ce texte devance le renommage de l'écran, et le dit.</b> Tant que la barre affiche encore
+  /// « Le paysage déclaré », la phrase envoie l'<c>Operator</c> vers un nom qu'aucun écran ne porte.
+  /// C'est un <b>décalage assumé et borné</b> : le texte gelé est arrêté mot pour mot par ADR-0006,
+  /// et le renommage de l'écran est le ticket voisin. Il ne se referme pas ici, et surtout il ne se
+  /// referme pas en réécrivant la phrase gelée.
+  /// </para>
   /// </summary>
   public string RelationToManifest { get; } =
-    "Ce dépistage n'est pas le recensement de votre paysage de données. Le recensement est le "
-    + "Manifest, et le Manifest se déclare à la main, système par système.";
+    "Ce rapport de détection ne recense pas vos systèmes : c'est vous qui les recensez, à la main, "
+    + "système par système, dans « Configuration du microservice RGPD ». La liste que vous y tenez "
+    + "ne garantit pas qu'il n'en existe pas d'autres.";
 
   /// <summary>
   /// La clause d'un rapport : le texte constant, et les comptes de <b>ce</b> relevé.
