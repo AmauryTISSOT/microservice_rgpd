@@ -65,6 +65,12 @@ public static class MiddlewareConfig
 
     app.UseHttpsRedirection(); // Note this will drop Authorization headers
 
+    // La feuille de style et la police des écrans, servies par le service lui-même. C'est le seul
+    // canal par lequel elles arrivent : aucune ressource tierce n'est chargée par la surface —
+    // un service qui outille le RGPD ne peut pas faire fuiter l'adresse IP de ses utilisateurs vers
+    // un hébergeur de polices pour afficher une page.
+    app.UseStaticFiles();
+
     // Les écrans de l'Operator. Ils vivent à côté de l'API sans la traverser : celle-ci fait entrer
     // une demande, elle n'instruit jamais rien — le seul chemin vers un geste humain passe par un
     // écran que le service écrit lui-même.
