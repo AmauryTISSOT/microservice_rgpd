@@ -22,6 +22,6 @@ internal static class ScreeningSchema
   /// <summary>La table du rapport.</summary>
   internal const string Screenings = "screenings";
 
-  /// <summary>La table des colonnes dépistées.</summary>
+  /// <summary>La table des colonnes détectées.</summary>
   internal const string ScreenedColumns = "screened_columns";
 }

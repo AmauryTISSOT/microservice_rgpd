@@ -18,7 +18,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </para>
 /// <para>
 /// <b>Elle n'est pas bornée.</b> Un déploiement porte quelques dizaines de rapports, jamais plus :
-/// dix re-dépistages de Dolibarr font dix lignes. Une pagination ici aurait caché des rapports
+/// dix détections de Dolibarr font dix lignes. Une pagination ici aurait caché des rapports de
+/// détection
 /// derrière un bouton, ce qui est la façon la plus simple de faire oublier un rapport qu'on croyait
 /// supprimé.
 /// </para>

@@ -4,7 +4,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadCurrentScreening;
 
 /// <summary>
 /// Rend le sommaire du rapport courant, <b>clause comprise</b> — ou rien du tout quand le
-/// déploiement n'a lancé aucun dépistage.
+/// déploiement n'a lancé aucune détection.
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>La clause est attachée ici et nulle part ailleurs.</b> <see cref="ScreeningAnswer{T}"/> n'a

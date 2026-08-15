@@ -8,8 +8,9 @@ internal sealed record ChromeEntryPoint(string Label, string Address)
   /// <summary>
   /// Si l'écran rendu relève de ce point d'entrée. La comparaison est faite <b>par segments</b> :
   /// un dossier relève du tableau des demandes RGPD, la reprise d'une déclaration du
-  /// <c>Manifest</c>, et la table d'arbitrage du dépistage — ce que le préfixe de texte nu n'aurait
-  /// pas su dire sans confondre aussi une adresse qui commence par les mêmes lettres.
+  /// <c>Manifest</c>, et la table d'arbitrage de la détection des données personnelles — ce que le
+  /// préfixe de texte nu n'aurait pas su dire sans confondre aussi une adresse qui commence par les
+  /// mêmes lettres.
   /// </summary>
   internal bool IsCurrent(PathString path)
   {
@@ -23,9 +24,9 @@ internal sealed record ChromeEntryPoint(string Label, string Address)
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Trois entrées, et pas une quatrième.</b> L'historique des dépistages n'en est pas une : il
-/// s'atteint depuis le rapport courant, et une barre à trois entrées se parcourt moins qu'une barre
-/// à quatre.
+/// ⚠️ <b>Trois entrées, et pas une quatrième.</b> L'historique des rapports de détection n'en est
+/// pas une : il s'atteint depuis le rapport de détection courant, et une barre à trois entrées se
+/// parcourt moins qu'une barre à quatre.
 /// </para>
 /// <para>
 /// La clause « une barre à trois entrées se lit d'un coup d'œil » ne tient plus telle quelle, et

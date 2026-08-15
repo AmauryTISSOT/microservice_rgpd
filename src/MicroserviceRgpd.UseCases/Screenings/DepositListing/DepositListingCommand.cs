@@ -10,14 +10,15 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// ⚠️ <b>Synchrone sans exception, et le <c>202</c> de l'<c>Adapter</c> ne se transpose pas ici.</b>
 /// Ce vocabulaire-là dit que <em>le système du client</em> diffère. Le reprendre demanderait une
 /// file, un ouvrier de fond et un état que l'<c>Operator</c> sonde : très exactement « quelque chose
-/// qui tourne », avec le mode de panne qui va avec — un dépistage interrompu rendant un rapport
+/// qui tourne », avec le mode de panne qui va avec — une détection interrompue rendant un rapport
+/// de détection
 /// <b>vide et rassurant</b>. Le moteur rend toutes les colonnes, le rapport est écrit, puis il
 /// s'affiche.
 /// </para>
 /// <para>
 /// <b>Le caractère synchrone est retourné en contrainte plutôt que subi</b> : le geste entier tient
-/// dans un budget de 10 s au pire cas autorisé — lire le collage, éprouver les neuf refus, dépister,
-/// écrire. Il ne couvre pas le seul dépistage : un moteur tenant 9,5 s aurait passé une barre
+/// dans un budget de 10 s au pire cas autorisé — lire le collage, éprouver les neuf refus, détecter,
+/// écrire. Il ne couvre pas la seule détection : un moteur tenant 9,5 s aurait passé une barre
 /// annoncée à 10 pendant que le geste réel en prenait 12.
 /// </para>
 /// <para>

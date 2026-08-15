@@ -3,7 +3,7 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.Infrastructure.Screenings;
 
 /// <summary>
-/// Le moteur de dépistage retenu par le banc : <b>règles + lexique FR+EN</b>, porté en C# et servi
+/// Le moteur de détection retenu par le banc : <b>règles + lexique FR+EN</b>, porté en C# et servi
 /// depuis <c>Infrastructure</c>, sans second sidecar (ADR-0004).
 /// </summary>
 /// <remarks>
@@ -28,7 +28,7 @@ namespace MicroserviceRgpd.Infrastructure.Screenings;
 /// </para>
 /// <para>
 /// <b>Il est déterministe et local</b> : aucun réseau, aucun état, aucun aléa, aucune horloge. Deux
-/// dépistages du même relevé rendent la même chose, mot pour mot, et la part moteur du budget de
+/// détections du même relevé rendent la même chose, mot pour mot, et la part moteur du budget de
 /// rythme (#156) est celle que le banc a mesurée — p95 ≤ 0,103 ms/colonne.
 /// </para>
 /// </remarks>
@@ -60,8 +60,9 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
   /// ⚠️ <b>C'est le seul endroit où ce moteur s'écarte du montage gelé</b>, et l'écart est déclaré :
   /// le banc n'avait aucune borne sur la longueur d'un motif, le domaine en a une
   /// (<see cref="ScreenedColumn.MaxReasonLength"/>). Sans cette coupe, un commentaire de colonne
-  /// portant quarante mots du lexique ferait échouer le relevé <b>entier</b> — un dépistage qui
-  /// s'effondre sur une colonne est un rapport qui n'existe pas, pour un motif trop long à lire.
+  /// portant quarante mots du lexique ferait échouer le relevé <b>entier</b> — une détection qui
+  /// s'effondre sur une colonne est un rapport de détection qui n'existe pas, pour un motif trop long
+  /// à lire.
   /// Aucune colonne du corpus n'en approche, et la coupe <b>se dit</b> plutôt que de se faire en
   /// silence : un motif tronqué muet se lirait comme entier.
   /// </remarks>

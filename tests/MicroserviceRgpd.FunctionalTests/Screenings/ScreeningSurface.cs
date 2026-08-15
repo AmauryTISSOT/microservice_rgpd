@@ -8,7 +8,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screenings;
 
 /// <summary>
 /// De quoi coller un relevé et lire le rapport par leur <b>seule frontière HTTP</b> — exactement ce
-/// que fait un navigateur, et le seul chemin qui existe vers un dépistage.
+/// que fait un navigateur, et le seul chemin qui existe vers un rapport de détection.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,7 +29,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screenings;
 /// </remarks>
 internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> factory)
 {
-  /// <summary>Le rapport sommaire du dépistage courant.</summary>
+  /// <summary>Le sommaire du rapport de détection courant.</summary>
   internal const string Report = "/depistage";
 
   /// <summary>L'écran du dépôt — le seul chemin par lequel un relevé entre.</summary>
@@ -44,18 +44,18 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// <summary>L'historique : ce que le déploiement a lancé, et le seul écran qui supprime.</summary>
   internal const string History = "/depistage/historique";
 
-  /// <summary>Le sommaire d'<b>un</b> dépistage archivé, nommé en paramètre de requête.</summary>
+  /// <summary>Le sommaire d'<b>un</b> rapport de détection archivé, nommé en paramètre de requête.</summary>
   internal const string Archive = "/depistage/archive";
 
-  /// <summary>Une table d'un dépistage archivé.</summary>
+  /// <summary>Une table d'un rapport de détection archivé.</summary>
   internal const string ArchivedTable = "/depistage/archive/table";
 
   private static readonly DateTimeOffset GeneratedOn = new(2026, 8, 10, 9, 30, 0, TimeSpan.Zero);
 
   /// <summary>
   /// Les redirections ne sont pas suivies : c'est la redirection elle-même qu'on vérifie. Un dépôt
-  /// qui rendrait directement sa page ferait d'un rechargement un second dépistage — et un second
-  /// dépistage ne reprend aucun arbitrage du premier.
+  /// qui rendrait directement sa page ferait d'un rechargement un second rapport de détection — et
+  /// un second rapport de détection ne reprend aucun arbitrage du premier.
   /// </summary>
   private readonly HttpClient _client = factory.CreateClient(
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
@@ -150,7 +150,7 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// <param name="renderedFrom">
   /// La table dont on lit le formulaire, quand ce n'est pas celle qu'on poste. ⚠️ <b>C'est le seul
   /// moyen d'éprouver le clic d'un <c>Operator</c> dont l'écran nomme une table qu'un second
-  /// dépistage vient d'emporter</b> : cet écran-là ne se rend plus, et son formulaire est
+  /// rapport de détection vient d'emporter</b> : cet écran-là ne se rend plus, et son formulaire est
   /// inatteignable.
   /// </param>
   internal async Task<HttpResponseMessage> ArbitrateInBatchAsync(
@@ -185,13 +185,13 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
     return $"{Table}?schema={Uri.EscapeDataString(schema)}&table={Uri.EscapeDataString(table)}";
   }
 
-  /// <summary>L'adresse du sommaire d'un dépistage archivé.</summary>
+  /// <summary>L'adresse du sommaire d'un rapport de détection archivé.</summary>
   internal static string ArchiveOf(string screening)
   {
     return $"{Archive}?screening={Uri.EscapeDataString(screening)}";
   }
 
-  /// <summary>L'adresse d'une table d'un dépistage archivé.</summary>
+  /// <summary>L'adresse d'une table d'un rapport de détection archivé.</summary>
   internal static string ArchivedTableOf(
     string screening, string schema = "public", string table = "adherents")
   {
@@ -213,7 +213,8 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
-  /// Supprime un dépistage <b>par le formulaire de l'historique</b>, jeton anti-rejeu compris.
+  /// Supprime un rapport de détection <b>par le formulaire de l'historique</b>, jeton anti-rejeu
+  /// compris.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Le nom de base se repose en clair</b>, exactement comme l'<c>Operator</c> le retape : il

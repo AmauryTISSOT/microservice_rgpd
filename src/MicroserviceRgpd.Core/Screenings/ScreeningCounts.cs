@@ -24,14 +24,14 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// Combien n'ont de commentaire ni à leur niveau ni à celui de leur table.
 /// </param>
 /// <param name="Flagged">
-/// Combien le dépistage en a signalées. ⚠️ Le complément est ce qu'il <b>n'a pas vu</b>, jamais ce
+/// Combien la détection en a signalées. ⚠️ Le complément est ce qu'elle <b>n'a pas vu</b>, jamais ce
 /// qui serait inoffensif : le service n'a jamais vu une seule valeur.
 /// </param>
 /// <param name="Retained">Combien un humain a retenues, sous son nom.</param>
 /// <param name="SetAside">Combien un humain a écartées, sous son nom.</param>
 /// <param name="Awaiting">Combien attendent encore qu'un humain les tranche.</param>
 /// <param name="RetainedOnUnflagged">
-/// Combien un humain a retenues là où le dépistage n'avait <b>rien vu</b> — la mesure directe de ce
+/// Combien un humain a retenues là où la détection n'avait <b>rien vu</b> — la mesure directe de ce
 /// que l'<c>Omission relue</c> a rattrapé.
 /// </param>
 /// <param name="UnreadUnflagged">
@@ -73,7 +73,8 @@ public sealed record ScreeningCounts(
     if (screening.ColumnCount != screening.DeclaredColumnCount)
     {
       throw new InvalidOperationException(
-        $"Ce dépistage déclare {screening.DeclaredColumnCount} colonnes et n'en porte que "
+        $"Ce rapport de détection déclare {screening.DeclaredColumnCount} colonnes et n'en porte "
+        + "que "
         + $"{screening.ColumnCount} : ses comptes seraient sincères et faux. Chargez-le avec ses "
         + "colonnes, ou demandez ses comptes à la base.");
     }

@@ -3,7 +3,8 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 
 /// <summary>
-/// Porte sur une colonne du dépistage courant l'issue qu'un humain vient de rendre, <b>signée et
+/// Porte sur une colonne du rapport de détection courant l'issue qu'un humain vient de rendre,
+/// <b>signée et
 /// datée par le service</b>.
 /// </summary>
 /// <remarks>
@@ -59,7 +60,7 @@ public sealed class ArbitrateColumnHandler(IRepository<Screening> screenings, Ti
 
     if (current is null)
     {
-      // Le déploiement n'a lancé aucun dépistage. Ce n'est pas une programmation fautive : un écran
+      // Le déploiement n'a lancé aucune détection. Ce n'est pas une programmation fautive : un écran
       // affiché il y a une minute peut nommer un rapport qu'un autre geste vient de supprimer.
       return Result.NotFound();
     }
@@ -90,7 +91,7 @@ public sealed class ArbitrateColumnHandler(IRepository<Screening> screenings, Ti
 
     if (arbitrated is null)
     {
-      // Le courant ne porte pas cette colonne : une adresse mal recopiée, ou un second dépistage
+      // Le courant ne porte pas cette colonne : une adresse mal recopiée, ou une seconde détection
       // sur une base d'où la colonne a disparu.
       return Result.NotFound();
     }

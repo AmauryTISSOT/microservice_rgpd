@@ -1,7 +1,7 @@
 namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
-/// Ce qu'un dépistage a rendu sur un <c>ColumnListing</c> : une <see cref="ScreenedColumn"/> par
+/// Ce que la détection a rendu sur un <c>ColumnListing</c> : une <see cref="ScreenedColumn"/> par
 /// colonne du relevé, et l'agrégat de ce contexte. C'est <b>l'acte et son résultat</b> — il n'existe
 /// pas d'objet « lancement » distinct de l'objet rendu.
 /// </summary>
@@ -94,7 +94,7 @@ public sealed class Screening : IAggregateRoot
   /// </summary>
   public string Dialect { get; private set; }
 
-  /// <summary>Qui a dépisté, et dans quelle version. Le domaine ne l'interprète jamais.</summary>
+  /// <summary>Qui a détecté, et dans quelle version. Le domaine ne l'interprète jamais.</summary>
   public ScreeningEngineIdentity Engine { get; private set; }
 
   /// <summary>
@@ -103,7 +103,7 @@ public sealed class Screening : IAggregateRoot
   /// </summary>
   public int DeclaredColumnCount { get; private set; }
 
-  /// <summary>Quand le dépistage a été lancé. C'est ce qui décide, et seul, quel rapport est le courant.</summary>
+  /// <summary>Quand la détection a été lancée. C'est ce qui décide, et seul, quel rapport de détection est le courant.</summary>
   public DateTimeOffset LaunchedOn { get; private set; }
 
   /// <summary>
@@ -122,7 +122,7 @@ public sealed class Screening : IAggregateRoot
   /// <summary>Combien de colonnes un humain a écartées, sous son nom.</summary>
   public int SetAsideCount => _columns.Count(column => column.State == ScreenedColumnState.SetAside);
 
-  /// <summary>Combien de colonnes le dépistage a signalées. Le complément est ce qu'il n'a pas vu, jamais ce qui est inoffensif.</summary>
+  /// <summary>Combien de colonnes la détection a signalées. Le complément est ce qu'elle n'a pas vu, jamais ce qui est inoffensif.</summary>
   public int FlaggedCount => _columns.Count(column => column.IsFlagged);
 
   /// <summary>
@@ -143,11 +143,12 @@ public sealed class Screening : IAggregateRoot
   public int TableCount => _columns.Select(column => column.Identity.TableIdentity).Distinct().Count();
 
   /// <summary>
-  /// Combien de colonnes un humain a retenues alors que le dépistage n'avait <b>rien vu</b>.
+  /// Combien de colonnes un humain a retenues alors que la détection n'avait <b>rien vu</b>.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>C'est la mesure directe de ce que l'<c>Omission relue</c> a rattrapé</b>, et le seul
-  /// compte du rapport qui ne parle pas du dépistage mais de sa relecture : un <c>Retained</c> posé
+  /// compte du rapport de détection qui ne parle pas de la détection mais de sa relecture : un
+  /// <c>Retained</c> posé
   /// sur une colonne <c>Unflagged</c> prouve qu'un <b>humain</b> l'a retenue, jamais que le service
   /// l'avait vue. Il vaut zéro tant que personne n'a relu, et c'est très exactement ce qu'on lui
   /// demande de dire.
@@ -157,7 +158,7 @@ public sealed class Screening : IAggregateRoot
 
   /// <summary>
   /// Combien de colonnes où <b>rien n'a été vu</b> n'ont pas encore été relues — le compte que porte
-  /// le verrou « ce dépistage est inachevé ».
+  /// le verrou « ce rapport de détection est inachevé ».
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>C'est un compte, jamais un état</b>, et la nuance est celle que ce contexte relit trois
@@ -197,14 +198,14 @@ public sealed class Screening : IAggregateRoot
   ];
 
   /// <summary>
-  /// Lance un dépistage, ou refuse. Le refus est une <b>programmation fautive</b> : un relevé mal
+  /// Lance une détection, ou refuse. Le refus est une <b>programmation fautive</b> : un relevé mal
   /// formé se refuse en bloc à l'ingestion, où le refus est lisible et où l'<c>Operator</c> n'a qu'à
   /// relancer sa requête.
   /// </summary>
   /// <param name="id">L'identité engendrée.</param>
   /// <param name="database">Le nom de base que le relevé rapporte.</param>
   /// <param name="dialect">Le SGBD dont le relevé se déclare.</param>
-  /// <param name="engine">Qui a dépisté, et dans quelle version.</param>
+  /// <param name="engine">Qui a détecté, et dans quelle version.</param>
   /// <param name="declaredColumnCount">Le nombre de colonnes que le relevé déclare porter.</param>
   /// <param name="columns">Une ligne par colonne du relevé, dans son ordre.</param>
   /// <param name="launchedOn">L'instant du lancement.</param>
@@ -231,7 +232,7 @@ public sealed class Screening : IAggregateRoot
     if (screened.Count != declaredColumnCount)
     {
       throw new ArgumentException(
-        $"Le relevé déclare {declaredColumnCount} colonnes et le dépistage en rend {screened.Count}. "
+        $"Le relevé déclare {declaredColumnCount} colonnes et la détection en rend {screened.Count}. "
         + "Un relevé est entier ou il n'existe pas : un rapport bâti sur une part du relevé se lirait "
         + "comme complet, et les colonnes manquantes seraient précisément celles que personne ne "
         + "relirait jamais.",
@@ -283,7 +284,7 @@ public sealed class Screening : IAggregateRoot
   /// n'introduit aucun état. Sans cette restriction, un <c>Operator</c> arbitre le mauvais rapport.
   /// </para>
   /// </remarks>
-  /// <returns>Le courant, ou <c>null</c> quand le déploiement n'a encore lancé aucun dépistage.</returns>
+  /// <returns>Le courant, ou <c>null</c> quand le déploiement n'a encore lancé aucune détection.</returns>
   /// <exception cref="ArgumentNullException"><paramref name="screenings"/> est absent.</exception>
   public static Screening? CurrentAmong(IEnumerable<Screening> screenings)
   {
@@ -355,7 +356,8 @@ public sealed class Screening : IAggregateRoot
   /// </para>
   /// <para>
   /// ⚠️ <b>Le lot vide rend le lot vide, et le lot d'un seul rapport aussi.</b> Un déploiement qui
-  /// n'a lancé qu'un dépistage n'a pas d'historique : son unique rapport est le courant, et un
+  /// n'a lancé qu'une détection n'a pas d'historique : son unique rapport de détection est le
+  /// courant, et un
   /// historique qui l'y ferait figurer laisserait croire qu'il existe une version antérieure à
   /// relire.
   /// </para>

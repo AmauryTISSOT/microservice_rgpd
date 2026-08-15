@@ -126,7 +126,8 @@ internal sealed class ScreeningLexicon
     using var stream = typeof(ScreeningLexicon).GetTypeInfo().Assembly.GetManifestResourceStream(resourceName)
       ?? throw new InvalidOperationException(
         $"Le lexique gelé « {resourceName} » n'est pas embarqué dans l'assemblage. Le moteur de "
-        + "dépistage n'a pas de repli : un dictionnaire absent est une panne de déploiement, pas un "
+        + "détection n'a pas de repli : un dictionnaire absent est une panne de déploiement, pas "
+        + "un "
         + "moteur qui ne signale rien.");
 
     using var reader = new StreamReader(stream, Encoding.UTF8);

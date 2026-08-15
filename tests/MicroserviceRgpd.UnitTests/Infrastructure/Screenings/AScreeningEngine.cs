@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
 
 /// <summary>
-/// Le moteur de dépistage, tel que le service l'obtient — <b>par son port et par son câblage</b>.
+/// Le moteur de détection, tel que le service l'obtient — <b>par son port et par son câblage</b>.
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>Aucun test ne connaît les classes internes du moteur.</b> Ils passent tous par

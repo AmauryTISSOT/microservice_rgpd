@@ -17,7 +17,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadArchivedScreeningTable;
 /// <para>
 /// ⚠️ <b>Un archivé se lit en entier, et « en entier » commence ici.</b> Toutes les colonnes de la
 /// table, <c>Unflagged</c> comprises : un archivé dont on ne rendrait que les signalées serait un
-/// rapport dont personne ne peut plus vérifier ce que le dépistage n'avait pas vu.
+/// rapport de détection dont personne ne peut plus vérifier ce que la détection n'avait pas vu.
 /// </para>
 /// </remarks>
 /// <param name="Screening">Le rapport archivé qu'on ouvre.</param>

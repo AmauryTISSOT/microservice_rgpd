@@ -16,7 +16,8 @@ namespace MicroserviceRgpd.FunctionalTests.Screenings;
 /// ⚠️ <b>Le test le plus important de ce fichier n'est pas celui du chemin heureux</b> : c'est
 /// <see cref="KeepsTheLockOnUntilEveryColumnWhereNothingWasSeenHasBeenReRead"/> et
 /// <see cref="CarriesTheIncompletenessClauseAsAPropertyOfTheAnswer"/>. Un rapport qui se rendrait
-/// sans son verrou ni sa clause laisserait un dépistage <b>se lire comme un recensement complet</b>,
+/// sans son verrou ni sa clause laisserait un rapport de détection <b>se lire comme un recensement
+/// complet</b>,
 /// ce qui est le seul mode de panne que ce contexte existe pour empêcher.
 /// </para>
 /// </remarks>
@@ -27,7 +28,8 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// <b>Un relevé collé produit un rapport lisible</b>, et le dépôt y mène. La redirection fait
-  /// qu'un rechargement ne dépiste pas deux fois — et un second dépistage ne reprend aucun arbitrage
+  /// qu'un rechargement ne détecte pas deux fois — et un second rapport de détection ne reprend
+  /// aucun arbitrage
   /// du premier.
   /// </summary>
   [Fact]
@@ -134,7 +136,7 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
       ScreeningSurface.Column("email", position: 2),
       ScreeningSurface.Column("montant", table: "cotisations", position: 1)));
 
-    report.ShouldContain("Ce dépistage est inachevé");
+    report.ShouldContain("Ce rapport de détection est inachevé");
     report.ShouldContain("pas encore été relues");
   }
 
@@ -169,9 +171,12 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// <b>Le mot est <em>dépistage</em></b> — jamais <em>recensement</em>, <em>cartographie</em> ni
+  /// <b>Le mot est <em>détection</em></b> — jamais <em>recensement</em>, <em>cartographie</em> ni
   /// <em>scan</em>. Un contexte qui a deux mots pour son geste central en aura trois dans un an, et
-  /// les trois interdits promettent chacun un document complet que ce rapport n'est pas.
+  /// les trois interdits promettent chacun un document complet que ce rapport de détection n'est
+  /// pas. ⚠️ <b>Le témoin porte la doctrine, pas le mot</b> : il a gelé l'ancien mot du contexte
+  /// tant que l'interface le disait, il gèle « détection » depuis, et il ne se supprime pas quand le
+  /// mot change.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -179,8 +184,8 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   /// sur toute occurrence dans la page. La <c>Clause d'incomplétude</c> écrit en toutes lettres « ce
   /// rapport de détection <b>ne recense pas</b> vos systèmes : c'est vous qui les recensez », et
   /// c'est le texte gelé du domaine (ADR-0006) : bannir le mot jusque dans la phrase qui refuse la
-  /// chose aurait fait disparaître la seule ligne qui dit à l'<c>Operator</c> ce que ce rapport
-  /// n'est pas.
+  /// chose aurait fait disparaître la seule ligne qui dit à l'<c>Operator</c> ce que ce rapport de
+  /// détection n'est pas.
   /// </para>
   /// <para>
   /// ⚠️ <b>L'exemption tient parce qu'elle est <em>verbale</em>.</b> Ce que la doctrine refuse n'est
@@ -203,7 +208,7 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
 
     var rendered = await _surface.ReadAsync(address);
 
-    rendered.ShouldContain("dépist");
+    rendered.ShouldContain("détection");
 
     // Ce qui NOMME : l'onglet, les titres, les boutons, les libellés et les liens.
     var naming = System.Text.RegularExpressions.Regex
@@ -245,7 +250,8 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// ⚠️ <b>Un relevé amputé est refusé EN BLOC, et le refus est lisible.</b> Un dépistage bâti sur
+  /// ⚠️ <b>Un relevé amputé est refusé EN BLOC, et le refus est lisible.</b> Un rapport de détection
+  /// bâti sur
   /// une part du relevé <b>se lirait comme complet</b>, et les colonnes perdues seraient précisément
   /// celles que personne ne relirait jamais. Le refus nomme la ligne et dit ce qui était attendu :
   /// sans cela, l'<c>Operator</c> recommence au hasard sur un collage d'un mégaoctet.
@@ -269,13 +275,14 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// <b>Le tout premier démarrage chez un client</b> : aucun dépistage n'a été lancé, et on rend
-  /// l'écran de dépôt seul. Un rapport vide portant « ce dépistage n'a pas regardé le CRM en
+  /// <b>Le tout premier démarrage chez un client</b> : aucune détection n'a été lancée, et on rend
+  /// l'écran de dépôt seul. Un rapport de détection vide portant « ce rapport de détection n'a pas
+  /// regardé le CRM en
   /// SaaS… » serait un <b>aveu sans acte</b>, et userait la clause avant son premier usage réel.
   /// </summary>
   /// <remarks>
   /// ⚠️ Ce n'est pas le cas spécial « quand rien n'est signalé », qui reste refusé : là il y a un
-  /// dépistage réel dont on tairait le seuil zéro, ici il n'y a pas de dépistage du tout.
+  /// rapport de détection réel dont on tairait le seuil zéro, ici il n'y a pas de détection du tout.
   /// </remarks>
   [Fact]
   public async Task LeadsToTheDepositScreenAloneWhenTheDeploymentHasLaunchedNoScreeningYet()

@@ -5,7 +5,7 @@
   var read = answer.Content;
   var clause = answer.Clause;
 
-  ViewData["Title"] = $"La table {read.Identity}";
+  ViewData["Title"] = $"La table {read.Identity} du rapport de détection courant";
 
   @*
     L'EXCEPTION DE LARGEUR, et elle est réclamée par le motif. Une maquette jetable, depuis
@@ -101,7 +101,7 @@ else
 *@
 <p class="hint">
   Les <strong>@Counted(read.ColumnCountInThisTable, "colonne")</strong> de cette table sont ici, dans l'ordre où
-  votre base les rend — celles où le dépistage n'a rien vu comprises, et il n'y a aucun moyen de les
+  votre base les rend — celles où la détection n'a rien vu comprises, et il n'y a aucun moyen de les
   masquer. Ce sont elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part
   ailleurs.
 </p>
@@ -142,7 +142,7 @@ else
     <p class="hint">
       Ce geste portera sur @(read.WithinReachOfABatchGestureInThisTable == 1 ? "la" : "les")
       <strong>@Counted(read.WithinReachOfABatchGestureInThisTable, "colonne")</strong> de
-      <strong>@read.Identity</strong> où le dépistage n'a rien vu et que personne n'a encore
+      <strong>@read.Identity</strong> où la détection n'a rien vu et que personne n'a encore
       tranchées. Il pose un arbitrage par colonne, chacun signé de votre nom et daté par le service —
       ce n'est pas un état de lot, et chacun se reprend ensuite ligne à ligne.
       @if (read.FlaggedStillAwaitingInThisTable > 0)
@@ -171,9 +171,9 @@ else
           asp-route-table="@read.Identity.Table">
       @*
         ⚠️ AUCUN CHAMP DE COLONNE ICI, et il ne doit jamais y en avoir : le geste nomme une table.
-        Le rapport lu voyage en revanche avec le clic, comme à l'unité — un collègue qui dépose un
-        relevé pendant la lecture ferait sinon atterrir cette signature-ci, d'un seul coup, sur des
-        dizaines de colonnes d'un rapport que personne n'a lu.
+        Le rapport de détection lu voyage en revanche avec le clic, comme à l'unité — un collègue
+        qui dépose un relevé pendant la lecture ferait sinon atterrir cette signature-ci, d'un seul
+        coup, sur des dizaines de colonnes d'un rapport de détection que personne n'a lu.
       *@
       <input type="hidden" name="Screening" value="@read.Screening.Value" />
 
@@ -217,8 +217,8 @@ else
 </section>
 
 <table class="queue columns">
-  @* Ces trois comptes-ci sont ceux DE CETTE TABLE ; ceux du rapport entier sont plus bas, sous
-     leur propre titre. Les mêmes mots sous deux dénominateurs se disent, ou ne se lisent pas. *@
+  @* Ces trois comptes-ci sont ceux DE CETTE TABLE ; ceux du rapport de détection entier sont plus
+     bas, sous leur propre titre. Les mêmes mots sous deux dénominateurs se disent, ou ne se lisent pas. *@
   <caption>
     Dans cette table : @Counted(read.ColumnCountInThisTable, "colonne"), dont
     @read.FlaggedCountInThisTable signalée@(read.FlaggedCountInThisTable == 1 ? "" : "s") —
@@ -304,10 +304,11 @@ else
             <input type="hidden" name="Column" value="@column.Identity.Column" />
 
             @*
-              ⚠️ LE RAPPORT LU VOYAGE AVEC LE CLIC, et il ne dit pas où écrire — le geste écrit
-              toujours le courant. Il dit sur quoi la lecture portait, et permet de REFUSER : un
-              collègue qui dépose un relevé pendant qu'on relit une table ferait sinon atterrir
-              cette signature-ci sur un rapport que personne n'a lu, motifs compris.
+              ⚠️ LE RAPPORT DE DÉTECTION LU VOYAGE AVEC LE CLIC, et il ne dit pas où écrire — le
+              geste écrit toujours le courant. Il dit sur quoi la lecture portait, et permet de
+              REFUSER : un collègue qui dépose un relevé pendant qu'on relit une table ferait sinon
+              atterrir cette signature-ci sur un rapport de détection que personne n'a lu, motifs
+              compris.
             *@
             <input type="hidden" name="Screening" value="@read.Screening.Value" />
 
@@ -352,11 +353,11 @@ else
   </tbody>
 </table>
 
-<h2>Les comptes du dépistage entier</h2>
+<h2>Les comptes du rapport de détection entier</h2>
 
 @*
-  ILS PORTENT SUR LE RAPPORT ENTIER, jamais sur la table ouverte : des comptes bornés à ce qu'on a
-  sous les yeux auraient dit « rien n'attend » à qui a trente-neuf tables intactes.
+  ILS PORTENT SUR LE RAPPORT DE DÉTECTION ENTIER, jamais sur la table ouverte : des comptes bornés
+  à ce qu'on a sous les yeux auraient dit « rien n'attend » à qui a trente-neuf tables intactes.
 *@
 <dl class="banner tally">
   <dt>Signalées</dt>
@@ -373,4 +374,4 @@ else
 
 <partial name="_IncompletenessClause" model="clause" />
 
-<p><a asp-page="Report">Revenir au rapport</a></p>
+<p><a asp-page="Report">Revenir au rapport de détection courant</a></p>

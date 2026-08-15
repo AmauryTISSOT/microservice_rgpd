@@ -3,7 +3,8 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateTableInBatch;
 
 /// <summary>
-/// Pose sur la table ouverte du dépistage courant les <b>n arbitrages</b> du geste de lot, chacun
+/// Pose sur la table ouverte du rapport de détection courant les <b>n arbitrages</b> du geste de
+/// lot, chacun
 /// signé du nom saisi et daté par le service.
 /// </summary>
 /// <remarks>
@@ -56,7 +57,7 @@ public sealed class ArbitrateTableInBatchHandler(IRepository<Screening> screenin
 
     if (current is null)
     {
-      // Le déploiement n'a lancé aucun dépistage. Ce n'est pas une programmation fautive : un écran
+      // Le déploiement n'a lancé aucune détection. Ce n'est pas une programmation fautive : un écran
       // affiché il y a une minute peut nommer un rapport qu'un autre geste vient de supprimer.
       return Result<BatchArbitration>.NotFound();
     }
@@ -73,7 +74,7 @@ public sealed class ArbitrateTableInBatchHandler(IRepository<Screening> screenin
 
     if (inTheTable.Count == 0)
     {
-      // Le courant ne porte pas cette table : une adresse mal recopiée, ou un second dépistage sur
+      // Le courant ne porte pas cette table : une adresse mal recopiée, ou une seconde détection sur
       // une base d'où la table a disparu. Le cas ne se confond avec aucun autre — un relevé ne nomme
       // jamais une table sans colonne.
       return Result<BatchArbitration>.NotFound();

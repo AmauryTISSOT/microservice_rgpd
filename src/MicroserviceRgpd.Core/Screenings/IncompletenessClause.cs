@@ -171,7 +171,7 @@ public sealed class IncompletenessClause
 }
 
 /// <summary>
-/// Ce que le dépistage <b>a</b> lu — la seule liste de la clause qui soit fermée, parce que c'est la
+/// Ce que la détection <b>a</b> lu — la seule liste de la clause qui soit fermée, parce que c'est la
 /// seule qui puisse l'être sans mentir.
 /// </summary>
 /// <param name="ReadAsSignal">Ce qui a été lu <b>comme signal</b>, c'est-à-dire comme indice de sens.</param>
@@ -182,7 +182,7 @@ public sealed class IncompletenessClause
 /// qui explique à l'<c>Operator</c> pourquoi une donnée cachée dans les <b>valeurs</b> d'une colonne
 /// au nom neutre ne pouvait pas être vue.
 /// <para>
-/// ⚠️ <b>Elle décrit ce que le dépistage a lu du <c>ColumnListing</c>, et non ce que la ligne
+/// ⚠️ <b>Elle décrit ce que la détection a lu du <c>ColumnListing</c>, et non ce que la ligne
 /// retient.</b> Le relevé porte neuf champs par colonne, dont la table qu'une clé étrangère
 /// référence ; une <see cref="ListedColumn"/>, elle, n'en garde que ceux dont l'arbitrage ou le
 /// filtre a besoin — le schéma et la table, par exemple, vivent sur son <see cref="ColumnIdentity"/>
@@ -207,7 +207,8 @@ public sealed record ReadPerimeter(
 {
   /// <summary>Ce qui ouvre la partie, en une phrase.</summary>
   public string Statement { get; } =
-    "Ce dépistage n'a lu qu'un relevé de colonnes, celui que vous avez collé, et rien d'autre.";
+    "Ce rapport de détection n'a lu qu'un relevé de colonnes, celui que vous avez collé, et rien "
+    + "d'autre.";
 
   /// <summary>Ce qui accompagne la seconde liste, et qui dit pourquoi elle n'est pas la première.</summary>
   public string FilterStatement { get; } =
@@ -247,7 +248,7 @@ public sealed record ReadPerimeter(
 }
 
 /// <summary>
-/// Ce que le dépistage n'a pas regardé — <b>déclaré ouvert</b>, ses items n'étant que des exemples.
+/// Ce que la détection n'a pas regardé — <b>déclaré ouvert</b>, ses items n'étant que des exemples.
 /// </summary>
 /// <remarks>
 /// ⚠️ <b><see cref="IsClosed"/> vaut faux, et ce n'est pas une décoration.</b> C'est ce qui empêche
@@ -271,7 +272,8 @@ public sealed record BeyondPerimeter(IReadOnlyList<string> Examples)
 
   /// <summary>Ce qui ouvre la partie, et qui déclare l'ouverture avant que les exemples n'arrivent.</summary>
   public string Statement { get; } =
-    "Ce dépistage n'a regardé aucune autre source. En voici quelques-unes, à titre d'exemples :";
+    "Ce rapport de détection n'a regardé aucune autre source. En voici quelques-unes, à titre "
+    + "d'exemples :";
 
   /// <summary>
   /// Ce qui ferme la partie <b>sans la fermer</b>. Elle est la phrase qui empêche la liste de se lire
@@ -299,7 +301,8 @@ public sealed record CategoriesBeyondReach(IReadOnlyList<CategoryBeyondReach> Ca
     new CategoryBeyondReach(
       PersonalDataCategory.HealthData,
       "Une donnée de santé peut n'exister que dans les valeurs d'une colonne au nom parfaitement "
-      + "neutre. Le nom ne dit rien, le type ne dit rien : un dépistage de schéma ne la verra pas."),
+      + "neutre. Le nom ne dit rien, le type ne dit rien : une détection de schéma ne la verra "
+      + "pas."),
     new CategoryBeyondReach(
       PersonalDataCategory.SpecialCategoryData,
       "La biométrie ne relève de l'art. 9 qu'« aux fins d'identifier une personne de manière "
@@ -313,7 +316,8 @@ public sealed record CategoriesBeyondReach(IReadOnlyList<CategoryBeyondReach> Ca
 
   /// <summary>Ce qui ouvre la partie, et qui dit sur quel registre elle parle.</summary>
   public string Statement { get; } =
-    "Trois catégories de la taxonomie restent hors de portée de ce dépistage. Elles y figurent au "
+    "Trois catégories de la taxonomie restent hors de portée de ce rapport de détection. Elles y "
+    + "figurent au "
     + "titre de ce qu'elles sont : la limite est celle de la méthode, jamais celle de votre base.";
 
   /// <summary>Cette liste est-elle fermée ? <b>Oui</b> : elle énumère des valeurs d'une taxonomie qui l'est.</summary>

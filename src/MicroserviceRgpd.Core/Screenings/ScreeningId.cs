@@ -3,7 +3,7 @@ using Vogen;
 namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
-/// L'identité d'un <see cref="Screening"/>, engendrée par le service au moment où le dépistage est
+/// L'identité d'un <see cref="Screening"/>, engendrée par le service au moment où la détection est
 /// lancé.
 /// </summary>
 /// <remarks>
@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 [ValueObject<Guid>]
 public readonly partial struct ScreeningId
 {
-  /// <summary>L'identité d'un dépistage qui se lance à l'instant.</summary>
+  /// <summary>L'identité d'un rapport de détection qui se lance à l'instant.</summary>
   public static ScreeningId Next() => From(Guid.CreateVersion7());
 
   private static Validation Validate(Guid value)

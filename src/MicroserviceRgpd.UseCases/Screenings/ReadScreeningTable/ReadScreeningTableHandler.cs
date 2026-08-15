@@ -3,8 +3,8 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 
 /// <summary>
-/// Rend une table du dépistage courant, <b>clause comprise</b> — ou rien du tout quand aucun
-/// dépistage n'a été lancé, ou quand le courant ne porte pas cette table.
+/// Rend une table du rapport de détection courant, <b>clause comprise</b> — ou rien du tout quand
+/// aucune détection n'a été lancée, ou quand le courant ne porte pas cette table.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,7 +15,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 /// </para>
 /// <para>
 /// ⚠️ <b>La clause est attachée ici, et elle porte sur le rapport entier.</b> Une clause bornée à la
-/// table ouverte aurait dit d'un écran de treize colonnes qu'il est le périmètre lu du dépistage.
+/// table ouverte aurait dit d'un écran de treize colonnes qu'il est le périmètre lu de la détection.
 /// </para>
 /// </remarks>
 /// <param name="screenings">Les rapports du déploiement, en lecture seule.</param>
@@ -42,7 +42,8 @@ public sealed class ReadScreeningTableHandler(
 
     var read = await columns.OfTableAsync(current.Id, query.Table, cancellationToken);
 
-    // Le courant ne porte pas cette table : une adresse mal recopiée, ou un second dépistage sur une
+    // Le courant ne porte pas cette table : une adresse mal recopiée, ou une seconde détection sur
+    // une
     // base d'où la table a disparu. Une table vide portant la clause aurait fait passer l'un pour
     // l'autre.
     if (read.Count == 0)

@@ -8,8 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Screenings;
 
 /// <summary>
-/// L'écran d'<b>une table</b> du dépistage courant : toutes ses colonnes, dans l'ordre du relevé, et
-/// la <c>Clause d'incomplétude</c> qui accompagne obligatoirement la réponse.
+/// L'écran d'<b>une table</b> du rapport de détection courant : toutes ses colonnes, dans l'ordre du
+/// relevé, et la <c>Clause d'incomplétude</c> qui accompagne obligatoirement la réponse.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -58,21 +58,21 @@ public class TableModel(IMediator mediator) : PageModel
   public string? SignedBy { get; set; }
 
   /// <summary>
-  /// Le rapport que l'écran rendait quand l'humain a cliqué. ⚠️ <b>Il ne désigne pas où écrire</b> —
-  /// le geste écrit toujours le courant — <b>il permet de refuser</b> quand le courant a changé
-  /// entre le rendu et le clic.
+  /// Le rapport de détection que l'écran rendait quand l'humain a cliqué. ⚠️ <b>Il ne désigne pas
+  /// où écrire</b> — le geste écrit toujours le courant — <b>il permet de refuser</b> quand le
+  /// courant a changé entre le rendu et le clic.
   /// </summary>
   [BindProperty]
   public string? Screening { get; set; }
 
   /// <summary>
-  /// La clé sous laquelle un geste refusé laisse au rapport ce qu'il a à dire.
+  /// La clé sous laquelle un geste refusé laisse au rapport de détection ce qu'il a à dire.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Cet écran ÉCRIT cette clé et ne la lit jamais</b>, et ce n'est pas un détail : une
   /// propriété <c>[TempData]</c> se charge — donc se consomme — à chaque requête de la page qui la
   /// porte. Posée ici, elle aurait été avalée par le premier affichage de la table, et la phrase
-  /// n'aurait plus atteint le rapport auquel elle est destinée.
+  /// n'aurait plus atteint le rapport de détection auquel elle est destinée.
   /// </remarks>
   internal const string NoticeKey = "Notice";
 
@@ -159,23 +159,24 @@ public class TableModel(IMediator mediator) : PageModel
       new ArbitrateColumnCommand(column, ScreeningId.From(read), ruling, SignedBy),
       cancellationToken);
 
-    // Aucun dépistage courant, ou un courant qui ne porte pas cette colonne : l'écran affiché est
-    // périmé. Le rapport dit ce que le déploiement a réellement.
+    // Aucun rapport de détection courant, ou un courant qui ne porte pas cette colonne : l'écran
+    // affiché est périmé. Le rapport de détection dit ce que le déploiement a réellement.
     if (arbitrated.Status == ResultStatus.NotFound)
     {
       return NothingWasArbitrated(
-        "La colonne que vous veniez de trancher n'est plus dans le dépistage courant : rien n'a "
-        + "été enregistré. Voici le rapport tel qu'il est.");
+        "La colonne que vous veniez de trancher n'est plus dans le rapport de détection courant : "
+        + "rien n'a été enregistré. Voici le rapport de détection tel qu'il est.");
     }
 
-    // ⚠️ Le rapport a changé pendant votre lecture — un relevé a été déposé entre le rendu de
-    // l'écran et le clic. Écrire aurait posé votre nom sur un rapport que vous n'avez pas lu.
+    // ⚠️ Le rapport de détection a changé pendant votre lecture — un relevé a été déposé entre le
+    // rendu de l'écran et le clic. Écrire aurait posé votre nom sur un rapport de détection que vous
+    // n'avez pas lu.
     if (arbitrated.Status == ResultStatus.Conflict)
     {
       return NothingWasArbitrated(
-        "Un dépistage plus récent a été déposé pendant que vous lisiez cette table : votre "
-        + "arbitrage n'a pas été enregistré, pour qu'il ne soit pas porté sur un rapport que vous "
-        + "n'avez pas lu. Voici le rapport courant.");
+        "Un rapport de détection plus récent a été déposé pendant que vous lisiez cette table : "
+        + "votre arbitrage n'a pas été enregistré, pour qu'il ne soit pas porté sur un rapport de "
+        + "détection que vous n'avez pas lu. Voici le rapport de détection courant.");
     }
 
     if (!arbitrated.IsSuccess)
@@ -240,18 +241,18 @@ public class TableModel(IMediator mediator) : PageModel
     if (batch.Status == ResultStatus.NotFound)
     {
       return NothingWasArbitrated(
-        "La table que vous veniez de trancher n'est plus dans le dépistage courant : rien n'a été "
-        + "enregistré. Voici le rapport tel qu'il est.");
+        "La table que vous veniez de trancher n'est plus dans le rapport de détection courant : "
+        + "rien n'a été enregistré. Voici le rapport de détection tel qu'il est.");
     }
 
     // ⚠️ Un relevé a été déposé entre le rendu de l'écran et le clic : écrire aurait posé votre nom,
-    // d'un seul coup, sur des dizaines de colonnes d'un rapport que vous n'avez pas lu.
+    // d'un seul coup, sur des dizaines de colonnes d'un rapport de détection que vous n'avez pas lu.
     if (batch.Status == ResultStatus.Conflict)
     {
       return NothingWasArbitrated(
-        "Un dépistage plus récent a été déposé pendant que vous lisiez cette table : votre geste de "
-        + "lot n'a pas été enregistré, pour qu'il ne soit pas porté sur un rapport que vous n'avez "
-        + "pas lu. Voici le rapport courant.");
+        "Un rapport de détection plus récent a été déposé pendant que vous lisiez cette table : "
+        + "votre geste de lot n'a pas été enregistré, pour qu'il ne soit pas porté sur un rapport de "
+        + "détection que vous n'avez pas lu. Voici le rapport de détection courant.");
     }
 
     if (!batch.IsSuccess)
@@ -297,10 +298,10 @@ public class TableModel(IMediator mediator) : PageModel
   }
 
   /// <summary>
-  /// Ce que dit un renvoi au rapport quand le formulaire ne désignait rien d'arbitrable. ⚠️ <b>Une
-  /// seule phrase pour toutes ces branches</b> : elles n'ont qu'une seule cause réelle — un
-  /// formulaire qui n'est pas celui de cet écran — et les distinguer aurait dit à l'humain ce que
-  /// son navigateur a mal fait, ce dont il ne peut rien faire.
+  /// Ce que dit un renvoi au rapport de détection quand le formulaire ne désignait rien
+  /// d'arbitrable. ⚠️ <b>Une seule phrase pour toutes ces branches</b> : elles n'ont qu'une seule
+  /// cause réelle — un formulaire qui n'est pas celui de cet écran — et les distinguer aurait dit à
+  /// l'humain ce que son navigateur a mal fait, ce dont il ne peut rien faire.
   /// ⚠️ <b>Elle ne nomme ni colonne ni table</b> : elle sert aussi le <b>geste de lot</b>, qui
   /// désigne une table et jamais une colonne. Lui faire chercher « une colonne » dans un formulaire
   /// qui n'en porte aucune l'enverrait chercher ce qui n'existe pas.
@@ -310,7 +311,7 @@ public class TableModel(IMediator mediator) : PageModel
     + "trancher. Rouvrez la table et reprenez le geste.";
 
   /// <summary>
-  /// Le renvoi au rapport, <b>et la phrase qui dit que rien n'a été écrit</b>. ⚠️ Sans elle, un
+  /// Le renvoi au rapport de détection, <b>et la phrase qui dit que rien n'a été écrit</b>. ⚠️ Sans elle, un
   /// renvoi se lit comme une navigation ordinaire, et l'<c>Operator</c> repart en croyant avoir
   /// tranché — ce qui est le seul mode de panne que cet écran ne doit jamais avoir.
   /// </summary>
@@ -327,9 +328,10 @@ public class TableModel(IMediator mediator) : PageModel
   /// </summary>
   private async Task<IActionResult> ReadTheTableAsync(CancellationToken cancellationToken)
   {
-    // ⚠️ Une adresse sans ses deux membres ne désigne aucune table : on renvoie au rapport, qui les
-    // nomme toutes. Forger une identité sur un membre vide aurait levé au fond d'un domaine dont la
-    // règle est qu'un triplet mal formé est une programmation fautive, jamais une saisie.
+    // ⚠️ Une adresse sans ses deux membres ne désigne aucune table : on renvoie au rapport de
+    // détection, qui les nomme toutes. Forger une identité sur un membre vide aurait levé au fond
+    // d'un domaine dont la règle est qu'un triplet mal formé est une programmation fautive, jamais
+    // une saisie.
     if (string.IsNullOrWhiteSpace(Schema) || string.IsNullOrWhiteSpace(Table))
     {
       return RedirectToPage("Report");
@@ -338,9 +340,9 @@ public class TableModel(IMediator mediator) : PageModel
     Answer = await mediator.Send(
       new ReadScreeningTableQuery(new TableIdentity(Schema, Table)), cancellationToken);
 
-    // Aucun dépistage courant, ou un courant qui ne porte pas cette table : le rapport la nommerait
-    // s'il l'avait. Une table vide portant la clause aurait fait passer une adresse mal recopiée
-    // pour une table réellement dépourvue de colonnes.
+    // Aucun rapport de détection courant, ou un courant qui ne porte pas cette table : le rapport
+    // de détection la nommerait s'il l'avait. Une table vide portant la clause aurait fait passer
+    // une adresse mal recopiée pour une table réellement dépourvue de colonnes.
     return Answer is null ? RedirectToPage("Report") : Page();
   }
 }

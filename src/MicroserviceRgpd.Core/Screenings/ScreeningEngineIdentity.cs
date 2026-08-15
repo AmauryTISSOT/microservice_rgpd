@@ -7,7 +7,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <remarks>
 /// <para>
 /// <b>Elle ne sert qu'à l'humain</b> qui relit un rapport plusieurs jours après l'avoir lancé, ou qui
-/// en compare deux. Elle prend tout son sens du fait qu'un re-dépistage <b>ne fusionne pas</b> :
+/// en compare deux. Elle prend tout son sens du fait qu'un rapport de détection neuf <b>ne fusionne
+/// pas</b> :
 /// relancer produit un rapport neuf, les arbitrages du précédent ne sont pas repris, et cette
 /// identité dit au moins <b>pourquoi</b> le nouveau diffère.
 /// </para>

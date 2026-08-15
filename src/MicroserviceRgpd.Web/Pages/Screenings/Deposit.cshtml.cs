@@ -6,19 +6,19 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 
 /// <summary>
 /// L'écran du <b>dépôt d'un relevé</b> : l'<c>Operator</c> y prend la requête de son SGBD, colle ce
-/// qu'elle rend, et obtient son rapport <b>d'un seul geste</b>.
+/// qu'elle rend, et obtient son rapport de détection <b>d'un seul geste</b>.
 /// </summary>
 /// <remarks>
 /// <para>
 /// ⚠️ <b>Ce n'est pas une route publique, et il n'en existe aucune pour ce contexte.</b> Cet écran
 /// appelle MediatR directement. Une API qui déposerait un relevé laisserait quelqu'un refaire chez
-/// lui l'écran « ✅ base analysée », où le dépistage se présente comme un recensement complet.
+/// lui l'écran « ✅ base analysée », où la détection se présente comme un recensement complet.
 /// </para>
 /// <para>
 /// <b>Le geste est synchrone, sans exception</b> : le moteur rend toutes les colonnes, le rapport
-/// est écrit, puis on redirige vers lui. Rien ne part en arrière-plan — un dépistage interrompu
-/// rendrait un rapport <b>vide et rassurant</b>, et l'<c>Operator</c> sonderait un état plutôt que
-/// de lire un résultat.
+/// de détection est écrit, puis on redirige vers lui. Rien ne part en arrière-plan — une détection
+/// interrompue rendrait un rapport de détection <b>vide et rassurant</b>, et l'<c>Operator</c>
+/// sonderait un état plutôt que de lire un résultat.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le plafond d'octets est relevé sur ce geste seul.</b> Kestrel plafonne le service à 64 Kio,
@@ -37,8 +37,11 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 /// pour se faire refuser en français.
 /// </para>
 /// <para>
-/// <b>Le mot est <em>dépistage</em></b> — jamais <em>recensement</em>, <em>cartographie</em> ni
-/// <em>scan</em> — dans tout ce que cet écran dit.
+/// <b>Le mot est <em>détection des données personnelles</em>, et ce qu'elle rend est un
+/// <em>rapport de détection</em></b> — jamais <em>recensement</em>, <em>cartographie</em> ni
+/// <em>scan</em> — dans tout ce que cet écran dit. ⚠️ L'interdit porte sur ce qui <b>nomme</b> :
+/// « recensement » est banni comme nom de la chose, et le verbe <em>recenser</em> reste licite dans
+/// la prose — c'est lui qui dit que l'<c>Operator</c> recense ses systèmes, et le service pas.
 /// </para>
 /// </remarks>
 [RequestSizeLimit(DepositModel.TransportCeilingInBytes)]
@@ -103,9 +106,9 @@ public class DepositModel(IMediator mediator) : PageModel
       return Page();
     }
 
-    // Le dépôt mène au rapport qu'il vient de produire. La redirection fait aussi qu'un
-    // rechargement ne dépiste pas deux fois — et un second dépistage coûte du travail humain, les
-    // arbitrages du précédent n'étant jamais repris.
+    // Le dépôt mène au rapport de détection qu'il vient de produire. La redirection fait aussi qu'un
+    // rechargement ne détecte pas deux fois — et un second rapport de détection coûte du travail
+    // humain, les arbitrages du précédent n'étant jamais repris.
     return RedirectToPage("Report");
   }
 }

@@ -7,24 +7,25 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Screenings;
 
 /// <summary>
-/// L'<b>historique</b> des dépistages du déploiement — et le <b>seul écran d'où l'on supprime</b>.
+/// L'<b>historique</b> des rapports de détection du déploiement — et le <b>seul écran d'où l'on
+/// supprime</b>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>« Archivé » est un calcul refait à chaque affichage.</b> Le rapport le plus récemment lancé
-/// est le courant ; tous les autres sont archivés par le seul fait qu'il existe, et rien n'a été
+/// <b>« Archivé » est un calcul refait à chaque affichage.</b> Le rapport de détection le plus
+/// récemment lancé est le courant ; tous les autres sont archivés par le seul fait qu'il existe, et rien n'a été
 /// écrit pour cela. Supprimer le courant rend son rang au précédent au rendu suivant, sans qu'aucune
 /// écriture n'ait lieu.
 /// </para>
 /// <para>
-/// ⚠️ <b>La suppression n'a que cet écran, et c'est délibéré.</b> Elle efface un rapport, toutes ses
-/// colonnes et tous leurs arbitrages, sans retour et sans trace : la garder loin des écrans où l'on
+/// ⚠️ <b>La suppression n'a que cet écran, et c'est délibéré.</b> Elle efface un rapport de
+/// détection, toutes ses colonnes et tous leurs arbitrages, sans retour et sans trace : la garder loin des écrans où l'on
 /// travaille est ce qui empêche qu'elle se pose entre deux arbitrages, d'un clic de trop dans une
 /// table de cinq mille lignes.
 /// </para>
 /// <para>
-/// ⚠️ <b>Aucune échéance ne supprime, et rien ne tourne.</b> Un rapport vit jusqu'à ce qu'un humain
-/// pose ce geste-ci. Il n'y a ni purge, ni rétention, ni corbeille.
+/// ⚠️ <b>Aucune échéance ne supprime, et rien ne tourne.</b> Un rapport de détection vit jusqu'à ce
+/// qu'un humain pose ce geste-ci. Il n'y a ni purge, ni rétention, ni corbeille.
 /// </para>
 /// </remarks>
 public class HistoryModel(IMediator mediator) : PageModel
@@ -34,17 +35,18 @@ public class HistoryModel(IMediator mediator) : PageModel
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Elle est écrite et lue par cet écran seul</b>, et la phrase est la moitié utile du geste :
-  /// après une suppression, le rapport ne peut plus se décrire lui-même, et une liste plus courte
+  /// après une suppression, le rapport de détection ne peut plus se décrire lui-même, et une liste
+  /// plus courte
   /// d'une ligne ne dit pas laquelle est partie.
   /// </remarks>
   internal const string NoticeKey = "DeletionNotice";
 
-  /// <summary>Les rapports archivés, et le courant qu'ils ne sont pas.</summary>
+  /// <summary>Les rapports de détection archivés, et le courant qu'ils ne sont pas.</summary>
   public ScreeningHistory? History { get; private set; }
 
   /// <summary>
-  /// Le rapport que le bouton cliqué désigne. <b>Il ne vit que sur le POST</b> : l'écran rend
-  /// toujours l'historique entier.
+  /// Le rapport de détection que le bouton cliqué désigne. <b>Il ne vit que sur le POST</b> :
+  /// l'écran rend toujours l'historique entier.
   /// </summary>
   [BindProperty]
   public string? Screening { get; set; }
@@ -65,13 +67,14 @@ public class HistoryModel(IMediator mediator) : PageModel
   }
 
   /// <summary>
-  /// Supprime le rapport nommé — <b>rapport, colonnes et arbitrages</b> — puis revient à
-  /// l'historique en disant ce qui est parti.
+  /// Supprime le rapport de détection nommé — <b>rapport de détection, colonnes et arbitrages</b> —
+  /// puis revient à l'historique en disant ce qui est parti.
   /// </summary>
   /// <remarks>
   /// <para>
   /// ⚠️ <b>Le succès redirige, il ne rend pas la page.</b> Un rechargement rejouerait sinon la
-  /// suppression : elle serait sans effet — le rapport n'existe plus — mais le navigateur
+  /// suppression : elle serait sans effet — le rapport de détection n'existe plus — mais le
+  /// navigateur
   /// redemanderait d'envoyer le formulaire, sur le seul geste de cette surface qu'on ne veut jamais
   /// voir proposé deux fois.
   /// </para>
@@ -99,7 +102,8 @@ public class HistoryModel(IMediator mediator) : PageModel
     {
       // Deux écrans ouverts sur le même déploiement, et l'autre a supprimé celui-ci le premier.
       TempData[NoticeKey] =
-        "Ce rapport n'existe plus : il a été supprimé ailleurs. Voici l'historique tel qu'il est.";
+        "Ce rapport de détection n'existe plus : il a été supprimé ailleurs. Voici l'historique tel "
+        + "qu'il est.";
 
       return RedirectToPage();
     }
@@ -126,31 +130,33 @@ public class HistoryModel(IMediator mediator) : PageModel
   /// courant</b>.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>La seconde phrase est la moitié utile.</b> Supprimer le courant remet le rapport
-  /// précédent au rang de courant : un <c>Operator</c> qui ne le sait pas rouvrira le dépistage et
-  /// arbitrera un rapport qu'il croyait rangé.
+  /// ⚠️ <b>La seconde phrase est la moitié utile.</b> Supprimer le courant remet le rapport de
+  /// détection précédent au rang de courant : un <c>Operator</c> qui ne le sait pas rouvrira la
+  /// détection et arbitrera un rapport de détection qu'il croyait rangé.
   /// </remarks>
   private static string WhatWasDeleted(DeletedScreening deleted)
   {
     var gone =
-      $"Le dépistage de « {deleted.Database} » lancé le "
+      $"Le rapport de détection de « {deleted.Database} » lancé le "
       + $"{deleted.LaunchedOn.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))} "
       + $"a été supprimé, avec ses {deleted.ColumnCount} colonnes et tous leurs arbitrages. Rien ne "
       + "les rétablit.";
 
     return deleted.WasCurrent
-      ? $"{gone} C'était le dépistage courant : le plus récent de ceux qui restent l'est devenu, et "
-        + "c'est désormais lui qui s'arbitre."
+      ? $"{gone} C'était le rapport de détection courant : le plus récent de ceux qui restent l'est "
+        + "devenu, et c'est désormais lui qui s'arbitre."
       : gone;
   }
 
   /// <summary>
-  /// Ce que dit un renvoi quand le formulaire ne désignait aucun rapport. ⚠️ <b>Une seule phrase</b> :
+  /// Ce que dit un renvoi quand le formulaire ne désignait aucun rapport de détection.
+  /// ⚠️ <b>Une seule phrase</b> :
   /// ces branches n'ont qu'une cause réelle — un formulaire qui n'est pas celui de cet écran — et les
   /// distinguer aurait dit à l'humain ce que son navigateur a mal fait.
   /// </summary>
   private const string NothingWasDeleted =
-    "Aucune suppression n'a été enregistrée : le formulaire envoyé ne désignait pas de rapport.";
+    "Aucune suppression n'a été enregistrée : le formulaire envoyé ne désignait pas de rapport de "
+    + "détection.";
 
   private async Task<IActionResult> ReadTheHistoryAsync(CancellationToken cancellationToken)
   {

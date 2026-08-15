@@ -3,7 +3,8 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 
 /// <summary>
-/// Lire <b>une table</b> du dépistage courant : toutes ses colonnes, dans l'ordre du relevé.
+/// Lire <b>une table</b> du rapport de détection courant : toutes ses colonnes, dans l'ordre du
+/// relevé.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -18,7 +19,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 /// un paramètre facultatif est une porte qu'un appelant finit par ouvrir.
 /// </para>
 /// <para>
-/// ⚠️ <b>Elle rend <c>null</c> quand le déploiement n'a lancé aucun dépistage, ou quand le courant ne
+/// ⚠️ <b>Elle rend <c>null</c> quand le déploiement n'a lancé aucune détection, ou quand le courant ne
 /// porte pas cette table.</b> Rendre une table vide portant la <c>Clause d'incomplétude</c> aurait
 /// déclaré l'incomplétude de quelque chose qui n'existe pas — un <b>aveu sans acte</b> — et aurait
 /// fait passer une faute de frappe dans l'adresse pour une table réellement dépourvue de colonnes.

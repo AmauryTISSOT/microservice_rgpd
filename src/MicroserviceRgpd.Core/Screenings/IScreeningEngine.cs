@@ -1,7 +1,8 @@
 namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
-/// Le port par lequel le domaine fait dépister un <see cref="ColumnListing"/>.
+/// Le port par lequel le domaine fait détecter les données personnelles d'un
+/// <see cref="ColumnListing"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -12,7 +13,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// des règles locales, à un modèle servi, ou à un troisième moteur pas encore écrit.
 /// </para>
 /// <para>
-/// <b>Il rend une ligne par colonne du relevé, ou il échoue.</b> Un dépistage partiel n'existe pas :
+/// <b>Il rend une ligne par colonne du relevé, ou il échoue.</b> Une détection partielle n'existe
+/// pas :
 /// l'<c>Omission relue</c> repose entièrement sur le fait que le rapport rende <b>toutes</b> les
 /// colonnes, y compris celles où rien n'a été vu. Un moteur qui ne saurait traiter qu'une part du
 /// relevé lève plutôt que de rendre ce qui se lirait comme complet.
@@ -32,13 +34,13 @@ namespace MicroserviceRgpd.Core.Screenings;
 public interface IScreeningEngine
 {
   /// <summary>
-  /// Dépiste le relevé entier, et rend <b>une ligne par colonne</b> — dans l'ordre du relevé — avec
+  /// Détecte sur le relevé entier, et rend <b>une ligne par colonne</b> — dans l'ordre du relevé — avec
   /// l'identité du moteur qui les a produites.
   /// </summary>
   /// <param name="listing">Le relevé collé, déjà accepté en entier par son ingestion.</param>
   /// <param name="cancellationToken">
   /// L'annulation de l'appelant, propagée jusqu'au moteur : un relevé de vingt mille colonnes
-  /// dépisté pour quelqu'un qui est parti occupe la place de celui qui est resté.
+  /// détecté pour quelqu'un qui est parti occupe la place de celui qui est resté.
   /// </param>
   /// <exception cref="ArgumentNullException"><paramref name="listing"/> est absent.</exception>
   Task<ScreenedListing> ScreenAsync(ColumnListing listing, CancellationToken cancellationToken = default);

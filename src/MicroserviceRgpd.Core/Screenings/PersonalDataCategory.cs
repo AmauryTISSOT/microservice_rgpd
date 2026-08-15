@@ -42,7 +42,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <b>PR</b> dont le corps dit quelles colonnes réelles ne trouvaient pas de valeur, pourquoi
 /// <see cref="PersonalDataUncategorised"/> ne suffisait pas, et où la valeur entre dans l'ordre
 /// d'arbitrage. ⚠️ <b>En retirer ou en renommer une reste un ADR</b> : il n'y a pas d'appelant à
-/// casser, mais il y a des arbitrages humains signés et datés qu'un re-dépistage ne reprend pas — ce
+/// casser, mais il y a des arbitrages humains signés et datés qu'un rapport de détection neuf ne
+/// reprend pas — ce
 /// geste-là ne périme pas un contrat, il périme du travail humain.
 /// </para>
 /// </remarks>
@@ -113,11 +114,11 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
     new(nameof(PersonalDataUncategorised), 11, "donnée personnelle sans catégorie", "repli");
 
   /// <summary>
-  /// La valeur rendue quand le dépistage <b>n'a rien signalé</b> sur une colonne.
+  /// La valeur rendue quand la détection <b>n'a rien signalé</b> sur une colonne.
   /// <para>
   /// ⚠️ <b>Elle dit ce que le service n'a pas fait, jamais ce que la colonne est.</b> Une colonne
   /// <see cref="Unflagged"/> n'est pas une colonne sans données personnelles — c'est une colonne où
-  /// <b>rien n'a été vu</b>, ce qui est un constat sur le dépistage et non sur la donnée. Le service
+  /// <b>rien n'a été vu</b>, ce qui est un constat sur la détection et non sur la donnée. Le service
   /// n'a jamais vu la donnée. C'est <c>Enregistré, jamais vérifié</c> appliqué au seul endroit de ce
   /// contexte où il serait tentant de l'oublier : une machine qui déclare une colonne inoffensive
   /// porte très exactement le témoignage qu'elle n'a pas les moyens de porter.
@@ -203,7 +204,7 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
   /// </para>
   /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="triggered"/> est absent.</exception>
-  /// <exception cref="ArgumentException">Aucune valeur n'a déclenché — le dépistage rend alors <see cref="Unflagged"/>, jamais rien.</exception>
+  /// <exception cref="ArgumentException">Aucune valeur n'a déclenché — la détection rend alors <see cref="Unflagged"/>, jamais rien.</exception>
   public static PersonalDataCategory MostCostlyToOmit(IEnumerable<PersonalDataCategory> triggered)
   {
     ArgumentNullException.ThrowIfNull(triggered);

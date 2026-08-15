@@ -88,7 +88,7 @@ public class ScreeningLifecycle(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>Un archivé se lit EN ENTIER</b> — les colonnes où le dépistage n'avait rien vu comprises —
+  /// ⚠️ <b>Un archivé se lit EN ENTIER</b> — les colonnes où la détection n'avait rien vu comprises —
   /// <b>et n'offre aucun geste d'arbitrage</b>. Un archivé amputé serait un rapport dont plus
   /// personne ne peut vérifier ce qui avait été omis.
   /// </summary>
@@ -204,7 +204,7 @@ public class ScreeningLifecycle(CustomWebApplicationFactory<Program> factory)
     await _surface.DeleteAsync(current, "galette_prod");
 
     var history = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.History));
-    history.ShouldContain("C'était le dépistage courant");
+    history.ShouldContain("C'était le rapport de détection courant");
 
     // ⚠️ Le rang s'est déplacé tout seul : le précédent s'arbitre de nouveau, et son écran
     // d'archivé n'existe plus.

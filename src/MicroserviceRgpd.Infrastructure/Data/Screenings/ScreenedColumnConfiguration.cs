@@ -3,7 +3,7 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.Infrastructure.Data.Screenings;
 
 /// <summary>
-/// La table des colonnes dépistées : une ligne par colonne du relevé, <b>sans exception</b> — y
+/// La table des colonnes détectées : une ligne par colonne du relevé, <b>sans exception</b> — y
 /// compris là où le moteur n'a rien vu.
 /// </summary>
 /// <remarks>
@@ -163,7 +163,7 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
   }
 
   /// <summary>
-  /// Ce que le dépistage a dit de cette colonne : une catégorie <b>toujours</b> présente, le degré
+  /// Ce que la détection a dit de cette colonne : une catégorie <b>toujours</b> présente, le degré
   /// de la règle qui a déclenché, et le motif en prose qui les justifie.
   /// </summary>
   /// <remarks>

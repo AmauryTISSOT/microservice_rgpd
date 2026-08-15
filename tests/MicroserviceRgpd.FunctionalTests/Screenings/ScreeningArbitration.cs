@@ -192,7 +192,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("email", position: 1),
       ScreeningSurface.Column("montant", position: 2));
 
-    (await ReadTheTableAsync()).ShouldContain("Ce dépistage est inachevé");
+    (await ReadTheTableAsync()).ShouldContain("Ce rapport de détection est inachevé");
 
     await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name, "Camille Roux");
 
@@ -200,15 +200,15 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     // avoir fini.
     var halfway = await ReadTheTableAsync();
 
-    halfway.ShouldContain("Ce dépistage est inachevé");
+    halfway.ShouldContain("Ce rapport de détection est inachevé");
     Counted(halfway, "En attente").ShouldBe(1);
 
     await _surface.ArbitrateAsync("montant", ScreenedColumnState.SetAside.Name, "Camille Roux");
 
     var finished = await ReadTheTableAsync();
 
-    finished.ShouldNotContain("Ce dépistage est inachevé");
-    finished.ShouldContain("Toutes les colonnes de ce dépistage ont été relues");
+    finished.ShouldNotContain("Ce rapport de détection est inachevé");
+    finished.ShouldContain("Toutes les colonnes de ce rapport de détection ont été relues");
     Counted(finished, "En attente").ShouldBe(0);
   }
 
@@ -249,7 +249,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>Une colonne que le rapport courant ne porte pas ne casse rien</b> : elle ramène au rapport,
   /// qui dit ce que le déploiement a réellement. Un écran affiché il y a une minute peut nommer une
-  /// colonne qu'un second dépistage vient d'emporter.
+  /// colonne qu'un second rapport de détection vient d'emporter.
   /// </summary>
   [Fact]
   public async Task SendsBackToTheReportRatherThanFailingOnAColumnTheCurrentScreeningDoesNotHold()
@@ -382,7 +382,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     var report = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Report));
 
-    report.ShouldContain("dépistage plus récent");
+    report.ShouldContain("rapport de détection plus récent");
     report.ShouldContain("n'a pas été enregistré");
   }
 
@@ -421,7 +421,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     var report = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Report));
 
-    report.ShouldContain("n'est plus dans le dépistage courant");
+    report.ShouldContain("n'est plus dans le rapport de détection courant");
   }
 
   /// <summary>

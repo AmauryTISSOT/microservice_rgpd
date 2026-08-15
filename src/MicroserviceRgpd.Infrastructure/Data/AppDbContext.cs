@@ -30,7 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<Case> Cases => Set<Case>();
 
   /// <summary>
-  /// Les <c>Screening</c> — le rapport d'un dépistage, et l'agrégat racine de son contexte.
+  /// Les <c>Screening</c> — le rapport de détection, et l'agrégat racine de son contexte.
   /// </summary>
   public DbSet<Screening> Screenings => Set<Screening>();
 

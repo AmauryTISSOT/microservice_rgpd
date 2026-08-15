@@ -3,7 +3,7 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.Infrastructure.Screenings;
 
 /// <summary>
-/// Branche le moteur de dépistage. Il n'y a rien à configurer, et c'est le rendu d'ADR-0004 : pas
+/// Branche le moteur de détection. Il n'y a rien à configurer, et c'est le rendu d'ADR-0004 : pas
 /// d'adresse, pas d'échéance, pas de drapeau — le moteur démarre avec le service.
 /// </summary>
 public static class ScreeningEngineServiceExtensions

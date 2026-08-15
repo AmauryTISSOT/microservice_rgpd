@@ -47,8 +47,8 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// <summary>
   /// <b>Les trois points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
   /// l'ordre de mise en route</b> : la configuration, puis la détection, puis le tableau des
-  /// demandes. Il n'y a pas de quatrième lien vers l'historique des rapports : il s'atteint depuis
-  /// le rapport courant.
+  /// demandes. Il n'y a pas de quatrième lien vers l'historique des rapports de détection : il
+  /// s'atteint depuis le rapport de détection courant.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Cette liste est RECOPIÉE À DESSEIN</b>, et il ne faut pas la faire pointer vers celle du
@@ -200,7 +200,7 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// <summary>
   /// Le point d'entrée <b>dont un écran relève</b>, lu sur sa seule adresse : le dépôt d'une
   /// demande et un dossier relèvent du tableau des demandes RGPD, la reprise d'une déclaration du
-  /// <c>Manifest</c>, et tout ce qui pend sous le dépistage du dépistage.
+  /// <c>Manifest</c>, et tout ce qui pend sous la détection des données personnelles.
   /// </summary>
   internal static string EntryPointOf(string screen)
   {
@@ -279,7 +279,8 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// Dépose deux relevés et rend le rapport que le second a archivé : c'est le seul chemin vers un
-  /// dépistage archivé, puisque « archivé » n'est écrit nulle part et se recalcule à chaque rendu.
+  /// rapport de détection archivé, puisque « archivé » n'est écrit nulle part et se recalcule à
+  /// chaque rendu.
   /// </summary>
   private async Task<string> ScreenTwiceAsync()
   {

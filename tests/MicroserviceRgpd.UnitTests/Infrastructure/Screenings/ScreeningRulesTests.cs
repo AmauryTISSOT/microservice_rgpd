@@ -248,7 +248,7 @@ public class ScreeningRulesTests
   }
 
   /// <summary>
-  /// Le moteur <b>propage l'annulation</b> : un relevé dépisté pour quelqu'un qui est parti occupe
+  /// Le moteur <b>propage l'annulation</b> : un relevé détecté pour quelqu'un qui est parti occupe
   /// la place de celui qui est resté.
   /// </summary>
   [Fact]

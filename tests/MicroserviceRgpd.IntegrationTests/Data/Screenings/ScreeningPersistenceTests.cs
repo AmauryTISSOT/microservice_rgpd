@@ -163,7 +163,8 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
   }
 
   /// <summary>
-  /// <b>Le même triplet dans deux rapports n'est pas un doublon</b> : re-dépister la même base rend
+  /// <b>Le même triplet dans deux rapports de détection n'est pas un doublon</b> : relancer la
+  /// détection sur la même base rend
   /// un rapport neuf qui porte les mêmes colonnes, et l'index unique est borné au rapport.
   /// </summary>
   [Fact]

@@ -21,10 +21,11 @@ quels : on écrit « la `Qualification` », « le `EvidenceLog` ».
   d'une demande d'exercice de droits de son arrivée à sa clôture, appelle les systèmes du client
   là où il les atteint, et produit la preuve qu'une procédure a été suivie — y compris là où elle
   ne l'a pas été.
-- [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Dépiste, dans le relevé
+- [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Détecte, dans le relevé
   des colonnes d'une base du client qu'un `Operator` lui colle, les colonnes qui portent
   vraisemblablement des données personnelles, et les lui rend une par une pour qu'il les retienne ou
-  les écarte. Il ne se connecte à rien, ne lit aucune valeur, et ne touche jamais au `Manifest`.
+  les écarte. C'est la **détection des données personnelles**, et ce qu'elle rend est un **rapport de
+  détection**. Il ne se connecte à rien, ne lit aucune valeur, et ne touche jamais au `Manifest`.
 
 ## Relations
 
@@ -102,16 +103,17 @@ piège que le découpage rend visible. Chez `Qualification`, l'erreur est une li
 a sous les yeux : c'est l'`Erreur relue`, et elle coûte peu. Chez `Casework`, l'erreur est une ligne
 manquante que personne ne verra jamais : c'est l'`Omission silencieuse`, et la relecture n'a aucune
 prise sur elle. Chez `Screening`, l'erreur qui coûte est bien l'omission — mais elle est **relisible**,
-et seulement parce que le rapport rend **toutes** les colonnes du relevé, y compris celles où rien n'a
-été vu : c'est l'`Omission relue`, et elle cesse d'exister le jour où quelqu'un filtre l'affichage.
-Chaque régime est défini dans le glossaire du contexte où il vaut, et **nulle part ailleurs**.
+et seulement parce que le rapport de détection rend **toutes** les colonnes du relevé, y compris
+celles où rien n'a été vu : c'est l'`Omission relue`, et elle cesse d'exister le jour où quelqu'un
+filtre l'affichage. Chaque régime est défini dans le glossaire du contexte où il vaut, et **nulle
+part ailleurs**.
 
 ## Décisions
 
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Trois ADR de système sont en vigueur, et aucun n'en supplante un autre :
+Six ADR de système sont en vigueur, et aucun n'en supplante un autre :
 
 - [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) — l'architecture
   polyglotte et le moteur auto-hébergé.
@@ -123,6 +125,17 @@ Trois ADR de système sont en vigueur, et aucun n'en supplante un autre :
   blanche** : rien ne traverse d'un contexte à l'autre sauf les deux traversées vers le noyau
   partagé, écrites en toutes lettres. Un quatrième contexte naîtrait donc interdit partout, et son
   `CONTEXT.md` ne peut pas entrer sans que quelqu'un écrive sa ligne.
+- [ADR-0004](./docs/adr/0004-moteur-de-depistage-en-csharp-sans-second-sidecar.md) — le moteur de la
+  détection des données personnelles vit en C# dans `Infrastructure`, sans second sidecar Python.
+  ⚠️ Son nom de fichier et son titre portent le mot que l'interface n'emploie plus : ils sont
+  **datés, pas faux** — un ADR acté parle avec les mots de sa date, et on ne le réécrit pas.
+- [ADR-0005](./docs/adr/0005-design-language-documente-police-embarquee-et-fichiers-statiques.md) —
+  le design language documenté est adopté, sa police est embarquée, et le service ouvre ses fichiers
+  statiques.
+- [ADR-0006](./docs/adr/0006-trois-points-d-entree-renommes-en-francais-identifiants-inchanges.md) —
+  les trois points d'entrée sont renommés dans la langue humaine — « Configuration du microservice
+  RGPD », « Détection des données personnelles », « Tableau des demandes RGPD » — et les
+  identifiants C# ne bougent pas.
 
 ⚠️ [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) **précède le
 découpage** : il a été écrit quand le dépôt n'avait qu'un contexte. Il se lit comme un ADR de
