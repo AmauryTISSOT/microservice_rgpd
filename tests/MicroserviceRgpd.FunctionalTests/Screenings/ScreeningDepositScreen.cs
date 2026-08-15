@@ -157,7 +157,7 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
     report.ShouldContain("Le périmètre lu");
     report.ShouldContain("Hors périmètre");
     report.ShouldContain("Hors de portée");
-    report.ShouldContain("Ce dépistage et votre catalogue");
+    report.ShouldContain("Ce rapport de détection et vos systèmes déclarés");
 
     // Ce que le service a lu comme indice, et ce qu'il n'a lu que pour écarter.
     report.ShouldContain("les noms de colonnes");
@@ -177,9 +177,17 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   /// <para>
   /// ⚠️ <b>La règle porte sur ce qui <em>nomme</em></b> — titres, boutons, libellés, onglet — et non
   /// sur toute occurrence dans la page. La <c>Clause d'incomplétude</c> écrit en toutes lettres « ce
-  /// dépistage <b>n'est pas</b> le recensement de votre paysage de données », et c'est le texte gelé
-  /// du domaine : bannir le mot jusque dans la phrase qui l'oppose au dépistage aurait fait
-  /// disparaître la seule ligne qui dit à l'<c>Operator</c> ce que ce rapport n'est pas.
+  /// rapport de détection <b>ne recense pas</b> vos systèmes : c'est vous qui les recensez », et
+  /// c'est le texte gelé du domaine (ADR-0006) : bannir le mot jusque dans la phrase qui refuse la
+  /// chose aurait fait disparaître la seule ligne qui dit à l'<c>Operator</c> ce que ce rapport
+  /// n'est pas.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>L'exemption tient parce qu'elle est <em>verbale</em>.</b> Ce que la doctrine refuse n'est
+  /// pas le lexème mais <b>l'autorité d'un recensement</b>, que seul le nom défini confère. Le
+  /// nouveau texte n'emploie plus que le verbe, dans la prose d'un <c>&lt;p&gt;</c> ; aucun titre,
+  /// bouton ni libellé ne porte le nom, et la règle ci-dessous s'applique donc sans exception à
+  /// tout ce qui <b>nomme</b>.
   /// </para>
   /// <para>
   /// <c>cartographie</c> et <c>scan</c>, eux, n'ont aucun emploi légitime nulle part sur ces écrans,

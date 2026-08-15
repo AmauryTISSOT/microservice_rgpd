@@ -215,7 +215,7 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     table.ShouldContain("Le périmètre lu");
     table.ShouldContain("Hors périmètre");
     table.ShouldContain("Hors de portée");
-    table.ShouldContain("Ce dépistage et votre catalogue");
+    table.ShouldContain("Ce rapport de détection et vos systèmes déclarés");
 
     // Les comptes sont ceux du relevé entier — trois colonnes dans deux tables — et non ceux des
     // deux colonnes de la table ouverte.
