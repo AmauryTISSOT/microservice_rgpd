@@ -1,7 +1,8 @@
 @*
   La surface de l'Operator, livrée par le service lui-même — server-rendered, sans framework
-  client, et sans aucune ressource externe : ce qui doit rester visible par construction ne peut
-  pas dépendre d'un fichier que le navigateur du client n'ira pas chercher.
+  client, et sans aucune ressource tierce : ce qui doit rester visible par construction ne peut
+  pas dépendre d'un fichier que le navigateur du client irait chercher ailleurs. Ce que le service
+  sert lui-même, il le sert.
 *@
 <!DOCTYPE html>
 <html lang="fr">
@@ -9,74 +10,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>@ViewData["Title"] — Droits des personnes concernées</title>
-  <style>
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, sans-serif; line-height: 1.5; margin: 0 auto; max-width: 60rem; padding: 2rem 1rem; }
-    h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.2rem; margin-top: 2.5rem; }
-    .caveat { border-left: 3px solid currentColor; font-style: italic; margin: 1rem 0 2rem; opacity: 0.85; padding-left: 0.75rem; }
-    .system { border-top: 1px solid rgba(127, 127, 127, 0.4); padding: 1rem 0; }
-    .system h3 { font-size: 1.05rem; margin: 0 0 0.25rem; }
-    .system dl { display: grid; gap: 0.15rem 1rem; grid-template-columns: max-content 1fr; margin: 0.5rem 0 0; }
-    .system dt { font-weight: 600; }
-    .system dd { margin: 0; white-space: pre-wrap; }
-    .none { font-style: italic; opacity: 0.75; }
-    table.queue { border-collapse: collapse; width: 100%; }
-    table.queue caption { text-align: left; margin-bottom: 0.5rem; }
-    table.queue th, table.queue td { border-bottom: 1px solid rgba(127, 127, 127, 0.4); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
-    .banner { display: grid; gap: 0.15rem 1rem; grid-template-columns: max-content 1fr; margin: 0.5rem 0 2rem; }
-    .banner dt { font-weight: 600; }
-    .banner dd { margin: 0; }
-    .claim { border-top: 1px solid rgba(127, 127, 127, 0.4); padding: 1rem 0; }
-    .claim h3 { font-size: 1.05rem; margin: 0 0 0.5rem; }
-    .step { margin: 0 0 1.5rem 1rem; }
-    .step h4 { font-size: 1rem; margin: 0; }
-    .step .hint { margin: 0 0 0.5rem; }
-    /* Le défaut et le dépassement se signalent, jamais par un nombre : le mot dit le fait. */
-    .defaulted { font-weight: 600; }
-    .overrun { color: #b3261e; }
-    .claimed-finding { border-left: 3px solid #b3261e; padding-left: 0.75rem; }
-    .signature { margin-top: 0.5rem; }
-    form p { margin: 0 0 1rem; }
-    label { display: block; font-weight: 600; margin-bottom: 0.2rem; }
-    input[type="text"], input[type="url"], textarea { box-sizing: border-box; font: inherit; padding: 0.4rem; width: 100%; }
-    fieldset { border: 1px solid rgba(127, 127, 127, 0.4); }
-    fieldset label { display: inline-block; font-weight: normal; margin-right: 1.5rem; }
-    .hint { display: block; font-weight: normal; opacity: 0.8; }
-    .refusal { color: #b3261e; font-weight: 600; }
-    .refusals { border: 1px solid #b3261e; margin-bottom: 1.5rem; padding: 0.75rem 1rem; }
-    /* Le dépistage. Le verrou est en tête et se voit : sans lui, on croit le travail fini. */
-    .unfinished { border-left: 3px solid #b3261e; font-weight: 600; margin: 1rem 0 2rem; padding-left: 0.75rem; }
-    .listing-query { border: 1px solid rgba(127, 127, 127, 0.4); font-size: 0.85rem; max-height: 22rem; overflow: auto; padding: 0.75rem; }
-    /*
-      L'EXCEPTION DE LARGEUR, et c'est le MOTIF qui la réclame. La maquette d'arbitrage l'a tranché :
-      un motif replié derrière une infobulle est un motif qui n'existe plus, et c'est lui qui rend
-      l'arbitrage possible. Il lui faut sa colonne — ~26 rem —, ce que la largeur du dépôt ne donne
-      pas. L'exception est nommée plutôt qu'élargie partout : les autres écrans se lisent mieux
-      étroits, et une largeur unique aurait fait payer à tous la contrainte d'un seul.
-    */
-    body.wide { max-width: 86rem; }
-    table.columns { table-layout: fixed; }
-    table.columns td.reason, table.columns th.reason { min-width: 26rem; width: 26rem; }
-    /*
-      L'ARBITRAGE TIENT DANS SA CELLULE, et c'est une contrainte de volume : chacune des cinq mille
-      lignes d'un relevé porte ce formulaire. Les marges de formulaire du reste du service —
-      pensées pour une réserve par écran — auraient rendu une table haute de cent écrans.
-    */
-    table.columns td.ruling, table.columns th.ruling { min-width: 15rem; width: 15rem; }
-    td.ruling form { margin: 0.4rem 0 0; }
-    td.ruling label { font-weight: normal; }
-    td.ruling input[type="text"] { margin-bottom: 0.35rem; }
-    td.ruling button { padding: 0.3rem 0.7rem; }
-    .dialects a { margin-right: 1rem; }
-    .dialects a.chosen { font-weight: 700; }
-    /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
-    .clause { border-top: 1px solid rgba(127, 127, 127, 0.4); display: grid; gap: 0 2rem; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); padding-top: 1rem; }
-    .clause h3 { font-size: 1rem; margin: 1rem 0 0.25rem; }
-    .clause ul { margin: 0.25rem 0; padding-left: 1.2rem; }
-    .clause p { margin: 0.25rem 0; }
-    button { font: inherit; padding: 0.5rem 1.25rem; }
-  </style>
+  <link rel="stylesheet" href="/css/operator.css" />
 </head>
 <body class="@(ViewData["Wide"] is true ? "wide" : null)">
   @RenderBody()

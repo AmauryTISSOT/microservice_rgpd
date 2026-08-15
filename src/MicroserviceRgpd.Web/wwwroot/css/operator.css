@@ -1,0 +1,474 @@
+/*
+  LA FEUILLE UNIQUE DE LA SURFACE DE L'OPERATOR, servie par le service lui-même. Toutes les valeurs
+  de design vivent ici, en propriétés personnalisées sur `:root` : une couleur se change en un
+  endroit plutôt qu'en cinq, et les écrans n'écrivent plus que des noms.
+
+  Les valeurs sont celles du design language documenté sous `docs/design/`. On en retient la
+  palette, l'échelle typographique, les espacements, les rayons, les élévations et les filets ; on en
+  écarte tout ce qui relève du marketing — la bande de héros, les cartes de tarif, les pastilles
+  promotionnelles, les boutons en pilule et la palette décorative. Le service n'a aucune page
+  publique : ses écrans sont tous des écrans d'instruction.
+*/
+
+/*
+  LA POLICE EST EMBARQUÉE, jamais chargée depuis un tiers : un service qui outille le RGPD ne peut
+  pas faire fuiter l'adresse IP de ses utilisateurs vers un hébergeur de polices. Un seul fichier
+  variable en sous-ensemble latin porte les quatre graisses du document, en une requête au lieu de
+  quatre — et `swap` fait que le texte s'affiche tout de suite, dans la pile de repli, si le fichier
+  n'arrive jamais.
+*/
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/inter-latin-variable.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /*
+    LE CLAIR EST VERROUILLÉ. La déclaration déléguait jusqu'ici le thème au navigateur, ce qui ne
+    tenait que tant qu'aucune couleur n'était posée. Poser une encre et des surfaces ferme la
+    question : le document ne fournit aucune valeur sombre, et en inventer une quinzaine reviendrait
+    à écrire un autre design language. Les tokens sont structurés pour qu'un thème sombre soit
+    greffable plus tard sans toucher à un seul écran.
+  */
+  color-scheme: light;
+
+  /*
+    La pile de repli est celle que le document donne lui-même, et elle est complète : les écrans
+    restent lisibles si le fichier de police n'arrive jamais.
+  */
+  --font-sans: "Inter", -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+
+  /*
+    L'ACCENT STRUCTUREL EST UNIQUE. Aucun second accent n'est déclaré : c'est la seule couleur qui
+    peindra jamais une action.
+  */
+  --accent: #0075de;
+  --accent-pressed: #005bab;
+  --on-accent: #ffffff;
+
+  /*
+    Les surfaces. Le canevas chaud est déclaré ici mais n'est employé par aucun écran : le fond de
+    page reste blanc jusqu'à la livraison qui pose les cartes.
+  */
+  --canvas: #f6f5f4;
+  --surface: #ffffff;
+  --hairline: #e6e6e6;
+  --hairline-width: 1px;
+
+  /*
+    Le filet qui marque une chose plutôt qu'il ne la sépare — la mise en garde, le constat réclamé,
+    le verrou d'un dépistage inachevé. Le document ne donne aucune valeur pour lui : c'est celle qui
+    était déjà écrite dans les écrans, conservée telle quelle et simplement nommée.
+  */
+  --rule-width: 3px;
+
+  /* Les encres, du texte principal au texte estompé. */
+  --ink: #000000;
+  --ink-secondary: #31302e;
+  --ink-muted: #615d59;
+  --ink-faint: #a39e98;
+
+  /*
+    Le signalement. Le rouge est celui qui était déjà écrit dans les écrans, repris tel quel : il
+    n'était que recopié cinq fois, et le nommer ne change aucun rendu.
+
+    ⚠️ « succès » et « attention » NE DOIVENT JAMAIS SERVIR DE COULEUR DE TEXTE. Mesurés sur blanc
+    ils atteignent 3,0:1 et 3,8:1, sous le seuil WCAG AA de 4,5:1 : ils sont réservés aux bordures et
+    aux pastilles. Aucun écran ne les emploie aujourd'hui ; ils sont écrits pour être disponibles.
+
+    Aucun token « information » n'est déclaré : il aurait valu la même couleur que l'accent, et le
+    même bleu aurait alors voulu dire à la fois « clique ici » et « ceci est une information ».
+    L'encre du signalement est le quatrième token : ce qui se pose SUR une couleur de signalement.
+  */
+  --signal-error: #b3261e;
+  --signal-success: #1aae39;
+  --signal-warning: #dd5b00;
+  --on-signal: #ffffff;
+
+  /*
+    Les onze rôles typographiques du document. Le crénage est porté par un token à part parce que
+    la propriété `font` ne le transporte pas — et il doit être appliqué explicitement : la police
+    substituée rend plus lâche que l'originale à crénage par défaut.
+
+    Les deux rôles d'affichage restent définis et inutilisés : ils n'ont de sens que sur une page
+    publique, et le service n'en a aucune.
+  */
+  --type-display-1: 700 64px/1 var(--font-sans);
+  --type-display-1-tracking: -2.125px;
+  --type-display-2: 700 54px/1.04 var(--font-sans);
+  --type-display-2-tracking: -1.875px;
+  --type-heading-1: 700 40px/1.1 var(--font-sans);
+  --type-heading-1-tracking: -1px;
+  --type-heading-2: 700 26px/1.23 var(--font-sans);
+  --type-heading-2-tracking: -0.625px;
+  --type-heading-3: 700 22px/1.27 var(--font-sans);
+  --type-heading-3-tracking: -0.25px;
+  --type-title: 600 20px/1.4 var(--font-sans);
+  --type-title-tracking: -0.125px;
+  --type-body-md: 400 16px/1.5 var(--font-sans);
+  --type-body-md-tracking: 0;
+  --type-body-sm: 400 15px/1.33 var(--font-sans);
+  --type-body-sm-tracking: 0;
+  --type-button: 500 16px/1.5 var(--font-sans);
+  --type-button-tracking: 0;
+  --type-caption: 400 14px/1.43 var(--font-sans);
+  --type-caption-tracking: 0;
+  --type-eyebrow: 600 12px/1.33 var(--font-sans);
+  --type-eyebrow-tracking: 0.125px;
+
+  /*
+    Les quatre graisses du document, et rien de plus. Elles sont déjà portées par les rôles
+    typographiques ; elles sont nommées à part pour les endroits — un terme de liste, une étiquette —
+    où c'est la graisse seule qui change, sans que le rôle change.
+  */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Les espacements, sur une base de 8. */
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 28px;
+  --space-xxl: 32px;
+
+  /* Les rayons. Les champs restent serrés ; rien ne prend la forme d'une pilule. */
+  --radius-xs: 4px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /*
+    Les élévations. Le défaut est plat — le filet seul —, et l'ombre douce reste réservée aux
+    surfaces qui flottent. Aucun écran ne les emploie à cette livraison.
+
+    Le troisième niveau du document n'est pas déclaré : celui-ci n'en donne que le dernier arrêt, et
+    inventer les quatre autres aurait écrit une valeur que personne n'a mesurée.
+  */
+  --elevation-flat: none;
+  --elevation-soft: rgba(0, 0, 0, 0.01) 0 0.175px 1.041px, rgba(0, 0, 0, 0.02) 0 0.8px 2.925px,
+    rgba(0, 0, 0, 0.027) 0 2.025px 7.847px, rgba(0, 0, 0, 0.04) 0 4px 18px;
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+  font: var(--type-body-md);
+  letter-spacing: var(--type-body-md-tracking);
+  margin: 0 auto;
+  max-width: 60rem;
+  padding: var(--space-xxl) var(--space-md);
+}
+
+h1 {
+  font: var(--type-heading-1);
+  letter-spacing: var(--type-heading-1-tracking);
+  margin-bottom: var(--space-xxs);
+}
+
+h2 {
+  font: var(--type-heading-2);
+  letter-spacing: var(--type-heading-2-tracking);
+  margin-top: var(--space-xxl);
+}
+
+.caveat {
+  border-left: var(--rule-width) solid currentColor;
+  color: var(--ink-secondary);
+  font-style: italic;
+  margin: var(--space-md) 0 var(--space-xxl);
+  padding-left: var(--space-sm);
+}
+
+.system {
+  border-top: var(--hairline-width) solid var(--hairline);
+  padding: var(--space-md) 0;
+}
+
+.system h3 {
+  font: var(--type-heading-3);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0 0 var(--space-xxs);
+}
+
+.system dl {
+  display: grid;
+  gap: var(--space-xxs) var(--space-md);
+  grid-template-columns: max-content 1fr;
+  margin: var(--space-xs) 0 0;
+}
+
+.system dt {
+  font-weight: var(--weight-semibold);
+}
+
+.system dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.none {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+table.queue {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table.queue caption {
+  margin-bottom: var(--space-xs);
+  text-align: left;
+}
+
+table.queue th,
+table.queue td {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+  vertical-align: top;
+}
+
+table.queue th {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+}
+
+.banner {
+  display: grid;
+  gap: var(--space-xxs) var(--space-md);
+  grid-template-columns: max-content 1fr;
+  margin: var(--space-xs) 0 var(--space-xxl);
+}
+
+.banner dt {
+  font-weight: var(--weight-semibold);
+}
+
+.banner dd {
+  margin: 0;
+}
+
+.claim {
+  border-top: var(--hairline-width) solid var(--hairline);
+  padding: var(--space-md) 0;
+}
+
+.claim h3 {
+  font: var(--type-heading-3);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0 0 var(--space-xs);
+}
+
+.step {
+  margin: 0 0 var(--space-lg) var(--space-md);
+}
+
+.step h4 {
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+  margin: 0;
+}
+
+.step .hint {
+  margin: 0 0 var(--space-xs);
+}
+
+/* Le défaut et le dépassement se signalent, jamais par un nombre : le mot dit le fait. */
+.defaulted {
+  font-weight: var(--weight-semibold);
+}
+
+.overrun {
+  color: var(--signal-error);
+}
+
+.claimed-finding {
+  border-left: var(--rule-width) solid var(--signal-error);
+  padding-left: var(--space-sm);
+}
+
+.signature {
+  margin-top: var(--space-xs);
+}
+
+form p {
+  margin: 0 0 var(--space-md);
+}
+
+label {
+  display: block;
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-xxs);
+}
+
+input[type="text"],
+input[type="url"],
+textarea {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-xs);
+  box-sizing: border-box;
+  color: var(--ink);
+  font: inherit;
+  padding: var(--space-xs);
+  width: 100%;
+}
+
+fieldset {
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+}
+
+fieldset label {
+  display: inline-block;
+  font-weight: var(--weight-regular);
+  margin-right: var(--space-lg);
+}
+
+.hint {
+  color: var(--ink-muted);
+  display: block;
+  font: var(--type-caption);
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.refusal {
+  color: var(--signal-error);
+  font-weight: var(--weight-semibold);
+}
+
+.refusals {
+  border: var(--hairline-width) solid var(--signal-error);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+}
+
+/* Le dépistage. Le verrou est en tête et se voit : sans lui, on croit le travail fini. */
+.unfinished {
+  border-left: var(--rule-width) solid var(--signal-error);
+  font-weight: var(--weight-semibold);
+  margin: var(--space-md) 0 var(--space-xxl);
+  padding-left: var(--space-sm);
+}
+
+.listing-query {
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+  max-height: 22rem;
+  overflow: auto;
+  padding: var(--space-sm);
+}
+
+/*
+  L'EXCEPTION DE LARGEUR, et c'est le MOTIF qui la réclame. L'arbitrage l'a tranché : un motif
+  replié derrière une infobulle est un motif qui n'existe plus, et c'est lui qui rend l'arbitrage
+  possible. Il lui faut sa colonne — ~26 rem —, ce que la largeur du dépôt ne donne pas.
+  L'exception est nommée plutôt qu'élargie partout : les autres écrans se lisent mieux étroits, et
+  une largeur unique aurait fait payer à tous la contrainte d'un seul.
+*/
+body.wide {
+  max-width: 86rem;
+}
+
+table.columns {
+  table-layout: fixed;
+}
+
+table.columns td.reason,
+table.columns th.reason {
+  min-width: 26rem;
+  width: 26rem;
+}
+
+/*
+  L'ARBITRAGE TIENT DANS SA CELLULE, et c'est une contrainte de volume : chacune des cinq mille
+  lignes d'un relevé porte ce formulaire. Les marges de formulaire du reste du service — pensées
+  pour une réserve par écran — auraient rendu une table haute de cent écrans.
+*/
+table.columns td.ruling,
+table.columns th.ruling {
+  min-width: 15rem;
+  width: 15rem;
+}
+
+td.ruling form {
+  margin: var(--space-xxs) 0 0;
+}
+
+td.ruling label {
+  font-weight: var(--weight-regular);
+}
+
+td.ruling input[type="text"] {
+  margin-bottom: var(--space-xxs);
+}
+
+td.ruling button {
+  padding: var(--space-xxs) var(--space-xs);
+}
+
+.dialects a {
+  margin-right: var(--space-md);
+}
+
+.dialects a.chosen {
+  font-weight: var(--weight-bold);
+}
+
+/* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
+.clause {
+  border-top: var(--hairline-width) solid var(--hairline);
+  display: grid;
+  gap: 0 var(--space-xxl);
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  padding-top: var(--space-md);
+}
+
+.clause h3 {
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+  margin: var(--space-md) 0 var(--space-xxs);
+}
+
+.clause ul {
+  margin: var(--space-xxs) 0;
+  padding-left: var(--space-lg);
+}
+
+.clause p {
+  margin: var(--space-xxs) 0;
+}
+
+/*
+  Le bouton prend sa typographie, son rayon et son filet, et RIEN DE SA COULEUR : les trois niveaux
+  d'action — l'action principale qui se voit, l'action secondaire qui s'efface, le geste irréversible
+  qui se signale — sont un changement de sens, pas de style, et ils arrivent avec la livraison qui
+  les distingue. Peindre le bouton ici aurait donné le même fond aux dix-huit formulaires du service,
+  dont celui qui détruit un journal de preuve.
+*/
+button {
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  font: var(--type-button);
+  letter-spacing: var(--type-button-tracking);
+  padding: var(--space-xs) var(--space-lg);
+}
