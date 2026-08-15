@@ -30,25 +30,25 @@ namespace MicroserviceRgpd.FunctionalTests.Screenings;
 internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> factory)
 {
   /// <summary>Le sommaire du rapport de détection courant.</summary>
-  internal const string Report = "/depistage";
+  internal const string Report = "/detection";
 
   /// <summary>L'écran du dépôt — le seul chemin par lequel un relevé entre.</summary>
-  internal const string Deposit = "/depistage/depot";
+  internal const string Deposit = "/detection/depot";
 
   /// <summary>
   /// L'écran d'<b>une</b> table du rapport courant. Le schéma et la table passent en paramètres de
   /// requête : un nom d'objet peut porter un point ou une barre oblique, que la base rend tels quels.
   /// </summary>
-  internal const string Table = "/depistage/table";
+  internal const string Table = "/detection/table";
 
   /// <summary>L'historique : ce que le déploiement a lancé, et le seul écran qui supprime.</summary>
-  internal const string History = "/depistage/historique";
+  internal const string History = "/detection/historique";
 
   /// <summary>Le sommaire d'<b>un</b> rapport de détection archivé, nommé en paramètre de requête.</summary>
-  internal const string Archive = "/depistage/archive";
+  internal const string Archive = "/detection/archive";
 
   /// <summary>Une table d'un rapport de détection archivé.</summary>
-  internal const string ArchivedTable = "/depistage/archive/table";
+  internal const string ArchivedTable = "/detection/archive/table";
 
   private static readonly DateTimeOffset GeneratedOn = new(2026, 8, 10, 9, 30, 0, TimeSpan.Zero);
 

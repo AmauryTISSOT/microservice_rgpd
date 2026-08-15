@@ -216,6 +216,51 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>Les six adresses du contexte de détection portent le nom de l'écran qu'elles servent</b> :
+  /// elles répondent sous <c>/detection</c>, et les six anciennes <b>meurent en 404</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Aucune redirection n'est posée, et il ne faut pas en poser.</b> Une ancienne adresse qui
+  /// mènerait encore quelque part serait un second nom vivant pour la même chose : elle survivrait
+  /// dans les signets et les liens collés, et la surface porterait deux vocabulaires. C'est pourquoi
+  /// le refus est vérifié comme un 404 sec — un 301 ou un 302 passerait un test qui se contenterait
+  /// de « ne répond pas 200 ».
+  /// </remarks>
+  [Fact]
+  public async Task RetiresTheSixFormerScreeningAddressesWithoutRedirecting()
+  {
+    foreach (var retired in ChromeSurface.RetiredScreeningAddresses)
+    {
+      var response = await _chrome.FetchAsync(retired);
+
+      response.StatusCode.ShouldBe(
+        HttpStatusCode.NotFound, $"L'ancienne adresse {retired} doit être morte.");
+      response.Headers.Location.ShouldBeNull(
+        $"L'ancienne adresse {retired} redirige, et fait donc revivre l'ancien nom.");
+    }
+  }
+
+  /// <summary>
+  /// <b>Et les six écrans répondent bien sous leur nouveau préfixe</b> — les six ensemble, sans quoi
+  /// une seule adresse restée en arrière ferait parler à la surface deux vocabulaires à la fois.
+  /// </summary>
+  [Fact]
+  public async Task ServesTheSixScreeningScreensUnderTheirNewPrefix()
+  {
+    var screens = await _chrome.ScreeningScreensAsync();
+
+    screens.Count.ShouldBe(ChromeSurface.RetiredScreeningAddresses.Count);
+
+    foreach (var screen in screens)
+    {
+      screen.ShouldStartWith(
+        "/detection", Case.Sensitive, $"L'écran {screen} ne porte pas le préfixe du contexte.");
+
+      await _chrome.ReadAsync(screen);
+    }
+  }
+
+  /// <summary>
   /// <b>Ni pied de page, ni lien d'évitement.</b> Le premier est un annuaire de liens marketing que
   /// le service n'a pas ; le second est une décision explicite du demandeur.
   /// </summary>
