@@ -465,7 +465,7 @@ public sealed class Case : IAggregateRoot
   /// D'où vient la reconnaissance de ces droits. <b>Une seule par ouverture</b> : les droits d'un
   /// dépôt arrivent tous par la même porte, et l'origine se fige sur chaque <see cref="Claim"/>.
   /// </param>
-  /// <param name="manifest">Le paysage déclaré du client, tel qu'il se lit à cet instant.</param>
+  /// <param name="manifest">Le catalogue déclaré du client, tel qu'il se lit à cet instant.</param>
   /// <param name="reception">
   /// Le jour de réception par le responsable de traitement, et la façon dont le service le sait.
   /// </param>

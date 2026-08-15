@@ -61,7 +61,7 @@ public sealed class EvidenceLogRow
 
   /// <summary>
   /// Le <c>DeclaredSystem</c> que le fait concerne, quand il en concerne un. C'est un nom du
-  /// <b>paysage déclaré du client</b> — choisi par l'humain qui l'a recensé — et jamais un nom de
+  /// <b>catalogue déclaré du client</b> — choisi par l'humain qui l'a recensé — et jamais un nom de
   /// personne concernée.
   /// </summary>
   public string? DeclaredSystem { get; init; }

@@ -126,16 +126,39 @@ public class IncompletenessClauseTests
   }
 
   /// <summary>
-  /// La relation au <c>Manifest</c> vit <b>dans la clause</b>, et pas seulement au glossaire : la
+  /// La relation aux systèmes déclarés vit <b>dans la clause</b>, et pas seulement au glossaire : la
   /// borne <c>Aucune modification vers le Manifest</c> n'empêche que le pont technique, et rien en
   /// elle n'empêche un <c>Operator</c> pressé de lire le rapport comme son paysage.
   /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le texte est gelé par ADR-0006, et ce test est ce qui le gèle.</b> L'ancienne phrase
+  /// exigeait l'identifiant <c>Manifest</c> en clair ; il en est retiré, parce qu'ADR-0006 le fait
+  /// désigner un écran qui ne portera plus ce nom — l'<c>Operator</c> devra chercher
+  /// « Configuration du microservice RGPD » dans la barre. Le renommage de cet écran est le ticket
+  /// voisin : jusqu'à lui, la phrase gelée devance la barre, et c'est la barre qui la rejoint.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le nom défini part, le verbe reste</b> — « ne recense pas… c'est vous qui les recensez ».
+  /// C'est ce qui retire l'autorité d'un recensement <b>sans retirer le mot</b> : le défini
+  /// d'identité conférait cette autorité, la forme verbale rend la tenue de la liste à celui qui la
+  /// tient. Et rien n'y présente cette liste comme close — l'<c>Omission silencieuse</c> reste
+  /// visible.
+  /// </para>
+  /// </remarks>
   [Fact]
-  public void SaysInTheAnswerItselfThatTheListingIsNotTheManifest()
+  public void SaysInTheAnswerItselfThatTheOperatorIsTheOneWhoListsTheirSystems()
   {
     var clause = IncompletenessClause.For(AScreening.Of(AScreening.AFlaggedColumn()));
 
-    clause.RelationToManifest.ShouldContain("Manifest", Case.Sensitive);
+    // Le texte entier, mot pour mot : c'est un texte gelé, et rien de moins qu'une égalité ne le
+    // gèle. ⚠️ Elle porte aussi le retrait de l'identifiant Manifest en clair, qui nommait un écran
+    // que le renommage fait changer de nom.
+    clause.RelationToManifest.ShouldBe(
+      "Ce rapport de détection ne recense pas vos systèmes : c'est vous qui les recensez, à la "
+      + "main, système par système, dans « Configuration du microservice RGPD ». La liste que vous "
+      + "y tenez ne garantit pas qu'il n'en existe pas d'autres.");
+
     clause.RelationToManifest.ShouldContain("à la main", Case.Insensitive);
   }
 

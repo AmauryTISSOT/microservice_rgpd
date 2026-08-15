@@ -45,18 +45,20 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   internal const string Font = "/fonts/inter-latin-variable.woff2";
 
   /// <summary>
-  /// <b>Les trois points d'entrée</b> que la barre de navigation offre, et les seuls. Il n'y a pas
-  /// de quatrième lien vers l'historique des dépistages : il s'atteint depuis le rapport courant, et
-  /// une barre à trois entrées se lit d'un coup d'œil.
+  /// <b>Les trois points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
+  /// l'ordre de mise en route</b> : la configuration, puis la détection, puis le tableau des
+  /// demandes. Il n'y a pas de quatrième lien vers l'historique des rapports : il s'atteint depuis
+  /// le rapport courant.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Cette liste est RECOPIÉE À DESSEIN</b>, et il ne faut pas la faire pointer vers celle du
   /// layout — pas plus que <see cref="ServiceName"/> ou que le calcul de <see cref="EntryPointOf"/>.
   /// Un test qui lit la constante qu'il vérifie ne vérifie plus rien : il passerait encore le jour où
-  /// un quatrième lien apparaît, ou le jour où la barre se met à mener ailleurs. Ce qui est écrit ici
-  /// est ce que la surface <b>doit</b> offrir, tenu séparément de ce qu'elle offre.
+  /// un quatrième lien apparaît, le jour où la barre se met à mener ailleurs, ou le jour où l'ordre
+  /// se défait. Ce qui est écrit ici est ce que la surface <b>doit</b> offrir, tenu séparément de ce
+  /// qu'elle offre : cette liste se met à jour <b>à la main</b>.
   /// </remarks>
-  internal static readonly IReadOnlyList<string> EntryPoints = ["/dossiers", "/manifest", "/depistage"];
+  internal static readonly IReadOnlyList<string> EntryPoints = ["/manifest", "/depistage", "/dossiers"];
 
   /// <summary>Le nom du service, que la barre porte devant ses trois liens.</summary>
   internal const string ServiceName = "Droits des personnes concernées";

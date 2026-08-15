@@ -3,7 +3,7 @@ using MicroserviceRgpd.Core.Casework.Adapters;
 namespace MicroserviceRgpd.UseCases.Casework.VerifyManifest;
 
 /// <summary>
-/// Confronter le paysage déclaré à ce que les <c>Adapter</c> servent réellement, et rapporter
+/// Confronter le catalogue déclaré à ce que les <c>Adapter</c> servent réellement, et rapporter
 /// l'écart.
 /// </summary>
 /// <remarks>

@@ -36,7 +36,7 @@ public class EvidenceLogSchemaTests(PostgreSqlFixture postgres)
   /// colonne de prose libre glissée ici serait la porte par laquelle un nom finirait par passer.
   /// <para>
   /// <c>declared_system</c> est arrivée avec les tentatives d'appel d'<c>Adapter</c> : elle porte un
-  /// nom du <b>paysage déclaré du client</b>, choisi par l'humain qui l'a recensé, et jamais un nom de
+  /// nom du <b>catalogue déclaré du client</b>, choisi par l'humain qui l'a recensé, et jamais un nom de
   /// personne concernée.
   /// </para>
   /// <para>

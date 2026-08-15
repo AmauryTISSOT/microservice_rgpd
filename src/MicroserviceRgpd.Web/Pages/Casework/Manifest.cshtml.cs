@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Casework;
 
 /// <summary>
-/// L'écran du <c>Manifest</c> : on y relit le paysage déclaré, et on y déclare un système de plus.
+/// L'écran du <c>Manifest</c>, « Configuration du microservice RGPD » : on y relit les systèmes
+/// déclarés, et on y déclare un système de plus.
 /// </summary>
 /// <remarks>
 /// <para>
