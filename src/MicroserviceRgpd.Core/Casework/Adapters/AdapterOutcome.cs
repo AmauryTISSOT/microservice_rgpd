@@ -14,7 +14,7 @@
 /// <b>Les deux refus sont distincts parce qu'on ne les répare pas au même endroit.</b> Un secret
 /// invalide se répare dans la configuration de déploiement — des deux côtés, et d'un seul geste
 /// coordonné ; un <c>system_id</c> non servi se répare dans le <c>Manifest</c> ou dans
-/// l'<c>Adapter</c>, et il dit que le paysage déclaré et le programme qui le sert ne parlent plus
+/// l'<c>Adapter</c>, et il dit que le catalogue déclaré et le programme qui le sert ne parlent plus
 /// du même système. Les fondre en un « refusé » ferait chercher l'exploitant au mauvais endroit une
 /// fois sur deux.
 /// </para>
@@ -45,7 +45,7 @@ public sealed class AdapterOutcome : SmartEnum<AdapterOutcome>
 
   /// <summary>
   /// L'<c>Adapter</c> ne sert pas ce <c>system_id</c>. <b>Un désaccord entre le <c>Manifest</c> et
-  /// l'<c>Adapter</c></b> : le paysage déclaré désigne une adresse qui ne connaît pas ce système,
+  /// l'<c>Adapter</c></b> : le catalogue déclaré désigne une adresse qui ne connaît pas ce système,
   /// et personne ne corrige l'un par l'autre en silence.
   /// </summary>
   public static readonly AdapterOutcome SystemNotServed = new(nameof(SystemNotServed), 3, "système non servi", isRefusal: true);

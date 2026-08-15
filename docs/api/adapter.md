@@ -218,7 +218,7 @@ les répare pas au même endroit.
 
 - `401` — **un fait de topologie.** Il ne dit rien du système appelé : le secret des deux côtés n'est
   plus le même, et la réparation est un redémarrage coordonné.
-- `404` — **un désaccord `Manifest`/`Adapter`.** Le paysage déclaré côté service désigne une adresse
+- `404` — **un désaccord `Manifest`/`Adapter`.** Le catalogue déclaré côté service désigne une adresse
   qui ne connaît pas ce système. Quelqu'un a tort — la déclaration, ou votre `Adapter` — et un
   humain tranchera. Le service ne corrige **jamais** son `Manifest` en silence sur votre réponse.
 

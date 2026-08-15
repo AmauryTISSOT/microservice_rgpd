@@ -2,7 +2,7 @@
 
 Ce dépôt porte **trois contextes bornés**, et ils se distinguent par le **temps** : l'un ne connaît
 que l'instant d'un verdict, l'autre que la durée d'une instruction, le troisième que le temps
-d'**avant** — la configuration, quand aucune demande n'existe encore.
+d'**avant** — celui où aucune demande n'existe encore.
 
 Les deux premiers parlent du même sujet, les droits que le RGPD ouvre aux personnes concernées. Le
 troisième n'en parle pas du tout : il regarde le paysage de données du client avant que quiconque ne

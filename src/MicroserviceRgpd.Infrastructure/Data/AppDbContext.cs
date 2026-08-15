@@ -16,7 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<QualificationAuditRow> QualificationAuditEntries => Set<QualificationAuditRow>();
 
   /// <summary>
-  /// Le <c>Manifest</c> : le paysage déclaré du client, tenu <b>système par système</b>. Chacun est
+  /// Le <c>Manifest</c> : le catalogue déclaré du client, tenu <b>système par système</b>. Chacun est
   /// un agrégat racine à lui seul — il se déclare, se relit et se révise seul, et porte sa propre
   /// date de déclaration.
   /// </summary>
