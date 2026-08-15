@@ -2,7 +2,7 @@ namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
 /// <b>Un terme retiré ne revient pas.</b> Le renommage de vocabulaire ne vit qu'en partie dans le
-/// code : sur les quatorze termes retirés, <b>dix sont des clauses de doctrine</b> qui n'existent
+/// code : sur les quinze termes retirés, <b>dix sont des clauses de doctrine</b> qui n'existent
 /// que dans de la prose — documentation, ADR, commentaires XML, messages d'échec de test. Le
 /// compilateur ne les voit pas, et rien n'empêcherait le vocabulaire de se défaire ligne à ligne au
 /// fil des PR suivantes.
@@ -29,6 +29,12 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// sont écrites en dur, et <see cref="EveryExemptedMigrationStillExistsOnDisk"/> tient qu'elles ne
 /// s'élargissent ni ne pourrissent.
 /// </para>
+/// <para>
+/// S'y ajoute <see cref="ActedDecisionsPath"/> : <c>docs/adr/</c> n'est pas balayé du tout, pour le
+/// motif des migrations — <b>un ADR acté décrit une décision datée, et parle avec les mots de sa
+/// date.</b> L'exemption est écrite en dur et <b>ancrée au chemin</b>, et le même test tient qu'elle
+/// ne s'élargit ni ne pourrit.
+/// </para>
 /// </summary>
 public class RetiredVocabularyTests
 {
@@ -42,7 +48,24 @@ public class RetiredVocabularyTests
   private const int LeastPlausibleFileCount = 200;
 
   /// <summary>
-  /// Les quatorze termes retirés, chacun avec son remplaçant. Le remplaçant est là pour le
+  /// Le prix accepté de l'entrée accentuée, écrit dans le message d'échec plutôt que laissé à
+  /// deviner : celui qui lit ce message est exactement celui qui serait tenté de retirer l'accent
+  /// pour « attraper plus de choses », et il doit lire ici pourquoi l'accent y est.
+  /// </summary>
+  private const string AccentedPriceNotice =
+    "⚠️ « dépist » est écrit ACCENTUÉ dans la table, et le garde ne compare jamais les accents. " +
+    "La forme accentuée est la forme humaine — le registre 2, c'est-à-dire exactement ce que ce " +
+    "garde défend ; la forme non accentuée est la forme machine : slug d'URL, nom de fichier, clé " +
+    "de lexique. C'est là que vivent les survivants légitimes, et l'accent les trie tout seul. " +
+    "Prix accepté : une occurrence NON accentuée écrite un jour en prose passera au travers du " +
+    "garde, et c'est assumé — c'est le coût d'un garde qui ne rougit jamais à tort, jugé moindre " +
+    "que celui d'un garde qu'on désarme parce qu'il bloque. Ne retirez pas l'accent : le garde " +
+    "exigerait alors des réparations impossibles (le nom de fichier de l'ADR-0004 cité depuis " +
+    "docs/contexts/, la clé de lexique « depistage » de la catégorie donnée de santé, les " +
+    "adresses en /depistage…).";
+
+  /// <summary>
+  /// Les quinze termes retirés, chacun avec son remplaçant. Le remplaçant est là pour le
   /// <b>message d'échec</b> : la réparation ne doit demander aucune recherche.
   /// </summary>
   /// <remarks>
@@ -59,6 +82,27 @@ public class RetiredVocabularyTests
   /// <para>
   /// <c>Texte qui meurt / texte qui reste</c> est <b>une</b> entrée de glossaire à deux moitiés :
   /// elle occupe deux lignes ici parce que ses deux moitiés se citent séparément.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b><c>dépist</c> est écrit accentué, et le garde ne compare jamais les accents.</b> C'est
+  /// délibéré, et c'est la décision la plus facile à défaire par inadvertance de tout ce chantier :
+  /// écrire l'entrée sans accent ferait rougir le garde sur trois emplois qu'on ne peut ni ne doit
+  /// réparer — le nom de fichier de l'<c>ADR-0004</c> cité depuis <c>docs/contexts/</c>, que
+  /// l'exemption de <see cref="ActedDecisionsPath"/> ne couvre pas et qu'on ne peut pas renommer ;
+  /// la clé de lexique qui associe <c>depistage</c> à la catégorie « donnée de santé », attestée par
+  /// un test de règles ; et les adresses en <c>/depistage…</c> tant qu'elles vivent.
+  /// </para>
+  /// <para>
+  /// La même figure que pour l'ancien mot du journal joue ici sur l'accent : <b>la forme accentuée
+  /// est la forme humaine</b> — le registre 2, c'est-à-dire exactement ce que ce garde défend —, et
+  /// <b>la forme non accentuée est la forme machine</b> : slug d'URL, nom de fichier, clé de
+  /// lexique. C'est précisément là que vivent les survivants légitimes, et l'accent les trie
+  /// <b>tout seul</b>, sans qu'aucune exemption nouvelle soit écrite.
+  /// </para>
+  /// <para>
+  /// ⚠️ <c>paysage</c> et <c>file</c> n'entrent <b>pas</b> dans cette table : ce sont des noms
+  /// communs français qui survivent légitimement en registre 3, et les y mettre ferait rougir le
+  /// garde sur de la prose juste. Leur renommage se vérifie par les tests d'écran.
   /// </para>
   /// </remarks>
   private static readonly RetiredTerm[] RetiredTerms =
@@ -78,6 +122,7 @@ public class RetiredVocabularyTests
     new("Garde en liste blanche", "Tout interdit sauf exceptions écrites", CaseSensitive: false),
     new("Garde de vacuité", "Garde contre le vert vide", CaseSensitive: false),
     new("Le verdict commande l'emplacement", "Le banc décide où vit le moteur", CaseSensitive: false),
+    new("dépist", "détect", CaseSensitive: false),
   ];
 
   /// <summary>
@@ -169,6 +214,28 @@ public class RetiredVocabularyTests
   ];
 
   /// <summary>
+  /// ⚠️ <b>Le dossier des ADR actés n'est pas balayé, et le motif est celui des migrations : un ADR
+  /// acté décrit une décision datée, et parle avec les mots de sa date.</b> Réécrire
+  /// l'ADR-0004 — « Le moteur de dépistage vit en C# dans <c>Infrastructure</c> » — lui ferait
+  /// décrire une décision qui n'a jamais été prise sous ce nom, et son <b>nom de fichier</b> est
+  /// cité ailleurs dans le dépôt. Comme pour un <see cref="GeneratedSnapshotSuffix"/>, le garde
+  /// pousserait sinon chaque contributeur à retoucher de l'histoire immuable.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// Le chemin est <b>ancré à la racine</b> et non réduit à un nom de feuille, sur le modèle de
+  /// <see cref="FilesSpeakingThePreRenameSchema"/> : un autre dossier qu'on appellerait un jour
+  /// <c>adr</c> n'hériterait pas de la tolérance écrite ici.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>L'exemption ne s'étend à rien d'autre.</b> <c>docs/contexts/</c>, <c>docs/spec/</c>,
+  /// <c>docs/api/</c>, <c>docs/agents/</c>, <c>exploration/</c>, <c>src/</c>, <c>tests/</c> et
+  /// <c>CONTEXT-MAP.md</c> restent balayés sans tolérance.
+  /// </para>
+  /// </remarks>
+  private static readonly string[] ActedDecisionsPath = ["docs", "adr"];
+
+  /// <summary>
   /// ⚠️ <b>Les instantanés de modèle qu'EF écrit ne sont pas balayés, et le motif compte.</b> Un
   /// <c>.Designer.cs</c> décrit le modèle <b>tel qu'il était</b> à la date de sa migration —
   /// jusqu'aux noms de types et de propriétés d'alors, <c>LedgerRow</c> et <c>SignatureRegime</c>
@@ -188,7 +255,7 @@ public class RetiredVocabularyTests
 
   /// <summary>
   /// ⚠️ <b>Ce fichier-ci est le seul que le garde ne se lit pas à lui-même</b>, et le motif est
-  /// écrit ici plutôt que laissé à deviner : il porte forcément les quatorze termes retirés, faute
+  /// écrit ici plutôt que laissé à deviner : il porte forcément les quinze termes retirés, faute
   /// de quoi il ne saurait pas quoi chercher. Ce n'est pas une exemption de vocabulaire, c'est le
   /// garde qui s'exclut de son propre balayage.
   /// </summary>
@@ -228,7 +295,10 @@ public class RetiredVocabularyTests
       "retiré et son remplaçant :" + Environment.NewLine +
       string.Join(Environment.NewLine, offences.Order(StringComparer.Ordinal)) +
       Environment.NewLine +
-      "Voir l'entrée correspondante des glossaires de docs/contexts/ ou de CONTEXT-MAP.md.");
+      "Voir l'entrée correspondante des glossaires de docs/contexts/ ou de CONTEXT-MAP.md." +
+      Environment.NewLine +
+      Environment.NewLine +
+      AccentedPriceNotice);
   }
 
   /// <summary>
@@ -276,6 +346,26 @@ public class RetiredVocabularyTests
         $"Aucun fichier « {Path.Combine(path)} » sur le disque, alors qu'il est autorisé à nommer " +
         "l'ancien schéma. Retirez la ligne : elle n'exempte plus rien.");
     }
+
+    ActedDecisionsPath.ShouldBe(
+      ["docs", "adr"],
+      "L'exemption des ADR actés doit désigner docs/adr/, et lui seul. Elle est ancrée au chemin " +
+      "depuis la racine : la remonter d'un cran exempterait docs/ tout entier, et la réduire au " +
+      "nom de feuille « adr » exempterait n'importe quel dossier qu'on appellerait un jour ainsi.");
+
+    var actedDecisions = ActedDecisionsDirectoryIn(root);
+
+    Directory.Exists(actedDecisions).ShouldBeTrue(
+      $"Aucun dossier « {Path.Combine(ActedDecisionsPath)} » sur le disque, alors qu'il est " +
+      "exempté du balayage. Retirez la ligne : elle n'exempte plus rien et laisse ouverte une " +
+      "porte que plus rien ne justifie.");
+
+    Directory
+      .EnumerateFiles(actedDecisions, "*.md")
+      .ShouldNotBeEmpty(
+        $"Le dossier « {Path.Combine(ActedDecisionsPath)} » ne porte plus aucun ADR, alors qu'il " +
+        "est exempté du balayage. Une exemption qui ne désigne plus rien est une exemption qui " +
+        "ment : retirez-la.");
   }
 
   /// <summary>
@@ -285,6 +375,7 @@ public class RetiredVocabularyTests
   /// </summary>
   private static IEnumerable<string> ScannableFiles(string root)
   {
+    var actedDecisions = ActedDecisionsDirectoryIn(root);
     var pending = new Stack<string>([root]);
 
     while (pending.Count > 0)
@@ -293,10 +384,13 @@ public class RetiredVocabularyTests
 
       foreach (var child in Directory.EnumerateDirectories(directory))
       {
-        if (!SkippedDirectories.Contains(new DirectoryInfo(child).Name, StringComparer.Ordinal))
+        if (SkippedDirectories.Contains(new DirectoryInfo(child).Name, StringComparer.Ordinal)
+          || string.Equals(child, actedDecisions, StringComparison.Ordinal))
         {
-          pending.Push(child);
+          continue;
         }
+
+        pending.Push(child);
       }
 
       foreach (var file in Directory.EnumerateFiles(directory))
@@ -368,6 +462,11 @@ public class RetiredVocabularyTests
   private static string MigrationsDirectoryIn(string root)
   {
     return Path.Combine([root, .. MigrationsPath]);
+  }
+
+  private static string ActedDecisionsDirectoryIn(string root)
+  {
+    return Path.Combine([root, .. ActedDecisionsPath]);
   }
 
   private static string Normalized(string text)
