@@ -29,7 +29,7 @@
     <ul>
       @foreach (var entryPoint in ChromeNavigation.EntryPoints)
       {
-        var current = ChromeNavigation.IsCurrent(entryPoint, Context.Request.Path);
+        var current = entryPoint.IsCurrent(Context.Request.Path);
 
         <li>
           @*

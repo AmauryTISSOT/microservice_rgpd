@@ -49,6 +49,13 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// de quatrième lien vers l'historique des dépistages : il s'atteint depuis le rapport courant, et
   /// une barre à trois entrées se lit d'un coup d'œil.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Cette liste est RECOPIÉE À DESSEIN</b>, et il ne faut pas la faire pointer vers celle du
+  /// layout — pas plus que <see cref="ServiceName"/> ou que le calcul de <see cref="EntryPointOf"/>.
+  /// Un test qui lit la constante qu'il vérifie ne vérifie plus rien : il passerait encore le jour où
+  /// un quatrième lien apparaît, ou le jour où la barre se met à mener ailleurs. Ce qui est écrit ici
+  /// est ce que la surface <b>doit</b> offrir, tenu séparément de ce qu'elle offre.
+  /// </remarks>
   internal static readonly IReadOnlyList<string> EntryPoints = ["/dossiers", "/manifest", "/depistage"];
 
   /// <summary>Le nom du service, que la barre porte devant ses trois liens.</summary>
@@ -149,6 +156,26 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
     bar.Success.ShouldBeTrue("La page rendue ne porte aucune barre de navigation.");
 
     return bar.Groups[1].Value;
+  }
+
+  /// <summary>
+  /// Ce que le corps de la page porte <b>hors de la barre et hors du <c>main</c></b>. Un
+  /// <c>main</c> qui existe ne dit pas encore qu'il enveloppe : la question est de savoir ce qui
+  /// est resté dehors, et la réponse doit être « rien ».
+  /// </summary>
+  internal static string OutsideTheMainOf(string rendered)
+  {
+    var body = Regex.Match(rendered, @"<body\b[^>]*>(.*?)</body>", RegexOptions.Singleline);
+
+    body.Success.ShouldBeTrue("La page rendue ne porte aucun corps.");
+
+    var main = Regex.Match(body.Groups[1].Value, @"<main\b[^>]*>.*?</main>", RegexOptions.Singleline);
+
+    main.Success.ShouldBeTrue("Le corps de la page rendue ne porte aucun main.");
+
+    var outside = body.Groups[1].Value.Remove(main.Index, main.Length);
+
+    return Regex.Replace(outside, @"<nav\b[^>]*>.*?</nav>", string.Empty, RegexOptions.Singleline).Trim();
   }
 
   /// <summary>

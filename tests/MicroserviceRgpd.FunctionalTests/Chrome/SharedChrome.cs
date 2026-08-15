@@ -126,15 +126,20 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// fois dans le layout partagé : c'est ce qui fait qu'un écran neuf l'aura sans que personne y
   /// pense.
   /// </summary>
+  /// <remarks>
+  /// Ce qui est vérifié n'est pas qu'une balise <c>main</c> existe — elle pourrait exister vide, à
+  /// côté du contenu — mais qu'<b>il ne reste rien dehors</b> une fois la barre et le <c>main</c>
+  /// retirés du corps. C'est la seule formulation qui distingue « envelopper » de « figurer ».
+  /// </remarks>
   [Fact]
   public async Task WrapsEveryScreenInAMainElement()
   {
     foreach (var screen in await _chrome.ScreensAsync())
     {
-      var rendered = await _chrome.ReadAsync(screen);
+      var outside = ChromeSurface.OutsideTheMainOf(await _chrome.ReadAsync(screen));
 
-      rendered.ShouldContain(
-        "<main", Case.Insensitive, $"L'écran {screen} n'enveloppe pas son contenu dans un main.");
+      outside.ShouldBeEmpty(
+        $"L'écran {screen} laisse du contenu hors de son main : {outside}");
     }
   }
 
@@ -194,7 +199,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// ⚠️ <b>AUCUN CHIFFRE DANS LA BARRE</b>, ni compteur ni badge. La règle des chiffres que la file
   /// applique — un « 0 dossier en retard » se lit comme une mesure rassurante là où la phrase dit ce
-  /// qu'elle est — vaut aussi pour une barre qu'on lit sur les douze écrans sans jamais l'ouvrir.
+  /// qu'elle est — vaut aussi pour une barre qu'on lit sur les onze écrans sans jamais l'ouvrir.
   /// </summary>
   [Fact]
   public async Task CarriesNoTallyInTheBar()
@@ -213,7 +218,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// le service n'a pas ; le second est une décision explicite du demandeur.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les douze écrans sans moyen de la
+  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les onze écrans sans moyen de la
   /// sauter au clavier, ce qui est une régression d'accessibilité par rapport à l'état d'avant, où
   /// aucune barre n'existait. Aucun chantier d'accessibilité n'est ouvert ici.
   /// </remarks>
@@ -225,7 +230,11 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
       var rendered = await _chrome.ReadAsync(screen);
 
       rendered.ShouldNotContain("<footer", Case.Insensitive, $"L'écran {screen} porte un pied de page.");
-      rendered.ShouldNotContain("#main", Case.Insensitive, $"L'écran {screen} porte un lien d'évitement.");
+
+      // Un lien d'évitement est un lien vers un fragment de la page elle-même, et la surface n'en
+      // porte aucun : c'est ce qu'on cherche, plutôt que le nom d'une cible qu'il aurait pu prendre.
+      Regex.IsMatch(rendered, @"<a\b[^>]*\bhref=""#").ShouldBeFalse(
+        $"L'écran {screen} porte un lien d'évitement.");
     }
   }
 }
