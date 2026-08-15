@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text.RegularExpressions;
 
 namespace MicroserviceRgpd.FunctionalTests.Chrome;
 
@@ -117,6 +118,123 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
 
       rendered.ShouldNotContain(
         "<style", Case.Insensitive, $"L'écran {screen} porte encore du CSS dans sa vue.");
+    }
+  }
+
+  /// <summary>
+  /// <b>Un élément <c>main</c> enveloppe le contenu rendu</b>, sur chaque écran. Il est posé une
+  /// fois dans le layout partagé : c'est ce qui fait qu'un écran neuf l'aura sans que personne y
+  /// pense.
+  /// </summary>
+  /// <remarks>
+  /// Ce qui est vérifié n'est pas qu'une balise <c>main</c> existe — elle pourrait exister vide, à
+  /// côté du contenu — mais qu'<b>il ne reste rien dehors</b> une fois la barre et le <c>main</c>
+  /// retirés du corps. C'est la seule formulation qui distingue « envelopper » de « figurer ».
+  /// </remarks>
+  [Fact]
+  public async Task WrapsEveryScreenInAMainElement()
+  {
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var outside = ChromeSurface.OutsideTheMainOf(await _chrome.ReadAsync(screen));
+
+      outside.ShouldBeEmpty(
+        $"L'écran {screen} laisse du contenu hors de son main : {outside}");
+    }
+  }
+
+  /// <summary>
+  /// <b>La barre porte les trois points d'entrée, sur chaque écran</b> — et c'est ce qui fait que
+  /// quitter un dossier long ne demande plus de le dérouler jusqu'en bas : la file, le
+  /// <c>Manifest</c> et le dépistage s'atteignent de partout sans passer par un écran intermédiaire.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheThreeEntryPointsOnEveryScreen()
+  {
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
+
+      ChromeSurface.LinksIn(bar)
+        .Select(link => link.Address)
+        .ShouldBe(ChromeSurface.EntryPoints, $"La barre de l'écran {screen} n'offre pas les trois points d'entrée, et eux seuls.");
+    }
+  }
+
+  /// <summary>
+  /// <b>Le lien de l'écran courant est marqué</b>, et lui seul : sans cela, la barre dit où l'on
+  /// peut aller sans jamais dire où l'on est.
+  /// </summary>
+  [Fact]
+  public async Task MarksTheLinkOfTheCurrentScreen()
+  {
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var links = ChromeSurface.LinksIn(ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
+
+      links.Where(link => link.IsCurrent)
+        .Select(link => link.Address)
+        .ShouldBe([ChromeSurface.EntryPointOf(screen)], $"La barre de l'écran {screen} ne marque pas le bon lien, ou en marque plusieurs.");
+    }
+  }
+
+  /// <summary>
+  /// <b>La barre porte le nom du service</b> — ce qu'on lit avant les trois liens, et le seul texte
+  /// de la barre qui ne mène nulle part.
+  /// </summary>
+  [Fact]
+  public async Task NamesTheServiceInTheBar()
+  {
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
+
+      bar.ShouldContain(
+        ChromeSurface.ServiceName,
+        Case.Sensitive,
+        $"La barre de l'écran {screen} ne nomme pas le service.");
+    }
+  }
+
+  /// <summary>
+  /// ⚠️ <b>AUCUN CHIFFRE DANS LA BARRE</b>, ni compteur ni badge. La règle des chiffres que la file
+  /// applique — un « 0 dossier en retard » se lit comme une mesure rassurante là où la phrase dit ce
+  /// qu'elle est — vaut aussi pour une barre qu'on lit sur les onze écrans sans jamais l'ouvrir.
+  /// </summary>
+  [Fact]
+  public async Task CarriesNoTallyInTheBar()
+  {
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
+
+      Regex.IsMatch(bar, @"\d").ShouldBeFalse(
+        $"La barre de l'écran {screen} porte un chiffre, donc un compte que personne n'a demandé.");
+    }
+  }
+
+  /// <summary>
+  /// <b>Ni pied de page, ni lien d'évitement.</b> Le premier est un annuaire de liens marketing que
+  /// le service n'a pas ; le second est une décision explicite du demandeur.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les onze écrans sans moyen de la
+  /// sauter au clavier, ce qui est une régression d'accessibilité par rapport à l'état d'avant, où
+  /// aucune barre n'existait. Aucun chantier d'accessibilité n'est ouvert ici.
+  /// </remarks>
+  [Fact]
+  public async Task CarriesNeitherAFooterNorASkipLink()
+  {
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var rendered = await _chrome.ReadAsync(screen);
+
+      rendered.ShouldNotContain("<footer", Case.Insensitive, $"L'écran {screen} porte un pied de page.");
+
+      // Un lien d'évitement est un lien vers un fragment de la page elle-même, et la surface n'en
+      // porte aucun : c'est ce qu'on cherche, plutôt que le nom d'une cible qu'il aurait pu prendre.
+      Regex.IsMatch(rendered, @"<a\b[^>]*\bhref=""#").ShouldBeFalse(
+        $"L'écran {screen} porte un lien d'évitement.");
     }
   }
 }

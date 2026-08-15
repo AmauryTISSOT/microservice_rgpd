@@ -142,7 +142,7 @@
                    maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
           </p>
 
-          <button type="submit">Déclarer et signer</button>
+          <button type="submit" class="primary">Déclarer et signer</button>
         </fieldset>
       </form>
       }
@@ -305,7 +305,7 @@
                    maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
           </p>
 
-          <button type="submit">Confirmer et signer</button>
+          <button type="submit" class="primary">Confirmer et signer</button>
         </fieldset>
       </form>
     }
@@ -445,7 +445,7 @@
                      maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
             </p>
 
-            <button type="submit">Déclarer et signer</button>
+            <button type="submit" class="primary">Déclarer et signer</button>
           </fieldset>
         </form>
         }
@@ -498,6 +498,12 @@
               détruit rien.
             </p>
 
+            @*
+              SECONDAIRE, ET SEULE DE SON FORMULAIRE. Le niveau principal désigne l'action que
+              l'écran attend ; celle-ci ne date rien et ne détruit rien — la phrase juste au-dessus
+              le dit — et la peindre en accent la mettrait au même rang que « Déclarer remis et
+              signer », qui, lui, engage.
+            *@
             <button type="submit">Télécharger la remise</button>
           </fieldset>
         </form>
@@ -536,7 +542,7 @@
                        maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
               </p>
 
-              <button type="submit">Déclarer remis et signer</button>
+              <button type="submit" class="primary">Déclarer remis et signer</button>
             </fieldset>
           </form>
         }
@@ -579,7 +585,7 @@
                    maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
           </p>
 
-          <button type="submit">Déclarer répondu et signer</button>
+          <button type="submit" class="primary">Déclarer répondu et signer</button>
         </fieldset>
       </form>
     }
@@ -803,6 +809,12 @@ else if (onScreen.Locatings.Count == 0)
                          maxlength="@MicroserviceRgpd.Core.Casework.EvidenceLog.Signatory.MaxNameLength" />
                 </p>
 
+                @*
+                  ⚠️ DEUX PAIRS, ET AUCUNE ACTION PRINCIPALE. Peindre l'un des deux à l'accent
+                  structurel dirait à l'Operator lequel des deux arbitrages l'écran attend de lui —
+                  et l'écran n'attend rien : il attend qu'un humain tranche. C'est très exactement le
+                  clic distrait contre lequel ces deux boutons ont été écrits côte à côte.
+                *@
                 <button type="submit" name="Arbitration.Ruling" value="@ReservationState.Attached.Name">
                   C'est bien la personne
                 </button>
@@ -889,7 +901,7 @@ else if (onScreen.Locatings.Count == 0)
                value="@Model.Extension.SignedBy" />
       </p>
 
-      <button type="submit">Déclarer la prolongation et signer</button>
+      <button type="submit" class="primary">Déclarer la prolongation et signer</button>
     </fieldset>
   </form>
 }
@@ -1044,7 +1056,11 @@ else
         </label>
       </p>
 
-      <button type="submit">Clore, détruire et signer</button>
+      @*
+        LE GESTE IRRÉVERSIBLE, et il porte l'apparence du geste irréversible — pas celle de l'action
+        que l'écran attend. Clore détruit tout le nominatif à l'instant même, et rien ne le rendra.
+      *@
+      <button type="submit" class="destructive">Clore, détruire et signer</button>
     </fieldset>
   </form>
 }

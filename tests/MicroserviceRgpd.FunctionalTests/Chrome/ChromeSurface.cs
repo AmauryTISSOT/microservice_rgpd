@@ -44,6 +44,23 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// </summary>
   internal const string Font = "/fonts/inter-latin-variable.woff2";
 
+  /// <summary>
+  /// <b>Les trois points d'entrée</b> que la barre de navigation offre, et les seuls. Il n'y a pas
+  /// de quatrième lien vers l'historique des dépistages : il s'atteint depuis le rapport courant, et
+  /// une barre à trois entrées se lit d'un coup d'œil.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Cette liste est RECOPIÉE À DESSEIN</b>, et il ne faut pas la faire pointer vers celle du
+  /// layout — pas plus que <see cref="ServiceName"/> ou que le calcul de <see cref="EntryPointOf"/>.
+  /// Un test qui lit la constante qu'il vérifie ne vérifie plus rien : il passerait encore le jour où
+  /// un quatrième lien apparaît, ou le jour où la barre se met à mener ailleurs. Ce qui est écrit ici
+  /// est ce que la surface <b>doit</b> offrir, tenu séparément de ce qu'elle offre.
+  /// </remarks>
+  internal static readonly IReadOnlyList<string> EntryPoints = ["/dossiers", "/manifest", "/depistage"];
+
+  /// <summary>Le nom du service, que la barre porte devant ses trois liens.</summary>
+  internal const string ServiceName = "Droits des personnes concernées";
+
   private const string Queue = "/dossiers";
   private const string CaseDeposit = "/dossiers/depot";
   private const string Manifest = "/manifest";
@@ -125,6 +142,73 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
     ];
 
     return [.. fetched.Where(IsThirdParty)];
+  }
+
+  /// <summary>
+  /// La <b>barre de navigation</b> d'une page rendue, isolée de tout le reste : ce qui se lit dedans
+  /// n'est jamais confondu avec ce que l'écran écrit sous elle — la file porte le mot « file », et
+  /// une assertion sur la barre qui lirait la page entière passerait pour de mauvaises raisons.
+  /// </summary>
+  internal static string NavigationBarIn(string rendered)
+  {
+    var bar = Regex.Match(rendered, @"<nav\b[^>]*>(.*?)</nav>", RegexOptions.Singleline);
+
+    bar.Success.ShouldBeTrue("La page rendue ne porte aucune barre de navigation.");
+
+    return bar.Groups[1].Value;
+  }
+
+  /// <summary>
+  /// Ce que le corps de la page porte <b>hors de la barre et hors du <c>main</c></b>. Un
+  /// <c>main</c> qui existe ne dit pas encore qu'il enveloppe : la question est de savoir ce qui
+  /// est resté dehors, et la réponse doit être « rien ».
+  /// </summary>
+  internal static string OutsideTheMainOf(string rendered)
+  {
+    var body = Regex.Match(rendered, @"<body\b[^>]*>(.*?)</body>", RegexOptions.Singleline);
+
+    body.Success.ShouldBeTrue("La page rendue ne porte aucun corps.");
+
+    var main = Regex.Match(body.Groups[1].Value, @"<main\b[^>]*>.*?</main>", RegexOptions.Singleline);
+
+    main.Success.ShouldBeTrue("Le corps de la page rendue ne porte aucun main.");
+
+    var outside = body.Groups[1].Value.Remove(main.Index, main.Length);
+
+    return Regex.Replace(outside, @"<nav\b[^>]*>.*?</nav>", string.Empty, RegexOptions.Singleline).Trim();
+  }
+
+  /// <summary>
+  /// Les liens de la barre, dans l'ordre où elle les pose, chacun avec l'adresse qu'il mène et le
+  /// <b>marquage de l'écran courant</b> qu'il porte ou non.
+  /// </summary>
+  internal static IReadOnlyList<(string Address, bool IsCurrent)> LinksIn(string bar)
+  {
+    return
+    [
+      .. Regex.Matches(bar, @"<a\b([^>]*)>").Select(link =>
+      (
+        Address: Regex.Match(link.Groups[1].Value, @"\bhref=""([^""]*)""").Groups[1].Value,
+        IsCurrent: link.Groups[1].Value.Contains(@"aria-current=""page""", StringComparison.Ordinal)
+      )),
+    ];
+  }
+
+  /// <summary>
+  /// Le point d'entrée <b>dont un écran relève</b>, lu sur sa seule adresse : le dépôt d'une demande
+  /// et un dossier relèvent de la file, la reprise d'une déclaration du <c>Manifest</c>, et tout ce
+  /// qui pend sous le dépistage du dépistage.
+  /// </summary>
+  internal static string EntryPointOf(string screen)
+  {
+    var path = screen.Split('?')[0];
+
+    var entryPoint = EntryPoints.SingleOrDefault(
+      candidate => path == candidate || path.StartsWith($"{candidate}/", StringComparison.Ordinal));
+
+    entryPoint.ShouldNotBeNull($"L'écran {screen} ne relève d'aucun des trois points d'entrée.");
+
+    return entryPoint;
   }
 
   private static bool IsThirdParty(string address)
