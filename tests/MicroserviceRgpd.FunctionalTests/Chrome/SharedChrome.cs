@@ -233,10 +233,14 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
     {
       var response = await _chrome.FetchAsync(retired);
 
+      // La redirection est nommée AVANT le 404, et non déduite de lui : un 301 échouerait de toute
+      // façon sur le statut, mais avec un message qui parlerait d'un statut inattendu là où ce qui
+      // s'est produit est qu'une ancienne adresse mène encore quelque part.
+      ((int)response.StatusCode is >= 300 and <= 399).ShouldBeFalse(
+        $"L'ancienne adresse {retired} redirige, et fait donc revivre l'ancien nom.");
+
       response.StatusCode.ShouldBe(
         HttpStatusCode.NotFound, $"L'ancienne adresse {retired} doit être morte.");
-      response.Headers.Location.ShouldBeNull(
-        $"L'ancienne adresse {retired} redirige, et fait donc revivre l'ancien nom.");
     }
   }
 
@@ -249,12 +253,18 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   {
     var screens = await _chrome.ScreeningScreensAsync();
 
-    screens.Count.ShouldBe(ChromeSurface.RetiredScreeningAddresses.Count);
+    // Six, écrit en clair, et non le compte de la liste des adresses retirées : les deux valent six
+    // par histoire et non par règle, et les dériver l'une de l'autre ferait qu'en retirer une
+    // affaiblirait les deux tests d'un coup.
+    screens.Count.ShouldBe(6, "Le contexte de détection compte six écrans.");
 
     foreach (var screen in screens)
     {
-      screen.ShouldStartWith(
-        "/detection", Case.Sensitive, $"L'écran {screen} ne porte pas le préfixe du contexte.");
+      // ⚠️ Comparaison PAR SEGMENTS, comme celle du surlignage de la barre : un préfixe de texte nu
+      // aurait aussi accepté une adresse qui commence par les mêmes lettres sans relever du
+      // contexte.
+      ChromeSurface.EntryPointOf(screen).ShouldBe(
+        "/detection", $"L'écran {screen} ne relève pas du point d'entrée du contexte.");
 
       await _chrome.ReadAsync(screen);
     }

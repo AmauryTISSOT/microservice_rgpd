@@ -70,9 +70,18 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// deux vocabulaires au lieu d'un.
   /// </summary>
   /// <remarks>
+  /// <para>
   /// ⚠️ <b>Cette liste est RECOPIÉE À DESSEIN</b>, comme <see cref="EntryPoints"/> : elle ne se
   /// dérive pas des adresses vivantes. Un préfixe calculé depuis l'ancien nom se serait tu le jour
   /// où une seule des six serait revenue à la vie.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>C'est le seul endroit du dépôt où l'ancienne adresse doit rester écrite</b>, et c'est ce
+  /// qui la rend éprouvable : un garde ne peut pas tenir qu'une adresse est morte sans la nommer.
+  /// Le jour où le mot du contexte entre dans les termes retirés, ce fichier a besoin d'une
+  /// exemption <b>ancrée sur son chemin</b>, sur le modèle de celles déjà écrites — pas d'un
+  /// assouplissement du garde, et pas de la suppression de cette liste.
+  /// </para>
   /// </remarks>
   internal static readonly IReadOnlyList<string> RetiredScreeningAddresses =
   [
