@@ -13,6 +13,39 @@
   <link rel="stylesheet" href="/css/operator.css" />
 </head>
 <body class="@(ViewData["Wide"] is true ? "wide" : null)">
-  @RenderBody()
+  @*
+    LA BARRE, ET ELLE EST DANS LE LAYOUT. Un écran neuf la portera sans que personne y pense — et
+    c'est ce qui fait qu'on quitte un dossier de mille lignes sans le dérouler jusqu'en bas, là où
+    le seul chemin de retour était un lien posé en toute dernière ligne.
+
+    ⚠️ NI PIED DE PAGE, NI LIEN D'ÉVITEMENT. Le premier serait un annuaire de liens marketing que
+    le service n'a pas. Le second est une décision explicite du demandeur, et sa conséquence est
+    consignée : la barre se répète sur tous les écrans sans moyen de la sauter au clavier, ce qui
+    est une régression d'accessibilité par rapport à l'état d'avant, où aucune barre n'existait.
+  *@
+  <nav class="chrome">
+    <span class="wordmark">@ChromeNavigation.ServiceName</span>
+
+    <ul>
+      @foreach (var entryPoint in ChromeNavigation.EntryPoints)
+      {
+        var current = ChromeNavigation.IsCurrent(entryPoint, Context.Request.Path);
+
+        <li>
+          @*
+            L'ÉCRAN COURANT SE MARQUE DEUX FOIS, et les deux marques disent la même chose à deux
+            lecteurs : `aria-current` à qui écoute la page, l'accent structurel à qui la regarde.
+          *@
+          <a href="@entryPoint.Address"
+             class="@(current ? "current" : null)"
+             aria-current="@(current ? "page" : null)">@entryPoint.Label</a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <main>
+    @RenderBody()
+  </main>
 </body>
 </html>

@@ -52,8 +52,9 @@
   --on-accent: #ffffff;
 
   /*
-    Les surfaces. Le canevas chaud est déclaré ici mais n'est employé par aucun écran : le fond de
-    page reste blanc jusqu'à la livraison qui pose les cartes.
+    Les surfaces. Le canevas chaud porte la page, et les cartes blanches se posent dessus : les deux
+    sont indissociables — un canevas sans carte rendrait tous les écrans simplement gris, ce qui se
+    lirait comme un défaut.
   */
   --canvas: #f6f5f4;
   --surface: #ffffff;
@@ -161,13 +162,63 @@
 }
 
 body {
-  background: var(--surface);
+  background: var(--canvas);
   color: var(--ink);
   font: var(--type-body-md);
   letter-spacing: var(--type-body-md-tracking);
+  margin: 0;
+}
+
+/*
+  LE CONTENEUR A CHANGÉ D'ÉLÉMENT, PAS DE MESURE. Les deux largeurs quittent le `body` pour le
+  `main` — la barre, elle, tient toute la fenêtre —, et elles restent exactement celles d'avant :
+  l'étroite par défaut, la large en exception nommée pour l'arbitrage colonne par colonne.
+*/
+main {
+  display: block;
   margin: 0 auto;
   max-width: 60rem;
   padding: var(--space-xxl) var(--space-md);
+}
+
+/*
+  LA BARRE DE NAVIGATION. Blanche sur le canevas, posée en tête de chaque écran, et sans un chiffre :
+  ni compteur ni badge — la règle des chiffres de la file vaut aussi ici.
+*/
+nav.chrome {
+  align-items: baseline;
+  background: var(--surface);
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-xl);
+  padding: var(--space-md) var(--space-lg);
+}
+
+nav.chrome .wordmark {
+  font-weight: var(--weight-semibold);
+}
+
+nav.chrome ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+nav.chrome a {
+  color: var(--ink-secondary);
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  text-decoration: none;
+}
+
+/* L'écran courant se marque avec l'accent structurel, et il est le seul de la barre à le porter. */
+nav.chrome a.current {
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
 }
 
 h1 {
@@ -182,17 +233,47 @@ h2 {
   margin-top: var(--space-xxl);
 }
 
-.caveat {
-  border-left: var(--rule-width) solid currentColor;
-  color: var(--ink-secondary);
-  font-style: italic;
-  margin: var(--space-md) 0 var(--space-xxl);
-  padding-left: var(--space-sm);
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES CARTES. Chaque chose de premier niveau se pose comme une carte blanche distincte sur le
+  canevas chaud : l'écran dit enfin où une chose finit et où la suivante commence, là où un système
+  déclaré, une réclamation, une clause d'incomplétude et une mise en garde se posaient tous à plat
+  sur le même fond blanc.
+
+  ⚠️ DEUX CHOSES N'EN SONT PAS, ET C'EST DÉLIBÉRÉ :
+
+  — L'ÉTAPE D'UNE RÉCLAMATION (`.step`) est une PARTIE d'une réclamation, pas une chose autonome.
+    Lui donner sa carte casserait la hiérarchie que l'écran montre, et un dossier en compte
+    beaucoup.
+
+  — LA TABLE D'ARBITRAGE COLONNE PAR COLONNE (`table.queue.columns`) porte jusqu'à plusieurs
+    milliers de lignes, et les marges normales du service y feraient déjà une table haute de cent
+    écrans. Une carte en ajouterait encore.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.caveat,
+.claim,
+.clause,
+.refusals,
+.system,
+table.queue:not(.columns) {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-flat);
+  box-sizing: border-box;
+  margin: var(--space-lg) 0;
+  padding: var(--space-lg);
 }
 
-.system {
-  border-top: var(--hairline-width) solid var(--hairline);
-  padding: var(--space-md) 0;
+/*
+  La mise en garde garde son filet de gauche par-dessus la carte : il MARQUE la chose plutôt qu'il
+  ne la sépare, et c'est ce filet qui la distingue d'une carte de prose ordinaire.
+*/
+.caveat {
+  border-left: var(--rule-width) solid var(--ink-secondary);
+  color: var(--ink-secondary);
+  font-style: italic;
 }
 
 .system h3 {
@@ -227,9 +308,34 @@ table.queue {
   width: 100%;
 }
 
+/*
+  La table mise en carte sépare ses bordures — un rayon ne clipperait pas des bordures fusionnées —
+  et sa dernière ligne rend la sienne : un filet qui court juste au-dessus du bord de la carte se
+  lirait comme une ligne manquante.
+*/
+table.queue:not(.columns) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+table.queue:not(.columns) tbody tr:last-child th,
+table.queue:not(.columns) tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 table.queue caption {
   margin-bottom: var(--space-xs);
   text-align: left;
+}
+
+/*
+  ⚠️ UNE LÉGENDE RESTE UNE LÉGENDE. `.hint` pose `display: block`, ce qui ôte au `caption` qui la
+  porte son rôle de tableau : la légende quittait sa place au-dessus de la table pour se poser entre
+  l'en-tête et la première ligne, où elle se lit comme une ligne de données. Le défaut est ancien ;
+  la mise en carte, qui referme un bord autour de la table, est ce qui le rend voyant.
+*/
+table.queue caption.hint {
+  display: table-caption;
 }
 
 table.queue th,
@@ -261,11 +367,6 @@ table.queue th {
 
 .banner dd {
   margin: 0;
-}
-
-.claim {
-  border-top: var(--hairline-width) solid var(--hairline);
-  padding: var(--space-md) 0;
 }
 
 .claim h3 {
@@ -353,11 +454,9 @@ fieldset label {
   font-weight: var(--weight-semibold);
 }
 
+/* Le bloc des refus est une carte, et son filet reste rouge : c'est ce qui le fait lire d'abord. */
 .refusals {
-  border: var(--hairline-width) solid var(--signal-error);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-lg);
-  padding: var(--space-sm) var(--space-md);
+  border-color: var(--signal-error);
 }
 
 /* Le dépistage. Le verrou est en tête et se voit : sans lui, on croit le travail fini. */
@@ -385,7 +484,7 @@ fieldset label {
   L'exception est nommée plutôt qu'élargie partout : les autres écrans se lisent mieux étroits, et
   une largeur unique aurait fait payer à tous la contrainte d'un seul.
 */
-body.wide {
+body.wide main {
   max-width: 86rem;
 }
 
@@ -436,11 +535,9 @@ td.ruling button {
 
 /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
 .clause {
-  border-top: var(--hairline-width) solid var(--hairline);
   display: grid;
   gap: 0 var(--space-xxl);
   grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-  padding-top: var(--space-md);
 }
 
 .clause h3 {
@@ -459,16 +556,51 @@ td.ruling button {
 }
 
 /*
-  Le bouton prend sa typographie, son rayon et son filet, et RIEN DE SA COULEUR : les trois niveaux
-  d'action — l'action principale qui se voit, l'action secondaire qui s'efface, le geste irréversible
-  qui se signale — sont un changement de sens, pas de style, et ils arrivent avec la livraison qui
-  les distingue. Peindre le bouton ici aurait donné le même fond aux dix-huit formulaires du service,
-  dont celui qui détruit un journal de preuve.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES TROIS NIVEAUX D'ACTION. Le service n'en avait qu'un : les dix-huit formulaires rendaient le
+  même bouton gris, et celui qui prend un dossier en charge ressemblait trait pour trait à celui qui
+  détruit un journal de preuve.
+
+  LE DÉFAUT EST LE SECONDAIRE, et c'est volontaire : un bouton qui n'a rien déclaré s'efface plutôt
+  qu'il ne crie. Un geste ne se peint qu'en le nommant.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
+
+/* L'ACTION SECONDAIRE — le style utilitaire du document : fond blanc, filet clair, coin resserré. */
 button {
+  background: var(--surface);
   border: var(--hairline-width) solid var(--hairline);
   border-radius: var(--radius-md);
+  color: var(--ink);
   font: var(--type-button);
   letter-spacing: var(--type-button-tracking);
   padding: var(--space-xs) var(--space-lg);
+}
+
+/* L'ACTION PRINCIPALE — l'accent structurel en fond plein : ce que l'écran attend de vous. */
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+button.primary:active {
+  background: var(--accent-pressed);
+  border-color: var(--accent-pressed);
+}
+
+/*
+  LE GESTE IRRÉVERSIBLE — filet et texte au rouge d'erreur, sur fond blanc.
+
+  ⚠️ C'EST UNE EXTENSION DU DOCUMENT DE DESIGN, et elle est signalée comme telle : celui-ci ne
+  prévoit AUCUN bouton destructeur, parce qu'il décrit un site de vente où rien ne se détruit. Le
+  domaine, lui, nomme déjà ce geste — « le geste irréversible » — et il en porte trois : détruire un
+  journal de preuve, supprimer un dépistage, clore un dossier. Le bouton doit le montrer.
+
+  Le fond reste BLANC plutôt que rouge plein : un aplat rouge se lit comme l'action que l'écran
+  attend, et aucun de ces trois gestes n'est jamais ce que l'écran attend.
+*/
+button.destructive {
+  border-color: var(--signal-error);
+  color: var(--signal-error);
 }

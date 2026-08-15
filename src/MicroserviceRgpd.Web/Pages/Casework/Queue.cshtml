@@ -220,7 +220,12 @@ else
                 new { @class = "refusal" })
             }
 
-            <button type="submit">Détruire cette preuve</button>
+            @*
+              LE GESTE IRRÉVERSIBLE. Il ne ressemble plus à celui qui prend un dossier en charge :
+              il est définitif ET sans trace, et c'est le pire du dispositif à avoir sous la main
+              d'un mauvais clic.
+            *@
+            <button type="submit" class="destructive">Détruire cette preuve</button>
           </fieldset>
         </form>
       </li>
