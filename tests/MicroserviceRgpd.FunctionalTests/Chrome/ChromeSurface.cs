@@ -1,9 +1,9 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Core.Screenings;
+using MicroserviceRgpd.Core.SharedKernel;
 
 namespace MicroserviceRgpd.FunctionalTests.Chrome;
 
@@ -32,7 +32,7 @@ namespace MicroserviceRgpd.FunctionalTests.Chrome;
 /// répondent.
 /// </para>
 /// </remarks>
-internal sealed class OperatorChrome(CustomWebApplicationFactory<Program> factory)
+internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory)
 {
   /// <summary>La feuille unique, servie par le service et référencée par tous les écrans.</summary>
   internal const string StyleSheet = "/css/operator.css";
@@ -67,7 +67,7 @@ internal sealed class OperatorChrome(CustomWebApplicationFactory<Program> factor
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
   /// <summary>
-  /// <b>Toutes les adresses de la surface de l'<c>Operator</c></b>, l'état de chacune posé par le
+  /// <b>Les onze adresses de la surface de l'<c>Operator</c></b>, l'état de chacune posé par le
   /// chemin que le domaine autorise — un dépôt manuel pour le dossier, une déclaration pour la
   /// reprise, deux dépôts de relevé pour qu'il existe un rapport courant et un rapport archivé.
   /// </summary>
@@ -110,25 +110,25 @@ internal sealed class OperatorChrome(CustomWebApplicationFactory<Program> factor
   }
 
   /// <summary>
-  /// Les adresses que la page demande au navigateur d'aller <b>chercher</b> — feuilles, scripts,
-  /// images. Les URL qui ne sont que du texte affiché n'en sont pas : ce qu'on garde ici est ce qui
-  /// déclenche une requête.
+  /// Les adresses qu'une page rendue fait <b>chercher chez un tiers</b>. Ce qui est retenu est ce
+  /// qui déclenche une requête — feuilles, scripts, images —, jamais une URL qui n'est que du texte
+  /// affiché : l'adresse d'un <c>Adapter</c> se lit à l'écran sans que le navigateur n'aille nulle
+  /// part.
   /// </summary>
-  internal static IReadOnlyList<string> FetchedResourcesIn(string rendered)
+  internal static IReadOnlyList<string> ThirdPartyResourcesIn(string rendered)
   {
-    return
+    IReadOnlyList<string> fetched =
     [
       .. Regex.Matches(rendered, @"<link\b[^>]*\bhref=""([^""]+)""").Select(m => m.Groups[1].Value),
       .. Regex.Matches(rendered, @"<script\b[^>]*\bsrc=""([^""]+)""").Select(m => m.Groups[1].Value),
       .. Regex.Matches(rendered, @"<img\b[^>]*\bsrc=""([^""]+)""").Select(m => m.Groups[1].Value),
     ];
+
+    return [.. fetched.Where(IsThirdParty)];
   }
 
-  /// <summary>Une adresse part-elle vers un serveur qui n'est pas celui du service ?</summary>
-  internal static bool IsThirdParty(string address)
+  private static bool IsThirdParty(string address)
   {
-    ArgumentNullException.ThrowIfNull(address);
-
     return address.StartsWith("//", StringComparison.Ordinal)
       || address.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
       || address.StartsWith("https://", StringComparison.OrdinalIgnoreCase);

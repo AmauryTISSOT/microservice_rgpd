@@ -37,9 +37,11 @@
   */
   color-scheme: light;
 
-  /* La pile de repli est complète : les écrans restent lisibles si le fichier n'arrive pas. */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, "Noto Sans", system-ui, sans-serif;
+  /*
+    La pile de repli est celle que le document donne lui-même, et elle est complète : les écrans
+    restent lisibles si le fichier de police n'arrive jamais.
+  */
+  --font-sans: "Inter", -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
 
   /*
     L'ACCENT STRUCTUREL EST UNIQUE. Aucun second accent n'est déclaré : c'est la seule couleur qui
@@ -57,6 +59,13 @@
   --surface: #ffffff;
   --hairline: #e6e6e6;
   --hairline-width: 1px;
+
+  /*
+    Le filet qui marque une chose plutôt qu'il ne la sépare — la mise en garde, le constat réclamé,
+    le verrou d'un dépistage inachevé. Le document ne donne aucune valeur pour lui : c'est celle qui
+    était déjà écrite dans les écrans, conservée telle quelle et simplement nommée.
+  */
+  --rule-width: 3px;
 
   /* Les encres, du texte principal au texte estompé. */
   --ink: #000000;
@@ -112,6 +121,16 @@
   --type-eyebrow: 600 12px/1.33 var(--font-sans);
   --type-eyebrow-tracking: 0.125px;
 
+  /*
+    Les quatre graisses du document, et rien de plus. Elles sont déjà portées par les rôles
+    typographiques ; elles sont nommées à part pour les endroits — un terme de liste, une étiquette —
+    où c'est la graisse seule qui change, sans que le rôle change.
+  */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
   /* Les espacements, sur une base de 8. */
   --space-xxs: 4px;
   --space-xs: 8px;
@@ -132,12 +151,13 @@
   /*
     Les élévations. Le défaut est plat — le filet seul —, et l'ombre douce reste réservée aux
     surfaces qui flottent. Aucun écran ne les emploie à cette livraison.
+
+    Le troisième niveau du document n'est pas déclaré : celui-ci n'en donne que le dernier arrêt, et
+    inventer les quatre autres aurait écrit une valeur que personne n'a mesurée.
   */
   --elevation-flat: none;
   --elevation-soft: rgba(0, 0, 0, 0.01) 0 0.175px 1.041px, rgba(0, 0, 0, 0.02) 0 0.8px 2.925px,
     rgba(0, 0, 0, 0.027) 0 2.025px 7.847px, rgba(0, 0, 0, 0.04) 0 4px 18px;
-  --elevation-raised: rgba(0, 0, 0, 0.01) 0 0.4px 2.2px, rgba(0, 0, 0, 0.02) 0 1.6px 6px,
-    rgba(0, 0, 0, 0.027) 0 4.4px 15px, rgba(0, 0, 0, 0.04) 0 9px 28px, rgba(0, 0, 0, 0.05) 0 23px 52px;
 }
 
 body {
@@ -163,7 +183,7 @@ h2 {
 }
 
 .caveat {
-  border-left: 3px solid currentColor;
+  border-left: var(--rule-width) solid currentColor;
   color: var(--ink-secondary);
   font-style: italic;
   margin: var(--space-md) 0 var(--space-xxl);
@@ -189,7 +209,7 @@ h2 {
 }
 
 .system dt {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .system dd {
@@ -236,7 +256,7 @@ table.queue th {
 }
 
 .banner dt {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .banner dd {
@@ -270,7 +290,7 @@ table.queue th {
 
 /* Le défaut et le dépassement se signalent, jamais par un nombre : le mot dit le fait. */
 .defaulted {
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .overrun {
@@ -278,7 +298,7 @@ table.queue th {
 }
 
 .claimed-finding {
-  border-left: 3px solid var(--signal-error);
+  border-left: var(--rule-width) solid var(--signal-error);
   padding-left: var(--space-sm);
 }
 
@@ -292,7 +312,7 @@ form p {
 
 label {
   display: block;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   margin-bottom: var(--space-xxs);
 }
 
@@ -316,7 +336,7 @@ fieldset {
 
 fieldset label {
   display: inline-block;
-  font-weight: normal;
+  font-weight: var(--weight-regular);
   margin-right: var(--space-lg);
 }
 
@@ -324,13 +344,13 @@ fieldset label {
   color: var(--ink-muted);
   display: block;
   font: var(--type-caption);
-  font-weight: normal;
+  font-weight: var(--weight-regular);
   letter-spacing: var(--type-caption-tracking);
 }
 
 .refusal {
   color: var(--signal-error);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .refusals {
@@ -342,8 +362,8 @@ fieldset label {
 
 /* Le dépistage. Le verrou est en tête et se voit : sans lui, on croit le travail fini. */
 .unfinished {
-  border-left: 3px solid var(--signal-error);
-  font-weight: 600;
+  border-left: var(--rule-width) solid var(--signal-error);
+  font-weight: var(--weight-semibold);
   margin: var(--space-md) 0 var(--space-xxl);
   padding-left: var(--space-sm);
 }
@@ -395,7 +415,7 @@ td.ruling form {
 }
 
 td.ruling label {
-  font-weight: normal;
+  font-weight: var(--weight-regular);
 }
 
 td.ruling input[type="text"] {
@@ -411,7 +431,7 @@ td.ruling button {
 }
 
 .dialects a.chosen {
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
 /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
@@ -438,20 +458,17 @@ td.ruling button {
   margin: var(--space-xxs) 0;
 }
 
+/*
+  Le bouton prend sa typographie, son rayon et son filet, et RIEN DE SA COULEUR : les trois niveaux
+  d'action — l'action principale qui se voit, l'action secondaire qui s'efface, le geste irréversible
+  qui se signale — sont un changement de sens, pas de style, et ils arrivent avec la livraison qui
+  les distingue. Peindre le bouton ici aurait donné le même fond aux dix-huit formulaires du service,
+  dont celui qui détruit un journal de preuve.
+*/
 button {
-  background: var(--surface);
   border: var(--hairline-width) solid var(--hairline);
   border-radius: var(--radius-md);
-  color: var(--ink);
   font: var(--type-button);
   letter-spacing: var(--type-button-tracking);
   padding: var(--space-xs) var(--space-lg);
-}
-
-a {
-  color: var(--accent);
-}
-
-a:active {
-  color: var(--accent-pressed);
 }

@@ -1,9 +1,9 @@
-using System.Net;
+﻿using System.Net;
 
 namespace MicroserviceRgpd.FunctionalTests.Chrome;
 
 /// <summary>
-/// Le chrome partagé des douze écrans : une feuille de style et une police que <b>le service sert
+/// Le chrome partagé des onze écrans de la surface : une feuille de style et une police que <b>le service sert
 /// lui-même</b>, et aucune ressource tierce.
 /// </summary>
 /// <remarks>
@@ -24,7 +24,7 @@ namespace MicroserviceRgpd.FunctionalTests.Chrome;
 [Collection(WebCollection.Name)]
 public class SharedChrome(CustomWebApplicationFactory<Program> factory)
 {
-  private readonly OperatorChrome _chrome = new(factory);
+  private readonly ChromeSurface _chrome = new(factory);
 
   /// <summary>
   /// <b>La feuille répond à sa route</b>, servie par le service comme une feuille de style — et non
@@ -33,7 +33,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task ServesTheStyleSheetItself()
   {
-    var served = await _chrome.FetchAsync(OperatorChrome.StyleSheet);
+    var served = await _chrome.FetchAsync(ChromeSurface.StyleSheet);
 
     served.StatusCode.ShouldBe(HttpStatusCode.OK, "La feuille de style doit être servie.");
     served.Content.Headers.ContentType?.MediaType.ShouldBe("text/css");
@@ -46,7 +46,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task ServesTheEmbeddedFontItself()
   {
-    var served = await _chrome.FetchAsync(OperatorChrome.Font);
+    var served = await _chrome.FetchAsync(ChromeSurface.Font);
 
     served.StatusCode.ShouldBe(HttpStatusCode.OK, "La police doit être servie par le service.");
     served.Content.Headers.ContentType?.MediaType.ShouldBe("font/woff2");
@@ -56,9 +56,9 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Chaque écran de la surface référence la feuille</b> — les douze, sans exception : elle est
-  /// posée une fois dans le layout partagé, et c'est ce qui fait qu'un écran neuf l'aura sans que
-  /// personne y pense.
+  /// <b>Chaque écran de la surface référence la feuille</b>, sans exception : elle est posée une
+  /// fois dans le layout partagé, et c'est ce qui fait qu'un écran neuf l'aura sans que personne y
+  /// pense.
   /// </summary>
   [Fact]
   public async Task ReferencesTheStyleSheetFromEveryScreen()
@@ -68,7 +68,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
       var rendered = await _chrome.ReadAsync(screen);
 
       rendered.ShouldContain(
-        OperatorChrome.StyleSheet,
+        ChromeSurface.StyleSheet,
         Case.Sensitive,
         $"L'écran {screen} ne référence pas la feuille de style.");
     }
@@ -83,13 +83,10 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _chrome.ScreensAsync())
     {
-      var fetched = OperatorChrome.FetchedResourcesIn(await _chrome.ReadAsync(screen));
+      var thirdParty = ChromeSurface.ThirdPartyResourcesIn(await _chrome.ReadAsync(screen));
 
-      foreach (var resource in fetched)
-      {
-        OperatorChrome.IsThirdParty(resource).ShouldBeFalse(
-          $"L'écran {screen} fait chercher {resource} chez un tiers.");
-      }
+      thirdParty.ShouldBeEmpty(
+        $"L'écran {screen} fait chercher {string.Join(", ", thirdParty)} chez un tiers.");
     }
   }
 
@@ -100,7 +97,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task LoadsNothingFromAThirdPartyFromTheStyleSheetItself()
   {
-    var sheet = await _chrome.ReadAsync(OperatorChrome.StyleSheet);
+    var sheet = await _chrome.ReadAsync(ChromeSurface.StyleSheet);
 
     sheet.ShouldNotContain("http://");
     sheet.ShouldNotContain("https://");
