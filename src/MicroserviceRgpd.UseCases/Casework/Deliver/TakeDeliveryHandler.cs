@@ -66,7 +66,8 @@ public sealed class TakeDeliveryHandler(
       await retrieved.HeldForAsync(command.Case, cancellationToken));
 
     // L'archive est assemblée AVANT que le dossier ne bouge : noter un téléchargement dont
-    // l'assemblage aurait échoué ferait remonter dans la file une remise que personne n'a eue.
+    // l'assemblage aurait échoué ferait remonter dans le tableau des demandes RGPD une remise que
+    // personne n'a eue.
     var archive = DeliveryArchive.Of(delivery, takenAt);
 
     if (opened.TakeDelivery(command.Right, takenAt))

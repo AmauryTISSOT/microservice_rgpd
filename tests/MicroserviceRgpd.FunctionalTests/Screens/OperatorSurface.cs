@@ -20,9 +20,9 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// <remarks>
 /// <para>
 /// <b>Les dossiers sont posés par le dépôt, et non par la route d'entrée.</b> Celle-ci date la
-/// réception de l'instant de l'appel : deux dossiers postés à la suite auraient la même échéance, et
-/// aucun ordre de file ne serait démontrable. Ce que ces tests exercent est la <b>surface</b>, et la
-/// route d'entrée a ses propres tests.
+/// réception de l'instant de l'appel : deux dossiers postés à la suite auraient la même échéance,
+/// et aucun ordre du tableau des demandes RGPD ne serait démontrable. Ce que ces tests exercent est
+/// la <b>surface</b>, et la route d'entrée a ses propres tests.
 /// </para>
 /// <para>
 /// La collection est partagée : d'autres tests ouvrent des dossiers dans la même base. Les
@@ -425,7 +425,8 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
   }
 
   /// <summary>
-  /// <b>Détruit un <c>EvidenceLog</c> échu</b>, depuis la section propre de l'écran de la file.
+  /// <b>Détruit un <c>EvidenceLog</c> échu</b>, depuis la section propre du tableau des demandes
+  /// RGPD.
   /// </summary>
   /// <remarks>
   /// La case de confirmation est un champ comme les autres, et <c>confirmed: false</c> l'omet :

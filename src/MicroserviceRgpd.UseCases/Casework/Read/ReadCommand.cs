@@ -15,8 +15,9 @@ namespace MicroserviceRgpd.UseCases.Casework.Read;
 /// rendrait alors, quel qu'il soit, n'aurait plus de sujet.
 /// </para>
 /// <para>
-/// <b>Elle part à l'ouverture du dossier, et de nulle part ailleurs</b>, comme <c>Locate</c> : c'est
-/// là que se fait la relance d'un <c>202</c>, jamais depuis la file et jamais par une minuterie.
+/// <b>Elle part à l'ouverture du dossier, et de nulle part ailleurs</b>, comme <c>Locate</c> :
+/// c'est là que se fait la relance d'un <c>202</c>, jamais depuis le tableau des demandes RGPD et
+/// jamais par une minuterie.
 /// </para>
 /// <para>
 /// <b>Aucune forme n'est demandée à l'<c>Adapter</c>.</b> Ce qui part est le droit ; ce qui revient

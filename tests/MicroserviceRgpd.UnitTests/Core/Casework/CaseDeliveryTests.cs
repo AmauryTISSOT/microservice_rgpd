@@ -47,8 +47,9 @@ public class CaseDeliveryTests
   }
 
   /// <summary>
-  /// <b>Une remise prise et jamais déclarée remonte dans la file.</b> C'est le seul propos de la
-  /// date du premier geste : sans elle, le travail resté au milieu du gué serait invisible.
+  /// <b>Une remise prise et jamais déclarée remonte dans le tableau des demandes RGPD.</b> C'est le
+  /// seul propos de la date du premier geste : sans elle, le travail resté au milieu du gué serait
+  /// invisible.
   /// </summary>
   [Fact]
   public void MakesADeliveryTakenAndNeverDeclaredVisible()

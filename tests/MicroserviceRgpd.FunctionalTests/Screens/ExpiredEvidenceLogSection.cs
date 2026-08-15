@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
 /// <summary>
-/// La <b>section propre</b> des <c>EvidenceLog</c> échus, sur l'écran de la file, et le geste
-/// irréversible qu'elle porte.
+/// La <b>section propre</b> des <c>EvidenceLog</c> échus, sur le tableau des demandes RGPD, et le
+/// geste irréversible qu'elle porte.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -65,7 +65,7 @@ public class ExpiredEvidenceLogSection(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
-  /// <b>Le bouton est loin de ceux des dossiers.</b> Le tableau des <c>Case</c> n'offre aucun geste
+  /// <b>Le bouton est loin de ceux des dossiers.</b> La liste des <c>Case</c> n'offre aucun geste
   /// — pas un formulaire, pas un bouton, pas une case — et la seule action de l'écran vit dans la
   /// section d'après, sous son propre titre : un mauvais clic définitif et inconstatable ne doit pas
   /// être à portée de main.
@@ -166,8 +166,8 @@ public class ExpiredEvidenceLogSection(CustomWebApplicationFactory<Program> fact
 
     var destroying = await _surface.DestroyEvidenceLogAsync(recent);
 
-    // La file rechargée dit d'elle-même ce qui reste : c'est la seule chose vraie qu'on puisse
-    // afficher d'un geste qui ne se consigne pas.
+    // Le tableau des demandes RGPD rechargé dit de lui-même ce qui reste : c'est la seule chose
+    // vraie qu'on puisse afficher d'un geste qui ne se consigne pas.
     destroying.StatusCode.ShouldBe(HttpStatusCode.Found);
 
     using var scope = factory.Services.CreateScope();

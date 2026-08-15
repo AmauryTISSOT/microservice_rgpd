@@ -196,9 +196,10 @@ public sealed class Case : IAggregateRoot
   /// droit est dans ce cas.
   /// </summary>
   /// <remarks>
-  /// <b>C'est une lecture, jamais un état.</b> Elle se recalcule sur les <see cref="Claim"/> à chaque
-  /// affichage, et sert de <b>colonne</b> sur une ligne de file déjà présente : une remise commencée
-  /// et non déclarée doit se voir tous les jours, plutôt que de manquer.
+  /// <b>C'est une lecture, jamais un état.</b> Elle se recalcule sur les <see cref="Claim"/> à
+  /// chaque affichage, et sert de <b>colonne</b> sur une ligne déjà présente du tableau des
+  /// demandes RGPD : une remise commencée et non déclarée doit se voir tous les jours, plutôt que
+  /// de manquer.
   /// </remarks>
   public bool AwaitsADeliveryDeclaration => _claims.Any(claim => claim.DeliveryAwaitsDeclaration);
 
@@ -617,7 +618,8 @@ public sealed class Case : IAggregateRoot
 
   /// <summary>
   /// Un <c>Adapter</c> a <b>différé</b> et déclaré son échéance. Rien du rattachement ne bouge : le
-  /// service repassera après elle, <b>à l'ouverture du dossier</b> et jamais depuis la file.
+  /// service repassera après elle, <b>à l'ouverture du dossier</b> et jamais depuis le tableau des
+  /// demandes RGPD.
   /// </summary>
   public Locating LocateDeferred(
     DeclaredSystemId declaredSystem,
@@ -680,7 +682,8 @@ public sealed class Case : IAggregateRoot
 
   /// <summary>
   /// Un <c>Adapter</c> a <b>différé</b> un <c>Read</c> et déclaré son échéance. Rien n'a été lu : le
-  /// service repassera après elle, <b>à l'ouverture du dossier</b> et jamais depuis la file.
+  /// service repassera après elle, <b>à l'ouverture du dossier</b> et jamais depuis le tableau des
+  /// demandes RGPD.
   /// </summary>
   /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
   public Reading ReadDeferred(

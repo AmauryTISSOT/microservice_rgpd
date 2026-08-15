@@ -3,10 +3,10 @@
 @using System.Globalization
 @using MicroserviceRgpd.Core.Casework
 @{
-  ViewData["Title"] = "La file";
+  ViewData["Title"] = "Tableau des demandes RGPD";
 }
 
-<h1>La file</h1>
+<h1>Tableau des demandes RGPD</h1>
 
 @*
   Aucun total, aucun taux, aucun dénombrement d'absences. Le seul usage d'un chiffre ici serait de se
@@ -21,9 +21,9 @@
 @if (Model.Queue.Cases.Count == 0)
 {
   @*
-    Une file vide se dit en mots et jamais par un zéro : un « 0 dossier » se lit comme une mesure
-    rassurante, là où la phrase dit ce qu'elle est — un service qui n'a rien à instruire, ou un
-    service dans lequel rien n'est encore entré.
+    Un tableau des demandes RGPD vide se dit en mots et jamais par un zéro : un « 0 dossier » se
+    lit comme une mesure rassurante, là où la phrase dit ce qu'elle est — un service qui n'a rien à
+    instruire, ou un service dans lequel rien n'est encore entré.
   *@
   <p class="none">
     Aucun dossier ouvert. Une demande qui n'est pas entrée dans le service n'apparaîtra pas ici.
@@ -108,9 +108,9 @@ else
           <td>@line.IdentityDeclaration.FrenchLabel</td>
           <td>
             @*
-              UNE COLONNE SUR UNE LIGNE DÉJÀ PRÉSENTE, jamais une file de plus. Le dossier est ouvert,
-              il est là ; ce que cette colonne ajoute est qu'une réponse assemblée n'a jamais été
-              rendue. La laisser invisible serait l'Omission silencieuse sous sa forme la plus
+              UNE COLONNE SUR UNE LIGNE DÉJÀ PRÉSENTE, jamais une ligne de plus dans le tableau des
+              demandes RGPD. Le dossier est ouvert, il est là ; ce que cette colonne ajoute est
+              qu'une réponse assemblée n'a jamais été rendue. La laisser invisible serait l'Omission silencieuse sous sa forme la plus
               tranquille. Énumérée, jamais comptée, comme les droits réclamés.
             *@
             @if (line.RightsAwaitingADeliveryDeclaration.Count == 0)
@@ -132,8 +132,9 @@ else
 }
 
 @*
-  Le dépôt manuel est offert que la file soit vide ou non : une demande qui dort dans une boîte aux
-  lettres est précisément ce que cet écran ne peut pas montrer, et le mois court déjà.
+  Le dépôt manuel est offert que le tableau des demandes RGPD soit vide ou non : une demande qui
+  dort dans une boîte aux lettres est précisément ce que cet écran ne peut pas montrer, et le mois
+  court déjà.
 *@
 <p><a asp-page="Deposit">Déposer une demande reçue par courriel</a></p>
 
@@ -148,7 +149,7 @@ else
 
   C'est aussi LA SEULE ÉCHÉANCE QUI FAIT NAÎTRE UNE LIGNE. Les quatre autres ne sont que des
   colonnes sur des lignes déjà présentes ; celle-ci fait reparaître un dossier clos depuis cinq
-  ans, et c'est pourquoi elle ne peut pas vivre dans le tableau du dessus.
+  ans, et c'est pourquoi elle ne peut pas vivre dans la liste des dossiers, au-dessus.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
 <h2>À détruire — conservation échue</h2>

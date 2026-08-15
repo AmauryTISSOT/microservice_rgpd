@@ -8,13 +8,14 @@
 /// </summary>
 /// <remarks>
 /// <b>La transition arrive avec la clôture</b>, qui détruit le nominatif à l'instant même et exige
-/// une signature humaine. L'état existe dès maintenant parce que la file s'y appuie : une file qui
-/// listerait « tous les dossiers » afficherait des dossiers clos le jour où la clôture existera, et
-/// personne ne l'aurait décidé.
+/// une signature humaine. L'état existe dès maintenant parce que le tableau des demandes RGPD s'y
+/// appuie : un tableau des demandes RGPD qui listerait « tous les dossiers » afficherait des
+/// dossiers clos le jour où la clôture existera, et personne ne l'aurait décidé.
 /// </remarks>
 public sealed class CaseState : SmartEnum<CaseState>
 {
-  /// <summary>Ouvert. C'est l'état de naissance, et le seul que la file affiche.</summary>
+  /// <summary>Ouvert. C'est l'état de naissance, et le seul que le tableau des demandes RGPD
+  /// affiche.</summary>
   public static readonly CaseState Open = new(nameof(Open), 0, "ouvert");
 
   /// <summary>

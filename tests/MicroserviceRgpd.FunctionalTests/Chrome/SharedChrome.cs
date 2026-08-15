@@ -146,8 +146,8 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>La barre porte les trois points d'entrée, sur chaque écran, et dans l'ordre décidé</b> — et
   /// c'est ce qui fait que quitter un dossier long ne demande plus de le dérouler jusqu'en bas : le
-  /// <c>Manifest</c>, le dépistage et la file s'atteignent de partout sans passer par un écran
-  /// intermédiaire.
+  /// <c>Manifest</c>, le dépistage et le tableau des demandes RGPD s'atteignent de partout sans
+  /// passer par un écran intermédiaire.
   /// </summary>
   [Fact]
   public async Task CarriesTheThreeEntryPointsOnEveryScreen()
@@ -198,9 +198,10 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>AUCUN CHIFFRE DANS LA BARRE</b>, ni compteur ni badge. La règle des chiffres que la file
-  /// applique — un « 0 dossier en retard » se lit comme une mesure rassurante là où la phrase dit ce
-  /// qu'elle est — vaut aussi pour une barre qu'on lit sur les onze écrans sans jamais l'ouvrir.
+  /// ⚠️ <b>AUCUN CHIFFRE DANS LA BARRE</b>, ni compteur ni badge. La règle des chiffres que le
+  /// tableau des demandes RGPD applique — un « 0 dossier en retard » se lit comme une mesure
+  /// rassurante là où la phrase dit ce qu'elle est — vaut aussi pour une barre qu'on lit sur les
+  /// onze écrans sans jamais l'ouvrir.
   /// </summary>
   [Fact]
   public async Task CarriesNoTallyInTheBar()

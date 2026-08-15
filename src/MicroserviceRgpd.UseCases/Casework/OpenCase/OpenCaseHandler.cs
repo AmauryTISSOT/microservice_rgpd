@@ -17,12 +17,13 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 /// </para>
 /// <para>
 /// <b>L'ordre est : ouvrir, puis consigner.</b> Ce sont deux écritures, et non une transaction : le
-/// <c>EvidenceLog</c> est <b>hors de l'agrégat</b> et son adaptateur écrit pour lui seul. L'ordre est
-/// celui-ci parce que les deux pannes ne se valent pas — une ligne de preuve pour un dossier qui
-/// n'existe pas est un faux, un dossier dont la première ligne manque est un dossier <b>présent</b>
-/// dans la file, que l'<c>Operator</c> voit. On enregistre un fait laid plutôt qu'on ne fabrique un
-/// faux, et l'échec de l'écriture remonte tel quel : il n'existe ici aucun repli qui rendrait un
-/// identifiant de dossier à un appelant dont la demande n'a rien laissé.
+/// <c>EvidenceLog</c> est <b>hors de l'agrégat</b> et son adaptateur écrit pour lui seul. L'ordre
+/// est celui-ci parce que les deux pannes ne se valent pas — une ligne de preuve pour un dossier
+/// qui n'existe pas est un faux, un dossier dont la première ligne manque est un dossier
+/// <b>présent</b> dans le tableau des demandes RGPD, que l'<c>Operator</c> voit. On enregistre un
+/// fait laid plutôt qu'on ne fabrique un faux, et l'échec de l'écriture remonte tel quel : il
+/// n'existe ici aucun repli qui rendrait un identifiant de dossier à un appelant dont la demande
+/// n'a rien laissé.
 /// </para>
 /// </remarks>
 /// <param name="manifest">Le catalogue déclaré du client, en lecture seule.</param>

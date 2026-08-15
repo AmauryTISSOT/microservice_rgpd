@@ -10,9 +10,10 @@ namespace MicroserviceRgpd.UseCases.Casework.Locate;
 /// <remarks>
 /// <para>
 /// <b>Elle part à l'ouverture du dossier, et de nulle part ailleurs.</b> C'est là que se fait la
-/// <b>relance</b> d'un <c>202</c> : jamais depuis la file, qui n'émet aucun appel, et jamais par une
-/// minuterie. Il n'existe ni compteur de tentatives, ni temporisation, ni abandon automatique, ni
-/// escalade — l'<c>Operator</c> n'a jamais cessé d'être le seul à produire une issue.
+/// <b>relance</b> d'un <c>202</c> : jamais depuis le tableau des demandes RGPD, qui n'émet aucun
+/// appel, et jamais par une minuterie. Il n'existe ni compteur de tentatives, ni temporisation, ni
+/// abandon automatique, ni escalade — l'<c>Operator</c> n'a jamais cessé d'être le seul à produire
+/// une issue.
 /// </para>
 /// <para>
 /// <b>Elle ne barre jamais la route.</b> L'ordre des appels est <b>signifiant</b> — on cherche la

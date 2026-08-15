@@ -304,7 +304,7 @@ public sealed class ExtensionForm
 /// parade est un geste <b>délibéré dans l'écran</b> plutôt que de la donnée gardée en réserve. La
 /// case n'est ni pré-cochée ni mémorisée : elle est la seconde affirmation d'une personne qui vient
 /// de lire ce qu'elle s'apprête à détruire. Le seul autre geste du dispositif à en porter une est
-/// la destruction d'un <c>EvidenceLog</c> échu, à l'écran de la file.
+/// la destruction d'un <c>EvidenceLog</c> échu, sur le tableau des demandes RGPD.
 /// </para>
 /// <para>
 /// <b>Le motif est un champ de prose, et c'est de la prose de <em>preuve</em>.</b> Il dit

@@ -15,9 +15,9 @@ namespace MicroserviceRgpd.UseCases.Casework.Deliver;
 /// geste, qui est une affirmation.
 /// </para>
 /// <para>
-/// <b>Il est répétable.</b> Retélécharger n'est pas un fait nouveau ; seul le <b>premier</b> instant
-/// est retenu sur le <c>Claim</c>, et il n'y sert qu'à faire remonter dans la file la remise prise
-/// et jamais déclarée.
+/// <b>Il est répétable.</b> Retélécharger n'est pas un fait nouveau ; seul le <b>premier</b>
+/// instant est retenu sur le <c>Claim</c>, et il n'y sert qu'à faire remonter dans le tableau des
+/// demandes RGPD la remise prise et jamais déclarée.
 /// </para>
 /// <para>
 /// <b>Il n'est pas signé.</b> Rien n'est affirmé : la signature appartient au geste qui produit une

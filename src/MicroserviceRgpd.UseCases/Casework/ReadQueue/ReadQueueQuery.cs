@@ -5,29 +5,29 @@ using MicroserviceRgpd.Core.SharedKernel;
 namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 
 /// <summary>
-/// Relire la file, telle qu'elle se lit <b>à cet instant</b>.
+/// Relire le tableau des demandes RGPD, tel qu'il se lit <b>à cet instant</b>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>La file est une requête, jamais un processus.</b> Rien ne tourne, donc rien ne peut s'arrêter
-/// en silence : un processus de fond interrompu rendrait une file <b>vide et rassurante</b>, soit
-/// l'<c>Omission silencieuse</c> sous sa forme la plus dangereuse, et ferait dépendre la preuve de ce
-/// qu'un <c>cron</c> ait tourné.
+/// <b>Le tableau des demandes RGPD est une requête, jamais un processus.</b> Rien ne tourne, donc
+/// rien ne peut s'arrêter en silence : un processus de fond interrompu rendrait un tableau des
+/// demandes RGPD <b>vide et rassurant</b>, soit l'<c>Omission silencieuse</c> sous sa forme la plus
+/// dangereuse, et ferait dépendre la preuve de ce qu'un <c>cron</c> ait tourné.
 /// </para>
 /// <para>
 /// <b>Aucun paramètre : ni page, ni filtre, ni tri au choix.</b> Un filtre est une façon de ne plus
 /// voir, et un tri au choix ferait de l'ordre des échéances une préférence d'écran.
 /// </para>
 /// <para>
-/// <b>Elle n'émet aucun appel.</b> La relance d'un <c>202</c> a lieu à l'ouverture d'un dossier ;
-/// afficher une liste n'appelle pas un <c>Adapter</c> par ligne.
+/// <b>Le tableau des demandes RGPD n'émet aucun appel.</b> La relance d'un <c>202</c> a lieu à
+/// l'ouverture d'un dossier ; afficher une liste n'appelle pas un <c>Adapter</c> par ligne.
 /// </para>
 /// </remarks>
 public sealed record ReadQueueQuery : IQuery<OperatorQueue>;
 
 /// <summary>
-/// La file de l'<c>Operator</c> : les dossiers ouverts, rangés par échéance, et l'instant où on les
-/// a regardés.
+/// Le tableau des demandes RGPD de l'<c>Operator</c> : les dossiers ouverts, rangés par échéance,
+/// et l'instant où on les a regardés.
 /// </summary>
 /// <remarks>
 /// <b>Aucun total.</b> Ni « 4 dossiers ouverts », ni « 2 en retard » : la règle des chiffres
@@ -52,7 +52,8 @@ public sealed record ReadQueueQuery : IQuery<OperatorQueue>;
 /// </param>
 /// <param name="ObservedAt">
 /// L'instant sur lequel tous les dépassements de cette page ont été calculés. Il est <b>nommé</b> :
-/// une file qui ne dirait pas de quand elle date se lirait comme une vérité intemporelle.
+/// un tableau des demandes RGPD qui ne dirait pas de quand il date se lirait comme une vérité
+/// intemporelle.
 /// </param>
 public sealed record OperatorQueue(
   IReadOnlyList<QueuedCase> Cases,
@@ -60,13 +61,14 @@ public sealed record OperatorQueue(
   DateTimeOffset ObservedAt);
 
 /// <summary>
-/// Une ligne de la file : un dossier ouvert, et ce qui sert à décider s'il passe avant un autre.
+/// Une ligne du tableau des demandes RGPD : un dossier ouvert, et ce qui sert à décider s'il passe
+/// avant un autre.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Les échéances sont des colonnes sur une ligne déjà présente.</b> Le dossier est ouvert, il est
-/// dans la file ; l'échéance le <b>trie</b>, elle ne le fait pas apparaître. Aucune ligne d'ici ne
-/// dépend de ce qu'un processus ait tourné.
+/// <b>Les échéances sont des colonnes sur une ligne déjà présente.</b> Le dossier est ouvert, il
+/// est dans le tableau des demandes RGPD ; l'échéance le <b>trie</b>, elle ne le fait pas
+/// apparaître. Aucune ligne d'ici ne dépend de ce qu'un processus ait tourné.
 /// </para>
 /// <para>
 /// <b>Aucun nombre de jours.</b> Une date et un dépassement sont des faits ; « en retard de 4 jours »
@@ -87,7 +89,8 @@ public sealed record OperatorQueue(
 /// Les droits dont quelqu'un a téléchargé la remise sans jamais déclarer l'avoir rendue —
 /// <b>énumérés et jamais comptés</b>, comme les droits réclamés.
 /// <para>
-/// <b>C'est une colonne sur une ligne déjà présente</b>, jamais une file de plus. Le dossier est
+/// <b>C'est une colonne sur une ligne déjà présente</b>, jamais une ligne de plus dans le tableau
+/// des demandes RGPD. Le dossier est
 /// ouvert, il est là ; ce que cette colonne ajoute est qu'un travail s'est arrêté au milieu du gué,
 /// et le laisser invisible serait l'<c>Omission silencieuse</c> sous sa forme la plus tranquille :
 /// la personne a une réponse assemblée que personne ne lui a rendue.

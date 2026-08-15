@@ -4,8 +4,8 @@ using MicroserviceRgpd.Core.Casework.EvidenceLog;
 namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 
 /// <summary>
-/// Évalue la file. <b>À chaque affichage, entièrement</b> : rien n'est mémorisé d'un affichage à
-/// l'autre, et aucun drapeau d'échéance n'est écrit nulle part.
+/// Évalue le tableau des demandes RGPD. <b>À chaque affichage, entièrement</b> : rien n'est
+/// mémorisé d'un affichage à l'autre, et aucun drapeau d'échéance n'est écrit nulle part.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -14,8 +14,9 @@ namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 /// c'est-à-dire le drapeau même que ce contexte refuse. Le troc est assumé : quelques demandes par an.
 /// </para>
 /// <para>
-/// <b>Une file vide est un résultat, jamais une absence.</b> C'est l'état d'un service qui n'a rien à
-/// instruire, et l'écran doit pouvoir le dire — mais il ne le dira <b>jamais par un zéro</b>.
+/// <b>Un tableau des demandes RGPD vide est un résultat, jamais une absence.</b> C'est l'état d'un
+/// service qui n'a rien à instruire, et l'écran doit pouvoir le dire — mais il ne le dira <b>jamais
+/// par un zéro</b>.
 /// </para>
 /// </remarks>
 /// <param name="cases">Les dossiers, en lecture seule.</param>

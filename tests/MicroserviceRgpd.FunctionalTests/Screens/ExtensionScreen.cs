@@ -32,8 +32,8 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Le test d'acceptation.</b> Déclarée dans le mois, la prolongation porte le dénominateur à
-  /// trois mois — à l'écran du dossier comme à celui de la file — et la preuve garde le motif, la
-  /// date d'information et le nom du signataire.
+  /// trois mois — à l'écran du dossier comme au tableau des demandes RGPD — et la preuve garde le
+  /// motif, la date d'information et le nom du signataire.
   /// </summary>
   [Fact]
   public async Task CarriesTheDeadlineToThreeMonthsWhenDeclaredWithinTheMonth()
@@ -57,7 +57,7 @@ public class ExtensionScreen(CustomWebApplicationFactory<Program> factory)
     screen.ShouldContain("Prolongée de deux mois");
     screen.ShouldContain("le service n'a écrit à personne");
 
-    // Et la file range la ligne sur la nouvelle échéance, en le disant.
+    // Et le tableau des demandes RGPD range la ligne sur la nouvelle échéance, en le disant.
     var queue = await _surface.ReadTextAsync(OperatorSurface.Queue);
 
     queue.ShouldContain("prolongée (art. 12.3)");

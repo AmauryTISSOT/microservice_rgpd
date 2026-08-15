@@ -147,9 +147,10 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// La <b>barre de navigation</b> d'une page rendue, isolée de tout le reste : ce qui se lit dedans
-  /// n'est jamais confondu avec ce que l'écran écrit sous elle — la file porte le mot « file », et
-  /// une assertion sur la barre qui lirait la page entière passerait pour de mauvaises raisons.
+  /// La <b>barre de navigation</b> d'une page rendue, isolée de tout le reste : ce qui se lit
+  /// dedans n'est jamais confondu avec ce que l'écran écrit sous elle — le tableau des demandes
+  /// RGPD porte le même nom dans la barre et dans son titre, et une assertion sur la barre qui
+  /// lirait la page entière passerait pour de mauvaises raisons.
   /// </summary>
   internal static string NavigationBarIn(string rendered)
   {
@@ -197,9 +198,9 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// Le point d'entrée <b>dont un écran relève</b>, lu sur sa seule adresse : le dépôt d'une demande
-  /// et un dossier relèvent de la file, la reprise d'une déclaration du <c>Manifest</c>, et tout ce
-  /// qui pend sous le dépistage du dépistage.
+  /// Le point d'entrée <b>dont un écran relève</b>, lu sur sa seule adresse : le dépôt d'une
+  /// demande et un dossier relèvent du tableau des demandes RGPD, la reprise d'une déclaration du
+  /// <c>Manifest</c>, et tout ce qui pend sous le dépistage du dépistage.
   /// </summary>
   internal static string EntryPointOf(string screen)
   {

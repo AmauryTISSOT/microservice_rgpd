@@ -4,15 +4,16 @@ namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
 /// <b>Rien ne tourne.</b> Aucun <c>IHostedService</c>, aucun <c>BackgroundService</c>, aucune
-/// minuterie, aucun ordonnanceur : la file de l'<c>Operator</c> est une <b>requête</b>, évaluée à
-/// chaque affichage.
+/// minuterie, aucun ordonnanceur : le tableau des demandes RGPD de l'<c>Operator</c> est une
+/// <b>requête</b>, évaluée à chaque affichage.
 /// </summary>
 /// <remarks>
 /// <para>
-/// C'est le garde le plus important de la surface, et il ne porte pas sur le confort d'architecture :
-/// un processus de fond interrompu rendrait une file <b>vide et rassurante</b>, soit l'<c>Omission
-/// silencieuse</c> sous sa forme la plus dangereuse, et ferait dépendre la preuve de ce qu'un
-/// <c>cron</c> ait tourné. Un retard non détecté deviendrait un retard inexistant.
+/// C'est le garde le plus important de la surface, et il ne porte pas sur le confort
+/// d'architecture : un processus de fond interrompu rendrait un tableau des demandes RGPD <b>vide
+/// et rassurant</b>, soit l'<c>Omission silencieuse</c> sous sa forme la plus dangereuse, et ferait
+/// dépendre la preuve de ce qu'un <c>cron</c> ait tourné. Un retard non détecté deviendrait un
+/// retard inexistant.
 /// </para>
 /// <para>
 /// <b>Il lit l'IL compilé, et non le code source.</b> Un test sur les seules déclarations de types
@@ -67,8 +68,9 @@ public class NothingRunsInTheBackgroundTests
     machinery.ShouldBeEmpty(
       $"{assembly} porte de la machinerie qui tourne :" + Environment.NewLine
       + string.Join(Environment.NewLine, machinery) + Environment.NewLine
-      + "La file est une requête, évaluée à chaque affichage : un processus arrêté rendrait une file "
-      + "vide et rassurante, et un retard non détecté deviendrait un retard inexistant.");
+      + "Le tableau des demandes RGPD est une requête, évaluée à chaque affichage : un processus "
+      + "arrêté rendrait un tableau des demandes RGPD vide et rassurant, et un retard non détecté "
+      + "deviendrait un retard inexistant.");
   }
 
   /// <summary>

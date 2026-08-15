@@ -7,8 +7,8 @@
 /// </summary>
 /// <remarks>
 /// La minuterie est <b>cachée dans un corps de méthode</b>, à l'endroit précis qu'un test de
-/// signatures ne verrait pas — c'est la dérive qu'on craint : un écran qui, un jour, « rafraîchirait
-/// la file toutes les minutes ».
+/// signatures ne verrait pas — c'est la dérive qu'on craint : un écran qui, un jour,
+/// « rafraîchirait le tableau des demandes RGPD toutes les minutes ».
 /// </remarks>
 internal sealed class AScreenThatWouldRunOnItsOwn
 {

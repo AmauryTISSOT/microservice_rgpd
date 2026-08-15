@@ -70,9 +70,9 @@ public sealed class Locating
   public DateTimeOffset AskedAt { get; private set; }
 
   /// <summary>
-  /// L'échéance que l'<c>Adapter</c> a <b>déclarée</b> en différant, ou <c>null</c> pour toute autre
-  /// réponse. Le service repassera après elle — <b>à l'ouverture du dossier</b>, jamais depuis la
-  /// file, et sans compteur de tentatives.
+  /// L'échéance que l'<c>Adapter</c> a <b>déclarée</b> en différant, ou <c>null</c> pour toute
+  /// autre réponse. Le service repassera après elle — <b>à l'ouverture du dossier</b>, jamais
+  /// depuis le tableau des demandes RGPD, et sans compteur de tentatives.
   /// </summary>
   public DateTimeOffset? DeclaredDeadline { get; private set; }
 

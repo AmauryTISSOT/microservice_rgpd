@@ -16,10 +16,10 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// <b>libre</b>, et il le restera.
 /// </para>
 /// <para>
-/// <b>Un seul index secondaire, et il est daté.</b> Il est posé sur <c>case_id</c> le jour où
-/// l'écran de la file s'est mis à lire les <c>EvidenceLog</c> échus : c'est par lui que la file demande
-/// quels dossiers clos portent encore une preuve, et par lui que la destruction emporte un dossier
-/// de preuve entier. Il n'y en a pas d'autre — rien d'autre ne lit cette table.
+/// <b>Un seul index secondaire, et il est daté.</b> Il est posé sur <c>case_id</c> le jour où le
+/// tableau des demandes RGPD s'est mis à lire les <c>EvidenceLog</c> échus : c'est par lui que cet
+/// écran demande quels dossiers clos portent encore une preuve, et par lui que la destruction
+/// emporte un dossier de preuve entier. Il n'y en a pas d'autre — rien d'autre ne lit cette table.
 /// </para>
 /// <para>
 /// <b>Le <c>snake_case</c> est déclaré ici, explicitement</b>, comme sur les autres tables du dépôt.
@@ -41,9 +41,10 @@ public sealed class EvidenceLogRowConfiguration : IEntityTypeConfiguration<Evide
 
     builder.Property(row => row.CaseId).HasColumnName("case_id").IsRequired();
 
-    // Le seul index secondaire de la table. La file demande, à chaque affichage, quels dossiers clos
-    // portent encore une preuve ; et la destruction d'un EvidenceLog échu emporte toutes les lignes d'un
-    // même dossier d'un coup. Les deux se lisent par cette colonne, et par elle seule.
+    // Le seul index secondaire de la table. Le tableau des demandes RGPD demande, à chaque
+    // affichage, quels dossiers clos portent encore une preuve ; et la destruction d'un EvidenceLog
+    // échu emporte toutes les lignes d'un même dossier d'un coup. Les deux se lisent par cette
+    // colonne, et par elle seule.
     builder.HasIndex(row => row.CaseId).HasDatabaseName("ix_evidence_log_entries_case_id");
 
     builder.Property(row => row.OccurredAt).HasColumnName("occurred_at").IsRequired();

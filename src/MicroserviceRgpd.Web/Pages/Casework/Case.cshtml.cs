@@ -143,9 +143,10 @@ public class CaseModel(IMediator mediator) : PageModel
   /// <remarks>
   /// <para>
   /// <b>C'est ici, et nulle part ailleurs, que le service appelle.</b> L'ouverture du dossier est
-  /// aussi le seul endroit où se fait la <b>relance</b> d'un <c>202</c> : jamais depuis la file, qui
-  /// n'émet aucun appel, et jamais par une minuterie. Rien ne tourne, donc rien ne peut s'arrêter en
-  /// silence — un processus de fond interrompu rendrait un écran <b>vide et rassurant</b>.
+  /// aussi le seul endroit où se fait la <b>relance</b> d'un <c>202</c> : jamais depuis le tableau
+  /// des demandes RGPD, qui n'émet aucun appel, et jamais par une minuterie. Rien ne tourne, donc
+  /// rien ne peut s'arrêter en silence — un processus de fond interrompu rendrait un écran <b>vide
+  /// et rassurant</b>.
   /// </para>
   /// <para>
   /// <b>L'ordre des appels est signifiant sans jamais être bloquant.</b> On cherche la personne avant

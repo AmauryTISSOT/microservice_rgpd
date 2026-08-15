@@ -269,7 +269,7 @@ public sealed class CaseConfiguration : IEntityTypeConfiguration<Case>
       // Les deux gestes de la remise sont deux colonnes, et non un état : la première est un
       // téléchargement, qui ne date rien ; la seconde est l'affirmation qu'on a rendu la réponse.
       // Les garder distinctes laisse voir la `Delivery` prise et jamais déclarée — celle qui doit
-      // remonter dans la file plutôt que de disparaître entre deux états.
+      // remonter dans le tableau des demandes RGPD plutôt que de disparaître entre deux états.
       claim.Property(one => one.DeliveryTakenOn).HasColumnName("delivery_taken_on");
 
       claim.Property(one => one.DeliveryDeclaredOn).HasColumnName("delivery_declared_on");

@@ -7,9 +7,9 @@ internal sealed record ChromeEntryPoint(string Label, string Address)
 {
   /// <summary>
   /// Si l'écran rendu relève de ce point d'entrée. La comparaison est faite <b>par segments</b> :
-  /// un dossier relève de la file, la reprise d'une déclaration du <c>Manifest</c>, et la table
-  /// d'arbitrage du dépistage — ce que le préfixe de texte nu n'aurait pas su dire sans confondre
-  /// aussi une adresse qui commence par les mêmes lettres.
+  /// un dossier relève du tableau des demandes RGPD, la reprise d'une déclaration du
+  /// <c>Manifest</c>, et la table d'arbitrage du dépistage — ce que le préfixe de texte nu n'aurait
+  /// pas su dire sans confondre aussi une adresse qui commence par les mêmes lettres.
   /// </summary>
   internal bool IsCurrent(PathString path)
   {
@@ -35,9 +35,9 @@ internal sealed record ChromeEntryPoint(string Label, string Address)
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucun compteur, aucun badge numérique</b>, et il ne doit jamais y en avoir. La règle des
-/// chiffres que la file applique — un « 0 dossier en retard » se lit comme une mesure rassurante là
-/// où la phrase dit ce qu'elle est — vaut d'autant plus pour une barre qui se répète sur tous les
-/// écrans sans qu'on l'ouvre jamais.
+/// chiffres que le tableau des demandes RGPD applique — un « 0 dossier en retard » se lit comme une
+/// mesure rassurante là où la phrase dit ce qu'elle est — vaut d'autant plus pour une barre qui se
+/// répète sur tous les écrans sans qu'on l'ouvre jamais.
 /// </para>
 /// </remarks>
 internal static class ChromeNavigation

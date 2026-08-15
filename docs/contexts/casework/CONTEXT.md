@@ -72,15 +72,16 @@ d'un compteur lancé depuis un nombre de jours inconnu, et la date de réception
 Rien ne le suspend — ni une `OpenQuestion`, ni une vérification d'identité, la suspension n'ayant
 aucune base textuelle.
 
-**La file est une requête, jamais un processus.** Le dépassement, l'échéance déclarée d'un `202`,
-l'ancienneté d'une `OpenQuestion`, une `Delivery` non remise, un `EvidenceLog` échu : tout se recalcule à
-l'instant où l'`Operator` regarde. Rien ne tourne, donc rien ne peut s'arrêter en silence — un
-processus de fond interrompu rendrait une file **vide et rassurante**, soit l'`Omission silencieuse`
-sous sa forme la plus dangereuse, et ferait dépendre la preuve de ce qu'un `cron` ait tourné.
+**Le tableau des demandes RGPD est une requête, jamais un processus.** Le dépassement, l'échéance
+déclarée d'un `202`, l'ancienneté d'une `OpenQuestion`, une `Delivery` non remise, un `EvidenceLog`
+échu : tout se recalcule à l'instant où l'`Operator` regarde. Rien ne tourne, donc rien ne peut
+s'arrêter en silence — un processus de fond interrompu rendrait un tableau des demandes RGPD **vide
+et rassurant**, soit l'`Omission silencieuse` sous sa forme la plus dangereuse, et ferait dépendre
+la preuve de ce qu'un `cron` ait tourné.
 ⚠️ De ces cinq échéances, quatre ne sont que des **colonnes** sur des lignes déjà présentes : le
-`Case` est ouvert, il est déjà dans la file. L'échéance **trie**, elle n'ajoute pas. Seul le `EvidenceLog`
-échu fait naître une ligne, son `Case` étant clos depuis cinq ans — d'où sa section propre sur
-l'écran, qui tient aussi lieu de parade au geste irréversible qu'il porte.
+`Case` est ouvert, il est déjà dans le tableau des demandes RGPD. L'échéance **trie**, elle n'ajoute
+pas. Seul le `EvidenceLog` échu fait naître une ligne, son `Case` étant clos depuis cinq ans — d'où
+sa section propre sur l'écran, qui tient aussi lieu de parade au geste irréversible qu'il porte.
 ⚠️ **Aucun seuil, nulle part.** Une `OpenQuestion` affiche la date à laquelle elle a été posée,
 jamais « sans réponse depuis N jours » : aucun nombre du droit ne fonde N, un seuil réglable serait
 une case à laisser pourrir de plus, et trier sur lui ferait passer devant un compteur sans force
@@ -121,9 +122,9 @@ _Avoid_ : Extension, Delay, Postponement, Deferral, prolongation
 
 **La relance a lieu à l'ouverture d'un `Case`.** Un `202` d'`Adapter` porte une échéance déclarée, et
 c'est le service qui revient — mais seulement quand l'`Operator` ouvre le dossier, jamais depuis la
-file, qui n'émet aucun appel. Il n'existe ni compteur de tentatives, ni temporisation, ni abandon
-automatique, ni escalade : l'`Operator` n'a jamais cessé d'être le seul à produire une issue, et une
-escalade automatique lui retirerait une décision qui est la sienne.
+tableau des demandes RGPD, qui n'émet aucun appel. Il n'existe ni compteur de tentatives, ni
+temporisation, ni abandon automatique, ni escalade : l'`Operator` n'a jamais cessé d'être le seul à
+produire une issue, et une escalade automatique lui retirerait une décision qui est la sienne.
 
 **La personne n'apprend rien du temps qui passe.** Le service ne lui parle jamais — ni accusé de
 réception, ni avertissement d'échéance, ni relance de courtoisie. Les trois seules communications qui
@@ -329,7 +330,7 @@ retomber quelque part à la clôture.
 
 ⚠️ **Il n'existe aucun vestibule.** La confirmation a lieu **dans le `Case` ouvert**, pendant que le
 mois de l'art. 12.3 court : une salle d'attente aurait fait passer pour « pas encore commencé » un
-compteur déjà lancé, et la demande y aurait attendu hors de la file.
+compteur déjà lancé, et la demande y aurait attendu hors du tableau des demandes RGPD.
 _Avoid_ : Source, Channel, provenance
 
 ### Ce qu'un `Locate` rapporte, et ce qu'il refuse de trancher
@@ -531,9 +532,9 @@ ne fait confiance à aucune coordonnée qu'il n'a pas vérifiée, l'`IdentityDec
 `RetrievedData` : **la remise est une affirmation, pas un transfert d'octets**, et confondre les deux
 ferait dater la preuve du moment où un fichier a quitté un serveur.
 ⚠️ Le service ne prouvera donc **jamais** que la personne a reçu quoi que ce soit — c'est enregistré,
-jamais vérifié. ⚠️ Entre les deux gestes le paquet existe en deux exemplaires, dont l'un hors de portée pour
-toujours ; une `Delivery` téléchargée et non déclarée remise remonte dans la file de l'`Operator`,
-ligne présente vue tous les jours plutôt que ligne manquante.
+jamais vérifié. ⚠️ Entre les deux gestes le paquet existe en deux exemplaires, dont l'un hors de
+portée pour toujours ; une `Delivery` téléchargée et non déclarée remise remonte dans le tableau des
+demandes RGPD de l'`Operator`, ligne présente vue tous les jours plutôt que ligne manquante.
 ⚠️ **Le second geste demande le premier.** Déclarer remis un paquet que personne n'a jamais eu en
 main daterait au `EvidenceLog` un geste qui n'a pas eu lieu, et détruirait des `RetrievedData` que
 personne n'a tendues.
@@ -626,11 +627,11 @@ qui pourrit en silence, et de la donnée gardée trop longtemps ne fait aucun br
 `EvidenceLog` est détruit **en entier** — pas de second étage d'anonymisation, qui rouvrirait
 l'expurgation que sa définition ferme.
 ⚠️ Cette destruction n'est **jamais automatique**. Un `EvidenceLog` échu apparaît dans une **section
-propre** de l'écran de la file — sa ligne n'a ni personne, ni droit, ni délai, et son bouton ne doit
-jamais voisiner ceux des `Case` — où l'`Operator` le détruit d'un geste délibéré, confirmé case
-cochée comme l'est la clôture : un `EvidenceLog` expiré est ainsi une **ligne présente**, vue tous les
-jours, jamais une ligne manquante que nulle relecture ne lèverait. La section reste affichée, et
-vide, les années où rien n'est échu.
+propre** du tableau des demandes RGPD — sa ligne n'a ni personne, ni droit, ni délai, et son bouton
+ne doit jamais voisiner ceux des `Case` — où l'`Operator` le détruit d'un geste délibéré, confirmé
+case cochée comme l'est la clôture : un `EvidenceLog` expiré est ainsi une **ligne présente**, vue
+tous les jours, jamais une ligne manquante que nulle relecture ne lèverait. La section reste
+affichée, et vide, les années où rien n'est échu.
 ⚠️ **C'est le seul geste du dispositif qui ne porte pas de signature**, et c'est une conséquence de
 ce qui suit, non un oubli : le seul endroit où ce nom aurait pu s'écrire est le `EvidenceLog` qui
 disparaît. L'écrire ailleurs — seconde table, journal — aurait rouvert l'expurgation que la
@@ -649,11 +650,11 @@ fait avancer que l'exécution, et toujours en réponse à un appel du service. L
 n'est pas un acteur du cycle.
 _Avoid_ : User, Agent, Admin, gestionnaire
 
-⚠️ **Il n'existe aucun troisième moteur.** Ce qui fait remonter du travail dans la file est une
-**requête**, évaluée quand l'`Operator` regarde — une propriété de la surface, pas un acteur du
-domaine. Aucun nom ne lui est donné : `Timer`, `Scheduler`, `DueWork` et `Reminder` promettraient
-tous une chose qui tourne, et quelqu'un finirait par écrire le processus qui tourne — même mécanique
-que le refus de `Blocker`.
+⚠️ **Il n'existe aucun troisième moteur.** Ce qui fait remonter du travail dans le tableau des
+demandes RGPD est une **requête**, évaluée quand l'`Operator` regarde — une propriété de la surface,
+pas un acteur du domaine. Aucun nom ne lui est donné : `Timer`, `Scheduler`, `DueWork` et
+`Reminder` promettraient tous une chose qui tourne, et quelqu'un finirait par écrire le processus
+qui tourne — même mécanique que le refus de `Blocker`.
 
 ### Ce que le service ne fait pas
 
