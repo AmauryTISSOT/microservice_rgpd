@@ -1,4 +1,4 @@
-@page "/depistage/table"
+@page "/detection/table"
 @model MicroserviceRgpd.Web.Pages.Screenings.TableModel
 @{
   var answer = Model.Answer!;
@@ -160,9 +160,9 @@ else
       plus bas sont des `<form method="post">` nus : sans attribut de tag helper, aucune `action`
       n'est produite et le navigateur reposte sur l'URL courante, query string comprise. Dès qu'une
       forme porte `asp-page-handler`, le tag helper FABRIQUE l'`action` — et la génération de lien ne
-      reprend que les valeurs de ROUTE. Or `@@page "/depistage/table"` n'a pas de paramètre de route :
+      reprend que les valeurs de ROUTE. Or `@@page "/detection/table"` n'a pas de paramètre de route :
       `schema` et `table` vivent dans la query string. Sans ces deux lignes, l'action produite est
-      `/depistage/table?handler=Batch`, le geste arrive sans table nommée et se refuse lui-même.
+      `/detection/table?handler=Batch`, le geste arrive sans table nommée et se refuse lui-même.
       Même raison qu'`asp-route-dialect` sur la forme de dépôt.
     *@
     <form method="post"

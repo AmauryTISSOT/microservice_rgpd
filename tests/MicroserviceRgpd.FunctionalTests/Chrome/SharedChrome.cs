@@ -216,6 +216,61 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>Les six adresses du contexte de détection portent le nom de l'écran qu'elles servent</b> :
+  /// elles répondent sous <c>/detection</c>, et les six anciennes <b>meurent en 404</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Aucune redirection n'est posée, et il ne faut pas en poser.</b> Une ancienne adresse qui
+  /// mènerait encore quelque part serait un second nom vivant pour la même chose : elle survivrait
+  /// dans les signets et les liens collés, et la surface porterait deux vocabulaires. C'est pourquoi
+  /// le refus est vérifié comme un 404 sec — un 301 ou un 302 passerait un test qui se contenterait
+  /// de « ne répond pas 200 ».
+  /// </remarks>
+  [Fact]
+  public async Task RetiresTheSixFormerScreeningAddressesWithoutRedirecting()
+  {
+    foreach (var retired in ChromeSurface.RetiredScreeningAddresses)
+    {
+      var response = await _chrome.FetchAsync(retired);
+
+      // La redirection est nommée AVANT le 404, et non déduite de lui : un 301 échouerait de toute
+      // façon sur le statut, mais avec un message qui parlerait d'un statut inattendu là où ce qui
+      // s'est produit est qu'une ancienne adresse mène encore quelque part.
+      ((int)response.StatusCode is >= 300 and <= 399).ShouldBeFalse(
+        $"L'ancienne adresse {retired} redirige, et fait donc revivre l'ancien nom.");
+
+      response.StatusCode.ShouldBe(
+        HttpStatusCode.NotFound, $"L'ancienne adresse {retired} doit être morte.");
+    }
+  }
+
+  /// <summary>
+  /// <b>Et les six écrans répondent bien sous leur nouveau préfixe</b> — les six ensemble, sans quoi
+  /// une seule adresse restée en arrière ferait parler à la surface deux vocabulaires à la fois.
+  /// </summary>
+  [Fact]
+  public async Task ServesTheSixScreeningScreensUnderTheirNewPrefix()
+  {
+    var screens = await _chrome.ScreeningScreensAsync();
+
+    // Six, écrit en clair, et non le compte de la liste des adresses retirées : les deux valent six
+    // par histoire et non par règle, et les dériver l'une de l'autre ferait qu'en retirer une
+    // affaiblirait les deux tests d'un coup.
+    screens.Count.ShouldBe(6, "Le contexte de détection compte six écrans.");
+
+    foreach (var screen in screens)
+    {
+      // ⚠️ Comparaison PAR SEGMENTS, comme celle du surlignage de la barre : un préfixe de texte nu
+      // aurait aussi accepté une adresse qui commence par les mêmes lettres sans relever du
+      // contexte.
+      ChromeSurface.EntryPointOf(screen).ShouldBe(
+        "/detection", $"L'écran {screen} ne relève pas du point d'entrée du contexte.");
+
+      await _chrome.ReadAsync(screen);
+    }
+  }
+
+  /// <summary>
   /// <b>Ni pied de page, ni lien d'évitement.</b> Le premier est un annuaire de liens marketing que
   /// le service n'a pas ; le second est une décision explicite du demandeur.
   /// </summary>

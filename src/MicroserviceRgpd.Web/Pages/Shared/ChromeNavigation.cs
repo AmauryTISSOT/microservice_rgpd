@@ -8,9 +8,9 @@ internal sealed record ChromeEntryPoint(string Label, string Address)
   /// <summary>
   /// Si l'écran rendu relève de ce point d'entrée. La comparaison est faite <b>par segments</b> :
   /// un dossier relève du tableau des demandes RGPD, la reprise d'une déclaration du
-  /// <c>Manifest</c>, et la table d'arbitrage de la détection des données personnelles — ce que le
-  /// préfixe de texte nu n'aurait pas su dire sans confondre aussi une adresse qui commence par les
-  /// mêmes lettres.
+  /// <c>Manifest</c>, et la table d'arbitrage de la détection des données personnelles, sous
+  /// <c>/detection</c> — ce que le préfixe de texte nu n'aurait pas su dire sans confondre aussi une
+  /// adresse qui commence par les mêmes lettres.
   /// </summary>
   internal bool IsCurrent(PathString path)
   {
@@ -55,7 +55,7 @@ internal static class ChromeNavigation
   internal static IReadOnlyList<ChromeEntryPoint> EntryPoints { get; } =
   [
     new("Configuration du microservice RGPD", "/manifest"),
-    new("Détection des données personnelles", "/depistage"),
+    new("Détection des données personnelles", "/detection"),
     new("Tableau des demandes RGPD", "/dossiers"),
   ];
 }

@@ -58,20 +58,50 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// se défait. Ce qui est écrit ici est ce que la surface <b>doit</b> offrir, tenu séparément de ce
   /// qu'elle offre : cette liste se met à jour <b>à la main</b>.
   /// </remarks>
-  internal static readonly IReadOnlyList<string> EntryPoints = ["/manifest", "/depistage", "/dossiers"];
+  internal static readonly IReadOnlyList<string> EntryPoints = ["/manifest", "/detection", "/dossiers"];
 
   /// <summary>Le nom du service, que la barre porte devant ses trois liens.</summary>
   internal const string ServiceName = "Droits des personnes concernées";
 
+  /// <summary>
+  /// <b>Les six adresses que le contexte de détection a quittées</b>, et qui <b>meurent en 404, sans
+  /// redirection</b>. Une redirection serait un second nom vivant pour la même chose : l'ancien mot
+  /// survivrait dans les signets, les liens collés et les barres d'adresse, et la surface porterait
+  /// deux vocabulaires au lieu d'un.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Cette liste est RECOPIÉE À DESSEIN</b>, comme <see cref="EntryPoints"/> : elle ne se
+  /// dérive pas des adresses vivantes. Un préfixe calculé depuis l'ancien nom se serait tu le jour
+  /// où une seule des six serait revenue à la vie.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>C'est le seul endroit du dépôt où l'ancienne adresse doit rester écrite</b>, et c'est ce
+  /// qui la rend éprouvable : un garde ne peut pas tenir qu'une adresse est morte sans la nommer.
+  /// Le jour où le mot du contexte entre dans les termes retirés, ce fichier a besoin d'une
+  /// exemption <b>ancrée sur son chemin</b>, sur le modèle de celles déjà écrites — pas d'un
+  /// assouplissement du garde, et pas de la suppression de cette liste.
+  /// </para>
+  /// </remarks>
+  internal static readonly IReadOnlyList<string> RetiredScreeningAddresses =
+  [
+    "/depistage",
+    "/depistage/depot",
+    "/depistage/table",
+    "/depistage/historique",
+    "/depistage/archive",
+    "/depistage/archive/table",
+  ];
+
   private const string Queue = "/dossiers";
   private const string CaseDeposit = "/dossiers/depot";
   private const string Manifest = "/manifest";
-  private const string ScreeningDeposit = "/depistage/depot";
-  private const string Report = "/depistage";
-  private const string ScreeningTable = "/depistage/table";
-  private const string History = "/depistage/historique";
-  private const string Archive = "/depistage/archive";
-  private const string ArchivedTable = "/depistage/archive/table";
+  private const string ScreeningDeposit = "/detection/depot";
+  private const string Report = "/detection";
+  private const string ScreeningTable = "/detection/table";
+  private const string History = "/detection/historique";
+  private const string Archive = "/detection/archive";
+  private const string ArchivedTable = "/detection/archive/table";
 
   private const string Schema = "public";
   private const string Table = "adherents";
@@ -103,13 +133,18 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
       $"{Queue}/{opened}",
       Manifest,
       $"{Manifest}/{declared}",
-      ScreeningDeposit,
-      Report,
-      TableOf(ScreeningTable),
-      History,
-      $"{Archive}?screening={Uri.EscapeDataString(archived)}",
-      TableOf(ArchivedTable, $"screening={Uri.EscapeDataString(archived)}&"),
+      .. ScreeningScreens(archived),
     ];
+  }
+
+  /// <summary>
+  /// <b>Les six écrans du contexte de détection</b>, et eux seuls — l'état posé par le seul chemin
+  /// que le domaine autorise, deux dépôts de relevé pour qu'il existe un rapport courant et un
+  /// rapport archivé.
+  /// </summary>
+  internal async Task<IReadOnlyList<string>> ScreeningScreensAsync()
+  {
+    return ScreeningScreens(await ScreenTwiceAsync());
   }
 
   /// <summary>Le corps d'une adresse qui doit répondre, et le refus d'une adresse qui ne répond pas.</summary>
@@ -219,6 +254,19 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
     return address.StartsWith("//", StringComparison.Ordinal)
       || address.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
       || address.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+  }
+
+  private static IReadOnlyList<string> ScreeningScreens(string archived)
+  {
+    return
+    [
+      ScreeningDeposit,
+      Report,
+      TableOf(ScreeningTable),
+      History,
+      $"{Archive}?screening={Uri.EscapeDataString(archived)}",
+      TableOf(ArchivedTable, $"screening={Uri.EscapeDataString(archived)}&"),
+    ];
   }
 
   private static string TableOf(string screen, string leading = "")

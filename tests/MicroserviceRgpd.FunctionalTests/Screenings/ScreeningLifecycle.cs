@@ -84,7 +84,7 @@ public class ScreeningLifecycle(CustomWebApplicationFactory<Program> factory)
 
     // ⚠️ Et le courant n'y figure pas comme archivé : la ligne qui le porte est celle du courant,
     // qui ne renvoie pas à l'écran des archivés.
-    history.ShouldNotContain($"/depistage/archive?screening={current}");
+    history.ShouldNotContain($"/detection/archive?screening={current}");
   }
 
   /// <summary>
