@@ -131,7 +131,7 @@ lui sont dues — la prolongation, le refus et ses mentions de l'art. 12.4, la r
 humains **déclarés** au service, jamais émis par lui. Le temps est de la matière de preuve, lue par
 le contrôle ; il n'est pas de la matière de relation.
 
-### Le paysage déclaré du client
+### Configuration du microservice RGPD
 
 **DeclaredSystem** :
 Un endroit où des données personnelles vivent chez le client, parce qu'**un humain l'a déclaré**.
@@ -160,7 +160,7 @@ arbitrer, ayant renoncé au grain du champ.
 _Avoid_ : Operation (pris par l'art. 4.2), acte, verbe, diligence, permission
 
 **Désaccord `Manifest`/`Adapter`** :
-Ce qu'un refus d'`Adapter` révèle : le paysage déclaré et le programme qui le sert ne parlent plus
+Ce qu'un refus d'`Adapter` révèle : le catalogue déclaré et le programme qui le sert ne parlent plus
 du même système, ou les deux moitiés du secret ont divergé. Il se signale **une seule fois, au grain
 du déploiement** — une panne unique n'est pas N pannes, et la crier une fois par dossier ferait
 dépendre le volume du signal du nombre de demandes en cours, qui n'en dit rien. Il ne corrige jamais

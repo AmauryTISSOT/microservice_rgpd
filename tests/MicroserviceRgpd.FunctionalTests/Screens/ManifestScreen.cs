@@ -18,6 +18,12 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
   private const string Manifest = "/manifest";
 
   /// <summary>
+  /// Le nom que l'écran porte, recopié à dessein : un test qui lirait la constante qu'il vérifie ne
+  /// vérifierait plus rien.
+  /// </summary>
+  private const string ScreenName = "Configuration du microservice RGPD";
+
+  /// <summary>
   /// Les redirections ne sont pas suivies : c'est la redirection elle-même qu'on vérifie. Une
   /// écriture qui rend directement sa page ferait d'un rechargement une seconde déclaration.
   /// </summary>
@@ -237,6 +243,44 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
   public async Task NeverPresentsTheManifestAsComplete()
   {
     (await ReadAsync(Manifest)).ShouldContain("ne garantit pas qu'il n'en existe pas d'autres");
+  }
+
+  /// <summary>
+  /// <b>L'écran porte un seul nom, en forme pleine</b> — « Configuration du microservice RGPD » —
+  /// du nom d'onglet au titre, et jusqu'à l'entrée de barre qui y mène. <b>Aucune forme courte
+  /// n'existe</b> : un mot dont la lisibilité dépend de l'écran où on le lit se retrouvera un jour
+  /// hors de cet écran.
+  /// </summary>
+  [Fact]
+  public async Task CarriesOneFullNameFromTheTabToTheBarAndNoShortFormAnywhere()
+  {
+    var screen = await ReadAsync(Manifest);
+
+    screen.ShouldContain($"<title>{ScreenName} —");
+    screen.ShouldContain($"<h1>{ScreenName}</h1>");
+    screen.ShouldContain($">{ScreenName}</a>");
+
+    // Le nom retiré ne survit nulle part sur l'écran…
+    screen.ShouldNotContain("paysage déclaré");
+
+    // …et « Configuration » ne s'écrit jamais seul : chacune de ses occurrences est la forme pleine.
+    Regex.Matches(screen, "Configuration").Count
+      .ShouldBe(Regex.Matches(screen, Regex.Escape(ScreenName)).Count);
+  }
+
+  /// <summary>
+  /// Le lien de retour de la reprise d'une déclaration porte lui aussi la <b>forme pleine</b> :
+  /// c'est le site où le nom pèse le plus, et c'est précisément là que la règle se vérifie.
+  /// </summary>
+  [Fact]
+  public async Task NamesTheScreenInFullInTheProseLinkThatLeadsBackToIt()
+  {
+    await DeclareAsync(new Declaration("retour-en-toutes-lettres", "Un système de plus", "Ce qu'il contient."));
+
+    var revising = await ReadAsync($"{Manifest}/retour-en-toutes-lettres");
+
+    revising.ShouldContain(ScreenName);
+    revising.ShouldNotContain("paysage déclaré");
   }
 
   private async Task<string> SectionAsync(string id)

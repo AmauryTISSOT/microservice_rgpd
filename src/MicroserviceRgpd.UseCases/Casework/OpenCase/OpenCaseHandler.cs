@@ -25,7 +25,7 @@ namespace MicroserviceRgpd.UseCases.Casework.OpenCase;
 /// identifiant de dossier à un appelant dont la demande n'a rien laissé.
 /// </para>
 /// </remarks>
-/// <param name="manifest">Le paysage déclaré du client, en lecture seule.</param>
+/// <param name="manifest">Le catalogue déclaré du client, en lecture seule.</param>
 /// <param name="cases">
 /// Le <b>seul</b> dépôt de ce contexte : il n'en existe aucun pour un <c>Claim</c> ni pour un
 /// <c>Step</c>, et les règles sont écrites une fois sur la racine.

@@ -40,13 +40,13 @@ internal static class ChromeNavigation
   internal const string ServiceName = "Droits des personnes concernées";
 
   /// <summary>
-  /// Les trois points d'entrée, dans l'ordre où la barre les pose : le travail à instruire, le
-  /// paysage sur lequel on l'instruit, et le temps d'avant.
+  /// Les trois points d'entrée, dans l'ordre où la barre les pose : le travail à instruire, la
+  /// « Configuration du microservice RGPD » sur laquelle on l'instruit, et le temps d'avant.
   /// </summary>
   internal static IReadOnlyList<ChromeEntryPoint> EntryPoints { get; } =
   [
     new("La file", "/dossiers"),
-    new("Le paysage déclaré", "/manifest"),
+    new("Configuration du microservice RGPD", "/manifest"),
     new("Le dépistage", "/depistage"),
   ];
 }

@@ -122,7 +122,7 @@ public sealed record EvidenceLogEntry
 
   /// <summary>
   /// Le <see cref="Casework.DeclaredSystem"/> que le fait concerne, quand il en concerne un — jamais
-  /// une personne : c'est un nom du paysage déclaré du client, choisi par l'humain qui l'a recensé.
+  /// une personne : c'est un nom du catalogue déclaré du client, choisi par l'humain qui l'a recensé.
   /// <c>null</c> pour les faits qui portent sur le dossier entier.
   /// </summary>
   public DeclaredSystemId? DeclaredSystem { get; }
