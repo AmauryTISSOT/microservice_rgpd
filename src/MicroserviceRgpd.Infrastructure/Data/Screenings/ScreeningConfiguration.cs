@@ -27,7 +27,7 @@ namespace MicroserviceRgpd.Infrastructure.Data.Screenings;
 /// <para>
 /// <b>Aucun index secondaire, pas même sur <c>launched_on</c></b> — qui est pourtant la seule
 /// lecture de cette table, « le plus récemment lancé ». Un déploiement en porte quelques dizaines,
-/// jamais plus : dix re-dépistages de Dolibarr font dix lignes ici. Un index se paierait à chaque
+/// jamais plus : dix détections de Dolibarr font dix lignes ici. Un index se paierait à chaque
 /// dépôt pour éviter un balayage de dix lignes, et la clé primaire couvre le seul accès ciblé qui
 /// existe.
 /// </para>
@@ -76,7 +76,8 @@ public sealed class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
   }
 
   /// <summary>
-  /// Qui a dépisté, et dans quelle version — deux colonnes de la ligne du rapport, jamais une table.
+  /// Qui a détecté, et dans quelle version — deux colonnes de la ligne du rapport de détection,
+  /// jamais une table.
   /// </summary>
   /// <remarks>
   /// <b>Sans plafond déclaré</b>, comme les colonnes de moteur de la trace d'audit : c'est une

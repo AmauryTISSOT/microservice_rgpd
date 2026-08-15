@@ -21,7 +21,7 @@ public class UnfinishedScreeningTests
     var unfinished = new UnfinishedScreening(UnreadUnflagged: 12, Awaiting: 12);
 
     unfinished.IsUnfinished.ShouldBeTrue();
-    unfinished.Statement.ShouldStartWith("Ce dépistage est inachevé");
+    unfinished.Statement.ShouldStartWith("Ce rapport de détection est inachevé");
     unfinished.Statement.ShouldContain("12 colonnes");
   }
 
@@ -37,7 +37,7 @@ public class UnfinishedScreeningTests
     var nothingUnflagged = new UnfinishedScreening(UnreadUnflagged: 0, Awaiting: 7);
 
     nothingUnflagged.Statement
-      .Contains("Toutes les colonnes de ce dépistage ont été relues", StringComparison.Ordinal)
+      .Contains("Toutes les colonnes de ce rapport de détection ont été relues", StringComparison.Ordinal)
       .ShouldBeFalse(
         "Le rapport se déclarerait fini alors que sept colonnes attendent encore un arbitrage.");
 
@@ -53,7 +53,8 @@ public class UnfinishedScreeningTests
 
     read.IsUnfinished.ShouldBeFalse();
     read.Statement.ShouldBe(
-      "Toutes les colonnes de ce dépistage ont été relues, y compris celles où rien n'a été vu.");
+      "Toutes les colonnes de ce rapport de détection ont été relues, y compris celles où rien n'a "
+      + "été vu.");
   }
 
   /// <summary>

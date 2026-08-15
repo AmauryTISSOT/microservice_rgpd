@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningHistory;
 /// plus d'une poignée de rapports.
 /// </para>
 /// <para>
-/// <b>Il rend une liste vide plutôt que rien</b> quand le déploiement n'a lancé qu'un dépistage, ou
+/// <b>Il rend une liste vide plutôt que rien</b> quand le déploiement n'a lancé qu'une détection, ou
 /// aucun : « il n'y a pas d'historique » est une réponse, et l'écran la rend en toutes lettres.
 /// </para>
 /// </remarks>

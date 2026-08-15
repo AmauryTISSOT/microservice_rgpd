@@ -63,7 +63,7 @@
 
   /*
     Le filet qui marque une chose plutôt qu'il ne la sépare — la mise en garde, le constat réclamé,
-    le verrou d'un dépistage inachevé. Le document ne donne aucune valeur pour lui : c'est celle qui
+    le verrou d'un rapport de détection inachevé. Le document ne donne aucune valeur pour lui : c'est celle qui
     était déjà écrite dans les écrans, conservée telle quelle et simplement nommée.
   */
   --rule-width: 3px;
@@ -459,7 +459,8 @@ fieldset label {
   border-color: var(--signal-error);
 }
 
-/* Le dépistage. Le verrou est en tête et se voit : sans lui, on croit le travail fini. */
+/* La détection des données personnelles. Le verrou est en tête et se voit : sans lui, on croit le
+   travail fini. */
 .unfinished {
   border-left: var(--rule-width) solid var(--signal-error);
   font-weight: var(--weight-semibold);
@@ -595,7 +596,7 @@ button.primary:active {
   ⚠️ C'EST UNE EXTENSION DU DOCUMENT DE DESIGN, et elle est signalée comme telle : celui-ci ne
   prévoit AUCUN bouton destructeur, parce qu'il décrit un site de vente où rien ne se détruit. Le
   domaine, lui, nomme déjà ce geste — « le geste irréversible » — et il en porte trois : détruire un
-  journal de preuve, supprimer un dépistage, clore un dossier. Le bouton doit le montrer.
+  journal de preuve, supprimer un rapport de détection, clore un dossier. Le bouton doit le montrer.
 
   Le fond reste BLANC plutôt que rouge plein : un aplat rouge se lit comme l'action que l'écran
   attend, et aucun de ces trois gestes n'est jamais ce que l'écran attend.

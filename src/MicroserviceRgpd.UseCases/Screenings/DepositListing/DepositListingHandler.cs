@@ -5,7 +5,8 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 
 /// <summary>
-/// Ingère le collage, le fait dépister, assemble le rapport et l'écrit — <b>dans cet ordre et sans
+/// Ingère le collage, le fait détecter, assemble le rapport de détection et l'écrit — <b>dans cet
+/// ordre et sans
 /// rien différer</b>.
 /// </summary>
 /// <remarks>
@@ -29,7 +30,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// </remarks>
 /// <param name="screenings">Le dépôt des rapports. Un dépôt neuf à chaque collage : rien ne fusionne.</param>
 /// <param name="engine">
-/// Le port du dépistage. ⚠️ Le geste ignore s'il parle à des règles locales ou à un moteur servi, et
+/// Le port de la détection. ⚠️ Le geste ignore s'il parle à des règles locales ou à un moteur servi, et
 /// c'est la couture de réversibilité d'ADR-0004 — pas une couture de test.
 /// </param>
 /// <param name="clock">L'horloge. C'est elle, et elle seule, qui décide quel rapport sera le courant.</param>

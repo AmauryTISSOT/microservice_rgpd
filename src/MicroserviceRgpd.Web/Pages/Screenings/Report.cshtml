@@ -1,7 +1,7 @@
 @page "/depistage"
 @model MicroserviceRgpd.Web.Pages.Screenings.ReportModel
 @{
-  ViewData["Title"] = "Le dépistage courant";
+  ViewData["Title"] = "Le rapport de détection courant";
   var answer = Model.Answer!;
   var summary = answer.Content;
   var clause = answer.Clause;
@@ -11,7 +11,7 @@
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
 }
 
-<h1>Le dépistage courant</h1>
+<h1>Le rapport de détection courant</h1>
 
 @*
   CE QU'UN GESTE REFUSÉ AILLEURS A LAISSÉ À DIRE. Un arbitrage qui n'a pas eu lieu ramène ici :
@@ -28,7 +28,7 @@
 @*
   LE VERROU, EN TÊTE ET RECALCULÉ À CE RENDU. Sans lui, on déclare lues quarante tables, on croit
   le travail fini, et l'Omission relue n'a rien rattrapé : les colonnes signalées sont la minorité
-  du rapport, et les relire toutes ne relit rien de ce qui a été omis.
+  du rapport de détection, et les relire toutes ne relit rien de ce qui a été omis.
 *@
 @if (summary.Lock.IsUnfinished)
 {
@@ -67,7 +67,7 @@ else
   <dd>
     @summary.Tally.Flagged
     <span class="hint">
-      Le complément est ce que le dépistage <strong>n'a pas vu</strong>, jamais ce qui serait
+      Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
       inoffensif : le service n'a jamais vu une seule valeur.
     </span>
   </dd>
@@ -131,20 +131,21 @@ else
 
 @*
   CE QU'UN NOUVEAU DÉPÔT COÛTE, ÉCRIT À CÔTÉ DU LIEN QUI L'OFFRE. Le re-dépôt ne fusionne rien :
-  les arbitrages de ce rapport-ci ne seront pas repris, et le rapport qui les porte deviendra un
-  archivé qu'on relit sans pouvoir le reprendre. C'est un coût déclaré, pas une surprise.
+  les arbitrages de ce rapport de détection-ci ne seront pas repris, et le rapport de détection qui
+  les porte deviendra un archivé qu'on relit sans pouvoir le reprendre. C'est un coût déclaré, pas
+  une surprise.
 *@
 <p>
   <a asp-page="Deposit">Déposer un nouveau relevé</a>
   <span class="hint">
-    Un nouveau dépôt produit un dépistage neuf et range celui-ci dans l'historique. Il
+    Un nouveau dépôt produit un rapport de détection neuf et range celui-ci dans l'historique. Il
     <strong>ne reprend aucun</strong> des arbitrages posés ici : ce qui a été tranché sur ce rapport
-    reste sur lui, et se relit sans plus pouvoir se reprendre.
+    de détection reste sur lui, et se relit sans plus pouvoir se reprendre.
   </span>
 </p>
 
 @*
-  L'HISTORIQUE ET LA SUPPRESSION SONT AILLEURS, et c'est délibéré : le geste qui efface un rapport,
-  ses colonnes et tous leurs arbitrages n'a pas sa place sur l'écran où l'on travaille.
+  L'HISTORIQUE ET LA SUPPRESSION SONT AILLEURS, et c'est délibéré : le geste qui efface un rapport
+  de détection, ses colonnes et tous leurs arbitrages n'a pas sa place sur l'écran où l'on travaille.
 *@
-<p><a asp-page="History">L'historique des dépistages, et la suppression</a></p>
+<p><a asp-page="History">L'historique des rapports de détection, et la suppression</a></p>

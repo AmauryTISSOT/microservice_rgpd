@@ -6,10 +6,11 @@ colonnes d'une base du client ; il lui rend, **colonne par colonne**, une catég
 présumée, le degré de la règle qui l'a produite et un motif en prose française — que l'`Operator`
 **retient ou écarte**, nommé et daté.
 
-Il **dépiste, il ne recense pas**. Le mot est pris au sens médical, et il porte l'économie entière de
-ce contexte : un dépistage est calibré pour la sensibilité, il ne rend jamais un diagnostic mais des
-suspicions, un humain confirme, et il ne couvre **que ce qu'il a dépisté**. C'est l'`Aide à la
-décision`, définie une fois pour tout le dépôt dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
+Il **détecte, il ne recense pas**, et cette distinction porte l'économie entière de ce contexte : la
+détection des données personnelles est **réglée pour signaler large, quitte à se tromper souvent —
+c'est à l'humain de trancher**. Elle ne conclut jamais ; elle rend des suspicions, un humain les
+confirme, et elle ne couvre **que ce qu'elle a regardé**. C'est l'`Aide à la décision`, définie une
+fois pour tout le dépôt dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 
 Il ne partage **rien** avec les deux autres contextes — pas même `DataSubjectRight`. Il ne touche
 jamais au `Manifest` de [Casework](../casework/CONTEXT.md), et c'est une clause de ce glossaire, pas
@@ -41,10 +42,10 @@ que de laisser un client SQL le mettre en forme : il déclare donc le SGBD dont 
 de colonnes qu'il porte, et une troncature au collage devient **détectable**. Un relevé dont il
 manque un morceau est **refusé en bloc** — jamais ingéré en partie, si petite que soit la part
 perdue. Motif : un `Screening` bâti sur 99 % d'un relevé **se lirait comme complet**, et l'`Omission
-relue` repose entièrement sur le fait que le rapport rend **toutes** les colonnes du relevé. Trois
-colonnes que personne ne relira jamais, dans un artefact qui promet qu'on relit tout, est la faille
-exacte que ce contexte existe pour ne pas avoir. Le coût est faible et réversible : l'`Operator`
-relance sa requête, il ne perd aucun arbitrage.
+relue` repose entièrement sur le fait que le rapport de détection rend **toutes** les colonnes du
+relevé. Trois colonnes que personne ne relira jamais, dans un artefact qui promet qu'on relit tout,
+est la faille exacte que ce contexte existe pour ne pas avoir. Le coût est faible et réversible :
+l'`Operator` relance sa requête, il ne perd aucun arbitrage.
 
 ⚠️ **Ce qui reste hors de portée, en revanche, c'est la provenance.** Un relevé sincère, entier et
 bien formé, mais tiré de la base de recette ou de celle d'hier, est indiscernable du bon. Aucun
@@ -67,12 +68,13 @@ sur la liste _Avoid_ de `Manifest`, qui garde la clause « déclaré, non décou
 ici ferait lire ce relevé comme un recensement du paysage du client, ce qu'il n'est pas.
 
 **Screening** :
-Ce qu'un dépistage a rendu sur un `ColumnListing` : une `ScreenedColumn` par colonne du relevé, et
-l'agrégat de ce contexte. C'est **l'acte et son résultat**, comme une `Qualification` — il n'existe
-pas d'objet « lancement » distinct de l'objet rendu.
-Il est **détenu** et vit plusieurs jours : un recensement s'arbitre en plusieurs fois, colonne par
-colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au `EvidenceLog`, n'a
-aucune échéance et vit jusqu'à ce qu'un `Operator` le supprime.
+Ce que la détection a rendu sur un `ColumnListing` : une `ScreenedColumn` par colonne du relevé, et
+l'agrégat de ce contexte. C'est le **rapport de détection** que l'interface nomme, et c'est **l'acte
+et son résultat**, comme une `Qualification` — il n'existe pas d'objet « lancement » distinct de
+l'objet rendu.
+Il est **détenu** et vit plusieurs jours : un rapport de détection s'arbitre en plusieurs fois,
+colonne par colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au
+`EvidenceLog`, n'a aucune échéance et vit jusqu'à ce qu'un `Operator` le supprime.
 ⚠️ **Un re-scan ne fusionne pas.** Relancer un `Screening` en produit un neuf ; les arbitrages du
 précédent ne sont pas repris. C'est un écart assumé au précédent de `Reservation`, dont les réserves
 fusionnent précisément pour ne jamais détruire un arbitrage humain, et il coûte du travail humain
@@ -83,16 +85,17 @@ banni pour cette seule raison.
 
 **ScreeningEngineIdentity** :
 Le nom et la version que le moteur joint au `Screening` qu'il a produit — celle de ses règles, celle
-du modèle servi le cas échéant. Elle ne sert qu'à l'humain qui relit un rapport plusieurs jours après
-l'avoir lancé, ou qui en compare deux : le domaine ne l'interprète **jamais** et aucune réponse
-publique ne la porte. Décalque exact de `QualificationEngineIdentity`, retenue comprise.
+du modèle servi le cas échéant. Elle ne sert qu'à l'humain qui relit un rapport de détection
+plusieurs jours après l'avoir lancé, ou qui en compare deux : le domaine ne l'interprète **jamais**
+et aucune réponse publique ne la porte. Décalque exact de `QualificationEngineIdentity`, retenue
+comprise.
 _Avoid_ : modèle, moteur, provenance, signature, version ⚠️ `signature` est prise par le geste d'un
 humain, qui est la seule signature de ce dépôt.
 
 **IScreeningEngine** :
-Le port par lequel le domaine fait dépister un `ColumnListing`. Il ne nomme aucun moteur : le
-domaine ignore s'il parle à des règles locales, à un modèle servi, ou à un troisième moteur pas
-encore écrit.
+Le port par lequel le domaine fait détecter les données personnelles d'un `ColumnListing`. Il ne
+nomme aucun moteur : le domaine ignore s'il parle à des règles locales, à un modèle servi, ou à un
+troisième moteur pas encore écrit.
 ⚠️ **C'est la couture de réversibilité d'[ADR-0004](../../adr/0004-moteur-de-depistage-en-csharp-sans-second-sidecar.md),
 et non une couture de test.** Le banc a désigné un dictionnaire, l'ADR en a tiré que le moteur vit
 en C# dans `Infrastructure` ; ce port est ce qui rend cette décision réversible — un moteur qui
@@ -100,8 +103,8 @@ reviendrait en Python serait une implémentation de plus, et `Core` ne bougerait
 pourquoi il est **asynchrone** alors que le moteur retenu est local et déterministe : une signature
 synchrone obligerait un futur moteur servi à bloquer sur son propre transport, et cette dette-là se
 paierait dans `Core`.
-⚠️ **Il rend une ligne par colonne, ou il échoue.** Un dépistage partiel n'existe pas : c'est la
-même clause que « il est entier ou il n'existe pas », vue du moteur.
+⚠️ **Il rend une ligne par colonne, ou il échoue.** Un rapport de détection partiel n'existe pas :
+c'est la même clause que « il est entier ou il n'existe pas », vue du moteur.
 _Avoid_ : Scanner, Detector, Classifier, Analyzer, ArbitrationEngine ⚠️ `ArbitrationEngine` donnerait
 à une machine le mot réservé au geste de l'`Operator`, qui est seul à produire une issue.
 
@@ -112,8 +115,8 @@ relevé, **et l'identité du moteur qui les a produites**.
 rend ; un moteur servi apprend la version qu'on lui sert au moment où il répond, et une propriété
 posée à côté de l'appel dirait la version configurée plutôt que celle qui a répondu.
 ⚠️ **Ce n'est pas encore un `Screening`.** Il y manque ce que le moteur n'a pas à décider :
-l'identité du rapport, l'instant du lancement, le nom de base et le dialecte. C'est le geste qui
-assemble, jamais le moteur.
+l'identité du rapport de détection, l'instant du lancement, le nom de base et le dialecte. C'est le
+geste qui assemble, jamais le moteur.
 _Avoid_ : ScreeningResult, ScreeningOutcome, Predictions, Findings ⚠️ `Outcome` est le mot de l'issue,
 qui n'appartient qu'à l'humain ; `Predictions` promet un modèle et un score.
 
@@ -227,11 +230,11 @@ _Avoid_ : DataCategory, catégorie, Label, Class, Tag, Type ⚠️ le raccourci 
 frotter contre la liste de `DataSubjectRight` pour économiser huit caractères.
 
 **Unflagged** :
-La valeur rendue quand le dépistage n'a rien signalé sur une colonne. Exclusive : elle ne se combine
+La valeur rendue quand la détection n'a rien signalé sur une colonne. Exclusive : elle ne se combine
 avec aucune autre.
 ⚠️ **Elle dit ce que le service n'a pas fait, jamais ce que la colonne est.** Une colonne `Unflagged`
 n'est pas une colonne sans données personnelles — c'est une colonne où **rien n'a été vu**, ce qui
-est un constat sur le dépistage et non sur la donnée. Le service n'a jamais vu la donnée. C'est
+est un constat sur la détection et non sur la donnée. Le service n'a jamais vu la donnée. C'est
 `Enregistré, jamais vérifié` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
 parce qu'une machine qui déclare une colonne inoffensive est très exactement le témoignage qu'elle
 n'a pas les moyens de porter.
@@ -243,7 +246,7 @@ colonne ; `None` et `Unknown` la feraient de surcroît lire comme une absence de
 en est une.
 
 **PersonalDataUncategorised** :
-Le repli : la valeur rendue quand le dépistage a reconnu une colonne comme **personnelle** sans
+Le repli : la valeur rendue quand la détection a reconnu une colonne comme **personnelle** sans
 qu'aucune autre valeur ne lui aille. Elle est signalée, donc elle porte un **motif**, et c'est ce
 motif qui la sépare d'`Unflagged`.
 ⚠️ **C'est un verdict, pas un aveu d'ignorance** — même geste que `DataSubjectRight.OutOfScope`, dont
@@ -258,8 +261,9 @@ minimiser : un taux qui monte est le signal qu'il manque une valeur. C'est ce qu
 même titre que ce qu'il détecte.
 ⚠️ **Il n'y a pas de second repli.** Une valeur « non personnelle » a été explicitement écartée : elle
 porterait sur la donnée un verdict d'innocuité que le service n'a pas les moyens de rendre — il n'a
-jamais vu la donnée. `Unflagged` occupe cette place et dit la bonne chose, un constat sur le dépistage
-et non sur la donnée. Voir la liste _Avoid_ d'`Unflagged`, où `NonPersonal` figure nommément.
+jamais vu la donnée. `Unflagged` occupe cette place et dit la bonne chose, un constat sur la
+détection et non sur la donnée. Voir la liste _Avoid_ d'`Unflagged`, où `NonPersonal` figure
+nommément.
 _Avoid_ : Other, Misc, Unclassified, Unknown, Generic, NonPersonal, divers, fourre-tout ⚠️ `Other` et
 `Misc` en feraient une poubelle qu'on cesse de lire, alors que c'est la valeur qu'il faut lire en
 premier ; `Unknown` en referait l'aveu d'ignorance qu'elle n'est pas.
@@ -289,7 +293,8 @@ décorative. Corollaire : un `Retained` posé sur une colonne `Unflagged` prouve
 retenue, jamais que le service l'avait vue.
 _Avoid_ : Confirmed, Validated, Accepted, Rejected, Dismissed, Ignored ⚠️ `Confirmed` et `Validated`
 feraient de l'`Operator` le validateur d'un avis de la machine, alors qu'il est le seul à produire
-une issue ; `Rejected` et `Ignored` diraient qu'on a jeté la ligne, alors qu'elle reste au rapport.
+une issue ; `Rejected` et `Ignored` diraient qu'on a jeté la ligne, alors qu'elle reste au rapport
+de détection.
 
 **La signature vit à côté de l'état, et aucun chemin d'écriture ne peut poser l'un sans l'autre.**
 Qui a arbitré et quand vivent sur la `ScreenedColumn` elle-même — il n'y a pas de `EvidenceLog` ici, le
@@ -301,15 +306,15 @@ finissent par se dissocier.
 
 **Un `Screening` n'a aucun état.** « Courant » est un **calcul** : le `Screening` le plus récent du
 déploiement est le courant, tous les autres sont archivés par le seul fait qu'un plus récent existe.
-Si `Archived` était un état, une transition ratée laisserait deux rapports courants et l'`Operator`
-arbitrerait le mauvais — même mécanique que le refus d'un état « en retard » dans `Casework`, où le
-dépassement est un calcul pour que jamais un retard non détecté ne devienne un retard inexistant.
+Si `Archived` était un état, une transition ratée laisserait deux rapports de détection courants et
+l'`Operator` arbitrerait le mauvais — même mécanique que le refus d'un état « en retard » dans
+`Casework`, où le dépassement est un calcul pour que jamais un retard non détecté ne devienne un retard inexistant.
 L'avancement non plus n'est pas un état : « douze colonnes en attente » est un **compte** sur les
 `ScreenedColumn`, jamais un état de haut niveau rassurant.
 
-**Le geste de lot** — `ArbitrateInBatch` — existe pour qu'un rapport de 5 000 colonnes reste tenable :
-un écran intenable rétablit l'`Omission silencieuse` par épuisement, sans qu'aucune ligne de doctrine
-n'ait été modifiée. Il est **borné à la table ouverte**, et à ses seules colonnes `Unflagged` encore
+**Le geste de lot** — `ArbitrateInBatch` — existe pour qu'un rapport de détection de 5 000 colonnes
+reste tenable : un écran intenable rétablit l'`Omission silencieuse` par épuisement, sans qu'aucune
+ligne de doctrine n'ait été modifiée. Il est **borné à la table ouverte**, et à ses seules colonnes `Unflagged` encore
 `Awaiting`.
 ⚠️ **Aucun geste de lot ne porte sur une colonne signalée** : une suspicion ne s'écarte jamais sans
 avoir été lue une par une. La règle vit à un seul endroit, sur la ligne —
@@ -331,7 +336,7 @@ de lot alors qu'il n'y a que n signatures.
 **Operator** :
 L'humain, côté client, qui colle un `ColumnListing`, lance un `Screening` et arbitre ses
 `ScreenedColumn`. **Seul** à produire une issue : le service signale, il ne retient ni n'écarte
-jamais. Rien ne se déclenche sans lui — aucun processus périodique, aucune API publique de dépistage.
+jamais. Rien ne se déclenche sans lui — aucun processus périodique, aucune API publique de détection.
 ⚠️ **Homonyme assumé de l'`Operator` de `Casework`**, et rien de plus : même personne au bureau, même
 mot au glossaire, pouvoirs différents et **aucun type partagé**. Il n'entre pas au noyau partagé, qui
 vaut par sa petitesse et ne contient que `DataSubjectRight`. Factoriser un `Operator` commun serait la
@@ -343,7 +348,7 @@ _Avoid_ : User, Agent, Admin, DPO, gestionnaire
 **Omission relue** :
 Le régime d'erreur de ce contexte, et il n'est ni celui de `Qualification` ni celui de `Casework`.
 L'erreur qui coûte ici est l'**omission**, comme dans `Casework` : une colonne portant des données
-personnelles que le dépistage n'a pas signalée ne produit pas une ligne fausse, elle produit une
+personnelles que la détection n'a pas signalée ne produit pas une ligne fausse, elle produit une
 absence. Une ligne signalée à tort, elle, coûte peu — l'`Operator` l'écarte d'un geste, et c'est
 l'`Erreur relue`.
 Mais contrairement à `Casework`, cette omission est **relisible**, et elle ne l'est que par un

@@ -6,12 +6,13 @@
 @*
   LE GESTE IRRÉVERSIBLE, ET LE SEUL DE CETTE SURFACE.
 
-  Il emporte le rapport, toutes ses colonnes et tous leurs arbitrages. Il n'y a ni corbeille, ni
-  rétention, ni trace : après lui, le travail humain que le rapport portait n'est nulle part.
+  Il emporte le rapport de détection, toutes ses colonnes et tous leurs arbitrages. Il n'y a ni
+  corbeille, ni rétention, ni trace : après lui, le travail humain que le rapport de détection
+  portait n'est nulle part.
 
   ⚠️ LE NOM DE BASE SE RETAPE, et ce n'est pas une politesse. Un bouton nu au bas d'un écran qu'on
   parcourt est le mode de panne le plus probable, et le seul qui n'ait pas de remède. Retaper oblige
-  à REGARDER quel rapport on supprime — ce qu'une case à cocher n'aurait pas obtenu. La confrontation
+  à REGARDER quel rapport de détection on supprime — ce qu'une case à cocher n'aurait pas obtenu. La confrontation
   est faite par le SERVICE, contre le nom qu'il détient : un champ caché reposté aurait été une
   cérémonie sans juge.
 *@
@@ -19,16 +20,16 @@
   <input type="hidden" name="Screening" value="@Model.Screening.Id.Value" />
 
   <label for="@field">
-    Supprimer ce dépistage
+    Supprimer ce rapport de détection
     <span class="hint">
       Retapez <strong>@Model.Screening.Database</strong> pour confirmer. La suppression emporte le
-      rapport, ses @Model.Screening.ColumnCount colonnes et <strong>tous leurs arbitrages</strong> —
-      rien ne les rétablit.
+      rapport de détection, ses @Model.Screening.ColumnCount colonnes et <strong>tous leurs
+      arbitrages</strong> — rien ne les rétablit.
       @if (Model.IsCurrent)
       {
         <text>
-          C'est le dépistage <strong>courant</strong> : le supprimer rendra son rang au plus récent
-          de ceux qui restent, et c'est celui-là qui s'arbitrera ensuite.
+          C'est le rapport de détection <strong>courant</strong> : le supprimer rendra son rang au
+          plus récent de ceux qui restent, et c'est celui-là qui s'arbitrera ensuite.
         </text>
       }
     </span>

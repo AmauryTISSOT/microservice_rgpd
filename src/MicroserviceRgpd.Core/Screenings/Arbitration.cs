@@ -22,7 +22,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <para>
 /// ⚠️ <b>Il n'y a pas d'histoire.</b> La trace est l'état courant seul, et un second arbitrage
 /// l'écrase. Une histoire demanderait une troisième table, c'est-à-dire un <c>EvidenceLog</c> sous un
-/// autre nom, au grain que ce contexte refuse — et un re-dépistage détruit de toute façon <i>tous</i>
+/// autre nom, au grain que ce contexte refuse — et un rapport de détection neuf détruit de toute
+/// façon <i>tous</i>
 /// les arbitrages, si bien qu'une histoire fine à l'intérieur d'un rapport serait une précision
 /// absurde dans un dispositif qui jette le rapport complet. <b>Le coût est réel et déclaré</b> : un
 /// <c>Operator</c> qui repasse une colonne de <c>Retained</c> à <c>SetAside</c> efface qui avait dit

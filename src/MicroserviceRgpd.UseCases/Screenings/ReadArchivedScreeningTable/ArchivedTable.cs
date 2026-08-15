@@ -4,7 +4,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadArchivedScreeningTable;
 
 /// <summary>
 /// Une table d'un rapport archivé telle qu'on la relit : <b>toutes</b> ses colonnes dans l'ordre du
-/// relevé, ce que le dépistage avait dit de chacune, ce qu'un humain en avait tranché — et
+/// relevé, ce que la détection avait dit de chacune, ce qu'un humain en avait tranché — et
 /// <b>aucun geste</b>.
 /// </summary>
 /// <remarks>
@@ -25,7 +25,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadArchivedScreeningTable;
 /// Le SGBD dont le relevé se déclarait. Sans lui, « cette colonne n'a pas de commentaire » et « ce
 /// SGBD n'en rend jamais » se lisent pareil.
 /// </param>
-/// <param name="LaunchedOn">Quand ce dépistage a été lancé.</param>
+/// <param name="LaunchedOn">Quand ce rapport de détection a été lancé.</param>
 /// <param name="Identity">Le schéma et la table qu'on lit.</param>
 /// <param name="Comment">Le commentaire de la table, ou <c>null</c>.</param>
 /// <param name="Columns">Ses colonnes, toutes, dans l'ordre du relevé.</param>
@@ -43,7 +43,7 @@ public sealed record ArchivedTable(
   /// <summary>Combien de colonnes cette table porte, <b>toutes</b>.</summary>
   public int ColumnCountInThisTable => Columns.Count;
 
-  /// <summary>Combien le dépistage en avait signalées, <b>dans cette table</b>.</summary>
+  /// <summary>Combien la détection en avait signalées, <b>dans cette table</b>.</summary>
   public int FlaggedCountInThisTable => Columns.Count(column => column.IsFlagged);
 
   /// <summary>

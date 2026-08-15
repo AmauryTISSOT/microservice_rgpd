@@ -146,7 +146,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>La barre porte les trois points d'entrée, sur chaque écran, et dans l'ordre décidé</b> — et
   /// c'est ce qui fait que quitter un dossier long ne demande plus de le dérouler jusqu'en bas : le
-  /// <c>Manifest</c>, le dépistage et le tableau des demandes RGPD s'atteignent de partout sans
+  /// <c>Manifest</c>, la détection et le tableau des demandes RGPD s'atteignent de partout sans
   /// passer par un écran intermédiaire.
   /// </summary>
   [Fact]

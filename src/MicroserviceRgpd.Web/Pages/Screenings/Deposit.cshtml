@@ -2,10 +2,10 @@
 @model MicroserviceRgpd.Web.Pages.Screenings.DepositModel
 @using MicroserviceRgpd.Core.Screenings
 @{
-  ViewData["Title"] = "Déposer un relevé";
+  ViewData["Title"] = "Déposer un relevé et lancer la détection";
 }
 
-<h1>Déposer un relevé de colonnes</h1>
+<h1>Déposer un relevé de colonnes et lancer la détection</h1>
 
 @*
   Le service NE SE CONNECTE À RIEN. C'est la première chose que l'écran dit, parce que c'est la
@@ -16,8 +16,8 @@
   Le service <strong>ne se connecte à aucune base</strong> : vous exécutez la requête ci-dessous chez
   vous et vous collez ce qu'elle rend. Il lit des <strong>noms</strong> de tables et de colonnes, des
   types, des contraintes et des commentaires — <strong>jamais une valeur</strong>. Ce qu'il vous
-  rendra est un <strong>dépistage</strong> : des suspicions que vous retiendrez ou écarterez une par
-  une — et qui ne couvrent que ce qu'il a dépisté.
+  rendra est un <strong>rapport de détection</strong> : des suspicions que vous retiendrez ou
+  écarterez une par une — et qui ne couvrent que ce qu'il a regardé.
 </p>
 
 @if (!ViewData.ModelState.IsValid)
@@ -58,9 +58,9 @@
 <form method="post" asp-route-dialect="@Model.Query.Dialect">
   @*
     IL EST ENTIER OU IL N'EXISTE PAS. Un relevé amputé est refusé EN BLOC — jamais ingéré en
-    partie, si petite que soit la part perdue : un dépistage bâti sur 99 % d'un relevé SE LIRAIT
-    COMME COMPLET, et les colonnes manquantes seraient précisément celles que personne ne relirait
-    jamais.
+    partie, si petite que soit la part perdue : un rapport de détection bâti sur 99 % d'un relevé SE
+    LIRAIT COMME COMPLET, et les colonnes manquantes seraient précisément celles que personne ne
+    relirait jamais.
   *@
   <p class="caveat">
     Collez la sortie <strong>entière</strong>, ligne d'en-tête et ligne de fin comprises. Un relevé
@@ -85,15 +85,16 @@
 
   @*
     LE GESTE EST SYNCHRONE, ET C'EST UNE CONTRAINTE ASSUMÉE, pas une conséquence subie : rien ne
-    part en arrière-plan, parce qu'un dépistage interrompu rendrait un rapport vide et rassurant.
+    part en arrière-plan, parce qu'une détection interrompue rendrait un rapport de détection vide
+    et rassurant.
   *@
   <p class="hint">
-    Le dépistage se fait <strong>maintenant</strong>, pendant que vous attendez : rien ne part en
+    La détection se fait <strong>maintenant</strong>, pendant que vous attendez : rien ne part en
     arrière-plan, et il n'y a aucun état à venir consulter. Un relevé de vingt mille colonnes tient
     dans une dizaine de secondes.
   </p>
 
-  <button type="submit" class="primary">Déposer et dépister</button>
+  <button type="submit" class="primary">Déposer et détecter</button>
 </form>
 
-<p><a asp-page="Report">Revenir au dépistage courant</a></p>
+<p><a asp-page="Report">Revenir au rapport de détection courant</a></p>

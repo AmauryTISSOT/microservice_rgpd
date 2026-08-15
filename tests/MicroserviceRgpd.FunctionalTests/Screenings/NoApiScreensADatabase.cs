@@ -4,14 +4,15 @@ using FastEndpoints;
 namespace MicroserviceRgpd.FunctionalTests.Screenings;
 
 /// <summary>
-/// <b>Aucune API ne dépiste.</b> <c>Screening</c> ne déclare <b>aucune</b> route publique — pas même
+/// <b>Aucune API ne détecte.</b> <c>Screening</c> ne déclare <b>aucune</b> route publique — pas même
 /// une qui ferait entrer un relevé, là où <c>Casework</c> en garde une pour faire entrer une demande.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Ce n'est pas une préférence d'architecture. Le seul chemin vers un dépistage est un écran que
+/// Ce n'est pas une préférence d'architecture. Le seul chemin vers un rapport de détection est un
+/// écran que
 /// nous écrivons, sans quoi quelqu'un finirait par refaire chez lui l'écran « ✅ base analysée » —
-/// où le dépistage se présente comme un recensement complet, et où une colonne non signalée ne
+/// où la détection se présente comme un recensement complet, et où une colonne non signalée ne
 /// laisse aucune trace. C'est l'<c>Omission silencieuse</c> rétablie sans qu'une ligne de doctrine
 /// n'ait été modifiée.
 /// </para>
@@ -47,13 +48,15 @@ public class NoApiScreensADatabase(CustomWebApplicationFactory<Program> factory)
       .ToArray();
 
     endpoints.ShouldBeEmpty(
-      "Une route publique dépiste. Le seul chemin vers un dépistage est la surface de l'Operator : "
-      + "une API laisserait quelqu'un refaire chez lui l'écran « ✅ base analysée », où un dépistage "
+      "Une route publique détecte. Le seul chemin vers un rapport de détection est la surface de "
+      + "l'Operator : une API laisserait quelqu'un refaire chez lui l'écran « ✅ base analysée », où "
+      + "une détection "
       + "se présente comme un recensement complet.");
   }
 
   /// <summary>
-  /// <b>Rien ne dépose, ne relit, n'arbitre ni ne supprime un dépistage par une route</b>, et
+  /// <b>Rien ne dépose, ne relit, n'arbitre ni ne supprime un rapport de détection par une
+  /// route</b>, et
   /// l'absence se constate sur le fil et non seulement dans une liste de types.
   /// </summary>
   [Theory]
@@ -76,7 +79,8 @@ public class NoApiScreensADatabase(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>Et aucune route ne pré-remplit le <c>Manifest</c> depuis un dépistage.</b> C'est le geste
+  /// ⚠️ <b>Et aucune route ne pré-remplit le <c>Manifest</c> depuis un rapport de détection.</b>
+  /// C'est le geste
   /// que la clause <c>Aucune modification vers le Manifest</c> bannit nommément — un
   /// <c>Manifest</c> pré-rempli par une machine <b>se lirait comme complet</b>, ce qui est l'<c>Omission silencieuse</c> sous sa
   /// forme la plus dangereuse. La liste <em>Avoid</em> du glossaire dit d'elle-même qu'elle est le
@@ -103,8 +107,8 @@ public class NoApiScreensADatabase(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// Le dépistage passe par la surface de l'<c>Operator</c>, qui est bien là : la règle ci-dessus
-  /// serait vide de sens si aucun chemin n'existait — un service où personne ne peut dépister
+  /// La détection passe par la surface de l'<c>Operator</c>, qui est bien là : la règle ci-dessus
+  /// serait vide de sens si aucun chemin n'existait — un service où personne ne peut détecter
   /// respecterait toutes les règles et ne servirait à rien.
   /// </summary>
   [Fact]

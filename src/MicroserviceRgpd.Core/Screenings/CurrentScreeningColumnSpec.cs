@@ -39,9 +39,9 @@ public sealed class CurrentScreeningColumnSpec : SingleResultSpecification<Scree
     ArgumentNullException.ThrowIfNull(column);
 
     // ⚠️ Le rapport est rendu MÊME quand le triplet ne désigne rien chez lui, avec zéro colonne :
-    // c'est ce qui laisse le geste distinguer « aucun dépistage n'a été lancé » de « le courant ne
+    // c'est ce qui laisse le geste distinguer « aucune détection n'a été lancée » de « le courant ne
     // porte pas cette colonne ». Un filtre sur la racine aurait confondu les deux, et l'Operator
-    // aurait lu « aucun dépistage » devant le sien.
+    // aurait lu « aucune détection » devant le sien.
     Query.Include(screening => screening.Columns.Where(screened =>
         screened.Listed.Identity.Schema == column.Schema
         && screened.Listed.Identity.Table == column.Table

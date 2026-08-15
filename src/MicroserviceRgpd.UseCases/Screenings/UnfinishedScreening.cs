@@ -3,7 +3,7 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings;
 
 /// <summary>
-/// Le verrou « ce dépistage est inachevé », <b>recalculé à chaque rendu</b>.
+/// Le verrou « ce rapport de détection est inachevé », <b>recalculé à chaque rendu</b>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -14,10 +14,11 @@ namespace MicroserviceRgpd.UseCases.Screenings;
 /// <para>
 /// <b>Sans lui, la surface a un défaut propre et sérieux</b> : on déclare lues quarante tables, on
 /// croit le travail fini, et l'<c>Omission relue</c> n'a rien rattrapé — les colonnes signalées sont
-/// la minorité du rapport, et les relire toutes ne relit rien de ce qui a été omis.
+/// la minorité du rapport de détection, et les relire toutes ne relit rien de ce qui a été omis.
 /// </para>
 /// <para>
-/// ⚠️ <b>Il porte sur le rapport entier, et il se rend aussi sur l'écran d'une table.</b> C'est là
+/// ⚠️ <b>Il porte sur le rapport de détection entier, et il se rend aussi sur l'écran d'une
+/// table.</b> C'est là
 /// qu'il compte le plus : une table relue jusqu'au bout est l'instant précis où l'on croit avoir
 /// fini.
 /// </para>
@@ -29,10 +30,11 @@ namespace MicroserviceRgpd.UseCases.Screenings;
 /// </param>
 public sealed record UnfinishedScreening(int UnreadUnflagged, int Awaiting)
 {
-  /// <summary>Le dépistage est-il inachevé ? Vrai tant qu'il reste une colonne où rien n'a été vu à relire.</summary>
+  /// <summary>Le rapport de détection est-il inachevé ? Vrai tant qu'il reste une colonne où rien n'a été vu à relire.</summary>
   /// <remarks>
   /// ⚠️ <b>Le verrou porte sur les seules colonnes non signalées, et c'est délibéré.</b> Il existe
-  /// pour l'<c>Omission relue</c> : ce qui échappe au dépistage n'est rattrapé que si quelqu'un relit
+  /// pour l'<c>Omission relue</c> : ce qui échappe à la détection n'est rattrapé que si quelqu'un
+  /// relit
   /// là où il n'a <em>rien</em> vu. Des colonnes signalées non tranchées sont du travail visible, que
   /// le compte <c>En attente</c> dit déjà — elles n'ont pas besoin d'un verrou pour être vues.
   /// </remarks>
@@ -40,18 +42,20 @@ public sealed record UnfinishedScreening(int UnreadUnflagged, int Awaiting)
 
   /// <summary>
   /// Ce que le verrou dit à l'<c>Operator</c>, en toutes lettres. Il vit ici plutôt que dans l'écran
-  /// pour que le mot <b>dépistage</b> soit celui du glossaire partout où il se rend.
+  /// pour que les mots <b>rapport de détection</b> soient ceux du glossaire partout où il se rend.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>La phrase d'achèvement a trois branches, et la branche du milieu est celle qui compte.</b>
   /// Écrite à deux, elle affirmait « toutes les colonnes ont été relues » dès que les non signalées
-  /// l'étaient — <b>y compris sur un rapport où personne n'avait rien tranché</b>, lorsque le relevé
+  /// l'étaient — <b>y compris sur un rapport de détection où personne n'avait rien tranché</b>,
+  /// lorsque le relevé
   /// n'a aucune colonne non signalée. L'<c>Operator</c> lisait alors le travail comme fini juste
   /// au-dessus d'un compte <c>En attente</c> non nul, dans la même page : très exactement la surface
   /// rassurante contre laquelle ce verrou a été écrit.
   /// </remarks>
   public string Statement => IsUnfinished
-    ? $"Ce dépistage est inachevé — {Counted(UnreadUnflagged, "colonne")} où rien n'a été vu "
+    ? $"Ce rapport de détection est inachevé — {Counted(UnreadUnflagged, "colonne")} où rien n'a "
+      + "été vu "
       + (UnreadUnflagged == 1 ? "n'a" : "n'ont") + " pas encore été relue"
       + (UnreadUnflagged == 1 ? "." : "s.")
     : Awaiting > 0
@@ -59,7 +63,8 @@ public sealed record UnfinishedScreening(int UnreadUnflagged, int Awaiting)
         + $"{Counted(Awaiting, "colonne")} signalée{(Awaiting == 1 ? string.Empty : "s")} "
         + (Awaiting == 1 ? "attend" : "attendent") + " encore d'être tranchée"
         + (Awaiting == 1 ? "." : "s.")
-      : "Toutes les colonnes de ce dépistage ont été relues, y compris celles où rien n'a été vu.";
+      : "Toutes les colonnes de ce rapport de détection ont été relues, y compris celles où rien "
+        + "n'a été vu.";
 
   internal static UnfinishedScreening Of(ScreeningCounts counts)
   {

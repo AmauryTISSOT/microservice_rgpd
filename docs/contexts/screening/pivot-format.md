@@ -83,7 +83,8 @@ rien.
 auteur de requête : l'`information_schema` de MariaDB rend la nullabilité en `'YES'`/`'NO'`, si bien
 qu'un `JSON_OBJECT('nullable', IS_NULLABLE, …)` naïf émet `"nullable":"YES"` — une chaîne, pas un
 booléen. Le relevé est alors **refusé** (cas n° 4). Il doit l'être : accepté, il désactiverait le
-filtre de nullabilité sur toute la base, sans un mot, dans un rapport qui se lit comme complet.
+filtre de nullabilité sur toute la base, sans un mot, dans un rapport de détection qui se lit comme
+complet.
 Écrire `IS_NULLABLE = 'YES'` dans la requête, pas `IS_NULLABLE`.
 
 ⚠️ **`type`, `nullable` et `table_referencee` sont collectés comme _filtre_, jamais comme _signal_.**

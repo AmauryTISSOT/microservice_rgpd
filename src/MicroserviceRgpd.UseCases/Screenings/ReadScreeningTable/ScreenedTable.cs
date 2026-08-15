@@ -4,7 +4,8 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 
 /// <summary>
 /// Une table du rapport telle que l'<c>Operator</c> la lit : <b>toutes</b> ses colonnes dans l'ordre
-/// du relevé, ce que le dépistage a dit de chacune, et le verrou et les comptes du rapport entier.
+/// du relevé, ce que la détection a dit de chacune, et le verrou et les comptes du rapport de
+/// détection entier.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -52,7 +53,7 @@ public sealed record ScreenedTable(
   /// </remarks>
   public int ColumnCountInThisTable => Columns.Count;
 
-  /// <summary>Combien le dépistage en a signalées, <b>dans cette table</b>.</summary>
+  /// <summary>Combien la détection en a signalées, <b>dans cette table</b>.</summary>
   public int FlaggedCountInThisTable => Columns.Count(column => column.IsFlagged);
 
   /// <summary>Combien attendent encore qu'un humain les tranche, <b>dans cette table</b>.</summary>

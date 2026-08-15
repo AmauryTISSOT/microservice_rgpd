@@ -198,7 +198,8 @@ public class ScreeningTests
   /// lettres pour que l'y ajouter soit un geste délibéré. « Courant » ne se lit que <i>parmi</i> des
   /// rapports — d'où <c>IsCurrentAmong</c>, qui exige ses frères et ne peut pas devenir un champ.
   /// <para>
-  /// ⚠️ <b>Elle ne porte aucun booléen, et le verrou « ce dépistage est inachevé » n'en est pas
+  /// ⚠️ <b>Elle ne porte aucun booléen, et le verrou « ce rapport de détection est inachevé » n'en
+  /// est pas
   /// devenu un.</b> Il vit en <c>UnreadUnflaggedCount</c> : un <c>IsUnfinished</c> aurait été le
   /// même calcul, mais un booléen sur un agrégat <b>se lit</b> comme l'état que #126 refuse, et le
   /// jour où quelqu'un chercherait à le rendre plus rapide il le persisterait. Le compte, lui, ne
@@ -355,7 +356,8 @@ public class ScreeningTests
   }
 
   /// <summary>
-  /// <b>Le verrou est un compte, et il se recalcule.</b> « Ce dépistage est inachevé » tant qu'une
+  /// <b>Le verrou est un compte, et il se recalcule.</b> « Ce rapport de détection est inachevé »
+  /// tant qu'une
   /// colonne où rien n'a été vu n'a pas été relue : sans lui, un <c>Operator</c> qui a arbitré ses
   /// lignes signalées croit le travail fini, et l'<c>Omission relue</c> n'a rien rattrapé.
   /// </summary>
@@ -623,7 +625,8 @@ public class ScreeningTests
 
   /// <summary>
   /// Une table que le rapport ne porte pas ne lève pas : elle n'atteint rien, et le dire est la
-  /// réponse — un écran affiché il y a une minute peut nommer une table qu'un second dépistage vient
+  /// réponse — un écran affiché il y a une minute peut nommer une table qu'un second rapport de
+  /// détection vient
   /// d'emporter.
   /// </summary>
   [Fact]

@@ -46,7 +46,8 @@ public sealed class ReadArchivedScreeningTableHandler(
     var read = await columns.OfTableAsync(query.Screening, query.Table, cancellationToken);
 
     // Ce rapport-là ne portait pas cette table : une adresse mal recopiée, ou une table qui
-    // n'existait pas encore quand ce dépistage a été lancé. Une table vide portant la clause aurait
+    // n'existait pas encore quand ce rapport de détection a été lancé. Une table vide portant la
+    // clause aurait
     // fait passer l'un pour l'autre.
     if (read.Count == 0)
     {

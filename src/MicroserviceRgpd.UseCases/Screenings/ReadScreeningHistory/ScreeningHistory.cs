@@ -18,16 +18,17 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningHistory;
 /// ce qui garde le bouton irréversible loin des surfaces où l'on travaille.
 /// </para>
 /// </remarks>
-/// <param name="Archived">Les archivés, du plus récemment lancé au plus ancien. Vide au premier dépistage.</param>
+/// <param name="Archived">Les archivés, du plus récemment lancé au plus ancien. Vide au premier rapport de détection.</param>
 /// <param name="Current">
-/// Le rapport courant du déploiement, ou <c>null</c> si aucun dépistage n'a été lancé. <b>Il n'est
+/// Le rapport de détection courant du déploiement, ou <c>null</c> si aucune détection n'a été
+/// lancée. <b>Il n'est
 /// pas dans <paramref name="Archived"/></b>.
 /// </param>
 public sealed record ScreeningHistory(
   IReadOnlyList<ScreeningHeading> Archived,
   ScreeningHeading? Current)
 {
-  /// <summary>Ce déploiement a-t-il lancé le moindre dépistage ?</summary>
+  /// <summary>Ce déploiement a-t-il lancé la moindre détection ?</summary>
   /// <remarks>
   /// <b>La question ne se pose pas sur la liste des archivés</b> : un déploiement d'un seul rapport
   /// a une liste vide et n'est pas vierge pour autant.
@@ -80,7 +81,7 @@ public sealed record ScreeningHistory(
 /// pour confirmer une suppression.
 /// </param>
 /// <param name="Dialect">Le SGBD dont le relevé se déclarait.</param>
-/// <param name="Engine">Qui a dépisté, et dans quelle version.</param>
+/// <param name="Engine">Qui a détecté, et dans quelle version.</param>
 /// <param name="LaunchedOn">Quand il a été lancé — le seul fait dont dépend son rang.</param>
 /// <param name="ColumnCount">Combien de colonnes le relevé portait.</param>
 public sealed record ScreeningHeading(
@@ -97,7 +98,8 @@ public sealed record ScreeningHeading(
   /// <remarks>
   /// ⚠️ <b>Le compte de colonnes est celui que le relevé <em>déclarait</em></b>, et non le compte
   /// des lignes filles — qu'un entête seul rendrait à zéro. Les deux sont égaux par construction :
-  /// un rapport n'existe que si le dépistage a rendu autant de lignes que le relevé en annonçait.
+  /// un rapport de détection n'existe que si la détection a rendu autant de lignes que le relevé en
+  /// annonçait.
   /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="screening"/> est absent.</exception>
   internal static ScreeningHeading Of(Screening screening)

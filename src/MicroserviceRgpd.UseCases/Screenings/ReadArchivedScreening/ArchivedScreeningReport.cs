@@ -4,7 +4,7 @@ using MicroserviceRgpd.UseCases.Screenings.ReadCurrentScreening;
 namespace MicroserviceRgpd.UseCases.Screenings.ReadArchivedScreening;
 
 /// <summary>
-/// Le <b>rapport sommaire</b> d'un dépistage archivé : son entête, ses tables retriées et ses
+/// Le <b>sommaire</b> d'un rapport de détection archivé : son entête, ses tables retriées et ses
 /// comptes — <b>sans verrou et sans geste</b>.
 /// </summary>
 /// <remarks>
@@ -15,7 +15,8 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadArchivedScreening;
 /// mis la règle dans un <c>if</c> de rendu, où le premier écran distrait l'aurait perdue.
 /// </para>
 /// <para>
-/// ⚠️ <b>Il ne porte pas le verrou d'inachèvement</b>, et c'est délibéré. « Ce dépistage est
+/// ⚠️ <b>Il ne porte pas le verrou d'inachèvement</b>, et c'est délibéré. « Ce rapport de détection
+/// est
 /// inachevé — relisez les colonnes où rien n'a été vu » est un appel à un geste qui n'existe plus
 /// ici : le verrou pousse à finir un travail, et sur un archivé il n'y a plus rien à finir. Ce qui
 /// reste vrai — combien de colonnes n'ont jamais été tranchées — est dans les comptes, sous le mot
@@ -31,10 +32,10 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadArchivedScreening;
 /// <param name="Database">Le nom de base que le relevé rapportait — un repère, jamais une identité.</param>
 /// <param name="Dialect">Le SGBD dont le relevé se déclarait.</param>
 /// <param name="Engine">
-/// Qui a dépisté, et dans quelle version. ⚠️ <b>C'est ici qu'elle sert le plus</b> : elle dit à
+/// Qui a détecté, et dans quelle version. ⚠️ <b>C'est ici qu'elle sert le plus</b> : elle dit à
 /// l'humain qui compare deux rapports pourquoi le plus récent ne dit pas la même chose.
 /// </param>
-/// <param name="LaunchedOn">Quand ce dépistage a été lancé.</param>
+/// <param name="LaunchedOn">Quand ce rapport de détection a été lancé.</param>
 /// <param name="Tables">Les tables du relevé, retriées par le service.</param>
 /// <param name="Tally">Les comptes du rapport, tels qu'ils étaient quand il a été rangé.</param>
 public sealed record ArchivedScreeningReport(

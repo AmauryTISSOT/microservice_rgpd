@@ -168,7 +168,7 @@ public class ScreeningOnTheTemoinPivotTests
   }
 
   /// <summary>
-  /// <b>Déterministe</b> : deux dépistages du même relevé rendent la même chose, mot pour mot. Le
+  /// <b>Déterministe</b> : deux détections du même relevé rendent la même chose, mot pour mot. Le
   /// moteur n'a ni aléa, ni horloge, ni amont, et rien ne l'apprend en chemin.
   /// </summary>
   [Fact]
@@ -185,7 +185,8 @@ public class ScreeningOnTheTemoinPivotTests
   }
 
   /// <summary>
-  /// Le rapport porte <b>qui</b> a dépisté : le montage retenu par le banc, et le gel dont ses
+  /// Le rapport de détection porte <b>qui</b> a détecté : le montage retenu par le banc, et le gel
+  /// dont ses
   /// lexiques sortent. C'est ce qui dit à l'humain pourquoi un nouveau rapport diffère de l'ancien.
   /// </summary>
   [Fact]

@@ -96,7 +96,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
     // « tout a été relu » aurait tranché la suspicion sans que personne ne l'ait lue.
     table.ShouldContain("Toutes les colonnes où rien n'a été vu ont été relues");
     table.ShouldContain("1 colonne signalée attend encore d'être tranchée");
-    table.ShouldNotContain("Toutes les colonnes de ce dépistage ont été relues");
+    table.ShouldNotContain("Toutes les colonnes de ce rapport de détection ont été relues");
   }
 
   /// <summary>
@@ -293,7 +293,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     var report = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Report));
 
-    report.ShouldContain("dépistage plus récent");
+    report.ShouldContain("rapport de détection plus récent");
     report.ShouldContain("n'a pas été enregistré");
   }
 
@@ -344,7 +344,8 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
   /// <summary>
   /// <b>Une table que le rapport courant ne porte pas ramène au rapport, et le dit</b> — un écran
-  /// affiché il y a une minute peut nommer une table qu'un second dépistage vient d'emporter.
+  /// affiché il y a une minute peut nommer une table qu'un second rapport de détection vient
+  /// d'emporter.
   /// </summary>
   [Fact]
   public async Task SendsBackToTheReportWhenTheTableHasLeftTheCurrentScreening()
@@ -365,7 +366,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     var report = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Report));
 
-    report.ShouldContain("n'est plus dans le dépistage courant");
+    report.ShouldContain("n'est plus dans le rapport de détection courant");
   }
 
   /// <summary>Le rapport que l'écran rendait, lu sur son formulaire.</summary>

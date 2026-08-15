@@ -17,6 +17,6 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// relevé déclare. C'est le geste qui assemble, pas le moteur.
 /// </para>
 /// </remarks>
-/// <param name="Engine">Qui a dépisté, et dans quelle version. Le domaine ne l'interprète jamais.</param>
+/// <param name="Engine">Qui a détecté, et dans quelle version. Le domaine ne l'interprète jamais.</param>
 /// <param name="Columns">Une ligne par colonne du relevé, dans l'ordre du relevé.</param>
 public sealed record ScreenedListing(ScreeningEngineIdentity Engine, IReadOnlyList<ScreenedColumn> Columns);

@@ -5,25 +5,26 @@
   var report = answer.Content;
   var clause = answer.Clause;
 
-  ViewData["Title"] = $"Un dépistage archivé de {report.Database}";
+  ViewData["Title"] = $"Un rapport de détection archivé de {report.Database}";
 
   // Un compte et son nom, accordés : une surface qui se lit au compte ne peut pas écrire
   // « 1 tables ».
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
 }
 
-<h1>Un dépistage archivé</h1>
+<h1>Un rapport de détection archivé</h1>
 
 @*
-  CE QUE CET ÉCRAN EST, DIT EN TÊTE ET NON EN PIED DE PAGE. Un rapport archivé a exactement la même
-  allure qu'un courant — mêmes lignes, mêmes comptes, même clause : sans cette phrase, un Operator
-  qui arrive ici par un lien croit lire le dépistage du jour, et cherche ses boutons.
+  CE QUE CET ÉCRAN EST, DIT EN TÊTE ET NON EN PIED DE PAGE. Un rapport de détection archivé a
+  exactement la même allure qu'un courant — mêmes lignes, mêmes comptes, même clause : sans cette
+  phrase, un Operator qui arrive ici par un lien croit lire le rapport de détection du jour, et
+  cherche ses boutons.
 *@
 <p class="caveat">
-  Ce dépistage est <strong>archivé</strong> : un dépistage plus récent existe sur ce déploiement.
-  Il se lit ici <strong>en entier</strong> — toutes ses colonnes, et ce que vous en aviez dit — mais
-  il ne s'arbitre plus. Ses arbitrages n'ont pas été repris par le courant : un nouveau dépôt ne
-  fusionne rien.
+  Ce rapport de détection est <strong>archivé</strong> : un rapport de détection plus récent existe
+  sur ce déploiement. Il se lit ici <strong>en entier</strong> — toutes ses colonnes, et ce que vous
+  en aviez dit — mais il ne s'arbitre plus. Ses arbitrages n'ont pas été repris par le courant : un
+  nouveau dépôt ne fusionne rien.
 </p>
 
 <dl class="banner">
@@ -43,12 +44,13 @@
   <dd>
     @report.Engine.Name, version @report.Engine.Version
     <span class="hint">
-      C'est ce qui dit pourquoi un dépistage plus récent ne rend pas la même chose que celui-ci.
+      C'est ce qui dit pourquoi un rapport de détection plus récent ne rend pas la même chose que
+      celui-ci.
     </span>
   </dd>
 </dl>
 
-<h2>Les comptes de ce dépistage</h2>
+<h2>Les comptes de ce rapport de détection</h2>
 
 @*
   LES COMPTES SONT CEUX D'ALORS, RECALCULÉS MAINTENANT : rien n'a été figé à l'archivage, puisque
@@ -59,7 +61,7 @@
   <dd>
     @report.Tally.Flagged
     <span class="hint">
-      Le complément est ce que le dépistage <strong>n'avait pas vu</strong>, jamais ce qui serait
+      Le complément est ce que la détection <strong>n'avait pas vu</strong>, jamais ce qui serait
       inoffensif : le service n'a jamais vu une seule valeur.
     </span>
   </dd>
@@ -71,8 +73,8 @@
   <dd>
     @report.Tally.Awaiting
     <span class="hint">
-      Sur un rapport archivé, ce n'est pas du travail à finir : c'est du travail qui ne se fera plus
-      ici. Le dépistage courant est reparti d'une page blanche.
+      Sur un rapport de détection archivé, ce n'est pas du travail à finir : c'est du travail qui ne
+      se fera plus ici. Le rapport de détection courant est reparti d'une page blanche.
     </span>
   </dd>
   <dt>Retenues sur « rien signalé »</dt>
@@ -113,6 +115,6 @@
 <partial name="_IncompletenessClause" model="clause" />
 
 <p>
-  <a asp-page="History">Revenir à l'historique</a> —
-  <a asp-page="Report">lire le dépistage courant</a>
+  <a asp-page="History">Revenir à l'historique des rapports de détection</a> —
+  <a asp-page="Report">lire le rapport de détection courant</a>
 </p>

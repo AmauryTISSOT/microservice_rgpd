@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Screenings;
 
 /// <summary>
-/// Le <b>rapport sommaire d'un dépistage archivé</b> : ce qu'un moteur avait vu à une date donnée,
-/// et ce qu'un humain en avait dit — <b>en lecture, et rien d'autre</b>.
+/// Le <b>sommaire d'un rapport de détection archivé</b> : ce qu'un moteur avait vu à une date
+/// donnée, et ce qu'un humain en avait dit — <b>en lecture, et rien d'autre</b>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,20 +17,20 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 /// courant.
 /// </para>
 /// <para>
-/// ⚠️ <b>Il ne porte pas non plus le verrou d'inachèvement.</b> « Ce dépistage est inachevé —
-/// relisez les colonnes où rien n'a été vu » appellerait ici un geste qui n'existe plus.
+/// ⚠️ <b>Il ne porte pas non plus le verrou d'inachèvement.</b> « Ce rapport de détection est
+/// inachevé — relisez les colonnes où rien n'a été vu » appellerait ici un geste qui n'existe plus.
 /// </para>
 /// <para>
-/// <b>Le rapport nommé peut avoir cessé d'être archivé, ou d'exister</b> — le courant qui
-/// l'archivait a pu être supprimé, ou lui-même l'a pu. Les deux ramènent à l'historique, qui dit ce
+/// <b>Le rapport de détection nommé peut avoir cessé d'être archivé, ou d'exister</b> — le courant
+/// qui l'archivait a pu être supprimé, ou lui-même l'a pu. Les deux ramènent à l'historique, qui dit ce
 /// que le déploiement a réellement.
 /// </para>
 /// </remarks>
 public class ArchiveModel(IMediator mediator) : PageModel
 {
   /// <summary>
-  /// Le rapport archivé qu'on ouvre. ⚠️ <b>Il passe en paramètre de requête</b>, comme le schéma et
-  /// la table de l'écran d'arbitrage : la surface de ce contexte n'a aucun paramètre de route.
+  /// Le rapport de détection archivé qu'on ouvre. ⚠️ <b>Il passe en paramètre de requête</b>, comme
+  /// le schéma et la table de l'écran d'arbitrage : la surface de ce contexte n'a aucun paramètre de route.
   /// </summary>
   [BindProperty(SupportsGet = true)]
   public string? Screening { get; set; }
@@ -42,8 +42,8 @@ public class ArchiveModel(IMediator mediator) : PageModel
   {
     if (!Guid.TryParse(Screening, out var named) || named == Guid.Empty)
     {
-      // Une adresse qui ne nomme aucun rapport ne rend pas un écran vide : l'historique les nomme
-      // tous.
+      // Une adresse qui ne nomme aucun rapport de détection ne rend pas un écran vide :
+      // l'historique les nomme tous.
       return RedirectToPage("History");
     }
 
@@ -51,7 +51,8 @@ public class ArchiveModel(IMediator mediator) : PageModel
       new ReadArchivedScreeningQuery(ScreeningId.From(named)), cancellationToken);
 
     // Supprimé, ou redevenu le courant. Dans les deux cas l'écran affiché est périmé, et
-    // l'historique dit ce qui est vrai — y compris que ce rapport-ci s'arbitre de nouveau.
+    // l'historique dit ce qui est vrai — y compris que ce rapport de détection-ci s'arbitre de
+    // nouveau.
     return Answer is null ? RedirectToPage("History") : Page();
   }
 }

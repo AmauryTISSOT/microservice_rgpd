@@ -62,7 +62,7 @@ public sealed class ScreenedColumn
   /// <summary>La ligne du relevé, recopiée telle quelle.</summary>
   public ListedColumn Listed { get; private set; }
 
-  /// <summary>Ce que le dépistage a reconnu. <b>Toujours une valeur</b> : l'absence de signalement en est une.</summary>
+  /// <summary>Ce que la détection a reconnu. <b>Toujours une valeur</b> : l'absence de signalement en est une.</summary>
   public PersonalDataCategory Category { get; private set; }
 
   /// <summary>
@@ -93,7 +93,7 @@ public sealed class ScreenedColumn
   /// <summary>Cette colonne attend-elle encore qu'un humain la tranche ?</summary>
   public bool AwaitsAnArbitration => Arbitration is null;
 
-  /// <summary>Le dépistage a-t-il signalé quelque chose ici ? Équivaut exactement à « elle porte un motif ».</summary>
+  /// <summary>La détection a-t-elle signalé quelque chose ici ? Équivaut exactement à « elle porte un motif ».</summary>
   public bool IsFlagged => Category.IsFlagged;
 
   /// <summary>
@@ -104,7 +104,7 @@ public sealed class ScreenedColumn
   /// <para>
   /// ⚠️ <b>Aucun geste de lot ne porte sur une colonne signalée</b> : une suspicion ne s'écarte jamais
   /// sans avoir été lue une par une. C'est la borne entière du geste, et écarter en masse ce que le
-  /// dépistage a vu serait exactement ce que le rapport existe pour empêcher.
+  /// détection a vu serait exactement ce que le rapport de détection existe pour empêcher.
   /// </para>
   /// <para>
   /// <b>Une ligne déjà tranchée est hors de portée elle aussi</b>, pour l'autre raison : le lot
@@ -169,7 +169,7 @@ public sealed class ScreenedColumn
   /// </summary>
   /// <remarks>
   /// ⚠️ Ce n'est pas « cette colonne ne porte pas de données personnelles » : c'est un constat sur le
-  /// dépistage, et non sur la donnée — que le service n'a jamais vue.
+  /// détection, et non sur la donnée — que le service n'a jamais vue.
   /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="listed"/> est absent.</exception>
   public static ScreenedColumn NothingSeen(ListedColumn listed)

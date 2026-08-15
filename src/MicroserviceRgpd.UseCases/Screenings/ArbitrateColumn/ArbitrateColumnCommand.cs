@@ -3,7 +3,8 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 
 /// <summary>
-/// Un <c>Operator</c> <b>arbitre une colonne</b> du dépistage courant : il dit qu'elle compte, ou
+/// Un <c>Operator</c> <b>arbitre une colonne</b> du rapport de détection courant : il dit qu'elle
+/// compte, ou
 /// qu'elle ne compte pas — sous son nom.
 /// </summary>
 /// <remarks>

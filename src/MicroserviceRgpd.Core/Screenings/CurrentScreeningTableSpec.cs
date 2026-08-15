@@ -39,9 +39,9 @@ public sealed class CurrentScreeningTableSpec : SingleResultSpecification<Screen
     ArgumentNullException.ThrowIfNull(table);
 
     // ⚠️ Le rapport est rendu MÊME quand il ne porte pas cette table, avec zéro colonne : c'est ce
-    // qui laisse le geste distinguer « aucun dépistage n'a été lancé » de « le courant ne porte pas
+    // qui laisse le geste distinguer « aucune détection n'a été lancée » de « le courant ne porte pas
     // cette table ». Un filtre sur la racine aurait confondu les deux, et l'Operator aurait lu
-    // « aucun dépistage » devant le sien.
+    // « aucune détection » devant le sien.
     Query.Include(screening => screening.Columns.Where(screened =>
         screened.Listed.Identity.Schema == table.Schema
         && screened.Listed.Identity.Table == table.Table))

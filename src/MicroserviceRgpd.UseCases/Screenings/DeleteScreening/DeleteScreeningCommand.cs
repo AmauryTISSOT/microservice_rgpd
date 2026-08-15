@@ -58,7 +58,7 @@ public sealed record DeleteScreeningCommand(ScreeningId Screening, string? Confi
 /// rapport à lire, et la <c>Clause d'incomplétude</c> n'a rien à accompagner.
 /// </remarks>
 /// <param name="Database">Le nom de base que le relevé rapportait.</param>
-/// <param name="LaunchedOn">Quand ce dépistage avait été lancé.</param>
+/// <param name="LaunchedOn">Quand ce rapport de détection avait été lancé.</param>
 /// <param name="ColumnCount">Combien de colonnes sont parties avec lui.</param>
 /// <param name="WasCurrent">
 /// Ce rapport était-il le <b>courant</b> du déploiement ? L'écran en a besoin pour dire ce qui vient

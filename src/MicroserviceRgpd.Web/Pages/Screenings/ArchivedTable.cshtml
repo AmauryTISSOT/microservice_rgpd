@@ -5,7 +5,7 @@
   var read = answer.Content;
   var clause = answer.Clause;
 
-  ViewData["Title"] = $"La table {read.Identity}, archivée";
+  ViewData["Title"] = $"La table {read.Identity} d'un rapport de détection archivé";
 
   @*
     L'EXCEPTION DE LARGEUR, réclamée par le motif, exactement comme sur l'écran d'arbitrage : un
@@ -24,7 +24,7 @@
   sans cette phrase, on cherche les boutons plutôt que de comprendre qu'il n'y en a pas.
 *@
 <p class="caveat">
-  Cette table appartient à un dépistage <strong>archivé</strong>, lancé le
+  Cette table appartient à un rapport de détection <strong>archivé</strong>, lancé le
   @read.LaunchedOn.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")).
   Elle se lit en entier — <strong>toutes</strong> ses colonnes, et les arbitrages qu'elle portait —
   et elle ne s'arbitre plus.
@@ -48,12 +48,12 @@
 
 @*
   TOUTES LES COLONNES, SANS FILTRE, ET DANS L'ORDRE DU RELEVÉ — la même règle que sur le courant.
-  Un archivé amputé de ses colonnes non signalées serait un rapport dont personne ne peut plus
-  vérifier ce que le dépistage n'avait pas vu.
+  Un archivé amputé de ses colonnes non signalées serait un rapport de détection dont personne ne
+  peut plus vérifier ce que la détection n'avait pas vu.
 *@
 <p class="hint">
   Les <strong>@Counted(read.ColumnCountInThisTable, "colonne")</strong> de cette table sont ici, dans
-  l'ordre où votre base les rendait — celles où le dépistage n'avait rien vu comprises.
+  l'ordre où votre base les rendait — celles où la détection n'avait rien vu comprises.
 </p>
 
 <table class="queue columns">
@@ -96,7 +96,7 @@
         }
         else
         {
-          @* ⚠️ Rien n'avait été vu — un constat sur le DÉPISTAGE, jamais sur la donnée. Aucun motif :
+          @* ⚠️ Rien n'avait été vu — un constat sur la DÉTECTION, jamais sur la donnée. Aucun motif :
              il n'y a rien à motiver. *@
           <td class="none">Rien n'a été vu</td>
           <td></td>
@@ -125,7 +125,7 @@
   </tbody>
 </table>
 
-<h2>Les comptes de ce dépistage archivé</h2>
+<h2>Les comptes de ce rapport de détection archivé</h2>
 
 <dl class="banner tally">
   <dt>Signalées</dt>
@@ -143,6 +143,6 @@
 <partial name="_IncompletenessClause" model="clause" />
 
 <p>
-  <a asp-page="Archive" asp-route-screening="@read.Screening.Value">Revenir à ce dépistage archivé</a> —
-  <a asp-page="History">l'historique</a>
+  <a asp-page="Archive" asp-route-screening="@read.Screening.Value">Revenir à ce rapport de détection archivé</a> —
+  <a asp-page="History">l'historique des rapports de détection</a>
 </p>

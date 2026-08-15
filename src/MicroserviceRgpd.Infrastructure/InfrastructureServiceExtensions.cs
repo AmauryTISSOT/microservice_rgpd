@@ -60,7 +60,7 @@ public static class InfrastructureServiceExtensions
     // personnel une racine que tout le service pourrait charger.
     services.AddScoped<IRetrievedData, RetrievedDataStore>();
 
-    // Les colonnes dépistées non plus : elles ont leur propre DbSet sans être une racine, et l'écran
+    // Les colonnes détectées non plus : elles ont leur propre DbSet sans être une racine, et l'écran
     // n'en ouvre qu'une table à la fois. Le dépôt générique, contraint aux racines, aurait obligé à
     // rematérialiser cinq mille lignes pour en montrer treize.
     services.AddScoped<IScreenedColumns, ScreenedColumns>();
@@ -71,7 +71,7 @@ public static class InfrastructureServiceExtensions
 
     services.AddQualificationEngines(config);
 
-    // Le moteur de dépistage, lui, ne se configure pas : ADR-0004 l'a mis en C# ici même, sans
+    // Le moteur de détection, lui, ne se configure pas : ADR-0004 l'a mis en C# ici même, sans
     // sidecar, sans adresse et sans échéance. Il démarre avec le service.
     services.AddScreeningEngine();
 

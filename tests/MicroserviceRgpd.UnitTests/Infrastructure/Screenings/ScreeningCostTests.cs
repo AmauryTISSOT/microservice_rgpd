@@ -20,7 +20,7 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
 /// <para>
 /// <b>Ce qui est gardé ici est l'<i>ordre de grandeur</i></b>, avec une marge délibérément large :
 /// le seuil est deux ordres de grandeur au-dessus de la mesure du banc. Il ne dit pas « le moteur
-/// est rapide » — il dit qu'aucune régression n'a fait passer le dépistage d'un balayage linéaire à
+/// est rapide » — il dit qu'aucune régression n'a fait passer la détection d'un balayage linéaire à
 /// autre chose, ce qui est le seul mode de panne qui ferait franchir la borne éliminatoire du banc
 /// à un dictionnaire. Un seuil serré ferait rougir la construction un jour de machine chargée, et
 /// un test qui crie faux finit ignoré.

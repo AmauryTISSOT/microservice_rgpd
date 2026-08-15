@@ -202,7 +202,8 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>La clause d'incomplétude est due sur toute réponse rendant une <c>ScreenedColumn</c></b>, et
   /// cet écran n'en rend que ça. Ses comptes portent sur le <b>relevé entier</b> : une clause bornée
-  /// à la table ouverte aurait dit d'un écran de trois colonnes qu'il est le périmètre du dépistage.
+  /// à la table ouverte aurait dit d'un écran de trois colonnes qu'il est le périmètre de la
+  /// détection.
   /// </summary>
   [Fact]
   public async Task CarriesTheIncompletenessClauseOnTheAnswerThatRendersColumns()
@@ -235,7 +236,7 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("id_adh", position: 1),
       ScreeningSurface.Column("montant", table: "cotisations", position: 1));
 
-    table.ShouldContain("Ce dépistage est inachevé");
+    table.ShouldContain("Ce rapport de détection est inachevé");
 
     // Deux colonnes attendent dans le rapport, dont une seule dans la table ouverte.
     Counted(table, "En attente").ShouldBe(2);
@@ -274,15 +275,17 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Le mot est <em>dépistage</em></b> — jamais <em>recensement</em>, <em>cartographie</em> ni
-  /// <em>scan</em> — sur cet écran comme sur les autres.
+  /// <b>Le mot est <em>détection</em></b> — jamais <em>recensement</em>, <em>cartographie</em> ni
+  /// <em>scan</em> — sur cet écran comme sur les autres. ⚠️ <b>Le témoin porte la doctrine, pas le
+  /// mot</b> : il a gelé l'ancien mot du contexte tant que l'interface le disait, il gèle
+  /// « détection » depuis, et il ne se supprime pas quand le mot change.
   /// </summary>
   [Fact]
   public async Task NamesTheGestureWithTheOnlyWordTheGlossaryGivesIt()
   {
     var table = await DepositAndOpenAsync(ScreeningSurface.Column("email"));
 
-    table.ShouldContain("dépist");
+    table.ShouldContain("détection");
     table.ShouldNotContain("cartographie", Case.Insensitive);
     table.ShouldNotContain("scan", Case.Insensitive);
   }

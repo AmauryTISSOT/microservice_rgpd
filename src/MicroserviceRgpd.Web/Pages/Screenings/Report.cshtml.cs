@@ -6,19 +6,20 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Screenings;
 
 /// <summary>
-/// Le <b>rapport sommaire</b> du dépistage courant : son entête, ses tables retriées, ses comptes,
-/// son verrou et sa <c>Clause d'incomplétude</c>.
+/// Le <b>sommaire du rapport de détection courant</b> : son entête, ses tables retriées, ses
+/// comptes, son verrou et sa <c>Clause d'incomplétude</c>.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>« Courant » est un calcul refait à chaque affichage</b>, jamais un état lu quelque part. Le
-/// rapport le plus récemment lancé est le courant ; les autres sont archivés par le seul fait qu'il
-/// existe, et rien n'a été écrit pour cela.
+/// rapport de détection le plus récemment lancé est le courant ; les autres sont archivés par le
+/// seul fait qu'il existe, et rien n'a été écrit pour cela.
 /// </para>
 /// <para>
-/// ⚠️ <b>Quand aucun dépistage n'a été lancé, on rend l'écran de dépôt seul.</b> Un rapport vide
-/// portant « ce dépistage n'a pas regardé le CRM en SaaS, les tableurs partagés, les journaux… »
-/// serait un <b>aveu sans acte</b>, et userait la clause avant son premier usage réel.
+/// ⚠️ <b>Quand aucun rapport de détection n'a été lancé, on rend l'écran de dépôt seul.</b> Un
+/// rapport de détection vide portant « ce rapport de détection n'a pas regardé le CRM en SaaS, les
+/// tableurs partagés, les journaux… » serait un <b>aveu sans acte</b>, et userait la clause avant
+/// son premier usage réel.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le verrou et les comptes ne sont mémorisés nulle part.</b> Ils se recalculent ici, à
@@ -28,7 +29,9 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 /// </remarks>
 public class ReportModel(IMediator mediator) : PageModel
 {
-  /// <summary>Le sommaire du rapport courant, et la clause qui l'accompagne obligatoirement.</summary>
+  /// <summary>
+  /// Le sommaire du rapport de détection courant, et la clause qui l'accompagne obligatoirement.
+  /// </summary>
   public ScreeningAnswer<ScreeningSummary>? Answer { get; private set; }
 
   /// <summary>
@@ -46,8 +49,8 @@ public class ReportModel(IMediator mediator) : PageModel
   {
     Answer = await mediator.Send(new ReadCurrentScreeningQuery(), cancellationToken);
 
-    // Aucun dépistage n'a encore été lancé chez ce client : l'écran de dépôt, seul, et sans clause
-    // — il n'y a rien dont on puisse déclarer l'incomplétude.
+    // Aucun rapport de détection n'a encore été lancé chez ce client : l'écran de dépôt, seul, et
+    // sans clause — il n'y a rien dont on puisse déclarer l'incomplétude.
     return Answer is null ? RedirectToPage("Deposit") : Page();
   }
 }

@@ -3,7 +3,8 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UseCases.Screenings.ReadCurrentScreening;
 
 /// <summary>
-/// Le <b>rapport sommaire</b> du dépistage courant : son entête, ses tables retriées, ses comptes et
+/// Le <b>sommaire</b> du rapport de détection courant : son entête, ses tables retriées, ses
+/// comptes et
 /// son verrou.
 /// </summary>
 /// <remarks>
@@ -29,10 +30,10 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadCurrentScreening;
 /// de commentaire » et « ce SGBD n'en rend jamais » se lisent pareil</b>.
 /// </param>
 /// <param name="Engine">
-/// Qui a dépisté, et dans quelle version. ⚠️ Elle ne sert qu'à l'humain qui relit ou qui compare
+/// Qui a détecté, et dans quelle version. ⚠️ Elle ne sert qu'à l'humain qui relit ou qui compare
 /// deux rapports : le domaine ne l'interprète jamais.
 /// </param>
-/// <param name="LaunchedOn">Quand le dépistage a été lancé — le seul fait dont dépend « courant ».</param>
+/// <param name="LaunchedOn">Quand la détection a été lancée — le seul fait dont dépend « courant ».</param>
 /// <param name="Tables">Les tables du relevé, retriées par le service.</param>
 /// <param name="Tally">Les comptes du rapport.</param>
 /// <param name="Lock">Le verrou d'inachèvement, recalculé à ce rendu.</param>
@@ -86,7 +87,7 @@ public sealed record ScreeningSummary(
 /// </summary>
 /// <param name="Identity">Le schéma et la table.</param>
 /// <param name="ColumnCount">Combien de colonnes elle porte, <b>toutes</b>.</param>
-/// <param name="FlaggedCount">Combien le dépistage en a signalées.</param>
+/// <param name="FlaggedCount">Combien la détection en a signalées.</param>
 /// <param name="AwaitingCount">Combien attendent encore qu'un humain les tranche.</param>
 public sealed record SummarisedTable(
   TableIdentity Identity,
