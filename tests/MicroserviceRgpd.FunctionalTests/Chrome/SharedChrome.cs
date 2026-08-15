@@ -146,8 +146,8 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>La barre porte les trois points d'entrée, sur chaque écran</b> — et c'est ce qui fait que
   /// quitter un dossier long ne demande plus de le dérouler jusqu'en bas : le tableau des demandes
-  /// RGPD, le
-  /// <c>Manifest</c> et le dépistage s'atteignent de partout sans passer par un écran intermédiaire.
+  /// RGPD, le <c>Manifest</c> et le dépistage s'atteignent de partout sans passer par un écran
+  /// intermédiaire.
   /// </summary>
   [Fact]
   public async Task CarriesTheThreeEntryPointsOnEveryScreen()

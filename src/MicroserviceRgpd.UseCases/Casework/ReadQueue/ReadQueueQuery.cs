@@ -19,8 +19,8 @@ namespace MicroserviceRgpd.UseCases.Casework.ReadQueue;
 /// voir, et un tri au choix ferait de l'ordre des échéances une préférence d'écran.
 /// </para>
 /// <para>
-/// <b>Elle n'émet aucun appel.</b> La relance d'un <c>202</c> a lieu à l'ouverture d'un dossier ;
-/// afficher une liste n'appelle pas un <c>Adapter</c> par ligne.
+/// <b>Le tableau des demandes RGPD n'émet aucun appel.</b> La relance d'un <c>202</c> a lieu à
+/// l'ouverture d'un dossier ; afficher une liste n'appelle pas un <c>Adapter</c> par ligne.
 /// </para>
 /// </remarks>
 public sealed record ReadQueueQuery : IQuery<OperatorQueue>;
@@ -89,7 +89,8 @@ public sealed record OperatorQueue(
 /// Les droits dont quelqu'un a téléchargé la remise sans jamais déclarer l'avoir rendue —
 /// <b>énumérés et jamais comptés</b>, comme les droits réclamés.
 /// <para>
-/// <b>C'est une colonne sur une ligne déjà présente</b>, jamais une ligne de plus. Le dossier est
+/// <b>C'est une colonne sur une ligne déjà présente</b>, jamais une ligne de plus dans le tableau
+/// des demandes RGPD. Le dossier est
 /// ouvert, il est là ; ce que cette colonne ajoute est qu'un travail s'est arrêté au milieu du gué,
 /// et le laisser invisible serait l'<c>Omission silencieuse</c> sous sa forme la plus tranquille :
 /// la personne a une réponse assemblée que personne ne lui a rendue.

@@ -65,7 +65,7 @@ public class ExpiredEvidenceLogSection(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
-  /// <b>Le bouton est loin de ceux des dossiers.</b> Le tableau des <c>Case</c> n'offre aucun geste
+  /// <b>Le bouton est loin de ceux des dossiers.</b> La liste des <c>Case</c> n'offre aucun geste
   /// — pas un formulaire, pas un bouton, pas une case — et la seule action de l'écran vit dans la
   /// section d'après, sous son propre titre : un mauvais clic définitif et inconstatable ne doit pas
   /// être à portée de main.

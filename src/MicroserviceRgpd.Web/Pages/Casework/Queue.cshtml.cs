@@ -31,7 +31,7 @@ namespace MicroserviceRgpd.Web.Pages.Casework;
 /// l'ouverture d'un dossier ; afficher une liste n'appelle pas un <c>Adapter</c> par ligne.
 /// </para>
 /// <para>
-/// ⚠️ <b>Elle n'offre aucun geste SUR UN DOSSIER.</b> Chaque ligne de dossier mène au dossier, et
+/// ⚠️ <b>Il n'offre aucun geste SUR UN DOSSIER.</b> Chaque ligne de dossier mène au dossier, et
 /// c'est là que l'<c>Operator</c> agit : une action depuis la liste ferait signer quelqu'un sans
 /// qu'il ait ouvert ce qu'il signe. Le <b>seul</b> geste de cet écran est la destruction d'un
 /// <c>EvidenceLog</c> échu, qui n'a aucun dossier où vivre — le sien est clos depuis cinq ans —, et son

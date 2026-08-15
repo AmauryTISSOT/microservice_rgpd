@@ -196,10 +196,10 @@ public sealed class Case : IAggregateRoot
   /// droit est dans ce cas.
   /// </summary>
   /// <remarks>
-  /// <b>C'est une lecture, jamais un état.</b> Elle se recalcule sur les <see cref="Claim"/> à chaque
-  /// affichage, et sert de <b>colonne</b> sur une ligne déjà présente du tableau des demandes
-  /// RGPD : une remise commencée
-  /// et non déclarée doit se voir tous les jours, plutôt que de manquer.
+  /// <b>C'est une lecture, jamais un état.</b> Elle se recalcule sur les <see cref="Claim"/> à
+  /// chaque affichage, et sert de <b>colonne</b> sur une ligne déjà présente du tableau des
+  /// demandes RGPD : une remise commencée et non déclarée doit se voir tous les jours, plutôt que
+  /// de manquer.
   /// </remarks>
   public bool AwaitsADeliveryDeclaration => _claims.Any(claim => claim.DeliveryAwaitsDeclaration);
 

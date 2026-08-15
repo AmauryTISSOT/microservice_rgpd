@@ -122,7 +122,8 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   /// ⚠️ <b>L'écran porte une exception, et une seule</b> : la destruction d'un <c>EvidenceLog</c> échu,
   /// qui n'a aucun dossier où vivre — le sien est clos depuis cinq ans. Elle est <b>tenue à part</b>,
   /// dans sa propre section, et <see cref="ExpiredEvidenceLogSection"/> garde qu'elle ne redescend jamais
-  /// parmi les lignes de dossiers. C'est pourquoi ce test-ci lit le tableau plutôt que la page.
+  /// parmi les lignes de dossiers. C'est pourquoi ce test-ci lit la liste des dossiers plutôt que
+  /// la page entière.
   /// </remarks>
   [Fact]
   public async Task OffersNoGestureFromTheListAndLeadsToTheCaseInstead()

@@ -17,9 +17,9 @@ namespace MicroserviceRgpd.Infrastructure.Data.Casework;
 /// </para>
 /// <para>
 /// <b>Un seul index secondaire, et il est daté.</b> Il est posé sur <c>case_id</c> le jour où le
-/// tableau des demandes RGPD s'est mis à lire les <c>EvidenceLog</c> échus : c'est par lui qu'il
-/// demande quels dossiers clos portent encore une preuve, et par lui que la destruction emporte un
-/// dossier de preuve entier. Il n'y en a pas d'autre — rien d'autre ne lit cette table.
+/// tableau des demandes RGPD s'est mis à lire les <c>EvidenceLog</c> échus : c'est par lui que cet
+/// écran demande quels dossiers clos portent encore une preuve, et par lui que la destruction
+/// emporte un dossier de preuve entier. Il n'y en a pas d'autre — rien d'autre ne lit cette table.
 /// </para>
 /// <para>
 /// <b>Le <c>snake_case</c> est déclaré ici, explicitement</b>, comme sur les autres tables du dépôt.
