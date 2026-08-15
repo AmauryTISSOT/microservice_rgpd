@@ -190,8 +190,9 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Une remise téléchargée et jamais déclarée remonte dans la file</b>, comme colonne sur une
-  /// ligne déjà présente — et elle en disparaît quand quelqu'un déclare l'avoir rendue.
+  /// <b>Une remise téléchargée et jamais déclarée remonte dans le tableau des demandes RGPD</b>,
+  /// comme colonne sur une ligne déjà présente — et elle en disparaît quand quelqu'un déclare
+  /// l'avoir rendue.
   /// </summary>
   [Fact]
   public async Task BringsBackIntoTheQueueADeliveryTakenAndNeverDeclared()
@@ -212,9 +213,9 @@ public class DeliveryScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La ligne de CE dossier</b> dans la file, et non la page entière : la colonne est une colonne
-  /// sur une ligne, et l'affirmer sur toute la page ferait dépendre le test des dossiers que les
-  /// autres ont laissés ouverts.
+  /// <b>La ligne de CE dossier</b> dans le tableau des demandes RGPD, et non la page entière : la
+  /// colonne est une colonne sur une ligne, et l'affirmer sur toute la page ferait dépendre le test
+  /// des dossiers que les autres ont laissés ouverts.
   /// </summary>
   private async Task<string> QueueLineOfAsync(CaseId opened)
   {

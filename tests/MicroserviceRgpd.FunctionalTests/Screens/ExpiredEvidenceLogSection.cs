@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
 /// <summary>
-/// La <b>section propre</b> des <c>EvidenceLog</c> échus, sur l'écran de la file, et le geste
-/// irréversible qu'elle porte.
+/// La <b>section propre</b> des <c>EvidenceLog</c> échus, sur le tableau des demandes RGPD, et le
+/// geste irréversible qu'elle porte.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -166,8 +166,8 @@ public class ExpiredEvidenceLogSection(CustomWebApplicationFactory<Program> fact
 
     var destroying = await _surface.DestroyEvidenceLogAsync(recent);
 
-    // La file rechargée dit d'elle-même ce qui reste : c'est la seule chose vraie qu'on puisse
-    // afficher d'un geste qui ne se consigne pas.
+    // Le tableau des demandes RGPD rechargé dit de lui-même ce qui reste : c'est la seule chose
+    // vraie qu'on puisse afficher d'un geste qui ne se consigne pas.
     destroying.StatusCode.ShouldBe(HttpStatusCode.Found);
 
     using var scope = factory.Services.CreateScope();

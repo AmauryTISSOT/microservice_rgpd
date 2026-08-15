@@ -105,7 +105,8 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
     var defaulted = ReceptionDate.Defaulted(DateTimeOffset.UtcNow).On.ToString("dd/MM/yyyy", null);
     Regex.Matches(onScreen, Regex.Escape(defaulted)).Count.ShouldBe(0);
 
-    // Et la file le dit de la même façon : c'est la même règle, aux deux endroits.
+    // Et le tableau des demandes RGPD le dit de la même façon : c'est la même règle, aux deux
+    // endroits.
     var queue = await _surface.ReadTextAsync(OperatorSurface.Queue);
     queue.ShouldContain("J+9 (défaut)");
   }
@@ -419,9 +420,9 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Un <c>Claim</c> <c>Proposed</c> se confirme <em>dans le dossier</em>, pendant que le délai
-  /// court.</b> Il n'existe aucun état d'attente hors du <c>Case</c> : le dossier est ouvert, il est
-  /// dans la file, et la confirmation qui manque est une ligne <b>visible</b> plutôt qu'un vestibule
-  /// que personne ne regarde.
+  /// court.</b> Il n'existe aucun état d'attente hors du <c>Case</c> : le dossier est ouvert, il
+  /// est dans le tableau des demandes RGPD, et la confirmation qui manque est une ligne
+  /// <b>visible</b> plutôt qu'un vestibule que personne ne regarde.
   /// </summary>
   [Fact]
   public async Task ConfirmsAProposedRightInsideTheOpenCaseRatherThanInAnyWaitingRoom()
@@ -440,8 +441,8 @@ public class CaseScreen(CustomWebApplicationFactory<Program> factory)
     before.ShouldContain("Confirmation réclamée");
     before.ShouldContain(ClaimOrigin.Proposed.FrenchLabel);
 
-    // Et le dossier est bien dans la file pendant qu'il attend : le compteur ne s'arrête pour
-    // personne, et une demande non confirmée ne doit pas disparaître de la vue.
+    // Et le dossier est bien dans le tableau des demandes RGPD pendant qu'il attend : le compteur
+    // ne s'arrête pour personne, et une demande non confirmée ne doit pas disparaître de la vue.
     (await _surface.ReadAsync(OperatorSurface.Queue)).ShouldContain(opened.Value.ToString());
 
     var confirmed = await _surface.ConfirmAsync(opened, nameof(DataSubjectRight.Erasure), "Claire Martin");

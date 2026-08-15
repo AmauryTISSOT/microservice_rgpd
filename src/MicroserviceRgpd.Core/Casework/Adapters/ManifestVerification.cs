@@ -18,9 +18,9 @@ namespace MicroserviceRgpd.Core.Casework.Adapters;
 /// exactitude.
 /// </para>
 /// <para>
-/// <b>Rien ne tourne pour la produire.</b> Elle se recalcule quand on la demande, comme la file de
-/// l'<c>Operator</c> : un processus de fond interrompu rendrait un rapport <b>vide et
-/// rassurant</b>, soit l'<c>Omission silencieuse</c> sous sa forme la plus dangereuse.
+/// <b>Rien ne tourne pour la produire.</b> Elle se recalcule quand on la demande, comme le tableau
+/// des demandes RGPD de l'<c>Operator</c> : un processus de fond interrompu rendrait un rapport
+/// <b>vide et rassurant</b>, soit l'<c>Omission silencieuse</c> sous sa forme la plus dangereuse.
 /// </para>
 /// </remarks>
 /// <param name="VerifiedOn">

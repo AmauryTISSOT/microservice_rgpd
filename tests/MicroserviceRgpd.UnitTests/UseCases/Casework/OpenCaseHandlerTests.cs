@@ -155,7 +155,7 @@ public class OpenCaseHandlerTests
   /// <summary>
   /// <b>Le dossier est écrit, puis la preuve.</b> Une ligne de preuve pour un dossier qui n'existe
   /// pas serait un faux ; un dossier dont la première ligne manque reste une ligne présente dans la
-  /// file, que l'<c>Operator</c> voit.
+  /// tableau des demandes RGPD, que l'<c>Operator</c> voit.
   /// </summary>
   [Fact]
   public async Task WritesTheCaseThenItsFirstLineOfProof()

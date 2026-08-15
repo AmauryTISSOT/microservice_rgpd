@@ -46,9 +46,9 @@ public interface IExpiredEvidenceLogs
   /// échue à cet instant.
   /// </summary>
   /// <remarks>
-  /// <b>L'échéance est éprouvée ici, et non crue sur parole.</b> L'écran de la file d'où part le
-  /// clic a pu être affiché il y a une heure comme il y a un an ; ce qui est irréversible ne se
-  /// décide pas sur une page vieille d'une minute.
+  /// <b>L'échéance est éprouvée ici, et non crue sur parole.</b> Le tableau des demandes RGPD d'où
+  /// part le clic a pu être affiché il y a une heure comme il y a un an ; ce qui est irréversible
+  /// ne se décide pas sur une page vieille d'une minute.
   /// </remarks>
   /// <param name="evidenceLogOf">Le dossier dont la preuve est détruite.</param>
   /// <param name="observedAt">L'instant du geste, sur lequel l'échéance est éprouvée.</param>
@@ -61,8 +61,8 @@ public interface IExpiredEvidenceLogs
 }
 
 /// <summary>
-/// Un <c>EvidenceLog</c> échu, tel que l'écran de la file le montre : un dossier, la date de sa clôture,
-/// et le jour où sa preuve a cessé d'être due.
+/// Un <c>EvidenceLog</c> échu, tel que le tableau des demandes RGPD le montre : un dossier, la date
+/// de sa clôture, et le jour où sa preuve a cessé d'être due.
 /// </summary>
 /// <remarks>
 /// <b>Ni personne, ni droit, ni délai</b> — et c'est pourquoi cette ligne ne peut pas vivre dans le

@@ -97,10 +97,10 @@ public class DepositModel(IMediator mediator, TimeProvider clock) : PageModel
       return Page();
     }
 
-    // Le dépôt mène au dossier qu'il vient d'ouvrir, et non à la file : c'est là que l'exigence non
-    // satisfaite se lit — une motivation réclamée, un droit à confirmer — et l'y conduire est ce qui
-    // rend la faiblesse visible plutôt que contournée. La redirection fait aussi qu'un rechargement
-    // ne dépose pas deux fois.
+    // Le dépôt mène au dossier qu'il vient d'ouvrir, et non au tableau des demandes RGPD : c'est là
+    // que l'exigence non satisfaite se lit — une motivation réclamée, un droit à confirmer — et l'y
+    // conduire est ce qui rend la faiblesse visible plutôt que contournée. La redirection fait
+    // aussi qu'un rechargement ne dépose pas deux fois.
     return RedirectToPage("Case", new { id = opened.Value.Id.Value });
   }
 }

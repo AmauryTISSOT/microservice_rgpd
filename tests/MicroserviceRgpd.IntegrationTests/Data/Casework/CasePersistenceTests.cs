@@ -205,9 +205,9 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
   }
 
   /// <summary>
-  /// <b>Un dossier naît <c>Open</c> en base</b>, et l'état y est écrit par son nom : la file s'appuie
-  /// sur lui plutôt que de lister « tous les dossiers », pour qu'un dossier clos n'y réapparaisse jamais
-  /// le jour où la clôture existera.
+  /// <b>Un dossier naît <c>Open</c> en base</b>, et l'état y est écrit par son nom : le tableau des
+  /// demandes RGPD s'appuie sur lui plutôt que de lister « tous les dossiers », pour qu'un dossier
+  /// clos n'y réapparaisse jamais le jour où la clôture existera.
   /// </summary>
   [Fact]
   public async Task WritesTheStateByItsNameAndBornsItOpen()

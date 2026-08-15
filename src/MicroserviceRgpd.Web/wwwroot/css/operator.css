@@ -183,7 +183,7 @@ main {
 
 /*
   LA BARRE DE NAVIGATION. Blanche sur le canevas, posée en tête de chaque écran, et sans un chiffre :
-  ni compteur ni badge — la règle des chiffres de la file vaut aussi ici.
+  ni compteur ni badge — la règle des chiffres du tableau des demandes RGPD vaut aussi ici.
 */
 nav.chrome {
   align-items: baseline;

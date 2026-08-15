@@ -7,17 +7,18 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Casework;
 
 /// <summary>
-/// La file : les dossiers ouverts, rangés par échéance, et — <b>à part</b> — les <c>EvidenceLog</c> dont
-/// la conservation est échue. <b>C'est une requête, jamais un processus.</b>
+/// Le tableau des demandes RGPD : les dossiers ouverts, rangés par échéance, et — <b>à part</b> —
+/// les <c>EvidenceLog</c> dont la conservation est échue. <b>C'est une requête, jamais un
+/// processus.</b>
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>Rien ne tourne derrière cet écran.</b> Aucun <c>IHostedService</c>, aucun
 /// <c>BackgroundService</c>, aucun <c>cron</c>, aucune minuterie, aucun drapeau persisté
 /// d'échéance : tout se recalcule à l'instant où l'<c>Operator</c> regarde. Un processus de fond
-/// interrompu rendrait une file <b>vide et rassurante</b>, soit l'<c>Omission silencieuse</c> sous sa
-/// forme la plus dangereuse. <b>C'est vrai de la destruction des <c>EvidenceLog</c> échus aussi</b> :
-/// elle n'a lieu que sous le clic d'un humain.
+/// interrompu rendrait un tableau des demandes RGPD <b>vide et rassurant</b>, soit l'<c>Omission
+/// silencieuse</c> sous sa forme la plus dangereuse. <b>C'est vrai de la destruction des
+/// <c>EvidenceLog</c> échus aussi</b> : elle n'a lieu que sous le clic d'un humain.
 /// </para>
 /// <para>
 /// <b>Ce n'est pas un tableau de bord, et il n'y a aucun nombre à regarder.</b> Ni total, ni taux, ni
@@ -26,8 +27,8 @@ namespace MicroserviceRgpd.Web.Pages.Casework;
 /// lire les lignes. <c>0 dossier en retard</c> est impossible à produire ici.
 /// </para>
 /// <para>
-/// <b>La file n'émet aucun appel.</b> La relance d'un <c>202</c> a lieu à l'ouverture d'un dossier ;
-/// afficher une liste n'appelle pas un <c>Adapter</c> par ligne.
+/// <b>Le tableau des demandes RGPD n'émet aucun appel.</b> La relance d'un <c>202</c> a lieu à
+/// l'ouverture d'un dossier ; afficher une liste n'appelle pas un <c>Adapter</c> par ligne.
 /// </para>
 /// <para>
 /// ⚠️ <b>Elle n'offre aucun geste SUR UN DOSSIER.</b> Chaque ligne de dossier mène au dossier, et
@@ -42,7 +43,7 @@ public class QueueModel(IMediator mediator) : PageModel
   /// <summary>Le préfixe de liaison de la destruction, cité tel quel lorsqu'un champ est refusé.</summary>
   public const string DestructionPrefix = nameof(Destruction);
 
-  /// <summary>La file telle qu'elle se lit à cet instant.</summary>
+  /// <summary>Le tableau des demandes RGPD tel qu'il se lit à cet instant.</summary>
   public OperatorQueue Queue { get; private set; } = new([], [], DateTimeOffset.MinValue);
 
   /// <summary>
@@ -75,9 +76,9 @@ public class QueueModel(IMediator mediator) : PageModel
   /// </para>
   /// <para>
   /// <b>Un refus du domaine ne s'affiche pas.</b> Une preuve encore due, un dossier inconnu, un
-  /// <c>EvidenceLog</c> qu'un autre écran vient d'emporter : aucun de ces cas n'est une panne, et la file
-  /// rechargée dit d'elle-même ce qui reste. C'est la seule chose vraie qu'on puisse afficher d'un
-  /// geste qui ne se consigne pas.
+  /// <c>EvidenceLog</c> qu'un autre écran vient d'emporter : aucun de ces cas n'est une panne, et
+  /// le tableau des demandes RGPD rechargé dit de lui-même ce qui reste. C'est la seule chose vraie
+  /// qu'on puisse afficher d'un geste qui ne se consigne pas.
   /// </para>
   /// </remarks>
   public async Task<IActionResult> OnPostDestroyEvidenceLogAsync(CancellationToken cancellationToken)
@@ -104,8 +105,8 @@ public class QueueModel(IMediator mediator) : PageModel
 
     await mediator.Send(new DestroyEvidenceLogCommand(evidenceLogOf), cancellationToken);
 
-    // Une redirection après l'écriture : recharger la page ne redétruit rien — et la file qui
-    // revient est celle d'après la destruction, seule à pouvoir dire ce qui reste.
+    // Une redirection après l'écriture : recharger la page ne redétruit rien — et le tableau des
+    // demandes RGPD qui revient est celui d'après la destruction, seul à pouvoir dire ce qui reste.
     return RedirectToPage();
   }
 }

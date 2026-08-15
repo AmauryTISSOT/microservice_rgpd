@@ -35,9 +35,10 @@ public sealed class DestroyEvidenceLogHandler(IExpiredEvidenceLogs expired, Time
 
     var destroyed = await expired.DestroyAsync(command.Case, clock.GetUtcNow(), cancellationToken);
 
-    // Rien à détruire : une preuve encore due, un dossier qui n'a jamais existé, ou un EvidenceLog qu'un
-    // autre écran vient d'emporter. Aucun de ces cas n'est une panne, et aucun ne se distingue pour
-    // l'humain qui regarde — sa file, à l'affichage suivant, dit ce qui reste.
+    // Rien à détruire : une preuve encore due, un dossier qui n'a jamais existé, ou un EvidenceLog
+    // qu'un autre écran vient d'emporter. Aucun de ces cas n'est une panne, et aucun ne se
+    // distingue pour l'humain qui regarde — son tableau des demandes RGPD, à l'affichage suivant,
+    // dit ce qui reste.
     return destroyed ? Result.Success() : Result.NotFound();
   }
 }

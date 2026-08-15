@@ -177,15 +177,16 @@ public sealed class Claim
   /// </summary>
   /// <remarks>
   /// <para>
-  /// <b>Il ne date rien de ce que le service prouve</b>, et n'entre donc pas au <c>EvidenceLog</c> :
-  /// prendre le paquet n'est pas remettre, et confondre les deux ferait dater la preuve du moment où
-  /// un fichier a quitté un serveur. Ce qu'il sert est la <b>file</b> — une remise commencée et non
-  /// déclarée doit rester une ligne vue tous les jours, plutôt qu'une ligne manquante.
+  /// <b>Il ne date rien de ce que le service prouve</b>, et n'entre donc pas au
+  /// <c>EvidenceLog</c> : prendre le paquet n'est pas remettre, et confondre les deux ferait dater
+  /// la preuve du moment où un fichier a quitté un serveur. Ce qu'il sert est le <b>tableau des
+  /// demandes RGPD</b> — une remise commencée et non déclarée doit rester une ligne vue tous les
+  /// jours, plutôt qu'une ligne manquante.
   /// </para>
   /// <para>
-  /// <b>Le premier instant est gardé, jamais le dernier.</b> Reprendre le paquet ne défait pas qu'un
-  /// exemplaire soit déjà hors de portée pour toujours, et réécrire la date ferait mentir la file sur
-  /// le jour où cela a commencé.
+  /// <b>Le premier instant est gardé, jamais le dernier.</b> Reprendre le paquet ne défait pas
+  /// qu'un exemplaire soit déjà hors de portée pour toujours, et réécrire la date ferait mentir le
+  /// tableau des demandes RGPD sur le jour où cela a commencé.
   /// </para>
   /// </remarks>
   public DateTimeOffset? DeliveryTakenOn { get; private set; }
@@ -202,9 +203,9 @@ public sealed class Claim
   public DateTimeOffset? DeliveryDeclaredOn { get; private set; }
 
   /// <summary>
-  /// Le paquet est-il sorti sans que personne n'ait déclaré la remise ? C'est la colonne que la file
-  /// porte sur une ligne <b>déjà présente</b> : elle trie et rappelle, elle ne fait apparaître aucun
-  /// dossier.
+  /// Le paquet est-il sorti sans que personne n'ait déclaré la remise ? C'est la colonne que le
+  /// tableau des demandes RGPD porte sur une ligne <b>déjà présente</b> : elle trie et rappelle,
+  /// elle ne fait apparaître aucun dossier.
   /// </summary>
   public bool DeliveryAwaitsDeclaration => DeliveryTakenOn is not null && DeliveryDeclaredOn is null;
 

@@ -108,9 +108,9 @@ public class ExpiredEvidenceLogTests(PostgreSqlFixture postgres)
   }
 
   /// <summary>
-  /// <b>L'index de <c>case_id</c> est posé</b>, et il est le seul : c'est par lui que la file
-  /// demande quels dossiers clos portent encore une preuve, et par lui que la destruction emporte un
-  /// dossier de preuve entier.
+  /// <b>L'index de <c>case_id</c> est posé</b>, et il est le seul : c'est par lui que le tableau
+  /// des demandes RGPD demande quels dossiers clos portent encore une preuve, et par lui que la
+  /// destruction emporte un dossier de preuve entier.
   /// </summary>
   [Fact]
   public async Task IndexesTheOnlyColumnThatTheQueueAndTheDestructionEverReadBy()

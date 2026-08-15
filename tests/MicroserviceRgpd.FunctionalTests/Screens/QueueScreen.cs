@@ -6,13 +6,14 @@ using MicroserviceRgpd.Core.SharedKernel;
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
 /// <summary>
-/// L'écran de la file, exercé par sa <b>seule frontière HTTP</b>.
+/// Le tableau des demandes RGPD, exercé par sa <b>seule frontière HTTP</b>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Ce que ces tests gardent n'est pas la mise en page : c'est ce que la file <b>refuse d'offrir</b> —
-/// aucun total, aucun taux, aucun « 0 dossier en retard », aucun geste depuis la liste — et le fait
-/// qu'une échéance <b>trie</b> des lignes déjà présentes sans jamais en faire naître.
+/// Ce que ces tests gardent n'est pas la mise en page : c'est ce que le tableau des demandes RGPD
+/// <b>refuse d'offrir</b> — aucun total, aucun taux, aucun « 0 dossier en retard », aucun geste
+/// depuis la liste — et le fait qu'une échéance <b>trie</b> des lignes déjà présentes sans jamais
+/// en faire naître.
 /// </para>
 /// <para>
 /// ⚠️ Le test le plus important de ce fichier n'est pas celui du chemin heureux : c'est
@@ -27,8 +28,8 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   private readonly OperatorSurface _surface = new(factory);
 
   /// <summary>
-  /// <b>La file liste les dossiers ouverts, rangés par échéance</b> — et l'ordre est celui des
-  /// échéances, jamais celui de l'arrivée en base.
+  /// <b>Le tableau des demandes RGPD liste les dossiers ouverts, rangés par échéance</b> — et
+  /// l'ordre est celui des échéances, jamais celui de l'arrivée en base.
   /// </summary>
   [Fact]
   public async Task ListsTheOpenCasesInTheOrderOfTheirDeadlinesRatherThanOfTheirArrival()
@@ -41,8 +42,10 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
     var first = screen.IndexOf(older.Value.ToString(), StringComparison.Ordinal);
     var second = screen.IndexOf(recent.Value.ToString(), StringComparison.Ordinal);
 
-    first.ShouldBeGreaterThan(-1, "Le dossier le plus ancien n'apparaît pas dans la file.");
-    second.ShouldBeGreaterThan(-1, "Le dossier le plus récent n'apparaît pas dans la file.");
+    first.ShouldBeGreaterThan(
+      -1, "Le dossier le plus ancien n'apparaît pas dans le tableau des demandes RGPD.");
+    second.ShouldBeGreaterThan(
+      -1, "Le dossier le plus récent n'apparaît pas dans le tableau des demandes RGPD.");
     first.ShouldBeLessThan(second, "L'échéance la plus proche doit passer devant.");
   }
 
@@ -66,7 +69,8 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Les échéances trient les lignes déjà présentes ; aucune ne fait naître une ligne.</b> Le
-  /// dossier est ouvert, il est dans la file — dépassé ou non, le nombre de lignes est le même.
+  /// dossier est ouvert, il est dans le tableau des demandes RGPD — dépassé ou non, le nombre de
+  /// lignes est le même.
   /// </summary>
   [Fact]
   public async Task NeverMakesARowAppearBecauseADeadlinePassed()
@@ -109,9 +113,10 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La file n'offre aucun geste SUR UN DOSSIER.</b> Chaque ligne mène au dossier, et c'est là
-  /// que l'<c>Operator</c> agit : une action depuis la liste ferait signer quelqu'un sans qu'il ait
-  /// ouvert ce qu'il signe. Aucun formulaire, donc, et pas même une case à cocher.
+  /// <b>Le tableau des demandes RGPD n'offre aucun geste SUR UN DOSSIER.</b> Chaque ligne mène au
+  /// dossier, et c'est là que l'<c>Operator</c> agit : une action depuis la liste ferait signer
+  /// quelqu'un sans qu'il ait ouvert ce qu'il signe. Aucun formulaire, donc, et pas même une case à
+  /// cocher.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>L'écran porte une exception, et une seule</b> : la destruction d'un <c>EvidenceLog</c> échu,
@@ -138,9 +143,9 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// La file ne montre <b>que</b> ce qui sert à décider par quoi commencer, et jamais la personne : ni
-  /// désignation, ni nom. Le seul nom qu'un écran de liste porterait serait celui de la personne
-  /// concernée, et il n'a rien à faire sous les yeux de qui passe.
+  /// Le tableau des demandes RGPD ne montre <b>que</b> ce qui sert à décider par quoi commencer, et
+  /// jamais la personne : ni désignation, ni nom. Le seul nom qu'un écran de liste porterait serait
+  /// celui de la personne concernée, et il n'a rien à faire sous les yeux de qui passe.
   /// </summary>
   [Fact]
   public async Task NamesNobodyInTheList()
@@ -153,8 +158,9 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// La file dit sur quoi elle a calculé : <b>elle est recalculée à chaque affichage</b>. Une liste qui
-  /// ne dirait pas de quand elle date se lirait comme une vérité intemporelle.
+  /// Le tableau des demandes RGPD dit sur quoi il a calculé : <b>il est recalculé à chaque
+  /// affichage</b>. Une liste qui ne dirait pas de quand elle date se lirait comme une vérité
+  /// intemporelle.
   /// </summary>
   [Fact]
   public async Task SaysThatItIsRecomputedAtEveryDisplay()

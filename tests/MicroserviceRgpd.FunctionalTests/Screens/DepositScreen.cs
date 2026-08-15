@@ -45,8 +45,9 @@ public class DepositScreen(CustomWebApplicationFactory<Program> factory)
       SignedBy = "Claire Martin",
     });
 
-    // Le dépôt mène au dossier qu'il vient d'ouvrir, et non à la file : c'est là que ce qui manque
-    // se lit. La redirection fait aussi qu'un rechargement ne dépose pas deux fois.
+    // Le dépôt mène au dossier qu'il vient d'ouvrir, et non au tableau des demandes RGPD : c'est là
+    // que ce qui manque se lit. La redirection fait aussi qu'un rechargement ne dépose pas deux
+    // fois.
     deposited.StatusCode.ShouldBe(HttpStatusCode.Found);
 
     var screen = await _surface.ReadTextAsync(deposited.Headers.Location!.ToString());

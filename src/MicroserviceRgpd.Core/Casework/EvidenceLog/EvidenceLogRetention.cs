@@ -17,10 +17,11 @@
 /// dépendre la purge de ce qu'une minuterie ait tourné.
 /// </para>
 /// <para>
-/// ⚠️ <b>Rien de ce qui est écrit ici ne détruit quoi que ce soit.</b> L'échéance fait <b>naître une
-/// ligne</b> dans une section propre de l'écran de la file — la seule échéance du dispositif à faire
-/// naître une ligne — où un humain détruit d'un geste délibéré. Un <c>Operator</c> inactif garde
-/// au-delà de cinq ans : c'est un coût assumé, visible, et jamais barré.
+/// ⚠️ <b>Rien de ce qui est écrit ici ne détruit quoi que ce soit.</b> L'échéance fait <b>naître
+/// une ligne</b> dans une section propre du tableau des demandes RGPD — la seule échéance du
+/// dispositif à faire naître une ligne — où un humain détruit d'un geste délibéré. Un
+/// <c>Operator</c> inactif garde au-delà de cinq ans : c'est un coût assumé, visible, et jamais
+/// barré.
 /// </para>
 /// </remarks>
 public static class EvidenceLogRetention

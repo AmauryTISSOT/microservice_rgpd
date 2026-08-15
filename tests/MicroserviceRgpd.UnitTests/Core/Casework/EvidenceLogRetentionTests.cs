@@ -12,8 +12,9 @@ namespace MicroserviceRgpd.UnitTests.Core.Casework;
 /// preuve vit aussi longtemps que l'action qu'elle sert à défendre, ni plus, ni moins.
 /// </para>
 /// <para>
-/// ⚠️ <b>L'échéance ne détruit rien.</b> Elle fait <b>naître une ligne</b> à l'écran de la file, où
-/// un humain détruit d'un geste délibéré : rien ne tourne, donc rien ne peut purger en silence.
+/// ⚠️ <b>L'échéance ne détruit rien.</b> Elle fait <b>naître une ligne</b> sur le tableau des
+/// demandes RGPD, où un humain détruit d'un geste délibéré : rien ne tourne, donc rien ne peut
+/// purger en silence.
 /// </para>
 /// </remarks>
 public class EvidenceLogRetentionTests
