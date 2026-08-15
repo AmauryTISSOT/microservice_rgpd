@@ -24,8 +24,14 @@ internal sealed record ChromeEntryPoint(string Label, string Address)
 /// <remarks>
 /// <para>
 /// ⚠️ <b>Trois entrées, et pas une quatrième.</b> L'historique des dépistages n'en est pas une : il
-/// s'atteint depuis le rapport courant, et une barre à trois entrées se lit d'un coup d'œil quand
-/// une barre à quatre se parcourt.
+/// s'atteint depuis le rapport courant, et une barre à trois entrées se parcourt moins qu'une barre
+/// à quatre.
+/// </para>
+/// <para>
+/// La clause « une barre à trois entrées se lit d'un coup d'œil » ne tient plus telle quelle, et
+/// elle est érodée <b>en connaissance de cause</b> : les trois libellés portent leur forme pleine,
+/// et la barre <b>passera à la ligne</b> sur un écran étroit. Elle est en <c>flex-wrap</c>, donc
+/// rien ne s'y déforme — c'est le prix accepté pour des noms qui disent ce qu'ils mènent.
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucun compteur, aucun badge numérique</b>, et il ne doit jamais y en avoir. La règle des
@@ -40,13 +46,15 @@ internal static class ChromeNavigation
   internal const string ServiceName = "Droits des personnes concernées";
 
   /// <summary>
-  /// Les trois points d'entrée, dans l'ordre où la barre les pose : le travail à instruire, le
-  /// paysage sur lequel on l'instruit, et le temps d'avant.
+  /// Les trois points d'entrée, dans <b>l'ordre de mise en route</b> : on configure, puis on
+  /// détecte, puis on traite les demandes. La position apprend ce qu'aucun nom ne dit — que rien ne
+  /// fonctionne dans le service tant que l'<c>Operator</c> n'a pas déclaré ses systèmes et les
+  /// adresses de leurs <c>Adapter</c>.
   /// </summary>
   internal static IReadOnlyList<ChromeEntryPoint> EntryPoints { get; } =
   [
-    new("La file", "/dossiers"),
-    new("Le paysage déclaré", "/manifest"),
-    new("Le dépistage", "/depistage"),
+    new("Configuration du microservice RGPD", "/manifest"),
+    new("Détection des données personnelles", "/depistage"),
+    new("Tableau des demandes RGPD", "/dossiers"),
   ];
 }
