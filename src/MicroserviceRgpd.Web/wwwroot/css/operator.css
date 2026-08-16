@@ -195,10 +195,6 @@ nav.chrome {
   padding: var(--space-md) var(--space-lg);
 }
 
-nav.chrome .wordmark {
-  font-weight: var(--weight-semibold);
-}
-
 nav.chrome ul {
   display: flex;
   flex-wrap: wrap;
@@ -219,6 +215,21 @@ nav.chrome a {
 nav.chrome a.current {
   color: var(--accent);
   font-weight: var(--weight-semibold);
+}
+
+/*
+  LE NOM DU SERVICE EST DEVENU UN LIEN — le chemin du retour à l'accueil, depuis n'importe quel
+  écran, et sans quatrième entrée dans la barre. Il ne doit pas pour autant SE LIRE comme une entrée
+  de plus : il garde l'encre et le corps qu'il portait quand il était inerte, là où les trois entrées
+  se posent en corps petit sur l'encre secondaire. Cette règle vient après la règle générale des
+  liens de la barre, qu'elle défait par le corps et par l'encre — jamais par le soulignement, que
+  toute la barre a déjà ôté.
+*/
+nav.chrome a.wordmark {
+  color: var(--ink);
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--type-body-md-tracking);
 }
 
 h1 {
@@ -249,8 +260,14 @@ h2 {
   — LA TABLE D'ARBITRAGE COLONNE PAR COLONNE (`table.queue.columns`) porte jusqu'à plusieurs
     milliers de lignes, et les marges normales du service y feraient déjà une table haute de cent
     écrans. Une carte en ajouterait encore.
+
+  ⚠️ LA PORTE DE L'ACCUEIL (`a.doorway`) EST DE LA LISTE, et elle y est plutôt que recopiée plus
+  bas : elle reprend LA PEAU de la carte et n'en change que la NATURE — la carte entière est un
+  lien. Deux jeux de déclarations auraient divergé au premier rayon retouché, et l'accueil aurait
+  alors porté des cartes qui ne sont plus tout à fait celles du service.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
+a.doorway,
 .caveat,
 .claim,
 .clause,
@@ -554,6 +571,90 @@ td.ruling button {
 
 .clause p {
   margin: var(--space-xxs) 0;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES TROIS PORTES DE L'ACCUEIL. La carte reprend LA PEAU de la carte du service — même fond, même
+  filet, même rayon, même marge — mais elle en CHANGE LA NATURE : la carte entière est un lien.
+  C'est une porte, on pousse la porte entière.
+
+  ⚠️ C'EST LE PREMIER ÉTAT INTERACTIF STYLÉ DU SERVICE, et c'est une EXTENSION DU DESIGN LANGUAGE
+  consignée dans l'ADR-0006 — pas un effet de bord. Ce que l'extension autorise, et rien de plus :
+  le survol passe le filet à l'accent, et le focus visible pose un contour d'accent avec décalage.
+  PAS D'OMBRE, PAS D'ÉLÉVATION, PAS DE TRANSLATION, PAS DE TRANSITION : un écran d'instruction ne
+  doit pas bouger sous la souris.
+
+  Aucun token nouveau, aucune valeur nouvelle sur `:root` — tout sort de l'existant.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.doorways {
+  display: grid;
+  gap: var(--space-lg);
+
+  /*
+    ⚠️ LA BORNE DIFFÈRE DE CELLE DE `.clause`, ET C'EST LA RAISON D'ÊTRE DE CETTE LIGNE : à 20rem,
+    trois portes ne tiennent que DEUX colonnes dans la largeur utile du `main`, et la troisième
+    tombe seule sur une ligne. Ce n'est pas un token — c'est un nombre écrit dans une règle, comme
+    les autres largeurs d'exception de cette feuille.
+
+    Aucune requête média : trois colonnes, puis deux, puis une, selon la place.
+  */
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+
+  /*
+    La marge de la carte du service est portée ICI plutôt que sur chaque porte : posée sur les
+    éléments d'une grille, elle se serait ajoutée à l'écart entre les colonnes — d'où le `margin: 0`
+    que les portes reprennent à la peau de la carte.
+  */
+  margin: var(--space-lg) 0;
+}
+
+/* Ce que la porte CHANGE à la peau de la carte, et rien de plus : elle est un lien de bloc. */
+a.doorway {
+  color: inherit;
+  display: block;
+  margin: 0;
+  text-decoration: none;
+}
+
+/* LE SURVOL PASSE LE FILET À L'ACCENT, ET RIEN D'AUTRE. */
+a.doorway:hover {
+  border-color: var(--accent);
+}
+
+/*
+  LE FOCUS SE VOIT, et il se voit AUTREMENT que le survol : un contour posé à côté du filet, avec
+  décalage. `:focus-visible` plutôt que `:focus` — la porte poussée à la souris n'a pas à garder un
+  contour après le clic.
+*/
+a.doorway:focus-visible {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: var(--space-xxs);
+}
+
+/*
+  Le nom prend le rôle de titre 3 avec son crénage, et ses marges tombent à zéro : le titre de
+  niveau 2 de cette feuille porte une grande marge haute, faite pour séparer deux sections d'un
+  écran long, qui décollerait ici le nom du haut de sa carte.
+*/
+a.doorway h2 {
+  font: var(--type-heading-3);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0 0 var(--space-xxs);
+}
+
+/*
+  La phrase prend le rôle de corps petit sur l'encre estompée. C'est `--ink-muted` et non
+  `--ink-faint` : celle-ci est la plus pâle des quatre encres et ne tient pas le seuil de contraste
+  d'un texte qui se lit — la teinte estompée d'un paragraphe entier, dans cette feuille, est celle
+  que `.hint` emploie déjà.
+*/
+a.doorway p {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  margin: 0;
 }
 
 /*

@@ -24,7 +24,13 @@
     est une régression d'accessibilité par rapport à l'état d'avant, où aucune barre n'existait.
   *@
   <nav class="chrome">
-    <span class="wordmark">@ChromeNavigation.ServiceName</span>
+    @*
+      LE NOM DU SERVICE EST LE CHEMIN DU RETOUR, et c'est ce qui donne l'accueil depuis n'importe
+      quel écran SANS QUATRIÈME ENTRÉE : le texte inerte devient un lien plutôt qu'un lien de plus.
+      Il reste hors de la liste — il n'est pas un point d'entrée, et il ne se marque jamais comme
+      l'écran courant.
+    *@
+    <a class="wordmark" href="@ChromeNavigation.Doorstep">@ChromeNavigation.ServiceName</a>
 
     <ul>
       @foreach (var entryPoint in ChromeNavigation.EntryPoints)

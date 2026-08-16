@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace MicroserviceRgpd.FunctionalTests.Chrome;
 
 /// <summary>
-/// Le chrome partagé des onze écrans de la surface : une feuille de style et une police que <b>le service sert
+/// Le chrome partagé des douze écrans de la surface : une feuille de style et une police que <b>le service sert
 /// lui-même</b>, et aucune ressource tierce.
 /// </summary>
 /// <remarks>
@@ -156,7 +156,10 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
     {
       var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
 
-      ChromeSurface.LinksIn(bar)
+      // ⚠️ La liste est lue SEULE, sans le nom du service qui la précède : celui-ci mène à
+      // l'accueil sans être une entrée, et lire la barre entière ferait passer le retour à
+      // l'accueil pour une quatrième entrée — c'est-à-dire l'inverse de ce que ce test garde.
+      ChromeSurface.LinksIn(ChromeSurface.EntryPointListIn(bar))
         .Select(link => link.Address)
         .ShouldBe(ChromeSurface.EntryPoints, $"La barre de l'écran {screen} n'offre pas les trois points d'entrée, et eux seuls.");
     }
@@ -164,7 +167,8 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Le lien de l'écran courant est marqué</b>, et lui seul : sans cela, la barre dit où l'on
-  /// peut aller sans jamais dire où l'on est.
+  /// peut aller sans jamais dire où l'on est. ⚠️ <b>Sauf sur l'accueil</b>, qui ne relève d'aucun
+  /// des trois points d'entrée et n'en marque donc aucun.
   /// </summary>
   [Fact]
   public async Task MarksTheLinkOfTheCurrentScreen()
@@ -175,25 +179,28 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
 
       links.Where(link => link.IsCurrent)
         .Select(link => link.Address)
-        .ShouldBe([ChromeSurface.EntryPointOf(screen)], $"La barre de l'écran {screen} ne marque pas le bon lien, ou en marque plusieurs.");
+        .ShouldBe(ChromeSurface.MarkedEntryPointsOn(screen), $"La barre de l'écran {screen} ne marque pas le bon lien, ou en marque plusieurs.");
     }
   }
 
   /// <summary>
-  /// <b>La barre porte le nom du service</b> — ce qu'on lit avant les trois liens, et le seul texte
-  /// de la barre qui ne mène nulle part.
+  /// <b>La barre porte le nom du service, et il mène à l'accueil</b> — depuis n'importe quel écran.
+  /// C'est le retour à la porte, et il est obtenu <b>sans quatrième entrée</b> : le texte inerte
+  /// devient un lien plutôt qu'un lien de plus.
   /// </summary>
   [Fact]
-  public async Task NamesTheServiceInTheBar()
+  public async Task NamesTheServiceInTheBarAndLeadsBackToTheDoorstep()
   {
     foreach (var screen in await _chrome.ScreensAsync())
     {
       var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
+      var wordmark = ChromeSurface.WordmarkIn(bar);
 
-      bar.ShouldContain(
-        ChromeSurface.ServiceName,
-        Case.Sensitive,
-        $"La barre de l'écran {screen} ne nomme pas le service.");
+      wordmark.Text.ShouldBe(
+        ChromeSurface.ServiceName, $"La barre de l'écran {screen} ne nomme pas le service.");
+
+      wordmark.Address.ShouldBe(
+        ChromeSurface.Doorstep, $"Le nom du service ne ramène pas à l'accueil depuis l'écran {screen}.");
     }
   }
 
@@ -201,7 +208,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// ⚠️ <b>AUCUN CHIFFRE DANS LA BARRE</b>, ni compteur ni badge. La règle des chiffres que le
   /// tableau des demandes RGPD applique — un « 0 dossier en retard » se lit comme une mesure
   /// rassurante là où la phrase dit ce qu'elle est — vaut aussi pour une barre qu'on lit sur les
-  /// onze écrans sans jamais l'ouvrir.
+  /// douze écrans sans jamais l'ouvrir.
   /// </summary>
   [Fact]
   public async Task CarriesNoTallyInTheBar()
@@ -275,7 +282,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// le service n'a pas ; le second est une décision explicite du demandeur.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les onze écrans sans moyen de la
+  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les douze écrans sans moyen de la
   /// sauter au clavier, ce qui est une régression d'accessibilité par rapport à l'état d'avant, où
   /// aucune barre n'existait. Aucun chantier d'accessibilité n'est ouvert ici.
   /// </remarks>

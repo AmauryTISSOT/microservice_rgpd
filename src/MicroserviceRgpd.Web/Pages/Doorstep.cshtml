@@ -1,0 +1,42 @@
+@page "/"
+@{
+  ViewData["Title"] = "Accueil";
+}
+
+@*
+  LA PORTE DU SERVICE. Un humain qui tape l'adresse du service ne reçoit plus un 404 en
+  `application/problem+json` en pleine figure : il arrive sur un écran qui dit ce qu'est ce service
+  et par quoi commencer.
+
+  ⚠️ CET ÉCRAN NE RELÈVE NI DU CASEWORK NI DU SCREENING : il est du LAYOUT, au même titre que la
+  barre — d'où sa place à la racine des pages, et non dans un dossier de contexte. Il ne connaît
+  aucun agrégat, n'appelle aucun geste, et ne porte donc AUCUN PageModel : il n'a rien à charger.
+
+  ⚠️ AUCUN CHIFFRE, AUCUN COMPTEUR, AUCUN BADGE. Un « 0 dossier en retard » ne doit jamais rassurer
+  à tort, et c'est d'autant plus vrai sur l'écran qu'on lit avant tous les autres. La seule
+  dérogation est étroite et nommée : les références d'articles du RGPD de la phrase ci-dessous, qui
+  ne sont ni un compteur ni une mesure du service.
+*@
+<h1>@ChromeNavigation.ServiceName</h1>
+
+<p>@ChromeNavigation.Presentation</p>
+
+<div class="doorways">
+  @foreach (var entryPoint in ChromeNavigation.EntryPoints)
+  {
+    @*
+      LA CARTE ENTIÈRE EST UN LIEN : c'est une porte, on pousse la porte entière. Pas un `div`
+      cliquable, pas de `role`, pas de `tabindex` — un lien est déjà un lien —, et AUCUNE CIBLE
+      SECONDAIRE à l'intérieur : un second lien dans la carte ferait deux choses à pousser là où
+      l'écran n'en montre qu'une.
+
+      L'ORDRE EST CELUI DE LA BARRE, et il vient de la même liste : on configure, puis on détecte,
+      puis on traite les demandes. Deux listes se seraient décalées d'un cran un jour, et l'accueil
+      aurait dit d'une porte ce qui se trouve derrière une autre.
+    *@
+    <a class="doorway" href="@entryPoint.Address">
+      <h2>@entryPoint.Label</h2>
+      <p>@entryPoint.DoorwaySentence</p>
+    </a>
+  }
+</div>
