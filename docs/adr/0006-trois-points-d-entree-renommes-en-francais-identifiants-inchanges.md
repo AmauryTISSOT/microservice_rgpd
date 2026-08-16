@@ -523,10 +523,18 @@ le voit* — redevient entier.
 
 **Le retrait de « dépistage » n'a plus de mécanisme.** La section ci-dessus dit que ce retrait
 « passe par `RetiredVocabularyTests.RetiredTerms` ». Il ne passe plus par rien : il tient aux
-tests d'écran, qui gèlent les libellés qu'ils vérifient, et à la relecture. Deux emplois du mot
-étaient encore vivants au moment de la suppression et le restent — un commentaire Razor de
-`Table.cshtml` (relevant de #222) et neuf fichiers d'`exploration/`, seize occurrences, qu'aucun
-ticket ne couvrait.
+tests d'écran, qui gèlent les libellés qu'ils vérifient, et à la relecture.
+
+⚠️ **Et la relecture seule a déjà laissé passer un emploi.** Le renommage du vocabulaire d'écran du
+contexte de détection a été livré et clos le 2026-08-16 — le jour même de cette suite —, et
+`Table.cshtml:270` porte toujours, dans un commentaire Razor, le mot **crié en majuscules** :
+*« un constat sur le DÉPISTAGE, jamais sur la donnée »*. C'est **exactement** le cas que le garde
+citait pour justifier qu'il cherche sans égard à la casse, et exactement le cas qu'une relecture
+humaine ne voit pas — un commentaire, invisible à l'écran comme au compilateur. Il a survécu au
+ticket qui devait l'emporter, et plus rien ne le signale.
+
+Restent donc vivants : ce commentaire, et neuf fichiers d'`exploration/` — seize occurrences —
+qu'aucun ticket ne couvrait.
 
 **Ce qui reste vrai et ne dépendait pas du garde :**
 
