@@ -64,6 +64,62 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   internal const string ServiceName = "Droits des personnes concernées";
 
   /// <summary>
+  /// <b>L'accueil</b> — la porte du service, à la racine. Ce n'est le point d'entrée d'aucun
+  /// contexte : c'est du layout, au même titre que la barre.
+  /// </summary>
+  internal const string Doorstep = "/";
+
+  /// <summary>
+  /// <b>La phrase de présentation du seuil</b>, gelée mot pour mot : registre juridique, troisième
+  /// personne, et une énumération d'articles <b>non contiguë</b> — la taxonomie du code est fermée à
+  /// six droits et exclut l'art. 22, si bien qu'« articles 15 à 21 » promettrait un droit que le
+  /// service refuse.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Recopiée à dessein</b>, comme <see cref="EntryPoints"/> : un test qui lirait la constante
+  /// qu'il vérifie passerait encore le jour où la phrase se défait.
+  /// </remarks>
+  internal const string Presentation =
+    "Ce service instruit les demandes par lesquelles une personne concernée exerce les six droits " +
+    "prévus aux articles 15 à 18, 20 et 21 du RGPD. Il sert aussi, avant toute demande, à présumer " +
+    "les données qu'un système détient.";
+
+  /// <summary>
+  /// <b>Les trois portes de l'accueil</b>, dans l'ordre de mise en route, chacune avec le nom
+  /// qu'elle porte, la phrase qu'elle dit et l'adresse où elle mène.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Recopiées à dessein</b>, elles aussi. Les phrases sont gelées : deuxième personne,
+  /// parallèles sur « Vous y + verbe », et <b>sans un chiffre</b>.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>La troisième n'a qu'une phrase, délibérément.</b> « Lire » est le seul des trois verbes
+  /// qui ne soit pas un geste, et la brièveté dit par sa forme qu'on ne pose rien sur cet écran. Le
+  /// parallélisme ne doit pas être « rétabli ».
+  /// </para>
+  /// </remarks>
+  internal static readonly IReadOnlyList<(string Name, string Sentence, string Address)> Doorways =
+  [
+    (
+      "Configuration du microservice RGPD",
+      "Vous y déclarez, à la main et un par un, les systèmes où vivent des données personnelles. " +
+      "Le service ne connaît que ceux que vous y inscrivez, et rien ne garantit qu'il n'en existe " +
+      "pas d'autres.",
+      "/manifest"),
+    (
+      "Détection des données personnelles",
+      "Vous y collez un schéma de base de données, et le service signale les colonnes susceptibles " +
+      "de porter des données personnelles. Il lit des noms de tables et de colonnes, jamais une " +
+      "valeur ; vous tranchez, ligne par ligne.",
+      "/detection"),
+    (
+      "Tableau des demandes RGPD",
+      "Vous y lisez les demandes RGPD en cours, rangées par échéance.",
+      "/dossiers"),
+  ];
+
+  /// <summary>
   /// <b>Les six adresses que le contexte de détection a quittées</b>, et qui <b>meurent en 404, sans
   /// redirection</b>. Une redirection serait un second nom vivant pour la même chose : l'ancien mot
   /// survivrait dans les signets, les liens collés et les barres d'adresse, et la surface porterait
@@ -116,9 +172,10 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
   /// <summary>
-  /// <b>Les onze adresses de la surface de l'<c>Operator</c></b>, l'état de chacune posé par le
-  /// chemin que le domaine autorise — un dépôt manuel pour le dossier, une déclaration pour la
-  /// reprise, deux dépôts de relevé pour qu'il existe un rapport courant et un rapport archivé.
+  /// <b>Les douze adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de
+  /// chacune posé par le chemin que le domaine autorise — un dépôt manuel pour le dossier, une
+  /// déclaration pour la reprise, deux dépôts de relevé pour qu'il existe un rapport courant et un
+  /// rapport archivé.
   /// </summary>
   internal async Task<IReadOnlyList<string>> ScreensAsync()
   {
@@ -128,6 +185,7 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
 
     return
     [
+      Doorstep,
       Queue,
       CaseDeposit,
       $"{Queue}/{opened}",
@@ -194,6 +252,98 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
     bar.Success.ShouldBeTrue("La page rendue ne porte aucune barre de navigation.");
 
     return bar.Groups[1].Value;
+  }
+
+  /// <summary>
+  /// Le <b>nom du service</b> tel que la barre le porte : ce qu'on lit, et l'adresse où il mène. Il
+  /// est le premier lien de la barre <b>sans en être une entrée</b> — c'est ce qui donne le retour à
+  /// l'accueil depuis n'importe quel écran sans ajouter une quatrième entrée.
+  /// </summary>
+  internal static (string Address, string Text) WordmarkIn(string bar)
+  {
+    var wordmark = Regex.Match(bar, @"<a\b([^>]*)>(.*?)</a>", RegexOptions.Singleline);
+
+    wordmark.Success.ShouldBeTrue("La barre ne porte aucun lien.");
+
+    return (
+      Regex.Match(wordmark.Groups[1].Value, @"\bhref=""([^""]*)""").Groups[1].Value,
+      TextIn(wordmark.Groups[2].Value));
+  }
+
+  /// <summary>
+  /// <b>La liste des points d'entrée</b>, isolée du nom du service qui la précède : la barre porte
+  /// un lien de plus qu'elle n'a d'entrées, et confondre les deux ferait passer un quatrième point
+  /// d'entrée pour le retour à l'accueil.
+  /// </summary>
+  internal static string EntryPointListIn(string bar)
+  {
+    var list = Regex.Match(bar, @"<ul\b[^>]*>(.*?)</ul>", RegexOptions.Singleline);
+
+    list.Success.ShouldBeTrue("La barre ne porte aucune liste de points d'entrée.");
+
+    return list.Groups[1].Value;
+  }
+
+  /// <summary>
+  /// Le point d'entrée que la barre doit <b>marquer</b> sur un écran : un seul, sauf sur l'accueil,
+  /// qui ne relève d'aucun des trois et n'en marque donc <b>aucun</b> — marquer une entrée là
+  /// reviendrait à dire qu'on est déjà dans ce que la porte ouvre.
+  /// </summary>
+  internal static IReadOnlyList<string> MarkedEntryPointsOn(string screen)
+  {
+    return screen == Doorstep ? [] : [EntryPointOf(screen)];
+  }
+
+  /// <summary>
+  /// <b>Ce qu'un fragment rendu donne à LIRE</b> : le balisage retiré, les entités rendues à leur
+  /// caractère, et les blancs du gabarit ramenés à un espace.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Sans cela, une phrase gelée ne serait comparable qu'à condition de tenir sur une seule ligne
+  /// du gabarit, et une apostrophe — que l'encodeur écrit <c>&amp;#x27;</c> — ferait échouer la
+  /// comparaison sur un texte que l'humain lit pourtant mot pour mot.
+  /// </remarks>
+  internal static string TextIn(string fragment)
+  {
+    var stripped = Regex.Replace(fragment, "<!--.*?-->", " ", RegexOptions.Singleline);
+
+    stripped = Regex.Replace(stripped, "<[^>]*>", " ");
+
+    return Regex.Replace(WebUtility.HtmlDecode(stripped), @"\s+", " ").Trim();
+  }
+
+  /// <summary>Le contenu du <c>main</c> d'une page rendue — l'écran lui-même, sans son chrome.</summary>
+  internal static string MainOf(string rendered)
+  {
+    var main = Regex.Match(rendered, @"<main\b[^>]*>(.*?)</main>", RegexOptions.Singleline);
+
+    main.Success.ShouldBeTrue("La page rendue ne porte aucun main.");
+
+    return main.Groups[1].Value;
+  }
+
+  /// <summary>
+  /// Les <b>liens de bloc</b> d'un fragment rendu : chacun avec l'adresse où il mène, ses attributs
+  /// et ce qu'il enveloppe.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Un lien IMBRIQUÉ ne ressort pas ici comme un lien de plus</b>, et c'est une propriété de
+  /// la lecture, pas un oubli : la fermeture est prise <b>au plus court</b>, si bien que le lien
+  /// intérieur est avalé dans le contenu du lien extérieur et que le compte reste le même. Un lien
+  /// posé <b>à côté</b>, lui, ressort. Qui garde l'absence de cible secondaire doit donc regarder
+  /// <b>aussi</b> ce que le contenu porte — le compte seul se tairait.
+  /// </remarks>
+  internal static IReadOnlyList<(string Address, string Attributes, string Contents)> LinkBlocksIn(string fragment)
+  {
+    return
+    [
+      .. Regex.Matches(fragment, @"<a\b([^>]*)>(.*?)</a>", RegexOptions.Singleline).Select(link =>
+      (
+        Address: Regex.Match(link.Groups[1].Value, @"\bhref=""([^""]*)""").Groups[1].Value,
+        Attributes: link.Groups[1].Value,
+        Contents: link.Groups[2].Value
+      )),
+    ];
   }
 
   /// <summary>
