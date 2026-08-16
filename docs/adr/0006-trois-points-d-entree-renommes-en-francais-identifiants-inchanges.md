@@ -499,3 +499,43 @@ média** — le premier écran à sortir de la colonne unique le fait sans intro
   ne sont ni un compteur ni une mesure du service.
 - **La construction elle-même**, qui est spécifiée par l'issue `ready-for-agent` qui accompagne cet
   ADR.
+
+## Suite — le garde de vocabulaire retiré a été supprimé (2026-08-16)
+
+⚠️ **`RetiredVocabularyTests` n'existe plus.** Le test a été retiré du dépôt le 2026-08-16, sur
+décision du demandeur, le lendemain de cet ADR. **Deux passages ci-dessus décrivent donc un
+dispositif qui n'existe plus**, et sont laissés tels quels parce qu'un ADR acté ne se réécrit pas :
+
+- **« Ce que les ADR actés gardent, et l'exemption qui le permet »** — tout ce qui y est dit du
+  balayage, de la table `RetiredTerms` et de l'exemption `docs/adr/` est **sans objet**. Plus rien ne
+  balaie, donc plus rien n'a besoin d'être exempté.
+- **Conséquences → « Ce qu'on paie »**, la ligne *« Un garde acquiert une exemption : `docs/adr/`
+  sort du balayage du vocabulaire retiré »* — le coût annoncé n'a pas été payé, faute de garde.
+
+**Ce que la suppression emporte réellement.** Le garde était le **seul test du dépôt à chercher des
+mots dans de la prose**. Les autres gardes d'architecture — `ContextIsolationTests`,
+`NothingRunsInTheBackgroundTests`, `ContextlessTypeTests` — lisent le **code compilé**, où le
+compilateur sert déjà de second filet ; `ContextRosterTests` vérifie une présence, pas une absence.
+Les **dix clauses de doctrine** qui n'existent que dans la documentation, les ADR, les commentaires
+XML et les messages d'échec de test n'ont donc **plus aucune surveillance**. Le risque que le garde
+avait été écrit pour couvrir — *le vocabulaire se défait ligne à ligne au fil des PR, et personne ne
+le voit* — redevient entier.
+
+**Le retrait de « dépistage » n'a plus de mécanisme.** La section ci-dessus dit que ce retrait
+« passe par `RetiredVocabularyTests.RetiredTerms` ». Il ne passe plus par rien : il tient aux
+tests d'écran, qui gèlent les libellés qu'ils vérifient, et à la relecture. Deux emplois du mot
+étaient encore vivants au moment de la suppression et le restent — un commentaire Razor de
+`Table.cshtml` (relevant de #222) et neuf fichiers d'`exploration/`, seize occurrences, qu'aucun
+ticket ne couvrait.
+
+**Ce qui reste vrai et ne dépendait pas du garde :**
+
+- **L'équivalence de lecture**, énoncée plus haut : « dépistage » dans un ADR d'avant le 2026-08-15
+  désigne ce que l'interface appelle « Détection des données personnelles », et « paysage déclaré »
+  ce qu'elle appelle « Configuration du microservice RGPD ». C'est une **clé de lecture**, pas un
+  mécanisme — elle vaut indépendamment de tout test.
+- **Le motif de fond de l'exemption** : un ADR acté décrit une décision datée et parle avec les mots
+  de sa date. Il ne cesse pas d'être vrai parce que plus rien ne l'applique, et il redeviendra la
+  règle si un garde équivalent est un jour réécrit.
+- **Le tableau des mots bloqués** et les réserves de vocabulaire : ce sont des relevés, pas des
+  gardes.
