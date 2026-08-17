@@ -83,8 +83,7 @@ quels : on écrit « la `Qualification` », « le `EvidenceLog` ».
 
 Deux termes sont vrais des trois côtés à la fois, et ils sont écrits ici plutôt que dupliqués dans
 les trois glossaires — une doctrine tenue partout doit être écrite **une fois, au-dessus**, sinon
-elle n'est tenue nulle part. Le premier est une posture ; le second n'est qu'un numéro, mais il
-porte un mot que deux glossaires réservent déjà à autre chose.
+elle n'est tenue nulle part.
 
 **Aide à la décision** :
 La posture du service, sur toute sa durée : il propose, recense, rappelle et prouve ; il ne tranche
@@ -112,18 +111,18 @@ part ailleurs**.
 **Version du produit** :
 La version de l'application `MicroserviceRgpd.Web` — seule UI et seule API du produit —, celle qui
 s'affiche à droite de la barre de navigation sous la forme `v0.1.0` et se journalise au démarrage.
-Déclarée une fois dans la configuration de build partagée, lue depuis l'assemblage compilé, identique
-dans tous les environnements : elle nomme *ce que l'on voit à l'écran*, et rien d'autre.
+Déclarée une seule fois, identique dans tous les environnements, elle nomme *ce que l'on voit à
+l'écran*, et rien d'autre.
 _Avoid_ : version du moteur, version du modèle, version d'API, version du sidecar, build, révision,
 SHA
-⚠️ **Le mot « version » est déjà pris deux fois dans le dépôt, et jamais pour le produit.** Chez
-`Qualification` et `Screening`, il vit dans `QualificationEngineIdentity` et
-`ScreeningEngineIdentity` : c'est la version qu'un *moteur* joint à l'avis ou au rapport qu'il a
-produit — celle de ses règles, celle du modèle servi —, réservée à la provenance, jamais publique,
-et que le domaine n'interprète pas. La version du produit, elle, est publique par construction et ne
-dit rien d'aucun moteur : un bump du produit ne change pas l'identité d'un moteur, et une nouvelle
-version de lexique ou de modèle ne bump pas le produit. Les deux ne se lisent ni ne se dérivent l'une
-de l'autre.
+⚠️ **Le dépôt connaît déjà une autre version, et elle n'est pas celle du produit.**
+`QualificationEngineIdentity` et `ScreeningEngineIdentity` sont le nom et la version qu'un *moteur*
+joint à l'avis ou au rapport qu'il a produit — celle de ses règles, celle du modèle servi —,
+réservées à la provenance, jamais publiques, et que le domaine n'interprète pas ; le glossaire de
+`Screening` va jusqu'à mettre « version » en `_Avoid_` de cette entrée, précisément pour que le mot
+ne nomme pas le concept. La version du produit, elle, est publique par construction et ne dit rien
+d'aucun moteur : un bump du produit ne change pas l'identité d'un moteur, et une nouvelle version de
+lexique ou de modèle ne bump pas le produit. Les deux ne se lisent ni ne se dérivent l'une de l'autre.
 ⚠️ Elle est tout aussi distincte des versions de **contrat**, qui gardent chacune leur cadence : le
 `v1` du document Swagger/Scalar est la version du contrat HTTP de l'API, et le sidecar porte les
 siennes — contrat HTTP, moteur lexical. On peut livrer `v0.2.0` sans toucher au `v1`, et l'inverse.
