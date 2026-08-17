@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using MicroserviceRgpd.FunctionalTests.Layout;
 
 namespace MicroserviceRgpd.FunctionalTests.Screenings;
 
@@ -70,8 +71,15 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("email", position: 2));
 
     // Aucune case, aucun sélecteur : la surface ne propose rien à cocher ni à choisir.
-    table.ShouldNotContain("<select");
-    table.ShouldNotContain("type=\"checkbox\"");
+    //
+    // ⚠️ LE BALAYAGE PORTE SUR LE `main`, ET NON SUR LA PAGE ENTIÈRE. Le layout partagé pose depuis
+    // le panneau latéral une case à cocher dans chaque page — celle qui porte l'état du repli, et
+    // qui n'a rien à voir avec les colonnes. Balayer la page entière ferait échouer ce test sur une
+    // case qui n'est pas une commande de cet écran ; ce qu'il garde est ce que l'ÉCRAN propose.
+    var content = LayoutSurface.MainOf(table);
+
+    content.ShouldNotContain("<select");
+    content.ShouldNotContain("type=\"checkbox\"");
 
     // ⚠️ Les SEULS formulaires de l'écran sont les arbitrages — un par ligne, plus le geste de lot —
     // et aucun ne masque quoi que ce soit. Interdire tout <form> était tenable tant que l'écran

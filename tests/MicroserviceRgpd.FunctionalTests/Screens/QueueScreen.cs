@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.FunctionalTests.Layout;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
@@ -134,7 +135,12 @@ public class QueueScreen(CustomWebApplicationFactory<Program> factory)
 
     // La liste des dossiers s'arrête là où commence la section des EvidenceLog échus, et tout ce qui
     // précède ce titre est ce qu'un Operator lit en cherchant par quel dossier commencer.
-    var cases = screen[..screen.IndexOf("À détruire", StringComparison.Ordinal)];
+    //
+    // ⚠️ LE DÉCOUPAGE PART DU `main`, ET NON DE LA PAGE. Le layout partagé pose la case du repli du
+    // panneau tout en haut du corps ; partir de la page entière l'aurait fait tomber dans ce
+    // préfixe, et ce test aurait échoué sur une case qui n'est pas un geste de la liste.
+    var content = LayoutSurface.MainOf(screen);
+    var cases = content[..content.IndexOf("À détruire", StringComparison.Ordinal)];
 
     cases.ShouldNotContain("<form");
     cases.ShouldNotContain("<button");

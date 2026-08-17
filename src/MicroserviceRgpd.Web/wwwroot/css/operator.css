@@ -170,79 +170,213 @@ body {
 }
 
 /*
+  LA GOUTTIÈRE DE DÉFILEMENT EST RÉSERVÉE. Replier le panneau change la hauteur du contenu, donc fait
+  apparaître ou disparaître la barre de défilement, donc décale toute la page latéralement au moment
+  même où l'Operator regarde autre chose bouger. Réserver la gouttière ôte ce second mouvement, qui
+  n'est celui de rien.
+*/
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA COQUE : le panneau à gauche, et à sa droite la colonne qui porte le bandeau puis le contenu.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.column {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/*
   LE CONTENEUR A CHANGÉ D'ÉLÉMENT, PAS DE MESURE. Les deux largeurs quittent le `body` pour le
-  `main` — la barre, elle, tient toute la fenêtre —, et elles restent exactement celles d'avant :
-  l'étroite par défaut, la large en exception nommée pour l'arbitrage colonne par colonne.
+  `main` — le bandeau, lui, tient toute la largeur de la colonne —, et elles restent exactement
+  celles d'avant : l'étroite par défaut, la large en exception nommée pour l'arbitrage colonne par
+  colonne.
 */
 main {
+  box-sizing: border-box;
   display: block;
   margin: 0 auto;
   max-width: 60rem;
   padding: var(--space-xxl) var(--space-md);
+  width: 100%;
 }
 
 /*
-  LA BARRE DE NAVIGATION. Blanche sur le canevas, posée en tête de chaque écran, et sans un chiffre :
-  ni compteur ni badge — la règle des chiffres du tableau des demandes RGPD vaut aussi ici.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE PANNEAU DE NAVIGATION. Blanc sur le canevas, posé à gauche de chaque écran sur toute sa
+  hauteur, et sans un chiffre : ni compteur ni badge — la règle des chiffres du tableau des
+  demandes RGPD vaut aussi ici.
+
+  ⚠️ IL EST OUVERT PAR DÉFAUT, et son repli est l'exception que l'Operator demande. La déclaration
+  ci-dessous est donc celle de l'état OUVERT ; l'état replié ne se dit qu'une fois, tout en bas,
+  derrière `:checked`.
+
+  ⚠️ LES LIBELLÉS NE SE TRONQUENT PAS, ILS PASSENT À LA LIGNE. « Détection des données
+  personnelles » porte sa forme pleine par décision consignée (ADR-0008) ; une ellipse en aurait
+  fait une forme abrégée par accident, décidée par une largeur de panneau. C'est le panneau qui
+  cède, jamais le nom — et c'est pourquoi il est large de 17,5 rem plutôt que d'un pouce.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-nav {
-  align-items: baseline;
+nav.panel {
   background: var(--surface);
-  border-bottom: var(--hairline-width) solid var(--hairline);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-xl);
-  padding: var(--space-md) var(--space-lg);
+  border-right: var(--hairline-width) solid var(--hairline);
+  box-sizing: border-box;
+  flex: 0 0 17.5rem;
+  overflow: hidden;
+  padding: var(--space-xs) 0;
+  width: 17.5rem;
 }
 
-nav ul {
+nav.panel ul {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-lg);
+  flex-direction: column;
+  gap: var(--space-xxs);
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--space-xs);
 }
 
-nav a {
+nav.panel a {
+  border-radius: var(--radius-md);
   color: var(--ink-secondary);
+  display: block;
   font: var(--type-body-sm);
   letter-spacing: var(--type-body-sm-tracking);
+  padding: 10px var(--space-sm);
   text-decoration: none;
 }
 
-/* L'écran courant se marque avec l'accent structurel, et il est le seul de la barre à le porter. */
-nav a.current {
+nav.panel a:hover {
+  background: var(--canvas);
+}
+
+/*
+  L'écran courant se marque avec l'accent structurel, et il est le seul du panneau à le porter. Le
+  fond teinté vient AVEC l'encre, jamais à sa place : la couleur seule aurait dit l'écran courant à
+  qui distingue les bleus, et rien à qui ne les distingue pas.
+*/
+nav.panel a.current {
+  background: var(--canvas);
   color: var(--accent);
   font-weight: var(--weight-semibold);
 }
 
 /*
-  LE NOM DU SERVICE EST DEVENU UN LIEN — le chemin du retour à l'accueil, depuis n'importe quel
-  écran, et sans quatrième entrée dans la barre. Il ne doit pas pour autant SE LIRE comme une entrée
-  de plus : il garde l'encre et le corps qu'il portait quand il était inerte, là où les trois entrées
-  se posent en corps petit sur l'encre secondaire. Cette règle vient après la règle générale des
-  liens de la barre, qu'elle défait par le corps et par l'encre — jamais par le soulignement, que
-  toute la barre a déjà ôté.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE BANDEAU, qui survit au repli et porte ce qui ne doit jamais disparaître : le hamburger, le nom
+  du service, la version.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-nav a.wordmark {
+nav.topbar {
+  align-items: center;
+  background: var(--surface);
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-md);
+}
+
+/*
+  LE NOM DU SERVICE EST UN LIEN — le chemin du retour à l'accueil, depuis n'importe quel écran, et
+  sans quatrième entrée dans la navigation. Il ne doit pas pour autant SE LIRE comme une entrée de
+  plus : il garde l'encre et le corps qu'il portait quand il était inerte, là où les trois entrées
+  se posent en corps petit sur l'encre secondaire.
+*/
+nav.topbar a.wordmark {
   color: var(--ink);
   font: var(--type-body-md);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--type-body-md-tracking);
+  text-decoration: none;
 }
 
 /*
   LA VERSION DU PRODUIT, poussée à l'extrémité droite par `margin-left: auto`, en légende sur l'encre
   estompée : elle se lit et s'ignore. C'est l'exception nommée à « sans un chiffre » ci-dessus. En
-  écran étroit elle SUIT LE FLUX de la barre — celle-ci est en `flex-wrap` —, jamais masquée ni
-  posée en absolu : ce qui est vrai de la barre est vrai d'elle.
+  écran étroit elle SUIT LE FLUX du bandeau — celui-ci est en `flex-wrap` —, jamais masquée ni posée
+  en absolu : ce qui est vrai du bandeau est vrai d'elle.
 */
-nav .version {
+nav.topbar .version {
   color: var(--ink-muted);
   font: var(--type-caption);
   letter-spacing: var(--type-caption-tracking);
   margin-left: auto;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE REPLI, ET IL TIENT EN TROIS RÈGLES SANS UNE LIGNE DE SCRIPT.
+
+  La case à cocher porte l'état ; le hamburger n'est que son `label`. Le service continue donc de ne
+  servir AUCUN JavaScript — voir le commentaire de `_Layout.cshtml`.
+
+  ⚠️ LE CHOIX NE SURVIT PAS À LA NAVIGATION : la case repart décochée à chaque écran, et le panneau
+  s'y rouvre. C'est une décision explicite du demandeur, prise contre un cookie et contre un script.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+
+/*
+  La case est masquée À L'ŒIL SEULEMENT. Ni `hidden` ni `display: none` : les deux l'auraient sortie
+  de l'ordre de tabulation et de l'arbre d'accessibilité, et le hamburger serait devenu un bouton que
+  seule une souris actionne.
+*/
+.panel-toggle {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.burger {
+  align-items: center;
+  border: var(--hairline-width) solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--ink-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.burger:hover {
+  background: var(--canvas);
+  border-color: var(--hairline);
+}
+
+/*
+  L'ANNEAU DE FOCUS SE POSE SUR LE HAMBURGER, PAS SUR LA CASE — celle-ci est réduite à un pixel, et
+  son anneau à elle n'aurait rien entouré de visible. C'est la contrepartie obligée d'un contrôle
+  masqué : sans cette règle, tabuler jusqu'au repli ne se verrait nulle part.
+*/
+.panel-toggle:focus-visible ~ .shell .burger {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: var(--space-xxs);
+}
+
+/*
+  LE PANNEAU REPLIÉ NE LAISSE RIEN DERRIÈRE LUI — ni rail, ni bord, ni gouttière : le contenu reprend
+  toute la largeur, ce qui sert d'abord la table d'arbitrage colonne par colonne.
+*/
+.panel-toggle:checked ~ .shell nav.panel {
+  border-right-width: 0;
+  flex-basis: 0;
+  width: 0;
 }
 
 h1 {

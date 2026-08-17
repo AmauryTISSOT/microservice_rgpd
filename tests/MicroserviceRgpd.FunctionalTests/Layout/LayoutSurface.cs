@@ -261,30 +261,75 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// La <b>barre de navigation</b> d'une page rendue, isolée de tout le reste : ce qui se lit
-  /// dedans n'est jamais confondu avec ce que l'écran écrit sous elle — le tableau des demandes
-  /// RGPD porte le même nom dans la barre et dans son titre, et une assertion sur la barre qui
-  /// lirait la page entière passerait pour de mauvaises raisons.
+  /// Les <b>deux régions de navigation</b> d'une page rendue, isolées de tout le reste et l'une de
+  /// l'autre : le <b>panneau</b>, qui porte les trois points d'entrée et disparaît quand l'Operator
+  /// le replie, et le <b>bandeau</b>, qui porte ce qui ne doit jamais disparaître — le hamburger, le
+  /// nom du service, la version.
   /// </summary>
   /// <remarks>
+  /// <para>
+  /// Ce qui se lit dedans n'est jamais confondu avec ce que l'écran écrit dessous : le tableau des
+  /// demandes RGPD porte le même nom dans le panneau et dans son titre, et une assertion sur la
+  /// navigation qui lirait la page entière passerait pour de mauvaises raisons.
+  /// </para>
+  /// <para>
   /// ⚠️ <b>Le compte est vérifié, et pas seulement la présence</b> — comme pour l'élément de version.
-  /// L'écran ne porte <b>qu'un</b> <c>nav</c>, et c'est ce qui autorise le style de la barre à
-  /// s'attacher à l'élément nu plutôt qu'à une classe. Un second <c>nav</c> posé un jour — une
-  /// pagination, un fil d'Ariane — hériterait de ce style et se rendrait en seconde barre blanche ;
-  /// sans ce compte, toutes les assertions de barre se mettraient alors à lire le premier
-  /// <c>nav</c> venu <b>sans échouer</b>, ce qui est la seule façon dont ce renommage pouvait se
-  /// retourner en silence.
+  /// L'écran porte <b>exactement deux</b> <c>nav</c>, et chacun est reconnu <b>à sa classe</b>. Un
+  /// troisième <c>nav</c> posé un jour — une pagination, un fil d'Ariane — ferait échouer ce compte
+  /// plutôt que de se faire lire à la place de l'un des deux, ce qui est la seule façon dont un tel
+  /// ajout pouvait se retourner en silence.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Les deux régions se lisent SÉPARÉMENT, et jamais concaténées.</b> Le nom du service est
+  /// « le premier lien du bandeau » ; recoller les deux régions ferait du premier point d'entrée le
+  /// premier lien, et <c>WordmarkIn</c> se mettrait à lire <c>Configuration</c> sans échouer.
+  /// </para>
   /// </remarks>
-  internal static string NavigationBarIn(string rendered)
+  internal static (string Panel, string Bar) NavigationOf(string rendered)
   {
-    var bars = Regex.Matches(rendered, @"<nav\b[^>]*>(.*?)</nav>", RegexOptions.Singleline);
+    var regions = Regex.Matches(rendered, @"<nav\b([^>]*)>(.*?)</nav>", RegexOptions.Singleline);
 
-    bars.Count.ShouldBe(
-      1,
-      "L'écran doit porter exactement une barre de navigation, et le style de la barre est posé sur "
-      + "l'élément `nav` nu : un second `nav` en hériterait et ferait lire la mauvaise barre.");
+    regions.Count.ShouldBe(
+      2,
+      "L'écran doit porter exactement deux régions de navigation — le panneau et le bandeau : un "
+      + "`nav` de plus se ferait lire à la place de l'un des deux.");
 
-    return bars[0].Groups[1].Value;
+    return (RegionOf(regions, "panel"), RegionOf(regions, "topbar"));
+  }
+
+  /// <summary>
+  /// <b>Le panneau des points d'entrée</b> d'une page rendue. C'est lui qui porte la liste des
+  /// trois entrées et le marquage de l'écran courant.
+  /// </summary>
+  internal static string NavigationPanelIn(string rendered)
+  {
+    return NavigationOf(rendered).Panel;
+  }
+
+  /// <summary>
+  /// <b>Le bandeau du service</b> d'une page rendue : le hamburger, le nom du service, la version.
+  /// Il survit au repli du panneau, et c'est ce qui fait qu'un écran au panneau replié garde un
+  /// chemin de retour.
+  /// </summary>
+  internal static string ServiceBarIn(string rendered)
+  {
+    return NavigationOf(rendered).Bar;
+  }
+
+  /// <summary>
+  /// La région reconnue à sa <b>classe</b> — comme un mot de la liste, et non comme la valeur exacte
+  /// de l'attribut : une seconde classe posée un jour à côté ne la rendrait pas invisible aux tests.
+  /// </summary>
+  private static string RegionOf(MatchCollection regions, string name)
+  {
+    var found = regions.Where(region => Regex.IsMatch(
+      region.Groups[1].Value,
+      @"\bclass=""(?:[^""]*\s)?" + name + @"(?:\s[^""]*)?""")).ToList();
+
+    found.Count.ShouldBe(
+      1, $"L'écran doit porter exactement une région de navigation `{name}`.");
+
+    return found[0].Groups[2].Value;
   }
 
   /// <summary>
@@ -326,6 +371,25 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal static string WithoutTheVersion(string bar)
   {
     return Regex.Replace(bar, VersionElement, string.Empty, RegexOptions.Singleline);
+  }
+
+  /// <summary>
+  /// La région <b>sans le tracé du hamburger</b> — pour le balayage des chiffres.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est la SECONDE exception nommée au balayage, et elle est d'une autre nature que la
+  /// version.</b> Celle-ci est un chiffre qu'on <b>lit</b> et qu'on ignore ; le tracé du hamburger
+  /// n'est pas lu du tout — ses <c>viewBox="0 0 18 18"</c> et ses coordonnées de chemin sont des
+  /// mesures de dessin, qu'aucun œil ne rencontre comme un nombre. La règle que le balayage garde
+  /// est « aucun COMPTE dans la navigation » ; un chiffre de géométrie n'en est pas un.
+  /// <para>
+  /// Le retrait porte sur l'élément <c>svg</c> entier, et il est <b>étroit</b> : un compteur glissé
+  /// à côté du glyphe, dans le <c>label</c> mais hors du <c>svg</c>, fait toujours échouer le test.
+  /// </para>
+  /// </remarks>
+  internal static string WithoutTheBurgerGlyph(string bar)
+  {
+    return Regex.Replace(bar, @"<svg\b[^>]*>.*?</svg>", string.Empty, RegexOptions.Singleline);
   }
 
   /// <summary>
@@ -428,10 +492,20 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// Ce que le corps de la page porte <b>hors de la barre et hors du <c>main</c></b>. Un
-  /// <c>main</c> qui existe ne dit pas encore qu'il enveloppe : la question est de savoir ce qui
-  /// est resté dehors, et la réponse doit être « rien ».
+  /// Ce que le corps de la page porte <b>hors de la navigation, hors de la coque et hors du
+  /// <c>main</c></b>. Un <c>main</c> qui existe ne dit pas encore qu'il enveloppe : la question est
+  /// de savoir ce qui est resté dehors, et la réponse doit être « rien ».
   /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Les balises ouvrantes retirées sont NOMMÉES par leur classe</b> — la coque et la colonne,
+  /// et elles seules : un <c>div</c> quelconque laissé dehors par un écran reste donc visible au
+  /// balayage. Les <b>fermantes</b>, elles, ne portent aucune classe et sont indistinguables ; elles
+  /// sont retirées toutes. C'est la limite connue de ce balayage, et elle est étroite : ce qu'un
+  /// <c>div</c> égaré porterait — du <b>texte</b>, un titre, un tableau — survit à ce retrait et fait
+  /// toujours échouer le test. Seule une paire de balises rigoureusement vide passerait.
+  /// </para>
+  /// </remarks>
   internal static string OutsideTheMainOf(string rendered)
   {
     var body = Regex.Match(rendered, @"<body\b[^>]*>(.*?)</body>", RegexOptions.Singleline);
@@ -444,7 +518,18 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
 
     var outside = body.Groups[1].Value.Remove(main.Index, main.Length);
 
-    return Regex.Replace(outside, @"<nav\b[^>]*>.*?</nav>", string.Empty, RegexOptions.Singleline).Trim();
+    outside = Regex.Replace(outside, @"<nav\b[^>]*>.*?</nav>", string.Empty, RegexOptions.Singleline);
+
+    // La case du repli : elle porte l'état du panneau, et elle doit précéder la coque pour que le
+    // sélecteur `:checked ~ .shell` l'atteigne. Elle n'a donc pas sa place dans le `main`.
+    outside = Regex.Replace(outside, @"<input\b[^>]*\bclass=""panel-toggle""[^>]*>", string.Empty);
+
+    // Les deux enveloppes de disposition, nommées par leur classe — puis les fermantes, qui n'en
+    // portent aucune. Voir la limite consignée ci-dessus.
+    outside = Regex.Replace(outside, @"<div\b[^>]*\bclass=""(?:shell|column)""[^>]*>", string.Empty);
+    outside = Regex.Replace(outside, @"</div>", string.Empty);
+
+    return outside.Trim();
   }
 
   /// <summary>

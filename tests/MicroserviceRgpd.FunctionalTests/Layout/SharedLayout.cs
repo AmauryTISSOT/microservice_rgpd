@@ -154,14 +154,14 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var bar = LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen));
+      var panel = LayoutSurface.NavigationPanelIn(await _layout.ReadAsync(screen));
 
-      // ⚠️ La liste est lue SEULE, sans le nom du service qui la précède : celui-ci mène à
-      // l'accueil sans être une entrée, et lire la barre entière ferait passer le retour à
-      // l'accueil pour une quatrième entrée — c'est-à-dire l'inverse de ce que ce test garde.
-      LayoutSurface.LinksIn(LayoutSurface.EntryPointListIn(bar))
+      // ⚠️ La liste est lue SEULE, et le panneau est lu séparément du bandeau : le nom du service
+      // mène à l'accueil sans être une entrée, et lire les deux régions ensemble ferait passer le
+      // retour à l'accueil pour une quatrième entrée — l'inverse de ce que ce test garde.
+      LayoutSurface.LinksIn(LayoutSurface.EntryPointListIn(panel))
         .Select(link => link.Address)
-        .ShouldBe(LayoutSurface.EntryPoints, $"La barre de l'écran {screen} n'offre pas les trois points d'entrée, et eux seuls.");
+        .ShouldBe(LayoutSurface.EntryPoints, $"Le panneau de l'écran {screen} n'offre pas les trois points d'entrée, et eux seuls.");
     }
   }
 
@@ -183,15 +183,16 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var bar = LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen));
+      var panel = LayoutSurface.NavigationPanelIn(await _layout.ReadAsync(screen));
 
       // La liste est lue SEULE, pour la même raison qu'au-dessus : le wordmark est un lien de la
-      // barre sans être une entrée, et il porte précisément le mot dont ces libellés se distinguent.
-      LayoutSurface.LinkBlocksIn(LayoutSurface.EntryPointListIn(bar))
+      // navigation sans être une entrée, et il porte précisément le mot dont ces libellés se
+      // distinguent.
+      LayoutSurface.LinkBlocksIn(LayoutSurface.EntryPointListIn(panel))
         .Select(link => LayoutSurface.TextIn(link.Contents))
         .ShouldBe(
           LayoutSurface.NavigationLabels,
-          $"La barre de l'écran {screen} ne porte pas les trois libellés arrêtés, dans l'ordre décidé.");
+          $"Le panneau de l'écran {screen} ne porte pas les trois libellés arrêtés, dans l'ordre décidé.");
     }
   }
 
@@ -205,11 +206,11 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var links = LayoutSurface.LinksIn(LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen)));
+      var links = LayoutSurface.LinksIn(LayoutSurface.NavigationPanelIn(await _layout.ReadAsync(screen)));
 
       links.Where(link => link.IsCurrent)
         .Select(link => link.Address)
-        .ShouldBe(LayoutSurface.MarkedEntryPointsOn(screen), $"La barre de l'écran {screen} ne marque pas le bon lien, ou en marque plusieurs.");
+        .ShouldBe(LayoutSurface.MarkedEntryPointsOn(screen), $"Le panneau de l'écran {screen} ne marque pas le bon lien, ou en marque plusieurs.");
     }
   }
 
@@ -223,11 +224,14 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var bar = LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen));
+      // ⚠️ LE NOM DU SERVICE SE LIT DANS LE BANDEAU, ET C'EST LE POINT DE CE TEST DEPUIS LE PANNEAU :
+      // le panneau se replie, le bandeau non. Un wordmark qui aurait suivi les entrées dans le
+      // panneau aurait emporté le chemin du retour avec lui au premier repli.
+      var bar = LayoutSurface.ServiceBarIn(await _layout.ReadAsync(screen));
       var wordmark = LayoutSurface.WordmarkIn(bar);
 
       wordmark.Text.ShouldBe(
-        LayoutSurface.ServiceName, $"La barre de l'écran {screen} ne nomme pas le service.");
+        LayoutSurface.ServiceName, $"Le bandeau de l'écran {screen} ne nomme pas le service.");
 
       wordmark.Address.ShouldBe(
         LayoutSurface.Doorstep, $"Le nom du service ne ramène pas à l'accueil depuis l'écran {screen}.");
@@ -251,11 +255,18 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var bar = LayoutSurface.WithoutTheVersion(
-        LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen)));
+      // ⚠️ LES DEUX RÉGIONS SONT BALAYÉES, pas seulement celle qui porte l'exception. Ne balayer que
+      // le bandeau aurait laissé un compteur s'installer à côté d'un point d'entrée — l'endroit
+      // même où un « 3 dossiers en retard » viendrait naturellement se poser.
+      var navigation = LayoutSurface.NavigationOf(await _layout.ReadAsync(screen));
 
-      Regex.IsMatch(bar, @"\d").ShouldBeFalse(
-        $"La barre de l'écran {screen} porte un chiffre, donc un compte que personne n'a demandé.");
+      foreach (var (region, name) in new[] { (navigation.Panel, "panneau"), (navigation.Bar, "bandeau") })
+      {
+        var swept = LayoutSurface.WithoutTheBurgerGlyph(LayoutSurface.WithoutTheVersion(region));
+
+        Regex.IsMatch(swept, @"\d").ShouldBeFalse(
+          $"Le {name} de l'écran {screen} porte un chiffre, donc un compte que personne n'a demandé.");
+      }
     }
   }
 
@@ -297,7 +308,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 
   private async Task<IReadOnlyList<string>> VersionsInTheBarOfAsync(string screen)
   {
-    return LayoutSurface.VersionsIn(LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen)));
+    return LayoutSurface.VersionsIn(LayoutSurface.ServiceBarIn(await _layout.ReadAsync(screen)));
   }
 
   /// <summary>
