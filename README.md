@@ -85,14 +85,14 @@ dotnet run --project src/MicroserviceRgpd.Web
 dotnet run --project src/MicroserviceRgpd.AspireHost
 ```
 
-Pour le confort du poste de développement, [`scripts/demarrer.sh`](scripts/demarrer.sh) enveloppe la
+Pour le confort du poste de développement, [`scripts/run-project.sh`](scripts/run-project.sh) enveloppe la
 seconde commande : il vérifie les prérequis (Docker, `uv`, certificat HTTPS de développement) avant
 de lancer quoi que ce soit, attend que l'accueil réponde, puis ouvre le navigateur dans une nouvelle
 fenêtre sur l'accueil et sur le dashboard Aspire.
 
 ```sh
-scripts/demarrer.sh                     # démarre, attend, ouvre le navigateur
-scripts/demarrer.sh --sans-navigateur   # démarre et imprime les adresses
+scripts/run-project.sh                     # démarre, attend, ouvre le navigateur
+scripts/run-project.sh --sans-navigateur   # démarre et imprime les adresses
 ```
 
 Le lien du dashboard est **lu dans la sortie d'Aspire**, jamais reconstruit : il porte un jeton de
