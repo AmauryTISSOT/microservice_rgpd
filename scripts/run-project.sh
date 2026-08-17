@@ -8,9 +8,9 @@
 # l'AppHost (Postgres, Ollama) survivent volontairement à l'arrêt — c'est leur raison d'être.
 #
 # Usage :
-#   scripts/demarrer.sh              # démarre, attend, ouvre le navigateur
-#   scripts/demarrer.sh --sans-navigateur
-#   PROFIL=http scripts/demarrer.sh  # dashboard en http plutôt qu'en https
+#   scripts/run-project.sh              # démarre, attend, ouvre le navigateur
+#   scripts/run-project.sh --sans-navigateur
+#   PROFIL=http scripts/run-project.sh  # dashboard en http plutôt qu'en https
 
 set -euo pipefail
 

@@ -14,7 +14,7 @@ classes CSS `nav.chrome` et `.chrome-version`.
 
 Le mot venait du vocabulaire du design, où il est juste et bien établi : le *chrome* d'une interface
 est ce qui entoure le contenu. Mais dans **ce** dépôt il est homographe d'autre chose, et pas
-d'une hypothèse — `scripts/demarrer.sh` cherche `google-chrome`, `google-chrome-stable`, `chromium`
+d'une hypothèse — `scripts/run-project.sh` cherche `google-chrome`, `google-chrome-stable`, `chromium`
 pour ouvrir le service dans un navigateur. Le même dépôt écrivait donc `nav.chrome` et
 `google-chrome` en voulant dire deux choses sans rapport.
 
@@ -61,7 +61,7 @@ le test comme dans le gabarit), et jusque dans l'ADR-0005 — « une soixantaine
   design de Notion. C'est le sens où le mot est juste, et le renommer couperait le lien avec la
   littérature dont ce document est l'analyse.
 - l'ADR-0005 et l'ADR-0006, comptes-rendus datés. Un ADR acté parle avec les mots de sa date.
-- `scripts/demarrer.sh`, où `google-chrome` désigne le navigateur — c'est-à-dire la raison même de
+- `scripts/run-project.sh`, où `google-chrome` désigne le navigateur — c'est-à-dire la raison même de
   cet ADR.
 
 ## Justification

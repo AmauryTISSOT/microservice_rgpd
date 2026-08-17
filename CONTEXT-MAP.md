@@ -138,7 +138,7 @@ n'appartient à aucun des trois contextes — c'est ce qui les porte tous, et c'
 nommé ici plutôt que dans l'un des trois glossaires.
 _Avoid_ : chrome, habillage, shell, enveloppe
 ⚠️ **Le mot retiré est « chrome »**, et il l'est pour une raison de lecture : il se lisait comme le
-navigateur Google Chrome — que ce dépôt nomme par ailleurs pour de vrai, dans `scripts/demarrer.sh`.
+navigateur Google Chrome — que ce dépôt nomme par ailleurs pour de vrai, dans `scripts/run-project.sh`.
 Voir l'ADR-0007, qui supplante sur ce point l'ADR-0006.
 ⚠️ **La barre n'est pas le layout : elle en est une partie.** Elle se nomme `Navigation`, et ses trois
 entrées `EntryPoint`. La relation ne vaut que dans ce sens — un test de police relève du layout et
