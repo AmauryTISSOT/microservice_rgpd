@@ -185,7 +185,7 @@ main {
   LA BARRE DE NAVIGATION. Blanche sur le canevas, posée en tête de chaque écran, et sans un chiffre :
   ni compteur ni badge — la règle des chiffres du tableau des demandes RGPD vaut aussi ici.
 */
-nav.chrome {
+nav {
   align-items: baseline;
   background: var(--surface);
   border-bottom: var(--hairline-width) solid var(--hairline);
@@ -195,7 +195,7 @@ nav.chrome {
   padding: var(--space-md) var(--space-lg);
 }
 
-nav.chrome ul {
+nav ul {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-lg);
@@ -204,7 +204,7 @@ nav.chrome ul {
   padding: 0;
 }
 
-nav.chrome a {
+nav a {
   color: var(--ink-secondary);
   font: var(--type-body-sm);
   letter-spacing: var(--type-body-sm-tracking);
@@ -212,7 +212,7 @@ nav.chrome a {
 }
 
 /* L'écran courant se marque avec l'accent structurel, et il est le seul de la barre à le porter. */
-nav.chrome a.current {
+nav a.current {
   color: var(--accent);
   font-weight: var(--weight-semibold);
 }
@@ -225,7 +225,7 @@ nav.chrome a.current {
   liens de la barre, qu'elle défait par le corps et par l'encre — jamais par le soulignement, que
   toute la barre a déjà ôté.
 */
-nav.chrome a.wordmark {
+nav a.wordmark {
   color: var(--ink);
   font: var(--type-body-md);
   font-weight: var(--weight-semibold);
@@ -238,7 +238,7 @@ nav.chrome a.wordmark {
   écran étroit elle SUIT LE FLUX de la barre — celle-ci est en `flex-wrap` —, jamais masquée ni
   posée en absolu : ce qui est vrai de la barre est vrai d'elle.
 */
-nav.chrome .chrome-version {
+nav .version {
   color: var(--ink-muted);
   font: var(--type-caption);
   letter-spacing: var(--type-caption-tracking);

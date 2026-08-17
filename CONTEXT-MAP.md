@@ -81,7 +81,7 @@ quels : on écrit « la `Qualification` », « le `EvidenceLog` ».
 
 ## Langue de système
 
-Deux termes sont vrais des trois côtés à la fois, et ils sont écrits ici plutôt que dupliqués dans
+Trois termes sont vrais des trois côtés à la fois, et ils sont écrits ici plutôt que dupliqués dans
 les trois glossaires — une doctrine tenue partout doit être écrite **une fois, au-dessus**, sinon
 elle n'est tenue nulle part.
 
@@ -129,12 +129,35 @@ siennes — contrat HTTP, moteur lexical. On peut livrer `v0.2.0` sans toucher a
 Coupler l'une à l'autre ferait d'un changement d'écran une rupture de contrat, ou d'une rupture de
 contrat un simple bump.
 
+**Layout** :
+Le cadre fixe que les douze écrans de la surface portent tous, écrit **une seule fois** dans
+`_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, la barre de
+navigation, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page comme de lien
+d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est l'écran. Le layout
+n'appartient à aucun des trois contextes — c'est ce qui les porte tous, et c'est pourquoi il est
+nommé ici plutôt que dans l'un des trois glossaires.
+_Avoid_ : chrome, habillage, shell, enveloppe
+⚠️ **Le mot retiré est « chrome »**, et il l'est pour une raison de lecture : il se lisait comme le
+navigateur Google Chrome — que ce dépôt nomme par ailleurs pour de vrai, dans `scripts/demarrer.sh`.
+Voir l'ADR-0007, qui supplante sur ce point l'ADR-0006.
+⚠️ **La barre n'est pas le layout : elle en est une partie.** Elle se nomme `Navigation`, et ses trois
+entrées `EntryPoint`. La relation ne vaut que dans ce sens — un test de police relève du layout et
+non de la navigation, alors qu'un test de barre relève des deux, par la partie. C'est ce qui autorise
+`SharedLayout` à porter les deux familles d'assertions.
+⚠️ **« Enveloppe » reste à `TransportEnvelope`**, qui nomme l'emballage HTTP d'un transport de
+`Casework` — un tout autre objet, et la raison pour laquelle le mot est en `_Avoid_` ici.
+⚠️ **Trois endroits gardent le mot _chrome_, et aucun n'est un reste à balayer.**
+`docs/design/DESIGN.md` le porte au sens du designer, en anglais, à propos du langage de design de
+Notion — c'est le sens où il est juste. L'ADR-0005 et l'ADR-0006 le portent au sens retiré, dans leur
+prose française : ce sont des comptes-rendus datés, et un ADR acté parle avec les mots de sa date.
+
 ## Décisions
 
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Six ADR de système sont en vigueur, et aucun n'en supplante un autre :
+Sept ADR de système sont en vigueur, et **un seul en supplante un autre — sur un point, et nommément** :
+l'ADR-0007 rouvre ce que l'ADR-0006 avait explicitement laissé fermé.
 
 - [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) — l'architecture
   polyglotte et le moteur auto-hébergé.
@@ -157,6 +180,11 @@ Six ADR de système sont en vigueur, et aucun n'en supplante un autre :
   les trois points d'entrée sont renommés dans la langue humaine — « Configuration du microservice
   RGPD », « Détection des données personnelles », « Tableau des demandes RGPD » — et les
   identifiants C# ne bougent pas.
+- [ADR-0007](./docs/adr/0007-le-cadre-partage-des-ecrans-se-nomme-layout.md) — le cadre partagé des
+  écrans se nomme `Layout`, la barre se nomme `Navigation`, et le mot `Chrome` quitte le dépôt.
+  ⚠️ **Il supplante l'ADR-0006 sur un point précis** : celui-ci rangeait « le mot `Chrome` de
+  `ChromeNavigation` » parmi ce que sa décision n'ouvrait pas. Cette clause ne vaut plus ; tout le
+  reste de l'ADR-0006 reste en vigueur, et son texte n'a pas été édité.
 
 ⚠️ [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) **précède le
 découpage** : il a été écrit quand le dépôt n'avait qu'un contexte. Il se lit comme un ADR de

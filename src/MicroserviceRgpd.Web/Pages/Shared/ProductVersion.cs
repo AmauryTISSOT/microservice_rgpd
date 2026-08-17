@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.Web.Pages.Shared;
 /// <para>
 /// Elle se lit et s'ignore : ni lien, ni infobulle, ni libellé technique, ni variation par
 /// environnement. C'est l'<b>exception nommée et étroite</b> à la doctrine « aucun chiffre dans la
-/// barre » de <see cref="ChromeNavigation"/>.
+/// barre » de <see cref="Navigation"/>.
 /// </para>
 /// </remarks>
 internal static class ProductVersion

@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.SharedKernel;
 
-namespace MicroserviceRgpd.FunctionalTests.Chrome;
+namespace MicroserviceRgpd.FunctionalTests.Layout;
 
 /// <summary>
 /// <b>La porte du service</b> : la racine répond un écran, et non un <c>404</c> en
@@ -11,9 +11,9 @@ namespace MicroserviceRgpd.FunctionalTests.Chrome;
 /// <remarks>
 /// <para>
 /// ⚠️ <b>L'accueil ne relève ni du <c>Casework</c> ni du <c>Screening</c> : il est du layout</b>, au
-/// même titre que la barre. Il est donc éprouvé dans le harnais du chrome, par la <b>seule frontière
-/// HTTP</b>, exactement ce que fait un navigateur — et le reste du chrome le tient déjà pour un
-/// écran comme les onze autres, puisqu'il entre dans <see cref="ChromeSurface.ScreensAsync"/>.
+/// même titre que la barre. Il est donc éprouvé dans le harnais du layout, par la <b>seule frontière
+/// HTTP</b>, exactement ce que fait un navigateur — et le reste du layout le tient déjà pour un
+/// écran comme les onze autres, puisqu'il entre dans <see cref="LayoutSurface.ScreensAsync"/>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucune assertion de ce fichier ne porte sur une valeur de design</b> : pas une couleur, pas
@@ -24,7 +24,7 @@ namespace MicroserviceRgpd.FunctionalTests.Chrome;
 [Collection(WebCollection.Name)]
 public class Doorstep(CustomWebApplicationFactory<Program> factory)
 {
-  private readonly ChromeSurface _chrome = new(factory);
+  private readonly LayoutSurface _layout = new(factory);
 
   /// <summary>
   /// <b>La racine répond un écran</b>, rendu par le serveur et nommé — c'est toute la décision : le
@@ -33,11 +33,11 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task AnswersAtTheRootWithAScreenThatNamesTheService()
   {
-    var read = ChromeSurface.TextIn(
-      ChromeSurface.MainOf(await _chrome.ReadAsync(ChromeSurface.Doorstep)));
+    var read = LayoutSurface.TextIn(
+      LayoutSurface.MainOf(await _layout.ReadAsync(LayoutSurface.Doorstep)));
 
     read.ShouldContain(
-      ChromeSurface.ServiceName, Case.Sensitive, "L'accueil ne porte pas le nom du service.");
+      LayoutSurface.ServiceName, Case.Sensitive, "L'accueil ne porte pas le nom du service.");
   }
 
   /// <summary>
@@ -48,11 +48,11 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesThePresentationSentenceWordForWord()
   {
-    var read = ChromeSurface.TextIn(
-      ChromeSurface.MainOf(await _chrome.ReadAsync(ChromeSurface.Doorstep)));
+    var read = LayoutSurface.TextIn(
+      LayoutSurface.MainOf(await _layout.ReadAsync(LayoutSurface.Doorstep)));
 
     read.ShouldContain(
-      ChromeSurface.Presentation,
+      LayoutSurface.Presentation,
       Case.Sensitive,
       "La phrase de présentation de l'accueil n'est pas celle qui a été arrêtée.");
   }
@@ -66,12 +66,12 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CitesTheArticlesTheCodeActuallyImplements()
   {
-    var read = ChromeSurface.TextIn(
-      ChromeSurface.MainOf(await _chrome.ReadAsync(ChromeSurface.Doorstep)));
+    var read = LayoutSurface.TextIn(
+      LayoutSurface.MainOf(await _layout.ReadAsync(LayoutSurface.Doorstep)));
 
-    read.ShouldContain(ChromeSurface.Presentation, Case.Sensitive);
+    read.ShouldContain(LayoutSurface.Presentation, Case.Sensitive);
 
-    ArticlesCitedIn(ChromeSurface.Presentation).ShouldBe(
+    ArticlesCitedIn(LayoutSurface.Presentation).ShouldBe(
       [.. DataSubjectRight.List.Where(right => right.Article is not null).Select(right => right.Article!.Value)],
       ignoreOrder: true,
       "La phrase du seuil ne cite pas les articles que la taxonomie ouvre : la porte promet un " +
@@ -85,16 +85,16 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesTheThreeDoorwaysWordForWordAndInOrder()
   {
-    var main = ChromeSurface.MainOf(await _chrome.ReadAsync(ChromeSurface.Doorstep));
-    var doorways = ChromeSurface.LinkBlocksIn(main);
+    var main = LayoutSurface.MainOf(await _layout.ReadAsync(LayoutSurface.Doorstep));
+    var doorways = LayoutSurface.LinkBlocksIn(main);
 
     doorways.Select(doorway => doorway.Address).ShouldBe(
-      [.. ChromeSurface.Doorways.Select(expected => expected.Address)],
+      [.. LayoutSurface.Doorways.Select(expected => expected.Address)],
       "Les portes de l'accueil ne mènent pas aux trois adresses, dans l'ordre décidé.");
 
-    foreach (var (doorway, expected) in doorways.Zip(ChromeSurface.Doorways))
+    foreach (var (doorway, expected) in doorways.Zip(LayoutSurface.Doorways))
     {
-      var read = ChromeSurface.TextIn(doorway.Contents);
+      var read = LayoutSurface.TextIn(doorway.Contents);
 
       read.ShouldContain(
         expected.Name, Case.Sensitive, $"La porte {expected.Address} ne porte pas son nom.");
@@ -120,11 +120,11 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task MakesEachWholeCardOneBlockLinkAndNothingElse()
   {
-    var main = ChromeSurface.MainOf(await _chrome.ReadAsync(ChromeSurface.Doorstep));
-    var doorways = ChromeSurface.LinkBlocksIn(main);
+    var main = LayoutSurface.MainOf(await _layout.ReadAsync(LayoutSurface.Doorstep));
+    var doorways = LayoutSurface.LinkBlocksIn(main);
 
     doorways.Count.ShouldBe(
-      ChromeSurface.Doorways.Count,
+      LayoutSurface.Doorways.Count,
       "L'accueil ne porte pas exactement les trois liens de ses trois portes : une cible " +
       "secondaire s'est glissée dans une carte, ou à côté.");
 
@@ -167,9 +167,9 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   {
     // Le balayage porte sur ce qui se LIT, pas sur la source : le niveau d'un titre est un chiffre
     // du balisage, et le compter aurait rendu ce garde faux au premier `h2`.
-    var read = ChromeSurface.TextIn(ChromeSurface.MainOf(await _chrome.ReadAsync(ChromeSurface.Doorstep)));
+    var read = LayoutSurface.TextIn(LayoutSurface.MainOf(await _layout.ReadAsync(LayoutSurface.Doorstep)));
 
-    var swept = read.Replace(ChromeSurface.Presentation, string.Empty, StringComparison.Ordinal);
+    var swept = read.Replace(LayoutSurface.Presentation, string.Empty, StringComparison.Ordinal);
 
     Regex.IsMatch(swept, @"\d").ShouldBeFalse(
       "L'accueil porte un chiffre hors de la phrase du seuil, donc un compte que personne n'a demandé.");
@@ -181,12 +181,12 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   /// </summary>
   /// <remarks>
   /// L'absence de ressource tierce, elle, est gardée pour les douze écrans à la fois par
-  /// <see cref="SharedChrome.LoadsNothingFromAThirdPartyOnAnyScreen"/>.
+  /// <see cref="SharedLayout.LoadsNothingFromAThirdPartyOnAnyScreen"/>.
   /// </remarks>
   [Fact]
   public async Task RunsWithoutASingleLineOfScript()
   {
-    var rendered = await _chrome.ReadAsync(ChromeSurface.Doorstep);
+    var rendered = await _layout.ReadAsync(LayoutSurface.Doorstep);
 
     rendered.ShouldNotContain("<script", Case.Insensitive, "L'accueil sert du JavaScript.");
     rendered.ShouldNotContain("onclick", Case.Insensitive, "L'accueil câble un geste en JavaScript.");

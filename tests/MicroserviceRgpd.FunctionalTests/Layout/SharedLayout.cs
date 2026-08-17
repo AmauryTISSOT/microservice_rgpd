@@ -1,16 +1,16 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
 
-namespace MicroserviceRgpd.FunctionalTests.Chrome;
+namespace MicroserviceRgpd.FunctionalTests.Layout;
 
 /// <summary>
-/// Le chrome partagé des douze écrans de la surface : une feuille de style et une police que <b>le service sert
+/// Le layout partagé des douze écrans de la surface : une feuille de style et une police que <b>le service sert
 /// lui-même</b>, et aucune ressource tierce.
 /// </summary>
 /// <remarks>
 /// <para>
 /// ⚠️ <b>Le test le plus important de ce fichier est
-/// <see cref="LoadsNothingFromAThirdPartyOnAnyScreen"/>.</b> Le reste garde que le chrome arrive ;
+/// <see cref="LoadsNothingFromAThirdPartyOnAnyScreen"/>.</b> Le reste garde que le layout arrive ;
 /// celui-là garde <b>d'où</b> il arrive. Un service qui outille le RGPD ne peut pas faire fuiter
 /// l'adresse IP de ses utilisateurs vers un hébergeur de polices pour afficher une page — et une
 /// feuille chargée chez un tiers le ferait à chaque écran, sans que rien ne se voie.
@@ -23,9 +23,9 @@ namespace MicroserviceRgpd.FunctionalTests.Chrome;
 /// </para>
 /// </remarks>
 [Collection(WebCollection.Name)]
-public class SharedChrome(CustomWebApplicationFactory<Program> factory)
+public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 {
-  private readonly ChromeSurface _chrome = new(factory);
+  private readonly LayoutSurface _layout = new(factory);
 
   /// <summary>
   /// <b>La feuille répond à sa route</b>, servie par le service comme une feuille de style — et non
@@ -34,7 +34,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task ServesTheStyleSheetItself()
   {
-    var served = await _chrome.FetchAsync(ChromeSurface.StyleSheet);
+    var served = await _layout.FetchAsync(LayoutSurface.StyleSheet);
 
     served.StatusCode.ShouldBe(HttpStatusCode.OK, "La feuille de style doit être servie.");
     served.Content.Headers.ContentType?.MediaType.ShouldBe("text/css");
@@ -47,7 +47,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task ServesTheEmbeddedFontItself()
   {
-    var served = await _chrome.FetchAsync(ChromeSurface.Font);
+    var served = await _layout.FetchAsync(LayoutSurface.Font);
 
     served.StatusCode.ShouldBe(HttpStatusCode.OK, "La police doit être servie par le service.");
     served.Content.Headers.ContentType?.MediaType.ShouldBe("font/woff2");
@@ -64,12 +64,12 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task ReferencesTheStyleSheetFromEveryScreen()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var rendered = await _chrome.ReadAsync(screen);
+      var rendered = await _layout.ReadAsync(screen);
 
       rendered.ShouldContain(
-        ChromeSurface.StyleSheet,
+        LayoutSurface.StyleSheet,
         Case.Sensitive,
         $"L'écran {screen} ne référence pas la feuille de style.");
     }
@@ -82,9 +82,9 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task LoadsNothingFromAThirdPartyOnAnyScreen()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var thirdParty = ChromeSurface.ThirdPartyResourcesIn(await _chrome.ReadAsync(screen));
+      var thirdParty = LayoutSurface.ThirdPartyResourcesIn(await _layout.ReadAsync(screen));
 
       thirdParty.ShouldBeEmpty(
         $"L'écran {screen} fait chercher {string.Join(", ", thirdParty)} chez un tiers.");
@@ -98,7 +98,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task LoadsNothingFromAThirdPartyFromTheStyleSheetItself()
   {
-    var sheet = await _chrome.ReadAsync(ChromeSurface.StyleSheet);
+    var sheet = await _layout.ReadAsync(LayoutSurface.StyleSheet);
 
     sheet.ShouldNotContain("http://");
     sheet.ShouldNotContain("https://");
@@ -112,9 +112,9 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesNoStyleBlockInsideTheScreensThemselves()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var rendered = await _chrome.ReadAsync(screen);
+      var rendered = await _layout.ReadAsync(screen);
 
       rendered.ShouldNotContain(
         "<style", Case.Insensitive, $"L'écran {screen} porte encore du CSS dans sa vue.");
@@ -134,9 +134,9 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task WrapsEveryScreenInAMainElement()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var outside = ChromeSurface.OutsideTheMainOf(await _chrome.ReadAsync(screen));
+      var outside = LayoutSurface.OutsideTheMainOf(await _layout.ReadAsync(screen));
 
       outside.ShouldBeEmpty(
         $"L'écran {screen} laisse du contenu hors de son main : {outside}");
@@ -152,16 +152,16 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesTheThreeEntryPointsOnEveryScreen()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
+      var bar = LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen));
 
       // ⚠️ La liste est lue SEULE, sans le nom du service qui la précède : celui-ci mène à
       // l'accueil sans être une entrée, et lire la barre entière ferait passer le retour à
       // l'accueil pour une quatrième entrée — c'est-à-dire l'inverse de ce que ce test garde.
-      ChromeSurface.LinksIn(ChromeSurface.EntryPointListIn(bar))
+      LayoutSurface.LinksIn(LayoutSurface.EntryPointListIn(bar))
         .Select(link => link.Address)
-        .ShouldBe(ChromeSurface.EntryPoints, $"La barre de l'écran {screen} n'offre pas les trois points d'entrée, et eux seuls.");
+        .ShouldBe(LayoutSurface.EntryPoints, $"La barre de l'écran {screen} n'offre pas les trois points d'entrée, et eux seuls.");
     }
   }
 
@@ -173,13 +173,13 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task MarksTheLinkOfTheCurrentScreen()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var links = ChromeSurface.LinksIn(ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
+      var links = LayoutSurface.LinksIn(LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen)));
 
       links.Where(link => link.IsCurrent)
         .Select(link => link.Address)
-        .ShouldBe(ChromeSurface.MarkedEntryPointsOn(screen), $"La barre de l'écran {screen} ne marque pas le bon lien, ou en marque plusieurs.");
+        .ShouldBe(LayoutSurface.MarkedEntryPointsOn(screen), $"La barre de l'écran {screen} ne marque pas le bon lien, ou en marque plusieurs.");
     }
   }
 
@@ -191,16 +191,16 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task NamesTheServiceInTheBarAndLeadsBackToTheDoorstep()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
-      var wordmark = ChromeSurface.WordmarkIn(bar);
+      var bar = LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen));
+      var wordmark = LayoutSurface.WordmarkIn(bar);
 
       wordmark.Text.ShouldBe(
-        ChromeSurface.ServiceName, $"La barre de l'écran {screen} ne nomme pas le service.");
+        LayoutSurface.ServiceName, $"La barre de l'écran {screen} ne nomme pas le service.");
 
       wordmark.Address.ShouldBe(
-        ChromeSurface.Doorstep, $"Le nom du service ne ramène pas à l'accueil depuis l'écran {screen}.");
+        LayoutSurface.Doorstep, $"Le nom du service ne ramène pas à l'accueil depuis l'écran {screen}.");
     }
   }
 
@@ -219,10 +219,10 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesNoTallyInTheBar()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var bar = ChromeSurface.WithoutTheVersion(
-        ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
+      var bar = LayoutSurface.WithoutTheVersion(
+        LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen)));
 
       Regex.IsMatch(bar, @"\d").ShouldBeFalse(
         $"La barre de l'écran {screen} porte un chiffre, donc un compte que personne n'a demandé.");
@@ -236,7 +236,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesExactlyOneVersionInTheBar()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
       var versions = await VersionsInTheBarOfAsync(screen);
 
@@ -255,9 +255,9 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task ShowsTheInformationalVersionOfTheWebAssembly()
   {
-    var expected = $"v{ChromeSurface.InformationalVersionOfTheWebAssembly()}";
+    var expected = $"v{LayoutSurface.InformationalVersionOfTheWebAssembly()}";
 
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
       var versions = await VersionsInTheBarOfAsync(screen);
 
@@ -267,7 +267,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
 
   private async Task<IReadOnlyList<string>> VersionsInTheBarOfAsync(string screen)
   {
-    return ChromeSurface.VersionsIn(ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
+    return LayoutSurface.VersionsIn(LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen)));
   }
 
   /// <summary>
@@ -284,9 +284,9 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task RetiresTheSixFormerScreeningAddressesWithoutRedirecting()
   {
-    foreach (var retired in ChromeSurface.RetiredScreeningAddresses)
+    foreach (var retired in LayoutSurface.RetiredScreeningAddresses)
     {
-      var response = await _chrome.FetchAsync(retired);
+      var response = await _layout.FetchAsync(retired);
 
       // La redirection est nommée AVANT le 404, et non déduite de lui : un 301 échouerait de toute
       // façon sur le statut, mais avec un message qui parlerait d'un statut inattendu là où ce qui
@@ -306,7 +306,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task ServesTheSixScreeningScreensUnderTheirNewPrefix()
   {
-    var screens = await _chrome.ScreeningScreensAsync();
+    var screens = await _layout.ScreeningScreensAsync();
 
     // Six, écrit en clair, et non le compte de la liste des adresses retirées : les deux valent six
     // par histoire et non par règle, et les dériver l'une de l'autre ferait qu'en retirer une
@@ -318,10 +318,10 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
       // ⚠️ Comparaison PAR SEGMENTS, comme celle du surlignage de la barre : un préfixe de texte nu
       // aurait aussi accepté une adresse qui commence par les mêmes lettres sans relever du
       // contexte.
-      ChromeSurface.EntryPointOf(screen).ShouldBe(
+      LayoutSurface.EntryPointOf(screen).ShouldBe(
         "/detection", $"L'écran {screen} ne relève pas du point d'entrée du contexte.");
 
-      await _chrome.ReadAsync(screen);
+      await _layout.ReadAsync(screen);
     }
   }
 
@@ -337,9 +337,9 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesNeitherAFooterNorASkipLink()
   {
-    foreach (var screen in await _chrome.ScreensAsync())
+    foreach (var screen in await _layout.ScreensAsync())
     {
-      var rendered = await _chrome.ReadAsync(screen);
+      var rendered = await _layout.ReadAsync(screen);
 
       rendered.ShouldNotContain("<footer", Case.Insensitive, $"L'écran {screen} porte un pied de page.");
 

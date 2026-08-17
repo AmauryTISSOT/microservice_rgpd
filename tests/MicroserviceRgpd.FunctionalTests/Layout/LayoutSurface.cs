@@ -6,16 +6,16 @@ using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Core.SharedKernel;
 
-namespace MicroserviceRgpd.FunctionalTests.Chrome;
+namespace MicroserviceRgpd.FunctionalTests.Layout;
 
 /// <summary>
-/// Le <b>chrome partagé</b> de la surface de l'<c>Operator</c> — la feuille de style et la police
+/// Le <b>layout partagé</b> de la surface de l'<c>Operator</c> — la feuille de style et la police
 /// que le service sert lui-même —, exercé par sa <b>seule frontière HTTP</b>, exactement ce que fait
 /// un navigateur.
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Le chrome n'appartient ni au <c>Casework</c> ni au <c>Screening</c> : il est du layout.</b>
+/// ⚠️ <b>Le layout n'appartient ni au <c>Casework</c> ni au <c>Screening</c>.</b>
 /// Il reçoit donc son harnais à lui plutôt que d'entrer dans les harnais de contexte existants —
 /// écrire deux fois la même assertion, une par contexte, l'aurait dupliquée sans rien prouver de
 /// plus, et aurait fait se croiser deux contextes que la carte tient pour disjoints. Ce harnais pose
@@ -25,7 +25,7 @@ namespace MicroserviceRgpd.FunctionalTests.Chrome;
 /// ⚠️ <b>Aucune valeur de design n'est lue ici.</b> Pas une couleur, pas un rayon, pas une taille,
 /// pas une graisse : une telle assertion lirait le contenu de la feuille, décrirait l'implémentation
 /// et casserait à chaque retouche sans jamais rien attraper. Ce que ce harnais garde est que le
-/// chrome <b>arrive</b>, et qu'il arrive <b>du service</b>. Le rendu, lui, se vérifie à l'œil.
+/// layout <b>arrive</b>, et qu'il arrive <b>du service</b>. Le rendu, lui, se vérifie à l'œil.
 /// </para>
 /// <para>
 /// <b>La collection est partagée</b> : d'autres tests déposent dans la même base. Les assertions ne
@@ -33,7 +33,7 @@ namespace MicroserviceRgpd.FunctionalTests.Chrome;
 /// répondent.
 /// </para>
 /// </remarks>
-internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory)
+internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory)
 {
   /// <summary>La feuille unique, servie par le service et référencée par tous les écrans.</summary>
   internal const string StyleSheet = "/css/operator.css";
@@ -246,13 +246,25 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// RGPD porte le même nom dans la barre et dans son titre, et une assertion sur la barre qui
   /// lirait la page entière passerait pour de mauvaises raisons.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le compte est vérifié, et pas seulement la présence</b> — comme pour l'élément de version.
+  /// L'écran ne porte <b>qu'un</b> <c>nav</c>, et c'est ce qui autorise le style de la barre à
+  /// s'attacher à l'élément nu plutôt qu'à une classe. Un second <c>nav</c> posé un jour — une
+  /// pagination, un fil d'Ariane — hériterait de ce style et se rendrait en seconde barre blanche ;
+  /// sans ce compte, toutes les assertions de barre se mettraient alors à lire le premier
+  /// <c>nav</c> venu <b>sans échouer</b>, ce qui est la seule façon dont ce renommage pouvait se
+  /// retourner en silence.
+  /// </remarks>
   internal static string NavigationBarIn(string rendered)
   {
-    var bar = Regex.Match(rendered, @"<nav\b[^>]*>(.*?)</nav>", RegexOptions.Singleline);
+    var bars = Regex.Matches(rendered, @"<nav\b[^>]*>(.*?)</nav>", RegexOptions.Singleline);
 
-    bar.Success.ShouldBeTrue("La page rendue ne porte aucune barre de navigation.");
+    bars.Count.ShouldBe(
+      1,
+      "L'écran doit porter exactement une barre de navigation, et le style de la barre est posé sur "
+      + "l'élément `nav` nu : un second `nav` en hériterait et ferait lire la mauvaise barre.");
 
-    return bar.Groups[1].Value;
+    return bars[0].Groups[1].Value;
   }
 
   /// <summary>
@@ -273,7 +285,7 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// <b>La version du produit</b> telle que la barre la porte : le texte de chaque élément
-  /// <c>.chrome-version</c>, dans l'ordre. Ce que la barre doit porter est <b>un seul</b> élément —
+  /// <c>.version</c>, dans l'ordre. Ce que la barre doit porter est <b>un seul</b> élément —
   /// la liste est rendue entière plutôt qu'un premier élément trouvé, pour que le compte se
   /// vérifie et non seulement la présence.
   /// </summary>
@@ -317,7 +329,7 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// invisible aux tests, ce qui ferait passer le balayage des chiffres pour de mauvaises raisons.
   /// </summary>
   private const string VersionElement =
-    @"<span\b[^>]*\bclass=""(?:[^""]*\s)?chrome-version(?:\s[^""]*)?""[^>]*>(.*?)</span>";
+    @"<span\b[^>]*\bclass=""(?:[^""]*\s)?version(?:\s[^""]*)?""[^>]*>(.*?)</span>";
 
   /// <summary>
   /// <b>La liste des points d'entrée</b>, isolée du nom du service qui la précède : la barre porte
@@ -361,7 +373,7 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
     return Regex.Replace(WebUtility.HtmlDecode(stripped), @"\s+", " ").Trim();
   }
 
-  /// <summary>Le contenu du <c>main</c> d'une page rendue — l'écran lui-même, sans son chrome.</summary>
+  /// <summary>Le contenu du <c>main</c> d'une page rendue — l'écran lui-même, sans son layout.</summary>
   internal static string MainOf(string rendered)
   {
     var main = Regex.Match(rendered, @"<main\b[^>]*>(.*?)</main>", RegexOptions.Singleline);
@@ -486,7 +498,7 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
       new("Form.MotivationDetail", string.Empty),
       new("Form.SignedBy", "Claire Martin"),
       new("Form.DesignationKinds", DesignationKind.Email.Token),
-      new("Form.DesignationValues", "chrome@example.fr"),
+      new("Form.DesignationValues", "layout@example.fr"),
       new("Form.Rights", nameof(DataSubjectRight.Access)),
     };
 
@@ -505,13 +517,13 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
   /// </summary>
   private async Task<string> DeclareASystemAsync()
   {
-    var id = $"chrome-{Guid.NewGuid().ToString("n", CultureInfo.InvariantCulture)}";
+    var id = $"layout-{Guid.NewGuid().ToString("n", CultureInfo.InvariantCulture)}";
 
     var fields = new List<KeyValuePair<string, string>>
     {
       new("__RequestVerificationToken", await TokenOfAsync(Manifest)),
       new("Form.Id", id),
-      new("Form.Label", "Le système du chrome"),
+      new("Form.Label", "Le système du layout"),
       new("Form.Contents", "Les adhésions et leurs coordonnées."),
       new("Form.AdapterAddress", string.Empty),
     };
