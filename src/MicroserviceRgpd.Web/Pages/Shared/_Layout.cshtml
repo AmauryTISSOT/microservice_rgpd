@@ -48,6 +48,15 @@
         </li>
       }
     </ul>
+
+    @*
+      LA VERSION DU PRODUIT, À L'EXTRÉMITÉ DROITE, ET C'EST L'EXCEPTION NOMMÉE À « AUCUN CHIFFRE
+      DANS LA BARRE » — de même nature que les références d'articles RGPD sur l'accueil : un chiffre
+      qui n'est ni un compte ni une mesure. Elle se lit et s'ignore : texte nu, ni lien, ni
+      infobulle, ni ARIA. Elle n'est PAS une quatrième entrée — elle est hors de la liste. Sa valeur
+      n'est jamais écrite ici : ProductVersion la lit sur l'assemblage.
+    *@
+    <span class="chrome-version">@ProductVersion.Display</span>
   </nav>
 
   <main>
