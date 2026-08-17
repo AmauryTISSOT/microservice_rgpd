@@ -128,7 +128,7 @@ configuration a perdu le complément qui répétait celui-ci.
 
 **Version du produit** :
 La version de l'application `MicroserviceRgpd.Web` — seule UI et seule API du produit —, celle qui
-s'affiche à droite de la barre de navigation sous la forme `v0.1.0` et se journalise au démarrage.
+s'affiche à droite du header sous la forme `v0.1.0` et se journalise au démarrage.
 Déclarée une seule fois, identique dans tous les environnements, elle nomme *ce que l'on voit à
 l'écran*, et rien d'autre.
 _Avoid_ : version du moteur, version du modèle, version d'API, version du sidecar, build, révision,
@@ -149,19 +149,27 @@ contrat un simple bump.
 
 **Layout** :
 Le cadre fixe que les douze écrans de la surface portent tous, écrit **une seule fois** dans
-`_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, la barre de
-navigation, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page comme de lien
-d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est l'écran. Le layout
-n'appartient à aucun des trois contextes — c'est ce qui les porte tous, et c'est pourquoi il est
-nommé ici plutôt que dans l'un des trois glossaires.
-_Avoid_ : chrome, habillage, shell, enveloppe
+`_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
+latéral** et le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
+comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est
+l'écran. Le layout n'appartient à aucun des trois contextes — c'est ce qui les porte tous, et c'est
+pourquoi il est nommé ici plutôt que dans l'un des trois glossaires.
+_Avoid_ : chrome, habillage, shell, coque, enveloppe
 ⚠️ **Le mot retiré est « chrome »**, et il l'est pour une raison de lecture : il se lisait comme le
 navigateur Google Chrome — que ce dépôt nomme par ailleurs pour de vrai, dans `scripts/run-project.sh`.
 Voir l'ADR-0007, qui supplante sur ce point l'ADR-0006.
-⚠️ **La barre n'est pas le layout : elle en est une partie.** Elle se nomme `Navigation`, et ses trois
-entrées `EntryPoint`. La relation ne vaut que dans ce sens — un test de police relève du layout et
-non de la navigation, alors qu'un test de barre relève des deux, par la partie. C'est ce qui autorise
-`SharedLayout` à porter les deux familles d'assertions.
+⚠️ **Le layout porte DEUX régions de navigation, et aucune n'est le layout : elles en sont des
+parties.** Le **panneau latéral** (`sidepanel`) porte les trois points d'entrée et se replie ; le
+**header** (`header`) porte ce qui ne doit jamais disparaître — le hamburger, le nom du service, la
+version — et survit au repli. `Navigation` continue de nommer le modèle des points d'entrée, et ses
+trois entrées restent des `EntryPoint`. La relation ne vaut que dans ce sens — un test de police
+relève du layout et non de la navigation, alors qu'un test de panneau relève des deux, par la partie.
+C'est ce qui autorise `SharedLayout` à porter les deux familles d'assertions. Voir l'ADR-0009.
+⚠️ **Le mot est « header », pas « bandeau ».** Le dépôt emploie déjà « bandeau » pour tout autre
+chose — le bandeau d'avertissement permanent d'un écran (`DepositScreen`, `CaseScreen`,
+`LocateHandlerTests`) —, et deux objets sans rapport ne portent pas le même mot. C'est la raison
+pour laquelle le code et la prose disent tous deux `header` ici, là où le panneau, lui, se dit
+`sidepanel` dans le code et « panneau latéral » en français.
 ⚠️ **« Enveloppe » reste à `TransportEnvelope`**, qui nomme l'emballage HTTP d'un transport de
 `Casework` — un tout autre objet, et la raison pour laquelle le mot est en `_Avoid_` ici.
 ⚠️ **Trois endroits gardent le mot _chrome_, et aucun n'est un reste à balayer.**

@@ -154,9 +154,9 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var panel = LayoutSurface.NavigationPanelIn(await _layout.ReadAsync(screen));
+      var panel = LayoutSurface.SidepanelIn(await _layout.ReadAsync(screen));
 
-      // ⚠️ La liste est lue SEULE, et le panneau est lu séparément du bandeau : le nom du service
+      // ⚠️ La liste est lue SEULE, et le panneau est lu séparément du header : le nom du service
       // mène à l'accueil sans être une entrée, et lire les deux régions ensemble ferait passer le
       // retour à l'accueil pour une quatrième entrée — l'inverse de ce que ce test garde.
       LayoutSurface.LinksIn(LayoutSurface.EntryPointListIn(panel))
@@ -183,7 +183,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var panel = LayoutSurface.NavigationPanelIn(await _layout.ReadAsync(screen));
+      var panel = LayoutSurface.SidepanelIn(await _layout.ReadAsync(screen));
 
       // La liste est lue SEULE, pour la même raison qu'au-dessus : le wordmark est un lien de la
       // navigation sans être une entrée, et il porte précisément le mot dont ces libellés se
@@ -206,7 +206,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var links = LayoutSurface.LinksIn(LayoutSurface.NavigationPanelIn(await _layout.ReadAsync(screen)));
+      var links = LayoutSurface.LinksIn(LayoutSurface.SidepanelIn(await _layout.ReadAsync(screen)));
 
       links.Where(link => link.IsCurrent)
         .Select(link => link.Address)
@@ -225,13 +225,13 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
     foreach (var screen in await _layout.ScreensAsync())
     {
       // ⚠️ LE NOM DU SERVICE SE LIT DANS LE BANDEAU, ET C'EST LE POINT DE CE TEST DEPUIS LE PANNEAU :
-      // le panneau se replie, le bandeau non. Un wordmark qui aurait suivi les entrées dans le
+      // le panneau latéral se replie, le header non. Un wordmark qui aurait suivi les entrées dans le
       // panneau aurait emporté le chemin du retour avec lui au premier repli.
-      var bar = LayoutSurface.ServiceBarIn(await _layout.ReadAsync(screen));
+      var bar = LayoutSurface.HeaderIn(await _layout.ReadAsync(screen));
       var wordmark = LayoutSurface.WordmarkIn(bar);
 
       wordmark.Text.ShouldBe(
-        LayoutSurface.ServiceName, $"Le bandeau de l'écran {screen} ne nomme pas le service.");
+        LayoutSurface.ServiceName, $"Le header de l'écran {screen} ne nomme pas le service.");
 
       wordmark.Address.ShouldBe(
         LayoutSurface.Doorstep, $"Le nom du service ne ramène pas à l'accueil depuis l'écran {screen}.");
@@ -256,11 +256,11 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
     foreach (var screen in await _layout.ScreensAsync())
     {
       // ⚠️ LES DEUX RÉGIONS SONT BALAYÉES, pas seulement celle qui porte l'exception. Ne balayer que
-      // le bandeau aurait laissé un compteur s'installer à côté d'un point d'entrée — l'endroit
+      // le header aurait laissé un compteur s'installer à côté d'un point d'entrée — l'endroit
       // même où un « 3 dossiers en retard » viendrait naturellement se poser.
       var navigation = LayoutSurface.NavigationOf(await _layout.ReadAsync(screen));
 
-      foreach (var (region, name) in new[] { (navigation.Panel, "panneau"), (navigation.Bar, "bandeau") })
+      foreach (var (region, name) in new[] { (navigation.Sidepanel, "panneau latéral"), (navigation.Header, "header") })
       {
         var swept = LayoutSurface.WithoutTheBurgerGlyph(LayoutSurface.WithoutTheVersion(region));
 
@@ -308,7 +308,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 
   private async Task<IReadOnlyList<string>> VersionsInTheBarOfAsync(string screen)
   {
-    return LayoutSurface.VersionsIn(LayoutSurface.ServiceBarIn(await _layout.ReadAsync(screen)));
+    return LayoutSurface.VersionsIn(LayoutSurface.HeaderIn(await _layout.ReadAsync(screen)));
   }
 
   /// <summary>

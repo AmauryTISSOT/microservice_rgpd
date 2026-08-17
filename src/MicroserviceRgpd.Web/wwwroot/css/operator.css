@@ -182,10 +182,13 @@ html {
 
 /*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
-  LA COQUE : le panneau à gauche, et à sa droite la colonne qui porte le bandeau puis le contenu.
+  LE LAYOUT EN DEUX COLONNES : le panneau latéral à gauche, et à sa droite la colonne qui porte le
+  header puis le contenu. La boîte porte le nom que le glossaire consacre — `shell` et `coque` sont
+  en `_Avoid_` de l'entrée `Layout` (ADR-0007), et le dépôt ne prend pas un second mot pour le cadre
+  qu'il a déjà nommé.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-.shell {
+.layout {
   display: flex;
   min-height: 100vh;
 }
@@ -199,7 +202,7 @@ html {
 
 /*
   LE CONTENEUR A CHANGÉ D'ÉLÉMENT, PAS DE MESURE. Les deux largeurs quittent le `body` pour le
-  `main` — le bandeau, lui, tient toute la largeur de la colonne —, et elles restent exactement
+  `main` — le header, lui, tient toute la largeur de la colonne —, et elles restent exactement
   celles d'avant : l'étroite par défaut, la large en exception nommée pour l'arbitrage colonne par
   colonne.
 */
@@ -228,7 +231,7 @@ main {
   cède, jamais le nom — et c'est pourquoi il est large de 17,5 rem plutôt que d'un pouce.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-nav.panel {
+nav.sidepanel {
   background: var(--surface);
   border-right: var(--hairline-width) solid var(--hairline);
   box-sizing: border-box;
@@ -238,7 +241,7 @@ nav.panel {
   width: 17.5rem;
 }
 
-nav.panel ul {
+nav.sidepanel ul {
   display: flex;
   flex-direction: column;
   gap: var(--space-xxs);
@@ -247,7 +250,7 @@ nav.panel ul {
   padding: 0 var(--space-xs);
 }
 
-nav.panel a {
+nav.sidepanel a {
   border-radius: var(--radius-md);
   color: var(--ink-secondary);
   display: block;
@@ -257,7 +260,7 @@ nav.panel a {
   text-decoration: none;
 }
 
-nav.panel a:hover {
+nav.sidepanel a:hover {
   background: var(--canvas);
 }
 
@@ -266,7 +269,7 @@ nav.panel a:hover {
   fond teinté vient AVEC l'encre, jamais à sa place : la couleur seule aurait dit l'écran courant à
   qui distingue les bleus, et rien à qui ne les distingue pas.
 */
-nav.panel a.current {
+nav.sidepanel a.current {
   background: var(--canvas);
   color: var(--accent);
   font-weight: var(--weight-semibold);
@@ -274,11 +277,11 @@ nav.panel a.current {
 
 /*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
-  LE BANDEAU, qui survit au repli et porte ce qui ne doit jamais disparaître : le hamburger, le nom
+  LE HEADER, qui survit au repli et porte ce qui ne doit jamais disparaître : le hamburger, le nom
   du service, la version.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-nav.topbar {
+nav.header {
   align-items: center;
   background: var(--surface);
   border-bottom: var(--hairline-width) solid var(--hairline);
@@ -294,7 +297,7 @@ nav.topbar {
   plus : il garde l'encre et le corps qu'il portait quand il était inerte, là où les trois entrées
   se posent en corps petit sur l'encre secondaire.
 */
-nav.topbar a.wordmark {
+nav.header a.wordmark {
   color: var(--ink);
   font: var(--type-body-md);
   font-weight: var(--weight-semibold);
@@ -305,10 +308,10 @@ nav.topbar a.wordmark {
 /*
   LA VERSION DU PRODUIT, poussée à l'extrémité droite par `margin-left: auto`, en légende sur l'encre
   estompée : elle se lit et s'ignore. C'est l'exception nommée à « sans un chiffre » ci-dessus. En
-  écran étroit elle SUIT LE FLUX du bandeau — celui-ci est en `flex-wrap` —, jamais masquée ni posée
-  en absolu : ce qui est vrai du bandeau est vrai d'elle.
+  écran étroit elle SUIT LE FLUX du header — celui-ci est en `flex-wrap` —, jamais masquée ni posée
+  en absolu : ce qui est vrai du header est vrai d'elle.
 */
-nav.topbar .version {
+nav.header .version {
   color: var(--ink-muted);
   font: var(--type-caption);
   letter-spacing: var(--type-caption-tracking);
@@ -332,7 +335,7 @@ nav.topbar .version {
   de l'ordre de tabulation et de l'arbre d'accessibilité, et le hamburger serait devenu un bouton que
   seule une souris actionne.
 */
-.panel-toggle {
+.sidepanel-toggle {
   clip-path: inset(50%);
   height: 1px;
   overflow: hidden;
@@ -364,7 +367,7 @@ nav.topbar .version {
   son anneau à elle n'aurait rien entouré de visible. C'est la contrepartie obligée d'un contrôle
   masqué : sans cette règle, tabuler jusqu'au repli ne se verrait nulle part.
 */
-.panel-toggle:focus-visible ~ .shell .burger {
+.sidepanel-toggle:focus-visible ~ .layout .burger {
   outline: var(--rule-width) solid var(--accent);
   outline-offset: var(--space-xxs);
 }
@@ -373,7 +376,7 @@ nav.topbar .version {
   LE PANNEAU REPLIÉ NE LAISSE RIEN DERRIÈRE LUI — ni rail, ni bord, ni gouttière : le contenu reprend
   toute la largeur, ce qui sert d'abord la table d'arbitrage colonne par colonne.
 */
-.panel-toggle:checked ~ .shell nav.panel {
+.sidepanel-toggle:checked ~ .layout nav.sidepanel {
   border-right-width: 0;
   flex-basis: 0;
   width: 0;

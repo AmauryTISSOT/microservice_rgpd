@@ -292,7 +292,7 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
     Regex.Matches(screen, "Configuration").Count.ShouldBe(
       Regex.Matches(screen, Regex.Escape(ScreenName)).Count
       + Regex.Matches(
-        LayoutSurface.NavigationPanelIn(screen), $">{Regex.Escape(ShortScreenName)}</a>").Count,
+        LayoutSurface.SidepanelIn(screen), $">{Regex.Escape(ShortScreenName)}</a>").Count,
       "L'écran écrit « Configuration » ailleurs que dans sa forme pleine ou dans son lien de panneau.");
   }
 

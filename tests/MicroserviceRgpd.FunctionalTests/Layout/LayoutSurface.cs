@@ -262,8 +262,8 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// Les <b>deux régions de navigation</b> d'une page rendue, isolées de tout le reste et l'une de
-  /// l'autre : le <b>panneau</b>, qui porte les trois points d'entrée et disparaît quand l'Operator
-  /// le replie, et le <b>bandeau</b>, qui porte ce qui ne doit jamais disparaître — le hamburger, le
+  /// l'autre : le <b>panneau latéral</b>, qui porte les trois points d'entrée et disparaît quand l'Operator
+  /// le replie, et le <b>header</b>, qui porte ce qui ne doit jamais disparaître — le hamburger, le
   /// nom du service, la version.
   /// </summary>
   /// <remarks>
@@ -281,39 +281,39 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </para>
   /// <para>
   /// ⚠️ <b>Les deux régions se lisent SÉPARÉMENT, et jamais concaténées.</b> Le nom du service est
-  /// « le premier lien du bandeau » ; recoller les deux régions ferait du premier point d'entrée le
+  /// « le premier lien du header » ; recoller les deux régions ferait du premier point d'entrée le
   /// premier lien, et <c>WordmarkIn</c> se mettrait à lire <c>Configuration</c> sans échouer.
   /// </para>
   /// </remarks>
-  internal static (string Panel, string Bar) NavigationOf(string rendered)
+  internal static (string Sidepanel, string Header) NavigationOf(string rendered)
   {
     var regions = Regex.Matches(rendered, @"<nav\b([^>]*)>(.*?)</nav>", RegexOptions.Singleline);
 
     regions.Count.ShouldBe(
       2,
-      "L'écran doit porter exactement deux régions de navigation — le panneau et le bandeau : un "
+      "L'écran doit porter exactement deux régions de navigation — le panneau latéral et le header : un "
       + "`nav` de plus se ferait lire à la place de l'un des deux.");
 
-    return (RegionOf(regions, "panel"), RegionOf(regions, "topbar"));
+    return (RegionOf(regions, "sidepanel"), RegionOf(regions, "header"));
   }
 
   /// <summary>
-  /// <b>Le panneau des points d'entrée</b> d'une page rendue. C'est lui qui porte la liste des
+  /// <b>Le panneau latéral des points d'entrée</b> d'une page rendue. C'est lui qui porte la liste des
   /// trois entrées et le marquage de l'écran courant.
   /// </summary>
-  internal static string NavigationPanelIn(string rendered)
+  internal static string SidepanelIn(string rendered)
   {
-    return NavigationOf(rendered).Panel;
+    return NavigationOf(rendered).Sidepanel;
   }
 
   /// <summary>
-  /// <b>Le bandeau du service</b> d'une page rendue : le hamburger, le nom du service, la version.
+  /// <b>Le header du service</b> d'une page rendue : le hamburger, le nom du service, la version.
   /// Il survit au repli du panneau, et c'est ce qui fait qu'un écran au panneau replié garde un
   /// chemin de retour.
   /// </summary>
-  internal static string ServiceBarIn(string rendered)
+  internal static string HeaderIn(string rendered)
   {
-    return NavigationOf(rendered).Bar;
+    return NavigationOf(rendered).Header;
   }
 
   /// <summary>
@@ -492,13 +492,13 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// Ce que le corps de la page porte <b>hors de la navigation, hors de la coque et hors du
+  /// Ce que le corps de la page porte <b>hors de la navigation, hors du layout et hors du
   /// <c>main</c></b>. Un <c>main</c> qui existe ne dit pas encore qu'il enveloppe : la question est
   /// de savoir ce qui est resté dehors, et la réponse doit être « rien ».
   /// </summary>
   /// <remarks>
   /// <para>
-  /// ⚠️ <b>Les balises ouvrantes retirées sont NOMMÉES par leur classe</b> — la coque et la colonne,
+  /// ⚠️ <b>Les balises ouvrantes retirées sont NOMMÉES par leur classe</b> — le layout et la colonne,
   /// et elles seules : un <c>div</c> quelconque laissé dehors par un écran reste donc visible au
   /// balayage. Les <b>fermantes</b>, elles, ne portent aucune classe et sont indistinguables ; elles
   /// sont retirées toutes. C'est la limite connue de ce balayage, et elle est étroite : ce qu'un
@@ -520,13 +520,13 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
 
     outside = Regex.Replace(outside, @"<nav\b[^>]*>.*?</nav>", string.Empty, RegexOptions.Singleline);
 
-    // La case du repli : elle porte l'état du panneau, et elle doit précéder la coque pour que le
-    // sélecteur `:checked ~ .shell` l'atteigne. Elle n'a donc pas sa place dans le `main`.
-    outside = Regex.Replace(outside, @"<input\b[^>]*\bclass=""panel-toggle""[^>]*>", string.Empty);
+    // La case du repli : elle porte l'état du panneau latéral, et elle doit précéder le layout pour que le
+    // sélecteur `:checked ~ .layout` l'atteigne. Elle n'a donc pas sa place dans le `main`.
+    outside = Regex.Replace(outside, @"<input\b[^>]*\bclass=""sidepanel-toggle""[^>]*>", string.Empty);
 
     // Les deux enveloppes de disposition, nommées par leur classe — puis les fermantes, qui n'en
     // portent aucune. Voir la limite consignée ci-dessus.
-    outside = Regex.Replace(outside, @"<div\b[^>]*\bclass=""(?:shell|column)""[^>]*>", string.Empty);
+    outside = Regex.Replace(outside, @"<div\b[^>]*\bclass=""(?:layout|column)""[^>]*>", string.Empty);
     outside = Regex.Replace(outside, @"</div>", string.Empty);
 
     return outside.Trim();
