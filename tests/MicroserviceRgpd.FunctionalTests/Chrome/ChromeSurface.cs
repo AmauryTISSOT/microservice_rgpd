@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Net;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Screenings;
@@ -269,6 +270,54 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
       Regex.Match(wordmark.Groups[1].Value, @"\bhref=""([^""]*)""").Groups[1].Value,
       TextIn(wordmark.Groups[2].Value));
   }
+
+  /// <summary>
+  /// <b>La version du produit</b> telle que la barre la porte : le texte de chaque élément
+  /// <c>.chrome-version</c>, dans l'ordre. Ce que la barre doit porter est <b>un seul</b> élément —
+  /// la liste est rendue entière plutôt qu'un premier élément trouvé, pour que le compte se
+  /// vérifie et non seulement la présence.
+  /// </summary>
+  internal static IReadOnlyList<string> VersionsIn(string bar)
+  {
+    return
+    [
+      .. Regex.Matches(bar, VersionElement, RegexOptions.Singleline)
+        .Select(version => TextIn(version.Groups[1].Value)),
+    ];
+  }
+
+  /// <summary>
+  /// La barre <b>sans l'élément de version</b> — pour le balayage des chiffres. ⚠️ L'exception est
+  /// <b>retirée</b>, pas tolérée : le balayage garde tout le reste de la barre au chiffre près, et
+  /// c'est ce qui fait qu'un compteur glissé à côté de la version échouerait encore.
+  /// </summary>
+  internal static string WithoutTheVersion(string bar)
+  {
+    return Regex.Replace(bar, VersionElement, string.Empty, RegexOptions.Singleline);
+  }
+
+  /// <summary>
+  /// <b>La version informationnelle de l'assemblage Web</b>, lue par réflexion sur l'attribut que le
+  /// build y écrit — et non recopiée : ce que le test garde est que l'écran <b>montre ce que
+  /// l'assemblage porte</b>, quelle que soit la valeur du jour. La règle « une seule source » se
+  /// vérifie ainsi de bout en bout : la propriété de build, l'attribut, l'écran.
+  /// </summary>
+  internal static string InformationalVersionOfTheWebAssembly()
+  {
+    var attribute = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+
+    attribute.ShouldNotBeNull("L'assemblage Web ne porte aucune version informationnelle.");
+
+    return attribute.InformationalVersion;
+  }
+
+  /// <summary>
+  /// L'élément de version, reconnu à sa <b>classe</b> — comme un mot de la liste, et non comme la
+  /// valeur exacte de l'attribut : une seconde classe posée un jour à côté ne le rendrait pas
+  /// invisible aux tests, ce qui ferait passer le balayage des chiffres pour de mauvaises raisons.
+  /// </summary>
+  private const string VersionElement =
+    @"<span\b[^>]*\bclass=""(?:[^""]*\s)?chrome-version(?:\s[^""]*)?""[^>]*>(.*?)</span>";
 
   /// <summary>
   /// <b>La liste des points d'entrée</b>, isolée du nom du service qui la précède : la barre porte

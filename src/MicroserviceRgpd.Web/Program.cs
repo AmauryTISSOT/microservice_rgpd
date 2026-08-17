@@ -2,6 +2,7 @@
 using System.Text.Unicode;
 using MicroserviceRgpd.Infrastructure.Qualifications;
 using MicroserviceRgpd.Web.Configurations;
+using MicroserviceRgpd.Web.Pages.Shared;
 using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -57,6 +58,11 @@ builder.Services.AddFastEndpoints()
                 });
 
 var app = builder.Build();
+
+// La version du produit, dite une fois au démarrage — par le journal de l'application et non par
+// le journal de bootstrap : c'est celui-là qui passe par OpenTelemetry, donc celui que le tableau
+// de bord Aspire montre, en plus de la console. Même source que la barre : ProductVersion.
+app.Logger.LogInformation("Version du produit {Version}", ProductVersion.Display);
 
 await app.UseAppMiddlewareAndSeedDatabase();
 

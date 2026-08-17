@@ -232,6 +232,19 @@ nav.chrome a.wordmark {
   letter-spacing: var(--type-body-md-tracking);
 }
 
+/*
+  LA VERSION DU PRODUIT, poussée à l'extrémité droite par `margin-left: auto`, en légende sur l'encre
+  estompée : elle se lit et s'ignore. C'est l'exception nommée à « sans un chiffre » ci-dessus. En
+  écran étroit elle SUIT LE FLUX de la barre — celle-ci est en `flex-wrap` —, jamais masquée ni
+  posée en absolu : ce qui est vrai de la barre est vrai d'elle.
+*/
+nav.chrome .chrome-version {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+  margin-left: auto;
+}
+
 h1 {
   font: var(--type-heading-1);
   letter-spacing: var(--type-heading-1-tracking);

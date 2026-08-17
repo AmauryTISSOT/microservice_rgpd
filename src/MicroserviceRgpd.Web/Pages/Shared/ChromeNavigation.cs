@@ -46,6 +46,13 @@ internal sealed record ChromeEntryPoint(string Label, string Address, string Doo
 /// mesure rassurante là où la phrase dit ce qu'elle est — vaut d'autant plus pour une barre qui se
 /// répète sur tous les écrans sans qu'on l'ouvre jamais.
 /// </para>
+/// <para>
+/// ⚠️ <b>Une seule exception, nommée et étroite : la version du produit</b> (<c>v0.1.0</c>), à
+/// l'extrémité droite de la barre, portée par <see cref="ProductVersion"/> — de même nature que
+/// les références d'articles RGPD sur l'accueil : un chiffre qui n'est ni un compte ni une mesure,
+/// et qui se lit et s'ignore. Elle n'est <b>pas</b> une entrée : elle vit hors de
+/// <see cref="EntryPoints"/>, qui reste à trois.
+/// </para>
 /// </remarks>
 internal static class ChromeNavigation
 {

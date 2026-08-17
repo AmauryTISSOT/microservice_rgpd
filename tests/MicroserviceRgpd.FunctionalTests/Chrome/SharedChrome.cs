@@ -210,16 +210,64 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   /// rassurante là où la phrase dit ce qu'elle est — vaut aussi pour une barre qu'on lit sur les
   /// douze écrans sans jamais l'ouvrir.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Une exception, nommée et étroite : la version du produit</b>, à l'extrémité droite de la
+  /// barre — de même nature que les références d'articles RGPD sur l'accueil. Elle est <b>retirée</b>
+  /// de la barre avant le balayage, et non tolérée par lui : tout autre chiffre, y compris un
+  /// compteur glissé à côté d'elle, fait toujours échouer le test.
+  /// </remarks>
   [Fact]
   public async Task CarriesNoTallyInTheBar()
   {
     foreach (var screen in await _chrome.ScreensAsync())
     {
-      var bar = ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen));
+      var bar = ChromeSurface.WithoutTheVersion(
+        ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
 
       Regex.IsMatch(bar, @"\d").ShouldBeFalse(
         $"La barre de l'écran {screen} porte un chiffre, donc un compte que personne n'a demandé.");
     }
+  }
+
+  /// <summary>
+  /// <b>La barre porte la version du produit, exactement une fois, sur chaque écran</b> — un texte
+  /// nu de la forme <c>v0.1.0</c>, à lire et à ignorer : ni lien, ni infobulle, ni libellé.
+  /// </summary>
+  [Fact]
+  public async Task CarriesExactlyOneVersionInTheBar()
+  {
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var versions = await VersionsInTheBarOfAsync(screen);
+
+      versions.Count.ShouldBe(1, $"La barre de l'écran {screen} doit porter la version du produit, une fois.");
+
+      versions[0].ShouldMatch(
+        @"^v\d+\.\d+\.\d+$", $"La version de la barre de l'écran {screen} n'a pas la forme attendue.");
+    }
+  }
+
+  /// <summary>
+  /// <b>La version affichée est celle de l'assemblage Web</b>, lue par réflexion dans le test et non
+  /// figée en littéral : ce qui est gardé est qu'il n'y a <b>qu'une source</b> — la propriété de
+  /// build, portée par l'attribut de l'assemblage, et rendue telle quelle à l'écran.
+  /// </summary>
+  [Fact]
+  public async Task ShowsTheInformationalVersionOfTheWebAssembly()
+  {
+    var expected = $"v{ChromeSurface.InformationalVersionOfTheWebAssembly()}";
+
+    foreach (var screen in await _chrome.ScreensAsync())
+    {
+      var versions = await VersionsInTheBarOfAsync(screen);
+
+      versions.ShouldBe([expected], $"La barre de l'écran {screen} ne montre pas la version de l'assemblage.");
+    }
+  }
+
+  private async Task<IReadOnlyList<string>> VersionsInTheBarOfAsync(string screen)
+  {
+    return ChromeSurface.VersionsIn(ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
   }
 
   /// <summary>

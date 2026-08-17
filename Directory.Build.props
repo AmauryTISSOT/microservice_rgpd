@@ -11,4 +11,22 @@
   <PropertyGroup>
     <NoWarn>1591</NoWarn> <!-- Remove this to turn on warnings for missing XML Comments -->
   </PropertyGroup>
+
+  <!--
+    LA VERSION DU PRODUIT, ET C'EST ICI QU'ELLE VIT — en un seul endroit, pour tous les projets. Elle
+    est lue au runtime sur l'attribut de version informationnelle de l'assemblage Web : la barre de
+    navigation de la surface Operator l'affiche, et l'hôte la journalise au démarrage.
+
+    Règle d'incrément : le MAJEUR quand un contrat que l'Adapter ou l'Operator lit se rompt (format
+    pivot, adresses, taxonomie des droits) ; le MINEUR quand la surface gagne un écran ou une
+    capacité sans rien rompre ; le CORRECTIF pour tout le reste. On bumpe à la main, dans la PR qui
+    porte le changement — pas de tag git, pas de MinVer, pas de CHANGELOG.
+
+    Le SHA de commit n'est PAS collé à la version informationnelle : elle vaut exactement ce qui est
+    écrit ici, et c'est ce que l'écran montre.
+  -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
 </Project>
