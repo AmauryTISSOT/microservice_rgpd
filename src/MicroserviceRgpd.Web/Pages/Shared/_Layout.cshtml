@@ -23,17 +23,17 @@
     consignée : la barre se répète sur tous les écrans sans moyen de la sauter au clavier, ce qui
     est une régression d'accessibilité par rapport à l'état d'avant, où aucune barre n'existait.
   *@
-  <nav class="chrome">
+  <nav>
     @*
       LE NOM DU SERVICE EST LE CHEMIN DU RETOUR, et c'est ce qui donne l'accueil depuis n'importe
       quel écran SANS QUATRIÈME ENTRÉE : le texte inerte devient un lien plutôt qu'un lien de plus.
       Il reste hors de la liste — il n'est pas un point d'entrée, et il ne se marque jamais comme
       l'écran courant.
     *@
-    <a class="wordmark" href="@ChromeNavigation.Doorstep">@ChromeNavigation.ServiceName</a>
+    <a class="wordmark" href="@Navigation.Doorstep">@Navigation.ServiceName</a>
 
     <ul>
-      @foreach (var entryPoint in ChromeNavigation.EntryPoints)
+      @foreach (var entryPoint in Navigation.EntryPoints)
       {
         var current = entryPoint.IsCurrent(Context.Request.Path);
 
@@ -56,7 +56,7 @@
       infobulle, ni ARIA. Elle n'est PAS une quatrième entrée — elle est hors de la liste. Sa valeur
       n'est jamais écrite ici : ProductVersion la lit sur l'assemblage.
     *@
-    <span class="chrome-version">@ProductVersion.Display</span>
+    <span class="version">@ProductVersion.Display</span>
   </nav>
 
   <main>

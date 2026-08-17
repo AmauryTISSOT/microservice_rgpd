@@ -17,12 +17,12 @@
   dérogation est étroite et nommée : les références d'articles du RGPD de la phrase ci-dessous, qui
   ne sont ni un compteur ni une mesure du service.
 *@
-<h1>@ChromeNavigation.ServiceName</h1>
+<h1>@Navigation.ServiceName</h1>
 
-<p>@ChromeNavigation.Presentation</p>
+<p>@Navigation.Presentation</p>
 
 <div class="doorways">
-  @foreach (var entryPoint in ChromeNavigation.EntryPoints)
+  @foreach (var entryPoint in Navigation.EntryPoints)
   {
     @*
       LA CARTE ENTIÈRE EST UN LIEN : c'est une porte, on pousse la porte entière. Pas un `div`

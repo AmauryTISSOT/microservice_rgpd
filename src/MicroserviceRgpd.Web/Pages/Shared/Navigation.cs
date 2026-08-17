@@ -9,7 +9,7 @@ namespace MicroserviceRgpd.Web.Pages.Shared;
 /// que c'est le seul endroit qui tienne ensemble, <b>dans un seul ordre</b>, le nom, l'adresse et ce
 /// qu'on trouve derrière — trois listes parallèles se seraient décalées d'un cran un jour.
 /// </param>
-internal sealed record ChromeEntryPoint(string Label, string Address, string DoorwaySentence)
+internal sealed record EntryPoint(string Label, string Address, string DoorwaySentence)
 {
   /// <summary>
   /// Si l'écran rendu relève de ce point d'entrée. La comparaison est faite <b>par segments</b> :
@@ -54,7 +54,7 @@ internal sealed record ChromeEntryPoint(string Label, string Address, string Doo
 /// <see cref="EntryPoints"/>, qui reste à trois.
 /// </para>
 /// </remarks>
-internal static class ChromeNavigation
+internal static class Navigation
 {
   /// <summary>
   /// Le nom du service, porté devant les trois liens — et, depuis l'accueil, <b>le chemin du
@@ -92,7 +92,7 @@ internal static class ChromeNavigation
   /// fonctionne dans le service tant que l'<c>Operator</c> n'a pas déclaré ses systèmes et les
   /// adresses de leurs <c>Adapter</c>.
   /// </summary>
-  internal static IReadOnlyList<ChromeEntryPoint> EntryPoints { get; } =
+  internal static IReadOnlyList<EntryPoint> EntryPoints { get; } =
   [
     new(
       "Configuration du microservice RGPD",
