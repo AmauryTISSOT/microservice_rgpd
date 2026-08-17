@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Casework.EvidenceLog;
+using MicroserviceRgpd.FunctionalTests.Layout;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
 using Microsoft.EntityFrameworkCore;
@@ -80,11 +81,15 @@ public class ExpiredEvidenceLogSection(CustomWebApplicationFactory<Program> fact
 
     var screen = await _surface.ReadAsync(OperatorSurface.Queue);
 
-    var frontier = screen.IndexOf("À détruire", StringComparison.Ordinal);
+    // ⚠️ LE DÉCOUPAGE PART DU `main`, ET NON DE LA PAGE : le layout partagé pose la case du repli du
+    // panneau tout en haut du corps, et elle serait tombée dans le préfixe des dossiers.
+    var content = LayoutSurface.MainOf(screen);
+
+    var frontier = content.IndexOf("À détruire", StringComparison.Ordinal);
 
     frontier.ShouldBeGreaterThan(-1, "La section des EvidenceLog échus a disparu de l'écran.");
 
-    var cases = screen[..frontier];
+    var cases = content[..frontier];
 
     // ⚠️ AUCUN GESTE SUR UN DOSSIER, comme depuis toujours : chaque ligne mène au dossier, et c'est
     // là que l'Operator agit. Une action depuis la liste ferait signer quelqu'un sans qu'il ait
@@ -95,8 +100,10 @@ public class ExpiredEvidenceLogSection(CustomWebApplicationFactory<Program> fact
     cases.ShouldContain($"/dossiers/{opened.Value}");
 
     // Et tous les formulaires de l'écran sont, sans exception, ceux de la section d'après.
-    Regex.Matches(screen, "<form").Count
-      .ShouldBe(Regex.Matches(screen[frontier..], "<form").Count);
+    // ⚠️ Le compte porte sur `content` des DEUX côtés : `frontier` indexe le `main`, et le comparer à
+    // une découpe de la page entière aurait mesuré deux choses différentes.
+    Regex.Matches(content, "<form").Count
+      .ShouldBe(Regex.Matches(content[frontier..], "<form").Count);
   }
 
   /// <summary>

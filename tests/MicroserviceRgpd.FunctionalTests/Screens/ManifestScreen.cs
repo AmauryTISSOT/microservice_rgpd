@@ -282,18 +282,18 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
     screen.ShouldNotContain("paysage déclaré");
 
     // …et les DEUX formes se comptent : toute occurrence de « Configuration » est soit la forme
-    // pleine, soit le lien de LA BARRE. Une forme courte glissée ailleurs — dans une phrase de
-    // l'écran, ou dans un lien posé hors de la barre — incrémente la gauche sans la droite, et
+    // pleine, soit le lien DU PANNEAU. Une forme courte glissée ailleurs — dans une phrase de
+    // l'écran, ou dans un lien posé hors du panneau — incrémente la gauche sans la droite, et
     // échoue ici.
     //
-    // ⚠️ LE RETOUR DE LA FORME PLEINE DANS LA BARRE N'EST PAS ATTRAPÉ PAR CE COMPTE, qui resterait
+    // ⚠️ LE RETOUR DE LA FORME PLEINE DANS LE PANNEAU N'EST PAS ATTRAPÉ PAR CE COMPTE, qui resterait
     // équilibré : c'est le `ShouldContain` ci-dessus qui le tient, et c'est pourquoi les deux
     // assertions ne font pas double emploi.
     Regex.Matches(screen, "Configuration").Count.ShouldBe(
       Regex.Matches(screen, Regex.Escape(ScreenName)).Count
       + Regex.Matches(
-        LayoutSurface.NavigationBarIn(screen), $">{Regex.Escape(ShortScreenName)}</a>").Count,
-      "L'écran écrit « Configuration » ailleurs que dans sa forme pleine ou dans son lien de barre.");
+        LayoutSurface.SidepanelIn(screen), $">{Regex.Escape(ShortScreenName)}</a>").Count,
+      "L'écran écrit « Configuration » ailleurs que dans sa forme pleine ou dans son lien de panneau.");
   }
 
   /// <summary>
