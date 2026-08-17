@@ -311,7 +311,13 @@ internal sealed class ChromeSurface(CustomWebApplicationFactory<Program> factory
     return attribute.InformationalVersion;
   }
 
-  private const string VersionElement = @"<span\b[^>]*\bclass=""chrome-version""[^>]*>(.*?)</span>";
+  /// <summary>
+  /// L'élément de version, reconnu à sa <b>classe</b> — comme un mot de la liste, et non comme la
+  /// valeur exacte de l'attribut : une seconde classe posée un jour à côté ne le rendrait pas
+  /// invisible aux tests, ce qui ferait passer le balayage des chiffres pour de mauvaises raisons.
+  /// </summary>
+  private const string VersionElement =
+    @"<span\b[^>]*\bclass=""(?:[^""]*\s)?chrome-version(?:\s[^""]*)?""[^>]*>(.*?)</span>";
 
   /// <summary>
   /// <b>La liste des points d'entrée</b>, isolée du nom du service qui la précède : la barre porte

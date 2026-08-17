@@ -238,7 +238,7 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _chrome.ScreensAsync())
     {
-      var versions = ChromeSurface.VersionsIn(ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
+      var versions = await VersionsInTheBarOfAsync(screen);
 
       versions.Count.ShouldBe(1, $"La barre de l'écran {screen} doit porter la version du produit, une fois.");
 
@@ -259,10 +259,15 @@ public class SharedChrome(CustomWebApplicationFactory<Program> factory)
 
     foreach (var screen in await _chrome.ScreensAsync())
     {
-      var versions = ChromeSurface.VersionsIn(ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
+      var versions = await VersionsInTheBarOfAsync(screen);
 
       versions.ShouldBe([expected], $"La barre de l'écran {screen} ne montre pas la version de l'assemblage.");
     }
+  }
+
+  private async Task<IReadOnlyList<string>> VersionsInTheBarOfAsync(string screen)
+  {
+    return ChromeSurface.VersionsIn(ChromeSurface.NavigationBarIn(await _chrome.ReadAsync(screen)));
   }
 
   /// <summary>
