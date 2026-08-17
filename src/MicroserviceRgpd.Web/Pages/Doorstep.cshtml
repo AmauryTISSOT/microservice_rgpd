@@ -33,9 +33,13 @@
       L'ORDRE EST CELUI DE LA BARRE, et il vient de la même liste : on configure, puis on détecte,
       puis on traite les demandes. Deux listes se seraient décalées d'un cran un jour, et l'accueil
       aurait dit d'une porte ce qui se trouve derrière une autre.
+
+      ⚠️ LA CARTE PORTE `DoorwayName`, PAS `NavigationLabel` — c'est le nom PLEIN, plus long que
+      celui que la barre affiche pour le même écran. Rien ne précède une carte, là où le wordmark
+      précède le libellé de la barre. Voir ADR-0008.
     *@
     <a class="doorway" href="@entryPoint.Address">
-      <h2>@entryPoint.Label</h2>
+      <h2>@entryPoint.DoorwayName</h2>
       <p>@entryPoint.DoorwaySentence</p>
     </a>
   }

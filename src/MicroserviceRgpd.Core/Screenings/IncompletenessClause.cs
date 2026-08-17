@@ -119,20 +119,28 @@ public sealed class IncompletenessClause
   /// </para>
   /// <para>
   /// ⚠️ <b>L'identifiant <c>Manifest</c> en clair est retiré du texte</b> — non parce qu'un client le
-  /// lirait, mais parce qu'ADR-0006 le fait désigner un écran qui ne portera plus ce nom : un
-  /// <c>Operator</c> devra chercher « Configuration du microservice RGPD » dans la barre.
+  /// lirait, mais parce qu'ADR-0006 le fait désigner un écran qui ne porte plus ce nom : un
+  /// <c>Operator</c> doit chercher « Configuration » dans la barre.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Ce texte devance le renommage de l'écran, et le dit.</b> Tant que la barre affiche encore
-  /// « Le paysage déclaré », la phrase envoie l'<c>Operator</c> vers un nom qu'aucun écran ne porte.
-  /// C'est un <b>décalage assumé et borné</b> : le texte gelé est arrêté mot pour mot par ADR-0006,
-  /// et le renommage de l'écran est le ticket voisin. Il ne se referme pas ici, et surtout il ne se
-  /// referme pas en réécrivant la phrase gelée.
+  /// ⚠️ <b>LE NOM CITÉ EST CELUI DE LA BARRE, PAS CELUI DE LA CARTE</b>, et l'écran en porte
+  /// désormais deux — « Configuration » dans la barre, « Configuration du microservice RGPD » sur
+  /// la carte de l'accueil et en titre (ADR-0008). Cette phrase décrit un <b>geste de
+  /// navigation</b> : elle envoie l'<c>Operator</c> cliquer dans la barre, et le nom qu'il doit y
+  /// reconnaître est celui qui y est écrit.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Ce texte est du domaine, mais il ne quitte pas la surface — et c'est ce qui borne le
+  /// coût de la forme courte.</b> Il n'est rendu que par <c>_IncompletenessClause.cshtml</c>, inclus
+  /// par les quatre écrans de détection, <b>qui portent tous la barre</b> : le mot cité est écrit à
+  /// l'écran au moment où la phrase se lit. Il ne part ni dans une <c>DeliveryLetter</c> ni dans une
+  /// charge d'API. Le jour où il partirait, la forme <b>pleine</b> devrait y revenir — c'est
+  /// précisément le cas que la règle « aucune forme courte » de l'ADR-0006 visait.
   /// </para>
   /// </summary>
   public string RelationToManifest { get; } =
     "Ce rapport de détection ne recense pas vos systèmes : c'est vous qui les recensez, à la main, "
-    + "système par système, dans « Configuration du microservice RGPD ». La liste que vous y tenez "
+    + "système par système, dans « Configuration ». La liste que vous y tenez "
     + "ne garantit pas qu'il n'en existe pas d'autres.";
 
   /// <summary>

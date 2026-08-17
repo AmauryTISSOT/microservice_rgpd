@@ -1,7 +1,12 @@
 namespace MicroserviceRgpd.Web.Pages.Shared;
 
 /// <summary>Un point d'entrée : ce qu'on lit, où l'on arrive, et ce qu'on y fait.</summary>
-/// <param name="Label">Le libellé, en français — c'est un texte destiné à l'humain.</param>
+/// <param name="NavigationLabel">
+/// Le libellé <b>que la barre porte</b>, en français — c'est un texte destiné à l'humain.
+/// </param>
+/// <param name="DoorwayName">
+/// Le nom <b>que la carte de l'accueil porte</b>, et que l'écran reprend en titre.
+/// </param>
 /// <param name="Address">L'adresse de l'écran d'entrée, et la racine de tout ce qui pend sous lui.</param>
 /// <param name="DoorwaySentence">
 /// La phrase que la <b>porte de l'accueil</b> dit, et que la barre ne dit pas : celle-ci n'a la
@@ -9,7 +14,18 @@ namespace MicroserviceRgpd.Web.Pages.Shared;
 /// que c'est le seul endroit qui tienne ensemble, <b>dans un seul ordre</b>, le nom, l'adresse et ce
 /// qu'on trouve derrière — trois listes parallèles se seraient décalées d'un cran un jour.
 /// </param>
-internal sealed record EntryPoint(string Label, string Address, string DoorwaySentence)
+/// <remarks>
+/// ⚠️ <b>DEUX CHAMPS DE TEXTE, ET C'EST UN COÛT ASSUMÉ</b> — voir <c>ADR-0008</c>. Un écran sur les
+/// trois a <b>deux noms vivants</b> : la barre, où le wordmark le précède, n'a pas besoin de la
+/// forme pleine que la carte porte seule. Les deux autres répètent la même chaîne dans les deux
+/// champs, et cette répétition est <b>la forme normale</b> : un champ vide ou nul aurait fait de
+/// « la barre reprend le nom de la carte » une règle implicite qu'aucun lecteur ne verrait.
+/// </remarks>
+internal sealed record EntryPoint(
+  string NavigationLabel,
+  string DoorwayName,
+  string Address,
+  string DoorwaySentence)
 {
   /// <summary>
   /// Si l'écran rendu relève de ce point d'entrée. La comparaison est faite <b>par segments</b> :
@@ -36,9 +52,17 @@ internal sealed record EntryPoint(string Label, string Address, string DoorwaySe
 /// </para>
 /// <para>
 /// La clause « une barre à trois entrées se lit d'un coup d'œil » ne tient plus telle quelle, et
-/// elle est érodée <b>en connaissance de cause</b> : les trois libellés portent leur forme pleine,
-/// et la barre <b>passera à la ligne</b> sur un écran étroit. Elle est en <c>flex-wrap</c>, donc
-/// rien ne s'y déforme — c'est le prix accepté pour des noms qui disent ce qu'ils mènent.
+/// elle est érodée <b>en connaissance de cause</b> : <b>deux</b> des trois libellés portent leur
+/// forme pleine, et la barre <b>passera à la ligne</b> sur un écran étroit. Elle est en
+/// <c>flex-wrap</c>, donc rien ne s'y déforme — c'est le prix accepté pour des noms qui disent ce
+/// qu'ils mènent.
+/// </para>
+/// <para>
+/// ⚠️ <b>Le troisième, lui, est court, et il est le seul</b> : la configuration se dit
+/// <c>Configuration</c> ici et <c>Configuration du microservice RGPD</c> partout ailleurs — parce
+/// que le wordmark <see cref="ServiceName"/> la précède <b>dans cette barre et nulle part
+/// ailleurs</b>. Ce n'est donc pas un précédent pour raccourcir les deux autres : leur forme pleine
+/// ne répète rien de ce qui les précède. Voir <c>ADR-0008</c>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucun compteur, aucun badge numérique</b>, et il ne doit jamais y en avoir. La règle des
@@ -58,9 +82,16 @@ internal static class Navigation
 {
   /// <summary>
   /// Le nom du service, porté devant les trois liens — et, depuis l'accueil, <b>le chemin du
-  /// retour</b> : il est un lien vers la racine sur tous les écrans.
+  /// retour</b> : il est un lien vers la racine sur tous les écrans. C'est aussi le titre de
+  /// l'accueil et la moitié droite du titre d'onglet de tous les écrans.
   /// </summary>
-  internal const string ServiceName = "Droits des personnes concernées";
+  /// <remarks>
+  /// ⚠️ <b>C'est un NOM DE PRODUIT, pas une description</b>, et le changement de registre est
+  /// délibéré — voir <c>ADR-0008</c>. « Droits des personnes concernées » disait ce que le service
+  /// <b>fait</b> ; ce nom dit ce qu'il <b>est</b>. La capitale à <b>M</b>icroservice est ce qui le
+  /// distingue du nom commun « microservice RGPD » que portent les phrases du domaine.
+  /// </remarks>
+  internal const string ServiceName = "Microservice RGPD";
 
   /// <summary>L'adresse de l'accueil. Ce n'est pas un point d'entrée : c'est la porte.</summary>
   internal const string Doorstep = "/";
@@ -94,13 +125,20 @@ internal static class Navigation
   /// </summary>
   internal static IReadOnlyList<EntryPoint> EntryPoints { get; } =
   [
+    // ⚠️ LE SEUL ÉCRAN À DEUX NOMS, et c'est la conséquence directe du wordmark. « Configuration du
+    // microservice RGPD » dans une barre qui dit déjà « Microservice RGPD » répétait le nom du
+    // service à quinze centimètres de lui-même ; la carte, elle, n'a rien qui la précède et garde
+    // donc la forme pleine — qui reste aussi le titre de l'écran. Le prix consigné : la redondance
+    // survit sur l'accueil, où la barre surmonte les cartes. Voir ADR-0008.
     new(
+      "Configuration",
       "Configuration du microservice RGPD",
       "/manifest",
       "Vous y déclarez, à la main et un par un, les systèmes où vivent des données personnelles. " +
       "Le service ne connaît que ceux que vous y inscrivez, et rien ne garantit qu'il n'en existe " +
       "pas d'autres."),
     new(
+      "Détection des données personnelles",
       "Détection des données personnelles",
       "/detection",
       "Vous y collez un schéma de base de données, et le service signale les colonnes susceptibles " +
@@ -110,7 +148,11 @@ internal static class Navigation
     // ⚠️ UNE SEULE PHRASE, ET C'EST DÉLIBÉRÉ. « Lire » est le seul des trois verbes qui ne soit pas
     // un geste, et la brièveté dit par sa forme qu'on ne pose rien sur cet écran. Le parallélisme ne
     // se « rétablit » pas : la seconde phrase qui l'aurait rétabli a été jugée sans apport.
+    // ⚠️ SON « RGPD » RESTE, et ce n'est pas une redondance avec le wordmark : ici le mot qualifie
+    // LES DEMANDES — celles que le règlement régit —, là il nomme LE SERVICE. Le retirer effacerait
+    // une qualification juridique, pas une répétition.
     new(
+      "Tableau des demandes RGPD",
       "Tableau des demandes RGPD",
       "/dossiers",
       "Vous y lisez les demandes RGPD en cours, rangées par échéance."),

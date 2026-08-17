@@ -62,7 +62,27 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal static readonly IReadOnlyList<string> EntryPoints = ["/manifest", "/detection", "/dossiers"];
 
   /// <summary>Le nom du service, que la barre porte devant ses trois liens.</summary>
-  internal const string ServiceName = "Droits des personnes concernées";
+  internal const string ServiceName = "Microservice RGPD";
+
+  /// <summary>
+  /// <b>Les trois libellés que la BARRE porte</b>, dans l'ordre de mise en route — et le premier
+  /// <b>n'est pas</b> le nom que la carte de l'accueil porte pour le même écran. Le service a deux
+  /// noms vivants pour la configuration : <c>Configuration</c> dans la barre, où le wordmark
+  /// <see cref="ServiceName"/> le précède de quinze centimètres et rendait la forme pleine
+  /// redondante, et la forme pleine sur la carte, où rien ne la précède.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Recopiés à dessein</b>, comme <see cref="Doorways"/> : c'est <b>le</b> garde du double
+  /// nom. Sans lui, rien n'empêche les deux formes de se rejoindre en silence — ni le compilateur,
+  /// qui verrait deux champs distincts porter la même chaîne, ni aucun autre test, puisque la barre
+  /// n'était jusqu'ici éprouvée que sur ses adresses.
+  /// </remarks>
+  internal static readonly IReadOnlyList<string> NavigationLabels =
+  [
+    "Configuration",
+    "Détection des données personnelles",
+    "Tableau des demandes RGPD",
+  ];
 
   /// <summary>
   /// <b>L'accueil</b> — la porte du service, à la racine. Ce n'est le point d'entrée d'aucun

@@ -166,6 +166,36 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>La barre porte ses trois libellés mot pour mot</b>, et le premier est <b>plus court</b> que
+  /// le nom que la carte de l'accueil donne au même écran : la barre dit <c>Configuration</c> là où
+  /// la carte dit <c>Configuration du microservice RGPD</c>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est le garde du double nom, et il n'a de sens que lu avec
+  /// <see cref="Doorstep.CarriesTheThreeDoorwaysWordForWordAndInOrder"/>.</b> Les deux formes
+  /// viennent désormais de deux champs distincts d'un même <c>EntryPoint</c> ; rien dans le code ne
+  /// les empêche de se rejoindre, et la barre n'était jusqu'ici éprouvée que sur ses adresses. Un
+  /// retour silencieux à la forme pleine dans la barre — celui-là même que le renommage du service
+  /// a servi à défaire — ne se serait vu nulle part.
+  /// </remarks>
+  [Fact]
+  public async Task CarriesTheThreeNavigationLabelsWordForWordAndInOrder()
+  {
+    foreach (var screen in await _layout.ScreensAsync())
+    {
+      var bar = LayoutSurface.NavigationBarIn(await _layout.ReadAsync(screen));
+
+      // La liste est lue SEULE, pour la même raison qu'au-dessus : le wordmark est un lien de la
+      // barre sans être une entrée, et il porte précisément le mot dont ces libellés se distinguent.
+      LayoutSurface.LinkBlocksIn(LayoutSurface.EntryPointListIn(bar))
+        .Select(link => LayoutSurface.TextIn(link.Contents))
+        .ShouldBe(
+          LayoutSurface.NavigationLabels,
+          $"La barre de l'écran {screen} ne porte pas les trois libellés arrêtés, dans l'ordre décidé.");
+    }
+  }
+
+  /// <summary>
   /// <b>Le lien de l'écran courant est marqué</b>, et lui seul : sans cela, la barre dit où l'on
   /// peut aller sans jamais dire où l'on est. ⚠️ <b>Sauf sur l'accueil</b>, qui ne relève d'aucun
   /// des trois points d'entrée et n'en marque donc aucun.
