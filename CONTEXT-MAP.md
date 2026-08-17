@@ -81,7 +81,7 @@ quels : on écrit « la `Qualification` », « le `EvidenceLog` ».
 
 ## Langue de système
 
-Trois termes sont vrais des trois côtés à la fois, et ils sont écrits ici plutôt que dupliqués dans
+Quatre termes sont vrais des trois côtés à la fois, et ils sont écrits ici plutôt que dupliqués dans
 les trois glossaires — une doctrine tenue partout doit être écrite **une fois, au-dessus**, sinon
 elle n'est tenue nulle part.
 
@@ -107,6 +107,24 @@ et seulement parce que le rapport de détection rend **toutes** les colonnes du 
 celles où rien n'a été vu : c'est l'`Omission relue`, et elle cesse d'exister le jour où quelqu'un
 filtre l'affichage. Chaque régime est défini dans le glossaire du contexte où il vaut, et **nulle
 part ailleurs**.
+
+**Microservice RGPD** :
+Le nom du produit, tel que l'utilisateur le lit : le wordmark devant les trois entrées de la barre,
+le titre de l'accueil, et la moitié droite du titre d'onglet de chaque écran. C'est un **nom propre**
+— il dit ce que le service *est* —, et la capitale à **M**icroservice est ce qui le distingue du nom
+commun « microservice RGPD » que portent les phrases du domaine. Comme le `Layout`, il n'appartient à
+aucun des trois contextes.
+_Avoid_ : Droits des personnes concernées, l'application, l'outil, la plateforme, le portail
+⚠️ **Le nom retiré est « Droits des personnes concernées »**, et il l'est pour une raison de
+registre : c'était une **description** de ce que le service fait, là où l'utilisateur qui ouvre
+l'application cherche un nom. Voir l'ADR-0008, qui supplante sur ce point l'ADR-0006.
+⚠️ **Ce que le service *fait* n'est plus dit par son nom**, et une seule phrase le dit encore : la
+présentation de l'accueil (`Navigation.Presentation`). C'est la contrepartie du changement de
+registre, et c'est ce qui rend cette phrase moins facultative qu'avant.
+⚠️ **Le `RGPD` du nom du produit n'est pas celui des `demandes RGPD`.** Ici il nomme le service ;
+là il qualifie les demandes que le règlement régit. L'identité de mot n'est pas une identité de
+sens, et c'est pourquoi l'entrée « Tableau des demandes RGPD » garde le sien alors que celle de la
+configuration a perdu le complément qui répétait celui-ci.
 
 **Version du produit** :
 La version de l'application `MicroserviceRgpd.Web` — seule UI et seule API du produit —, celle qui
@@ -156,8 +174,11 @@ prose française : ce sont des comptes-rendus datés, et un ADR acté parle avec
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Sept ADR de système sont en vigueur, et **un seul en supplante un autre — sur un point, et nommément** :
-l'ADR-0007 rouvre ce que l'ADR-0006 avait explicitement laissé fermé.
+Huit ADR de système sont en vigueur, et **deux en supplantent un autre — sur des points nommés, et
+le même à chaque fois** : l'ADR-0007 rouvre ce que l'ADR-0006 avait explicitement laissé fermé, et
+l'ADR-0008 renverse deux de ses clauses — la réserve n° 1, qui tenait le wordmark métier pour le
+contrepoids du mot « microservice », et la règle « un seul nom, aucune forme courte ». L'ADR-0006
+reste en vigueur pour tout le reste, et son texte n'a été édité par aucun des deux.
 
 - [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) — l'architecture
   polyglotte et le moteur auto-hébergé.
@@ -185,6 +206,13 @@ l'ADR-0007 rouvre ce que l'ADR-0006 avait explicitement laissé fermé.
   ⚠️ **Il supplante l'ADR-0006 sur un point précis** : celui-ci rangeait « le mot `Chrome` de
   `ChromeNavigation` » parmi ce que sa décision n'ouvrait pas. Cette clause ne vaut plus ; tout le
   reste de l'ADR-0006 reste en vigueur, et son texte n'a pas été édité.
+- [ADR-0008](./docs/adr/0008-le-service-se-nomme-microservice-rgpd-et-la-configuration-porte-deux-noms.md)
+  — le service se nomme « Microservice RGPD », et l'écran de configuration porte **deux noms** :
+  `Configuration` dans la barre, `Configuration du microservice RGPD` sur la carte de l'accueil et
+  en titre. ⚠️ **Il supplante l'ADR-0006 sur deux points** : la réserve n° 1, qui tenait le wordmark
+  métier pour le contrepoids autorisant le mot « microservice » dans la barre, et la règle « un seul
+  nom, aucune forme courte ». Tout le reste de l'ADR-0006 reste en vigueur, et son texte n'a pas été
+  édité.
 
 ⚠️ [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) **précède le
 découpage** : il a été écrit quand le dépôt n'avait qu'un contexte. Il se lit comme un ADR de

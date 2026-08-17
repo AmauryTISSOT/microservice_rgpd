@@ -9,7 +9,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>@ViewData["Title"] — Droits des personnes concernées</title>
+  <title>@ViewData["Title"] — @Navigation.ServiceName</title>
   <link rel="stylesheet" href="/css/operator.css" />
 </head>
 <body class="@(ViewData["Wide"] is true ? "wide" : null)">
@@ -44,7 +44,7 @@
           *@
           <a href="@entryPoint.Address"
              class="@(current ? "current" : null)"
-             aria-current="@(current ? "page" : null)">@entryPoint.Label</a>
+             aria-current="@(current ? "page" : null)">@entryPoint.NavigationLabel</a>
         </li>
       }
     </ul>

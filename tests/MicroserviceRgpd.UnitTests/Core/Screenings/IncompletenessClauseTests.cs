@@ -134,9 +134,15 @@ public class IncompletenessClauseTests
   /// <para>
   /// ⚠️ <b>Le texte est gelé par ADR-0006, et ce test est ce qui le gèle.</b> L'ancienne phrase
   /// exigeait l'identifiant <c>Manifest</c> en clair ; il en est retiré, parce qu'ADR-0006 le fait
-  /// désigner un écran qui ne portera plus ce nom — l'<c>Operator</c> devra chercher
-  /// « Configuration du microservice RGPD » dans la barre. Le renommage de cet écran est le ticket
-  /// voisin : jusqu'à lui, la phrase gelée devance la barre, et c'est la barre qui la rejoint.
+  /// désigner un écran qui ne porte plus ce nom — l'<c>Operator</c> doit chercher
+  /// « Configuration » dans la barre.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le nom cité est celui de LA BARRE.</b> Depuis ADR-0008, l'écran en porte deux :
+  /// « Configuration » dans la barre, « Configuration du microservice RGPD » sur la carte de
+  /// l'accueil et en titre. La phrase décrit un geste de navigation — elle envoie l'<c>Operator</c>
+  /// cliquer —, et le nom qu'il doit reconnaître est celui qui est écrit là où il clique. Ce test
+  /// est donc <b>aussi</b> ce qui empêche la phrase de repartir vers la forme pleine.
   /// </para>
   /// <para>
   /// ⚠️ <b>Le nom défini part, le verbe reste</b> — « ne recense pas… c'est vous qui les recensez ».
@@ -156,7 +162,7 @@ public class IncompletenessClauseTests
     // que le renommage fait changer de nom.
     clause.RelationToManifest.ShouldBe(
       "Ce rapport de détection ne recense pas vos systèmes : c'est vous qui les recensez, à la "
-      + "main, système par système, dans « Configuration du microservice RGPD ». La liste que vous "
+      + "main, système par système, dans « Configuration ». La liste que vous "
       + "y tenez ne garantit pas qu'il n'en existe pas d'autres.");
 
     clause.RelationToManifest.ShouldContain("à la main", Case.Insensitive);

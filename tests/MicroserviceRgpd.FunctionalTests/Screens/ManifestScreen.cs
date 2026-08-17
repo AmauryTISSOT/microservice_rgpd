@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
+using MicroserviceRgpd.FunctionalTests.Layout;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
@@ -22,6 +23,13 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
   /// vérifierait plus rien.
   /// </summary>
   private const string ScreenName = "Configuration du microservice RGPD";
+
+  /// <summary>
+  /// Le nom <b>que la barre</b> donne au même écran, recopié à dessein lui aussi. L'écran en porte
+  /// deux depuis ADR-0008 : le wordmark « Microservice RGPD » précède l'entrée de barre, où la forme
+  /// pleine répétait le nom du service à quinze centimètres de lui-même.
+  /// </summary>
+  private const string ShortScreenName = "Configuration";
 
   /// <summary>
   /// Les redirections ne sont pas suivies : c'est la redirection elle-même qu'on vérifie. Une
@@ -246,40 +254,63 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>L'écran porte un seul nom, en forme pleine</b> — « Configuration du microservice RGPD » —
-  /// du nom d'onglet au titre, et jusqu'à l'entrée de barre qui y mène. <b>Aucune forme courte
-  /// n'existe</b> : un mot dont la lisibilité dépend de l'écran où on le lit se retrouvera un jour
-  /// hors de cet écran.
+  /// <b>L'écran porte DEUX noms, et chacun à sa place</b> : la <b>forme pleine</b> — « Configuration
+  /// du microservice RGPD » — de l'onglet au titre, et la <b>forme courte</b> — « Configuration » —
+  /// dans la barre, où le wordmark « Microservice RGPD » la précède et rendait la forme pleine
+  /// redondante.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>CE TEST RENVERSE CELUI QU'IL REMPLACE, ET LA RAISON EST ÉCRITE DANS ADR-0008.</b> La
+  /// règle d'avant était « un seul nom, aucune forme courte : un mot dont la lisibilité dépend de
+  /// l'écran où on le lit se retrouvera un jour hors de cet écran ». Elle n'est pas abandonnée
+  /// parce qu'elle avait tort — elle a été <b>pesée contre</b> la répétition du nom du service à
+  /// quinze centimètres de lui-même, et c'est cette répétition qui a été jugée le plus coûteux des
+  /// deux. Son coût, lui, est <b>borné et vérifié</b> : le seul texte de domaine qui cite la forme
+  /// courte — la clause d'incomplétude — n'est rendu que sur des écrans qui portent la barre, où le
+  /// mot cité est écrit sous les yeux du lecteur. Voir ADR-0008.
+  /// </remarks>
   [Fact]
-  public async Task CarriesOneFullNameFromTheTabToTheBarAndNoShortFormAnywhere()
+  public async Task CarriesTheFullNameInTheTabAndTitleAndTheShortOneInTheBar()
   {
     var screen = await ReadAsync(Manifest);
 
     screen.ShouldContain($"<title>{ScreenName} —");
     screen.ShouldContain($"<h1>{ScreenName}</h1>");
-    screen.ShouldContain($">{ScreenName}</a>");
+    screen.ShouldContain($">{ShortScreenName}</a>");
 
     // Le nom retiré ne survit nulle part sur l'écran…
     screen.ShouldNotContain("paysage déclaré");
 
-    // …et « Configuration » ne s'écrit jamais seul : chacune de ses occurrences est la forme pleine.
-    Regex.Matches(screen, "Configuration").Count
-      .ShouldBe(Regex.Matches(screen, Regex.Escape(ScreenName)).Count);
+    // …et les DEUX formes se comptent : toute occurrence de « Configuration » est soit la forme
+    // pleine, soit le lien de LA BARRE. Une forme courte glissée ailleurs — dans une phrase de
+    // l'écran, ou dans un lien posé hors de la barre — incrémente la gauche sans la droite, et
+    // échoue ici.
+    //
+    // ⚠️ LE RETOUR DE LA FORME PLEINE DANS LA BARRE N'EST PAS ATTRAPÉ PAR CE COMPTE, qui resterait
+    // équilibré : c'est le `ShouldContain` ci-dessus qui le tient, et c'est pourquoi les deux
+    // assertions ne font pas double emploi.
+    Regex.Matches(screen, "Configuration").Count.ShouldBe(
+      Regex.Matches(screen, Regex.Escape(ScreenName)).Count
+      + Regex.Matches(
+        LayoutSurface.NavigationBarIn(screen), $">{Regex.Escape(ShortScreenName)}</a>").Count,
+      "L'écran écrit « Configuration » ailleurs que dans sa forme pleine ou dans son lien de barre.");
   }
 
   /// <summary>
-  /// Le lien de retour de la reprise d'une déclaration porte lui aussi la <b>forme pleine</b> :
-  /// c'est le site où le nom pèse le plus, et c'est précisément là que la règle se vérifie.
+  /// Le lien de retour de la reprise d'une déclaration porte la <b>forme courte</b> : c'est un
+  /// <b>geste de navigation</b> — il renvoie l'<c>Operator</c> vers la barre —, et le nom qu'il
+  /// doit y reconnaître est celui qui y est écrit. La forme pleine ne paraît nulle part sur cet
+  /// écran, qui porte son propre titre.
   /// </summary>
   [Fact]
-  public async Task NamesTheScreenInFullInTheProseLinkThatLeadsBackToIt()
+  public async Task NamesTheScreenShortInTheProseLinkThatLeadsBackToIt()
   {
     await DeclareAsync(new Declaration("retour-en-toutes-lettres", "Un système de plus", "Ce qu'il contient."));
 
     var revising = await ReadAsync($"{Manifest}/retour-en-toutes-lettres");
 
-    revising.ShouldContain(ScreenName);
+    revising.ShouldContain($"Revenir à « {ShortScreenName} »");
+    revising.ShouldNotContain(ScreenName);
     revising.ShouldNotContain("paysage déclaré");
   }
 
