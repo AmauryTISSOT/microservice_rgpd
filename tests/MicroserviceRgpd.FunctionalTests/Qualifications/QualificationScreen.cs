@@ -192,12 +192,15 @@ public class QualificationScreen
 
   /// <summary>
   /// <b>Un service qui n'était pas entier le dit</b>, et le verdict qu'il rend malgré tout se lit
-  /// comme un verdict sans contrôle — jamais comme un verdict contrôlé.
+  /// comme un verdict sans contrôle — jamais comme un verdict contrôlé. C'est la première des deux
+  /// formes du mode dégradé : <b>le moteur dont l'avis fait verdict est resté muet</b>, et c'est le
+  /// lexique qui en a tenu lieu.
   /// </summary>
   /// <remarks>
   /// ⚠️ Ce qui est gardé ici est <b>ce que la ligne d'entièreté dit</b> quand un moteur s'est tu.
-  /// Ce que le service fait de la double panne — les deux moteurs muets — est un geste à part, et il
-  /// n'est pas ouvert par cet écran.
+  /// L'urgence à relire est gardée <b>à côté</b>, et non à sa place : ce sont deux axes, et
+  /// <see cref="ReadsTheWholenessOfTheServiceApartFromTheUrgencyToReview"/> éprouve qu'ils ne se
+  /// fondent pas.
   /// </remarks>
   [Fact]
   public async Task SaysTheServiceWasNotWholeWhenOneEngineRenderedNoOpinion()
@@ -210,6 +213,130 @@ public class QualificationScreen
     rendered.ShouldContain("Service non entier");
     rendered.ShouldContain("À relire");
     rendered.ShouldContain(DataSubjectRight.Erasure.FrenchLabel);
+  }
+
+  /// <summary>
+  /// <b>L'autre forme du mode dégradé : le lexique est muet</b>, et l'écran rend quand même le
+  /// verdict du moteur qui, lui, a parlé — sa justification comprise. Ce qui manque alors n'est pas
+  /// le verdict, c'est le <b>contrôle</b> : un moteur lexical mort ne doit pas pouvoir s'éteindre en
+  /// silence.
+  /// </summary>
+  [Fact]
+  public async Task SaysTheServiceWasNotWholeWhenTheLexiconRenderedNoOpinion()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Access]);
+    _factory.Verdict.Justification = "Le texte réclame une copie des données détenues.";
+    _factory.Lexicon.Silence = new QualificationEngineFailure("Le lexique est resté muet.");
+
+    var rendered = await _surface.QualifyAndReadAsync("Je veux une copie de mes données.");
+
+    rendered.ShouldContain("Service non entier");
+    rendered.ShouldContain(DataSubjectRight.Access.FrenchLabel);
+    rendered.ShouldContain("Le texte réclame une copie des données détenues.");
+
+    // Le dépliant nomme LEQUEL des deux s'est tu, et ce que son silence a coûté au verdict : c'est
+    // ce qui distingue les deux formes du mode dégradé, que la seule ligne d'entièreté confond.
+    QualificationSurface.FoldOf(rendered).ShouldContain("le verdict est resté sans contrôle");
+  }
+
+  /// <summary>
+  /// <b>L'entièreté du service se lit distinctement de l'urgence à relire.</b> Les deux axes ne se
+  /// fondent pas : un service entier peut demander une relecture, et c'est le cas le plus courant —
+  /// deux moteurs d'accord, mais dont celui qui fait verdict ne se dit pas sûr.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Sans ce garde, un écran qui aurait déduit l'entièreté du signal de relecture aurait passé
+  /// tous les autres tests : le mode dégradé rend toujours « À relire », et la confusion ne se voit
+  /// que là où « À relire » arrive <b>sans</b> mode dégradé.
+  /// </remarks>
+  [Fact]
+  public async Task ReadsTheWholenessOfTheServiceApartFromTheUrgencyToReview()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Verdict.DeclaredConfidence = DeclaredConfidence.Low;
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+
+    var rendered = await _surface.QualifyAndReadAsync("Supprimez mes données.");
+
+    // Le moteur qui fait verdict doute : la relecture est urgente.
+    rendered.ShouldContain("À relire");
+
+    // Les deux moteurs ont pourtant parlé : l'urgence à relire ne dit rien de l'entièreté.
+    rendered.ShouldContain("Service entier");
+  }
+
+  /// <summary>
+  /// <b>La double panne rend un message français lisible</b> : le service dit qu'il ne peut rien
+  /// qualifier pour l'instant, et l'<c>Operator</c> repart avec une phrase — jamais avec une trace
+  /// d'exception, jamais avec une page d'erreur nue.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le statut dit la même chose que la phrase</b> : un <c>200</c> aurait annoncé aux caches
+  /// et à la supervision une page rendue normalement, là où le service est indisponible. C'est le
+  /// même code que celui de <c>POST /qualifications</c> sur la même panne.
+  /// </remarks>
+  [Fact]
+  public async Task RendersAReadableFrenchSentenceWhenNoEngineRenderedAnyOpinion()
+  {
+    _factory.Verdict.Silence = new QualificationEngineFailure("Le moteur principal est resté muet.");
+    _factory.Lexicon.Silence = new QualificationEngineFailure("Le lexique est resté muet.");
+
+    var outage = await _surface.SubmitAsync("Supprimez mes données.");
+
+    outage.StatusCode.ShouldBe(
+      HttpStatusCode.ServiceUnavailable,
+      "Le service ne peut rien qualifier : la page le dit, et le statut aussi.");
+
+    var rendered = WebUtility.HtmlDecode(await outage.Content.ReadAsStringAsync());
+
+    rendered.ShouldContain("ne peut rien qualifier pour l'instant");
+  }
+
+  /// <summary>
+  /// <b>La double panne ne laisse échapper ni trace d'exception ni verdict vide.</b> Le message du
+  /// moteur nomme le moteur qui s'est tu : c'est de l'exploitation, elle vit dans les traces, et
+  /// l'écran n'en montre rien.
+  /// </summary>
+  [Fact]
+  public async Task ShowsNeitherAStackTraceNorAnEmptyVerdictWhenBothEnginesAreMute()
+  {
+    _factory.Verdict.Silence = new QualificationEngineFailure("Le moteur principal est resté muet.");
+    _factory.Lexicon.Silence = new QualificationEngineFailure("Le lexique est resté muet.");
+
+    var rendered = WebUtility.HtmlDecode(
+      await (await _surface.SubmitAsync("Supprimez mes données.")).Content.ReadAsStringAsync());
+
+    rendered.ShouldNotContain("QualificationEngineFailure");
+    rendered.ShouldNotContain("Le moteur principal est resté muet.");
+    rendered.ShouldNotContain("MicroserviceRgpd.UseCases");
+
+    // Aucun verdict : l'écran ne rend pas une carte de verdict aux cases vides, qui se lirait comme
+    // un verdict que personne n'a prononcé.
+    QualificationSurface.MainOf(rendered).ShouldNotContain("Le verdict");
+    rendered.ShouldNotContain("Entièreté du service");
+  }
+
+  /// <summary>
+  /// <b>Le geste reste possible après une double panne</b> : l'écran rend de nouveau sa zone de
+  /// texte, et il y rend le texte collé. Un message d'indisponibilité qui emporterait le formulaire
+  /// obligerait l'<c>Operator</c> à recoller sa demande.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheFormAndThePastedTextAfterADoubleFailure()
+  {
+    _factory.Verdict.Silence = new QualificationEngineFailure("Le moteur principal est resté muet.");
+    _factory.Lexicon.Silence = new QualificationEngineFailure("Le lexique est resté muet.");
+
+    var rendered = WebUtility.HtmlDecode(
+      await (await _surface.SubmitAsync("Supprimez toutes mes données.")).Content.ReadAsStringAsync());
+
+    var area = Regex.Match(
+      QualificationSurface.MainOf(rendered),
+      @"<textarea[^>]*>(.*?)</textarea>",
+      RegexOptions.Singleline);
+
+    area.Success.ShouldBeTrue("L'écran doit rendre de nouveau sa zone de texte.");
+    area.Groups[1].Value.ShouldContain("Supprimez toutes mes données.");
   }
 
   /// <summary>

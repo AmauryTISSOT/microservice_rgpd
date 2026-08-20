@@ -142,6 +142,45 @@
   }
 }
 
+@*
+  ⚠️ LA DOUBLE PANNE SE DIT EN FRANÇAIS, ET ELLE SE DIT LÀ OÙ LE VERDICT SE SERAIT LU. Aucune trace
+  d'exception, aucune page d'erreur nue : l'Operator apprend ce que le service ne peut pas faire, et
+  ce qu'il peut faire, lui.
+
+  CE N'EST PAS LE MODE DÉGRADÉ. Un seul moteur muet rend un verdict, et l'écran le marque « service
+  non entier » sur sa ligne d'entièreté. Ici, il n'y a pas de verdict : une carte de verdict aux
+  cases vides se lirait comme un verdict que personne n'a prononcé.
+*@
+@if (Model.CouldNotQualify)
+{
+  <div class="system outage">
+    <h2>Le service ne peut rien qualifier pour l'instant</h2>
+
+    @*
+      ⚠️ CE QUE LA PAGE AFFIRME, LE CODE DOIT POUVOIR LE TENIR. « Rien n'a été qualifié » et « aucune
+      trace n'a été gravée » sont vrais : le service refuse avant d'écrire quoi que ce soit. Dire que
+      le texte ne serait « passé nulle part » serait faux — un moteur peut avoir reçu et traité le
+      texte avant de répondre autre chose qu'un avis lisible —, et c'est une affirmation qu'un écran
+      du RGPD ne peut pas se permettre de faire à la légère.
+    *@
+    <p>
+      Aucun des moteurs n'a rendu d'avis. <strong>Rien n'a été qualifié</strong>, et aucune trace
+      n'a été gravée.
+    </p>
+
+    @*
+      LE GESTE EST OFFERT, JAMAIS PROMIS. Cette page recouvre aussi le cas où le moteur principal a
+      dépassé son échéance, que `POST /qualifications` distingue par son code et dont il dit qu'un
+      rejeu redonnera le même dépassement : annoncer ici qu'un nouvel envoi aboutira ferait de la
+      moitié des cas une promesse que le service ne tient pas.
+    *@
+    <p>
+      Le texte est resté dans la zone ci-dessous, et rien ne vous empêche de le soumettre de
+      nouveau — sans garantie qu'il aboutisse. Si le service reste muet, prévenez l'exploitant.
+    </p>
+  </div>
+}
+
 @if (!ViewData.ModelState.IsValid)
 {
   <div class="refusals">

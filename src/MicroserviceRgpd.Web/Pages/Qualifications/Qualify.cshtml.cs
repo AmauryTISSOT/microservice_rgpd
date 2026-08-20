@@ -46,11 +46,25 @@ namespace MicroserviceRgpd.Web.Pages.Qualifications;
 /// pas d'une ligne : <c>QualifyResponse</c> ne projette rien de tout cela.
 /// </para>
 /// <para>
+/// ⚠️ <b>Une indisponibilité partielle ne bloque pas l'<c>Operator</c>, une indisponibilité totale
+/// ne lui rend pas un écran cassé.</b> Un seul moteur muet donne un verdict, assorti de la ligne
+/// d'entièreté qui dit que le service n'était pas entier — et cet état se lit <b>à côté</b> de
+/// l'urgence à relire, jamais à sa place : ce sont deux axes, et un verdict sans contrôle ne doit
+/// jamais se lire comme un verdict contrôlé. Les <b>deux moteurs</b> muets ne laissent rien à
+/// qualifier, et l'écran le dit alors en français, sous un <c>503</c>.
+/// </para>
+/// <para>
+/// <b>La double panne ne se subdivise pas ici</b>, à la différence de <c>POST /qualifications</c>
+/// qui distingue le dépassement d'échéance de l'indisponibilité par son code. La distinction sert
+/// une <b>application</b> qui décide de rejouer ou non ; l'<c>Operator</c>, lui, resoumet son texte
+/// dans les deux cas, et une seconde phrase l'aurait fait choisir entre deux gestes identiques.
+/// </para>
+/// <para>
 /// <b>Le service propose, il ne décide jamais.</b> Ce que l'écran rend est une aide à la décision :
 /// l'humain qui le lit valide ou corrige.
 /// </para>
 /// </remarks>
-public class QualifyModel(IMediator mediator) : PageModel
+public class QualifyModel(IMediator mediator, ILogger<QualifyModel> logger) : PageModel
 {
   /// <summary>Le texte collé, tel quel. Le service ne le découpe ni ne le complète.</summary>
   [BindProperty]
@@ -70,6 +84,18 @@ public class QualifyModel(IMediator mediator) : PageModel
   /// sur le même texte, un signal de relecture calculé autrement que celui de l'API.
   /// </remarks>
   public Premises? RenderedPremises { get; private set; }
+
+  /// <summary>
+  /// Vrai quand <b>aucun moteur n'a rendu d'avis</b> : il n'y a alors rien à qualifier, et l'écran
+  /// dit en français qu'il ne peut rien faire pour l'instant.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ce n'est pas le mode dégradé.</b> Un seul moteur muet rend un verdict, assorti de la
+  /// ligne d'entièreté qui dit que le service n'était pas entier. Ici, les deux se sont tus : il n'y
+  /// a pas de verdict à rendre, et en fabriquer un aux cases vides se lirait comme un verdict que
+  /// personne n'a prononcé.
+  /// </remarks>
+  public bool CouldNotQualify { get; private set; }
 
   /// <summary>
   /// Le plafond du texte tel que l'écran l'annonce — <b>celui du domaine, jamais recopié</b> : un
@@ -107,7 +133,30 @@ public class QualifyModel(IMediator mediator) : PageModel
 
     // ⚠️ AUCUNE RÉFÉRENCE APPELANTE. Voir le prix consigné plus haut : ce champ est celui de
     // l'appelant, et l'écran n'en est pas un.
-    var qualified = await mediator.Send(new QualifyCommand(text, CallerReference: null), cancellationToken);
+    Result<QualificationOutcome> qualified;
+
+    try
+    {
+      qualified = await mediator.Send(new QualifyCommand(text, CallerReference: null), cancellationToken);
+    }
+    catch (QualificationEngineFailure doubleFailure)
+    {
+      // ⚠️ LES DEUX MOTEURS SE SONT TUS, ET C'EST LE SEUL CAS QUI PASSE ICI : un moteur seul muet a
+      // déjà été absorbé par le repli, et rend un verdict marqué « service non entier ». Il ne reste
+      // rien à qualifier, et l'Operator lit une phrase française plutôt qu'une page d'erreur nue.
+      //
+      // ⚠️ LE MESSAGE DU MOTEUR NE FRANCHIT PAS CETTE FRONTIÈRE, exactement comme à l'endpoint : il
+      // nomme le moteur qui s'est tu, ce qui est de l'exploitation et vit dans les traces. Il est
+      // journalisé ici pour ne pas disparaître avec l'exception rattrapée.
+      logger.LogError(doubleFailure, "Aucun moteur n'a rendu d'avis : l'écran ne peut rien qualifier.");
+
+      CouldNotQualify = true;
+
+      // ⚠️ LE STATUT DIT LA MÊME CHOSE QUE LA PHRASE, et c'est le même code que celui de
+      // `POST /qualifications` sur la même panne : un 200 aurait annoncé aux caches et à la
+      // supervision une page rendue normalement, là où le service est indisponible.
+      return new PageResult { StatusCode = StatusCodes.Status503ServiceUnavailable };
+    }
 
     if (qualified.Status != ResultStatus.Ok)
     {

@@ -657,6 +657,15 @@ fieldset label {
   border-color: var(--signal-error);
 }
 
+/*
+  L'INDISPONIBILITÉ EMPRUNTE LA CARTE DU VERDICT, et n'en change que le filet : elle occupe la place
+  où le verdict se serait lu, et un bloc d'une autre forme aurait laissé croire à un rendu tronqué
+  plutôt qu'à un service qui ne peut rien dire.
+*/
+.outage {
+  border-color: var(--signal-error);
+}
+
 /* La détection des données personnelles. Le verrou est en tête et se voit : sans lui, on croit le
    travail fini. */
 .unfinished {
