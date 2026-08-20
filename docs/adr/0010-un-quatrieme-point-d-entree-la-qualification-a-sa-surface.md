@@ -3,7 +3,7 @@
 - **Statut** : accepté
 - **Date** : 2026-08-20
 - **Décidé par** : [Carte — La `Qualification` a sa surface](https://github.com/AmauryTISSOT/microservice_rgpd/issues/248), et le ticket des écrits qu'elle a ouvert en premier : [#249](https://github.com/AmauryTISSOT/microservice_rgpd/issues/249)
-- **Supplante, sur un point** : [ADR-0006](./0006-trois-points-d-entree-renommes-en-francais-identifiants-inchanges.md), qui tenait **le compte des points d'entrée à trois** — la clause « Trois entrées, et pas une quatrième ». Elle s'y lit deux fois, sous la même forme : *« une barre à trois entrées se lit d'un coup d'œil quand une barre à quatre se parcourt »* (décision, « Aucune forme courte, nulle part »), et *« la clause "trois entrées se lisent d'un coup d'œil" est érodée »* (conséquences, « Ce qu'on paie »). Cette clause ne vaut plus. Tout le reste de l'ADR-0006 reste en vigueur — les trois noms français, la règle « aucune forme courte », les identifiants C# inchangés —, et son texte n'a pas été édité : on supplante un ADR, on ne le réécrit pas.
+- **Supplante, sur un point** : [ADR-0006](./0006-trois-points-d-entree-renommes-en-francais-identifiants-inchanges.md), qui tenait **le compte des points d'entrée à trois** — la clause « Trois entrées, et pas une quatrième ». Elle s'y lit deux fois, sous la même forme : *« une barre à trois entrées se lit d'un coup d'œil quand une barre à quatre se parcourt »* (décision, « Aucune forme courte, nulle part »), et *« la clause "trois entrées se lisent d'un coup d'œil" est érodée »* (conséquences, « Ce qu'on paie »). Cette clause ne vaut plus. Tout ce que l'ADR-0006 décide par ailleurs reste en vigueur — les trois noms français des points d'entrée, les identifiants C# inchangés, le texte gelé de la clause d'incomplétude —, **sous réserve des deux points que les ADR-0007 et 0008 lui avaient déjà retirés**, et son texte n'a pas été réécrit : on supplante un ADR, on ne le réécrit pas. Une **suite datée** est appendue en fin de son fichier, qui se borne à nommer ses trois points morts sans toucher une ligne de ce qui précède.
 - **S'appuie sur** : [ADR-0009](./0009-la-navigation-passe-en-panneau-lateral-repliable-sans-javascript.md), qui rangeait « une quatrième entrée » parmi ce qu'il **n'ouvrait pas**, tout en notant que le panneau latéral « la porterait sans effort — c'est même une des raisons de la forme ». Ce que cet ADR-là a préparé sans le décider, celui-ci le décide.
 - **Ne touche pas** : le contrat HTTP. Ce qui remonte à l'écran et ce que l'API tait relèvent de l'[ADR-0011](./0011-les-internes-des-moteurs-sur-la-surface-de-l-operator.md), décision séparée et défaisable séparément.
 
@@ -64,8 +64,11 @@ par un compte.
 
 ## Conséquences
 
-- **La correspondance « un contexte borné, un point d'entrée » devient vraie**, et elle ne l'était
-  pas. Les trois contextes ont chacun leur porte.
+- **Les trois contextes bornés ont chacun leur porte**, et l'un des trois n'en avait aucune. ⚠️ Ce
+  n'est pas pour autant une correspondance un pour un : le panneau compte quatre entrées pour trois
+  contextes, la configuration et le tableau des demandes relevant tous deux de `Casework` et du
+  `Manifest` qu'il consomme. **Le compte des portes ne se déduit pas du compte des contextes**, ni
+  avant ni après cette décision — c'est ce que le point 6 de la décision acte.
 - **`ClaimOrigin.Proposed` cesse d'être une valeur que rien ne produit.** L'écart n'est pas comblé
   pour autant : l'assistance à la qualification dans le dépôt manuel est un chantier distinct, et
   cet ADR ne l'ouvre pas. La valeur cesse seulement d'être **inatteignable par principe**.

@@ -14,7 +14,7 @@ leurs deux `QualificationOpinion`. De cette comparaison sort le `ReviewSignal` :
 
 **Rien de ce travail ne sort du service.** `QualifyResponse` tait délibérément les avis bruts, la
 `DeclaredConfidence` et l'identité des moteurs, et un test de l'endpoint —
-`QualificationsPost.NeverPublishesTheRawOpinionsTheDeclaredConfidenceOrTheEngineIdentities` — le
+`QualificationsPost.NeverPublishesTheRawOpinionsTheDeclaredConfidenceOrTheEngines` — le
 garde nommément. Le motif est écrit dans le contrat lui-même : les publier « graverait l'architecture
 dans le contrat public et inviterait l'appelant à recalculer, hors de tout test, la règle que le
 service tient pour lui ».
@@ -57,6 +57,13 @@ sûr : le jour où quelqu'un laisserait fuir un avis brut sur le fil, le test le
 **`QualificationOutcome` porte désormais les deux `QualificationOpinion` et les trois latences** —
 par moteur, et totale. Elles ne sont pas calculées pour l'occasion : elles existent déjà dans le
 gestionnaire et partent déjà dans la trace d'audit. **Elles cessent simplement d'y mourir.**
+
+⚠️ **Elles sont facultatives, et elles doivent l'être** — l'avis d'un moteur muet est nul, et sa
+latence l'est avec lui. Le motif est écrit dans le gestionnaire et ne change pas ici : *« mesurer le
+temps qu'il a mis à ne rien rendre ferait passer une panne pour une lenteur »*. En `Mode dégradé`,
+l'écran a donc **un** avis et **deux** latences à montrer, et l'absence de l'autre est ce qui dit
+lequel des deux moteurs manquait — la même lecture par la nullité que la `Trace d'audit` pratique
+déjà. Seule la latence totale est toujours présente.
 
 **`QualifyResponse.From` les jette à la projection.** Le contrat HTTP public est **strictement
 inchangé** : pas un champ de plus, pas un champ renommé, pas une contrainte durcie.
@@ -125,7 +132,7 @@ tiré ». Ni « Détails », ni « Avancé » : un dépliant qui ne dit pas ce q
 
 | Alternative | Motif du rejet |
 | --- | --- |
-| **Un second chemin de qualification, dédié à l'écran** — un port ou un gestionnaire parallèle rendant un résultat plus riche | **deux chemins qui divergeraient.** C'est la doctrine déjà tenue ailleurs dans le dépôt, mot pour mot — *« deux formes voudraient dire deux chemins à maintenir »* (`Designation.cs`, `OpenCaseRequest.cs`, `DepositForm.cs`) —, et le second chemin est toujours celui qui prend du retard. Ici il aurait pris du retard **sur la règle de corroboration elle-même** : l'écran aurait fini par afficher un `ReviewSignal` calculé autrement que celui de l'API, sur le même texte |
+| **Un second chemin de qualification, dédié à l'écran** — un port ou un gestionnaire parallèle rendant un résultat plus riche | **deux chemins qui divergeraient.** C'est la doctrine déjà tenue ailleurs dans le dépôt, où elle s'écrit *« deux formes voudraient dire deux chemins de recherche à maintenir, et l'un des deux finirait par ne plus être celui qu'on croit »* (`Designation.cs`, `OpenCaseRequest.cs`, `DepositForm.cs` — la recherche y est le sujet, le motif est le même) —, et le second chemin est toujours celui qui prend du retard. Ici il aurait pris du retard **sur la règle de corroboration elle-même** : l'écran aurait fini par afficher un `ReviewSignal` calculé autrement que celui de l'API, sur le même texte |
 | **L'écran appelant les deux moteurs lui-même**, et comparant les avis dans sa page | deux défauts, et le premier est rédhibitoire : **il ne graverait aucune trace d'audit**, donc une qualification rendue par le service échapperait à ce dont le responsable de traitement doit pouvoir répondre plus tard. Le second : il **redirait la règle de corroboration** hors du gestionnaire qui la tient — une deuxième implémentation d'un `ReviewSignal`, dans une page Razor, sans les tests qui gardent la première |
 | **Publier les internes dans `QualifyResponse`** et laisser l'écran lire l'API comme un client | grave l'architecture dans le contrat public, invite l'appelant tiers à recalculer la règle chez lui, et fait de tout changement de moteur une rupture de contrat. C'est très exactement ce que la clause protège, et elle n'est pas rouverte |
 | **N'afficher que le `ReviewSignal`**, sans les avis | demande à un humain de croire une machine qui refuse de s'expliquer, et rend `NeedsReview` sur un accord des deux moteurs proprement incompréhensible. C'est le besoin qui a ouvert la question |

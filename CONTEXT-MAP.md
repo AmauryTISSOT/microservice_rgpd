@@ -233,8 +233,9 @@ morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour vivants.
   `Qualification` acquiert un **quatrième point d'entrée**, à `/qualification`, nommé
   « Qualification » et posé au **troisième rang** du panneau. ⚠️ **Il supplante l'ADR-0006 sur un
   troisième point** : la clause « Trois entrées, et pas une quatrième », dont le motif — la
-  lisibilité d'une barre horizontale — a disparu avec la barre que l'ADR-0009 a retirée. Tout le
-  reste de l'ADR-0006 reste en vigueur, et son texte n'a pas été édité.
+  lisibilité d'une barre horizontale — a disparu avec la barre que l'ADR-0009 a retirée. Tout ce que
+  l'ADR-0006 décide par ailleurs reste en vigueur, hors les deux points que les ADR-0007 et 0008 lui
+  avaient déjà retirés, et son texte n'a pas été réécrit.
 - [ADR-0011](./docs/adr/0011-les-internes-des-moteurs-sur-la-surface-de-l-operator.md) — les
   **internes des moteurs** — les deux `QualificationOpinion`, la `DeclaredConfidence`, les deux
   `QualificationEngineIdentity` et les trois latences — paraissent sur la surface de l'`Operator`,
