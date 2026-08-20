@@ -63,7 +63,7 @@ L'échelle ordinale à trois degrés — `High`, `Medium`, `Low` — par laquell
 _Avoid_ : certitude, probabilité, score de confiance, fiabilité
 
 **QualificationEngineIdentity** :
-Le nom et la version qu'un moteur joint à sa `QualificationOpinion` — celle de ses règles pour un lexique, celle du modèle servi pour un LLM. Elle ne sert qu'à la `Trace d'audit`, qui conserve les avis avec le moteur dont ils relèvent ; le domaine ne l'interprète jamais et aucune réponse publique ne la porte.
+Le nom et la version qu'un moteur joint à sa `QualificationOpinion` — celle de ses règles pour un lexique, celle du modèle servi pour un LLM. Elle sert à la `Trace d'audit`, qui conserve les avis avec le moteur dont ils relèvent, et le domaine ne l'interprète jamais. ⚠️ **Aucune réponse du contrat HTTP ne la porte ; la surface de l'`Operator` peut la montrer.** Ce que la clause protège est le contrat des applications tierces — le publier sur le fil graverait l'architecture dans un contrat public et inviterait l'appelant à recalculer chez lui la règle que le service tient. Elle ne dit rien de ce que le service montre à l'humain qui est devant lui, et pour qui l'identité du moteur relève du diagnostic. Voir l'[ADR-0011](../../adr/0011-les-internes-des-moteurs-sur-la-surface-de-l-operator.md).
 _Avoid_ : modèle, moteur, provenance, signature
 
 **LexiconOpinion** :

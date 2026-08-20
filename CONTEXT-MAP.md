@@ -182,11 +182,14 @@ prose française : ce sont des comptes-rendus datés, et un ADR acté parle avec
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Huit ADR de système sont en vigueur, et **deux en supplantent un autre — sur des points nommés, et
-le même à chaque fois** : l'ADR-0007 rouvre ce que l'ADR-0006 avait explicitement laissé fermé, et
+Onze ADR de système sont en vigueur, et **quatre en supplantent un autre — toujours sur des points
+nommés**. Trois visent l'ADR-0006 : l'ADR-0007 rouvre ce qu'il avait explicitement laissé fermé,
 l'ADR-0008 renverse deux de ses clauses — la réserve n° 1, qui tenait le wordmark métier pour le
-contrepoids du mot « microservice », et la règle « un seul nom, aucune forme courte ». L'ADR-0006
-reste en vigueur pour tout le reste, et son texte n'a été édité par aucun des deux.
+contrepoids du mot « microservice », et la règle « un seul nom, aucune forme courte » —, et
+l'ADR-0010 retire la clause « Trois entrées, et pas une quatrième ». Le quatrième vise l'ADR-0007 :
+l'ADR-0009 lui retire la clause « le layout porte **une** barre ». Aucun texte supplanté n'a été
+édité ; l'ADR-0006 porte en fin de fichier une **suite datée** qui se borne à nommer ses trois points
+morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour vivants.
 
 - [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) — l'architecture
   polyglotte et le moteur auto-hébergé.
@@ -221,6 +224,29 @@ reste en vigueur pour tout le reste, et son texte n'a été édité par aucun de
   métier pour le contrepoids autorisant le mot « microservice » dans la barre, et la règle « un seul
   nom, aucune forme courte ». Tout le reste de l'ADR-0006 reste en vigueur, et son texte n'a pas été
   édité.
+- [ADR-0009](./docs/adr/0009-la-navigation-passe-en-panneau-lateral-repliable-sans-javascript.md) —
+  la navigation passe en **panneau latéral repliable**, le layout garde un **header** qui survit au
+  repli, et le repli n'a pas une ligne de JavaScript. ⚠️ **Il supplante l'ADR-0007 sur un point** :
+  celui-ci posait que le layout portait **une** barre, nommée `Navigation`. Le layout en porte
+  désormais deux ; `Navigation` et `EntryPoint` gardent leur sens.
+- [ADR-0010](./docs/adr/0010-un-quatrieme-point-d-entree-la-qualification-a-sa-surface.md) — la
+  `Qualification` acquiert un **quatrième point d'entrée**, à `/qualification`, nommé
+  « Qualification » et posé au **troisième rang** du panneau. ⚠️ **Il supplante l'ADR-0006 sur un
+  troisième point** : la clause « Trois entrées, et pas une quatrième », dont le motif — la
+  lisibilité d'une barre horizontale — a disparu avec la barre que l'ADR-0009 a retirée. Tout le
+  reste de l'ADR-0006 reste en vigueur, et son texte n'a pas été édité.
+- [ADR-0011](./docs/adr/0011-les-internes-des-moteurs-sur-la-surface-de-l-operator.md) — les
+  **internes des moteurs** — les deux `QualificationOpinion`, la `DeclaredConfidence`, les deux
+  `QualificationEngineIdentity` et les trois latences — paraissent sur la surface de l'`Operator`,
+  et le **contrat HTTP ne bouge pas** : `QualificationOutcome` s'élargit pour les porter,
+  `QualifyResponse` les jette à la projection. ⚠️ **Il ne supplante rien** — il relit ce que
+  « public » veut dire, et garde **séparées** les deux raisons d'afficher ces internes : expliquer le
+  `ReviewSignal` d'un côté, le diagnostic de l'autre.
+
+⚠️ **Les ADR-0010 et 0011 sont deux et non un, et c'est délibéré** : ce sont deux décisions sans
+rapport, qui se défont séparément — on peut retirer la porte du panneau sans rien changer à ce que
+l'écran montre, et l'inverse. Le dépôt supplante **par points nommés** ; un ADR fondu ne saurait plus
+se supplanter à moitié.
 
 ⚠️ [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) **précède le
 découpage** : il a été écrit quand le dépôt n'avait qu'un contexte. Il se lit comme un ADR de

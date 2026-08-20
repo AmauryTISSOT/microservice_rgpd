@@ -547,3 +547,30 @@ qu'aucun ticket ne couvrait.
   règle si un garde équivalent est un jour réécrit.
 - **Le tableau des mots bloqués** et les réserves de vocabulaire : ce sont des relevés, pas des
   gardes.
+
+## Suite — cet ADR est supplanté sur trois points, par trois ADR distincts (2026-08-20)
+
+⚠️ **Rien de ce qui précède n'a été édité**, et rien ne le sera : on supplante un ADR, on ne le
+réécrit pas. Cette section ne fait que **nommer les trois points** qui ne valent plus, pour qu'un
+lecteur de l'ADR-0006 ne les tienne pas pour vivants faute d'ouvrir la carte des contextes. Les deux
+premiers étaient jusqu'ici consignés dans les ADR qui supplantent et dans `CONTEXT-MAP.md`
+seulement.
+
+- **Le mot `Chrome` de `ChromeNavigation`**, rangé par « Ce que cette décision n'ouvre pas » parmi ce
+  qui restait fermé — supplanté par
+  l'[ADR-0007](./0007-le-cadre-partage-des-ecrans-se-nomme-layout.md) (2026-08-17), qui le sort du
+  dépôt et nomme `Layout` le cadre partagé.
+- **La réserve n° 1 et la règle « aucune forme courte, nulle part »** — supplantées par
+  l'[ADR-0008](./0008-le-service-se-nomme-microservice-rgpd-et-la-configuration-porte-deux-noms.md)
+  (2026-08-17), qui donne son nom au service et **deux noms** à l'écran de configuration.
+- **La clause « Trois entrées, et pas une quatrième »** — celle qui tient le compte des points
+  d'entrée à trois, écrite ici sous la forme *« une barre à trois entrées se lit d'un coup d'œil
+  quand une barre à quatre se parcourt »* (décision, « Aucune forme courte, nulle part ») puis
+  reprise en conséquence sous *« la clause "trois entrées se lisent d'un coup d'œil" est érodée »*.
+  Supplantée par l'[ADR-0010](./0010-un-quatrieme-point-d-entree-la-qualification-a-sa-surface.md)
+  (2026-08-20), qui ouvre un **quatrième** point d'entrée pour la `Qualification`. Le motif de la
+  clause était la lisibilité d'une **barre horizontale** ; l'ADR-0009 a retiré la barre, et le motif
+  a disparu avec la forme qui le portait.
+
+**Tout le reste de cet ADR reste en vigueur** — les trois noms français des points d'entrée, les
+identifiants C# inchangés, le texte gelé de la clause d'incomplétude, le tableau des mots bloqués.
