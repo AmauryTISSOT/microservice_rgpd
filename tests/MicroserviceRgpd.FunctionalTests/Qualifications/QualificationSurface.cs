@@ -137,6 +137,26 @@ internal sealed class QualificationSurface(CustomWebApplicationFactory<Program> 
   }
 
   /// <summary>
+  /// Ce que le <b>dépliant</b> porte : le contenu de l'élément natif sous lequel l'écran range les
+  /// internes des moteurs, et rien de la page qui l'entoure.
+  /// </summary>
+  /// <remarks>
+  /// Le lire séparément est ce qui donne leur sens aux gardes : « les deux avis paraissent » ne dit
+  /// rien tant qu'on ignore s'ils paraissent <b>sous le dépliant</b> ou en plein milieu du verdict,
+  /// où l'ADR-0011 refuse qu'ils soient.
+  /// </remarks>
+  internal static string FoldOf(string rendered)
+  {
+    var fold = Regex.Match(rendered, "<details[^>]*>(.*?)</details>", RegexOptions.Singleline);
+
+    fold.Success.ShouldBeTrue(
+      "L'écran doit porter un dépliant natif : c'est lui qui range les internes des moteurs sous le "
+      + "verdict.");
+
+    return fold.Groups[1].Value;
+  }
+
+  /// <summary>
   /// L'identifiant que l'écran met sous les yeux de l'<c>Operator</c>, lu <b>sur la page</b> — le
   /// seul endroit où il paraisse, faute d'adresse qui le porterait.
   /// </summary>

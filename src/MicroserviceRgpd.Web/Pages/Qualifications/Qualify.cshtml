@@ -1,5 +1,6 @@
 @page "/qualification"
 @model MicroserviceRgpd.Web.Pages.Qualifications.QualifyModel
+@using MicroserviceRgpd.Web.Pages.Qualifications
 @{
   ViewData["Title"] = "Qualification";
 }
@@ -63,6 +64,82 @@
     <strong>rejoue la qualification</strong> — elle produira un autre identifiant et une autre
     trace. Notez ce que vous voulez garder avant de partir.
   </p>
+
+  @*
+    LE DÉPLIANT, ET IL EST EN BAS. L'ordre du document est un critère et non une préférence :
+    personne ne doit lire une version de moteur avant un droit RGPD. Ce qui tient l'Operator à
+    distance de l'idée de trancher lui-même, avis par avis, est la DISPOSITION — le verdict occupe
+    le haut, les internes sont pliés — et non le secret.
+
+    LE RÉSUMÉ NOMME CE QU'IL CACHE. Ni « Détails », ni « Avancé » : un dépliant qui ne dit pas ce
+    qu'il cache ne dit pas s'il vaut la peine d'être ouvert.
+
+    L'élément est NATIF. Pas une ligne de JavaScript ici non plus : ce que le service ne sert pas ne
+    peut pas manquer.
+  *@
+  @if (Model.RenderedPremises is { } premises)
+  {
+    <details class="premises">
+      <summary>@Premises.Summary</summary>
+
+      <p class="hint">
+        Les deux moteurs travaillent en même temps sur le même texte, et c'est de leur confrontation
+        que sort l'urgence à relire. Ce qui suit est <strong>subordonné au verdict</strong>, jamais
+        son concurrent.
+      </p>
+
+      <div class="opinions">
+        @foreach (var column in premises.Opinions)
+        {
+          <div class="opinion">
+            <h3>@column.Heading</h3>
+
+            @if (column.Opinion is { } opinion)
+            {
+              <dl>
+                <dt>Droits exercés</dt>
+                <dd>@opinion.Rights</dd>
+
+                <dt>Confiance déclarée</dt>
+                @*
+                  L'ABSENCE SE LIT COMME UNE ABSENCE, ici aussi. Une case vide en face du mot
+                  « confiance » se lirait comme une confiance nulle — un moteur qui doute —, là où il
+                  s'agit d'un moteur qui n'a aucun avis sur sa propre fiabilité.
+                *@
+                <dd>
+                  @if (opinion.Confidence is { } confidence)
+                  {
+                    @confidence
+                  }
+                  else
+                  {
+                    <span class="none">
+                      Aucune confiance déclarée : ce moteur n'a aucun avis sur sa propre fiabilité.
+                    </span>
+                  }
+                </dd>
+
+                <dt>Moteur</dt>
+                <dd>@opinion.EngineName <code>@opinion.EngineVersion</code></dd>
+
+                <dt>Temps de réponse</dt>
+                <dd>@opinion.Latency</dd>
+              </dl>
+            }
+            else
+            {
+              <p class="none">@column.Absence</p>
+            }
+          </div>
+        }
+      </div>
+
+      <dl>
+        <dt>Temps total de la qualification</dt>
+        <dd>@premises.TotalLatency</dd>
+      </dl>
+    </details>
+  }
 }
 
 @if (!ViewData.ModelState.IsValid)

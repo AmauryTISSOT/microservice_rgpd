@@ -421,6 +421,7 @@ a.doorway,
 .caveat,
 .claim,
 .clause,
+.premises,
 .refusals,
 .system,
 table.queue:not(.columns) {
@@ -443,6 +444,7 @@ table.queue:not(.columns) {
   font-style: italic;
 }
 
+.premises h3,
 .system h2,
 .system h3 {
   font: var(--type-heading-3);
@@ -450,6 +452,7 @@ table.queue:not(.columns) {
   margin: 0 0 var(--space-xxs);
 }
 
+.premises dl,
 .system dl {
   display: grid;
   gap: var(--space-xxs) var(--space-md);
@@ -457,13 +460,40 @@ table.queue:not(.columns) {
   margin: var(--space-xs) 0 0;
 }
 
+.premises dt,
 .system dt {
   font-weight: var(--weight-semibold);
 }
 
+.premises dd,
 .system dd {
   margin: 0;
   white-space: pre-wrap;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE DÉPLIANT DES PRÉMISSES. Une carte comme les autres, et un élément NATIF : le repli est celui du
+  navigateur, sans une ligne de JavaScript — comme le panneau latéral, qui n'en demande pas non plus.
+
+  ⚠️ SON RÉSUMÉ SE LIT COMME UN GESTE, pas comme un titre : il porte le curseur du pointeur et la
+  graisse d'un intitulé, faute de quoi rien ne dirait qu'il s'ouvre.
+
+  LES DEUX AVIS SONT CÔTE À CÔTE, et ils le restent tant que la place le permet : c'est ce qui rend
+  une divergence lisible d'un coup d'œil. Sous 18rem par colonne, ils s'empilent d'eux-mêmes — sans
+  point de rupture déclaré, la grille suffit.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.premises > summary {
+  cursor: pointer;
+  font-weight: var(--weight-semibold);
+}
+
+.premises .opinions {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  margin-top: var(--space-md);
 }
 
 .none {

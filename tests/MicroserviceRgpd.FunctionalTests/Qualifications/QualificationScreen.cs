@@ -412,6 +412,208 @@ public class QualificationScreen
       "L'écran de qualification n'ouvre ni ne promet aucun dossier.");
   }
 
+  /// <summary>
+  /// <b>Un dépliant natif porte les internes des moteurs, et son résumé nomme ce qu'il cache</b> :
+  /// « Les deux avis dont ce verdict est tiré ». Ni « Détails », ni « Avancé » — un dépliant qui ne
+  /// dit pas ce qu'il cache ne dit pas s'il vaut la peine d'être ouvert.
+  /// </summary>
+  [Fact]
+  public async Task FoldsTheEngineInternalsUnderASummaryThatNamesWhatItHides()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+
+    var rendered = await _surface.QualifyAndReadAsync("Supprimez mes données.");
+    var screen = QualificationSurface.MainOf(rendered);
+
+    Regex.Match(screen, "<summary[^>]*>(.*?)</summary>", RegexOptions.Singleline)
+      .Groups[1].Value.Trim()
+      .ShouldBe("Les deux avis dont ce verdict est tiré");
+
+    screen.ShouldNotContain("Détails", Case.Insensitive);
+    screen.ShouldNotContain("Avancé", Case.Insensitive);
+  }
+
+  /// <summary>
+  /// <b>Le verdict paraît avant le dépliant dans l'ordre du document.</b> L'ordre est un critère et
+  /// non une préférence : personne ne doit lire une version de moteur avant un droit RGPD, et c'est
+  /// la disposition — non le secret — qui empêche l'<c>Operator</c> de trancher avis par avis.
+  /// </summary>
+  [Fact]
+  public async Task PlacesTheVerdictBeforeTheFoldInTheDocument()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+
+    var screen = QualificationSurface.MainOf(
+      await _surface.QualifyAndReadAsync("Supprimez mes données."));
+
+    var verdict = screen.IndexOf(DataSubjectRight.Erasure.FrenchLabel, StringComparison.Ordinal);
+    var fold = screen.IndexOf("<details", StringComparison.Ordinal);
+
+    verdict.ShouldBeGreaterThanOrEqualTo(0);
+    fold.ShouldBeGreaterThan(
+      verdict,
+      "Le verdict occupe le haut, les internes des moteurs le bas — jamais l'inverse.");
+  }
+
+  /// <summary>
+  /// <b>Les deux <c>QualificationOpinion</c> paraissent côte à côte sous le dépliant</b>, et c'est
+  /// ce qui rend un verdict contesté compréhensible : l'<c>Operator</c> lit enfin <b>sur quoi</b>
+  /// les deux moteurs divergent, plutôt que de croire une machine qui refuse de s'expliquer.
+  /// </summary>
+  [Fact]
+  public async Task ShowsBothOpinionsUnderTheFoldWhenTheEnginesDiverge()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Access]);
+
+    var fold = QualificationSurface.FoldOf(
+      await _surface.QualifyAndReadAsync("Effacez tout ce que vous avez sur moi."));
+
+    fold.ShouldContain(DataSubjectRight.Erasure.FrenchLabel);
+    // L'avis de contrôle paraît, fût-il celui sur lequel le verdict n'a pas été tiré.
+    fold.ShouldContain(DataSubjectRight.Access.FrenchLabel);
+  }
+
+  /// <summary>
+  /// <b>La <c>DeclaredConfidence</c> du moteur principal paraît sous le dépliant</b> : c'est elle,
+  /// et rien d'autre, qui explique qu'un verdict sur lequel les deux moteurs s'accordent ne soit
+  /// pourtant pas dit corroboré.
+  /// </summary>
+  [Theory]
+  [InlineData(DeclaredConfidence.High, "Haute")]
+  [InlineData(DeclaredConfidence.Medium, "Moyenne")]
+  [InlineData(DeclaredConfidence.Low, "Basse")]
+  public async Task ShowsTheDeclaredConfidenceOfTheEngineThatMakesTheVerdict(
+    DeclaredConfidence declared,
+    string said)
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Verdict.DeclaredConfidence = declared;
+
+    var fold = QualificationSurface.FoldOf(
+      await _surface.QualifyAndReadAsync("Supprimez mes données."));
+
+    fold.ShouldContain("Confiance déclarée");
+    fold.ShouldContain(said);
+  }
+
+  /// <summary>
+  /// <b>Le lexique ne déclare aucune confiance, et l'absence se lit comme une absence.</b> Une case
+  /// vide en face du mot « confiance » se lirait comme une confiance nulle — c'est-à-dire comme un
+  /// moteur qui doute, là où il s'agit d'un moteur qui n'a aucun avis sur sa propre fiabilité.
+  /// </summary>
+  [Fact]
+  public async Task ReadsTheAbsenceOfADeclaredConfidenceAsAnAbsence()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.DeclaredConfidence = null;
+
+    var fold = QualificationSurface.FoldOf(
+      await _surface.QualifyAndReadAsync("Supprimez mes données."));
+
+    fold.ShouldContain("Aucune confiance déclarée");
+  }
+
+  /// <summary>
+  /// <b>Le nom et la version de chaque moteur paraissent sous le dépliant</b> — de quoi dire plus
+  /// tard quel moteur a rendu quel verdict. C'est du diagnostic, et cela n'explique rien du verdict :
+  /// les deux raisons restent séparées.
+  /// </summary>
+  [Fact]
+  public async Task NamesEachEngineAndTheVersionItDeclares()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Verdict.Engine = new QualificationEngineIdentity("moteur-de-verdict", "4.2.1");
+    _factory.Lexicon.Engine = new QualificationEngineIdentity("moteur-de-controle", "0.9.7");
+
+    var fold = QualificationSurface.FoldOf(
+      await _surface.QualifyAndReadAsync("Supprimez mes données."));
+
+    fold.ShouldContain("moteur-de-verdict");
+    fold.ShouldContain("4.2.1");
+    fold.ShouldContain("moteur-de-controle");
+    fold.ShouldContain("0.9.7");
+  }
+
+  /// <summary>
+  /// <b>Les trois latences paraissent</b> — celle de chaque moteur, et la totale : ce que la
+  /// qualification coûte réellement, et non ce qu'on suppose qu'elle coûte.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Aucune <b>valeur</b> de latence n'est gardée : elles dépendent de la machine qui exécute le
+  /// test. Ce qui est gardé est qu'il y en a bien <b>trois</b>, chacune portant son unité.
+  /// </remarks>
+  [Fact]
+  public async Task ShowsTheThreeLatenciesTheOneOfEachEngineAndTheTotal()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+
+    var fold = QualificationSurface.FoldOf(
+      await _surface.QualifyAndReadAsync("Supprimez mes données."));
+
+    fold.ShouldContain("Temps total");
+
+    Regex.Matches(fold, @"\d+\s*ms\b").Count.ShouldBe(
+      3,
+      "Trois latences, et trois seulement : celle de chaque moteur, et la totale.");
+  }
+
+  /// <summary>
+  /// <b>Un moteur muet n'a ni avis ni latence, et le dépliant le dit.</b> Mesurer le temps qu'il a
+  /// mis à ne rien rendre ferait passer une panne pour une lenteur ; laisser sa colonne vide ferait
+  /// passer un service non entier pour un rendu tronqué.
+  /// </summary>
+  [Fact]
+  public async Task SaysUnderTheFoldThatAMuteEngineRenderedNoOpinionAtAll()
+  {
+    _factory.Verdict.Silence = new QualificationEngineFailure("Le moteur principal est resté muet.");
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+
+    var fold = QualificationSurface.FoldOf(
+      await _surface.QualifyAndReadAsync("Supprimez mes données."));
+
+    fold.ShouldContain("Aucun avis");
+
+    Regex.Matches(fold, @"\d+\s*ms\b").Count.ShouldBe(
+      2,
+      "Un moteur qui n'a rien rendu n'a pas de latence : il reste la sienne, et la totale.");
+  }
+
+  /// <summary>
+  /// <b>Les trois signaux de relecture sont éprouvés par la doublure de moteur</b>, et ce qui les
+  /// produit se lit sous le dépliant : deux avis d'accord et une confiance haute donnent
+  /// <c>Corroborated</c>, les mêmes avis avec une confiance moindre donnent <c>NeedsReview</c>, et
+  /// deux avis qui divergent donnent <c>Contested</c>.
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(DataSubjectRight.Erasure), DeclaredConfidence.High, "Corroborée")]
+  [InlineData(nameof(DataSubjectRight.Erasure), DeclaredConfidence.Medium, "À relire")]
+  [InlineData(nameof(DataSubjectRight.Access), DeclaredConfidence.High, "Contestée")]
+  public async Task DictatesTheThreeReviewSignalsThroughTheEngineDouble(
+    string controlledName,
+    DeclaredConfidence declared,
+    string said)
+  {
+    var controlled = DataSubjectRight.FromName(controlledName);
+
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Verdict.DeclaredConfidence = declared;
+    _factory.Lexicon.Qualification = Qualification.Of([controlled]);
+
+    var rendered = await _surface.QualifyAndReadAsync("Supprimez mes données.");
+
+    rendered.ShouldContain(said);
+
+    // Le dépliant porte l'avis qui a produit ce signal.
+    QualificationSurface.FoldOf(rendered).ShouldContain(controlled.FrenchLabel);
+  }
+
   /// <summary>Ce que la trace a gardé de cette qualification-là.</summary>
   private async Task<QualificationAuditRow> RowOfAsync(Guid identifier)
   {
