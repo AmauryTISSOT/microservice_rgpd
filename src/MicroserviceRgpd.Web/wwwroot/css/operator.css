@@ -443,6 +443,7 @@ table.queue:not(.columns) {
   font-style: italic;
 }
 
+.system h2,
 .system h3 {
   font: var(--type-heading-3);
   letter-spacing: var(--type-heading-3-tracking);

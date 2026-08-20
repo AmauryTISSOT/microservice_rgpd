@@ -31,7 +31,14 @@ internal sealed class QualificationSurface(CustomWebApplicationFactory<Program> 
   private readonly HttpClient _client = factory.CreateClient(
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-  internal HttpClient Client => _client;
+  /// <summary>
+  /// La réponse brute d'une adresse, servie ou non — de quoi constater qu'une adresse <b>n'existe
+  /// pas</b>, ce que <see cref="ReadAsync"/> ne saurait pas faire puisqu'il exige un 200.
+  /// </summary>
+  internal async Task<HttpResponseMessage> FetchAsync(string address)
+  {
+    return await _client.GetAsync(address);
+  }
 
   /// <summary>
   /// Colle un texte et rend la réponse telle quelle — de quoi lire un statut et un en-tête.
@@ -87,6 +94,46 @@ internal sealed class QualificationSurface(CustomWebApplicationFactory<Program> 
     response.StatusCode.ShouldBe(HttpStatusCode.OK, $"L'écran {address} doit se rendre.");
 
     return WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+  }
+
+  /// <summary>
+  /// La page <b>telle qu'elle est servie</b>, entités non résolues.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ C'est la seule forme sur laquelle un garde d'échappement veut dire quelque chose : décodée,
+  /// une balise correctement échappée par Razor devient indiscernable d'une balise vivante, et le
+  /// garde attraperait un texte hostile collé par l'<c>Operator</c> au lieu d'un script servi.
+  /// </remarks>
+  internal async Task<string> RawAsync(string address = Screen)
+  {
+    var response = await FetchAsync(address);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, $"L'écran {address} doit se rendre.");
+
+    return await response.Content.ReadAsStringAsync();
+  }
+
+  /// <summary>Le rendu brut d'un geste, entités non résolues.</summary>
+  internal async Task<string> QualifyAndReadRawAsync(string? text)
+  {
+    var qualified = await SubmitAsync(text);
+
+    qualified.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    return await qualified.Content.ReadAsStringAsync();
+  }
+
+  /// <summary>
+  /// Ce que <b>l'écran lui-même</b> rend, le layout partagé retiré : c'est lui qu'on éprouve, et le
+  /// panneau qui l'entoure appartient au harnais du layout.
+  /// </summary>
+  internal static string MainOf(string rendered)
+  {
+    var main = Regex.Match(rendered, "<main[^>]*>(.*?)</main>", RegexOptions.Singleline);
+
+    main.Success.ShouldBeTrue("L'écran doit être rendu dans le main du layout partagé.");
+
+    return main.Groups[1].Value;
   }
 
   /// <summary>

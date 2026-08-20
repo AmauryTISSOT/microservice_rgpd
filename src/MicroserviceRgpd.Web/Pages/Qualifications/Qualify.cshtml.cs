@@ -49,7 +49,7 @@ public class QualifyModel(IMediator mediator) : PageModel
   public string? Text { get; set; }
 
   /// <summary>Le verdict rendu par le geste qui vient d'avoir lieu, ou rien avant lui.</summary>
-  public Verdict? Rendered { get; private set; }
+  public Verdict? RenderedVerdict { get; private set; }
 
   /// <summary>
   /// Le plafond du texte tel que l'écran l'annonce — <b>celui du domaine, jamais recopié</b> : un
@@ -98,7 +98,7 @@ public class QualifyModel(IMediator mediator) : PageModel
         $"La qualification a rendu un statut que l'écran ne sait pas traduire : {qualified.Status}.");
     }
 
-    Rendered = Verdict.Of(qualified.Value);
+    RenderedVerdict = Verdict.Of(qualified.Value);
 
     return Page();
   }

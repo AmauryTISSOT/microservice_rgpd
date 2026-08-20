@@ -53,7 +53,10 @@ public class QualificationScreen
   [Fact]
   public async Task ServesABareTextAreaAndASingleGesture()
   {
-    var screen = await _surface.ReadAsync();
+    // ⚠️ L'ÉCRAN SEUL, LE LAYOUT RETIRÉ : compter les boutons de la page entière aurait fait échouer
+    // ce test le jour où le panneau partagé en porte un, pour une raison qui ne regarde pas cet
+    // écran.
+    var screen = QualificationSurface.MainOf(await _surface.ReadAsync());
 
     var area = Regex.Match(screen, @"<textarea[^>]*>(.*?)</textarea>", RegexOptions.Singleline);
 
@@ -70,7 +73,14 @@ public class QualificationScreen
   [Fact]
   public async Task WorksWithoutASingleLineOfJavaScript()
   {
-    foreach (var rendered in new[] { await _surface.ReadAsync(), await _surface.QualifyAndReadAsync("Supprimez mes données.") })
+    // ⚠️ LE CORPS BRUT, JAMAIS DÉCODÉ. Décodé, une balise correctement échappée par Razor devient
+    // indiscernable d'une balise vivante : le garde attraperait alors un texte hostile collé par
+    // l'Operator, et laisserait passer un vrai script servi par l'écran.
+    foreach (var rendered in new[]
+    {
+      await _surface.RawAsync(),
+      await _surface.QualifyAndReadRawAsync("Supprimez mes données."),
+    })
     {
       rendered.ShouldNotContain("<script", Case.Insensitive);
       rendered.ShouldNotContain("javascript:", Case.Insensitive);
@@ -155,7 +165,51 @@ public class QualificationScreen
     rendered.ShouldContain("Urgence à relire");
     rendered.ShouldContain("Entièreté du service");
     rendered.ShouldContain("Justification");
+
+    // ⚠️ LES TROIS VALEURS, PAS SEULEMENT LEURS TROIS LIBELLÉS. Un écran qui aurait porté les trois
+    // intitulés au-dessus de trois cases vides aurait passé un test qui ne lit que les intitulés.
+    rendered.ShouldContain("Corroborée");
+    rendered.ShouldContain("Service entier");
     rendered.ShouldContain("Le texte réclame l'effacement de toutes les données.");
+  }
+
+  /// <summary>
+  /// <b>Les deux moteurs qui divergent se disent, et se disent comme une urgence.</b> C'est le cas
+  /// où la relecture humaine compte le plus : le service dit qu'il n'est pas d'accord avec lui-même
+  /// plutôt que de choisir en silence.
+  /// </summary>
+  [Fact]
+  public async Task SaysTheReviewIsContestedWhenTheTwoEnginesDoNotAgree()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Access]);
+
+    var rendered = await _surface.QualifyAndReadAsync("Effacez tout ce que vous avez sur moi.");
+
+    rendered.ShouldContain("Contestée");
+    rendered.ShouldContain("Service entier");
+  }
+
+  /// <summary>
+  /// <b>Un service qui n'était pas entier le dit</b>, et le verdict qu'il rend malgré tout se lit
+  /// comme un verdict sans contrôle — jamais comme un verdict contrôlé.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Ce qui est gardé ici est <b>ce que la ligne d'entièreté dit</b> quand un moteur s'est tu.
+  /// Ce que le service fait de la double panne — les deux moteurs muets — est un geste à part, et il
+  /// n'est pas ouvert par cet écran.
+  /// </remarks>
+  [Fact]
+  public async Task SaysTheServiceWasNotWholeWhenOneEngineRenderedNoOpinion()
+  {
+    _factory.Verdict.Silence = new QualificationEngineFailure("Le moteur principal est resté muet.");
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+
+    var rendered = await _surface.QualifyAndReadAsync("Supprimez mes données.");
+
+    rendered.ShouldContain("Service non entier");
+    rendered.ShouldContain("À relire");
+    rendered.ShouldContain(DataSubjectRight.Erasure.FrenchLabel);
   }
 
   /// <summary>
@@ -336,7 +390,7 @@ public class QualificationScreen
   [InlineData("/qualifications")]
   public async Task OpensNoAddressThatWouldReadAQualificationAgain(string address)
   {
-    var response = await _surface.Client.GetAsync(address);
+    var response = await _surface.FetchAsync(address);
 
     response.StatusCode.ShouldBeOneOf(HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
   }
@@ -375,13 +429,9 @@ public class QualificationScreen
   /// </summary>
   private static IReadOnlyList<string> LinksInTheMainOf(string rendered)
   {
-    var main = Regex.Match(rendered, "<main[^>]*>(.*?)</main>", RegexOptions.Singleline);
-
-    main.Success.ShouldBeTrue("L'écran doit être rendu dans le main du layout partagé.");
-
     return
     [
-      .. Regex.Matches(main.Groups[1].Value, @"<a\b[^>]*href=""([^""]*)""")
+      .. Regex.Matches(QualificationSurface.MainOf(rendered), @"<a\b[^>]*href=""([^""]*)""")
         .Select(link => link.Groups[1].Value),
     ];
   }

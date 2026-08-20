@@ -148,7 +148,7 @@ Coupler l'une à l'autre ferait d'un changement d'écran une rupture de contrat,
 contrat un simple bump.
 
 **Layout** :
-Le cadre fixe que les douze écrans de la surface portent tous, écrit **une seule fois** dans
+Le cadre fixe que les treize écrans de la surface portent tous, écrit **une seule fois** dans
 `_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
 latéral** et le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
 comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est

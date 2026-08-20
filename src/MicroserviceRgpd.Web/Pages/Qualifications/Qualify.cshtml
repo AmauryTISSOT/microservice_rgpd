@@ -1,16 +1,21 @@
 @page "/qualification"
 @model MicroserviceRgpd.Web.Pages.Qualifications.QualifyModel
 @{
-  ViewData["Title"] = "Qualifier une demande";
+  ViewData["Title"] = "Qualification";
 }
 
-<h1>Qualifier une demande</h1>
+@*
+  LE NOM EST « QUALIFICATION », ET C'EST LE SEUL. L'ADR-0010 le pose : un seul nom par écran, répété
+  à l'identique du panneau à la carte de l'accueil quand la porte viendra. Un titre qui aurait dit
+  autre chose ici aurait été un troisième nom vivant pour le même écran.
+*@
+<h1>Qualification</h1>
 
 @*
   LE VERDICT EST EN HAUT, PARCE QUE C'EST CE QU'ON EST VENU LIRE. Le geste qui l'a produit reste
   dessous, avec le texte collé : l'Operator relit ce qu'il a soumis sans quitter le verdict.
 *@
-@if (Model.Rendered is { } verdict)
+@if (Model.RenderedVerdict is { } verdict)
 {
   <div class="system">
     <h2>Le verdict</h2>
@@ -94,11 +99,6 @@
       demande que personne n'a reçue.
     *@
     <textarea id="texte" name="Text" rows="12" spellcheck="false">@Model.Text</textarea>
-  </p>
-
-  <p class="hint">
-    La qualification se fait <strong>maintenant</strong>, pendant que vous attendez : rien ne part
-    en arrière-plan, et il n'y a aucun état à venir consulter.
   </p>
 
   <button type="submit" class="primary">Qualifier</button>

@@ -173,10 +173,11 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   private const string Queue = "/dossiers";
 
   /// <summary>
-  /// L'écran de la qualification. ⚠️ <b>Il ne relève d'AUCUN des trois points d'entrée</b> — il
-  /// s'atteint par son adresse, et la porte qui l'annoncera viendra par un geste délibéré. Il porte
-  /// pourtant le cadre partagé comme les autres, et c'est très exactement ce que sa présence dans
-  /// cette liste garde.
+  /// L'écran de la qualification. <b>Sa porte est décidée</b> — l'ADR-0010 lui donne la quatrième
+  /// entrée du panneau et sa carte à l'accueil, au troisième rang — et elle se pose par un ticket à
+  /// elle. ⚠️ <b>D'ici là il ne relève d'aucun point d'entrée</b>, et le marquage n'a donc rien à
+  /// marquer sur lui. Il porte pourtant le cadre partagé comme les autres, et c'est très exactement
+  /// ce que sa présence dans cette liste garde.
   /// </summary>
   private const string Qualification = "/qualification";
   private const string CaseDeposit = "/dossiers/depot";
@@ -440,9 +441,11 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// Le point d'entrée que la barre doit <b>marquer</b> sur un écran : un seul, sauf sur l'accueil
-  /// et sur l'écran de la qualification, qui ne relèvent d'aucun des trois et n'en marquent donc
+  /// et sur l'écran de la qualification, qui n'en relèvent d'aucun et n'en marquent donc
   /// <b>aucun</b> — marquer une entrée là reviendrait à dire qu'on est déjà dans ce que la porte
-  /// ouvre.
+  /// ouvre. ⚠️ <b>Les deux exceptions n'ont pas la même durée de vie</b> : l'accueil est la porte et
+  /// ne relèvera jamais d'une entrée, tandis que la qualification en attend une, décidée par
+  /// l'ADR-0010. Le jour où elle est posée, c'est ici qu'elle cesse d'être une exception.
   /// </summary>
   internal static IReadOnlyList<string> MarkedEntryPointsOn(string screen)
   {
