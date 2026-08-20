@@ -144,13 +144,13 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La barre porte les trois points d'entrée, sur chaque écran, et dans l'ordre décidé</b> — et
-  /// c'est ce qui fait que quitter un dossier long ne demande plus de le dérouler jusqu'en bas : le
-  /// <c>Manifest</c>, la détection et le tableau des demandes RGPD s'atteignent de partout sans
-  /// passer par un écran intermédiaire.
+  /// <b>La barre porte les quatre points d'entrée, sur chaque écran, et dans l'ordre décidé</b> —
+  /// et c'est ce qui fait que quitter un dossier long ne demande plus de le dérouler jusqu'en bas :
+  /// le <c>Manifest</c>, la détection, la qualification et le tableau des demandes RGPD s'atteignent
+  /// de partout sans passer par un écran intermédiaire.
   /// </summary>
   [Fact]
-  public async Task CarriesTheThreeEntryPointsOnEveryScreen()
+  public async Task CarriesTheFourEntryPointsOnEveryScreen()
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
@@ -158,28 +158,28 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 
       // ⚠️ La liste est lue SEULE, et le panneau est lu séparément du header : le nom du service
       // mène à l'accueil sans être une entrée, et lire les deux régions ensemble ferait passer le
-      // retour à l'accueil pour une quatrième entrée — l'inverse de ce que ce test garde.
+      // retour à l'accueil pour une cinquième entrée — l'inverse de ce que ce test garde.
       LayoutSurface.LinksIn(LayoutSurface.EntryPointListIn(panel))
         .Select(link => link.Address)
-        .ShouldBe(LayoutSurface.EntryPoints, $"Le panneau de l'écran {screen} n'offre pas les trois points d'entrée, et eux seuls.");
+        .ShouldBe(LayoutSurface.EntryPoints, $"Le panneau de l'écran {screen} n'offre pas les quatre points d'entrée, et eux seuls.");
     }
   }
 
   /// <summary>
-  /// <b>La barre porte ses trois libellés mot pour mot</b>, et le premier est <b>plus court</b> que
+  /// <b>La barre porte ses quatre libellés mot pour mot</b>, et le premier est <b>plus court</b> que
   /// le nom que la carte de l'accueil donne au même écran : la barre dit <c>Configuration</c> là où
   /// la carte dit <c>Configuration du microservice RGPD</c>.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>C'est le garde du double nom, et il n'a de sens que lu avec
-  /// <see cref="Doorstep.CarriesTheThreeDoorwaysWordForWordAndInOrder"/>.</b> Les deux formes
+  /// <see cref="Doorstep.CarriesTheFourDoorwaysWordForWordAndInOrder"/>.</b> Les deux formes
   /// viennent désormais de deux champs distincts d'un même <c>EntryPoint</c> ; rien dans le code ne
   /// les empêche de se rejoindre, et la barre n'était jusqu'ici éprouvée que sur ses adresses. Un
   /// retour silencieux à la forme pleine dans la barre — celui-là même que le renommage du service
   /// a servi à défaire — ne se serait vu nulle part.
   /// </remarks>
   [Fact]
-  public async Task CarriesTheThreeNavigationLabelsWordForWordAndInOrder()
+  public async Task CarriesTheFourNavigationLabelsWordForWordAndInOrder()
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
@@ -192,14 +192,14 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
         .Select(link => LayoutSurface.TextIn(link.Contents))
         .ShouldBe(
           LayoutSurface.NavigationLabels,
-          $"Le panneau de l'écran {screen} ne porte pas les trois libellés arrêtés, dans l'ordre décidé.");
+          $"Le panneau de l'écran {screen} ne porte pas les quatre libellés arrêtés, dans l'ordre décidé.");
     }
   }
 
   /// <summary>
   /// <b>Le lien de l'écran courant est marqué</b>, et lui seul : sans cela, la barre dit où l'on
   /// peut aller sans jamais dire où l'on est. ⚠️ <b>Sauf sur l'accueil</b>, qui ne relève d'aucun
-  /// des trois points d'entrée et n'en marque donc aucun.
+  /// des quatre points d'entrée et n'en marque donc aucun.
   /// </summary>
   [Fact]
   public async Task MarksTheLinkOfTheCurrentScreen()
@@ -216,7 +216,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>La barre porte le nom du service, et il mène à l'accueil</b> — depuis n'importe quel écran.
-  /// C'est le retour à la porte, et il est obtenu <b>sans quatrième entrée</b> : le texte inerte
+  /// C'est le retour à la porte, et il est obtenu <b>sans entrée de plus</b> : le texte inerte
   /// devient un lien plutôt qu'un lien de plus.
   /// </summary>
   [Fact]

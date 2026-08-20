@@ -109,7 +109,7 @@ filtre l'affichage. Chaque régime est défini dans le glossaire du contexte où
 part ailleurs**.
 
 **Microservice RGPD** :
-Le nom du produit, tel que l'utilisateur le lit : le wordmark devant les trois entrées de la barre,
+Le nom du produit, tel que l'utilisateur le lit : le wordmark devant les quatre entrées du panneau,
 le titre de l'accueil, et la moitié droite du titre d'onglet de chaque écran. C'est un **nom propre**
 — il dit ce que le service *est* —, et la capitale à **M**icroservice est ce qui le distingue du nom
 commun « microservice RGPD » que portent les phrases du domaine. Comme le `Layout`, il n'appartient à
@@ -159,10 +159,10 @@ _Avoid_ : chrome, habillage, shell, coque, enveloppe
 navigateur Google Chrome — que ce dépôt nomme par ailleurs pour de vrai, dans `scripts/run-project.sh`.
 Voir l'ADR-0007, qui supplante sur ce point l'ADR-0006.
 ⚠️ **Le layout porte DEUX régions de navigation, et aucune n'est le layout : elles en sont des
-parties.** Le **panneau latéral** (`sidepanel`) porte les trois points d'entrée et se replie ; le
+parties.** Le **panneau latéral** (`sidepanel`) porte les quatre points d'entrée et se replie ; le
 **header** (`header`) porte ce qui ne doit jamais disparaître — le hamburger, le nom du service, la
 version — et survit au repli. `Navigation` continue de nommer le modèle des points d'entrée, et ses
-trois entrées restent des `EntryPoint`. La relation ne vaut que dans ce sens — un test de police
+quatre entrées restent des `EntryPoint`. La relation ne vaut que dans ce sens — un test de police
 relève du layout et non de la navigation, alors qu'un test de panneau relève des deux, par la partie.
 C'est ce qui autorise `SharedLayout` à porter les deux familles d'assertions. Voir l'ADR-0009.
 ⚠️ **Le mot est « header », pas « bandeau ».** Le dépôt emploie déjà « bandeau » pour tout autre

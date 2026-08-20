@@ -46,30 +46,31 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal const string Font = "/fonts/inter-latin-variable.woff2";
 
   /// <summary>
-  /// <b>Les trois points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
-  /// l'ordre de mise en route</b> : la configuration, puis la détection, puis le tableau des
-  /// demandes. Il n'y a pas de quatrième lien vers l'historique des rapports de détection : il
-  /// s'atteint depuis le rapport de détection courant.
+  /// <b>Les quatre points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
+  /// l'ordre où l'on rencontre les écrans</b> : la configuration, la détection, la qualification,
+  /// puis le tableau des demandes. Il n'y a pas de cinquième lien vers l'historique des rapports de
+  /// détection : il s'atteint depuis le rapport de détection courant.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Cette liste est RECOPIÉE À DESSEIN</b>, et il ne faut pas la faire pointer vers celle du
   /// layout — pas plus que <see cref="ServiceName"/> ou que le calcul de <see cref="EntryPointOf"/>.
   /// Un test qui lit la constante qu'il vérifie ne vérifie plus rien : il passerait encore le jour où
-  /// un quatrième lien apparaît, le jour où la barre se met à mener ailleurs, ou le jour où l'ordre
+  /// un cinquième lien apparaît, le jour où la barre se met à mener ailleurs, ou le jour où l'ordre
   /// se défait. Ce qui est écrit ici est ce que la surface <b>doit</b> offrir, tenu séparément de ce
   /// qu'elle offre : cette liste se met à jour <b>à la main</b>.
   /// </remarks>
-  internal static readonly IReadOnlyList<string> EntryPoints = ["/manifest", "/detection", "/dossiers"];
+  internal static readonly IReadOnlyList<string> EntryPoints =
+    ["/manifest", "/detection", "/qualification", "/dossiers"];
 
-  /// <summary>Le nom du service, que la barre porte devant ses trois liens.</summary>
+  /// <summary>Le nom du service, que la barre porte devant ses quatre liens.</summary>
   internal const string ServiceName = "Microservice RGPD";
 
   /// <summary>
-  /// <b>Les trois libellés que la BARRE porte</b>, dans l'ordre de mise en route — et le premier
-  /// <b>n'est pas</b> le nom que la carte de l'accueil porte pour le même écran. Le service a deux
-  /// noms vivants pour la configuration : <c>Configuration</c> dans la barre, où le wordmark
-  /// <see cref="ServiceName"/> le précède de quinze centimètres et rendait la forme pleine
-  /// redondante, et la forme pleine sur la carte, où rien ne la précède.
+  /// <b>Les quatre libellés que la BARRE porte</b>, dans l'ordre où l'on rencontre les écrans — et
+  /// le premier <b>n'est pas</b> le nom que la carte de l'accueil porte pour le même écran. Le
+  /// service a deux noms vivants pour la configuration : <c>Configuration</c> dans la barre, où le
+  /// wordmark <see cref="ServiceName"/> le précède de quinze centimètres et rendait la forme
+  /// pleine redondante, et la forme pleine sur la carte, où rien ne la précède.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Recopiés à dessein</b>, comme <see cref="Doorways"/> : c'est <b>le</b> garde du double
@@ -81,6 +82,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   [
     "Configuration",
     "Détection des données personnelles",
+    "Qualification",
     "Tableau des demandes RGPD",
   ];
 
@@ -106,8 +108,8 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     "les données qu'un système détient.";
 
   /// <summary>
-  /// <b>Les trois portes de l'accueil</b>, dans l'ordre de mise en route, chacune avec le nom
-  /// qu'elle porte, la phrase qu'elle dit et l'adresse où elle mène.
+  /// <b>Les quatre portes de l'accueil</b>, dans l'ordre où l'on rencontre les écrans, chacune avec
+  /// le nom qu'elle porte, la phrase qu'elle dit et l'adresse où elle mène.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -115,9 +117,15 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// parallèles sur « Vous y + verbe », et <b>sans un chiffre</b>.
   /// </para>
   /// <para>
-  /// ⚠️ <b>La troisième n'a qu'une phrase, délibérément.</b> « Lire » est le seul des trois verbes
+  /// ⚠️ <b>La dernière n'a qu'une phrase, délibérément.</b> « Lire » est le seul des quatre verbes
   /// qui ne soit pas un geste, et la brièveté dit par sa forme qu'on ne pose rien sur cet écran. Le
   /// parallélisme ne doit pas être « rétabli ».
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>La phrase de la qualification dit qu'aucun dossier n'en découle</b>, et c'est ce qui la
+  /// distingue des trois autres : elle est la seule à écarter un geste plutôt qu'à en annoncer un.
+  /// Le verbe y est <b>proposer</b>, jamais « décider ». Ce membre de phrase est gelé comme le
+  /// reste — sans lui, on arriverait sur l'écran en croyant y déposer une demande.
   /// </para>
   /// </remarks>
   internal static readonly IReadOnlyList<(string Name, string Sentence, string Address)> Doorways =
@@ -134,6 +142,11 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
       "de porter des données personnelles. Il lit des noms de tables et de colonnes, jamais une " +
       "valeur ; vous tranchez, ligne par ligne.",
       "/detection"),
+    (
+      "Qualification",
+      "Vous y collez le texte libre d'une demande, et le service propose les droits RGPD qu'elle " +
+      "exerce. Aucun dossier n'en découle : la proposition se lit ici, elle ne s'y dépose pas.",
+      "/qualification"),
     (
       "Tableau des demandes RGPD",
       "Vous y lisez les demandes RGPD en cours, rangées par échéance.",
@@ -173,11 +186,9 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   private const string Queue = "/dossiers";
 
   /// <summary>
-  /// L'écran de la qualification. <b>Sa porte est décidée</b> — l'ADR-0010 lui donne la quatrième
-  /// entrée du panneau et sa carte à l'accueil, au troisième rang — et elle se pose par un ticket à
-  /// elle. ⚠️ <b>D'ici là il ne relève d'aucun point d'entrée</b>, et le marquage n'a donc rien à
-  /// marquer sur lui. Il porte pourtant le cadre partagé comme les autres, et c'est très exactement
-  /// ce que sa présence dans cette liste garde.
+  /// L'écran de la qualification, et <b>la racine de son point d'entrée</b> : l'ADR-0010 lui donne
+  /// la quatrième entrée du panneau et sa carte à l'accueil, au troisième rang. Il se marque donc
+  /// comme les trois autres, et il porte le cadre partagé comme tous les écrans.
   /// </summary>
   private const string Qualification = "/qualification";
   private const string CaseDeposit = "/dossiers/depot";
@@ -272,9 +283,9 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// Les <b>deux régions de navigation</b> d'une page rendue, isolées de tout le reste et l'une de
-  /// l'autre : le <b>panneau latéral</b>, qui porte les trois points d'entrée et disparaît quand l'Operator
-  /// le replie, et le <b>header</b>, qui porte ce qui ne doit jamais disparaître — le hamburger, le
-  /// nom du service, la version.
+  /// l'autre : le <b>panneau latéral</b>, qui porte les quatre points d'entrée et disparaît quand
+  /// l'Operator le replie, et le <b>header</b>, qui porte ce qui ne doit jamais disparaître — le
+  /// hamburger, le nom du service, la version.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -308,8 +319,8 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// <b>Le panneau latéral des points d'entrée</b> d'une page rendue. C'est lui qui porte la liste des
-  /// trois entrées et le marquage de l'écran courant.
+  /// <b>Le panneau latéral des points d'entrée</b> d'une page rendue. C'est lui qui porte la liste
+  /// des quatre entrées et le marquage de l'écran courant.
   /// </summary>
   internal static string SidepanelIn(string rendered)
   {
@@ -427,7 +438,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// <b>La liste des points d'entrée</b>, isolée du nom du service qui la précède : la barre porte
-  /// un lien de plus qu'elle n'a d'entrées, et confondre les deux ferait passer un quatrième point
+  /// un lien de plus qu'elle n'a d'entrées, et confondre les deux ferait passer un cinquième point
   /// d'entrée pour le retour à l'accueil.
   /// </summary>
   internal static string EntryPointListIn(string bar)
@@ -440,16 +451,16 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// Le point d'entrée que la barre doit <b>marquer</b> sur un écran : un seul, sauf sur l'accueil
-  /// et sur l'écran de la qualification, qui n'en relèvent d'aucun et n'en marquent donc
-  /// <b>aucun</b> — marquer une entrée là reviendrait à dire qu'on est déjà dans ce que la porte
-  /// ouvre. ⚠️ <b>Les deux exceptions n'ont pas la même durée de vie</b> : l'accueil est la porte et
-  /// ne relèvera jamais d'une entrée, tandis que la qualification en attend une, décidée par
-  /// l'ADR-0010. Le jour où elle est posée, c'est ici qu'elle cesse d'être une exception.
+  /// Le point d'entrée que la barre doit <b>marquer</b> sur un écran : un seul, <b>sauf sur
+  /// l'accueil</b>, qui n'en relève d'aucun et n'en marque donc aucun — marquer une entrée là
+  /// reviendrait à dire qu'on est déjà dans ce que la porte ouvre. ⚠️ <b>C'est désormais la seule
+  /// exception, et elle ne s'éteindra pas</b> : l'accueil est la porte, il ne relèvera jamais d'une
+  /// entrée. La qualification, elle, a reçu la sienne par l'ADR-0010 et se marque comme les trois
+  /// autres.
   /// </summary>
   internal static IReadOnlyList<string> MarkedEntryPointsOn(string screen)
   {
-    return screen == Doorstep || screen == Qualification ? [] : [EntryPointOf(screen)];
+    return screen == Doorstep ? [] : [EntryPointOf(screen)];
   }
 
   /// <summary>
@@ -564,7 +575,8 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// <summary>
   /// Le point d'entrée <b>dont un écran relève</b>, lu sur sa seule adresse : le dépôt d'une
   /// demande et un dossier relèvent du tableau des demandes RGPD, la reprise d'une déclaration du
-  /// <c>Manifest</c>, et tout ce qui pend sous la détection des données personnelles.
+  /// <c>Manifest</c>, tout ce qui pend sous la détection des données personnelles, et l'écran de la
+  /// qualification de sa propre racine.
   /// </summary>
   internal static string EntryPointOf(string screen)
   {
@@ -573,7 +585,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     var entryPoint = EntryPoints.SingleOrDefault(
       candidate => path == candidate || path.StartsWith($"{candidate}/", StringComparison.Ordinal));
 
-    entryPoint.ShouldNotBeNull($"L'écran {screen} ne relève d'aucun des trois points d'entrée.");
+    entryPoint.ShouldNotBeNull($"L'écran {screen} ne relève d'aucun des quatre points d'entrée.");
 
     return entryPoint;
   }
