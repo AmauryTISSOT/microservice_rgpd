@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.FunctionalTests.Layout;
 /// ⚠️ <b>L'accueil ne relève ni du <c>Casework</c> ni du <c>Screening</c> : il est du layout</b>, au
 /// même titre que la barre. Il est donc éprouvé dans le harnais du layout, par la <b>seule frontière
 /// HTTP</b>, exactement ce que fait un navigateur — et le reste du layout le tient déjà pour un
-/// écran comme les onze autres, puisqu'il entre dans <see cref="LayoutSurface.ScreensAsync"/>.
+/// écran comme les douze autres, puisqu'il entre dans <see cref="LayoutSurface.ScreensAsync"/>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucune assertion de ce fichier ne porte sur une valeur de design</b> : pas une couleur, pas
@@ -79,18 +79,19 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Les trois portes portent les trois noms et les trois phrases arrêtés</b>, et elles les
-  /// portent <b>dans l'ordre de mise en route</b> — la position apprend ce qu'aucun nom ne dit.
+  /// <b>Les quatre portes portent les quatre noms et les quatre phrases arrêtés</b>, et elles les
+  /// portent <b>dans l'ordre où l'on rencontre les écrans</b> — la position apprend ce qu'aucun nom
+  /// ne dit.
   /// </summary>
   [Fact]
-  public async Task CarriesTheThreeDoorwaysWordForWordAndInOrder()
+  public async Task CarriesTheFourDoorwaysWordForWordAndInOrder()
   {
     var main = LayoutSurface.MainOf(await _layout.ReadAsync(LayoutSurface.Doorstep));
     var doorways = LayoutSurface.LinkBlocksIn(main);
 
     doorways.Select(doorway => doorway.Address).ShouldBe(
       [.. LayoutSurface.Doorways.Select(expected => expected.Address)],
-      "Les portes de l'accueil ne mènent pas aux trois adresses, dans l'ordre décidé.");
+      "Les portes de l'accueil ne mènent pas aux quatre adresses, dans l'ordre décidé.");
 
     foreach (var (doorway, expected) in doorways.Zip(LayoutSurface.Doorways))
     {
@@ -112,7 +113,7 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>La cible secondaire se cherche des DEUX côtés, et le compte seul n'aurait rien vu.</b> Un
-  /// lien posé <b>à côté</b> des trois portes fait un quatrième lien ; un lien <b>imbriqué</b> dans
+  /// lien posé <b>à côté</b> des quatre portes fait un cinquième lien ; un lien <b>imbriqué</b> dans
   /// une porte n'en fait aucun — la fermeture étant prise au plus court, il est avalé dans le
   /// contenu de la porte qui le porte. C'est pourquoi le contenu de chaque porte est fouillé en
   /// plus d'être compté.
@@ -125,7 +126,7 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
 
     doorways.Count.ShouldBe(
       LayoutSurface.Doorways.Count,
-      "L'accueil ne porte pas exactement les trois liens de ses trois portes : une cible " +
+      "L'accueil ne porte pas exactement les quatre liens de ses quatre portes : une cible " +
       "secondaire s'est glissée dans une carte, ou à côté.");
 
     foreach (var doorway in doorways)

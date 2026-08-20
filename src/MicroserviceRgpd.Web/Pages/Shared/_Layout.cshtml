@@ -77,8 +77,8 @@
         rouvrirait plus : replié, le panneau ne laisse rien derrière lui, et sans ce header l'écran
         n'aurait plus ni chemin de retour, ni moyen de redéployer la navigation.
 
-        ⚠️ IL NE PORTE PAS LES TROIS ENTRÉES, ET C'EST LE PRIX ASSUMÉ DE CETTE FORME. Panneau replié,
-        aucun des trois écrans n'est à un clic : il faut d'abord rouvrir. La forme qui les aurait
+        ⚠️ IL NE PORTE PAS LES QUATRE ENTRÉES, ET C'EST LE PRIX ASSUMÉ DE CETTE FORME. Panneau replié,
+        aucun des quatre écrans n'est à un clic : il faut d'abord rouvrir. La forme qui les aurait
         remontés ici a été écartée en connaissance de cause — elle demandait de tenir deux mises en
         page de navigation en parallèle, pour toujours.
       *@
@@ -97,7 +97,7 @@
 
         @*
           LE NOM DU SERVICE EST LE CHEMIN DU RETOUR, et c'est ce qui donne l'accueil depuis n'importe
-          quel écran SANS QUATRIÈME ENTRÉE : le texte inerte devient un lien plutôt qu'un lien de
+          quel écran SANS UNE ENTRÉE DE PLUS : le texte inerte devient un lien plutôt qu'un lien de
           plus. Il reste hors de la liste — il n'est pas un point d'entrée, et il ne se marque jamais
           comme l'écran courant. Il vit dans le header et NON dans le panneau : le panneau
           disparaît, et le chemin du retour ne doit pas disparaître avec lui.
@@ -108,7 +108,7 @@
           LA VERSION DU PRODUIT, À L'EXTRÉMITÉ DROITE, ET C'EST L'EXCEPTION NOMMÉE À « AUCUN CHIFFRE
           DANS LA NAVIGATION » — de même nature que les références d'articles RGPD sur l'accueil : un
           chiffre qui n'est ni un compte ni une mesure. Elle se lit et s'ignore : texte nu, ni lien,
-          ni infobulle, ni ARIA. Elle n'est PAS une quatrième entrée — elle est hors de la liste. Sa
+          ni infobulle, ni ARIA. Elle n'est PAS une entrée du panneau — elle est hors de la liste. Sa
           valeur n'est jamais écrite ici : ProductVersion la lit sur l'assemblage.
         *@
         <span class="version">@ProductVersion.Display</span>
