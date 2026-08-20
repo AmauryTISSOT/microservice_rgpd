@@ -435,6 +435,23 @@ public class QualificationScreen
   }
 
   /// <summary>
+  /// <b>Le dépliant est plié quand la page arrive</b> : il ne porte pas l'attribut qui l'ouvrirait.
+  /// C'est la disposition, et non le secret, qui tient l'<c>Operator</c> à distance de l'idée de
+  /// trancher lui-même avis par avis — un dépliant ouvert d'office ne tiendrait plus rien.
+  /// </summary>
+  [Fact]
+  public async Task ServesTheFoldClosed()
+  {
+    _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+    _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
+
+    var screen = QualificationSurface.MainOf(
+      await _surface.QualifyAndReadAsync("Supprimez mes données."));
+
+    Regex.Match(screen, "<details[^>]*>").Value.ShouldNotContain("open");
+  }
+
+  /// <summary>
   /// <b>Le verdict paraît avant le dépliant dans l'ordre du document.</b> L'ordre est un critère et
   /// non une préférence : personne ne doit lire une version de moteur avant un droit RGPD, et c'est
   /// la disposition — non le secret — qui empêche l'<c>Operator</c> de trancher avis par avis.
@@ -503,7 +520,7 @@ public class QualificationScreen
   /// <summary>
   /// <b>Le lexique ne déclare aucune confiance, et l'absence se lit comme une absence.</b> Une case
   /// vide en face du mot « confiance » se lirait comme une confiance nulle — c'est-à-dire comme un
-  /// moteur qui doute, là où il s'agit d'un moteur qui n'a aucun avis sur sa propre fiabilité.
+  /// moteur qui doute, là où il s'agit d'un moteur qui ne dit rien de son propre doute.
   /// </summary>
   [Fact]
   public async Task ReadsTheAbsenceOfADeclaredConfidenceAsAnAbsence()

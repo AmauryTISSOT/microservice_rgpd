@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.RegularExpressions;
 
 namespace MicroserviceRgpd.FunctionalTests.Qualifications;
@@ -144,10 +144,16 @@ internal sealed class QualificationSurface(CustomWebApplicationFactory<Program> 
   /// Le lire séparément est ce qui donne leur sens aux gardes : « les deux avis paraissent » ne dit
   /// rien tant qu'on ignore s'ils paraissent <b>sous le dépliant</b> ou en plein milieu du verdict,
   /// où l'ADR-0011 refuse qu'ils soient.
+  /// <para>
+  /// ⚠️ <b>L'écran seul, le layout retiré</b>, pour la même raison que <see cref="MainOf"/> : le
+  /// jour où le panneau partagé se replierait par un dépliant plutôt que par sa case à cocher, ce
+  /// harnais se serait mis à lire la navigation en croyant lire les avis.
+  /// </para>
   /// </remarks>
   internal static string FoldOf(string rendered)
   {
-    var fold = Regex.Match(rendered, "<details[^>]*>(.*?)</details>", RegexOptions.Singleline);
+    var fold = Regex.Match(
+      MainOf(rendered), "<details[^>]*>(.*?)</details>", RegexOptions.Singleline);
 
     fold.Success.ShouldBeTrue(
       "L'écran doit porter un dépliant natif : c'est lui qui range les internes des moteurs sous le "

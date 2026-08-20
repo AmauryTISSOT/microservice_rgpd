@@ -91,7 +91,7 @@
       <div class="opinions">
         @foreach (var column in premises.Opinions)
         {
-          <div class="opinion">
+          <div>
             <h3>@column.Heading</h3>
 
             @if (column.Opinion is { } opinion)
@@ -104,7 +104,7 @@
                 @*
                   L'ABSENCE SE LIT COMME UNE ABSENCE, ici aussi. Une case vide en face du mot
                   « confiance » se lirait comme une confiance nulle — un moteur qui doute —, là où il
-                  s'agit d'un moteur qui n'a aucun avis sur sa propre fiabilité.
+                  s'agit d'un moteur qui ne dit rien de son propre doute.
                 *@
                 <dd>
                   @if (opinion.Confidence is { } confidence)
@@ -114,15 +114,15 @@
                   else
                   {
                     <span class="none">
-                      Aucune confiance déclarée : ce moteur n'a aucun avis sur sa propre fiabilité.
+                      Aucune confiance déclarée : ce moteur ne dit rien de son propre doute.
                     </span>
                   }
                 </dd>
 
-                <dt>Moteur</dt>
+                <dt>Nom et version</dt>
                 <dd>@opinion.EngineName <code>@opinion.EngineVersion</code></dd>
 
-                <dt>Temps de réponse</dt>
+                <dt>Temps de l'avis</dt>
                 <dd>@opinion.Latency</dd>
               </dl>
             }

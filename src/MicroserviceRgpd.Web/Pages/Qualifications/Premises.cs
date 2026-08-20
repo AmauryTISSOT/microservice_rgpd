@@ -39,8 +39,8 @@ namespace MicroserviceRgpd.Web.Pages.Qualifications;
 /// verdict resté sans contrôle.
 /// </param>
 /// <param name="TotalLatency">
-/// Ce que la qualification entière a pris. <b>Toujours présente</b>, elle : le service a bien duré,
-/// même quand l'un des deux moteurs s'est tu.
+/// Ce que la qualification entière a pris. <b>Elle est toujours présente</b>, à la différence de
+/// celles des moteurs : le service a bien duré, même quand l'un des deux s'est tu.
 /// </param>
 public sealed record Premises(
   RenderedOpinion? VerdictOpinion,

@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.Web.Pages.Qualifications;
 /// <param name="Rights">Les droits que <b>ce moteur-là</b> a reconnus, sous leur libellé français.</param>
 /// <param name="Confidence">
 /// À quel point ce moteur doute de son propre avis, ou <c>null</c> quand il n'en déclare aucune — ce
-/// qui est le cas du lexique, qui n'a aucun avis sur sa propre fiabilité.
+/// qui est le cas du lexique, qui ne dit rien de son propre doute.
 /// </param>
 /// <param name="EngineName">Le nom sous lequel ce moteur se déclare, tel qu'il est arrivé.</param>
 /// <param name="EngineVersion">La version qu'il déclare de lui-même, chaîne opaque rendue verbatim.</param>
@@ -27,9 +27,11 @@ public sealed record RenderedOpinion(
   /// vide</b>, et le gabarit la nomme plutôt que de laisser une colonne blanche.
   /// </summary>
   /// <remarks>
-  /// La latence suit l'avis, et jamais l'inverse : mesurer le temps qu'un moteur a mis à ne rien
-  /// rendre ferait passer une panne pour une lenteur. Un avis sans latence est donc traité comme un
-  /// avis instantané plutôt que comme une contradiction — le gestionnaire ne produit pas ce cas.
+  /// ⚠️ <b>La latence suit l'avis, et jamais l'inverse</b> : mesurer le temps qu'un moteur a mis à
+  /// ne rien rendre ferait passer une panne pour une lenteur, et le gestionnaire ne rend donc l'une
+  /// jamais sans l'autre. Un avis arrivé <b>sans</b> sa latence est une contradiction, et elle est
+  /// <b>refusée</b> plutôt que comblée : un « 0 ms » posé d'office serait une mesure inventée, que
+  /// l'<c>Operator</c> lirait comme un moteur instantané.
   /// </remarks>
   public static RenderedOpinion? Of(QualificationOpinion? opinion, TimeSpan? latency)
   {
@@ -38,12 +40,19 @@ public sealed record RenderedOpinion(
       return null;
     }
 
+    if (latency is null)
+    {
+      throw new InvalidOperationException(
+        "Un avis est arrivé sans le temps qu'il a pris : l'écran ne sait pas dire cette latence-là, "
+        + "et n'en invente pas.");
+    }
+
     return new RenderedOpinion(
       Verdict.RightsOf(opinion.Qualification),
       ConfidenceOf(opinion.DeclaredConfidence),
       opinion.Engine.Name,
       opinion.Engine.Version,
-      Premises.LatencyOf(latency ?? TimeSpan.Zero));
+      Premises.LatencyOf(latency.Value));
   }
 
   /// <summary>
