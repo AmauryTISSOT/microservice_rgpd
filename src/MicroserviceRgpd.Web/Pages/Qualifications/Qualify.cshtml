@@ -1,0 +1,105 @@
+@page "/qualification"
+@model MicroserviceRgpd.Web.Pages.Qualifications.QualifyModel
+@{
+  ViewData["Title"] = "Qualification";
+}
+
+@*
+  LE NOM EST « QUALIFICATION », ET C'EST LE SEUL. L'ADR-0010 le pose : un seul nom par écran, répété
+  à l'identique du panneau à la carte de l'accueil quand la porte viendra. Un titre qui aurait dit
+  autre chose ici aurait été un troisième nom vivant pour le même écran.
+*@
+<h1>Qualification</h1>
+
+@*
+  LE VERDICT EST EN HAUT, PARCE QUE C'EST CE QU'ON EST VENU LIRE. Le geste qui l'a produit reste
+  dessous, avec le texte collé : l'Operator relit ce qu'il a soumis sans quitter le verdict.
+*@
+@if (Model.RenderedVerdict is { } verdict)
+{
+  <div class="system">
+    <h2>Le verdict</h2>
+
+    <dl>
+      <dt>Droits exercés</dt>
+      <dd>@verdict.Rights</dd>
+
+      <dt>Urgence à relire</dt>
+      <dd>@verdict.ReviewUrgency</dd>
+
+      <dt>Entièreté du service</dt>
+      <dd>@verdict.Wholeness</dd>
+
+      <dt>Justification</dt>
+      @*
+        L'ABSENCE SE LIT COMME UNE ABSENCE. Une case laissée vide se lirait comme un rendu tronqué,
+        et l'Operator chercherait une phrase que personne n'a écrite.
+      *@
+      <dd>
+        @if (verdict.Justification is { } justification)
+        {
+          @justification
+        }
+        else
+        {
+          <span class="none">Aucune justification n'accompagne ce verdict.</span>
+        }
+      </dd>
+
+      <dt>Identifiant de la qualification</dt>
+      <dd><code>@verdict.Identifier</code></dd>
+    </dl>
+  </div>
+
+  @*
+    ⚠️ LA CONSÉQUENCE DE LA DÉROGATION, DITE EN CLAIR ET SOUS LE VERDICT. Le service n'ouvre aucune
+    adresse de relecture — ce serait faire de la trace d'audit une ressource métier exposée, celle
+    que ce contexte a refusée. Une conséquence acceptée qu'on tairait à l'écran serait un piège
+    plutôt qu'une décision.
+  *@
+  <p class="caveat">
+    Ce verdict <strong>ne se retrouve pas</strong> : aucune adresse ne le relit, et la trace d'audit
+    qu'il a gravée n'est pas une ressource que le service expose. Recharger cette page
+    <strong>rejoue la qualification</strong> — elle produira un autre identifiant et une autre
+    trace. Notez ce que vous voulez garder avant de partir.
+  </p>
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+  <div class="refusals">
+    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+    {
+      <p class="refusal">@refusal.ErrorMessage</p>
+    }
+  </div>
+}
+
+@*
+  CE QUE LE SERVICE FAIT, ET CE QU'IL NE FAIT PAS. Il propose — il ne décide jamais : un verdict
+  qui se présenterait comme une décision ferait porter à la machine un choix qui reste celui d'un
+  humain.
+*@
+<p class="caveat">
+  Collez le texte d'une demande, tel qu'il vous est parvenu. Le service dit les droits que ce texte
+  lui paraît exercer : c'est une <strong>aide à la décision</strong>, que vous validez ou corrigez.
+  Aucun dossier n'en découle, et rien n'est ouvert ici.
+</p>
+
+<form method="post">
+  <p>
+    <label for="texte">Le texte de la demande</label>
+    <span class="hint">
+      Au plus @QualifyModel.Ceiling caractères. Aucun texte n'est refusé pour son contenu : un texte
+      bruité ou hors sujet reçoit un verdict, jamais un refus de saisie.
+    </span>
+    @*
+      LA ZONE EST NUE : aucun exemple pré-rempli, aucun corpus proposé. Un texte posé d'office
+      serait le seul que l'Operator qualifierait jamais, et l'écran mesurerait le service sur une
+      demande que personne n'a reçue.
+    *@
+    <textarea id="texte" name="Text" rows="12" spellcheck="false">@Model.Text</textarea>
+  </p>
+
+  <button type="submit" class="primary">Qualifier</button>
+</form>

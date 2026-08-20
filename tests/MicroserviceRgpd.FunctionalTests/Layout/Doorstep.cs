@@ -180,7 +180,7 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   /// qu'une ligne de script ne soit servie ni exécutée.
   /// </summary>
   /// <remarks>
-  /// L'absence de ressource tierce, elle, est gardée pour les douze écrans à la fois par
+  /// L'absence de ressource tierce, elle, est gardée pour les treize écrans à la fois par
   /// <see cref="SharedLayout.LoadsNothingFromAThirdPartyOnAnyScreen"/>.
   /// </remarks>
   [Fact]

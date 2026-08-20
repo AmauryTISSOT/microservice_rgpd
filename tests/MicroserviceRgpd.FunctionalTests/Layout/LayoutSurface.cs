@@ -171,6 +171,15 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   ];
 
   private const string Queue = "/dossiers";
+
+  /// <summary>
+  /// L'écran de la qualification. <b>Sa porte est décidée</b> — l'ADR-0010 lui donne la quatrième
+  /// entrée du panneau et sa carte à l'accueil, au troisième rang — et elle se pose par un ticket à
+  /// elle. ⚠️ <b>D'ici là il ne relève d'aucun point d'entrée</b>, et le marquage n'a donc rien à
+  /// marquer sur lui. Il porte pourtant le cadre partagé comme les autres, et c'est très exactement
+  /// ce que sa présence dans cette liste garde.
+  /// </summary>
+  private const string Qualification = "/qualification";
   private const string CaseDeposit = "/dossiers/depot";
   private const string Manifest = "/manifest";
   private const string ScreeningDeposit = "/detection/depot";
@@ -193,7 +202,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
   /// <summary>
-  /// <b>Les douze adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de
+  /// <b>Les treize adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de
   /// chacune posé par le chemin que le domaine autorise — un dépôt manuel pour le dossier, une
   /// déclaration pour la reprise, deux dépôts de relevé pour qu'il existe un rapport courant et un
   /// rapport archivé.
@@ -207,6 +216,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     return
     [
       Doorstep,
+      Qualification,
       Queue,
       CaseDeposit,
       $"{Queue}/{opened}",
@@ -430,13 +440,16 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// Le point d'entrée que la barre doit <b>marquer</b> sur un écran : un seul, sauf sur l'accueil,
-  /// qui ne relève d'aucun des trois et n'en marque donc <b>aucun</b> — marquer une entrée là
-  /// reviendrait à dire qu'on est déjà dans ce que la porte ouvre.
+  /// Le point d'entrée que la barre doit <b>marquer</b> sur un écran : un seul, sauf sur l'accueil
+  /// et sur l'écran de la qualification, qui n'en relèvent d'aucun et n'en marquent donc
+  /// <b>aucun</b> — marquer une entrée là reviendrait à dire qu'on est déjà dans ce que la porte
+  /// ouvre. ⚠️ <b>Les deux exceptions n'ont pas la même durée de vie</b> : l'accueil est la porte et
+  /// ne relèvera jamais d'une entrée, tandis que la qualification en attend une, décidée par
+  /// l'ADR-0010. Le jour où elle est posée, c'est ici qu'elle cesse d'être une exception.
   /// </summary>
   internal static IReadOnlyList<string> MarkedEntryPointsOn(string screen)
   {
-    return screen == Doorstep ? [] : [EntryPointOf(screen)];
+    return screen == Doorstep || screen == Qualification ? [] : [EntryPointOf(screen)];
   }
 
   /// <summary>
