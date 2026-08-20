@@ -96,15 +96,22 @@ public sealed class QualifyHandler(
       ReviewSignal: corroboration.ReviewSignal,
       Degraded: corroboration.Degraded,
       Justification: corroboration.Justification,
-      CallerReference: command.CallerReference);
+      CallerReference: command.CallerReference,
+      // Les prémisses sont celles-là mêmes qui viennent d'arriver : aucun moteur n'est rappelé, et
+      // la trace d'audit les relira d'ici plutôt que de les redériver pour son compte.
+      VerdictOpinion: verdictAnswer.Result.Opinion,
+      LexiconOpinion: lexiconAnswer.Result.Opinion,
+      TotalLatency: clock.GetElapsedTime(started),
+      // La latence d'un moteur muet reste nulle, comme son avis : mesurer le temps qu'il a mis à ne
+      // rien rendre ferait passer une panne pour une lenteur.
+      VerdictLatency: verdictAnswer.Result.Opinion is null ? null : verdictAnswer.Result.Latency,
+      LexiconLatency: lexiconAnswer.Result.Opinion is null ? null : lexiconAnswer.Result.Latency);
 
     // Qualifier, écrire, répondre — dans cet ordre, et sans rattrapage. Un échec d'écriture remonte
     // tel quel : il n'y a pas de `200` dégradé pour une trace qui ne s'est pas écrite, y compris
     // quand la qualification elle-même l'était. Une base indisponible est une panne du service, pas
     // un mode dégradé.
-    await auditTrail.RecordAsync(
-      EntryOf(command, outcome, occurredAt, verdictAnswer.Result, lexiconAnswer.Result, clock.GetElapsedTime(started)),
-      cancellationToken);
+    await auditTrail.RecordAsync(EntryOf(command, outcome, occurredAt), cancellationToken);
 
     return outcome;
   }
@@ -121,10 +128,7 @@ public sealed class QualifyHandler(
   private static QualificationAuditEntry EntryOf(
     QualifyCommand command,
     QualificationOutcome outcome,
-    DateTimeOffset occurredAt,
-    EngineAnswer verdict,
-    EngineAnswer lexicon,
-    TimeSpan totalLatency)
+    DateTimeOffset occurredAt)
   {
     return new QualificationAuditEntry(
       outcome.QualificationId,
@@ -132,18 +136,16 @@ public sealed class QualifyHandler(
       command.Text,
       outcome.Qualification,
       outcome.ReviewSignal,
-      verdict.Opinion,
-      lexicon.Opinion,
+      outcome.VerdictOpinion,
+      outcome.LexiconOpinion,
       outcome.Justification,
       outcome.CallerReference,
       // La trace de télémétrie est prise telle qu'elle est, et jamais fabriquée : son absence dit
       // que la propagation est cassée en amont, ce qu'un identifiant de repli masquerait.
       Activity.Current?.TraceId.ToString(),
-      totalLatency,
-      // La latence d'un moteur muet reste nulle, comme son avis : mesurer le temps qu'il a mis à ne
-      // rien rendre ferait passer une panne pour une lenteur.
-      verdict.Opinion is null ? null : verdict.Latency,
-      lexicon.Opinion is null ? null : lexicon.Latency);
+      outcome.TotalLatency,
+      outcome.VerdictLatency,
+      outcome.LexiconLatency);
   }
 
   /// <summary>
