@@ -38,6 +38,14 @@ namespace MicroserviceRgpd.Web.Pages.Qualifications;
 /// une décision assumée — pas le détournement d'un champ existant.
 /// </para>
 /// <para>
+/// ⚠️ <b>Les internes des moteurs paraissent, et ils paraissent sous le verdict.</b> L'écran range
+/// les deux avis, la confiance déclarée, l'identité de chaque moteur et les trois latences sous un
+/// <b>dépliant natif</b>, en bas du document : un verdict qu'on ne peut pas contredire n'est pas une
+/// aide à la décision. L'ADR-0011 assume cette visibilité — elle n'ajoute <b>aucune capacité</b>,
+/// <c>POST /qualifications</c> étant déjà anonyme et public —, et le contrat HTTP public ne change
+/// pas d'une ligne : <c>QualifyResponse</c> ne projette rien de tout cela.
+/// </para>
+/// <para>
 /// <b>Le service propose, il ne décide jamais.</b> Ce que l'écran rend est une aide à la décision :
 /// l'humain qui le lit valide ou corrige.
 /// </para>
@@ -50,6 +58,18 @@ public class QualifyModel(IMediator mediator) : PageModel
 
   /// <summary>Le verdict rendu par le geste qui vient d'avoir lieu, ou rien avant lui.</summary>
   public Verdict? RenderedVerdict { get; private set; }
+
+  /// <summary>
+  /// Ce dont ce verdict-là est tiré — les deux avis, la confiance, les identités de moteurs et les
+  /// trois latences —, ou rien tant qu'aucun verdict n'a été rendu.
+  /// </summary>
+  /// <remarks>
+  /// Les prémisses ne sont <b>jamais</b> obtenues par un second chemin de qualification : elles
+  /// arrivent avec le verdict, dans le même <see cref="QualificationOutcome"/>. Deux chemins
+  /// auraient divergé sur la règle de corroboration elle-même, et l'écran aurait fini par afficher,
+  /// sur le même texte, un signal de relecture calculé autrement que celui de l'API.
+  /// </remarks>
+  public Premises? RenderedPremises { get; private set; }
 
   /// <summary>
   /// Le plafond du texte tel que l'écran l'annonce — <b>celui du domaine, jamais recopié</b> : un
@@ -99,6 +119,7 @@ public class QualifyModel(IMediator mediator) : PageModel
     }
 
     RenderedVerdict = Verdict.Of(qualified.Value);
+    RenderedPremises = Premises.Of(qualified.Value);
 
     return Page();
   }

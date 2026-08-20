@@ -57,8 +57,13 @@ public sealed record Verdict(
   /// ⚠️ <b>« Aucun droit reconnu » est un verdict nommé</b>, jamais une case vide : le service ne
   /// confond pas « je n'y reconnais aucun droit » avec « il ne s'est rien passé ». Le nom vient de
   /// la taxonomie, et la phrase qui le suit dit ce qu'il veut dire à qui ne connaît pas le mot.
+  /// <para>
+  /// <b>Le dépliant rend les avis des moteurs par cette même méthode</b> : les droits qu'un moteur a
+  /// reconnus sont des droits, et une seconde mise en français les aurait fait diverger de celle du
+  /// verdict — jusqu'à nommer autrement, sous le dépliant, ce qui est nommé au-dessus.
+  /// </para>
   /// </remarks>
-  private static string RightsOf(Qualification qualification)
+  internal static string RightsOf(Qualification qualification)
   {
     var rights = qualification.Rights.OrderBy(right => right.Value).ToArray();
 
