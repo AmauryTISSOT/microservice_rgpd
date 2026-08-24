@@ -1,10 +1,11 @@
 # Screening
 
 Ce contexte ne connaît que **le temps d'avant** : la configuration, quand aucune demande d'exercice
-de droits n'existe encore et que personne n'attend de réponse. Un `Operator` lui colle le relevé des
-colonnes d'une base du client ; il lui rend, **colonne par colonne**, une catégorie de données
-présumée, le degré de la règle qui l'a produite et un motif en prose française — que l'`Operator`
-**retient ou écarte**, nommé et daté.
+de droits n'existe encore et que personne n'attend de réponse. Un `Operator` lui donne le relevé des
+colonnes d'une base du client — il le **colle**, ou il laisse le service **scanner** la base et le
+relever lui-même. Il lui rend, **colonne par colonne**, une catégorie de données présumée, le degré
+de la règle qui l'a produite et un motif en prose française — que l'`Operator` **retient ou
+écarte**, nommé et daté.
 
 Il **détecte, il ne recense pas**, et cette distinction porte l'économie entière de ce contexte : la
 détection des données personnelles est **réglée pour signaler large, quitte à se tromper souvent —
@@ -19,23 +20,37 @@ une conséquence de l'architecture. Voir [`CONTEXT-MAP.md`](../../../CONTEXT-MAP
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages,
 documentation d'API — sont en français.
 
-**On lance un `Screening`.** Le geste central de ce contexte n'a qu'un seul mot, et « scan » n'en est
-pas un : ni endpoint, ni service, ni libellé. Un contexte qui a deux mots pour son geste central en
-aura trois dans un an.
+**On lance un `Screening`, et « scan » ne nomme pas ce geste-là.** Le geste central de ce contexte
+n'a toujours qu'un seul mot. `Scan` a cessé d'être un mot interdit, mais il en nomme un **autre**,
+plus petit et placé **avant** — voir `Scan`. La règle qui tient les deux séparés se teste : **une
+phrase employant « scan » qui reste vraie sur le chemin collé emploie le mot à tort.** Le motif du
+bannissement d'origine n'a rien perdu de sa valeur : un contexte qui a deux mots pour son geste
+central en aura trois dans un an.
 
 ## Language
 
-### Le relevé collé, et ce qu'il devient
+### Le relevé, d'où qu'il vienne, et ce qu'il devient
 
 **ColumnListing** :
-Le relevé que l'`Operator` colle : une ligne par colonne — table, colonne, type, commentaire,
-contraintes — produit par la requête que le service lui fournit. Le service ne se connecte à rien ;
-l'humain colle, le service lit ce qu'on lui a mis dans la main.
-⚠️ **Recopié tel quel, jamais vérifié ni complété.** `Enregistré, jamais vérifié` vaut ici aussi : le
-service ne sait pas d'où vient ce relevé. Il en enregistre le nom de base que le SGBD lui a donné
-sans jamais le vérifier ni s'en servir pour identifier quoi que ce soit — c'est un repère pour
-l'humain qui relit un `Screening` trois jours plus tard, jamais une identité sur laquelle bâtir une
-comparaison.
+Le relevé : une ligne par colonne — table, colonne, type, commentaire, contraintes. Il a **deux
+producteurs et un seul format**. Ou bien l'`Operator` le **colle**, l'ayant produit avec la requête
+que le service lui fournit ; ou bien le service **scanne** la base et le relève lui-même. Rien en
+aval ne distingue les deux : un `ColumnListing` scanné et un `ColumnListing` collé sont le même
+objet, et la détection ne sait pas lequel des deux elle lit.
+⚠️ **Jamais vérifié, quel que soit le chemin.** `Enregistré, jamais vérifié` vaut ici des deux côtés :
+le service ne sait pas d'où vient ce relevé. Il en enregistre le nom de base — **recopié tel quel**
+sur le chemin collé, **relevé par lui-même** sur le chemin connecté — sans jamais le vérifier ni s'en
+servir pour identifier quoi que ce soit. C'est un repère pour l'humain qui relit un `Screening` trois
+jours plus tard, jamais une identité sur laquelle bâtir une comparaison.
+⚠️ **Se connecter ne vaut pas savoir où l'on est allé, et c'est contre-intuitif.** Une connexion
+semble porter sa propre provenance ; elle ne la porte pas, pour deux raisons qui se cumulent. La
+première est matérielle : la chaîne de connexion **ne survit pas au scan** — voir `Rien de réel ne
+reste` —, donc le service ne détient plus, une seconde après, la moindre trace de l'hôte qu'il a
+atteint. La seconde tiendrait même sans la première : une connexion sait quel **hôte** elle a joint,
+jamais que c'était le **bon**. L'`Operator` qui saisit l'adresse de la recette obtient un relevé
+sincère, entier et faux — exactement comme celui qui colle le relevé d'hier. Deux régimes de
+provenance pour un même champ seraient deux règles pour un même fait, et la seconde finirait par
+contredire la première.
 
 ⚠️ **Il est entier ou il n'existe pas.** La requête fournie **produit elle-même** le relevé plutôt
 que de laisser un client SQL le mettre en forme : il déclare donc le SGBD dont il vient et le nombre
@@ -46,6 +61,12 @@ relue` repose entièrement sur le fait que le rapport de détection rend **toute
 relevé. Trois colonnes que personne ne relira jamais, dans un artefact qui promet qu'on relit tout,
 est la faille exacte que ce contexte existe pour ne pas avoir. Le coût est faible et réversible :
 l'`Operator` relance sa requête, il ne perd aucun arbitrage.
+Sur le chemin connecté la question ne se pose pas de la même façon — rien n'est retranscrit, donc
+rien ne se tronque au collage — mais la règle est identique : un relevé de schéma qui échoue en
+cours de route ne produit **aucun** `ColumnListing`, jamais un `ColumnListing` partiel.
+⚠️ **Cette rigueur-là ne s'étend pas au `ColumnPreview`, et c'est délibéré.** Le schéma est tout ou
+rien parce que l'`Omission relue` repose sur lui. Un aperçu manquant, lui, est **toléré** — il ne
+retire aucune ligne du rapport de détection — à la seule condition d'être **nommé** manquant.
 
 ⚠️ **Ce qui reste hors de portée, en revanche, c'est la provenance.** Un relevé sincère, entier et
 bien formé, mais tiré de la base de recette ou de celle d'hier, est indiscernable du bon. Aucun
@@ -63,9 +84,67 @@ regardé en vain.
 Sa forme exacte — les neuf champs, l'en-tête, la ligne de fin et les neuf cas de refus — vit dans
 [`pivot-format.md`](./pivot-format.md), parce qu'elle a deux producteurs (les requêtes par dialecte)
 et un consommateur, et que des clés qui ne sont écrites nulle part en toutes lettres divergent.
-_Avoid_ : Schema, Catalog, Inventory, Dump, Export, Snapshot, cartographie ⚠️ les cinq premiers sont
+_Avoid_ : Schema, Catalog, Inventory, Dump, Export, Snapshot ⚠️ les cinq premiers sont
 sur la liste _Avoid_ de `Manifest`, qui garde la clause « déclaré, non découvert » : les reprendre
 ici ferait lire ce relevé comme un recensement du paysage du client, ce qu'il n'est pas.
+⚠️ **`cartographie` a quitté cette liste, et le garde-fou qu'elle y tenait est remplacé par une
+phrase.** Le mot nomme désormais quelque chose dans ce contexte, mais **pas ceci** : une
+`Cartographie` est ce qu'un humain a arbitré, un `ColumnListing` est ce qu'une machine a relevé avant
+que quiconque ait rien dit. Employer l'un pour l'autre ferait lire le relevé brut comme un travail
+humain achevé.
+
+**Scan** :
+Le geste par lequel le service **relève lui-même** un `ColumnListing` : se connecter à la base du
+client, lire son schéma, prélever quelques valeurs par colonne. Il s'arrête là. Ce qu'il produit est
+un `ColumnListing` et un `ColumnPreview` par colonne — rien de plus, et surtout pas un `Screening`.
+⚠️ **Il ne nomme pas le geste central, et une règle mécanique tient la frontière.** Lancer un
+`Screening`, c'est faire **détecter** sur un `ColumnListing`, quelle que soit l'origine de celui-ci.
+Scanner, c'est **fabriquer** ce `ColumnListing`, et seulement sur le chemin connecté. D'où le test :
+**une phrase employant « scan » qui reste vraie sur le chemin collé emploie le mot à tort.** « Le
+scan a mis quarante secondes » est faux quand on colle : le mot est bien employé. « Le scan a signalé
+`ref_2` » est vrai quand on colle : il fallait dire « le `Screening` a signalé `ref_2` ».
+⚠️ **Le mot a été interdit pendant toute la première vie de ce contexte**, au motif qu'« un contexte
+qui a deux mots pour son geste central en aura trois dans un an ». Le motif n'a pas cessé d'être
+juste ; ce qui a changé, c'est qu'il y a désormais **deux gestes**, et que le second n'avait pas de
+nom. La réadmission ne tient qu'aussi longtemps que le test ci-dessus est appliqué.
+⚠️ **Il n'existe pas sur le chemin collé**, et ce n'est pas une omission : là, l'`Operator` fait
+lui-même, hors du service et avec la requête qu'on lui fournit, ce que le scan ferait pour lui.
+_Avoid_ : Crawl, Discovery, Probe, Introspection, sondage, exploration ⚠️ `Discovery` et
+`exploration` promettent que le service cherche ce qu'il ne sait pas d'avance trouver, alors qu'il
+lit un schéma puis *n* colonnes nommées ; `Probe` et `sondage` promettent un prélèvement méthodique
+visant à conclure, ce que le `ColumnPreview` n'est pas.
+
+**ColumnPreview** — « aperçu » :
+Les quelques valeurs — **cinq**, à la livraison — que le `Scan` a lues dans une colonne, et que
+l'écran montre à l'`Operator` **pendant qu'il arbitre**. Elles ne prouvent rien, elles n'entrent dans
+aucun chiffre rendu, et elles meurent : voir `Rien de réel ne reste`.
+⚠️ **Un aperçu n'est jamais vide.** Il est **soit** des valeurs, **soit** une **raison nommée** de
+n'en porter aucune — jamais rien. Deux raisons de nature différente coexistent : la colonne a été
+**exclue** du prélèvement (un type binaire, dont cinq valeurs ne diraient rien à un humain), ou le
+prélèvement a **échoué** (droits, délai, panne — toléré, à la différence du schéma). L'énumération
+exacte des raisons relève de la spécification ; ce que le glossaire tient, c'est qu'il n'existe pas
+de troisième forme et qu'aucune absence n'est muette.
+Motif : c'est le geste du dialecte déclaré, appliqué un cran plus bas. Sans raison nommée, « cette
+colonne ne contenait rien » et « on n'a pas regardé cette colonne » se liraient pareil à l'écran, ce
+qui est l'`Omission silencieuse` réintroduite par une cellule vide. Et un aperçu et une raison posés
+dans **deux champs** finiraient par se dissocier, comme finit toujours par se dissocier ce qu'un
+chemin d'écriture peut écrire séparément.
+⚠️ **`aperçu` a été un mot interdit et ne l'est plus, tandis qu'`échantillon` le reste**, et le
+partage n'est pas une affaire de style. Un échantillon est un tirage dont la taille et la méthode
+**portent une inférence** ; cinq valeurs choisies par rien n'en portent aucune, et le mot promettrait
+la preuve que ce contexte refuse partout ailleurs — voir les listes _Avoid_ de `ScreenedColumn` et de
+`RuleStrength`. Un aperçu, lui, dit ce qui a lieu : un humain regarde de ses yeux, et rien n'est
+conclu. C'est aussi le mot avec lequel
+[ADR-0012](../../adr/0012-la-connexion-le-scan-et-les-echantillons-entrent-dans-screening.md) grave
+sa frontière — l'aperçu en deçà, l'analyse de contenu au-delà. ⚠️ Cet ADR écrit « échantillon » d'un
+bout à l'autre : il **précède** ce terme, et on ne réécrit pas un enregistrement d'archive.
+⚠️ **Le nombre est un ordre de grandeur, pas un paramètre de doctrine.** Cinq, trois ou huit ne
+changent rien. Cinq cents change tout : ce n'est plus un aperçu qu'un humain lit de ses yeux, c'est
+de l'analyse de contenu, et c'est ce qui rouvre l'ADR-0012.
+_Avoid_ : Sample, échantillon, ValueSample, extrait, Excerpt, Snippet, Peek ⚠️ `Sample` et
+`échantillon` sont les mots qu'on écrira par réflexe, et c'est précisément pour cela qu'ils sont
+nommés ici ; `extrait` et `Excerpt` supposeraient un tout dont on aurait pris une part
+représentative, ce qui est la même promesse sous un autre habit.
 
 **Screening** :
 Ce que la détection a rendu sur un `ColumnListing` : une `ScreenedColumn` par colonne du relevé, et
@@ -75,13 +154,19 @@ l'objet rendu.
 Il est **détenu** et vit plusieurs jours : un rapport de détection s'arbitre en plusieurs fois,
 colonne par colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au
 `EvidenceLog`, n'a aucune échéance et vit jusqu'à ce qu'un `Operator` le supprime.
-⚠️ **Un re-scan ne fusionne pas.** Relancer un `Screening` en produit un neuf ; les arbitrages du
+⚠️ **Relancer ne fusionne pas.** Relancer un `Screening` en produit un neuf ; les arbitrages du
 précédent ne sont pas repris. C'est un écart assumé au précédent de `Reservation`, dont les réserves
 fusionnent précisément pour ne jamais détruire un arbitrage humain, et il coûte du travail humain
 réel — d'où la `ScreeningEngineIdentity`, qui dit au moins **pourquoi** le nouveau diffère.
-_Avoid_ : Report, Scan, Audit, Assessment, Inventory, Analysis, cartographie ⚠️ `Report` et `Audit`
-promettent un document figé là où l'objet est vivant et s'arbitre ; `Scan` est le doublon du geste,
-banni pour cette seule raison.
+_Avoid_ : Report, Audit, Assessment, Inventory, Analysis ⚠️ `Report` et `Audit`
+promettent un document figé là où l'objet est vivant et s'arbitre.
+⚠️ **`Scan` a quitté cette liste sans cesser d'être interdit ici.** Le mot nomme maintenant un geste
+propre — voir `Scan` —, mais il ne nomme **jamais** cet objet : un `Screening` n'est pas « un scan »,
+et « le scan a signalé `ref_2` » est fautif parce que la phrase resterait vraie sur le chemin collé,
+où aucun scan n'a eu lieu. C'est pour la même raison que cette entrée ne dit plus « un re-scan ne
+fusionne pas » : elle le disait déjà à tort, avant même que le mot ne soit réadmis.
+⚠️ **`cartographie` a quitté cette liste pour une raison voisine.** Le mot nomme ce que l'humain a
+arbitré ; un `Screening` est ce que la machine a rendu. Voir `Cartographie`.
 
 **ScreeningEngineIdentity** :
 Le nom et la version que le moteur joint au `Screening` qu'il a produit — celle de ses règles, celle
@@ -107,6 +192,9 @@ paierait dans `Core`.
 c'est la même clause que « il est entier ou il n'existe pas », vue du moteur.
 _Avoid_ : Scanner, Detector, Classifier, Analyzer, ArbitrationEngine ⚠️ `ArbitrationEngine` donnerait
 à une machine le mot réservé au geste de l'`Operator`, qui est seul à produire une issue.
+⚠️ **`Scanner` tient, alors même que `Scan` a été réadmis**, et c'est le test du chemin collé qui le
+dit : ce port travaille identiquement sur un relevé collé, où aucun scan n'a eu lieu. Le scan est le
+geste du connecteur ; ce port, lui, détecte.
 
 **ScreenedListing** :
 Ce qu'un `IScreeningEngine` rend : une `ScreenedColumn` par colonne du relevé, dans l'ordre du
@@ -133,6 +221,17 @@ dont le glossaire dit qu'« une réserve **sans** motif est une panne du contrat
 « `adr_l1` → `ContactDetails`, degré bas, motif : préfixe `adr` reconnu » s'arbitre ;
 « `ContactDetails`, 0,72 » ne s'arbitre pas. C'est du texte qui meurt, lu tel quel et jamais
 analysé.
+⚠️ **Le motif ne cite jamais une valeur lue.** Un motif est **enregistré** et vit aussi longtemps que
+le `Screening` ; une valeur recopiée dedans survivrait à l'aperçu qui l'a montrée, et `Rien de réel
+ne reste` cesserait d'être vrai par le plus étroit des chemins. Le motif dit donc la **forme**,
+jamais l'occurrence : « les valeurs lues ont la forme d'un courriel », et non « la valeur
+`p.martin@exemple.fr` a la forme d'un courriel ».
+⚠️ **Et un motif de forme reste arbitrable, parce que l'aperçu est à côté de lui.** Seul, il
+demanderait à l'`Operator` de croire un comptage qu'il ne peut pas contredire — c'est le « signal
+dérivé sans les valeurs » que l'ADR-0012 a écarté nommément. Ce qui le rend vérifiable, c'est que
+l'écran montre le `ColumnPreview` sur la même ligne : l'`Operator` lit la forme affirmée **et** les
+valeurs qui la portent, et peut dire non. Retirer l'aperçu de l'écran ne serait donc pas une
+économie d'affichage, ce serait rendre un motif invérifiable.
 Symétriquement, une ligne `Unflagged` n'a **pas** de motif : il n'y a rien à motiver, et c'est ce qui
 distingue « rien vu » de « vu et écarté ».
 _Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et `Candidate` sont
@@ -223,7 +322,7 @@ de la CNIL comprise. Se donner la même gravité sans le même fondement serait 
   `PersonalDataUncategorised` ne suffisait pas ; et où la valeur entre dans l'ordre d'arbitrage.
 - ⚠️ **Retirer ou renommer une valeur reste un ADR**, et pour une raison qui n'est pas la même que
   chez `DataSubjectRight` : il n'y a pas d'appelant à casser ici, mais il y a des **arbitrages humains
-  signés et datés** qui vivent plusieurs jours, et qu'un re-scan ne reprend pas. Ce geste-là ne périme
+  signés et datés** qui vivent plusieurs jours, et qu'une relance ne reprend pas. Ce geste-là ne périme
   pas un contrat, il périme du travail humain.
 
 _Avoid_ : DataCategory, catégorie, Label, Class, Tag, Type ⚠️ le raccourci `DataCategory` viendrait
@@ -234,8 +333,15 @@ La valeur rendue quand la détection n'a rien signalé sur une colonne. Exclusiv
 avec aucune autre.
 ⚠️ **Elle dit ce que le service n'a pas fait, jamais ce que la colonne est.** Une colonne `Unflagged`
 n'est pas une colonne sans données personnelles — c'est une colonne où **rien n'a été vu**, ce qui
-est un constat sur la détection et non sur la donnée. Le service n'a jamais vu la donnée. C'est
-`Enregistré, jamais vérifié` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
+est un constat sur la détection et non sur la donnée.
+⚠️ **La connexion n'y change rien, et rend même la clause plus nécessaire qu'avant.** On ne peut
+plus dire que le service n'a jamais vu la donnée : il en a lu jusqu'à cinq valeurs. Mais cinq valeurs
+ne disent rien du reste de la colonne, et une colonne dont les cinq lignes lues étaient vides ou
+anodines demeure une colonne où **rien n'a été vu**. Le lecteur qui apprend que le service regarde
+désormais les valeurs sera tenté de lire `Unflagged` comme un quitus : c'est très exactement ce que
+cette valeur ne dit pas, et elle le dit d'autant moins que le prélèvement peut avoir été exclu ou
+avoir échoué — voir `ColumnPreview`.
+C'est `Enregistré, jamais vérifié` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
 parce qu'une machine qui déclare une colonne inoffensive est très exactement le témoignage qu'elle
 n'a pas les moyens de porter.
 ⚠️ **Elle n'est pas le repli `PersonalDataUncategorised`**, et les confondre coûterait cher : celle-ci
@@ -260,8 +366,8 @@ mensonge est bruyant, le second est silencieux, et c'est le second qui coûte ic
 minimiser : un taux qui monte est le signal qu'il manque une valeur. C'est ce que le banc compte, au
 même titre que ce qu'il détecte.
 ⚠️ **Il n'y a pas de second repli.** Une valeur « non personnelle » a été explicitement écartée : elle
-porterait sur la donnée un verdict d'innocuité que le service n'a pas les moyens de rendre — il n'a
-jamais vu la donnée. `Unflagged` occupe cette place et dit la bonne chose, un constat sur la
+porterait sur la donnée un verdict d'innocuité que le service n'a pas les moyens de rendre : cinq
+valeurs lues ne fondent rien sur le reste d'une colonne, et sur le chemin collé il n'en a lu aucune. `Unflagged` occupe cette place et dit la bonne chose, un constat sur la
 détection et non sur la donnée. Voir la liste _Avoid_ d'`Unflagged`, où `NonPersonal` figure
 nommément.
 _Avoid_ : Other, Misc, Unclassified, Unknown, Generic, NonPersonal, divers, fourre-tout ⚠️ `Other` et
@@ -331,6 +437,33 @@ _Avoid_ : BulkArbitrate, ArbitrateAll, MassArbitrate, « valider tout » ⚠️ 
 le geste n'atteint ni les signalées ni les déjà tranchées — et `Bulk`/`Mass` laissent croire à un état
 de lot alors qu'il n'y a que n signatures.
 
+**Cartographie** :
+Le `Screening` **lu à travers les arbitrages de l'`Operator`** : les mêmes lignes, chacune portant ce
+qu'un humain en a dit, avec son nom et sa date. C'est ce qui s'exporte, et c'est le seul artefact de
+ce contexte qui sorte jamais du service.
+⚠️ **Ce qui la sépare du `Screening` est l'auteur, jamais la sélection.** Un `Screening` est ce que la
+machine a rendu ; une `Cartographie` est le même rapport une fois que l'humain a parlé. Elle porte
+donc **toutes** les lignes — `Retained`, `SetAside` et `Awaiting` —, et un `SetAside` y est autant le
+résultat du travail humain qu'un `Retained`. Une cartographie qui ne porterait que les `Retained`
+serait le filtre que l'`Omission relue` interdit, déplacé du rapport vers l'export : elle se lirait
+comme la liste **complète** des données personnelles du client, ce qu'aucun artefact d'ici ne peut
+être.
+⚠️ **C'est un calcul, jamais un objet enregistré.** Rien ne se persiste qui s'appelle une
+cartographie : on lit les `ScreenedColumn` et leurs arbitrages. Même mécanique que « courant », que
+l'avancement et que la sensibilité, et pour le même motif — un objet posé à côté de sa source serait
+une seconde vérité sur les mêmes arbitrages, et le premier réarbitrage la rendrait fausse sans que
+rien ne le signale.
+⚠️ **Elle ne porte aucune valeur lue.** Un `ColumnPreview` meurt avec la session d'arbitrage et
+n'atteint jamais l'export. Voir `Rien de réel ne reste`.
+⚠️ **Le mot a été interdit sur `ColumnListing` et sur `Screening`**, à l'époque où rien ne sortait du
+service et où il n'avait donc rien à nommer. Il désigne aujourd'hui le troisième terme de la
+séquence — ce que la machine a relevé, ce que la machine a rendu, ce que l'humain en a fait — et les
+deux entrées d'origine gardent chacune la phrase qui empêche de le confondre avec elles.
+_Avoid_ : Inventory, Manifest, Registre, Catalogue, recensement ⚠️ `Manifest` et `Registre`
+appartiennent à d'autres artefacts — celui de `Casework` et celui que le déployeur tient au titre de
+l'art. 30 — et les emprunter ferait lire une cartographie comme une **déclaration**, ce qu'elle n'est
+jamais : voir `Aucune modification vers le Manifest`.
+
 ### L'acteur
 
 **Operator** :
@@ -343,7 +476,7 @@ vaut par sa petitesse et ne contient que `DataSubjectRight`. Factoriser un `Oper
 première fissure dans cette clause, pour une économie nulle.
 _Avoid_ : User, Agent, Admin, DPO, gestionnaire
 
-### Ce que le contexte ne fait pas
+### Ce qui entre, ce qui reste, et ce que le contexte ne fait pas
 
 **Omission relue** :
 Le régime d'erreur de ce contexte, et il n'est ni celui de `Qualification` ni celui de `Casework`.
@@ -378,14 +511,66 @@ alimentation ⚠️ cette liste n'est pas du style : elle est le seul garde-fou 
 code sur un `ScreeningExportService` ou un `POST /manifest/prefill-from-screening`, qui autrement
 passeraient pour d'aimables raccourcis.
 
-**Aucune donnée réelle n'entre** :
-Le service lit des noms de tables et de colonnes, des types, des contraintes et des commentaires.
-**Aucune donnée personnelle réelle n'entre**, et il n'existe aucun chemin par lequel elle entrerait :
-pas de chaîne de connexion, pas de socket vers la production du client, pas d'échantillon de valeurs,
-pas de sondage. Le service ne détient aucun secret d'accès à la base du client.
-⚠️ **Corollaire contre-intuitif, et il faut le dire : ce n'est donc pas un NER.** Un NER s'entraîne
-sur de la prose, et `dt_naiss` n'est pas de la prose. Ce qui opère sur des noms d'identifiants relève
-du lexique, des règles et de la morphologie ; appeler la chose un NER ferait chercher des outils
-calibrés pour un problème qu'on n'a pas.
-_Avoid_ : NER, échantillon, sondage de valeurs, aperçu, connexion, chaîne de connexion, scan de
-contenu, profilage
+**Ce qui entre est borné** :
+Des données personnelles réelles **entrent** désormais dans ce contexte. Ce qui les tient n'est plus
+une promesse générale, mais des bornes qui se vérifient une par une.
+- Le service lit les noms de tables et de colonnes, les types, les contraintes et les commentaires —
+  comme il l'a toujours fait, et sur les deux chemins.
+- Il lit en plus, sur le chemin connecté seulement, **quelques valeurs par colonne** : cinq à la
+  livraison. Voir `ColumnPreview`.
+- La requête de prélèvement **nomme ses colonnes** une par une, depuis le schéma déjà relevé. Jamais
+  d'étoile, jamais une table entière.
+- Les **types binaires sont exclus** du prélèvement, et l'exclusion est **nommée** sur la ligne.
+- Les **textes longs sont tronqués par le SGBD**, avant de traverser le réseau.
+⚠️ **Cette entrée remplace une clause renversée, et il faut le savoir en la lisant.** Ce contexte a
+promis, pendant toute sa première vie, qu'« aucune donnée réelle n'entre » — pas de chaîne de
+connexion, pas de socket vers la production du client, pas d'échantillon de valeurs, pas de sondage.
+Les trois interdictions sont tombées par
+[ADR-0012](../../adr/0012-la-connexion-le-scan-et-les-echantillons-entrent-dans-screening.md), qui
+écrit ce que le renversement achète et ce qu'il coûte. Ce qui n'est **pas** tombé est la liste
+ci-dessus, et l'entrée suivante.
+⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
+prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
+`commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
+celle-là qu'il faut lire. Ce que le moteur reconnaît, ce sont des **formes**, pas des entités nommées
+en contexte : `+33612345678` est un motif, reconnaissable par sa morphologie, sans modèle et sans
+corpus d'entraînement ; « Madame Dupont a téléphoné » est une entité nommée dans une phrase, et ce
+contexte n'y touche pas. Le service que rend ce corollaire — empêcher qu'on aille chercher des outils
+calibrés pour un problème qu'on n'a pas — est plus utile qu'avant, parce que c'est **maintenant**, en
+voyant des valeurs textuelles entrer, qu'un lecteur aura le réflexe d'y penser.
+_Avoid_ : NER, échantillon, sondage de valeurs, scan de contenu, profilage ⚠️ ces cinq mots ont
+survécu à la chute des trois interdictions, chacun pour une raison propre. `échantillon` et
+`sondage de valeurs` promettent un tirage qui **porte une inférence**, ce que cinq valeurs ne font
+pas — voir `ColumnPreview`. `scan de contenu` est celui qu'il faut garder **maintenant que `Scan` est
+réadmis** : `Scan` nomme le geste, `scan de contenu` en nomme le franchissement — l'analyse du
+contenu de la base du client au-delà de ce qu'un humain lit de ses yeux —, et c'est cette frontière
+que l'ADR-0012 tient. `profilage` est un mot du RGPD (art. 4 § 4) et il désigne un traitement
+automatisé visant à **évaluer une personne** : rien ici n'évalue une personne, on devine ce que
+contient une **colonne**. L'employer ferait entrer le régime de l'art. 22 dans un outil qui n'y est
+pas — une **erreur de droit** dans l'outil dont c'est le métier de ne pas en commettre.
+⚠️ `connexion`, `chaîne de connexion` et `aperçu` ont quitté cette liste : ce sont désormais des mots
+de ce contexte.
+
+**Rien de réel ne reste** :
+Ce qui entre ne se dépose nulle part. C'est la promesse que ce contexte tient à la place de celle
+qu'il a perdue, et elle porte sur deux choses distinctes.
+- **La chaîne de connexion ne survit pas au scan.** Elle vit en mémoire le temps du relevé. Jamais
+  persistée, jamais journalisée, jamais tracée, jamais reprise dans un message d'erreur, jamais
+  rejouée pour un second scan. Le service ne détient **aucun secret d'accès durable** à la base d'un
+  client.
+- **Les valeurs lues meurent avec la session d'arbitrage.** Un `ColumnPreview` vit dans un cache en
+  mémoire du processus, avec une durée de vie **explicite, affichée et décomptée**. Un redémarrage du
+  service les efface : c'est un comportement à **dire** à l'`Operator`, pas un défaut à corriger.
+  Elles n'apparaissent jamais dans un log, une trace, un message d'erreur, un motif de
+  `ScreenedColumn`, ni dans la `Cartographie` exportée.
+⚠️ **Ce sont deux promesses et non une, et elles ne se vérifient pas au même endroit.** Qui relit le
+code du prélèvement contrôle ce qui **entre** ; qui relit le code de persistance contrôle ce qui
+**reste**. Les fondre en une seule clause ferait un champ unique dont les deux moitiés finiraient par
+diverger, et ce glossaire refuse ailleurs le même montage — voir la sensibilité et la signature.
+⚠️ **Persister les aperçus pour éviter de rescanner a été explicitement écarté.** Ce serait faire du
+service un détenteur durable de données personnelles du client, avec tout ce que cela entraîne :
+chiffrement au repos, purge, droit d'accès sur nos propres sauvegardes. Le gain — ne pas relancer un
+scan — est sans commune mesure avec le prix, et ce garde-fou n'est pas négociable.
+_Avoid_ : rétention, conservation, cache persistant, archivage des valeurs, historique des valeurs
+⚠️ tous supposent une durée que rien ici n'a ; « cache » employé seul est admis, parce qu'il dit
+l'inverse — ce qui y entre en sort.

@@ -22,10 +22,12 @@ quels : on écrit « la `Qualification` », « le `EvidenceLog` ».
   là où il les atteint, et produit la preuve qu'une procédure a été suivie — y compris là où elle
   ne l'a pas été.
 - [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Détecte, dans le relevé
-  des colonnes d'une base du client qu'un `Operator` lui colle, les colonnes qui portent
-  vraisemblablement des données personnelles, et les lui rend une par une pour qu'il les retienne ou
-  les écarte. C'est la **détection des données personnelles**, et ce qu'elle rend est un **rapport de
-  détection**. Il ne se connecte à rien, ne lit aucune valeur, et ne touche jamais au `Manifest`.
+  des colonnes d'une base du client — collé par un `Operator`, ou relevé par le service lui-même
+  lorsqu'il **scanne** la base —, les colonnes qui portent vraisemblablement des données
+  personnelles, et les lui rend une par une pour qu'il les retienne ou les écarte. C'est la
+  **détection des données personnelles**, et ce qu'elle rend est un **rapport de détection**. Il se
+  connecte et lit quelques valeurs par colonne, mais **n'en garde aucune** — ni les valeurs, ni la
+  chaîne de connexion —, et ne touche jamais au `Manifest`.
 
 ## Relations
 
