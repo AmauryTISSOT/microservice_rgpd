@@ -141,6 +141,16 @@ bout à l'autre : il **précède** ce terme, et on ne réécrit pas un enregistr
 ⚠️ **Le nombre est un ordre de grandeur, pas un paramètre de doctrine.** Cinq, trois ou huit ne
 changent rien. Cinq cents change tout : ce n'est plus un aperçu qu'un humain lit de ses yeux, c'est
 de l'analyse de contenu, et c'est ce qui rouvre l'ADR-0012.
+⚠️ **Toutes les valeurs d'un aperçu ne se valent pas devant une règle, et trois ne comptent nulle
+part.** Une règle de forme se prononce sur ce qu'elle a **réellement lu** : une valeur `NULL`, une
+valeur **tronquée** par le SGBD, et un **doublon** d'une valeur déjà comptée sont écartés du compte —
+ni au numérateur, ni au dénominateur. Les trois exclusions ont un seul motif commun : **compter deux
+fois la même observation, ou compter une observation qu'on n'a pas eue, est la façon la plus courte
+de fabriquer une preuve**. Une valeur tronquée n'a pas été lue en entier, donc elle n'a pas été lue ;
+cinq fois le même IBAN est un IBAN vérifié une fois, jamais cinq vérifications indépendantes ; un
+`NULL` n'est pas une valeur. ⚠️ Conséquence à assumer et à dire : la troncature transforme des vrais
+positifs en **silences** — un courriel coupé à deux cents caractères n'est plus un courriel — et
+c'est l'aperçu affiché, coupure visible, qui rend la main à l'`Operator`.
 ⚠️ **Sa durée de vie est glissante, et son expiration n'est pas une troisième raison.** Deux heures
 réarmées à chaque écran **portant des aperçus** — ni l'historique, ni l'archive, ni l'accueil ne les
 prolongent —, sous un plafond absolu de douze heures depuis le scan. Le glissant suit le rythme réel
@@ -219,6 +229,20 @@ du modèle servi le cas échéant. Elle ne sert qu'à l'humain qui relit un rapp
 plusieurs jours après l'avoir lancé, ou qui en compare deux : le domaine ne l'interprète **jamais**
 et aucune réponse publique ne la porte. Décalque exact de `QualificationEngineIdentity`, retenue
 comprise.
+⚠️ **Elle se découpe en autant de morceaux qu'il y a de choses capables de bouger seules**, et c'est
+tout son usage : l'humain qui compare deux rapports a besoin de savoir **lequel** a changé. Le moteur
+retenu en porte trois — ses règles de nom, ses règles de forme, le gel de ses lexiques —, là où il
+n'en portait que deux.
+⚠️ **C'est aussi elle qui dit qu'un rapport n'a pas eu de valeurs à lire, et c'est le seul endroit où
+ce fait est écrit.** Le même moteur, dans la même version, rend deux choses différentes selon que
+l'aperçu lui a été donné ou non : une colonne `ref_3` dont les valeurs sont des IBAN est signalée sur
+le chemin connecté et `Unflagged` sur le chemin collé. Sans mention, les deux rapports se
+compareraient comme s'ils étaient comparables. L'identité déclare donc ses règles de forme
+**inactives** quand aucun aperçu ne lui est parvenu.
+⚠️ **Et c'est ici, jamais sur la ligne, que ce fait doit s'écrire.** Une `ScreenedColumn` ne retient
+pas qu'on a lu des valeurs chez elle : à ce grain, ce serait dire quelque chose de la **donnée**, ce
+qu'`Unflagged` interdit. Porté par l'identité, le même fait ne parle que du **moteur**, et il vaut
+pour le rapport entier.
 _Avoid_ : modèle, moteur, provenance, signature, version ⚠️ `signature` est prise par le geste d'un
 humain, qui est la seule signature de ce dépôt.
 
@@ -235,6 +259,17 @@ synchrone obligerait un futur moteur servi à bloquer sur son propre transport, 
 paierait dans `Core`.
 ⚠️ **Il rend une ligne par colonne, ou il échoue.** Un rapport de détection partiel n'existe pas :
 c'est la même clause que « il est entier ou il n'existe pas », vue du moteur.
+⚠️ **Il reçoit les aperçus à côté du relevé, jamais dedans, et ils ne ressortent pas.** Le
+`ColumnListing` est **persisté** : y loger des valeurs ferait tomber `Rien de réel ne reste` par le
+plus court des chemins, et effacerait au passage la clause qui veut qu'un relevé scanné et un relevé
+collé soient le même objet. Les aperçus entrent donc **à part**, et le chemin collé n'en fournit
+simplement aucun. Rien ne les fait ressortir : ce que le port rend est un `ScreenedListing`, dont
+aucun champ ne sait porter une valeur — le motif est de la prose bornée, et il ne cite jamais une
+valeur lue.
+⚠️ **Il n'y a pas de second port pour les valeurs.** Un moteur de formes appelé à côté de celui-ci
+rendrait deux rapports à fusionner, donc un étage qui arbitre « ce que dit le nom » contre « ce que
+disent les valeurs » — l'étage exact que le modèle refuse plus bas. Il n'y a qu'une détection, et
+elle lit les deux.
 _Avoid_ : Scanner, Detector, Classifier, Analyzer, ArbitrationEngine ⚠️ `ArbitrationEngine` donnerait
 à une machine le mot réservé au geste de l'`Operator`, qui est seul à produire une issue.
 ⚠️ **`Scanner` tient, alors même que `Scan` a été réadmis**, et c'est le test du chemin collé qui le
@@ -285,6 +320,32 @@ relancer — détruirait le travail déjà signé. Ce qui demeure sous les yeux 
 d'ailleurs pas rien, l'ADR-0012 retenant le nom de la table **en propre et en premier**.
 Symétriquement, une ligne `Unflagged` n'a **pas** de motif : il n'y a rien à motiver, et c'est ce qui
 distingue « rien vu » de « vu et écarté ».
+⚠️ **Le motif ne dit jamais ce qui n'a pas déclenché**, et c'est plus qu'une économie de prose.
+Écrire « aucune règle de forme n'a confirmé » sur une colonne signalée par son nom serait une phrase
+**enregistrée**, qui vit des mois et qui se lira, un jour, comme « les valeurs avaient l'air propres »
+— le quitus que tout ce contexte refuse de délivrer, et qu'`Unflagged` refuse déjà à sa propre
+échelle. Le motif dit ce qui **a** parlé ; c'est l'aperçu, affiché à côté et périssable, qui laisse
+l'`Operator` juger le reste. La seule exception est celle qui existe déjà, et elle est de nature
+opposée : le motif nomme les catégories qu'un **autre déclenchement** a portées et que l'ordre
+d'arbitrage a écartées.
+⚠️ **Deux familles de règles écrivent dans le même motif, dans un ordre fixe : le nom d'abord, la
+forme ensuite.** Il n'y a qu'un motif par ligne, et les phrases s'y suivent. L'ordre n'est pas
+esthétique : le motif est **borné**, et un motif trop long est coupé — en le disant, mais coupé. Ce
+qui doit survivre à la coupe est le signal que l'ADR-0012 retient **en propre et en premier**, celui
+du nom.
+⚠️ **Une règle de forme ne peut qu'ajouter un signalement, jamais en retirer un.** C'est la clause la
+plus lourde de l'entrée, et elle se lit sur trois colonnes réelles. `commentaire` dont les valeurs
+lues sont des courriels est **signalée** alors que son nom n'a rien dit : c'est le gain. `email` dont
+les cinq valeurs lues sont vides **reste signalée**, et `date_naissance` dont les cinq valeurs lues
+sont des identifiants techniques **reste signalée** : cinq valeurs ne disent rien des trois millions
+de lignes qu'on n'a pas lues, et les laisser éteindre un signalement reviendrait à délivrer un
+certificat d'innocuité sur cinq lignes. C'est `Unflagged` vu depuis l'autre bout — celle-là refuse
+d'affirmer l'innocuité d'une colonne, celle-ci refuse de la déduire d'un aperçu.
+⚠️ **Il n'existe aucun étage qui arbitre « le nom » contre « les valeurs ».** Une règle de forme est
+une règle **de plus**, versée au même sac que les règles de nom, et c'est l'ordre d'arbitrage de
+`PersonalDataCategory` qui tranche, comme il l'a toujours fait. Un tel étage aurait été le seul
+endroit du contexte où une famille de règles l'emporte sur une autre — c'est-à-dire la comparaison de
+degrés que `RuleStrength` interdit, déplacée d'un cran.
 _Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et `Candidate` sont
 déjà refusés sur `Reservation` pour la raison qui vaut ici — ils promettent un rapprochement que le
 service ne fait pas et un score qu'il n'a pas ; `Finding` et `Hit` supposeraient qu'une ligne non
@@ -358,6 +419,13 @@ ci-dessus qui tranche, du plus au moins coûteux à omettre. ⚠️ **Jamais la 
 comparer deux degrés pour désigner un gagnant serait un score qui produit une issue, ce que l'`Aide
 à la décision` interdit. Le motif, lui, peut dire ce qui a été écarté — « la règle *vie
 professionnelle* a aussi déclenché ». Les moteurs **héritent** cet ordre ; aucun ne le redécide.
+⚠️ **Et les familles de règles l'héritent aussi, sans la moindre exception.** Une règle qui lit les
+**valeurs** ne l'emporte pas sur une règle qui lit le **nom**, ni l'inverse : une colonne `numero`
+que son nom rapproche d'`Identity` et dont les valeurs portent une clé d'IBAN rend `FinancialData`,
+uniquement parce que `FinancialData` est plus haut au tableau. L'ordre décrit la **gravité de la
+catégorie**, jamais la qualité de la règle qui l'a atteinte. Donner la préséance à une famille
+rouvrirait, sous un autre nom, le classement des règles entre elles que la phrase précédente
+interdit.
 
 **Sa gouvernance a deux étages, parce que ses valeurs n'ont pas toutes le même auteur.**
 `DataSubjectRight` peut écrire qu'ajouter une valeur est une rupture de niveau ADR : il y a six droits
@@ -392,6 +460,14 @@ anodines demeure une colonne où **rien n'a été vu**. Le lecteur qui apprend q
 désormais les valeurs sera tenté de lire `Unflagged` comme un quitus : c'est très exactement ce que
 cette valeur ne dit pas, et elle le dit d'autant moins que le prélèvement peut avoir été exclu ou
 avoir échoué — voir `ColumnPreview`.
+⚠️ **Deux colonnes très différentes rendent le même `Unflagged`, et c'est correct.** Celle où cinq
+valeurs ont été lues sans que rien ne déclenche, et celle dont l'aperçu a été *exclu* ou a *échoué*,
+portent la même valeur et **aucun motif** — seul l'aperçu affiché à côté les sépare, et il expire. La
+tentation est alors de retenir sur la ligne que le service a bien lu cinq valeurs ici. Il ne le
+retient pas : ce serait faire dire à `Unflagged` quelque chose de la **donnée**, quand elle ne dit
+jamais que ce que la détection a fait. Or dans les deux cas, rien n'a été vu — elles **doivent** se
+lire pareil. Ce qui distingue les deux rapports, lui, s'écrit à l'échelle du rapport, sur la
+`ScreeningEngineIdentity`.
 C'est `Enregistré, jamais vérifié` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
 parce qu'une machine qui déclare une colonne inoffensive est très exactement le témoignage qu'elle
 n'a pas les moyens de porter.
@@ -416,6 +492,11 @@ mensonge est bruyant, le second est silencieux, et c'est le second qui coûte ic
 ⚠️ **Le taux de repli est l'instrument de mesure de la taxonomie**, et il n'est pas un défaut à
 minimiser : un taux qui monte est le signal qu'il manque une valeur. C'est ce que le banc compte, au
 même titre que ce qu'il détecte.
+⚠️ **Aucune règle de forme n'y mène.** Une règle qui lit les valeurs sait d'avance quelle catégorie
+elle vise — une clé d'IBAN vise `FinancialData`, et rien d'autre. Il n'existe pas de « forme reconnue
+sans catégorie qui lui aille » : une forme qu'aucune catégorie n'attend est une forme qu'on n'a pas
+écrite. Le seul chemin vers ce repli reste la règle du **conteneur libre**, qui ne dit pas qu'une
+forme a été reconnue, mais que le schéma ne permet pas de lire.
 ⚠️ **Il n'y a pas de second repli.** Une valeur « non personnelle » a été explicitement écartée : elle
 porterait sur la donnée un verdict d'innocuité que le service n'a pas les moyens de rendre : cinq
 valeurs lues ne fondent rien sur le reste d'une colonne, et sur le chemin collé il n'en a lu aucune. `Unflagged` occupe cette place et dit la bonne chose, un constat sur la
@@ -426,9 +507,41 @@ _Avoid_ : Other, Misc, Unclassified, Unknown, Generic, NonPersonal, divers, four
 premier ; `Unknown` en referait l'aveu d'ignorance qu'elle n'est pas.
 
 **RuleStrength** :
-Le degré de doute d'une `ScreenedColumn`, **dérivé de la règle qui a déclenché** — correspondance
-exacte, rapprochement morphologique, heuristique de type. Externe et déterministe : il ne doit rien à
-l'auto-évaluation d'un moteur.
+Le degré de doute d'une `ScreenedColumn`, **dérivé de la règle qui a déclenché**. Externe et
+déterministe : il ne doit rien à l'auto-évaluation d'un moteur. Il a **cinq** membres, et l'ordre
+ci-dessous est celui dans lequel une règle parle le plus directement — le seul usage qu'on en fasse
+jamais.
+
+| Membre | Ce qui a déclenché |
+|---|---|
+| `ExactName` | le nom entier de la colonne figure au lexique |
+| `CheckedValueForm` | les valeurs lues portent une **clé de contrôle** qui se vérifie |
+| `Morphological` | une racine ou un affixe rapproche le nom d'une entrée du lexique |
+| `ValueForm` | les valeurs lues ont une **forme** reconnue, sans clé de contrôle |
+| `TypeHeuristic` | ni le nom ni ses valeurs n'ont parlé : le **type déclaré** de la colonne a parlé |
+
+⚠️ **Les deux membres de forme ne se distinguent pas par le nombre de valeurs, mais par la clé**, et
+c'est un résultat mesuré, pas une intuition. Un test de **forme** ne se multiplie pas sur cinq
+valeurs : la forme est une propriété de la colonne, et « cinq sur cinq » n'y est qu'**une seule
+observation affichée cinq fois** — d'où 81 % de faux positifs sur un code postal, qu'on en lise cinq
+ou cinquante. Un test de **clé**, lui, se multiplie réellement : deux IBAN distincts valident à une
+chance sur dix milliards. **Le nombre n'est donc pas le paramètre qui décide ; la présence d'une clé
+l'est.**
+⚠️ **`TypeHeuristic` parle du type déclaré au schéma, jamais de la forme des valeurs**, et la
+confusion est facile parce que le mot « forme » va aux deux. Le type est ce que le SGBD annonce
+(`jsonb`) ; la forme est ce que les valeurs montrent. Les fondre reviendrait à faire mentir le seul
+membre qui existait déjà, et à rendre indistinguables une colonne qu'on n'a pas su lire et une
+colonne dont on a lu le contenu.
+⚠️ **Aucun membre ne varie avec le nombre de valeurs conformes.** Un degré qui monterait de « deux
+sur cinq » à « cinq sur cinq » serait un ratio promu palier, c'est-à-dire un score par un autre
+chemin — le même interdit que la clause suivante, vu depuis l'intérieur d'un membre plutôt qu'entre
+deux membres.
+⚠️ **Le degré ne dit pas combien de règles ont parlé, seulement laquelle a parlé le plus
+directement.** Une colonne `iban` dont les valeurs sont des IBAN a été reconnue deux fois, par deux
+familles ; elle porte pourtant `ExactName`, et son motif porte les deux phrases. Un membre
+« corroboré » aurait fait dire au degré une **quantité de preuve**, ce qui est la définition du score
+que ce type existe pour empêcher. L'`Operator` ne perd rien : ce qui a déclenché est écrit en toutes
+lettres dans le motif.
 ⚠️ **Il ne se confond pas avec la `DeclaredConfidence` de `Qualification`**, et c'est l'homonyme le
 plus dangereux du dépôt : celle-là est une auto-évaluation qu'un moteur produit sur lui-même, et le
 ticket #46 l'a mesurée **dégénérée** sur `qwen3:8b` — 118 `Low`, 2 `High`, aucun `Medium` sur 120.
@@ -578,6 +691,25 @@ une promesse générale, mais des bornes qui se vérifient une par une.
   d'étoile, jamais une table entière.
 - Les **types binaires sont exclus** du prélèvement, et l'exclusion est **nommée** sur la ligne.
 - Les **textes longs sont tronqués par le SGBD**, avant de traverser le réseau.
+- Ce que le moteur fait de ces valeurs est borné aussi : il y cherche des **formes écrites d'avance**,
+  jamais des mots. Aucun lexique ne s'applique aux valeurs.
+⚠️ **Une règle de forme se juge à ce qu'elle rapporte, et certaines rapportent négativement.** Un
+format sans clé de contrôle plafonne au taux de faux positifs de sa famille de colonnes, et quatre
+sont **nommément écartés** parce qu'ils coûtent plus qu'ils ne rendent : le **code postal** (81 % de
+faux positifs — une base réelle est pleine de codes produits, de codes INSEE de communes et d'années
+× 100, tous à cinq chiffres), la **date seule** (95 à 98 % — une colonne date sur vingt à cinquante
+est une date de naissance), les **coordonnées GPS seules** (50 à 70 %), et le couple **CNI/NEPH**
+(indiscernables l'un de l'autre). Ils sont écrits ici pour la même raison qu'une liste _Avoid_ : sans
+la trace de leur refus, quelqu'un les ajoutera dans six mois en croyant réparer un oubli. Le prix
+d'une mauvaise règle n'est pas une ligne fausse de plus, c'est un `Operator` qui se met à survoler —
+et l'`Omission silencieuse` rétablie par épuisement, sans qu'aucune ligne de doctrine n'ait bougé.
+⚠️ **Un aperçu ne rend pas lisible ce que le schéma ne montrait pas.** Une colonne `jsonb` reste un
+**conteneur libre** même quand on a lu cinq de ses valeurs : la règle qui la signale ne dit pas ce
+qu'elle contient, elle dit que le schéma ne permet pas de le lire, et cinq valeurs n'y changent rien.
+Ouvrir le document pour appliquer les règles champ par champ serait franchir la frontière que
+l'ADR-0012 a tracée — on cesserait de regarder quelques valeurs comme un humain les lit pour
+décortiquer la structure de la donnée du client. Et l'éteindre parce qu'on a lu des valeurs serait
+laisser un aperçu **retirer** un signalement, ce que `ScreenedColumn` interdit.
 ⚠️ **Cette entrée remplace une clause renversée, et il faut le savoir en la lisant.** Ce contexte a
 promis, pendant toute sa première vie, qu'« aucune donnée réelle n'entre » — pas de chaîne de
 connexion, pas de socket vers la production du client, pas d'échantillon de valeurs, pas de sondage.
