@@ -83,7 +83,7 @@ quels : on écrit « la `Qualification` », « le `EvidenceLog` ».
 
 ## Langue de système
 
-Quatre termes sont vrais des trois côtés à la fois, et ils sont écrits ici plutôt que dupliqués dans
+Cinq termes sont vrais des trois côtés à la fois, et ils sont écrits ici plutôt que dupliqués dans
 les trois glossaires — une doctrine tenue partout doit être écrite **une fois, au-dessus**, sinon
 elle n'est tenue nulle part.
 
@@ -109,6 +109,36 @@ et seulement parce que le rapport de détection rend **toutes** les colonnes du 
 celles où rien n'a été vu : c'est l'`Omission relue`, et elle cesse d'exister le jour où quelqu'un
 filtre l'affichage. Chaque régime est défini dans le glossaire du contexte où il vaut, et **nulle
 part ailleurs**.
+
+**Geste** :
+Un **acte** posé par l'`Operator` ou par le service, et le mot est choisi pour ce qu'il **n'est
+pas** : un état. Un geste laisse *n* traces signées et datées, chacune se tenant seule ; il ne pose
+jamais un objet d'état partagé entre elles. C'est lui qui rend audible le refus des états qui court
+dans tout le dépôt — « un `Screening` n'a aucun état », l'avancement est un **compte** et non un
+état de haut niveau rassurant, `ArbitrateInBatch` « pose *n* arbitrages individuels, jamais un état
+de lot ». Il vaut des deux côtés de la frontière : `Screening` et `Casework` l'emploient au même
+sens, et il n'appartient donc à aucun des deux.
+_Avoid_ : action, opération, commande, traitement
+⚠️ **Cette entrée ne tranche rien.** Elle écrit un mot que le dépôt emploie déjà partout — dans les
+deux glossaires, dans les pages, dans les commentaires de domaine — et qu'aucune entrée ne
+définissait. Le défaut n'était pas le mot, c'était son absence de définition : un terme employé de
+part et d'autre de la frontière et défini nulle part est un terme que le prochain lecteur devra
+deviner.
+⚠️ **Un geste n'est pas une commande, et la nuance porte.** `commande` est prise par CQRS :
+`ArbitrateTableInBatchCommand` est le **message** qui transporte le geste, quand le geste est
+l'**acte** que l'humain pose. Un message se rejoue, un acte se signe. `traitement` est réservé au
+sens que le RGPD lui donne et ne nommera jamais autre chose ici. `action` et `opération`, eux, ne
+disent pas l'opposition à l'état — qui est tout le propos du mot.
+⚠️ **Le mot vit dans le code, et une part en est figée.** `ScreenedColumn.IsWithinReachOfABatchGesture`
+et `ScreenedTable.WithinReachOfABatchGestureInThisTable` le portent en anglais, `Gesture` ; la
+migration appliquée `20260806092543_AddDeliveryGesturesAndLedgerCounts` aussi, et celle-là est de
+l'histoire datée qu'on ne renomme pas. Un renommage du terme laisserait donc le mot vivant quelque
+part quoi qu'il arrive — raison de plus pour le définir plutôt que le remplacer.
+⚠️ **Nommer un geste n'est pas nommer une décision de machine**, et l'entrée « Aide à la décision »
+ci-dessus le dit déjà : ce que sa liste interdit est de nommer une issue que la *machine*
+produirait, jamais de nommer le geste d'un humain. Le geste nommé du dépôt est **le geste de lot**
+de `Screening` — `ArbitrateInBatch` —, borné à sa table et à ses seules colonnes `Unflagged` encore
+`Awaiting`, et le mot y est repris sciemment.
 
 **Microservice RGPD** :
 Le nom du produit, tel que l'utilisateur le lit : le wordmark devant les quatre entrées du panneau,
