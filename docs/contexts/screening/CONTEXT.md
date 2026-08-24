@@ -141,10 +141,55 @@ bout à l'autre : il **précède** ce terme, et on ne réécrit pas un enregistr
 ⚠️ **Le nombre est un ordre de grandeur, pas un paramètre de doctrine.** Cinq, trois ou huit ne
 changent rien. Cinq cents change tout : ce n'est plus un aperçu qu'un humain lit de ses yeux, c'est
 de l'analyse de contenu, et c'est ce qui rouvre l'ADR-0012.
+⚠️ **Sa durée de vie est glissante, et son expiration n'est pas une troisième raison.** Deux heures
+réarmées à chaque écran **portant des aperçus** — ni l'historique, ni l'archive, ni l'accueil ne les
+prolongent —, sous un plafond absolu de douze heures depuis le scan. Le glissant suit le rythme réel
+d'un arbitrage, qui se compte en heures ; le plafond empêche qu'un onglet oublié fasse d'un cache une
+rétention. Voir `Rien de réel ne reste`.
+⚠️ **Et quand la durée est écoulée, rien ne s'affiche « vide ».** L'expiration se dit **à l'échelle
+du rapport** — « les aperçus ont expiré ; ils ne reviendront pas pour ce rapport » — et le bloc
+d'aperçu **quitte l'écran entièrement**. Écrire « valeurs expirées » dans la case en ferait une
+**troisième forme**, que la clause ci-dessus interdit. L'aperçu n'est pas devenu vide : il n'existe
+plus. Et le message est vrai sans réserve — relancer un scan ferait reculer ce rapport-là, donc aucun
+geste ne rend ses aperçus.
 _Avoid_ : Sample, échantillon, ValueSample, extrait, Excerpt, Snippet, Peek ⚠️ `Sample` et
 `échantillon` sont les mots qu'on écrira par réflexe, et c'est précisément pour cela qu'ils sont
 nommés ici ; `extrait` et `Excerpt` supposeraient un tout dont on aurait pris une part
 représentative, ce qui est la même promesse sous un autre habit.
+
+**ScanProgress** — « avancement du scan » :
+Ce qu'un `Scan` en cours donne à voir pendant qu'il court : la **phase** où il en est, et le **compte
+réel** de cette phase. Il vit **en mémoire du processus**, n'est **jamais** persisté, et porte un
+`ScanId` propre — distinct de tout `ScreeningId`, parce qu'un scan peut être abandonné ou mourir sans
+avoir jamais produit de `Screening`.
+⚠️ **C'est lui, le transitoire qui vit à côté.** Le scan est asynchrone, et un `Screening` n'a aucun
+état — voir plus bas. L'avancement n'est donc pas porté par le `Screening` : il est un objet
+**distinct**, qui naît avant lui et meurt quand l'écran d'attente cède la place au rapport.
+⚠️ **Son compte est vrai, ou il n'est pas.** Une barre **par phase**, chacune avec son dénominateur —
+la **table** pour les aperçus, puisque le prélèvement coûte une requête par table ; la **colonne**
+pour la détection. Les phases qui précèdent le retour du catalogue n'affichent **aucune barre** :
+avant lui, aucun dénominateur n'est honnête. Et **aucun total global**, parce qu'en produire un
+reviendrait à décider d'avance qu'une table de prélèvement « vaut » *n* colonnes de détection, ce qui
+est le pourcentage inventé — pire qu'aucune barre.
+⚠️ **L'écran qu'il alimente couvre une phase de plus que le scan** : la détection, qui existe aussi
+sur le chemin collé. Ce n'est pas une entorse au test, parce que le test porte sur l'**objet** : quand
+on colle, il n'y a ni écran d'attente ni `ScanProgress`. La raison est que l'`Operator` n'attend pas
+un `ColumnListing`, il attend un rapport, et le faire attendre deux fois pour un seul geste serait
+une fidélité au vocabulaire payée par lui.
+⚠️ **Il est un fait du service, pas d'une session.** Un seul en vol par déploiement : un second
+`Operator` arrivant pendant un scan voit le même écran et le même compte, et se voit **refuser** un
+second lancement, celui en cours étant nommé. Fermer l'onglet n'arrête rien.
+⚠️ **Il ne survit ni au processus, ni à l'abandon, et les deux se disent.** Le service redémarré, il
+n'existe plus : l'écran d'attente répond alors « ce scan n'existe plus », avec la relance sous la
+main, et jamais une redirection muette — ce serait l'`Omission silencieuse` déplacée sur l'écran
+d'attente. Reprendre là où il s'était arrêté est **impossible par construction** : la chaîne de
+connexion n'a pas survécu au scan — voir `Rien de réel ne reste`. Un scan abandonné, lui, ne laisse
+**aucun objet** : ni `ColumnListing`, ni `Screening`, ni entrée d'historique, et le rapport courant
+ne recule pas.
+_Avoid_ : ScanState, ScanJob, statut du scan, progression, pourcentage ⚠️ `ScanState` et `statut`
+rangeraient parmi les états ce qui a été délibérément tenu à côté d'eux ; `ScanJob` promet une file
+et des reprises, quand il n'y en a qu'un et qu'il ne reprend jamais ; `pourcentage` est le mot qui
+fait naître le total global que cette entrée refuse.
 
 **Screening** :
 Ce que la détection a rendu sur un `ColumnListing` : une `ScreenedColumn` par colonne du relevé, et
@@ -232,6 +277,12 @@ dérivé sans les valeurs » que l'ADR-0012 a écarté nommément. Ce qui le ren
 l'écran montre le `ColumnPreview` sur la même ligne : l'`Operator` lit la forme affirmée **et** les
 valeurs qui la portent, et peut dire non. Retirer l'aperçu de l'écran ne serait donc pas une
 économie d'affichage, ce serait rendre un motif invérifiable.
+⚠️ **Cette clause borne la conception, pas la durée de vie.** Elle interdit de concevoir un écran qui
+sépare le motif de son aperçu ; elle ne fait **pas** de l'expiration de l'aperçu une péremption du
+rapport. Une fois les valeurs disparues, un motif de forme **reste arbitrable**, l'écran le disant :
+refuser la signature transformerait une expiration en rapport périmé, et la seule issue laissée —
+relancer — détruirait le travail déjà signé. Ce qui demeure sous les yeux de l'`Operator` n'est
+d'ailleurs pas rien, l'ADR-0012 retenant le nom de la table **en propre et en premier**.
 Symétriquement, une ligne `Unflagged` n'a **pas** de motif : il n'y a rien à motiver, et c'est ce qui
 distingue « rien vu » de « vu et écarté ».
 _Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et `Candidate` sont
@@ -415,6 +466,11 @@ déploiement est le courant, tous les autres sont archivés par le seul fait qu'
 Si `Archived` était un état, une transition ratée laisserait deux rapports de détection courants et
 l'`Operator` arbitrerait le mauvais — même mécanique que le refus d'un état « en retard » dans
 `Casework`, où le dépassement est un calcul pour que jamais un retard non détecté ne devienne un retard inexistant.
+⚠️ **Le scan asynchrone n'y change rien, et c'est un choix de placement.** Il introduit bien un
+transitoire — un scan court, puis n'existe plus —, mais ce transitoire vit dans un objet **distinct**,
+le `ScanProgress`, qui naît avant le `Screening` et meurt avant lui. Le porter sur le `Screening`
+aurait fait entrer un état par la porte de service, et l'aurait fait entrer sur l'agrégat même dont
+l'absence d'état protège l'unicité du rapport courant.
 L'avancement non plus n'est pas un état : « douze colonnes en attente » est un **compte** sur les
 `ScreenedColumn`, jamais un état de haut niveau rassurant.
 
@@ -559,14 +615,27 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   rejouée pour un second scan. Le service ne détient **aucun secret d'accès durable** à la base d'un
   client.
 - **Les valeurs lues meurent avec la session d'arbitrage.** Un `ColumnPreview` vit dans un cache en
-  mémoire du processus, avec une durée de vie **explicite, affichée et décomptée**. Un redémarrage du
-  service les efface : c'est un comportement à **dire** à l'`Operator`, pas un défaut à corriger.
-  Elles n'apparaissent jamais dans un log, une trace, un message d'erreur, un motif de
-  `ScreenedColumn`, ni dans la `Cartographie` exportée.
+  mémoire du processus, avec une durée de vie **explicite, affichée et décomptée** : deux heures
+  glissantes, réarmées par les seuls écrans qui montrent des aperçus, sous un plafond absolu de douze
+  heures depuis le scan. Un redémarrage du service les efface : c'est un comportement à **dire** à
+  l'`Operator`, pas un défaut à corriger. Elles n'apparaissent jamais dans un log, une trace, un
+  message d'erreur, un motif de `ScreenedColumn`, ni dans la `Cartographie` exportée.
+  ⚠️ **Le cache ne détient jamais qu'un seul jeu vivant** : quand un nouveau scan fait reculer le
+  rapport courant, les aperçus du précédent sont évincés **sur-le-champ**. Une archive ne porte aucune
+  valeur lue ; les garder en mémoire tiendrait en RAM ce que la base a le droit de refuser. C'est
+  aussi ce qui rend inutile tout plafond en octets — cinq valeurs tronquées par le SGBD, pour cinq
+  mille colonnes, pèsent quelques dizaines de mégaoctets, et il n'y en a qu'un jeu à la fois.
 ⚠️ **Ce sont deux promesses et non une, et elles ne se vérifient pas au même endroit.** Qui relit le
 code du prélèvement contrôle ce qui **entre** ; qui relit le code de persistance contrôle ce qui
 **reste**. Les fondre en une seule clause ferait un champ unique dont les deux moitiés finiraient par
 diverger, et ce glossaire refuse ailleurs le même montage — voir la sensibilité et la signature.
+⚠️ **Et elles se tiennent par un test, pas par une intention.** Un scan complet est joué contre une
+base de fixture dont **toutes** les valeurs — et la chaîne de connexion elle-même — sont des
+sentinelles improbables ; le test échoue si l'une d'elles apparaît dans un log, dans un attribut de
+trace, dans le message ou la pile d'une exception traversante, dans la base après le scan, ou dans la
+`Cartographie` exportée en JSON comme en CSV. Ces assertions restent **nommées séparément** : les
+trois premières contrôlent ce qui **fuit**, les deux dernières ce qui **reste**, et les fondre en une
+seule referait au banc d'essai le montage à champ unique que ce glossaire refuse dans le modèle.
 ⚠️ **Persister les aperçus pour éviter de rescanner a été explicitement écarté.** Ce serait faire du
 service un détenteur durable de données personnelles du client, avec tout ce que cela entraîne :
 chiffrement au repos, purge, droit d'accès sur nos propres sauvegardes. Le gain — ne pas relancer un
