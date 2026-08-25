@@ -1,0 +1,5 @@
+{"format":"screening-pivot/1","dialecte":"sqlite","base":"C:\\Users\\G713\\AppData\\Local\\Temp\\sonde-15504.sqlite","genere_le":"2026-08-25T09:19:14Z"}
+{"schema":"main","table":"adherents","colonne":"id","position":1,"type":"INTEGER","nullable":1,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"courriel","position":2,"type":"TEXT","nullable":1,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"piece","position":3,"type":"ANY","nullable":1,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"fin":true,"colonnes":3}

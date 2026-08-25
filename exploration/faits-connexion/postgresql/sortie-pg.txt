@@ -1,0 +1,172 @@
+== attente du serveur (postgres:17-alpine)
+CREATE SCHEMA
+CREATE TABLE
+ALTER TABLE
+COMMENT
+COMMENT
+CREATE TABLE
+CREATE TABLE
+CREATE VIEW
+INSERT 0 2
+CREATE ROLE
+REVOKE
+REVOKE
+REVOKE
+REVOKE
+
+== version
+PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+
+===================== SONDES SECONDAIRES (superutilisateur)
+--- attnum porte-t-il un trou après DROP COLUMN, et row_number() le rebouche-t-il ?
+ attnum | position_recalculee |  attname   
+--------+---------------------+------------
+      1 |                   1 | id
+      3 |                   2 | adr_l1
+      4 |                   3 | courriel
+      5 |                   4 | photo
+      6 |                   5 | signature
+      7 |                   6 | solde
+      8 |                   7 | cree_le
+      9 |                   8 | actif
+     10 |                   9 | jeton
+     11 |                  10 | ip
+     12 |                  11 | etiquettes
+     13 |                  12 | meta
+     14 |                  13 | duree
+     15 |                  14 | point_geo
+(14 rows)
+
+--- ORDINAL_POSITION d information_schema est-il, lui, contigu après le DROP ?
+ ordinal_position | column_name 
+------------------+-------------
+                1 | id
+                3 | adr_l1
+                4 | courriel
+                5 | photo
+                6 | signature
+                7 | solde
+                8 | cree_le
+                9 | actif
+               10 | jeton
+               11 | ip
+               12 | etiquettes
+               13 | meta
+               14 | duree
+               15 | point_geo
+(14 rows)
+
+--- typcategory par type concret (U = user-defined/binaire au sens de la doc)
+  attname   |        type_rendu        |   typname   | typcategory 
+------------+--------------------------+-------------+-------------
+ id         | bigint                   | int8        | N
+ adr_l1     | character varying(255)   | varchar     | S
+ courriel   | text                     | text        | S
+ photo      | bytea                    | bytea       | U
+ signature  | bytea                    | bytea       | U
+ solde      | numeric(12,2)            | numeric     | N
+ cree_le    | timestamp with time zone | timestamptz | D
+ actif      | boolean                  | bool        | B
+ jeton      | uuid                     | uuid        | U
+ ip         | inet                     | inet        | I
+ etiquettes | text[]                   | _text       | A
+ meta       | jsonb                    | jsonb       | U
+ duree      | interval                 | interval    | T
+ point_geo  | point                    | point       | G
+(14 rows)
+
+--- bytea::text : hexadécimal ou échappement ?
+ bytea_output 
+--------------
+ hex
+(1 row)
+
+ bytea_en_texte | tronque 
+----------------+---------
+ \x0102039fff   | \x0102
+(1 row)
+
+--- left() sur un entier : lève-t-il sans cast ?
+ERROR:  function left(bigint, integer) does not exist
+LINE 1: SELECT left(id, 4) FROM public.adherents LIMIT 1;
+               ^
+HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+--- left() sur NULL propage-t-il NULL ?
+ null_propage 
+--------------
+ t
+(1 row)
+
+--- Relevé équivalent par information_schema : combien de colonnes ?
+ colonnes_information_schema 
+-----------------------------
+                          20
+(1 row)
+
+--- Relevé par pg_catalog : combien de colonnes ?
+ colonnes_pg_catalog 
+---------------------
+                  20
+(1 row)
+
+--- Les commentaires sont-ils lisibles ? (information_schema n en expose aucun)
+    commentaire     
+--------------------
+ adresse de contact
+(1 row)
+
+--- Un SELECT sur la donnée elle-même passe-t-il ?
+ count 
+-------
+     2
+(1 row)
+
+
+===================== RELEVÉ pg_catalog — superutilisateur
+{"format" : "screening-pivot/1", "dialecte" : "postgresql", "base" : "epreuve", "genere_le" : "2026-08-25T09:10:34Z"}
+{"schema" : "audit", "table" : "adherents", "colonne" : "id", "position" : 1, "type" : "bigint", "nullable" : 0, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"schema" : "audit", "table" : "adherents", "colonne" : "qui", "position" : 2, "type" : "text", "nullable" : 1, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+...
+{"schema" : "public", "table" : "cotisations", "colonne" : "montant", "position" : 3, "type" : "numeric(10,2)", "nullable" : 1, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"colonnes" : 20}
+lignes: 22
+
+===================== RELEVÉ pg_catalog — rôle sans_droits
+{"format" : "screening-pivot/1", "dialecte" : "postgresql", "base" : "epreuve", "genere_le" : "2026-08-25T09:10:34Z"}
+{"schema" : "audit", "table" : "adherents", "colonne" : "id", "position" : 1, "type" : "bigint", "nullable" : 0, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"schema" : "audit", "table" : "adherents", "colonne" : "qui", "position" : 2, "type" : "text", "nullable" : 1, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+...
+{"schema" : "public", "table" : "cotisations", "colonne" : "montant", "position" : 3, "type" : "numeric(10,2)", "nullable" : 1, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"colonnes" : 20}
+lignes: 22
+
+===================== COMPARAISON des deux relevés (hors ligne d'en-tête horodatée)
+IDENTIQUES — 100 % des colonnes relevées sans aucun privilège objet
+
+===================== information_schema — rôle sans_droits
+--- left() sur NULL propage-t-il NULL ?
+ null_propage 
+--------------
+ t
+(1 row)
+
+--- Relevé équivalent par information_schema : combien de colonnes ?
+ colonnes_information_schema 
+-----------------------------
+                           0
+(1 row)
+
+--- Relevé par pg_catalog : combien de colonnes ?
+ colonnes_pg_catalog 
+---------------------
+                  20
+(1 row)
+
+--- Les commentaires sont-ils lisibles ? (information_schema n en expose aucun)
+    commentaire     
+--------------------
+ adresse de contact
+(1 row)
+
+--- Un SELECT sur la donnée elle-même passe-t-il ?
+ERROR:  permission denied for table adherents

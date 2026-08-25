@@ -1,0 +1,3 @@
+{"base": "epreuve", "format": "screening-pivot/1", "dialecte": "mariadb", "genere_le": "2026-08-25T09:15:37Z"}
+{"type": "varchar(255)", "table": "adherents", "schema": "epreuve", "colonne": "courriel", "nullable": false, "position": 3, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": "adresse de contact"}
+{"fin":true,"colonnes": 1}

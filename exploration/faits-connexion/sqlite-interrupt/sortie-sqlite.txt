@@ -1,0 +1,49 @@
+SQLite : 3.49.1
+Microsoft.Data.Sqlite : 10.0.5.0
+
+=== 1. sqlite3_interrupt via SqliteConnection.Handle (P/Invoke direct)
+    Handle : SQLitePCL.sqlite3
+    Pointeur natif : 0x19A122E2B70
+    INTERROMPUE après 421 ms
+    Type      : Microsoft.Data.Sqlite.SqliteException
+    ErrorCode : SqliteErrorCode=9, SqliteExtendedErrorCode=9
+    Message   : SQLite Error 9: 'interrupted'.
+
+=== 2. SQLitePCL.raw.sqlite3_interrupt(connexion.Handle)
+    INTERROMPUE après 412 ms
+    Type      : Microsoft.Data.Sqlite.SqliteException
+    ErrorCode : SqliteErrorCode=9, SqliteExtendedErrorCode=9
+    Message   : SQLite Error 9: 'interrupted'.
+
+=== 3. SqliteCommand.Cancel() — documenté « Does nothing. »
+    PLAFOND ATTEINT (6 s) — la requête n'a PAS été interrompue.
+    INTERROMPUE après 6007 ms
+    Type      : Microsoft.Data.Sqlite.SqliteException
+    ErrorCode : SqliteErrorCode=9, SqliteExtendedErrorCode=9
+    Message   : SQLite Error 9: 'interrupted'.
+
+=== 4. ExecuteReaderAsync(CancellationToken) — la façade *Async est synchrone
+    PLAFOND ATTEINT (6 s) — la requête n'a PAS été interrompue.
+    INTERROMPUE après 6005 ms
+    Type      : Microsoft.Data.Sqlite.SqliteException
+    ErrorCode : SqliteErrorCode=9, SqliteExtendedErrorCode=9
+    Message   : SQLite Error 9: 'interrupted'.
+
+=== 5. Mode=ReadOnly
+    Lecture : OK (4 lignes)
+    Écriture : REFUSÉE — SqliteErrorCode=8, ExtendedErrorCode=8 : SQLite Error 8: 'attempt to write a readonly database'.
+
+=== 6. typeof() à la valeur, et substr() sur autre chose que du texte
+    courriel          | typeof  | tronqué  | substr brut
+    ada@example.org   | text    | une ch   | une ch
+    bob@example.org   | blob    | NULL     | 0x0102039FFF
+    cyd@example.org   | integer | 123456   | 123456
+    dee@example.org   | null    | NULL     | NULL
+
+=== 7. releves/sqlite.sql, joué tel quel par Microsoft.Data.Sqlite
+    {"format":"screening-pivot/1","dialecte":"sqlite","base":"C:\\Users\\G713\\AppData\\Local\\Temp\\sonde-15504.sqlite","genere_le":"2026-08-25T09:19:14Z"}
+    {"schema":"main","table":"adherents","colonne":"id","position":1,"type":"INTEGER","nullable":1,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+    {"schema":"main","table":"adherents","colonne":"courriel","position":2,"type":"TEXT","nullable":1,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+    {"schema":"main","table":"adherents","colonne":"piece","position":3,"type":"ANY","nullable":1,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+    {"colonnes":3}
+

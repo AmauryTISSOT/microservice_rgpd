@@ -1,0 +1,44 @@
+=== PostgreSQL 17 — superutilisateur
+    REFUSÉ — MissingClosingLine
+             ColumnListingRefusal { Cause = MissingClosingLine, LineNumber = 22, Observed = {"colonnes" : 20} }
+
+=== PostgreSQL 17 — rôle sans_droits
+    REFUSÉ — MissingClosingLine
+             ColumnListingRefusal { Cause = MissingClosingLine, LineNumber = 22, Observed = {"colonnes" : 20} }
+
+=== MySQL 8.4 — compte plein
+    REFUSÉ — MissingClosingLine
+             ColumnListingRefusal { Cause = MissingClosingLine, LineNumber = 16, Observed = {"colonnes": 14} }
+
+=== MySQL 8.4 — compte partiel
+    REFUSÉ — MissingClosingLine
+             ColumnListingRefusal { Cause = MissingClosingLine, LineNumber = 3, Observed = {"colonnes": 1} }
+
+=== SQLite 3.49
+    REFUSÉ — MissingClosingLine
+             ColumnListingRefusal { Cause = MissingClosingLine, LineNumber = 5, Observed = {"colonnes":3} }
+
+=== PostgreSQL — fin rapiécée
+    REFUSÉ — UnreadableColumnLine
+             ColumnListingRefusal { Cause = UnreadableColumnLine, LineNumber = 2, Observed = {"schema" : "audit", "table" : "adherents", "colonne" : "id", "position" : 1, "type" : "bigint", "nullable" : 0, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""} }
+
+=== MySQL — fin rapiécée
+    REFUSÉ — UnreadableColumnLine
+             ColumnListingRefusal { Cause = UnreadableColumnLine, LineNumber = 2, Observed = {"type": "bigint", "table": "adherents", "schema": "epreuve", "colonne": "id", "nullable": 0, "position": 1, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""} }
+
+=== SQLite — fin rapiécée
+    REFUSÉ — UnreadableColumnLine
+             ColumnListingRefusal { Cause = UnreadableColumnLine, LineNumber = 2, Observed = {"schema":"main","table":"adherents","colonne":"id","position":1,"type":"INTEGER","nullable":1,"commentaire_colonne":"","commentaire_table":"","table_referencee":""} }
+
+=== PostgreSQL — fin + booléen
+    ACCEPTÉ — 20 colonnes
+
+=== MySQL — fin + booléen
+    ACCEPTÉ — 14 colonnes
+
+=== SQLite — fin + booléen
+    ACCEPTÉ — 3 colonnes
+
+=== MySQL AMPUTÉ — fin + booléen
+    ACCEPTÉ — 1 colonnes
+

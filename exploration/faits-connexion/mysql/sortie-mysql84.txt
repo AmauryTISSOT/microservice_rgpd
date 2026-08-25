@@ -1,0 +1,178 @@
+== attente du serveur (mysql:8.4)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+
+===================== SONDES SECONDAIRES (root)
+mysql: [Warning] Using a password on the command line interface can be insecure.
++----------------------------------------------------------------+
+| sonde                                                          |
++----------------------------------------------------------------+
+| --- JSON_OBJECT : quelles formes produisent un booléen JSON ? |
++----------------------------------------------------------------+
++-------------------------------------------------------------------------+
+| formes                                                                  |
++-------------------------------------------------------------------------+
+| {"if_1_0": 1, "brut_yes": "YES", "comparaison": true, "tinyint_col": 1} |
++-------------------------------------------------------------------------+
++---------------------------------------------------------------+
+| sonde                                                         |
++---------------------------------------------------------------+
+| --- CAST(... AS JSON) : MariaDB ne connaît pas cette syntaxe |
++---------------------------------------------------------------+
++---------------------+
+| forme_cast          |
++---------------------+
+| {"cast_json": true} |
++---------------------+
++-----------------------------------+
+| sonde                             |
++-----------------------------------+
+| --- JSON_COMPACT / repli portable |
++-----------------------------------+
++-------------------+
+| forme_extract     |
++-------------------+
+| {"extrait": true} |
++-------------------+
++----------------------------------------------------------------+
+| sonde                                                          |
++----------------------------------------------------------------+
+| --- JSON_OBJECT sur IS_NULLABLE brut (le piège de la chaîne) |
++----------------------------------------------------------------+
++--------------------+
+| naif               |
++--------------------+
+| {"nullable": "NO"} |
++--------------------+
++---------------------------------------------------------------------------------+
+| sonde                                                                           |
++---------------------------------------------------------------------------------+
+| --- Le type JSON est-il un alias de LONGTEXT ? (voir COLUMN_TYPE de etiquettes) |
++---------------------------------------------------------------------------------+
++-------------+-----------+----------------+
+| COLUMN_NAME | DATA_TYPE | COLUMN_TYPE    |
++-------------+-----------+----------------+
+| id          | bigint    | bigint         |
+| adr_l1      | varchar   | varchar(255)   |
+| courriel    | varchar   | varchar(255)   |
+| photo       | blob      | blob           |
+| signature   | varbinary | varbinary(255) |
+| notes       | longtext  | longtext       |
+| solde       | decimal   | decimal(12,2)  |
+| cree_le     | datetime  | datetime       |
+| actif       | tinyint   | tinyint(1)     |
+| jeton       | char      | char(36)       |
+| etiquettes  | json      | json           |
++-------------+-----------+----------------+
++------------------------------------------------------------------------------+
+| sonde                                                                        |
++------------------------------------------------------------------------------+
+| --- ORDINAL_POSITION est-il contigu et part-il de 1, après un DROP COLUMN ? |
++------------------------------------------------------------------------------+
++------------------+-------------+-------------+
+| ORDINAL_POSITION | COLUMN_NAME | IS_NULLABLE |
++------------------+-------------+-------------+
+|                1 | id          | NO          |
+|                2 | adr_l1      | YES         |
+|                3 | courriel    | NO          |
+|                4 | photo       | YES         |
+|                5 | signature   | YES         |
+|                6 | notes       | YES         |
+|                7 | solde       | YES         |
+|                8 | cree_le     | YES         |
+|                9 | actif       | YES         |
+|               10 | jeton       | YES         |
+|               11 | etiquettes  | YES         |
++------------------+-------------+-------------+
++--------------------------------------------------------+
+| sonde                                                  |
++--------------------------------------------------------+
+| --- TABLE_COMMENT porte-t-il un suffixe InnoDB free: ? |
++--------------------------------------------------------+
++-------------+------------+------------------+
+| TABLE_NAME  | TABLE_TYPE | commentaire      |
++-------------+------------+------------------+
+| adherents   | BASE TABLE | [les adhérents] |
+| cotisations | BASE TABLE | []               |
+| v_adherents | VIEW       | [VIEW]           |
++-------------+------------+------------------+
++----------------------------------------------------------------------------------------+
+| sonde                                                                                  |
++----------------------------------------------------------------------------------------+
+| --- LEFT() est-il multibyte safe ? (25 caractères accentués attendus, pas 25 octets) |
++----------------------------------------------------------------------------------------+
++---------------------------------+------------+------------+--------+
+| notes                           | tronque    | caracteres | octets |
++---------------------------------+------------+------------+--------+
+| éàçüö texte accentué long | éàçüö |         10 |     20 |
++---------------------------------+------------+------------+--------+
++-----------------------------------------+
+| sonde                                   |
++-----------------------------------------+
+| --- LEFT() sur un BLOB et sur un entier |
++-----------------------------------------+
++--------------+----------------+
+| blob_tronque | entier_tronque |
++--------------+----------------+
+| 010203       | 1              |
++--------------+----------------+
++---------------------+
+| sonde               |
++---------------------+
+| --- LEFT() sur NULL |
++---------------------+
++--------------+
+| null_propage |
++--------------+
+|            1 |
++--------------+
++------------------------------------+
+| sonde                              |
++------------------------------------+
+| --- max_allowed_packet par défaut |
++------------------------------------+
++--------------------+---------+------------------------------+
+| max_allowed_packet | version | commentaire                  |
++--------------------+---------+------------------------------+
+|           67108864 | 8.4.11  | MySQL Community Server - GPL |
++--------------------+---------+------------------------------+
+
+===================== RELEVÉ — compte 'root'
+lignes JSON : 16
+mysql: [Warning] Using a password on the command line interface can be insecure.
+{"base": "epreuve", "format": "screening-pivot/1", "dialecte": "mariadb", "genere_le": "2026-08-25T09:15:36Z"}
+...
+{"type": "decimal(10,2)", "table": "cotisations", "schema": "epreuve", "colonne": "montant", "nullable": 1, "position": 3, "table_referencee": "", "commentaire_table": "", "commentaire_colonne": ""}
+{"colonnes": 14}
+
+===================== RELEVÉ — compte 'plein'
+lignes JSON : 16
+mysql: [Warning] Using a password on the command line interface can be insecure.
+{"base": "epreuve", "format": "screening-pivot/1", "dialecte": "mariadb", "genere_le": "2026-08-25T09:15:37Z"}
+...
+{"type": "decimal(10,2)", "table": "cotisations", "schema": "epreuve", "colonne": "montant", "nullable": 1, "position": 3, "table_referencee": "", "commentaire_table": "", "commentaire_colonne": ""}
+{"colonnes": 14}
+
+===================== RELEVÉ — compte 'partiel'
+lignes JSON : 3
+mysql: [Warning] Using a password on the command line interface can be insecure.
+{"base": "epreuve", "format": "screening-pivot/1", "dialecte": "mariadb", "genere_le": "2026-08-25T09:15:37Z"}
+...
+{"type": "varchar(255)", "table": "adherents", "schema": "epreuve", "colonne": "courriel", "nullable": 0, "position": 3, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": "adresse de contact"}
+{"colonnes": 1}
+
+===================== RELEVÉ — compte 'nu'
+lignes JSON : 0
+0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1044 (42000): Access denied for user 'nu'@'%' to database 'epreuve'
+...
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1044 (42000): Access denied for user 'nu'@'%' to database 'epreuve'
+
+===================== VERDICT : le compte 'partiel' voit-il autant que 'plein' ?
+colonnes déclarées — plein : 14, partiel : 1
+AMPUTÉ ET MUET — le pivot du compte 'partiel' est structurellement valide,
+son compte de fin est cohérent avec ce qu'il a vu, et rien ne dit qu'il manque des colonnes :
+{"base": "epreuve", "format": "screening-pivot/1", "dialecte": "mariadb", "genere_le": "2026-08-25T09:15:37Z"}
+{"type": "varchar(255)", "table": "adherents", "schema": "epreuve", "colonne": "courriel", "nullable": 0, "position": 3, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": "adresse de contact"}
+{"colonnes": 1}

@@ -1,0 +1,17 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+{"base": "epreuve", "format": "screening-pivot/1", "dialecte": "mariadb", "genere_le": "2026-08-25T09:15:36Z"}
+{"type": "bigint", "table": "adherents", "schema": "epreuve", "colonne": "id", "nullable": 0, "position": 1, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "varchar(255)", "table": "adherents", "schema": "epreuve", "colonne": "adr_l1", "nullable": 1, "position": 2, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "varchar(255)", "table": "adherents", "schema": "epreuve", "colonne": "courriel", "nullable": 0, "position": 3, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": "adresse de contact"}
+{"type": "blob", "table": "adherents", "schema": "epreuve", "colonne": "photo", "nullable": 1, "position": 4, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "varbinary(255)", "table": "adherents", "schema": "epreuve", "colonne": "signature", "nullable": 1, "position": 5, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "longtext", "table": "adherents", "schema": "epreuve", "colonne": "notes", "nullable": 1, "position": 6, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "decimal(12,2)", "table": "adherents", "schema": "epreuve", "colonne": "solde", "nullable": 1, "position": 7, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "datetime", "table": "adherents", "schema": "epreuve", "colonne": "cree_le", "nullable": 1, "position": 8, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "tinyint(1)", "table": "adherents", "schema": "epreuve", "colonne": "actif", "nullable": 1, "position": 9, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "char(36)", "table": "adherents", "schema": "epreuve", "colonne": "jeton", "nullable": 1, "position": 10, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "json", "table": "adherents", "schema": "epreuve", "colonne": "etiquettes", "nullable": 1, "position": 11, "table_referencee": "", "commentaire_table": "les adhérents", "commentaire_colonne": ""}
+{"type": "bigint", "table": "cotisations", "schema": "epreuve", "colonne": "id", "nullable": 0, "position": 1, "table_referencee": "", "commentaire_table": "", "commentaire_colonne": ""}
+{"type": "bigint", "table": "cotisations", "schema": "epreuve", "colonne": "adherent_id", "nullable": 1, "position": 2, "table_referencee": "adherents", "commentaire_table": "", "commentaire_colonne": ""}
+{"type": "decimal(10,2)", "table": "cotisations", "schema": "epreuve", "colonne": "montant", "nullable": 1, "position": 3, "table_referencee": "", "commentaire_table": "", "commentaire_colonne": ""}
+{"colonnes": 14}

@@ -1,0 +1,174 @@
+== attente du serveur (mariadb:11)
+
+===================== SONDES SECONDAIRES (root)
++----------------------------------------------------------------+
+| sonde                                                          |
++----------------------------------------------------------------+
+| --- JSON_OBJECT : quelles formes produisent un booléen JSON ?  |
++----------------------------------------------------------------+
++-------------------------------------------------------------------------+
+| formes                                                                  |
++-------------------------------------------------------------------------+
+| {"if_1_0": 1, "comparaison": true, "brut_yes": "YES", "tinyint_col": 1} |
++-------------------------------------------------------------------------+
++---------------------------------------------------------------+
+| sonde                                                         |
++---------------------------------------------------------------+
+| --- CAST(... AS JSON) : MariaDB ne connaît pas cette syntaxe  |
++---------------------------------------------------------------+
+--------------
+SELECT JSON_OBJECT('cast_json', CAST(IF(1 = 1, 'true', 'false') AS JSON)) AS forme_cast
+--------------
+
+ERROR 1064 (42000) at line 12: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'JSON)) AS forme_cast' at line 1
++-----------------------------------+
+| sonde                             |
++-----------------------------------+
+| --- JSON_COMPACT / repli portable |
++-----------------------------------+
++-------------------+
+| forme_extract     |
++-------------------+
+| {"extrait": true} |
++-------------------+
++----------------------------------------------------------------+
+| sonde                                                          |
++----------------------------------------------------------------+
+| --- JSON_OBJECT sur IS_NULLABLE brut (le piège de la chaîne)   |
++----------------------------------------------------------------+
++--------------------+
+| naif               |
++--------------------+
+| {"nullable": "NO"} |
++--------------------+
++---------------------------------------------------------------------------------+
+| sonde                                                                           |
++---------------------------------------------------------------------------------+
+| --- Le type JSON est-il un alias de LONGTEXT ? (voir COLUMN_TYPE de etiquettes) |
++---------------------------------------------------------------------------------+
++-------------+-----------+----------------+
+| COLUMN_NAME | DATA_TYPE | COLUMN_TYPE    |
++-------------+-----------+----------------+
+| id          | bigint    | bigint(20)     |
+| adr_l1      | varchar   | varchar(255)   |
+| courriel    | varchar   | varchar(255)   |
+| photo       | blob      | blob           |
+| signature   | varbinary | varbinary(255) |
+| notes       | longtext  | longtext       |
+| solde       | decimal   | decimal(12,2)  |
+| cree_le     | datetime  | datetime       |
+| actif       | tinyint   | tinyint(1)     |
+| jeton       | char      | char(36)       |
+| etiquettes  | longtext  | longtext       |
++-------------+-----------+----------------+
++------------------------------------------------------------------------------+
+| sonde                                                                        |
++------------------------------------------------------------------------------+
+| --- ORDINAL_POSITION est-il contigu et part-il de 1, après un DROP COLUMN ?  |
++------------------------------------------------------------------------------+
++------------------+-------------+-------------+
+| ORDINAL_POSITION | COLUMN_NAME | IS_NULLABLE |
++------------------+-------------+-------------+
+|                1 | id          | NO          |
+|                2 | adr_l1      | YES         |
+|                3 | courriel    | NO          |
+|                4 | photo       | YES         |
+|                5 | signature   | YES         |
+|                6 | notes       | YES         |
+|                7 | solde       | YES         |
+|                8 | cree_le     | YES         |
+|                9 | actif       | YES         |
+|               10 | jeton       | YES         |
+|               11 | etiquettes  | YES         |
++------------------+-------------+-------------+
++--------------------------------------------------------+
+| sonde                                                  |
++--------------------------------------------------------+
+| --- TABLE_COMMENT porte-t-il un suffixe InnoDB free: ? |
++--------------------------------------------------------+
++-------------+------------+------------------+
+| TABLE_NAME  | TABLE_TYPE | commentaire      |
++-------------+------------+------------------+
+| v_adherents | VIEW       | [VIEW]           |
+| cotisations | BASE TABLE | []               |
+| adherents   | BASE TABLE | [les adhérents]  |
++-------------+------------+------------------+
++----------------------------------------------------------------------------------------+
+| sonde                                                                                  |
++----------------------------------------------------------------------------------------+
+| --- LEFT() est-il multibyte safe ? (25 caractères accentués attendus, pas 25 octets)   |
++----------------------------------------------------------------------------------------+
++---------------------------------+-----------------+------------+--------+
+| notes                           | tronque         | caracteres | octets |
++---------------------------------+-----------------+------------+--------+
+| éàçüö texte accentué long       | éàçüö text      |         10 |     15 |
++---------------------------------+-----------------+------------+--------+
++-----------------------------------------+
+| sonde                                   |
++-----------------------------------------+
+| --- LEFT() sur un BLOB et sur un entier |
++-----------------------------------------+
++--------------+----------------+
+| blob_tronque | entier_tronque |
++--------------+----------------+
+| 010203       | 1              |
++--------------+----------------+
++---------------------+
+| sonde               |
++---------------------+
+| --- LEFT() sur NULL |
++---------------------+
++--------------+
+| null_propage |
++--------------+
+|            1 |
++--------------+
++------------------------------------+
+| sonde                              |
++------------------------------------+
+| --- max_allowed_packet par défaut  |
++------------------------------------+
++--------------------+------------------------+---------------------------------+
+| max_allowed_packet | version                | commentaire                     |
++--------------------+------------------------+---------------------------------+
+|           16777216 | 11.8.9-MariaDB-ubu2404 | mariadb.org binary distribution |
++--------------------+------------------------+---------------------------------+
+
+===================== RELEVÉ — compte 'root'
+lignes JSON : 16
+{"format": "screening-pivot/1", "dialecte": "mariadb", "base": "epreuve", "genere_le": "2026-08-25T09:13:51Z"}
+{"schema": "epreuve", "table": "adherents", "colonne": "id", "position": 1, "type": "bigint(20)", "nullable": 0, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+...
+{"schema": "epreuve", "table": "cotisations", "colonne": "montant", "position": 3, "type": "decimal(10,2)", "nullable": 1, "commentaire_colonne": "", "commentaire_table": "", "table_referencee": ""}
+{"colonnes": 14}
+
+===================== RELEVÉ — compte 'plein'
+lignes JSON : 16
+{"format": "screening-pivot/1", "dialecte": "mariadb", "base": "epreuve", "genere_le": "2026-08-25T09:13:52Z"}
+{"schema": "epreuve", "table": "adherents", "colonne": "id", "position": 1, "type": "bigint(20)", "nullable": 0, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+...
+{"schema": "epreuve", "table": "cotisations", "colonne": "montant", "position": 3, "type": "decimal(10,2)", "nullable": 1, "commentaire_colonne": "", "commentaire_table": "", "table_referencee": ""}
+{"colonnes": 14}
+
+===================== RELEVÉ — compte 'partiel'
+lignes JSON : 3
+{"format": "screening-pivot/1", "dialecte": "mariadb", "base": "epreuve", "genere_le": "2026-08-25T09:13:53Z"}
+{"schema": "epreuve", "table": "adherents", "colonne": "courriel", "position": 3, "type": "varchar(255)", "nullable": 0, "commentaire_colonne": "adresse de contact", "commentaire_table": "les adhérents", "table_referencee": ""}
+...
+{"schema": "epreuve", "table": "adherents", "colonne": "courriel", "position": 3, "type": "varchar(255)", "nullable": 0, "commentaire_colonne": "adresse de contact", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"colonnes": 1}
+
+===================== RELEVÉ — compte 'nu'
+lignes JSON : 0
+0
+ERROR 1044 (42000): Access denied for user 'nu'@'%' to database 'epreuve'
+...
+ERROR 1044 (42000): Access denied for user 'nu'@'%' to database 'epreuve'
+
+===================== VERDICT : le compte 'partiel' voit-il autant que 'plein' ?
+colonnes déclarées — plein : 14, partiel : 1
+AMPUTÉ ET MUET — le pivot du compte 'partiel' est structurellement valide,
+son compte de fin est cohérent avec ce qu'il a vu, et rien ne dit qu'il manque des colonnes :
+{"format": "screening-pivot/1", "dialecte": "mariadb", "base": "epreuve", "genere_le": "2026-08-25T09:13:53Z"}
+{"schema": "epreuve", "table": "adherents", "colonne": "courriel", "position": 3, "type": "varchar(255)", "nullable": 0, "commentaire_colonne": "adresse de contact", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"colonnes": 1}
