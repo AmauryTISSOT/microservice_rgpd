@@ -1,0 +1,28 @@
+# Fins de ligne, portées par le dépôt et non par la configuration de chaque poste.
+#
+# Sans ces règles, un poste réglé sur `core.autocrlf=true` — l'installation par
+# défaut de Git for Windows — reçoit des CRLF dans sa copie de travail. Pour les
+# fichiers dont l'octet est contractuel, cela suffit à faire mentir une empreinte :
+# le contenu versionné est intact, mais celui lu sur disque ne l'est plus. Voir #288.
+
+# Le défaut sain : normaliser en LF dans la base pour tout ce que Git tient pour du
+# texte. La copie de travail reste libre de porter les fins de ligne de la plateforme,
+# sauf pour les fichiers énumérés ci-dessous.
+* text=auto
+
+# ── Les fichiers dont l'octet est contractuel ───────────────────────────────────
+# Pour ceux-ci, la copie de travail doit être identique à la base, octet pour octet.
+
+# Les lexiques gelés : leur empreinte est opposable (#155), et `FrozenLexiconsTests`
+# la vérifie sur la ressource embarquée, donc sur le fichier tel qu'il est sur disque.
+src/MicroserviceRgpd.Infrastructure/Screenings/Lexicons/*.tsv text eol=lf
+
+# Les relevés servis à l'`Operator`.
+releves/*.sql text eol=lf
+
+# Les pivots du corpus — instrument de mesure gelé, clause de l'ADR-0012 — et les
+# captures rejouées contre l'ingestion. Déjà couverts par `corpus/.gitattributes`,
+# `corpus/schemas/.gitattributes` et `exploration/.gitattributes` ; répétés ici pour
+# que la racine porte le contrat en entier.
+corpus/schemas/pivots/*.jsonl text eol=lf
+exploration/releves-authentiques/captures/*.txt text eol=lf
