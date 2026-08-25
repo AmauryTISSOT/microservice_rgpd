@@ -37,7 +37,7 @@ fin en dernier, et les colonnes d'une même table contiguës dans leur ordre de 
 | ----------- | ---------------------------------------------------------------------------------- |
 | `format`    | La version de format, en dur dans la requête. Toute autre valeur est refusée.       |
 | `dialecte`  | Le SGBD, **en dur dans la requête** : le pivot le déclare seul, l'écran ne le tape pas. |
-| `base`      | `current_database()`, `DATABASE()`, ou le chemin du fichier côté SQLite.            |
+| `base`      | `current_database()`, `DATABASE()`, ou le **nom** du fichier côté SQLite — jamais son chemin. |
 | `genere_le` | L'instant de génération, ISO 8601 **avec décalage** — `…+02:00` ou `…Z`.             |
 
 ⚠️ **Le décalage n'est pas facultatif, et l'ingestion refuse un instant qui n'en porte pas.** Sans
@@ -49,8 +49,17 @@ la seule chose qui dise à l'`Operator` de quand date son relevé.
 relit un `Screening` trois jours plus tard, jamais une identité sur laquelle bâtir une comparaison de
 rapports. Il passe le même garde que le domaine (100 caractères, sans caractère de contrôle ;
 64 pour `dialecte`), sans quoi un refus lisible se changerait en erreur nue un cran plus loin.
-⚠️ **Côté SQLite, cela borne le chemin du fichier** : un chemin plus long est refusé au titre du cas
-n° 1. Si un parc client dépasse, c'est la borne du domaine qu'il faut rouvrir, pas la frontière.
+⚠️ **Côté SQLite, on n'y écrit que le nom du fichier, jamais son chemin.**
+[#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278) tranche : `main.sqlite`, pas
+`/var/lib/app/tenants/acme-corp/prod/main.sqlite`. Le motif est le secret, pas la longueur — sur ce
+dialecte le chemin **est** la chaîne de connexion à peu de chose près, et ce champ, lui, est persisté
+et **exporté hors du service**. Voir `Rien de réel ne reste`.
+⚠️ **Cela referme la borne au lieu de la rouvrir.** La rédaction précédente prévoyait qu'un chemin de
+conteneur trop long soit refusé au titre du cas n° 1, quitte à rouvrir les cent caractères du
+domaine ; un nom de fichier y tient toujours, et la borne cesse d'être une gêne. ⚠️ **Sur le chemin
+collé, la requête embarquée doit donc couper le chemin elle-même** — un `Operator` qui joue le
+relevé à la main et colle le résultat obtient le même champ que le chemin connecté, la contrainte
+voulant que les deux chemins produisent le même objet.
 
 ⚠️ **`dialecte` n'est pas cosmétique.** Sans lui, « cette colonne n'a pas de commentaire » et
 « SQLite ne rend aucun commentaire » se lisent exactement pareil — l'`Omission silencieuse` déplacée
