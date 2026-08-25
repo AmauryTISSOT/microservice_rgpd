@@ -2,7 +2,7 @@
 
 - **Statut** : accepté
 - **Date** : 2026-08-17
-- **Décidé par** : une session de conception avec le demandeur, **précédée d'un prototype à trois variantes** conservé comme source primaire sur la branche `prototype-sidepanel-3-variantes` (commit `121a53e`). La spécification est portée par cet ADR lui-même.
+- **Décidé par** : une session de conception avec le demandeur, **précédée d'un prototype à trois variantes**, jeté après avoir servi — conformément à sa nature. Il n'en subsiste rien dans le dépôt, et il n'y a rien à y chercher. La spécification est portée par cet ADR lui-même.
 - **Supplante, sur un point** : [ADR-0007](./0007-le-cadre-partage-des-ecrans-se-nomme-layout.md), qui posait que le layout portait **une** barre, nommée `Navigation`. Le layout en porte désormais **deux**, et le mot « la barre » ne désigne plus rien sans ambiguïté. `Navigation` et `EntryPoint` gardent leur sens — ils nomment le modèle des points d'entrée, pas la région qui les affiche. Tout le reste de l'ADR-0007 reste en vigueur, et son texte n'a pas été édité — on supplante un ADR, on ne le réécrit pas.
 - **Aggrave, sans la corriger, une régression consignée par** : [ADR-0005](./0005-design-language-documente-police-embarquee-et-fichiers-statiques.md). Voir « Conséquences ».
 
