@@ -1,0 +1,22 @@
+{"format" : "screening-pivot/1", "dialecte" : "postgresql", "base" : "epreuve", "genere_le" : "2026-08-25T13:38:06Z"}
+{"schema" : "audit", "table" : "adherents", "colonne" : "id", "position" : 1, "type" : "bigint", "nullable" : false, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"schema" : "audit", "table" : "adherents", "colonne" : "qui", "position" : 2, "type" : "text", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"schema" : "audit", "table" : "adherents", "colonne" : "quand", "position" : 3, "type" : "timestamp with time zone", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "id", "position" : 1, "type" : "bigint", "nullable" : false, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "adr_l1", "position" : 2, "type" : "character varying(255)", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "courriel", "position" : 3, "type" : "text", "nullable" : false, "commentaire_colonne" : "adresse de contact", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "photo", "position" : 4, "type" : "bytea", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "signature", "position" : 5, "type" : "bytea", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "solde", "position" : 6, "type" : "numeric(12,2)", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "cree_le", "position" : 7, "type" : "timestamp with time zone", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "actif", "position" : 8, "type" : "boolean", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "jeton", "position" : 9, "type" : "uuid", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "ip", "position" : 10, "type" : "inet", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "etiquettes", "position" : 11, "type" : "text[]", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "meta", "position" : 12, "type" : "jsonb", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "duree", "position" : 13, "type" : "interval", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "adherents", "colonne" : "point_geo", "position" : 14, "type" : "point", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "les adhérents", "table_referencee" : ""}
+{"schema" : "public", "table" : "cotisations", "colonne" : "id", "position" : 1, "type" : "bigint", "nullable" : false, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"schema" : "public", "table" : "cotisations", "colonne" : "adherent_id", "position" : 2, "type" : "bigint", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : "adherents"}
+{"schema" : "public", "table" : "cotisations", "colonne" : "montant", "position" : 3, "type" : "numeric(10,2)", "nullable" : true, "commentaire_colonne" : "", "commentaire_table" : "", "table_referencee" : ""}
+{"fin" : true, "colonnes" : 20}

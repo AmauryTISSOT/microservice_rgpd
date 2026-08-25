@@ -1,0 +1,16 @@
+{"format": "screening-pivot/1", "dialecte": "mariadb", "base": "epreuve", "genere_le": "2026-08-25T13:38:53Z"}
+{"schema": "epreuve", "table": "adherents", "colonne": "id", "position": 1, "type": "bigint(20)", "nullable": false, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "adr_l1", "position": 2, "type": "varchar(255)", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "courriel", "position": 3, "type": "varchar(255)", "nullable": false, "commentaire_colonne": "adresse de contact", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "photo", "position": 4, "type": "blob", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "signature", "position": 5, "type": "varbinary(255)", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "notes", "position": 6, "type": "longtext", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "solde", "position": 7, "type": "decimal(12,2)", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "cree_le", "position": 8, "type": "datetime", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "actif", "position": 9, "type": "tinyint(1)", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "jeton", "position": 10, "type": "char(36)", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "adherents", "colonne": "etiquettes", "position": 11, "type": "longtext", "nullable": true, "commentaire_colonne": "", "commentaire_table": "les adhérents", "table_referencee": ""}
+{"schema": "epreuve", "table": "cotisations", "colonne": "id", "position": 1, "type": "bigint(20)", "nullable": false, "commentaire_colonne": "", "commentaire_table": "", "table_referencee": ""}
+{"schema": "epreuve", "table": "cotisations", "colonne": "adherent_id", "position": 2, "type": "bigint(20)", "nullable": true, "commentaire_colonne": "", "commentaire_table": "", "table_referencee": "adherents"}
+{"schema": "epreuve", "table": "cotisations", "colonne": "montant", "position": 3, "type": "decimal(10,2)", "nullable": true, "commentaire_colonne": "", "commentaire_table": "", "table_referencee": ""}
+{"fin": true, "colonnes": 14}

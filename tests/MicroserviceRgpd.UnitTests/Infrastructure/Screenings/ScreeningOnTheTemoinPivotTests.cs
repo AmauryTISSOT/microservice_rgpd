@@ -202,12 +202,16 @@ public class ScreeningOnTheTemoinPivotTests
   /// Le pivot témoin du corpus, tel qu'il est versionné, ingéré par la frontière du domaine.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Deux détails de forme sont convertis, et seulement eux</b> : le pivot du corpus a été
-  /// produit avant que <c>pivot-format.md</c> ne fige la forme, et il écrit la nullabilité en
-  /// <c>0</c>/<c>1</c> plutôt qu'en booléen, et ferme sur <c>{"colonnes":72}</c> plutôt que sur
-  /// <c>{"fin":true,…}</c>. La conversion ne touche <b>à rien de ce que le moteur lit</b> — noms,
-  /// types et commentaires arrivent intacts — et la nullabilité est de toute façon un filtre, jamais
-  /// un signal.
+  /// ⚠️ <b>Deux détails de forme sont convertis, et seulement eux</b> : la nullabilité, écrite en
+  /// <c>0</c>/<c>1</c>, et la ligne de fin, qui ferme sur <c>{"colonnes":72}</c> sans
+  /// <c>"fin":true</c>. Le corpus est <b>gelé dans une forme antérieure à</b> <c>pivot-format.md</c>
+  /// et le reste délibérément : <c>corpus/schemas/pivots/README.md</c> dit pourquoi, et c'est là
+  /// qu'il faut lire avant de songer à le réextraire.
+  /// <para>
+  /// ⚠️ <b>La conversion vit ici, et nulle part ailleurs.</b> Il n'y a qu'un appelant ; la remonter
+  /// dans l'ingestion ferait accepter au service, en production, la forme que <c>pivot-format.md</c>
+  /// a précisément écartée.
+  /// </para>
   /// </remarks>
   private static ColumnListing TheTemoinPivot()
   {

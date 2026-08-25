@@ -96,6 +96,30 @@ filtre de nullabilité sur toute la base, sans un mot, dans un rapport de détec
 complet.
 Écrire `IS_NULLABLE = 'YES'` dans la requête, pas `IS_NULLABLE`.
 
+⚠️ **Et MySQL n'est pas l'exception : SQLite pose le même piège par l'autre bout.** Il n'a **aucun**
+type booléen, si bien qu'une comparaison — la solution qui marche sur MariaDB — y rend `1`. Vérifié
+sur 3.46 :
+
+```
+sqlite> SELECT json_object('a',(1=1), 'b',TRUE, 'c',json('true'));
+{"a":1,"b":1,"c":true}
+```
+
+`(1=1)` et `TRUE` rendent **`1`**, là où PostgreSQL, MySQL et MariaDB rendent `true`. `json('true')`
+est la seule voie. Le relevé est refusé de la même façon (cas n° 4), pour la même raison, par un
+chemin différent.
+
+⚠️ **Il n'existe donc pas de forme portable de ce champ**, et c'est le fait à retenir avant d'écrire
+un quatrième dialecte : `nullable` s'écrit `nullable` sur PostgreSQL (le catalogue rend déjà un
+`boolean` — l'envelopper d'un `CASE … THEN 1 ELSE 0 END` le **dégraderait**),
+`(IS_NULLABLE = 'YES')` sur MySQL et MariaDB, `json('true')`/`json('false')` sur SQLite. ⚠️
+`CAST(… AS JSON)` n'est **pas** portable : syntaxe inconnue de MariaDB (`ERROR 1064`). Éprouvez la
+sortie sur le moteur visé plutôt que de recopier la forme d'un voisin, et **écrivez le piège en tête
+du fichier** : c'est ce qui empêche la « simplification » suivante de rebriser le champ.
+
+⚠️ **Le même piège vaut pour la ligne de fin**, dont le `"fin":true` est un booléen aussi — voir
+plus bas.
+
 ⚠️ **`type`, `nullable` et `table_referencee` sont collectés comme _filtre_, jamais comme _signal_.**
 Un `boolean`, un `decimal(10,2)`, une clé vers une table de référence **écartent** des catégories
 plutôt qu'ils n'en désignent une. Le premier banc qui mesurera leur pouvoir prédictif isolé conclura
@@ -110,6 +134,11 @@ geste.
 ```json
 {"fin":true,"colonnes":412}
 ```
+
+⚠️ **`fin` est un booléen JSON, et il se heurte au même piège que `nullable`** : `true` nu sur
+PostgreSQL, `(1 = 1)` sur MySQL et MariaDB, `json('true')` sur SQLite. Sans ce marqueur, l'ingestion
+refuse (cas n° 2) — et elle doit : « relevé complet » et « copier-coller tronqué » se liraient sinon
+exactement pareil.
 
 ⚠️ **`colonnes` se calcule dans la même requête que les lignes**, jamais par un second passage sur le
 catalogue. Deux lectures d'un catalogue vivant peuvent légitimement diverger si un `ALTER TABLE`
