@@ -214,14 +214,16 @@ prose française : ce sont des comptes-rendus datés, et un ADR acté parle avec
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Onze ADR de système sont en vigueur, et **quatre en supplantent un autre — toujours sur des points
+Treize ADR de système sont en vigueur, et **cinq en supplantent un autre — toujours sur des points
 nommés**. Trois visent l'ADR-0006 : l'ADR-0007 rouvre ce qu'il avait explicitement laissé fermé,
 l'ADR-0008 renverse deux de ses clauses — la réserve n° 1, qui tenait le wordmark métier pour le
 contrepoids du mot « microservice », et la règle « un seul nom, aucune forme courte » —, et
 l'ADR-0010 retire la clause « Trois entrées, et pas une quatrième ». Le quatrième vise l'ADR-0007 :
-l'ADR-0009 lui retire la clause « le layout porte **une** barre ». Aucun texte supplanté n'a été
-édité ; l'ADR-0006 porte en fin de fichier une **suite datée** qui se borne à nommer ses trois points
-morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour vivants.
+l'ADR-0009 lui retire la clause « le layout porte **une** barre ». Le cinquième vise l'ADR-0012 :
+l'ADR-0013 lui retire la réserve par laquelle il rangeait le contenu de la clause d'incomplétude
+parmi ce qu'il ne décide pas, alors même qu'il en rendait la partie 1 fausse. Aucun texte supplanté
+n'a été édité ; l'ADR-0006 porte en fin de fichier une **suite datée** qui se borne à nommer ses
+trois points morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour vivants.
 
 - [ADR-0001](./docs/adr/0001-architecture-polyglotte-et-moteur-auto-heberge.md) — l'architecture
   polyglotte et le moteur auto-hébergé.
@@ -275,6 +277,18 @@ morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour vivants.
   `QualifyResponse` les jette à la projection. ⚠️ **Il ne supplante rien** — il relit ce que
   « public » veut dire, et garde **séparées** les deux raisons d'afficher ces internes : expliquer le
   `ReviewSignal` d'un côté, le diagnostic de l'autre.
+- [ADR-0012](./docs/adr/0012-la-connexion-le-scan-et-les-echantillons-entrent-dans-screening.md) — la
+  **connexion**, le **scan** et les **échantillons de valeurs** entrent dans `Screening` : les trois
+  interdictions tombent, les deux garde-fous survivent — aucun secret d'accès durable, aucune valeur
+  enregistrée. ⚠️ **Il ne supplante aucun ADR** ; il renverse une clause de **glossaire**,
+  `Aucune donnée réelle n'entre`. Sa clause opposable avant livraison — rejeu du banc, chemin collé,
+  plancher F2 macro 0,3172 — tient.
+- [ADR-0013](./docs/adr/0013-la-clause-d-incompletude-varie-avec-l-origine-du-releve.md) — la
+  **clause d'incomplétude varie avec l'origine du relevé** : une clause, quatre parties, **une seule
+  qui varie** — le périmètre lu. L'origine est une valeur fermée `Collé` / `Scanné`, **enregistrée**
+  avec le rapport, le cas nul refusé bruyamment. ⚠️ **Il supplante l'ADR-0012 sur un point** : celui-ci
+  rangeait le contenu de la clause parmi ce qu'il ne décide pas, tout en rendant sa partie 1 fausse
+  sur le chemin scanné. Tout le reste de l'ADR-0012 reste en vigueur, et son texte n'a pas été édité.
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, et c'est délibéré** : ce sont deux décisions sans
 rapport, qui se défont séparément — on peut retirer la porte du panneau sans rien changer à ce que
