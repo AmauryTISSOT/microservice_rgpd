@@ -119,11 +119,36 @@ Les quelques valeurs — **cinq**, à la livraison — que le `Scan` a lues dans
 l'écran montre à l'`Operator` **pendant qu'il arbitre**. Elles ne prouvent rien, elles n'entrent dans
 aucun chiffre rendu, et elles meurent : voir `Rien de réel ne reste`.
 ⚠️ **Un aperçu n'est jamais vide.** Il est **soit** des valeurs, **soit** une **raison nommée** de
-n'en porter aucune — jamais rien. Deux raisons de nature différente coexistent : la colonne a été
-**exclue** du prélèvement (un type binaire, dont cinq valeurs ne diraient rien à un humain), ou le
-prélèvement a **échoué** (droits, délai, panne — toléré, à la différence du schéma). L'énumération
-exacte des raisons relève de la spécification ; ce que le glossaire tient, c'est qu'il n'existe pas
-de troisième forme et qu'aucune absence n'est muette.
+n'en porter aucune — jamais rien, et **jamais les deux à la fois**. ⚠️ **L'énumération est close et
+tient en quatre familles**, arrêtées par
+[#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278) : la colonne porte un **type non
+prélevable** (un binaire, dont cinq valeurs ne diraient rien à un humain) ; les **droits sont
+refusés** ; **aucune valeur n'a été retournée** ; la **lecture a échoué** (délai, panne,
+interruption). Ce que le glossaire tient, c'est qu'il n'existe pas de troisième **forme**, que
+l'énumération des **raisons** est fermée, et qu'aucune absence n'est muette.
+⚠️ **Quatre familles, et non une raison par panne rencontrée.** Le grain est celui du **geste que
+l'`Operator` peut poser** : « droits refusés » vit à part parce qu'elle est la seule qu'il puisse
+corriger — il ira demander un accès. « Délai dépassé », « connexion tombée » et « scan interrompu »
+ne lui offrent rien de plus les unes que les autres, et se rangent donc ensemble. Une énumération qui
+grandirait au fil des pannes de production serait, à chaque panne neuve, une valeur de plus que du
+code déjà écrit ne sait pas afficher.
+⚠️ **La prose de la raison ne cite jamais le message du pilote.** C'est par là que remonteraient la
+valeur lue, l'hôte, l'utilisateur — la chaîne de connexion reconstituée par morceaux, que `Rien de
+réel ne reste` interdit. La règle vaut jusque dans le code du prélèvement, écrit sous l'hypothèse que
+**toute exception qu'il laisse remonter porte la valeur**.
+⚠️ **« Aucune valeur retournée » dit une observation, jamais un constat sur la donnée.** Deux
+situations la produisent, indiscernables du dehors : la table est réellement **vide** (archive
+purgée, fonctionnalité jamais activée), ou elle est **pleine et filtrée** — sous une politique de
+sécurité au niveau ligne, un `SELECT` réussit, ne lève rien, et rend zéro ligne d'une table qui en
+porte des millions. Écrire « cette table ne contient aucune ligne » serait alors l'`Omission
+silencieuse` reconstituée **dans le champ créé pour l'empêcher**, sur la table `patients` d'un
+hôpital. Distinguer les deux demanderait un compte de lignes que le catalogue ne donne
+qu'**estimé** : fabriquer une certitude qu'on n'a pas est pire que dire l'incertitude.
+⚠️ **`NULL` et la chaîne vide ne sont pas des absences, et l'écran les montre comme des valeurs.**
+Cinq `NULL` sont **cinq valeurs lues** ; le prélèvement a parfaitement réussi et aucune raison n'est
+due. Ils portent chacun un marqueur visible — `⟨null⟩`, `⟨vide⟩` —, et deux marqueurs plutôt qu'un
+parce que ce sont deux choses différentes en base. Rendus en cellules blanches, ils se liraient comme
+l'absence que la raison nommée vient de chasser, un cran plus bas.
 Motif : c'est le geste du dialecte déclaré, appliqué un cran plus bas. Sans raison nommée, « cette
 colonne ne contenait rien » et « on n'a pas regardé cette colonne » se liraient pareil à l'écran, ce
 qui est l'`Omission silencieuse` réintroduite par une cellule vide. Et un aperçu et une raison posés
@@ -151,6 +176,22 @@ cinq fois le même IBAN est un IBAN vérifié une fois, jamais cinq vérificatio
 `NULL` n'est pas une valeur. ⚠️ Conséquence à assumer et à dire : la troncature transforme des vrais
 positifs en **silences** — un courriel coupé à deux cents caractères n'est plus un courriel — et
 c'est l'aperçu affiché, coupure visible, qui rend la main à l'`Operator`.
+⚠️ **La coupure est donc placée au-dessus de la plus longue valeur à motif utile — 254 caractères**
+([#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278)) : 34 pour un IBAN, 254 pour un
+courriel. Deux cents, chiffre qui a traîné dans un calcul de volume, coupait sous la borne du
+courriel ; il ne coûtait rien de moins et coûtait des détections. ⚠️ **Et la troncature doit être
+sue** : la clause ci-dessus écarte du compte une valeur tronquée, ce qui est impossible si rien ne
+dit qu'elle l'a été. La longueur réelle est donc relevée **à côté** de la valeur coupée — sans quoi
+la règle serait écrite sans jamais pouvoir s'appliquer.
+⚠️ **Les valeurs d'un aperçu sont les premières venues, et l'écran le dit.** Rien ne les trie : elles
+arrivent dans l'ordre physique du stockage, c'est-à-dire très souvent les **plus anciennes** lignes
+de la table — jeux d'essai, comptes de démonstration, données d'amorçage. Une colonne de deux
+millions de courriels réels peut n'en montrer que cinq en `example.com`, et l'`Operator` qui les lit
+comme représentatifs écartera une colonne qu'il fallait retenir. ⚠️ **C'est un biais à dire, pas à
+corriger** : trier coûterait un balayage complet de la table, prix que la base de production d'un
+tiers n'a pas à payer pour cinq valeurs qui ne prouvent rien. La phrase vit à côté du bloc d'aperçu,
+et elle est la seule chose qui empêche l'aperçu de se lire comme l'échantillon que son nom refuse
+d'être.
 ⚠️ **Sa durée de vie est glissante, et son expiration n'est pas une troisième raison.** Deux heures
 réarmées à chaque écran **portant des aperçus** — ni l'historique, ni l'archive, ni l'accueil ne les
 prolongent —, sous un plafond absolu de douze heures depuis le scan. Le glissant suit le rythme réel
@@ -196,6 +237,21 @@ d'attente. Reprendre là où il s'était arrêté est **impossible par construct
 connexion n'a pas survécu au scan — voir `Rien de réel ne reste`. Un scan abandonné, lui, ne laisse
 **aucun objet** : ni `ColumnListing`, ni `Screening`, ni entrée d'historique, et le rapport courant
 ne recule pas.
+⚠️ **Ses fins anormales sont trois, et non deux** — l'abandon et le scan inconnu du processus étaient
+seuls nommés ; [#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278) leur ajoute
+l'**échec**, qui est le cas fréquent : hôte injoignable, chaîne malformée, fichier absent, base
+tombée en cours de relevé, délai dépassé. L'écran d'attente le dit sur la même forme que les deux
+autres — la **phase** où il a échoué, la **famille** de cause, la relance sous la main — et **jamais
+le message du pilote, ni l'hôte, ni l'utilisateur**, qui reconstitueraient par morceaux ce que `Rien
+de réel ne reste` interdit.
+⚠️ **Un scan échoué se comporte comme un scan abandonné : il ne laisse aucun objet.** Un relevé tombé
+à la table 300 sur 312 est perdu en entier, et c'est « il est entier ou il n'existe pas » lue jusqu'au
+bout — un relevé de 300 tables sur 312 est très précisément l'état intermédiaire que la clause
+interdit. Reprendre serait de toute façon impossible : la chaîne n'a pas survécu.
+⚠️ **Une base sans aucune table est une fin nommée, pas un rapport de zéro colonne.** Rien n'a raté —
+la connexion a réussi, le catalogue a répondu —, mais produire un `Screening` vide ferait **reculer
+le rapport courant** au profit d'un rapport qui ne dit rien, et détruirait des jours d'arbitrage pour
+une connexion d'essai. L'écran d'attente le dit et ne produit rien.
 _Avoid_ : ScanState, ScanJob, statut du scan, progression, pourcentage ⚠️ `ScanState` et `statut`
 rangeraient parmi les états ce qui a été délibérément tenu à côté d'eux ; `ScanJob` promet une file
 et des reprises, quand il n'y en a qu'un et qu'il ne reprend jamais ; `pourcentage` est le mot qui
@@ -779,6 +835,21 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   persistée, jamais journalisée, jamais tracée, jamais reprise dans un message d'erreur, jamais
   rejouée pour un second scan. Le service ne détient **aucun secret d'accès durable** à la base d'un
   client.
+  ⚠️ **Le pooling est donc désactivé sur les trois dialectes**
+  ([#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278)). Une connexion poolée survit
+  au scan dans un casier **indexé par la chaîne de connexion** : c'est une détention, même sans
+  persistance, et pour une durée que le service ne contrôle pas. Le prix est un établissement de
+  connexion par scan, négligeable devant un relevé qui se compte en secondes ; le gain est qu'à la
+  question « où le secret du client se trouve-t-il ? », il n'y a rien à répondre.
+  ⚠️ **Et côté SQLite, `base` ne porte que le nom du fichier, jamais son chemin.** Là où les deux
+  autres dialectes y écrivent un mot inoffensif — `facturation` —, SQLite n'a pas de nom de base à
+  donner, et le chemin complet y **est** la chaîne de connexion à peu de chose près. Or ce champ est
+  persisté avec le `Screening`, vit des mois, et **quitte le service dans la `Cartographie`
+  exportée** : y laisser `/var/lib/app/tenants/acme-corp/prod/main.sqlite` publierait l'arborescence
+  interne et le nom du client à un destinataire qui n'a pas à les connaître. Le champ ne perd rien à
+  la coupe : il est un repère pour l'humain, jamais une adresse — **aucun code ne le relit pour se
+  connecter**, sur aucun dialecte, et le service ne se reconnecte jamais. Cela referme du même geste
+  la borne de cent caractères, qui refusait des chemins de conteneur sincères.
 - **Les valeurs lues meurent avec la session d'arbitrage.** Un `ColumnPreview` vit dans un cache en
   mémoire du processus, avec une durée de vie **explicite, affichée et décomptée** : deux heures
   glissantes, réarmées par les seuls écrans qui montrent des aperçus, sous un plafond absolu de douze
