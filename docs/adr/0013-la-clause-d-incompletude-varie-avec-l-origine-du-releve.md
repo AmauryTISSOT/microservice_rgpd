@@ -7,7 +7,7 @@
 - **Aucune suite datée n'est appendue à l'ADR-0012**, et c'est délibéré : [#263](https://github.com/AmauryTISSOT/microservice_rgpd/issues/263) a refusé de réécrire un enregistrement d'archive alors même que l'ADR-0012 écrit « échantillon » d'un bout à l'autre. La suite de l'ADR-0006 existe parce que **trois** points morts s'y étaient accumulés sur des mois, hors de vue d'un lecteur qui l'ouvrirait seul ; ici le point est **unique**, il est nommé ci-dessus, et les deux ADR se rejoignent par la même carte. Le jour où l'ADR-0012 en portera un deuxième, la suite se justifiera d'elle-même.
 - **Ne touche pas l'[ADR-0006](./0006-trois-points-d-entree-renommes-en-francais-identifiants-inchanges.md)**, qui gèle le texte de la **partie 4** — la relation au `Manifest`. Cette partie ne varie pas, et le gel tient.
 - **Ne touche pas l'export.** [#269](https://github.com/AmauryTISSOT/microservice_rgpd/issues/269) a décidé que le fichier exporté ne porte **aucune** clause, sous aucune forme. Le périmètre de cet ADR est celui des **quatre écrans de détection**.
-- ⚠️ **Il décide, il ne rédige pas.** La rédaction exacte des trois motifs réécrits, les libellés des quatre comptes, le contenu du répertoire de phrases interdites et l'entrée de glossaire de l'aperçu relèvent de la spec [#270](https://github.com/AmauryTISSOT/microservice_rgpd/issues/270). La migration relève de [#283](https://github.com/AmauryTISSOT/microservice_rgpd/issues/283).
+- ⚠️ **Il décide, il ne rédige pas.** La rédaction exacte des trois motifs réécrits, les libellés des quatre comptes, le contenu du répertoire de phrases interdites et l'entrée de glossaire de l'aperçu relèvent de **la spec du workflow connecté**. Celle-ci n'est pas un pas sur la route de la carte : [#270](https://github.com/AmauryTISSOT/microservice_rgpd/issues/270), qui en portait le périmètre, a été **clos hors périmètre** pour ce motif, et la spec se produit par `/to-spec` une fois la carte close. C'est là que ces textes s'écrivent, et #270 reste la liste de ce qu'elle doit couvrir. La migration, elle, relève de [#283](https://github.com/AmauryTISSOT/microservice_rgpd/issues/283), qui l'a tranchée sur les quatre changements en jeu — dont les **deux ajouts** décidés ici.
 
 ## Contexte
 
@@ -259,8 +259,9 @@ panne qu'un test asymétrique ne peut pas voir.
 - **Le `Screening` porte un fait de plus, et il est enregistré** : l'origine du relevé. C'est le vrai
   coût de cette décision, et il se paie en migration — laquelle relève de
   [#283](https://github.com/AmauryTISSOT/microservice_rgpd/issues/283), dont la question « une
-  migration ou deux ? » se pose désormais sur **quatre** changements : deux retraits (`SignedBy`, le
-  schéma enrichi) et **deux ajouts** — l'origine du relevé et la raison d'absence d'aperçu.
+  migration ou deux ? » s'est posée sur **quatre** changements et non deux : deux retraits
+  (`SignedBy`, le schéma enrichi) et **deux ajouts** — l'origine du relevé et la raison d'absence
+  d'aperçu, tous deux décidés ici.
 - **La colonne porte, elle aussi, un fait de plus et enregistré** : la raison d'absence d'aperçu.
   C'est la conséquence structurelle du point 5, et elle amende
   [#263](https://github.com/AmauryTISSOT/microservice_rgpd/issues/263) sur la durée de vie des deux
@@ -299,8 +300,9 @@ panne qu'un test asymétrique ne peut pas voir.
 
 - **La rédaction des textes.** Les trois motifs réécrits du point 6, les libellés des quatre comptes
   du point 5, le contenu du répertoire de phrases interdites du point 8 et l'entrée de glossaire de
-  l'aperçu relèvent de la spec [#270](https://github.com/AmauryTISSOT/microservice_rgpd/issues/270).
-- **La migration** des `Screening` existants, qui relève de
+  l'aperçu relèvent de la spec du workflow connecté, dont
+  [#270](https://github.com/AmauryTISSOT/microservice_rgpd/issues/270) tient la liste.
+- **La migration** des `Screening` existants, tranchée par
   [#283](https://github.com/AmauryTISSOT/microservice_rgpd/issues/283).
 - **L'export**, qui ne porte aucune clause, sous aucune forme —
   [#269](https://github.com/AmauryTISSOT/microservice_rgpd/issues/269).
