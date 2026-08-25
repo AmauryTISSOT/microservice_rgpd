@@ -624,6 +624,32 @@ une seconde vérité sur les mêmes arbitrages, et le premier réarbitrage la re
 rien ne le signale.
 ⚠️ **Elle ne porte aucune valeur lue.** Un `ColumnPreview` meurt avec la session d'arbitrage et
 n'atteint jamais l'export. Voir `Rien de réel ne reste`.
+**Elle sort par un geste explicite, en deux formats et jamais un seul.** Le bouton dit « Exporter la
+cartographie des données personnelles », et il y a **deux liens** plutôt qu'un choix de format : sans
+JavaScript, un menu n'existe pas, et un lien qu'on colle dans un courriel doit annoncer ce qu'il
+rend. Le **JSON** vise qui outille, le **CSV** vise qui double-clique — d'où un CSV au séparateur `;`
+et au BOM, qui sont les conditions pour qu'un tableur français l'ouvre en tableau et non en colonne
+unique. Ce ne sont pas deux vues d'un même lecteur : ce sont deux lecteurs.
+⚠️ **Elle ne porte aucune clause d'incomplétude, et c'est un renversement assumé.** Toute réponse qui
+rend un `Screening` porte sa clause — voir `ScreeningAnswer` —, **sauf** le fichier exporté, qui est
+pourtant le seul artefact d'ici à quitter le service. La raison n'est pas technique : **l'`Operator`
+signe chaque ligne et choisit d'envoyer le fichier ; ce qu'il en dit au destinataire lui appartient.**
+Le service ne parle pas par-dessus son épaule dans un document qu'il n'expédie pas. Le prix est
+nommé, parce qu'il est réel et qu'il ne faut pas le redécouvrir : un fichier ainsi titré, listant des
+colonnes de données personnelles et ne disant rien d'autre, **peut se lire comme une liste
+complète** — exactement l'`Omission silencieuse`. Ce qui tient malgré tout : la clause reste sur
+**tous** les écrans, et l'`Omission relue` est tenue dans le fichier lui-même, qui porte toutes les
+lignes.
+⚠️ **Le JSON dit d'où il vient, le CSV non, et l'asymétrie est voulue.** Le JSON porte en tête ce qui
+ne varie pas d'une ligne à l'autre — la base, le dialecte, la `ScreeningEngineIdentity`, les dates,
+les comptes. Ces faits ne sont **jamais** répétés sur la ligne : un rapport a **un** moteur, et le
+répéter laisserait croire qu'il pourrait changer d'une colonne à l'autre. Le CSV, lui, n'a pas
+d'en-tête libre, et rien n'a été ajouté pour lui en fabriquer un : **son nom de fichier est tout ce
+qu'il dit de sa provenance.**
+**L'arbitrage inachevé se dit, et il ne se confond avec rien.** Une cartographie s'exporte à
+n'importe quel moment du travail, `Awaiting` compris. Quand il en reste, le JSON le compte en une
+phrase. C'est une incomplétude **du travail humain**, d'une autre nature que celle de la méthode : la
+première se répare en repassant, la seconde ne se répare pas.
 ⚠️ **Le mot a été interdit sur `ColumnListing` et sur `Screening`**, à l'époque où rien ne sortait du
 service et où il n'avait donc rien à nommer. Il désigne aujourd'hui le troisième terme de la
 séquence — ce que la machine a relevé, ce que la machine a rendu, ce que l'humain en a fait — et les
@@ -675,10 +701,17 @@ Le motif est écrit dans le glossaire de `Casework` : un `Manifest` pré-rempli 
 lirait comme complet**, ce qui est l'`Omission silencieuse` sous sa forme la plus dangereuse. Et la
 tentation est réelle, parce que le pont a l'air utile : un `Operator` qui vient d'arbitrer quarante
 colonnes `Retained` va les ressaisir à la main.
-_Avoid_ : export, pré-remplissage, prefill, import, synchronisation, rapprochement, réconciliation,
-alimentation ⚠️ cette liste n'est pas du style : elle est le seul garde-fou qui accroche une revue de
-code sur un `ScreeningExportService` ou un `POST /manifest/prefill-from-screening`, qui autrement
-passeraient pour d'aimables raccourcis.
+⚠️ **`export` a quitté cette liste, et le garde-fou qu'il y tenait est remplacé par une phrase.** Le
+mot nomme désormais quelque chose dans ce contexte — le fichier que l'`Operator` emporte, voir
+`Cartographie` — et le bouton le dit en toutes lettres. **Il ne nomme jamais un chemin vers le
+`Manifest`** : aucun pré-remplissage, aucune confrontation, aucun bouton. Ce qui distingue les deux
+se dit en une ligne : **l'export a un destinataire humain qui l'a demandé, le pont a un destinataire
+machine que personne n'a demandé.** Un `ScreeningExportService` est donc licite ; un
+`ScreeningExportService` qui **écrirait** quoi que ce soit du côté `Casework` ne l'est pas, et c'est
+sur cette écriture qu'une revue de code doit s'arrêter.
+_Avoid_ : pré-remplissage, prefill, import, synchronisation, rapprochement, réconciliation,
+alimentation ⚠️ cette liste n'est pas du style : elle est ce qui accroche une revue de code sur un
+`POST /manifest/prefill-from-screening`, qui autrement passerait pour un aimable raccourci.
 
 **Ce qui entre est borné** :
 Des données personnelles réelles **entrent** désormais dans ce contexte. Ce qui les tient n'est plus
