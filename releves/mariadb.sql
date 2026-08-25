@@ -7,6 +7,16 @@
 -- Ne reformatez rien, ne réalignez rien, n'exportez pas vers un tableur : copiez le
 -- bloc de lignes tel quel. Voir docs/contexts/screening/CONTEXT.md.
 --
+-- ⚠️ **`nullable` s'écrit `(est_nullable = 'YES')`, jamais `IS_NULLABLE`.**
+-- L'`information_schema` rend la nullabilité en `'YES'`/`'NO'` : un
+-- `JSON_OBJECT('nullable', IS_NULLABLE)` naïf émet `"nullable":"YES"`, une chaîne,
+-- que le pivot refuse (`UnreadableColumnLine`) — et devait refuser, un `"YES"` pris
+-- pour `null` désactivant silencieusement le filtre de nullabilité sur toute la base.
+-- La comparaison, elle, rend un vrai booléen JSON : attesté `true` sur MySQL 8.4 **et**
+-- MariaDB 11.8. C'est aussi pourquoi la ligne de fin écrit `(1 = 1)` plutôt que `TRUE` :
+-- même mécanique, un booléen produit par une comparaison. ⚠️ `CAST(… AS JSON)` n'est
+-- **pas** portable — syntaxe inconnue de MariaDB (`ERROR 1064`).
+--
 -- ⚠️ Client en ligne de commande : utilisez `mysql -N -B -r` (--skip-column-names
 -- --batch --raw). Sans `--raw`, le client rééchappe les antislashs et les JSON
 -- porteurs de caractères échappés arrivent corrompus.
@@ -59,7 +69,7 @@ SELECT ligne FROM (
            'colonne',             nom_colonne,
            'position',            position,
            'type',                type_complet,
-           'nullable',            IF(est_nullable = 'YES', 1, 0),
+           'nullable',            (est_nullable = 'YES'),
            'commentaire_colonne', commentaire_colonne,
            'commentaire_table',   commentaire_table,
            'table_referencee',    table_referencee
@@ -70,6 +80,6 @@ SELECT ligne FROM (
   -- évaluée une fois. Un second passage pourrait diverger si un ALTER TABLE
   -- s'intercalait, et le service refuserait alors un relevé sincère.
   SELECT 2, '', 0,
-         JSON_OBJECT('colonnes', (SELECT COUNT(*) FROM cols))
+         JSON_OBJECT('fin', (1 = 1), 'colonnes', (SELECT COUNT(*) FROM cols))
 ) pivot
 ORDER BY bloc, tri_table, tri_position;

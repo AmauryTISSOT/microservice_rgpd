@@ -18,6 +18,23 @@
     <PackageReference Include="Testcontainers.PostgreSql" />
   </ItemGroup>
 
+  <!--
+    Les sorties RÉELLEMENT produites par les requêtes de `releves/`, jouées sur de vrais
+    SGBD en conteneur. Embarquées depuis `exploration/releves-authentiques/` plutôt que
+    recopiées ici : une fixture rédigée à la main dirait ce que son auteur croit que la
+    requête produit, et c'est très exactement l'angle mort qui a laissé passer #284.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\postgresql.txt"
+                      LogicalName="releve-postgresql.txt" />
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mysql84.txt"
+                      LogicalName="releve-mysql84.txt" />
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mariadb118.txt"
+                      LogicalName="releve-mariadb118.txt" />
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\sqlite.txt"
+                      LogicalName="releve-sqlite.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\MicroserviceRgpd.Infrastructure\MicroserviceRgpd.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\MicroserviceRgpd.UseCases\MicroserviceRgpd.UseCases.csproj" />

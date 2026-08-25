@@ -9,6 +9,20 @@
 -- pivot déclare son dialecte : sans lui, « cette colonne n'a pas de commentaire »
 -- et « ce SGBD n'en rend jamais » se liraient pareil.
 --
+-- ⚠️ **SQLite n'a aucun type booléen**, et c'est pourquoi `nullable` et la ligne de
+-- fin passent ici par `json('true')` là où les deux autres requêtes écrivent un
+-- booléen nu. Vérifié sur 3.46 :
+--
+--     sqlite> SELECT json_object('a',(1=1), 'b',TRUE, 'c',json('true'));
+--     {"a":1,"b":1,"c":true}
+--
+-- `(1=1)` et `TRUE` rendent **`1`**, quand PostgreSQL, MySQL et MariaDB rendent
+-- `true`. Or le pivot exige un booléen JSON : un `1` fait refuser la ligne
+-- (`UnreadableColumnLine`), et une ligne de fin sans `"fin":true` fait lire un
+-- relevé complet comme une troncature (`MissingClosingLine`). `json('…')` est la
+-- seule voie. Quiconque trouvera `json(CASE …)` alambiqué et le remplacera par
+-- `(ti."notnull" = 0)` rebrisera exactement ce défaut.
+--
 -- ⚠️ Client en ligne de commande : `sqlite3 -noheader -list base.sqlite < sqlite.sql`.
 --
 -- Requiert SQLite ≥ 3.38 pour `json_object()`, et ≥ 3.16 pour les pragmas
@@ -21,7 +35,7 @@ WITH cols AS (
     ti.name                                  AS nom_colonne,
     ti.cid + 1                               AS position,
     ti.type                                  AS type_complet,
-    CASE WHEN ti."notnull" = 0 THEN 1 ELSE 0 END AS nullable,
+    CASE WHEN ti."notnull" = 0 THEN 'true' ELSE 'false' END AS nullable,
     ''                                       AS commentaire_colonne,
     ''                                       AS commentaire_table,
     COALESCE((
@@ -50,7 +64,7 @@ SELECT ligne FROM (
            'colonne',             nom_colonne,
            'position',            position,
            'type',                type_complet,
-           'nullable',            nullable,
+           'nullable',            json(nullable),
            'commentaire_colonne', commentaire_colonne,
            'commentaire_table',   commentaire_table,
            'table_referencee',    table_referencee
@@ -59,6 +73,6 @@ SELECT ligne FROM (
   UNION ALL
   -- Même lecture du catalogue que les lignes : `cols` n'est évaluée qu'une fois.
   SELECT 2, '', 0,
-         json_object('colonnes', (SELECT COUNT(*) FROM cols))
+         json_object('fin', json('true'), 'colonnes', (SELECT COUNT(*) FROM cols))
 )
 ORDER BY bloc, tri_table, tri_position;

@@ -1,0 +1,13 @@
+{"format":"screening-pivot/1","dialecte":"sqlite","base":"/tmp/epreuve.sqlite","genere_le":"2026-08-25T13:38:55Z"}
+{"schema":"main","table":"adherents","colonne":"id","position":1,"type":"INTEGER","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"adr_l1","position":2,"type":"TEXT","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"courriel","position":3,"type":"TEXT","nullable":false,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"photo","position":4,"type":"BLOB","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"solde","position":5,"type":"NUMERIC","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"cree_le","position":6,"type":"TEXT","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"actif","position":7,"type":"INTEGER","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"adherents","colonne":"piece","position":8,"type":"ANY","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"cotisations","colonne":"id","position":1,"type":"INTEGER","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"schema":"main","table":"cotisations","colonne":"adherent_id","position":2,"type":"INTEGER","nullable":true,"commentaire_colonne":"","commentaire_table":"","table_referencee":"adherents"}
+{"schema":"main","table":"cotisations","colonne":"montant","position":3,"type":"NUMERIC","nullable":false,"commentaire_colonne":"","commentaire_table":"","table_referencee":""}
+{"fin":true,"colonnes":11}

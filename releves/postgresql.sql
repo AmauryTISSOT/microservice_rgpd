@@ -15,6 +15,14 @@
 -- neuf cas de refus du pivot — celui qui attrape la troncature au milieu. Rendre
 -- `attnum` tel quel ferait refuser des relevés parfaitement sincères.
 --
+-- ⚠️ **`nullable` sort tel quel du CTE, sans `CASE`.** `(NOT a.attnotnull)` est déjà
+-- un `boolean`, et `json_build_object` le rend en booléen JSON — ce que le pivot exige.
+-- L'envelopper d'un `CASE WHEN … THEN 1 ELSE 0 END` le **dégraderait** en nombre, et la
+-- ligne serait refusée (`UnreadableColumnLine`). Même raison pour `'fin', true` en ligne
+-- de fin : ici le littéral booléen suffit, là où SQLite exige `json('true')` et où
+-- MariaDB passe par une comparaison. Les trois requêtes divergent sur cette ligne parce
+-- que les trois SGBD divergent, et non par inadvertance.
+--
 -- ⚠️ Client en ligne de commande : `psql -At -f postgresql.sql`.
 --
 -- Relève tous les schémas applicatifs de la base courante : PostgreSQL a un vrai
@@ -65,7 +73,7 @@ SELECT ligne FROM (
            'colonne',             nom_colonne,
            'position',            position,
            'type',                type_complet,
-           'nullable',            CASE WHEN nullable THEN 1 ELSE 0 END,
+           'nullable',            nullable,
            'commentaire_colonne', commentaire_colonne,
            'commentaire_table',   commentaire_table,
            'table_referencee',    table_referencee
@@ -74,6 +82,6 @@ SELECT ligne FROM (
   UNION ALL
   -- Même lecture du catalogue que les lignes : `cols` n'est évaluée qu'une fois.
   SELECT 2, '', '', 0::bigint,
-         json_build_object('colonnes', (SELECT COUNT(*) FROM cols))::text
+         json_build_object('fin', true, 'colonnes', (SELECT COUNT(*) FROM cols))::text
 ) pivot
 ORDER BY bloc, tri_schema, tri_table, tri_position;
