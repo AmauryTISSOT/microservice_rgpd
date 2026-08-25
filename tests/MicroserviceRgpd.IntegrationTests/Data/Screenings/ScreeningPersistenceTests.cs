@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Globalization;
 using MicroserviceRgpd.Core.Screenings;
 using Npgsql;
 
@@ -197,7 +198,7 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     await ArbitrateAsync(screening.Id, "adr_l1", ScreenedColumnState.Retained, RenderedOn);
 
     var written = await ScalarListAsync(
-      "select state || '/' || (rendered_on = timestamptz '2026-08-07T14:05:00Z')::text "
+      $"select state || '/' || (rendered_on = timestamptz '{AsSql(RenderedOn)}')::text "
       + "from screened_columns "
       + $"where screening_id = '{screening.Id.Value}' and column_name = 'adr_l1'");
 
@@ -279,7 +280,7 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
       screening.Id, "adr_l1", ScreenedColumnState.SetAside, RenderedOn.AddDays(1));
 
     var written = await ScalarListAsync(
-      "select state || '/' || (rendered_on = timestamptz '2026-08-08T14:05:00Z')::text "
+      $"select state || '/' || (rendered_on = timestamptz '{AsSql(RenderedOn.AddDays(1))}')::text "
       + "from screened_columns "
       + $"where screening_id = '{screening.Id.Value}' and column_name = 'adr_l1'");
 
@@ -414,6 +415,16 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     // ⚠️ Et rien d'autre que les trois index décidés : un index de plus se paierait sur chaque
     // dépôt, cinq mille lignes à la fois.
     indexes.Count.ShouldBe(3);
+  }
+
+  /// <summary>
+  /// L'instant tel que PostgreSQL le lit, <b>tiré de la constante</b> et jamais recopié à la main :
+  /// un littéral écrit à côté de la valeur qu'il doit refléter finit par en diverger, et le test
+  /// resterait vert sur une date que le service n'a pas écrite.
+  /// </summary>
+  private static string AsSql(DateTimeOffset instant)
+  {
+    return instant.ToString("yyyy-MM-dd HH:mm:sszzz", CultureInfo.InvariantCulture);
   }
 
   private static Screening AScreening(params ScreenedColumn[] columns)

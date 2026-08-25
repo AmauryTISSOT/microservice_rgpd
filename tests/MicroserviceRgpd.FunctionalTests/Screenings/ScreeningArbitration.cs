@@ -302,19 +302,39 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// ⚠️ <b>La touche Entrée ne retient rien, et c'est l'absence de champ de saisie qui le tient.</b>
   /// Un formulaire soumet sur Entrée son <b>premier</b> bouton d'envoi, mais seulement depuis une
-  /// commande textuelle : il n'en reste aucune ici, le champ du nom étant parti. <b>Reposer un
-  /// champ texte, quel qu'il soit, remettrait la trappe</b> — taper puis valider retiendrait la
-  /// colonne, et gonflerait le compte sur lequel la déclaration se construit ensuite.
+  /// commande textuelle : il n'en reste aucune ici, le champ du nom étant parti. <b>Reposer une
+  /// commande textuelle, quelle qu'elle soit, remettrait la trappe</b> — taper puis valider
+  /// retiendrait la colonne, et gonflerait le compte sur lequel la déclaration se construit
+  /// ensuite.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le test n'énumère pas les types interdits, il n'autorise que <c>hidden</c>.</b> Une
+  /// liste noire serait un filet à trous : <c>search</c>, <c>email</c>, <c>url</c>, <c>number</c>,
+  /// <c>tel</c> et <c>password</c> déclenchent la soumission implicite exactement comme
+  /// <c>text</c>, et le jour où l'un d'eux serait posé ici, rien n'aurait rougi.
+  /// </remarks>
   [Fact]
-  public async Task OffersNoTextFieldThroughWhichTheEnterKeyCouldSettleAColumn()
+  public async Task CarriesNothingButHiddenInputsSoTheEnterKeyCannotSettleAColumn()
   {
     await DepositAsync(ScreeningSurface.Column("email", position: 1));
 
     var table = await ReadTheTableAsync();
 
-    table.ShouldNotContain("type=\"text\"");
     table.ShouldNotContain("<textarea");
+
+    var forms = Regex.Matches(table, @"<form[^>]*>.*?</form>", RegexOptions.Singleline);
+
+    forms.Count.ShouldBeGreaterThan(0, "L'écran d'une table n'offre aucun formulaire.");
+
+    var fields = forms
+      .SelectMany(form => Regex.Matches(form.Value, @"<input[^>]*>").Select(field => field.Value))
+      .ToList();
+
+    fields.ShouldNotBeEmpty("Les formes de l'écran ne postent plus rien.");
+
+    fields.ShouldAllBe(
+      field => field.Contains("type=\"hidden\"", StringComparison.Ordinal),
+      customMessage: "Toute commande non cachée rendrait à la touche Entrée la soumission implicite.");
   }
 
   /// <summary>
@@ -386,7 +406,6 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     report.ShouldContain("n'est plus dans le rapport de détection courant");
   }
-
 
   /// <summary>Le rapport que l'écran rendait, lu sur son formulaire.</summary>
   private static string ScreeningOf(string table)

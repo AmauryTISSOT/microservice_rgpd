@@ -202,7 +202,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
   /// trente fois. <c>Awaiting</c> n'est pas une issue, en lot pas plus qu'à l'unité.
   /// </summary>
   [Fact]
-  public async Task RefusesAWholeBatchThatCarriesNoRulingAndLeavesEveryColumnAwaiting()
+  public async Task RefusesAWholeBatchThatPostsAwaitingAndLeavesEveryColumnAwaiting()
   {
     await DepositAsync(
       ScreeningSurface.Column("montant", position: 1),
@@ -228,14 +228,19 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
-  /// ⚠️ <b>La touche Entrée ne tranche pas une table entière, et c'est l'absence de champ de saisie
-  /// qui le tient.</b> Un formulaire soumet sur Entrée son <b>premier</b> bouton d'envoi, mais
-  /// seulement depuis une commande textuelle : le champ du nom parti, il n'en reste aucune.
-  /// <b>Reposer un champ texte ici remettrait la trappe</b> — taper puis valider trancherait des
-  /// dizaines de colonnes d'un coup.
+  /// ⚠️ <b>La touche Entrée ne tranche pas une table entière, et c'est l'absence de commande
+  /// textuelle qui le tient.</b> Un formulaire soumet sur Entrée son <b>premier</b> bouton d'envoi,
+  /// mais seulement depuis une commande textuelle : le champ du nom parti, il n'en reste aucune.
+  /// <b>En reposer une ici remettrait la trappe</b> — taper puis valider trancherait des dizaines
+  /// de colonnes d'un coup, ce qui est le facteur qui rend la chose plus grave qu'à l'unité.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le test n'énumère pas les types interdits, il n'autorise que <c>hidden</c></b> — même
+  /// raison qu'à l'unité : <c>search</c>, <c>email</c>, <c>url</c>, <c>number</c>, <c>tel</c> et
+  /// <c>password</c> déclenchent la soumission implicite exactement comme <c>text</c>.
+  /// </remarks>
   [Fact]
-  public async Task OffersNoTextFieldThroughWhichTheEnterKeyCouldSettleAWholeTable()
+  public async Task CarriesNothingButHiddenInputsSoTheEnterKeyCannotSettleAWholeTable()
   {
     await DepositAsync(
       ScreeningSurface.Column("montant", position: 1),
@@ -248,8 +253,17 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     batchForm.Success.ShouldBeTrue("L'écran d'une table n'offre aucun geste de lot.");
 
-    batchForm.Value.ShouldNotContain("type=\"text\"");
     batchForm.Value.ShouldNotContain("<textarea");
+
+    var fields = Regex.Matches(batchForm.Value, @"<input[^>]*>")
+      .Select(field => field.Value)
+      .ToList();
+
+    fields.ShouldNotBeEmpty("Le geste de lot ne poste plus le rapport lu.");
+
+    fields.ShouldAllBe(
+      field => field.Contains("type=\"hidden\"", StringComparison.Ordinal),
+      customMessage: "Toute commande non cachée rendrait à la touche Entrée la soumission implicite.");
   }
 
   /// <summary>
