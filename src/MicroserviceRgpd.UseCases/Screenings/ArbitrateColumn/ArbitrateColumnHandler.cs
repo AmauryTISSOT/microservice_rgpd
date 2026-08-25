@@ -4,8 +4,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 
 /// <summary>
 /// Porte sur une colonne du rapport de détection courant l'issue qu'un humain vient de rendre,
-/// <b>signée et
-/// datée par le service</b>.
+/// <b>datée par le service</b>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -28,7 +27,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 /// ⚠️ <b>Et le courant peut avoir changé pendant la lecture.</b> « Courant » se recalcule à
 /// l'écriture : entre le rendu de l'écran et le clic, un collègue a pu déposer un relevé. Le geste
 /// compare donc le rapport lu à celui qu'il s'apprête à écrire, et <b>refuse</b> plutôt que de
-/// signer au nom de l'humain un rapport qu'il n'a pas vu.
+/// porter l'arbitrage de l'humain sur un rapport qu'il n'a pas vu.
 /// </para>
 /// <para>
 /// <b>Rien ne descend nulle part.</b> Aucun <c>EvidenceLog</c> — ce contexte n'en a pas, son grain est le
@@ -68,9 +67,9 @@ public sealed class ArbitrateColumnHandler(IRepository<Screening> screenings, Ti
     if (current.Id != command.ReadScreening)
     {
       // ⚠️ Le rapport a changé SOUS LES YEUX de celui qui a cliqué — un collègue a déposé un relevé
-      // pendant qu'il relisait. Écrire ici aurait posé sa signature sur un rapport qu'il n'a jamais
-      // vu, motifs compris, et le seul indice en aurait été son propre nom. Le geste refuse : c'est
-      // la seule branche de ce fichier où l'écriture était possible et où on s'en abstient.
+      // pendant qu'il relisait. Écrire ici aurait porté son arbitrage sur un rapport qu'il n'a
+      // jamais vu, motifs compris. Le geste refuse : c'est la seule branche de ce fichier où
+      // l'écriture était possible et où on s'en abstient.
       return Result.Conflict();
     }
 
@@ -78,11 +77,10 @@ public sealed class ArbitrateColumnHandler(IRepository<Screening> screenings, Ti
 
     try
     {
-      // ⚠️ La ligne ne bouge pas si la signature refuse : l'exception sort de la fabrique de
-      // l'arbitrage AVANT que la ligne ne la reçoive. Il n'existe donc, jusque dans le mode de
-      // panne, ni `Retained` ni `SetAside` non signé.
-      arbitrated = current.Arbitrate(
-        command.Column, command.Ruling, command.SignedBy, clock.GetUtcNow());
+      // ⚠️ La ligne ne bouge pas si l'issue refuse : l'exception sort de la fabrique de l'arbitrage
+      // AVANT que la ligne ne la reçoive. Il n'existe donc, jusque dans le mode de panne, ni
+      // `Retained` ni `SetAside` sans date.
+      arbitrated = current.Arbitrate(command.Column, command.Ruling, clock.GetUtcNow());
     }
     catch (ArgumentException refusal)
     {
@@ -116,12 +114,10 @@ public sealed class ArbitrateColumnHandler(IRepository<Screening> screenings, Ti
   {
     return new ValidationError
     {
-      // ⚠️ Le champ est celui que l'exception nomme, et non « le signataire » d'office : un
-      // formulaire forgé peut poster `Awaiting`, que le domaine refuse comme état — le porter sous
-      // le champ du nom aurait affiché « ce n'est pas un arbitrage » à côté de la case du nom.
-      Identifier = refusal.ParamName == "ruling"
-        ? nameof(ArbitrateColumnCommand.Ruling)
-        : nameof(ArbitrateColumnCommand.SignedBy),
+      // ⚠️ Il ne reste qu'un champ que le domaine refuse : l'issue. C'est le seul que le formulaire
+      // poste et que le domaine valide, et un `Awaiting` forgé est très exactement ce que cette
+      // branche rend à l'humain, à côté des deux boutons.
+      Identifier = nameof(ArbitrateColumnCommand.Ruling),
       ErrorMessage = $"{refusal.Message.Split(" (Parameter")[0]} {NothingWasArbitrated}",
       Severity = ValidationSeverity.Error,
     };

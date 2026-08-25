@@ -1,23 +1,24 @@
 namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
-/// L'issue qu'un humain a rendue sur une colonne, <b>avec sa signature</b> : l'état, le nom qu'il a
-/// saisi, et la date. Les trois entrent ensemble ou pas du tout.
+/// L'issue qu'un humain a rendue sur une colonne, <b>et le moment où il l'a rendue</b> : l'état et
+/// la date. Les deux entrent ensemble ou pas du tout.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>C'est le type entier qui tient l'invariant.</b> Il n'existe ni <c>Retained</c> ni
-/// <c>SetAside</c> non signé, parce qu'aucun chemin d'écriture ne pose un état sans passer par ici,
-/// et qu'ici les trois champs sont exigés ensemble. Trois colonnes nullables sur la ligne auraient
+/// <c>SetAside</c> sans date, parce qu'aucun chemin d'écriture ne pose un état sans passer par ici,
+/// et qu'ici les deux champs sont exigés ensemble. Deux colonnes nullables sur la ligne auraient
 /// dit la même chose et ne l'auraient pas tenue : <b>deux champs qu'un chemin d'écriture peut
 /// dissocier finissent par se dissocier</b>. Même mécanique que le régime de <c>ReceptionDate</c>.
 /// </para>
 /// <para>
-/// <b>Le nom est saisi, jamais authentifié</b> — il n'existe aucune authentification dans le
-/// service, et la question « qui a le droit » n'a aucun mécanisme sur lequel se poser. C'est
-/// <c>Enregistré, jamais vérifié</c> : le service enregistre une déclaration et n'en juge jamais la
-/// valeur. Il est en revanche <b>non nullable</b>, contre le <c>string?</c> de <c>Casework</c> : ici
-/// une signature manquante n'est pas un champ vide, c'est un arbitrage qui n'a pas eu lieu.
+/// ⚠️ <b>Personne n'est enregistré ici, et c'est une décision.</b> Ce contexte ne garde pas qui a
+/// arbitré — voir l'<c>ADR-0014</c>, qui porte l'asymétrie avec <c>Casework</c>, lequel enregistre
+/// son signataire dans un <c>string?</c>. Un nom saisi sans authentification n'aurait été qu'une
+/// déclaration de plus, et ce qui compte ici est <b>qu'un humain ait tranché</b> — la date le
+/// prouve, la machine, elle, ne signe pas. Une date manquante n'est donc pas un champ vide, c'est
+/// un arbitrage qui n'a pas eu lieu.
 /// </para>
 /// <para>
 /// ⚠️ <b>Il n'y a pas d'histoire.</b> La trace est l'état courant seul, et un second arbitrage
@@ -26,45 +27,36 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// façon <i>tous</i>
 /// les arbitrages, si bien qu'une histoire fine à l'intérieur d'un rapport serait une précision
 /// absurde dans un dispositif qui jette le rapport complet. <b>Le coût est réel et déclaré</b> : un
-/// <c>Operator</c> qui repasse une colonne de <c>Retained</c> à <c>SetAside</c> efface qui avait dit
-/// quoi.
+/// <c>Operator</c> qui repasse une colonne de <c>Retained</c> à <c>SetAside</c> efface la date de
+/// l'arbitrage qu'il remplace.
 /// </para>
 /// </remarks>
 public sealed record Arbitration
 {
-  /// <summary>Le plafond du nom saisi, en unités UTF-16. C'est une signature, pas une prose.</summary>
-  public const int MaxSignatoryLength = 100;
-
-  private Arbitration(ScreenedColumnState state, string signedBy, DateTimeOffset signedOn)
+  private Arbitration(ScreenedColumnState state, DateTimeOffset renderedOn)
   {
     State = state;
-    SignedBy = signedBy;
-    SignedOn = signedOn;
+    RenderedOn = renderedOn;
   }
 
-  /// <summary>L'issue rendue. Jamais <see cref="ScreenedColumnState.Awaiting"/> : personne ne signe une absence de décision.</summary>
+  /// <summary>L'issue rendue. Jamais <see cref="ScreenedColumnState.Awaiting"/> : personne ne tranche une absence de décision.</summary>
   public ScreenedColumnState State { get; }
 
-  /// <summary>Le nom que l'humain a saisi. Recopié tel quel, jamais vérifié.</summary>
-  public string SignedBy { get; }
-
-  /// <summary>Quand il l'a dit.</summary>
-  public DateTimeOffset SignedOn { get; }
+  /// <summary>Quand l'humain l'a dit.</summary>
+  public DateTimeOffset RenderedOn { get; }
 
   /// <summary>
-  /// Porte l'issue d'un humain, ou refuse. <b>C'est le seul constructeur</b>, et il exige les trois
+  /// Porte l'issue d'un humain, ou refuse. <b>C'est le seul constructeur</b>, et il exige les deux
   /// à la fois.
   /// </summary>
   /// <param name="ruling">Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>
-  /// <param name="signedBy">Le nom saisi par celui qui tranche.</param>
-  /// <param name="signedOn">L'instant où il a tranché.</param>
+  /// <param name="renderedOn">L'instant où il a tranché.</param>
   /// <exception cref="ArgumentNullException"><paramref name="ruling"/> est absent.</exception>
-  /// <exception cref="ArgumentException">L'état n'est pas une issue, ou la signature est vide, démesurée, ou porte un caractère de contrôle.</exception>
-  public static Arbitration Rendered(ScreenedColumnState ruling, string? signedBy, DateTimeOffset signedOn)
+  /// <exception cref="ArgumentException">L'état n'est pas une issue.</exception>
+  public static Arbitration Rendered(ScreenedColumnState ruling, DateTimeOffset renderedOn)
   {
     return new Arbitration(
       ScreenedColumnState.RulingOrThrow(ruling, nameof(ruling)),
-      ScreeningText.OrThrow(signedBy, "Le nom du signataire", MaxSignatoryLength, nameof(signedBy)),
-      signedOn);
+      renderedOn);
   }
 }

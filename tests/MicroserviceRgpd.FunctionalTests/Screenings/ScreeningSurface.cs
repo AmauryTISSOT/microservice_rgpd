@@ -99,7 +99,6 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   internal async Task<HttpResponseMessage> ArbitrateAsync(
     string column,
     string ruling,
-    string? signedBy,
     string table = "adherents",
     string schema = "public",
     IEnumerable<KeyValuePair<string, string>>? alsoPosted = null,
@@ -115,11 +114,6 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
       new("Ruling", ruling),
       new("Screening", screening ?? ScreeningIn(rendered, address)),
     };
-
-    if (signedBy is not null)
-    {
-      fields.Add(new KeyValuePair<string, string>("SignedBy", signedBy));
-    }
 
     if (alsoPosted is not null)
     {
@@ -139,10 +133,6 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// aurait permis d'écrire un test vert contre un formulaire par lequel un lot écarte des colonnes
   /// signalées.
   /// </remarks>
-  /// <param name="signedBy">
-  /// Le nom saisi, ou <c>null</c> pour poster le formulaire <b>sans le champ</b> — ce que fait un
-  /// navigateur d'un champ vide.
-  /// </param>
   /// <param name="screening">
   /// Le rapport que l'écran rendait, ou <c>null</c> pour <b>le lire sur la page</b> comme le fait un
   /// navigateur.
@@ -155,7 +145,6 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// </param>
   internal async Task<HttpResponseMessage> ArbitrateInBatchAsync(
     string ruling,
-    string? signedBy,
     string table = "adherents",
     string schema = "public",
     string? screening = null,
@@ -170,11 +159,6 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
       new("Ruling", ruling),
       new("Screening", screening ?? ScreeningIn(rendered, address)),
     };
-
-    if (signedBy is not null)
-    {
-      fields.Add(new KeyValuePair<string, string>("SignedBy", signedBy));
-    }
 
     return await _client.PostAsync($"{address}&handler=Batch", new FormUrlEncodedContent(fields));
   }

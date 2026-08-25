@@ -252,13 +252,11 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "adr_l1"),
       ScreenedColumnState.Retained,
-      "A. Tissot",
       Monday);
 
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "adr_l2"),
       ScreenedColumnState.SetAside,
-      "A. Tissot",
       Monday);
 
     screening.RetainedCount.ShouldBe(1);
@@ -314,7 +312,6 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "cotisations", "montant"),
       ScreenedColumnState.Retained,
-      "A. Tissot",
       Monday).ShouldBeNull();
   }
 
@@ -374,7 +371,6 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "id_adh"),
       ScreenedColumnState.SetAside,
-      "A. Tissot",
       Monday);
 
     screening.UnreadUnflaggedCount.ShouldBe(1);
@@ -395,7 +391,6 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "adr_l1"),
       ScreenedColumnState.Retained,
-      "A. Tissot",
       Monday);
 
     screening.AwaitingCount.ShouldBe(1);
@@ -413,7 +408,6 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "id_adh"),
       ScreenedColumnState.SetAside,
-      "A. Tissot",
       Monday);
 
     screening.UnreadUnflaggedCount.ShouldBe(0);
@@ -437,13 +431,11 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "id_adh"),
       ScreenedColumnState.Retained,
-      "A. Tissot",
       Monday);
 
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "date_crea"),
       ScreenedColumnState.SetAside,
-      "A. Tissot",
       Monday);
 
     // Retenue par un humain sur une ligne signalée : c'est un accord avec le service, pas un
@@ -451,7 +443,6 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "adr_l1"),
       ScreenedColumnState.Retained,
-      "A. Tissot",
       Monday);
 
     screening.RetainedOnUnflaggedCount.ShouldBe(1);
@@ -475,7 +466,6 @@ public class ScreeningTests
     var arbitrated = screening.ArbitrateInBatch(
       new TableIdentity("public", "adherents"),
       ScreenedColumnState.SetAside,
-      "A. Tissot",
       Monday);
 
     arbitrated.Select(column => column.Identity.Column).ShouldBe(["id_adh", "date_crea"]);
@@ -502,7 +492,6 @@ public class ScreeningTests
     screening.ArbitrateInBatch(
       new TableIdentity("public", "adherents"),
       ScreenedColumnState.SetAside,
-      "A. Tissot",
       Monday);
 
     screening.SetAsideCount.ShouldBe(1);
@@ -515,11 +504,11 @@ public class ScreeningTests
 
   /// <summary>
   /// ⚠️ <b>Le lot pose n arbitrages individuels, jamais un état de lot</b> : chaque colonne porte sa
-  /// propre signature et sa propre date. Sans cela, la seule trace qu'un humain ait tranché serait
-  /// portée par un objet que le rapport ne rend nulle part.
+  /// propre date de service. Sans cela, la seule trace qu'un humain ait tranché serait portée par un
+  /// objet que le rapport ne rend nulle part.
   /// </summary>
   [Fact]
-  public void PosesOneSignedAndDatedArbitrationPerColumnRatherThanASingleBatchState()
+  public void PosesOneDatedArbitrationPerColumnRatherThanASingleBatchState()
   {
     var screening = AScreening.Of(
       ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)),
@@ -528,7 +517,6 @@ public class ScreeningTests
     var arbitrated = screening.ArbitrateInBatch(
       new TableIdentity("public", "adherents"),
       ScreenedColumnState.Retained,
-      "A. Tissot",
       Monday);
 
     arbitrated.Count.ShouldBe(2);
@@ -538,8 +526,7 @@ public class ScreeningTests
       var rendered = column.Arbitration.ShouldNotBeNull();
 
       rendered.State.ShouldBe(ScreenedColumnState.Retained);
-      rendered.SignedBy.ShouldBe("A. Tissot");
-      rendered.SignedOn.ShouldBe(Monday);
+      rendered.RenderedOn.ShouldBe(Monday);
     }
 
     // ⚠️ Chaque ligne porte le SIEN : une instance partagée aurait fait de n arbitrages un seul objet,
@@ -549,7 +536,7 @@ public class ScreeningTests
 
   /// <summary>
   /// <b>Une colonne déjà tranchée dans la table ouverte n'est pas réécrite par le lot.</b> Le geste
-  /// sert à liquider ce qui attend, jamais à effacer sous un autre nom ce qu'un humain avait dit.
+  /// sert à liquider ce qui attend, jamais à effacer d'un clic ce qu'un humain avait dit.
   /// </summary>
   [Fact]
   public void LeavesAlreadyArbitratedColumnsOfTheOpenTableExactlyAsTheyWere()
@@ -561,13 +548,11 @@ public class ScreeningTests
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "id_adh"),
       ScreenedColumnState.Retained,
-      "C. Roux",
       Monday);
 
     screening.ArbitrateInBatch(
       new TableIdentity("public", "adherents"),
       ScreenedColumnState.SetAside,
-      "A. Tissot",
       Monday.AddDays(1));
 
     var untouched = screening.ColumnAt(ColumnIdentity.Of("public", "adherents", "id_adh"))
@@ -576,20 +561,18 @@ public class ScreeningTests
       .ShouldNotBeNull();
 
     untouched.State.ShouldBe(ScreenedColumnState.Retained);
-    untouched.SignedBy.ShouldBe("C. Roux");
-    untouched.SignedOn.ShouldBe(Monday);
+    untouched.RenderedOn.ShouldBe(Monday);
   }
 
   /// <summary>
-  /// ⚠️ <b>Un lot refusé n'écrit rien du tout</b> — pas même sa première colonne. Un lot à moitié posé
-  /// serait le pire des deux mondes : l'<c>Operator</c> lirait un refus devant un écran déjà tranché
-  /// en partie, sans savoir où le geste s'est arrêté.
+  /// ⚠️ <b>Un lot refusé n'écrit rien du tout</b> — pas même sa première colonne. Un lot à moitié
+  /// posé serait le pire des deux mondes : l'<c>Operator</c> lirait un refus devant un écran déjà
+  /// tranché en partie, sans savoir où le geste s'est arrêté. <b><c>Awaiting</c> n'est pas plus une
+  /// issue en lot qu'à l'unité</b> : personne ne tranche une absence de décision, fût-elle répétée
+  /// trente fois.
   /// </summary>
-  [Theory]
-  [InlineData(null)]
-  [InlineData("")]
-  [InlineData("   ")]
-  public void WritesNotASingleColumnWhenTheBatchCarriesNoSignature(string? signedBy)
+  [Fact]
+  public void WritesNotASingleColumnWhenTheBatchCarriesNoRuling()
   {
     var screening = AScreening.Of(
       ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)),
@@ -597,30 +580,10 @@ public class ScreeningTests
 
     Should.Throw<ArgumentException>(() => screening.ArbitrateInBatch(
       new TableIdentity("public", "adherents"),
-      ScreenedColumnState.Retained,
-      signedBy,
+      ScreenedColumnState.Awaiting,
       Monday));
 
     screening.AwaitingCount.ShouldBe(2);
-  }
-
-  /// <summary>
-  /// <b><c>Awaiting</c> n'est pas plus une issue en lot qu'à l'unité</b> : personne ne signe une
-  /// absence de décision, fût-elle répétée trente fois.
-  /// </summary>
-  [Fact]
-  public void RefusesToSignTheAbsenceOfADecisionAcrossAWholeTable()
-  {
-    var screening = AScreening.Of(
-      ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 1)));
-
-    Should.Throw<ArgumentException>(() => screening.ArbitrateInBatch(
-      new TableIdentity("public", "adherents"),
-      ScreenedColumnState.Awaiting,
-      "A. Tissot",
-      Monday));
-
-    screening.AwaitingCount.ShouldBe(1);
   }
 
   /// <summary>
@@ -637,7 +600,6 @@ public class ScreeningTests
     screening.ArbitrateInBatch(
       new TableIdentity("public", "cotisations"),
       ScreenedColumnState.Retained,
-      "A. Tissot",
       Monday).ShouldBeEmpty();
   }
 }

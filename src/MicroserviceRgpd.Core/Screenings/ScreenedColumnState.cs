@@ -24,12 +24,12 @@ namespace MicroserviceRgpd.Core.Screenings;
 public sealed class ScreenedColumnState : SmartEnum<ScreenedColumnState>
 {
   /// <summary>
-  /// Personne n'a tranché. C'est l'état de naissance, et <b>le seul qui n'ait pas de signature</b> :
-  /// une signature manquante n'est pas un champ vide, c'est un arbitrage qui n'a pas eu lieu.
+  /// Personne n'a tranché. C'est l'état de naissance, et <b>le seul qui n'ait pas de date</b> :
+  /// une date manquante n'est pas un champ vide, c'est un arbitrage qui n'a pas eu lieu.
   /// </summary>
   public static readonly ScreenedColumnState Awaiting = new(nameof(Awaiting), 0, "à arbitrer");
 
-  /// <summary>Un humain a dit que cette colonne comptait. Il l'a dit sous son nom, et à une date.</summary>
+  /// <summary>Un humain a dit que cette colonne comptait. Il l'a dit à une date, et ce contexte ne retient pas qui il était.</summary>
   public static readonly ScreenedColumnState Retained = new(nameof(Retained), 1, "retenue", isSettled: true);
 
   /// <summary>
@@ -48,7 +48,7 @@ public sealed class ScreenedColumnState : SmartEnum<ScreenedColumnState>
   /// <summary>Le libellé destiné à l'<c>Operator</c>. Le français reste hors des identifiants.</summary>
   public string FrenchLabel { get; }
 
-  /// <summary>Un humain a-t-il tranché ? C'est ce qui exige une signature, et ce qui l'exige toujours.</summary>
+  /// <summary>Un humain a-t-il tranché ? C'est ce qui exige une date, et ce qui l'exige toujours.</summary>
   public bool IsSettled { get; }
 
   /// <summary>

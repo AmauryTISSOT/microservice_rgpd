@@ -95,7 +95,7 @@ public sealed class ScreenedColumns(AppDbContext dbContext) : IScreenedColumns
       buckets.Where(bucket => bucket.Flagged).Sum(bucket => bucket.Count),
       retained,
       setAside,
-      // « En attente » EST l'absence de signature, et les trois états sont exhaustifs : le déduire
+      // « En attente » EST l'absence d'arbitrage, et les trois états sont exhaustifs : le déduire
       // évite un troisième aller-retour, et la contrainte de contrôle de la table — l'arbitrage est
       // entier ou absent — est ce qui rend la soustraction sûre plutôt qu'astucieuse.
       total - retained - setAside,

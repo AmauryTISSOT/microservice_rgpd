@@ -15,10 +15,10 @@ namespace MicroserviceRgpd.Infrastructure.Data.Screenings;
 /// le précédent, jamais un goût — voir l'index par table, qui est la lecture que cette table sert.
 /// </para>
 /// <para>
-/// ⚠️ <b>Aucune colonne d'état d'arbitrage séparée de la signature.</b> Les trois colonnes de
+/// ⚠️ <b>Aucune colonne d'état d'arbitrage séparée de sa date.</b> Les deux colonnes de
 /// l'arbitrage sont nulles ensemble — la colonne attend — ou pleines ensemble, et une contrainte de
 /// contrôle le tient jusque dans la base : « deux champs qu'un chemin d'écriture peut dissocier
-/// finissent par se dissocier », et un <c>Retained</c> sans signataire serait très exactement un
+/// finissent par se dissocier », et un <c>Retained</c> sans date serait très exactement un
 /// arbitrage que personne n'a rendu.
 /// </para>
 /// <para>
@@ -43,13 +43,13 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
   private const string RowIdentity = "Id";
 
   /// <summary>
-  /// Les trois colonnes de l'arbitrage entrent ensemble ou pas du tout, et c'est la base qui le
-  /// dit. Sans elle, la promesse « il n'existe ni <c>Retained</c> ni <c>SetAside</c> non signé »
+  /// Les deux colonnes de l'arbitrage entrent ensemble ou pas du tout, et c'est la base qui le
+  /// dit. Sans elle, la promesse « il n'existe ni <c>Retained</c> ni <c>SetAside</c> sans date »
   /// ne tiendrait que tant que tout le monde passe par le domaine.
   /// </summary>
   private const string ArbitrationIsWholeOrAbsent =
-    "(state is null and signed_by is null and signed_on is null) or "
-    + "(state is not null and signed_by is not null and signed_on is not null)";
+    "(state is null and rendered_on is null) or "
+    + "(state is not null and rendered_on is not null)";
 
   /// <summary>
   /// <inheritdoc />
@@ -89,7 +89,7 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
     ConfigureTheArbitration(builder);
 
     // Ce que la ligne calcule plutôt que de le porter. `State` en particulier n'a pas de colonne à
-    // lui : il EST « aucune signature » ou l'état de la signature, et une colonne à côté aurait pu
+    // lui : il EST « aucun arbitrage » ou l'état de l'arbitrage, et une colonne à côté aurait pu
     // s'en dissocier. `Identity` est une lecture de la ligne du relevé, jamais une seconde copie du
     // triplet — EF Core y verrait sinon une navigation et lui chercherait une table.
     builder.Ignore(column => column.State);
@@ -192,20 +192,21 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
   }
 
   /// <summary>
-  /// L'issue rendue par un humain, <b>inline sur la ligne</b> : l'état, le nom saisi, et la date.
+  /// L'issue rendue par un humain, <b>inline sur la ligne</b> : l'état et la date.
   /// </summary>
   /// <remarks>
   /// <para>
   /// <b>Ce n'est pas une troisième table</b>, et ce n'est pas non plus une histoire. La trace est
-  /// l'état courant seul : un second arbitrage écrase le premier, et le coût est déclaré — qui
-  /// avait dit quoi est effacé.
+  /// l'état courant seul : un second arbitrage écrase le premier, et le coût est déclaré — la date
+  /// de l'arbitrage remplacé est effacée.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Le signataire est obligatoire dès qu'un arbitrage existe</b>, contre le <c>string?</c> de
-  /// <c>Casework</c> : une signature manquante n'est pas un champ vide, c'est un arbitrage qui n'a
-  /// pas eu lieu. Les trois colonnes sont nullables <b>ensemble</b> parce qu'<c>Awaiting</c> est
-  /// l'absence des trois ; c'est la contrainte de contrôle de la table, et non la nullité d'une
-  /// colonne prise seule, qui interdit le tiercé dépareillé.
+  /// ⚠️ <b>Aucune colonne ne porte qui a arbitré</b>, contre le <c>string?</c> de <c>Casework</c> :
+  /// ce contexte ne l'enregistre pas du tout — voir l'<c>ADR-0014</c>. La date est obligatoire dès
+  /// qu'un arbitrage existe : une date manquante n'est pas un champ vide, c'est un arbitrage qui
+  /// n'a pas eu lieu. Les deux colonnes sont nullables <b>ensemble</b> parce qu'<c>Awaiting</c> est
+  /// l'absence des deux ; c'est la contrainte de contrôle de la table, et non la nullité d'une
+  /// colonne prise seule, qui interdit le duo dépareillé.
   /// </para>
   /// </remarks>
   private static void ConfigureTheArbitration(EntityTypeBuilder<ScreenedColumn> builder)
@@ -218,12 +219,7 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
         .HasConversion(state => state.Name, name => ScreenedColumnState.FromName(name))
         .IsRequired();
 
-      arbitration.Property(one => one.SignedBy)
-        .HasColumnName("signed_by")
-        .HasMaxLength(Arbitration.MaxSignatoryLength)
-        .IsRequired();
-
-      arbitration.Property(one => one.SignedOn).HasColumnName("signed_on").IsRequired();
+      arbitration.Property(one => one.RenderedOn).HasColumnName("rendered_on").IsRequired();
     });
   }
 }

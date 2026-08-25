@@ -5,7 +5,7 @@ de droits n'existe encore et que personne n'attend de réponse. Un `Operator` lu
 colonnes d'une base du client — il le **colle**, ou il laisse le service **scanner** la base et le
 relever lui-même. Il lui rend, **colonne par colonne**, une catégorie de données présumée, le degré
 de la règle qui l'a produite et un motif en prose française — que l'`Operator` **retient ou
-écarte**, nommé et daté.
+écarte**, daté et sans nom.
 
 Il **détecte, il ne recense pas**, et cette distinction porte l'économie entière de ce contexte : la
 détection des données personnelles est **réglée pour signaler large, quitte à se tromper souvent —
@@ -299,8 +299,13 @@ compareraient comme s'ils étaient comparables. L'identité déclare donc ses r�
 pas qu'on a lu des valeurs chez elle : à ce grain, ce serait dire quelque chose de la **donnée**, ce
 qu'`Unflagged` interdit. Porté par l'identité, le même fait ne parle que du **moteur**, et il vaut
 pour le rapport entier.
-_Avoid_ : modèle, moteur, provenance, signature, version ⚠️ `signature` est prise par le geste d'un
-humain, qui est la seule signature de ce dépôt.
+_Avoid_ : modèle, moteur, provenance, signature, version ⚠️ `signature` est à écarter **pour deux
+raisons cumulées**. Le mot est pris par `Casework`, qui le détient en propre — `Signatory`,
+`SignatoryKind`, `SignerVerification`, et les clauses d'`EvidenceLogEntry` qui distinguent le
+signataire humain du signataire « application, c'est-à-dire personne ». **Et** dans `Screening` il ne
+nomme plus rien : ce contexte n'enregistre aucun auteur, si bien que l'employer laisserait croire
+qu'il en garde un — ce qu'il vient précisément de cesser de faire, voir
+[ADR-0014](../../adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md).
 
 **IScreeningEngine** :
 Le port par lequel le domaine fait détecter les données personnelles d'un `ColumnListing`. Il ne
@@ -371,8 +376,8 @@ valeurs qui la portent, et peut dire non. Retirer l'aperçu de l'écran ne serai
 ⚠️ **Cette clause borne la conception, pas la durée de vie.** Elle interdit de concevoir un écran qui
 sépare le motif de son aperçu ; elle ne fait **pas** de l'expiration de l'aperçu une péremption du
 rapport. Une fois les valeurs disparues, un motif de forme **reste arbitrable**, l'écran le disant :
-refuser la signature transformerait une expiration en rapport périmé, et la seule issue laissée —
-relancer — détruirait le travail déjà signé. Ce qui demeure sous les yeux de l'`Operator` n'est
+refuser l'arbitrage transformerait une expiration en rapport périmé, et la seule issue laissée —
+relancer — détruirait le travail déjà tranché. Ce qui demeure sous les yeux de l'`Operator` n'est
 d'ailleurs pas rien, l'ADR-0012 retenant le nom de la table **en propre et en premier**.
 Symétriquement, une ligne `Unflagged` n'a **pas** de motif : il n'y a rien à motiver, et c'est ce qui
 distingue « rien vu » de « vu et écarté ».
@@ -606,7 +611,7 @@ _Avoid_ : Confidence, DeclaredConfidence, Score, Probability, certitude, fiabili
 `DeclaredConfidence` est listé nommément : il vit dans un autre contexte, où il veut à peu près
 l'inverse.
 
-### L'arbitrage, et sa signature
+### L'arbitrage, et sa date
 
 **États d'une `ScreenedColumn`** — `Awaiting`, `Retained`, `SetAside`.
 `Awaiting` et `SetAside` sont repris mot pour mot de `ReservationState` : même geste, même sens, et
@@ -622,13 +627,18 @@ feraient de l'`Operator` le validateur d'un avis de la machine, alors qu'il est 
 une issue ; `Rejected` et `Ignored` diraient qu'on a jeté la ligne, alors qu'elle reste au rapport
 de détection.
 
-**La signature vit à côté de l'état, et aucun chemin d'écriture ne peut poser l'un sans l'autre.**
-Qui a arbitré et quand vivent sur la `ScreenedColumn` elle-même — il n'y a pas de `EvidenceLog` ici, le
+**La date vit à côté de l'état, et aucun chemin d'écriture ne peut poser l'un sans l'autre.**
+Quand l'arbitrage a été rendu vit sur la `ScreenedColumn` elle-même — il n'y a pas de `EvidenceLog` ici, le
 `Screening` n'en écrit aucune ligne et son grain est le déploiement. Il n'existe donc **ni `Retained`
-ni `SetAside` non signé** : `Awaiting` est par construction le seul état sans signature, et une
-signature manquante n'est pas un champ vide, c'est un état qui n'a pas eu lieu. Même mécanique que le
+ni `SetAside` sans date** : `Awaiting` est par construction le seul état sans arbitrage, et une
+date manquante n'est pas un champ vide, c'est un état qui n'a pas eu lieu. Même mécanique que le
 régime de `ReceptionDate`, et pour la même raison — deux champs qu'un chemin d'écriture peut dissocier
 finissent par se dissocier.
+⚠️ **Qui a arbitré n'est enregistré nulle part, et c'est une décision** —
+[ADR-0014](../../adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md). `Casework` enregistre son
+signataire ; `Screening` ne l'enregistre plus du tout. Ce que la trace doit prouver est **qu'un
+humain a tranché**, et la date le prouve : la machine, elle, ne date aucun arbitrage parce qu'elle
+n'en rend aucun.
 
 **Un `Screening` n'a aucun état.** « Courant » est un **calcul** : le `Screening` le plus récent du
 déploiement est le courant, tous les autres sont archivés par le seul fait qu'un plus récent existe.
@@ -651,23 +661,30 @@ ligne de doctrine n'ait été modifiée. Il est **borné à la table ouverte**, 
 avoir été lue une par une. La règle vit à un seul endroit, sur la ligne —
 `ScreenedColumn.IsWithinReachOfABatchGesture` — et non dans la requête qui charge le lot, où elle
 serait invisible à qui lit le domaine. Une ligne **déjà tranchée** est hors de portée elle aussi : le
-lot liquide ce qui attend, il n'écrase pas sous un autre nom ce qu'un humain avait dit.
+lot liquide ce qui attend, il n'écrase pas d'un clic ce qu'un humain avait dit.
+⚠️ **Le retrait du nom saisi n'a pas rendu ce geste licite sur une signalée.** Signer 374 fois à la
+main le rendait impraticable ; ce prix a disparu, et il ne reste qu'un bouton tentant. Le prix n'a
+jamais été le motif — le nom n'en était que l'exécuteur incident. Le motif est écrit au même endroit
+que la règle, sur `IsWithinReachOfABatchGesture`, pour que qui viendra proposer d'élargir le lot le
+lise avant d'écrire la ligne.
 **Il pose n arbitrages individuels, jamais un état de lot** : chaque colonne atteinte porte sa propre
-signature et sa propre date de service, exactement comme si elle avait été tranchée seule. Un
+date de service, exactement comme si elle avait été tranchée seule. Un
 arbitrage partagé entre n lignes ferait de n actes un seul objet, et le premier réarbitrage individuel
 le rendrait faux partout ailleurs. La commande nomme **une table**, jamais une liste de colonnes : une
 liste de colonnes serait le seul chemin par lequel un formulaire forgé écarterait des colonnes
 signalées en masse.
 _Avoid_ : BulkArbitrate, ArbitrateAll, MassArbitrate, « valider tout » ⚠️ `All` ment sur la portée —
 le geste n'atteint ni les signalées ni les déjà tranchées — et `Bulk`/`Mass` laissent croire à un état
-de lot alors qu'il n'y a que n signatures.
+de lot alors qu'il n'y a que n arbitrages.
 
 **Cartographie** :
 Le `Screening` **lu à travers les arbitrages de l'`Operator`** : les mêmes lignes, chacune portant ce
-qu'un humain en a dit, avec son nom et sa date. C'est ce qui s'exporte, et c'est le seul artefact de
+qu'un humain en a dit, avec sa date. C'est ce qui s'exporte, et c'est le seul artefact de
 ce contexte qui sorte jamais du service.
-⚠️ **Ce qui la sépare du `Screening` est l'auteur, jamais la sélection.** Un `Screening` est ce que la
-machine a rendu ; une `Cartographie` est le même rapport une fois que l'humain a parlé. Elle porte
+⚠️ **Ce qui la sépare du `Screening` est le geste humain, jamais la sélection.** Un `Screening` est
+ce que la machine a rendu ; une `Cartographie` est le même rapport une fois que l'humain a parlé. Ce
+que la distinction protège n'a jamais été l'identité de la personne : c'est que **la machine ne
+signe pas**, et la date d'un arbitrage suffit à prouver le geste. Elle porte
 donc **toutes** les lignes — `Retained`, `SetAside` et `Awaiting` —, et un `SetAside` y est autant le
 résultat du travail humain qu'un `Retained`. Une cartographie qui ne porterait que les `Retained`
 serait le filtre que l'`Omission relue` interdit, déplacé du rapport vers l'export : elle se lirait
@@ -689,7 +706,7 @@ unique. Ce ne sont pas deux vues d'un même lecteur : ce sont deux lecteurs.
 ⚠️ **Elle ne porte aucune clause d'incomplétude, et c'est un renversement assumé.** Toute réponse qui
 rend un `Screening` porte sa clause — voir `ScreeningAnswer` —, **sauf** le fichier exporté, qui est
 pourtant le seul artefact d'ici à quitter le service. La raison n'est pas technique : **l'`Operator`
-signe chaque ligne et choisit d'envoyer le fichier ; ce qu'il en dit au destinataire lui appartient.**
+tranche chaque ligne et choisit d'envoyer le fichier ; ce qu'il en dit au destinataire lui appartient.**
 Le service ne parle pas par-dessus son épaule dans un document qu'il n'expédie pas. Le prix est
 nommé, parce qu'il est réel et qu'il ne faut pas le redécouvrir : un fichier ainsi titré, listant des
 colonnes de données personnelles et ne disant rien d'autre, **peut se lire comme une liste
@@ -864,7 +881,7 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
 ⚠️ **Ce sont deux promesses et non une, et elles ne se vérifient pas au même endroit.** Qui relit le
 code du prélèvement contrôle ce qui **entre** ; qui relit le code de persistance contrôle ce qui
 **reste**. Les fondre en une seule clause ferait un champ unique dont les deux moitiés finiraient par
-diverger, et ce glossaire refuse ailleurs le même montage — voir la sensibilité et la signature.
+diverger, et ce glossaire refuse ailleurs le même montage — voir la sensibilité et l'arbitrage.
 ⚠️ **Et elles se tiennent par un test, pas par une intention.** Un scan complet est joué contre une
 base de fixture dont **toutes** les valeurs — et la chaîne de connexion elle-même — sont des
 sentinelles improbables ; le test échoue si l'une d'elles apparaît dans un log, dans un attribut de

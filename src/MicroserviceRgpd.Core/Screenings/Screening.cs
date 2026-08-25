@@ -116,10 +116,10 @@ public sealed class Screening : IAggregateRoot
   /// <summary>Combien de colonnes attendent encore qu'un humain les tranche.</summary>
   public int AwaitingCount => _columns.Count(column => column.AwaitsAnArbitration);
 
-  /// <summary>Combien de colonnes un humain a retenues, sous son nom.</summary>
+  /// <summary>Combien de colonnes un humain a retenues.</summary>
   public int RetainedCount => _columns.Count(column => column.State == ScreenedColumnState.Retained);
 
-  /// <summary>Combien de colonnes un humain a écartées, sous son nom.</summary>
+  /// <summary>Combien de colonnes un humain a écartées.</summary>
   public int SetAsideCount => _columns.Count(column => column.State == ScreenedColumnState.SetAside);
 
   /// <summary>Combien de colonnes la détection a signalées. Le complément est ce qu'elle n'a pas vu, jamais ce qui est inoffensif.</summary>
@@ -405,8 +405,8 @@ public sealed class Screening : IAggregateRoot
   }
 
   /// <summary>
-  /// Porte l'issue qu'un humain vient de rendre sur une colonne, <b>signée et datée</b>. Il n'existe
-  /// aucun autre chemin d'écriture, et celui-ci ne sait pas poser un état sans signature.
+  /// Porte l'issue qu'un humain vient de rendre sur une colonne, <b>datée</b>. Il n'existe aucun
+  /// autre chemin d'écriture, et celui-ci ne sait pas poser un état sans date.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Ce qui manque ici, écrit plutôt que découvert un jour de panne : « un archivé n'est pas
@@ -420,30 +420,28 @@ public sealed class Screening : IAggregateRoot
   /// </remarks>
   /// <param name="identity">Le triplet de la colonne arbitrée.</param>
   /// <param name="ruling">Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>
-  /// <param name="signedBy">Le nom saisi par celui qui tranche. Non authentifié, et non facultatif.</param>
-  /// <param name="signedOn">L'instant où il a tranché.</param>
+  /// <param name="renderedOn">L'instant où il a tranché.</param>
   /// <returns>La ligne arbitrée, ou <c>null</c> si ce triplet ne désigne rien ici.</returns>
   /// <exception cref="ArgumentNullException"><paramref name="identity"/> ou <paramref name="ruling"/> est absent.</exception>
-  /// <exception cref="ArgumentException">L'état n'est pas une issue, ou la signature est vide, démesurée, ou porte un caractère de contrôle.</exception>
+  /// <exception cref="ArgumentException">L'état n'est pas une issue.</exception>
   public ScreenedColumn? Arbitrate(
     ColumnIdentity identity,
     ScreenedColumnState ruling,
-    string? signedBy,
-    DateTimeOffset signedOn)
+    DateTimeOffset renderedOn)
   {
     ArgumentNullException.ThrowIfNull(ruling);
 
     var column = ColumnAt(identity);
 
-    column?.Arbitrate(ruling, signedBy, signedOn);
+    column?.Arbitrate(ruling, renderedOn);
 
     return column;
   }
 
   /// <summary>
   /// Le <b>geste de lot</b> : pose d'un seul coup, sur les colonnes d'<b>une</b> table où rien n'a été
-  /// vu et que personne n'a tranchées, <b>n arbitrages individuels</b> — un par colonne, chacun signé
-  /// du nom saisi et daté par le service.
+  /// vu et que personne n'a tranchées, <b>n arbitrages individuels</b> — un par colonne, chacun daté
+  /// par le service.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -462,14 +460,14 @@ public sealed class Screening : IAggregateRoot
   /// </para>
   /// <para>
   /// ⚠️ <b>Ce ne sont pas des états de lot : ce sont n arbitrages.</b> Chaque ligne porte sa propre
-  /// signature et sa propre date, comme si l'<c>Operator</c> les avait posées une par une — un état
-  /// de lot aurait été une quatrième valeur d'arbitrage que rien du rapport ne rend, et le premier
+  /// date de service, comme si l'<c>Operator</c> les avait posées une par une — un état de lot
+  /// aurait été une quatrième valeur d'arbitrage que rien du rapport ne rend, et le premier
   /// réarbitrage individuel l'aurait fait mentir.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Un refus n'écrit pas une seule ligne.</b> La signature et l'issue se vérifient avant que
-  /// la première ne bouge : un lot à moitié posé laisserait l'<c>Operator</c> devant un refus sans
-  /// savoir où le geste s'est arrêté, sur une table de plusieurs dizaines de colonnes.
+  /// ⚠️ <b>Un refus n'écrit pas une seule ligne.</b> L'issue se vérifie avant que la première ne
+  /// bouge : un lot à moitié posé laisserait l'<c>Operator</c> devant un refus sans savoir où le
+  /// geste s'est arrêté, sur une table de plusieurs dizaines de colonnes.
   /// </para>
   /// <para>
   /// <b>Comme l'arbitrage à l'unité, il ne sait pas qu'un archivé n'est pas arbitrable</b> : un
@@ -479,16 +477,14 @@ public sealed class Screening : IAggregateRoot
   /// </remarks>
   /// <param name="table">La table ouverte. Le lot ne sort jamais d'elle.</param>
   /// <param name="ruling">L'issue portée sur chacune. Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>
-  /// <param name="signedBy">Le nom saisi par celui qui tranche. Non authentifié, et non facultatif.</param>
-  /// <param name="signedOn">L'instant où il a tranché.</param>
+  /// <param name="renderedOn">L'instant où il a tranché.</param>
   /// <returns>Les colonnes que le lot a tranchées, dans l'ordre du relevé — vide s'il n'en atteignait aucune.</returns>
   /// <exception cref="ArgumentNullException"><paramref name="table"/> ou <paramref name="ruling"/> est absent.</exception>
-  /// <exception cref="ArgumentException">L'état n'est pas une issue, ou la signature est vide, démesurée, ou porte un caractère de contrôle.</exception>
+  /// <exception cref="ArgumentException">L'état n'est pas une issue.</exception>
   public IReadOnlyList<ScreenedColumn> ArbitrateInBatch(
     TableIdentity table,
     ScreenedColumnState ruling,
-    string? signedBy,
-    DateTimeOffset signedOn)
+    DateTimeOffset renderedOn)
   {
     ArgumentNullException.ThrowIfNull(table);
     ArgumentNullException.ThrowIfNull(ruling);
@@ -497,7 +493,7 @@ public sealed class Screening : IAggregateRoot
     // ligne recevra le sien. Un arbitrage partagé entre n lignes aurait fait de n actes un seul
     // objet — que la persistance refuse de poser sur n lignes possédées, et que le premier
     // réarbitrage individuel aurait rendu faux partout ailleurs.
-    _ = Arbitration.Rendered(ruling, signedBy, signedOn);
+    _ = Arbitration.Rendered(ruling, renderedOn);
 
     var reached = ColumnsOf(table)
       .Where(column => column.IsWithinReachOfABatchGesture)
@@ -505,7 +501,7 @@ public sealed class Screening : IAggregateRoot
 
     foreach (var column in reached)
     {
-      column.Arbitrate(ruling, signedBy, signedOn);
+      column.Arbitrate(ruling, renderedOn);
     }
 
     return reached;

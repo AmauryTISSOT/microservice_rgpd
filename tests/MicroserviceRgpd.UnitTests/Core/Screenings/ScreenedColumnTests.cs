@@ -3,12 +3,12 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UnitTests.Core.Screenings;
 
 /// <summary>
-/// L'invariant du contexte — <b>motif présent ⇔ ce n'est pas <c>Unflagged</c></b> — et la signature,
-/// qui n'a pas de chemin par lequel se dissocier de l'état qu'elle porte.
+/// L'invariant du contexte — <b>motif présent ⇔ ce n'est pas <c>Unflagged</c></b> — et la date de
+/// l'arbitrage, qui n'a pas de chemin par lequel se dissocier de l'état qu'elle porte.
 /// </summary>
 public class ScreenedColumnTests
 {
-  private static readonly DateTimeOffset SignedOn = new(2026, 8, 7, 14, 0, 0, TimeSpan.Zero);
+  private static readonly DateTimeOffset RenderedOn = new(2026, 8, 7, 14, 0, 0, TimeSpan.Zero);
 
   /// <summary>Une ligne signalée porte sa catégorie, le degré de la règle qui a déclenché, et son motif.</summary>
   [Fact]
@@ -102,9 +102,9 @@ public class ScreenedColumnTests
       .ShouldAllBe(line => line.CarriesAReason == line.IsFlagged);
   }
 
-  /// <summary>Née <c>Awaiting</c>, et sans signature : c'est le seul état qui n'en a pas.</summary>
+  /// <summary>Née <c>Awaiting</c>, et sans arbitrage : c'est le seul état qui n'en a pas.</summary>
   [Fact]
-  public void IsBornAwaitingWithNoSignatureAtAll()
+  public void IsBornAwaitingWithNoArbitrationAtAll()
   {
     var column = AScreening.AFlaggedColumn();
 
@@ -114,48 +114,28 @@ public class ScreenedColumnTests
   }
 
   /// <summary>
-  /// ⚠️ <b>Aucun chemin d'écriture ne pose <c>Retained</c> ni <c>SetAside</c> sans signature</b> :
-  /// l'état et la signature entrent ensemble dans un seul type, ou pas du tout.
+  /// <c>Awaiting</c> n'est pas une issue : personne ne tranche une absence de décision, et le
+  /// service ne tranche jamais à la place de l'<c>Operator</c>.
   /// </summary>
-  [Theory]
-  [InlineData(null)]
-  [InlineData("")]
-  [InlineData("  ")]
-  public void RefusesARulingThatNoOneSigned(string? signedBy)
+  [Fact]
+  public void RefusesAwaitingAsARulingSinceNoOneEverRulesAnAbsenceOfDecision()
+  {
+    Should.Throw<ArgumentException>(
+      () => Arbitration.Rendered(ScreenedColumnState.Awaiting, RenderedOn));
+  }
+
+  /// <summary>Une issue rendue porte l'état et la date — les deux, toujours ensemble.</summary>
+  [Fact]
+  public void CarriesTheStateAndTheDateTogetherOnceAHumanHasRuled()
   {
     var screening = AScreening.Of(AScreening.AFlaggedColumn());
     var identity = ColumnIdentity.Of("public", "adherents", "adr_l1");
 
-    Should.Throw<ArgumentException>(
-      () => screening.Arbitrate(identity, ScreenedColumnState.Retained, signedBy, SignedOn));
-
-    screening.ColumnAt(identity)!.State.ShouldBe(ScreenedColumnState.Awaiting);
-  }
-
-  /// <summary>
-  /// <c>Awaiting</c> n'est pas une issue : personne ne signe une absence de décision, et le service
-  /// ne tranche jamais à la place de l'<c>Operator</c>.
-  /// </summary>
-  [Fact]
-  public void RefusesAwaitingAsARulingSinceNoOneEverSignsAnAbsenceOfDecision()
-  {
-    Should.Throw<ArgumentException>(
-      () => Arbitration.Rendered(ScreenedColumnState.Awaiting, "A. Tissot", SignedOn));
-  }
-
-  /// <summary>Une issue signée porte l'état, le nom saisi et la date — les trois, toujours ensemble.</summary>
-  [Fact]
-  public void CarriesTheStateTheNameAndTheDateTogetherOnceAHumanHasRuled()
-  {
-    var screening = AScreening.Of(AScreening.AFlaggedColumn());
-    var identity = ColumnIdentity.Of("public", "adherents", "adr_l1");
-
-    var arbitrated = screening.Arbitrate(identity, ScreenedColumnState.Retained, " A. Tissot ", SignedOn);
+    var arbitrated = screening.Arbitrate(identity, ScreenedColumnState.Retained, RenderedOn);
 
     arbitrated.ShouldNotBeNull();
     arbitrated.State.ShouldBe(ScreenedColumnState.Retained);
-    arbitrated.Arbitration!.SignedBy.ShouldBe("A. Tissot");
-    arbitrated.Arbitration.SignedOn.ShouldBe(SignedOn);
+    arbitrated.Arbitration!.RenderedOn.ShouldBe(RenderedOn);
     arbitrated.AwaitsAnArbitration.ShouldBeFalse();
   }
 
@@ -170,7 +150,7 @@ public class ScreenedColumnTests
     var screening = AScreening.Of(ScreenedColumn.NothingSeen(AScreening.AListedColumn("livret_modaccomp_code")));
     var identity = ColumnIdentity.Of("public", "adherents", "livret_modaccomp_code");
 
-    var arbitrated = screening.Arbitrate(identity, ScreenedColumnState.Retained, "A. Tissot", SignedOn);
+    var arbitrated = screening.Arbitrate(identity, ScreenedColumnState.Retained, RenderedOn);
 
     arbitrated!.State.ShouldBe(ScreenedColumnState.Retained);
     arbitrated.Category.ShouldBe(PersonalDataCategory.Unflagged);
@@ -178,30 +158,29 @@ public class ScreenedColumnTests
   }
 
   /// <summary>
-  /// <b>Un second arbitrage écrase le premier</b>, et le coût est déclaré : qui avait dit quoi est
-  /// effacé. C'est l'écart assumé au précédent de <c>Reservation</c>, dont un <c>EvidenceLog</c> gardait
-  /// la trace — il n'y en a aucun ici.
+  /// <b>Un second arbitrage écrase le premier</b>, et le coût est déclaré : la date de celui qu'il
+  /// remplace est effacée. C'est l'écart assumé au précédent de <c>Reservation</c>, dont un
+  /// <c>EvidenceLog</c> gardait la trace — il n'y en a aucun ici.
   /// </summary>
   [Fact]
-  public void OverwritesTheSignatureWhenAHumanChangesHisMind()
+  public void OverwritesTheArbitrationWhenAHumanChangesHisMind()
   {
     var screening = AScreening.Of(AScreening.AFlaggedColumn());
     var identity = ColumnIdentity.Of("public", "adherents", "adr_l1");
 
-    screening.Arbitrate(identity, ScreenedColumnState.Retained, "A. Tissot", SignedOn);
-    var arbitrated = screening.Arbitrate(identity, ScreenedColumnState.SetAside, "M. Dubois", SignedOn.AddDays(1));
+    screening.Arbitrate(identity, ScreenedColumnState.Retained, RenderedOn);
+    var arbitrated = screening.Arbitrate(identity, ScreenedColumnState.SetAside, RenderedOn.AddDays(1));
 
     arbitrated!.State.ShouldBe(ScreenedColumnState.SetAside);
-    arbitrated.Arbitration!.SignedBy.ShouldBe("M. Dubois");
-    arbitrated.Arbitration.SignedOn.ShouldBe(SignedOn.AddDays(1));
+    arbitrated.Arbitration!.RenderedOn.ShouldBe(RenderedOn.AddDays(1));
   }
 
   /// <summary>
-  /// L'état n'est pas un champ : c'est un calcul sur la présence de la signature, et il ne peut donc
+  /// L'état n'est pas un champ : c'est un calcul sur la présence de l'arbitrage, et il ne peut donc
   /// pas s'en dissocier.
   /// </summary>
   [Fact]
-  public void OffersNoSettableStateBesideTheSignatureThatCarriesIt()
+  public void OffersNoSettableStateBesideTheArbitrationThatCarriesIt()
   {
     typeof(ScreenedColumn)
       .GetProperty(nameof(ScreenedColumn.State))!
@@ -234,7 +213,7 @@ public class ScreenedColumnTests
 
     if (alreadyArbitrated)
     {
-      screening.Arbitrate(identity, ScreenedColumnState.Retained, "A. Tissot", SignedOn);
+      screening.Arbitrate(identity, ScreenedColumnState.Retained, RenderedOn);
     }
 
     screening.ColumnAt(identity)

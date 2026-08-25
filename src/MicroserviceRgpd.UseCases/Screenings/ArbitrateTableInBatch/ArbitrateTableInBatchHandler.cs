@@ -4,8 +4,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateTableInBatch;
 
 /// <summary>
 /// Pose sur la table ouverte du rapport de détection courant les <b>n arbitrages</b> du geste de
-/// lot, chacun
-/// signé du nom saisi et daté par le service.
+/// lot, chacun daté par le service.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,7 +28,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateTableInBatch;
 /// ⚠️ <b>Un archivé n'est pas arbitrable, et c'est la lecture qui le tient</b> — seul le courant est
 /// chargé, donc seul le courant est écrit — <b>et le courant peut avoir changé pendant la
 /// lecture</b> : le geste compare le rapport lu à celui qu'il s'apprête à écrire, et refuse plutôt
-/// que de signer d'un coup, au nom de l'humain, des dizaines de lignes qu'il n'a pas vues.
+/// que de trancher d'un coup, au nom de l'humain, des dizaines de lignes qu'il n'a pas vues.
 /// </para>
 /// </remarks>
 /// <param name="screenings">Les rapports du déploiement. Seul le courant s'écrit.</param>
@@ -65,7 +64,7 @@ public sealed class ArbitrateTableInBatchHandler(IRepository<Screening> screenin
     if (current.Id != command.ReadScreening)
     {
       // ⚠️ Le rapport a changé SOUS LES YEUX de celui qui a cliqué — un collègue a déposé un relevé
-      // pendant qu'il relisait. Écrire ici aurait posé sa signature d'un seul coup sur des dizaines
+      // pendant qu'il relisait. Écrire ici aurait porté son geste d'un seul coup sur des dizaines
       // de lignes d'un rapport qu'il n'a jamais vu, motifs compris.
       return Result<BatchArbitration>.Conflict();
     }
@@ -90,11 +89,10 @@ public sealed class ArbitrateTableInBatchHandler(IRepository<Screening> screenin
 
     try
     {
-      // ⚠️ Aucune ligne ne bouge si la signature refuse : le domaine lève avant d'écrire la première.
+      // ⚠️ Aucune ligne ne bouge si l'issue refuse : le domaine lève avant d'écrire la première.
       // Un lot à moitié posé laisserait l'Operator devant un refus sans savoir où le geste s'est
       // arrêté.
-      arbitrated = current.ArbitrateInBatch(
-        command.Table, command.Ruling, command.SignedBy, clock.GetUtcNow());
+      arbitrated = current.ArbitrateInBatch(command.Table, command.Ruling, clock.GetUtcNow());
     }
     catch (ArgumentException refusal)
     {
@@ -120,9 +118,9 @@ public sealed class ArbitrateTableInBatchHandler(IRepository<Screening> screenin
   {
     return new ValidationError
     {
-      Identifier = refusal.ParamName == "ruling"
-        ? nameof(ArbitrateTableInBatchCommand.Ruling)
-        : nameof(ArbitrateTableInBatchCommand.SignedBy),
+      // ⚠️ Il ne reste qu'un champ que le domaine refuse : l'issue. C'est le seul que le formulaire
+      // poste et que le domaine valide.
+      Identifier = nameof(ArbitrateTableInBatchCommand.Ruling),
       ErrorMessage = $"{refusal.Message.Split(" (Parameter")[0]} {NothingWasArbitrated}",
       Severity = ValidationSeverity.Error,
     };

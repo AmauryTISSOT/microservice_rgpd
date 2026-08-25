@@ -33,11 +33,11 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
   /// <summary>
   /// <b>Le lot tranche toutes les colonnes où rien n'a été vu de la table ouverte, et chacune porte
-  /// sa propre signature et sa propre date.</b> Ce ne sont pas des états de lot : ce sont n
-  /// arbitrages, que l'on reprend ensuite ligne à ligne comme les autres.
+  /// sa propre date.</b> Ce ne sont pas des états de lot : ce sont n arbitrages, que l'on reprend
+  /// ensuite ligne à ligne comme les autres.
   /// </summary>
   [Fact]
-  public async Task SettlesEveryUnflaggedColumnOfTheOpenTableUnderItsOwnSignatureAndDate()
+  public async Task SettlesEveryUnflaggedColumnOfTheOpenTableUnderItsOwnDate()
   {
     await DepositAsync(
       ScreeningSurface.Column("email", position: 1),
@@ -49,8 +49,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
     RowOf(before, "montant").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
     RowOf(before, "quantite").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
 
-    var batched = await _surface.ArbitrateInBatchAsync(
-      ScreenedColumnState.SetAside.Name, "Camille Roux");
+    var batched = await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name);
 
     // ⚠️ Le succès REDIRIGE : un rechargement ne doit pas reposer le lot.
     batched.StatusCode.ShouldBe(HttpStatusCode.Redirect);
@@ -62,7 +61,6 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
       var row = RowOf(table, column).ShouldNotBeNull();
 
       row.ShouldContain("écartée");
-      row.ShouldContain("Camille Roux");
 
       // La date est celle du service, à la journée — le formulaire n'en porte aucun champ.
       row.ShouldContain(Today());
@@ -83,13 +81,12 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     RowOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldNotContain("Rien n'a été vu");
 
-    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name, "Camille Roux");
+    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name);
 
     var table = await ReadTheTableAsync();
     var flagged = RowOf(table, "email").ShouldNotBeNull();
 
     flagged.ShouldContain("En attente");
-    flagged.ShouldNotContain("Camille Roux");
 
     // ⚠️ Et la phrase d'achèvement ne se referme PAS sur le lot : elle dit que les colonnes où rien
     // n'a été vu ont été relues, et que la signalée, elle, attend toujours. Un lot qui aurait rendu
@@ -122,7 +119,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
     batchForm.Value.ShouldNotContain("name=\"Column\"");
     batchForm.Value.ShouldNotContain("type=\"checkbox\"");
 
-    // Il dit en revanche sa portée exacte AVANT le clic : on ne signe pas sans savoir sur quoi.
+    // Il dit en revanche sa portée exacte AVANT le clic : on ne tranche pas sans savoir sur quoi.
     batchForm.Value.ShouldContain("1 colonne");
   }
 
@@ -165,7 +162,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
       ScreeningSurface.Column("montant", position: 1),
       ScreeningSurface.Column("montant", table: "cotisations", position: 1));
 
-    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Retained.Name, "Camille Roux");
+    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Retained.Name);
 
     RowOf(await ReadTheTableAsync(), "montant").ShouldNotBeNull().ShouldContain("retenue");
 
@@ -176,7 +173,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
   /// <summary>
   /// <b>Une colonne déjà tranchée de la table ouverte n'est pas réécrite par le lot.</b> Le geste
-  /// liquide ce qui attend ; il n'efface pas sous un autre nom ce qu'un humain avait dit.
+  /// liquide ce qui attend ; il n'efface pas d'un clic ce qu'un humain avait dit.
   /// </summary>
   [Fact]
   public async Task LeavesAnAlreadyArbitratedColumnExactlyAsTheHumanWhoSettledItLeftIt()
@@ -185,37 +182,33 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
       ScreeningSurface.Column("montant", position: 1),
       ScreeningSurface.Column("quantite", position: 2));
 
-    await _surface.ArbitrateAsync("montant", ScreenedColumnState.Retained.Name, "Camille Roux");
+    await _surface.ArbitrateAsync("montant", ScreenedColumnState.Retained.Name);
 
-    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name, "Dominique Blanc");
+    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name);
 
     var table = await ReadTheTableAsync();
     var settled = RowOf(table, "montant").ShouldNotBeNull();
 
+    // ⚠️ Elle porte toujours SON issue, et le lot ne l'a pas retournée.
     settled.ShouldContain("retenue");
-    settled.ShouldContain("Camille Roux");
-    settled.ShouldNotContain("Dominique Blanc");
+    settled.ShouldNotContain("écartée");
 
     // Et celle qui attendait, elle, a bien été tranchée par le lot.
-    RowOf(table, "quantite").ShouldNotBeNull().ShouldContain("Dominique Blanc");
+    RowOf(table, "quantite").ShouldNotBeNull().ShouldContain("écartée");
   }
 
   /// <summary>
-  /// ⚠️ <b>Un lot sans nom n'écrit pas une seule colonne.</b> Une signature manquante n'est pas un
-  /// champ vide, c'est un arbitrage qui n'a pas eu lieu — et il n'a pas eu lieu trente fois.
+  /// ⚠️ <b>Un lot qui ne tranche rien n'écrit pas une seule colonne</b>, et il ne l'a pas fait
+  /// trente fois. <c>Awaiting</c> n'est pas une issue, en lot pas plus qu'à l'unité.
   /// </summary>
-  [Theory]
-  [InlineData(null)]
-  [InlineData("")]
-  [InlineData("   ")]
-  public async Task RefusesAWholeBatchThatCarriesNoNameAndLeavesEveryColumnAwaiting(string? signedBy)
+  [Fact]
+  public async Task RefusesAWholeBatchThatCarriesNoRulingAndLeavesEveryColumnAwaiting()
   {
     await DepositAsync(
       ScreeningSurface.Column("montant", position: 1),
       ScreeningSurface.Column("quantite", position: 2));
 
-    var refused = await _surface.ArbitrateInBatchAsync(
-      ScreenedColumnState.Retained.Name, signedBy);
+    var refused = await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Awaiting.Name);
 
     // ⚠️ Le refus se relit SUR PLACE : le seul geste raisonnable après un refus est de corriger
     // devant le texte qui l'explique.
@@ -223,7 +216,6 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     var rendered = WebUtility.HtmlDecode(await refused.Content.ReadAsStringAsync());
 
-    rendered.ShouldContain("Le nom du signataire");
     rendered.ShouldContain("Aucun arbitrage n'a été enregistré");
 
     // Le refus ne nomme aucune colonne : le geste n'en désigne pas.
@@ -236,13 +228,14 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
-  /// ⚠️ <b>La touche Entrée ne tranche pas une table entière.</b> Un formulaire à champ texte soumet,
-  /// sur Entrée, son <b>premier</b> bouton d'envoi : taper son nom et valider aurait retenu des
-  /// dizaines de colonnes d'un coup, et gonflé le compte sur lequel la déclaration se construit
-  /// ensuite.
+  /// ⚠️ <b>La touche Entrée ne tranche pas une table entière, et c'est l'absence de champ de saisie
+  /// qui le tient.</b> Un formulaire soumet sur Entrée son <b>premier</b> bouton d'envoi, mais
+  /// seulement depuis une commande textuelle : le champ du nom parti, il n'en reste aucune.
+  /// <b>Reposer un champ texte ici remettrait la trappe</b> — taper puis valider trancherait des
+  /// dizaines de colonnes d'un coup.
   /// </summary>
   [Fact]
-  public async Task NeverSettlesAWholeTableBecauseSomeoneHitEnterInTheNameField()
+  public async Task OffersNoTextFieldThroughWhichTheEnterKeyCouldSettleAWholeTable()
   {
     await DepositAsync(
       ScreeningSurface.Column("montant", position: 1),
@@ -253,25 +246,15 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
       @"<section class=""batch"">.*?</section>",
       RegexOptions.Singleline);
 
-    var firstSubmit = Regex.Match(batchForm.Value, @"name=""Ruling""\s+value=""([^""]+)""");
+    batchForm.Success.ShouldBeTrue("L'écran d'une table n'offre aucun geste de lot.");
 
-    firstSubmit.Success.ShouldBeTrue();
-    firstSubmit.Groups[1].Value.ShouldBe(
-      ScreenedColumnState.Awaiting.Name,
-      "Le premier bouton d'envoi du lot est celui que la touche Entrée déclenche : s'il tranche, "
-      + "taper son nom et valider tranche la table entière.");
-
-    await _surface.ArbitrateInBatchAsync(firstSubmit.Groups[1].Value, "Camille Roux");
-
-    var table = await ReadTheTableAsync();
-
-    RowOf(table, "montant").ShouldNotBeNull().ShouldContain("En attente");
-    RowOf(table, "quantite").ShouldNotBeNull().ShouldContain("En attente");
+    batchForm.Value.ShouldNotContain("type=\"text\"");
+    batchForm.Value.ShouldNotContain("<textarea");
   }
 
   /// <summary>
   /// ⚠️ <b>Un rapport déposé pendant la lecture ne reçoit pas le lot de celui qui lisait l'autre.</b>
-  /// Le facteur est ce qui rend ce refus plus grave qu'à l'unité : sans lui, la signature d'un humain
+  /// Le facteur est ce qui rend ce refus plus grave qu'à l'unité : sans lui, le geste d'un humain
   /// atterrit d'un seul coup sur des dizaines de colonnes d'un rapport qu'il n'a jamais vu.
   /// </summary>
   [Fact]
@@ -284,7 +267,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
     await DepositAsync(ScreeningSurface.Column("montant", position: 1));
 
     var refused = await _surface.ArbitrateInBatchAsync(
-      ScreenedColumnState.Retained.Name, "Camille Roux", screening: read);
+      ScreenedColumnState.Retained.Name, screening: read);
 
     refused.StatusCode.ShouldBe(HttpStatusCode.Redirect);
     refused.Headers.Location!.OriginalString.ShouldContain(ScreeningSurface.Report);
@@ -310,11 +293,11 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
       ScreeningSurface.Column("montant", position: 2),
       ScreeningSurface.Column("quantite", position: 3));
 
-    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Retained.Name, "Camille Roux");
+    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Retained.Name);
 
     var table = await ReadTheTableAsync();
 
-    table.ShouldContain("2 colonnes où rien n'avait été vu ont été retenues sous votre nom");
+    table.ShouldContain("2 colonnes où rien n'avait été vu ont été retenues dans cette table");
     table.ShouldContain("1 colonne signalée y attend toujours");
     table.ShouldContain("elles se lisent une par une");
   }
@@ -329,10 +312,10 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
   {
     await DepositAsync(ScreeningSurface.Column("montant", position: 1));
 
-    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Retained.Name, "Camille Roux");
+    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Retained.Name);
 
     // Le second lot ne trouve plus rien : tout ce qu'il pouvait atteindre a été relu.
-    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name, "Camille Roux");
+    await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name);
 
     var table = await ReadTheTableAsync();
 
@@ -356,7 +339,6 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     var stale = await _surface.ArbitrateInBatchAsync(
       ScreenedColumnState.Retained.Name,
-      "Camille Roux",
       table: "une_table_qui_n_existe_pas",
       screening: read,
       renderedFrom: "adherents");

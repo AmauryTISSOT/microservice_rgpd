@@ -42,7 +42,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <b>PR</b> dont le corps dit quelles colonnes réelles ne trouvaient pas de valeur, pourquoi
 /// <see cref="PersonalDataUncategorised"/> ne suffisait pas, et où la valeur entre dans l'ordre
 /// d'arbitrage. ⚠️ <b>En retirer ou en renommer une reste un ADR</b> : il n'y a pas d'appelant à
-/// casser, mais il y a des arbitrages humains signés et datés qu'un rapport de détection neuf ne
+/// casser, mais il y a des arbitrages humains datés qu'un rapport de détection neuf ne
 /// reprend pas — ce
 /// geste-là ne périme pas un contrat, il périme du travail humain.
 /// </para>
