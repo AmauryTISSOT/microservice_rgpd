@@ -195,8 +195,21 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   /// tout ce qui <b>nomme</b>.
   /// </para>
   /// <para>
-  /// <c>cartographie</c> et <c>scan</c>, eux, n'ont aucun emploi légitime nulle part sur ces écrans,
-  /// et sont refusés sur la page entière.
+  /// ⚠️ <b><c>scan</c> a cessé d'être un synonyme et est devenu un terme du glossaire</b> (#308),
+  /// exactement comme <c>cartographie</c> avant lui : il nomme <b>la lecture d'une base</b> par le
+  /// service, c'est-à-dire la voie connectée — jamais le geste central du contexte, ni ce qu'il
+  /// rend. Il est donc refusé <b>sans réserve</b> dans l'onglet et le titre, qui nomment l'écran et
+  /// donc le rapport, et n'a ailleurs droit de cité qu'<b>attaché à la base qu'il joint</b> :
+  /// « connecter une base et lancer un scan ». Un lien qui dirait « le scan » tout court rougirait.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b><c>cartographie</c> a cessé d'être un synonyme et est devenu un terme du glossaire</b> :
+  /// il nomme <b>ce qui sort du service</b> — le fichier exporté —, pas le geste qui l'a produit.
+  /// La doctrine tient donc <b>mot pour mot</b>, et c'est ce que le garde vérifie désormais : le
+  /// rapport garde son seul mot dans l'onglet et le titre, où le mot est refusé sans réserve, et
+  /// partout ailleurs « cartographie » n'a droit de cité qu'<b>attaché à son export</b> — « exporter
+  /// la cartographie », « la cartographie en CSV ». Un lien qui dirait « la cartographie » tout court
+  /// rougirait : ce serait le second nom du rapport que la règle refuse.
   /// </para>
   /// </remarks>
   [Theory]
@@ -219,7 +232,12 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
 
     naming.ShouldNotBeEmpty("La page doit bien nommer quelque chose.");
 
-    foreach (var banned in new[] { "recensement", "cartographie", "scan" })
+    // ⚠️ « SCAN » A CESSÉ D'ÊTRE UN SYNONYME ET EST DEVENU UN TERME DU GLOSSAIRE (#308), comme
+    // « cartographie » avant lui : il nomme LA LECTURE D'UNE BASE par le service — le geste de la
+    // voie connectée —, jamais le geste central du contexte ni ce qu'il rend. Un lien qui dit
+    // « lancer un scan » nomme donc la bonne chose. Ce qui reste refusé sans réserve est plus bas :
+    // l'onglet et le titre, qui nomment l'écran et donc le rapport.
+    foreach (var banned in new[] { "recensement" })
     {
       naming.ShouldAllBe(
         named => !named.Contains(banned, StringComparison.OrdinalIgnoreCase),
@@ -227,9 +245,40 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
         + "contexte n'a qu'un seul mot, et un contexte qui en a deux en aura trois dans un an.");
     }
 
-    // Ceux-là n'ont aucun emploi légitime, pas même en prose.
-    rendered.ShouldNotContain("cartographie", Case.Insensitive);
-    rendered.ShouldNotContain("scan", Case.Insensitive);
+    // ⚠️ « Cartographie » nomme CE QUI SORT du service, jamais le rapport : l'onglet et le titre,
+    // qui nomment l'écran et donc le rapport, le refusent sans réserve.
+    System.Text.RegularExpressions.Regex
+      .Matches(rendered, @"<(title|h1)\b[^>]*>(.*?)</\1>",
+        System.Text.RegularExpressions.RegexOptions.Singleline)
+      .Select(named => named.Groups[2].Value)
+      .ShouldAllBe(
+        named => !named.Contains("cartographie", StringComparison.OrdinalIgnoreCase)
+          && !named.Contains("scan", StringComparison.OrdinalIgnoreCase),
+        "L'onglet ou le titre nomme le rapport « cartographie » ou « scan ». Le geste central de ce "
+        + "contexte n'a qu'un seul mot ; la cartographie est ce qui en sort, le scan est la lecture "
+        + "d'une base — ni l'un ni l'autre n'est lui.");
+
+    // Et partout ailleurs, le mot n'a droit de cité qu'attaché à son export : « la cartographie »
+    // tout court serait le second nom du rapport que la règle refuse.
+    naming
+      .Where(named => named.Contains("cartographie", StringComparison.OrdinalIgnoreCase))
+      .ShouldAllBe(
+        named => named.Contains("export", StringComparison.OrdinalIgnoreCase)
+          || named.Contains("CSV", StringComparison.OrdinalIgnoreCase)
+          || named.Contains("JSON", StringComparison.OrdinalIgnoreCase),
+        "Un libellé dit « cartographie » sans dire de quel export il parle : détaché de son "
+        + "fichier, le mot redevient un second nom du rapport de détection.");
+
+    // Et « scan », comme « cartographie », n'a droit de cité qu'attaché à CE QU'IL LIT : « lancer un
+    // scan » sur une base nomme la voie connectée ; « le scan » tout court redeviendrait un second
+    // nom du geste de détection, qui n'en a qu'un.
+    naming
+      .Where(named => named.Contains("scan", StringComparison.OrdinalIgnoreCase))
+      .ShouldAllBe(
+        named => named.Contains("base", StringComparison.OrdinalIgnoreCase)
+          || named.Contains("connect", StringComparison.OrdinalIgnoreCase),
+        "Un libellé dit « scan » sans dire ce qui est lu : détaché de la base qu'il joint, le mot "
+        + "redevient un second nom du geste de détection.");
   }
 
   /// <summary>

@@ -47,7 +47,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     // qui reprend cet écran pendant trois jours.
     arbitrated.StatusCode.ShouldBe(HttpStatusCode.Redirect);
 
-    var row = RowOf(await ReadTheTableAsync(), "email");
+    var row = ScreeningSurface.BlockOf(await ReadTheTableAsync(), "email");
 
     row.ShouldNotBeNull();
     row.ShouldContain("retenue");
@@ -83,7 +83,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     var arbitrated = await ReadTheTableAsync();
 
-    RowOf(arbitrated, "email").ShouldNotBeNull().ShouldContain("retenue");
+    ScreeningSurface.BlockOf(arbitrated, "email").ShouldNotBeNull().ShouldContain("retenue");
     arbitrated.ShouldNotContain("Camille Roux");
   }
 
@@ -98,7 +98,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     await _surface.ArbitrateAsync("email", ScreenedColumnState.Awaiting.Name);
 
-    RowOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("En attente");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("En attente");
   }
 
   /// <summary>
@@ -115,7 +115,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     await _surface.ArbitrateAsync("email", ScreenedColumnState.SetAside.Name);
 
     var table = await ReadTheTableAsync();
-    var row = RowOf(table, "email");
+    var row = ScreeningSurface.BlockOf(table, "email");
 
     row.ShouldNotBeNull();
     row.ShouldContain("écartée");
@@ -149,7 +149,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     var table = await ReadTheTableAsync();
 
-    RowOf(table, "email").ShouldNotBeNull().ShouldContain(Today());
+    ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull().ShouldContain(Today());
     table.ShouldNotContain("2001");
 
     // ⚠️ Et l'écran ne PROPOSE aucune date : le champ absent est ce qui tient la règle, le refus
@@ -202,7 +202,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("montant", position: 2));
 
     // « montant » n'est à aucun lexique : c'est une colonne où le service n'a rien vu.
-    RowOf(await ReadTheTableAsync(), "montant").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "montant").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
 
     await _surface.ArbitrateAsync("montant", ScreenedColumnState.Retained.Name);
     await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name);
@@ -216,7 +216,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     // Et la ligne dit toujours que le service, lui, n'avait rien vu : un Retained prouve qu'un
     // HUMAIN l'a déclaré retenu, jamais que la colonne porte des données personnelles.
-    var retainedOnNothing = RowOf(table, "montant");
+    var retainedOnNothing = ScreeningSurface.BlockOf(table, "montant");
 
     retainedOnNothing.ShouldNotBeNull();
     retainedOnNothing.ShouldContain("Rien n'a été vu");
@@ -254,9 +254,9 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name);
 
-    RowOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("retenue");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("retenue");
 
-    RowOf(await ReadTheTableAsync("cotisations"), "email")
+    ScreeningSurface.BlockOf(await ReadTheTableAsync("cotisations"), "email")
       .ShouldNotBeNull()
       .ShouldContain("En attente");
   }
@@ -291,7 +291,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name);
 
-    var row = RowOf(await ReadTheTableAsync(), "email");
+    var row = ScreeningSurface.BlockOf(await ReadTheTableAsync(), "email");
 
     row.ShouldNotBeNull();
     row.ShouldContain("retenue");
@@ -361,7 +361,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     // ⚠️ Rien n'a été écrit sur le rapport neuf, et le renvoi le DIT : un renvoi muet se lirait
     // comme une navigation ordinaire.
-    RowOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("En attente");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("En attente");
 
     var report = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Report));
 
@@ -387,7 +387,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     report.ShouldContain("Aucun arbitrage n'a été enregistré");
 
-    RowOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("En attente");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldContain("En attente");
   }
 
   /// <summary>
@@ -405,6 +405,47 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     var report = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Report));
 
     report.ShouldContain("n'est plus dans le rapport de détection courant");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La redirection ancre sur la colonne QU'ON VIENT DE TRANCHER, jamais sur la suivante.</b>
+  /// Ancrer sur la suivante ferait de l'écran un tapis roulant : l'<c>Operator</c> perdrait de vue
+  /// ce qu'il vient de dire à l'instant même où il pourrait encore se raviser.
+  /// </summary>
+  [Fact]
+  public async Task AnchorsTheRedirectionOnTheColumnThatWasJustRuledRatherThanTheNextOne()
+  {
+    await DepositAsync(
+      ScreeningSurface.Column("email", position: 1),
+      ScreeningSurface.Column("montant", position: 2));
+
+    var arbitrated = await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name);
+
+    arbitrated.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+
+    var location = arbitrated.Headers.Location!.OriginalString;
+
+    // La même table, et le fragment qui nomme la colonne tranchée.
+    location.ShouldContain("table=adherents");
+    location.ShouldEndWith($"#{ScreeningSurface.AnchorOf("email")}");
+
+    // ⚠️ Et surtout PAS la suivante : « montant » attend toujours, et l'écran ne l'a pas visée.
+    location.ShouldNotContain(ScreeningSurface.AnchorOf("montant"));
+
+    // ⚠️ L'ancre ATTERRIT : un fragment qui ne désigne aucun élément de la page rendue est un
+    // fragment que le navigateur ignore en silence, et l'Operator repartirait en haut de cinq
+    // mille lignes.
+    var table = await ReadTheTableAsync();
+
+    table.ShouldContain($"id=\"{ScreeningSurface.AnchorOf("email")}\"");
+
+    // Une colonne où rien n'a été vu s'ancre pareil : elle s'arbitre comme les autres.
+    var unflagged = await _surface.ArbitrateAsync("montant", ScreenedColumnState.SetAside.Name);
+
+    unflagged.Headers.Location!.OriginalString
+      .ShouldEndWith($"#{ScreeningSurface.AnchorOf("montant")}");
+
+    (await ReadTheTableAsync()).ShouldContain($"id=\"{ScreeningSurface.AnchorOf("montant")}\"");
   }
 
   /// <summary>Le rapport que l'écran rendait, lu sur son formulaire.</summary>
@@ -438,17 +479,6 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
   private static string Today()
   {
     return DateTimeOffset.UtcNow.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("fr-FR"));
-  }
-
-  /// <summary>La ligne d'une colonne, telle que l'écran la rend — ou <c>null</c> si elle n'y est pas.</summary>
-  private static string? RowOf(string table, string column)
-  {
-    var row = Regex.Match(
-      table,
-      $@"<tr>\s*<th scope=""row"">\s*{Regex.Escape(column)}\b.*?</tr>",
-      RegexOptions.Singleline);
-
-    return row.Success ? row.Value : null;
   }
 
   /// <summary>Ce qu'un compte du rapport vaut, lu là où l'écran le rend.</summary>

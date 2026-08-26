@@ -452,6 +452,15 @@ table.queue:not(.columns) {
   margin: 0 0 var(--space-xxs);
 }
 
+/*
+  ⚠️ LES FAITS NOMMÉS EMPRUNTENT LA GRILLE DES PRÉMISSES, et n'inventent rien. Ce qu'ils portent est
+  de la même nature : deux ou quatre faits, chacun sur sa ligne, dont l'intitulé dit ce que la valeur
+  est. Une seconde grille écrite pour eux aurait divergé au premier espacement retouché.
+
+  ⚠️ LE NOM DIT LA FORME, PAS L'OCCASION. Une classe `ending` aurait menti sur l'écran de refus d'un
+  second lancement, qui nomme un scan très exactement en train de courir.
+*/
+.facts,
 .premises dl,
 .system dl {
   display: grid;
@@ -460,15 +469,35 @@ table.queue:not(.columns) {
   margin: var(--space-xs) 0 0;
 }
 
+.facts dt,
 .premises dt,
 .system dt {
   font-weight: var(--weight-semibold);
 }
 
+.facts dd,
 .premises dd,
 .system dd {
   margin: 0;
   white-space: pre-wrap;
+}
+
+/*
+  LE GESTE À POSER SE VOIT, parce qu'il est la seule ligne de l'écran sur laquelle l'Operator ait
+  quelque chose à FAIRE. Il n'apparaît que sur les fins qui en appellent un : posé sur toutes, il
+  aurait fait de chacune une chose à corriger.
+*/
+.gesture {
+  font-weight: var(--weight-semibold);
+}
+
+/*
+  L'ABANDON EST UN GESTE SANS CÉRÉMONIE, ET SON BOUTON N'EST PAS LE BOUTON PRINCIPAL. Rien n'est
+  détruit : un scan abandonné ne laisse aucun objet, et le rapport courant ne bouge pas. Lui donner
+  la couleur d'un danger aurait fait hésiter là où il n'y a rien à perdre.
+*/
+.abandon {
+  margin: var(--space-lg) 0;
 }
 
 /*
@@ -700,10 +729,164 @@ table.columns {
   table-layout: fixed;
 }
 
+/*
+  ⚠️ LE MOTIF GARDE SA COLONNE — ~26 rem —, ET CETTE RÈGLE SERT DÉSORMAIS L'ÉCRAN D'UNE TABLE
+  ARCHIVÉE. La table courante a porté ce tableau tant qu'elle rendait ses signalées en lignes ;
+  elle les rend en fiches depuis, et son tableau n'a plus de colonne de motif du tout. L'archivé,
+  lui, en a toujours une — et `table-layout: fixed` lui donnerait sans cette règle une part égale
+  du reste, soit ~14 rem : un motif comprimé est un motif qu'on cesse de lire, ce que la maquette
+  jetée a tranché une fois pour toutes.
+*/
 table.columns td.reason,
 table.columns th.reason {
   min-width: 26rem;
   width: 26rem;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA FICHE D'UNE COLONNE SIGNALÉE. Le premier temps de l'écran d'une table : ce qui se juge sur
+  pièces, une colonne à la fois.
+
+  ⚠️ C'EST UNE CARTE, ET LE TABLEAU DES UNFLAGGED N'EN EST PAS UNE. Les deux ne portent pas le même
+  volume : quelques dizaines de fiches d'un côté, plusieurs milliers de lignes de l'autre, où les
+  marges d'une carte feraient déjà une table haute de cent écrans.
+
+  ⚠️ SON REPLI EST CELUI DU NAVIGATEUR, et son ouverture vient du serveur : pas une ligne de
+  JavaScript, pas un état client (ADR-0005, ADR-0009).
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.column-card {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+/*
+  ⚠️ LE RÉSUMÉ EST CE QUI SURVIT AU REPLI : le nom, la catégorie, l'issue. Il se lit comme un geste
+  — curseur et graisse d'un intitulé —, faute de quoi rien ne dirait qu'il s'ouvre.
+*/
+.column-card > summary {
+  align-items: baseline;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+}
+
+.column-card .column-name {
+  font-weight: var(--weight-semibold);
+}
+
+.column-card .category,
+.column-card .settled {
+  color: var(--ink-secondary);
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+}
+
+.column-card .banner {
+  margin-bottom: var(--space-md);
+}
+
+/*
+  LA LIGNE DU MOTIF, ET L'EMPLACEMENT DE L'APERÇU À CÔTÉ DE LUI.
+
+  ⚠️ UNE SEULE COLONNE DÉCLARÉE, ET LA SECONDE NAÎT DE L'APERÇU. Déclarer deux pistes aurait laissé
+  le motif dans les deux tiers de la ligne, avec un tiers blanc à côté, TANT QU'AUCUN APERÇU
+  N'EXISTE — c'est-à-dire tout le temps aujourd'hui, le chemin collé ne donnant aucune valeur à
+  montrer — sur le seul écran qui ait obtenu une exception de largeur POUR ce motif. La piste
+  implicite ne s'ouvre que quand la case porte quelque chose.
+
+  ⚠️ ET C'EST LE DOMAINE QUI DÉCIDE DE LA CASE, PAS UNE RÈGLE DE STYLE. Un `:empty` gardait naguère
+  la ligne propre : il suffisait d'une espace insérée par le gabarit pour qu'il cesse de mordre et
+  qu'un blanc réapparaisse là où « jamais une cellule vide » est la promesse. La case n'est
+  désormais rendue que si elle porte des valeurs ou une raison nommée, et il n'y a plus rien à
+  rattraper ici.
+*/
+.column-card .reason-line {
+  display: grid;
+  gap: var(--space-md);
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  grid-template-columns: minmax(26rem, 2fr);
+}
+
+.column-card .reason {
+  margin: 0;
+}
+
+/*
+  LES VALEURS LUES, LES UNES SOUS LES AUTRES ET SANS PUCE.
+
+  ⚠️ C'EST UNE LISTE, ET NON UN TABLEAU NI UNE PHRASE. Cinq valeurs séparées par des virgules se
+  seraient lues comme une valeur unique dès que l'une d'elles en porte une — un nom composé, une
+  adresse — et c'est exactement le genre de valeur qu'on montre ici.
+*/
+.column-card .values {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.column-card .values li {
+  margin: 0 0 var(--space-xxs);
+}
+
+/*
+  ⚠️ UNE VALEUR SE COUPE N'IMPORTE OÙ, et c'est la seule chose que cette règle achète. Un courriel de
+  254 caractères sans espace déborderait sinon de la fiche et pousserait l'écran entier en défilement
+  horizontal — sur le seul écran du service qui ait obtenu une exception de largeur.
+
+  ⚠️ AUCUNE CHASSE FIXE : le langage de dessin n'en déclare pas (ADR-0005), et en inventer une ici
+  ferait entrer une police non documentée par la porte d'un aperçu.
+*/
+.column-card .values .value,
+.column-card .values .marker {
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  overflow-wrap: anywhere;
+}
+
+/*
+  ⚠️ ⟨null⟩ ET ⟨vide⟩ SE DISTINGUENT DU TEXTE, ET NE S'EFFACENT PAS. Ce sont des valeurs lues : le
+  prélèvement a parfaitement réussi. Les peindre comme une absence rétablirait la cellule blanche que
+  la raison nommée vient de chasser un cran plus bas.
+*/
+.column-card .values .marker {
+  color: var(--ink-secondary);
+}
+
+/*
+  LA RAISON DE N'AVOIR AUCUNE VALEUR, DANS LA CASE DE L'APERÇU. Le libellé de la famille se lit
+  d'abord — c'est lui qui dit s'il y a un geste à poser —, la phrase ensuite.
+*/
+.column-card .preview .none {
+  margin: 0;
+}
+
+.column-card .preview .none .hint {
+  display: block;
+}
+
+/*
+  CE QUE LES APERÇUS DU RAPPORT SONT DEVENUS, DIT UNE FOIS AU-DESSUS DES FICHES.
+
+  ⚠️ ELLE PORTE SUR LE RAPPORT, PAS SUR UNE COLONNE, et sa place le dit : hors des fiches, au-dessus
+  d'elles. Posée dans une fiche, elle aurait été lue comme un fait de cette colonne-là.
+*/
+.previews {
+  max-width: 60rem;
+}
+
+.column-card form {
+  margin: var(--space-md) 0 0;
+}
+
+.column-card button {
+  padding: var(--space-xxs) var(--space-sm);
 }
 
 /*
@@ -739,6 +922,34 @@ td.ruling button {
 
 .dialects a.chosen {
   font-weight: var(--weight-bold);
+}
+
+/*
+  L'AVANCEMENT DU SCAN EST UNE LARGEUR, ET RIEN D'AUTRE. Pas d'animation, pas de `<progress>` dont
+  le rendu varie d'un navigateur à l'autre, pas une ligne de JavaScript : le serveur rend un
+  pourcentage dans un attribut `style`, et le navigateur dessine un rectangle. Ce qui est LU par
+  l'Operator reste le compte réel — « table 148 sur 312 » —, écrit juste au-dessus.
+
+  ⚠️ La barre n'apparaît QUE lorsque le catalogue a répondu : c'est l'écran qui décide de ne pas la
+  rendre, pas la feuille de la masquer. Une barre à zéro pour cent se lirait comme « le travail a
+  commencé et n'a rien fait », alors que rien n'est encore comptable.
+*/
+.count {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-bold);
+}
+
+.progress {
+  background: var(--hairline);
+  border-radius: var(--radius-full);
+  height: var(--space-xs);
+  margin: var(--space-xs) 0 var(--space-md);
+  overflow: hidden;
+}
+
+.progress-done {
+  background: var(--accent);
+  height: 100%;
 }
 
 /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */

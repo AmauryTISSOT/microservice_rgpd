@@ -50,10 +50,18 @@ public sealed class Screening : IAggregateRoot
 
   private readonly List<ScreenedColumn> _columns;
 
+  /// <summary>
+  /// L'origine, <b>en champ</b> et non en propriété automatique, parce que
+  /// <see cref="Origin"/> lève quand elle est absente : le champ est ce qu'EF Core remplit à la
+  /// rematérialisation, et il peut porter le vide qu'une ligne d'avant la migration porterait.
+  /// </summary>
+  private ListingOrigin? _origin;
+
   private Screening(
     ScreeningId id,
     string database,
     string dialect,
+    ListingOrigin origin,
     ScreeningEngineIdentity engine,
     int declaredColumnCount,
     List<ScreenedColumn> columns,
@@ -62,6 +70,7 @@ public sealed class Screening : IAggregateRoot
     Id = id;
     Database = database;
     Dialect = dialect;
+    _origin = origin;
     Engine = engine;
     DeclaredColumnCount = declaredColumnCount;
     _columns = columns;
@@ -85,6 +94,13 @@ public sealed class Screening : IAggregateRoot
   /// un repère pour l'humain qui relit trois jours plus tard, jamais une identité sur laquelle bâtir
   /// une comparaison.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il ne porte jamais un chemin.</b> C'est la seule chose qui lui soit faite avant
+  /// l'enregistrement, et elle a un motif : ce champ <b>quitte le service</b> dans la
+  /// <see cref="PersonalDataMap"/>, et jusque dans le nom du fichier CSV. Côté SQLite le SGBD ne
+  /// connaît sa base que par son chemin, et le dossier parent est l'endroit où l'on écrit le nom du
+  /// client. Voir <see cref="DatabaseName.WithoutAnyPath"/>.
+  /// </remarks>
   public string Database { get; private set; }
 
   /// <summary>
@@ -93,6 +109,30 @@ public sealed class Screening : IAggregateRoot
   /// d'un cran ; avec lui, l'absence est <b>nommée</b>.
   /// </summary>
   public string Dialect { get; private set; }
+
+  /// <summary>
+  /// Par quel chemin le relevé est entré : l'<c>Operator</c> l'a <b>collé</b>, ou le service l'a
+  /// <b>scanné</b>. Elle est enregistrée avec le rapport parce que la clause d'incomplétude est
+  /// rendue jusque sur l'archive, des mois après que la chaîne de connexion a cessé d'exister.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle lève plutôt que de rendre un rapport dont on ne sait pas ce qu'il a lu.</b> C'est
+  /// l'autre moitié du refus du cas nul — voir <see cref="ListingOrigin.KnownOrThrow"/>, qui tient
+  /// l'enregistrement — et elle vaut contre ce que le domaine n'a pas écrit : une ligne posée en SQL
+  /// nu, une ligne d'avant la migration, un chemin d'écriture neuf qui aurait oublié de la poser.
+  /// Rendre <see cref="ListingOrigin.Unspecified"/> aurait fait afficher la clause du chemin collé
+  /// sur un rapport scanné, c'est-à-dire la phrase « le service n'a jamais vu une seule valeur » sur
+  /// un rapport qui en a lu cinq par colonne.
+  /// </remarks>
+  /// <exception cref="InvalidOperationException">Ce rapport ne porte pas d'origine, ou porte le cas nul.</exception>
+  public ListingOrigin Origin => _origin is { IsKnown: true }
+    ? _origin
+    : throw new InvalidOperationException(
+      $"Le Screening {Id.Value} est rendu sans origine de relevé : sa ligne porte "
+      + $"« {_origin?.Name ?? "∅"} ». On ne sait donc pas s'il a lu un relevé collé ou un relevé "
+      + "scanné, et la clause d'incomplétude qu'il rendrait dirait l'un pour l'autre. L'origine est "
+      + "posée au lancement et enregistrée avec le rapport : une ligne qui n'en porte pas n'a pas "
+      + "été écrite par le domaine.");
 
   /// <summary>Qui a détecté, et dans quelle version. Le domaine ne l'interprète jamais.</summary>
   public ScreeningEngineIdentity Engine { get; private set; }
@@ -138,6 +178,19 @@ public sealed class Screening : IAggregateRoot
 
   /// <summary>Combien de colonnes n'ont de commentaire ni à leur niveau ni à celui de leur table.</summary>
   public int ColumnsWithoutACommentCount => _columns.Count(column => !column.Listed.CarriesAComment);
+
+  /// <summary>
+  /// Combien de colonnes n'ont aucun aperçu, <b>par famille</b> — les quatre comptes que la clause
+  /// rend sur le chemin scanné.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il se calcule sur la raison <em>enregistrée</em> de la colonne, jamais sur l'aperçu.</b>
+  /// Les aperçus meurent avec la session d'arbitrage : lus sur eux, ces quatre comptes seraient
+  /// pleins le matin et vides l'après-midi, et l'écran d'archive deviendrait plus rassurant que
+  /// celui du jour même.
+  /// </remarks>
+  public PreviewAbsenceCounts ColumnsWithoutAPreviewCount =>
+    PreviewAbsenceCounts.Of(_columns.Select(column => column.PreviewAbsence));
 
   /// <summary>Combien de tables distinctes ce relevé couvre.</summary>
   public int TableCount => _columns.Select(column => column.Identity.TableIdentity).Distinct().Count();
@@ -205,19 +258,26 @@ public sealed class Screening : IAggregateRoot
   /// <param name="id">L'identité engendrée.</param>
   /// <param name="database">Le nom de base que le relevé rapporte.</param>
   /// <param name="dialect">Le SGBD dont le relevé se déclare.</param>
+  /// <param name="origin">
+  /// Par quel chemin le relevé est entré. ⚠️ <b>Le cas nul est refusé ici</b> : c'est un paramètre
+  /// obligatoire pour qu'aucun chemin d'écriture ne puisse l'omettre par distraction, et un cas nul
+  /// refusé pour qu'aucun ne l'obtienne par défaut.
+  /// </param>
   /// <param name="engine">Qui a détecté, et dans quelle version.</param>
   /// <param name="declaredColumnCount">Le nombre de colonnes que le relevé déclare porter.</param>
   /// <param name="columns">Une ligne par colonne du relevé, dans son ordre.</param>
   /// <param name="launchedOn">L'instant du lancement.</param>
   /// <exception cref="ArgumentNullException">Un des arguments est absent.</exception>
   /// <exception cref="ArgumentException">
-  /// Le nom de base ou le dialecte est vide, démesuré ou porte un caractère de contrôle ; le compte
-  /// rendu diffère du compte déclaré ; ou deux lignes portent le même triplet.
+  /// Le nom de base ou le dialecte est vide, démesuré ou porte un caractère de contrôle ; l'origine
+  /// est le cas nul ; le compte rendu diffère du compte déclaré ; ou deux lignes portent le même
+  /// triplet.
   /// </exception>
   public static Screening Of(
     ScreeningId id,
     string? database,
     string? dialect,
+    ListingOrigin origin,
     ScreeningEngineIdentity engine,
     int declaredColumnCount,
     IEnumerable<ScreenedColumn> columns,
@@ -254,8 +314,16 @@ public sealed class Screening : IAggregateRoot
 
     return new Screening(
       id,
-      ScreeningText.OrThrow(database, "Le nom de la base", MaxDatabaseNameLength, nameof(database)),
+      // ⚠️ Le dossier parent est écarté AVANT le contrôle de longueur : ce champ quitte le service
+      // dans la Cartographie, et un chemin SQLite y publierait l'arborescence interne et le nom du
+      // client. Voir DatabaseName.WithoutAnyPath, où la règle est écrite une fois.
+      ScreeningText.OrThrow(
+        DatabaseName.WithoutAnyPath(database),
+        "Le nom de la base",
+        MaxDatabaseNameLength,
+        nameof(database)),
       ScreeningText.OrThrow(dialect, "Le dialecte du relevé", MaxDialectLength, nameof(dialect)),
+      ListingOrigin.KnownOrThrow(origin, nameof(origin)),
       engine,
       declaredColumnCount,
       screened,

@@ -138,6 +138,11 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("category");
 
+                    b.Property<string>("PreviewAbsence")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("preview_absence_reason");
+
                     b.Property<string>("Reason")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)")
@@ -189,6 +194,12 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("LaunchedOn")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("launched_on");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("listing_origin");
 
                     b.HasKey("Id")
                         .HasName("pk_screenings");

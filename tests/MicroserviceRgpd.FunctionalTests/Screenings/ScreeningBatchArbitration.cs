@@ -46,8 +46,8 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     var before = await ReadTheTableAsync();
 
-    RowOf(before, "montant").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
-    RowOf(before, "quantite").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
+    ScreeningSurface.BlockOf(before, "montant").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
+    ScreeningSurface.BlockOf(before, "quantite").ShouldNotBeNull().ShouldContain("Rien n'a été vu");
 
     var batched = await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name);
 
@@ -58,7 +58,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     foreach (var column in new[] { "montant", "quantite" })
     {
-      var row = RowOf(table, column).ShouldNotBeNull();
+      var row = ScreeningSurface.BlockOf(table, column).ShouldNotBeNull();
 
       row.ShouldContain("écartée");
 
@@ -79,12 +79,12 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
       ScreeningSurface.Column("email", position: 1),
       ScreeningSurface.Column("montant", position: 2));
 
-    RowOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldNotContain("Rien n'a été vu");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "email").ShouldNotBeNull().ShouldNotContain("Rien n'a été vu");
 
     await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name);
 
     var table = await ReadTheTableAsync();
-    var flagged = RowOf(table, "email").ShouldNotBeNull();
+    var flagged = ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull();
 
     flagged.ShouldContain("En attente");
 
@@ -164,9 +164,9 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     await _surface.ArbitrateInBatchAsync(ScreenedColumnState.Retained.Name);
 
-    RowOf(await ReadTheTableAsync(), "montant").ShouldNotBeNull().ShouldContain("retenue");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "montant").ShouldNotBeNull().ShouldContain("retenue");
 
-    RowOf(await ReadTheTableAsync("cotisations"), "montant")
+    ScreeningSurface.BlockOf(await ReadTheTableAsync("cotisations"), "montant")
       .ShouldNotBeNull()
       .ShouldContain("En attente");
   }
@@ -187,14 +187,14 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
     await _surface.ArbitrateInBatchAsync(ScreenedColumnState.SetAside.Name);
 
     var table = await ReadTheTableAsync();
-    var settled = RowOf(table, "montant").ShouldNotBeNull();
+    var settled = ScreeningSurface.BlockOf(table, "montant").ShouldNotBeNull();
 
     // ⚠️ Elle porte toujours SON issue, et le lot ne l'a pas retournée.
     settled.ShouldContain("retenue");
     settled.ShouldNotContain("écartée");
 
     // Et celle qui attendait, elle, a bien été tranchée par le lot.
-    RowOf(table, "quantite").ShouldNotBeNull().ShouldContain("écartée");
+    ScreeningSurface.BlockOf(table, "quantite").ShouldNotBeNull().ShouldContain("écartée");
   }
 
   /// <summary>
@@ -223,8 +223,8 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
 
     var table = await ReadTheTableAsync();
 
-    RowOf(table, "montant").ShouldNotBeNull().ShouldContain("En attente");
-    RowOf(table, "quantite").ShouldNotBeNull().ShouldContain("En attente");
+    ScreeningSurface.BlockOf(table, "montant").ShouldNotBeNull().ShouldContain("En attente");
+    ScreeningSurface.BlockOf(table, "quantite").ShouldNotBeNull().ShouldContain("En attente");
   }
 
   /// <summary>
@@ -286,7 +286,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
     refused.StatusCode.ShouldBe(HttpStatusCode.Redirect);
     refused.Headers.Location!.OriginalString.ShouldContain(ScreeningSurface.Report);
 
-    RowOf(await ReadTheTableAsync(), "montant").ShouldNotBeNull().ShouldContain("En attente");
+    ScreeningSurface.BlockOf(await ReadTheTableAsync(), "montant").ShouldNotBeNull().ShouldContain("En attente");
 
     var report = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Report));
 
@@ -336,7 +336,7 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
     table.ShouldContain("Aucune colonne n'a été tranchée par ce geste");
 
     // Et l'arbitrage rendu n'a pas été écrasé par le lot qui n'atteignait rien.
-    RowOf(table, "montant").ShouldNotBeNull().ShouldContain("retenue");
+    ScreeningSurface.BlockOf(table, "montant").ShouldNotBeNull().ShouldContain("retenue");
   }
 
   /// <summary>
@@ -396,16 +396,5 @@ public class ScreeningBatchArbitration(CustomWebApplicationFactory<Program> fact
   private static string Today()
   {
     return DateTimeOffset.UtcNow.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("fr-FR"));
-  }
-
-  /// <summary>La ligne d'une colonne, telle que l'écran la rend — ou <c>null</c> si elle n'y est pas.</summary>
-  private static string? RowOf(string table, string column)
-  {
-    var row = Regex.Match(
-      table,
-      $@"<tr>\s*<th scope=""row"">\s*{Regex.Escape(column)}\b.*?</tr>",
-      RegexOptions.Singleline);
-
-    return row.Success ? row.Value : null;
   }
 }

@@ -1,0 +1,85 @@
+@page "/detection/scan/{scanId:guid}"
+@model MicroserviceRgpd.Web.Pages.Screenings.ScanModel
+@using MicroserviceRgpd.Core.Screenings
+@{
+  ViewData["Title"] = Model.Ending?.Title ?? "Scan en cours";
+}
+
+@*
+  LE RAFRAÎCHISSEMENT EST UN `meta`, ET IL N'Y A PAS UNE LIGNE DE JAVASCRIPT DERRIÈRE. Il ne s'arme
+  que tant que le scan court : posé sur la fin, il rechargerait indéfiniment un écran qui ne bouge
+  plus, et sur le succès il courrait après un 303 déjà rendu.
+*@
+@section Head {
+  @if (Model.Snapshot is { HasEnded: false })
+  {
+    <meta http-equiv="refresh" content="@ScanModel.RefreshInSeconds" />
+  }
+}
+
+@if (Model.Ending is { } ending)
+{
+  @*
+    TOUTES LES FINS PASSENT PAR LE MÊME BLOC — l'abandon, le scan inconnu, l'échec, et les deux fins
+    à zéro objet. Elles disent donc toutes où le scan s'est arrêté, d'où vient la cause, que le
+    rapport courant n'a pas bougé, et par où relancer. Aucune ne propose de reprendre.
+  *@
+  <partial name="_ScanEnding" model="ending" />
+}
+else if (Model.Snapshot is { } state)
+{
+  <h1>Scan en cours</h1>
+
+  <p class="hint">
+    Cet écran se rafraîchit tout seul, toutes les @ScanModel.RefreshInSeconds secondes. Vous pouvez
+    fermer l'onglet : <strong>le scan continue</strong>, et cette adresse le retrouvera.
+  </p>
+
+  <p class="phase">Phase : <strong>@state.Phase.FrenchLabel</strong></p>
+
+  @*
+    AUCUNE BARRE AVANT QUE LE CATALOGUE AIT RÉPONDU. Tant qu'aucun dénominateur n'est honnête, il
+    n'y a ni barre ni compte : « 0 sur 0 » se lirait comme une mesure, et l'absence, elle, ne se lit
+    pas du tout — ce qui est exactement ce qu'il faut montrer quand on ne sait pas encore.
+  *@
+  @if (state.ShowsABar)
+  {
+    <p class="count">@Model.Unit @state.Done sur @state.Total</p>
+
+    @*
+      L'AVANCEMENT EST UNE LARGEUR, ET LE CHIFFRE MONTRÉ EST LE COMPTE RÉEL. Le pour-cent ne sert
+      qu'à dessiner le rectangle ; il ne s'écrit nulle part, parce qu'un pourcentage se lit comme
+      une mesure du temps restant, ce qu'il n'est pas.
+    *@
+    <div class="progress" role="img"
+         aria-label="@Model.Unit @state.Done sur @state.Total">
+      <div class="progress-done" style="width: @Model.BarWidth%"></div>
+    </div>
+  }
+  else
+  {
+    <p class="hint">
+      Le catalogue n'a pas encore répondu : il n'y a <strong>rien à compter</strong> tant que le
+      service ne sait pas combien de tables ce compte lui présente.
+    </p>
+  }
+
+  @*
+    L'ABANDON EST UN FORMULAIRE, ET C'EST TOUT CE QU'IL LUI FAUT. Pas une ligne de script : cet
+    écran se rafraîchit par un `meta`, et un bouton qui aurait eu besoin de JavaScript n'aurait pas
+    marché là où le reste de l'écran marche.
+
+    L'annulation COUPE LA REQUÊTE EN COURS sur la base — sqlite3_interrupt sous SQLite, le jeton
+    ailleurs —, et pas seulement la boucle qui l'entoure : sans cela, un SELECT continuerait de
+    courir sur la base d'un tiers après que l'Operator a dit d'arrêter.
+  *@
+  <form method="post" class="abandon">
+    <p class="hint">
+      Abandonner arrête <strong>la lecture en cours sur la base</strong>, et pas seulement cet
+      écran. Rien n'aura été relevé : ni rapport, ni ligne d'historique — et le rapport de détection
+      courant restera celui que vous avez.
+    </p>
+
+    <button type="submit">Abandonner ce scan</button>
+  </form>
+}

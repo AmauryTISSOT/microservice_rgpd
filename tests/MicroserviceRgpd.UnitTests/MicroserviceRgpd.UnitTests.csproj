@@ -28,6 +28,24 @@
          fumée du moteur de détection doit s'éprouver sur *le* pivot témoin, et une copie de test
          finirait par diverger de celle que le banc a laissée hors de ses deux côtés. -->
     <EmbeddedResource Include="..\..\corpus\schemas\pivots\temoin.jsonl" LogicalName="temoin.jsonl" />
+    <!-- La requête du chemin collé, embarquée depuis sa source : le test qui met les deux chemins
+         côte à côte doit s'éprouver sur *la* requête que l'Operator exécute, et une copie de test
+         finirait par diverger de celle que releves/ publie. -->
+    <EmbeddedResource Include="..\..\releves\sqlite.sql" LogicalName="releves.sqlite.sql" />
+    <EmbeddedResource Include="..\..\releves\postgresql.sql" LogicalName="releves.postgresql.sql" />
+    <EmbeddedResource Include="..\..\releves\mariadb.sql" LogicalName="releves.mariadb.sql" />
+    <!-- La capture authentique du relevé PostgreSQL, mesurée sur conteneur hors du dépôt (#275).
+         Le dialecte PostgreSQL n'ajoute aucun test à conteneurs : c'est elle, rejouée contre
+         l'ingestion, qui tient la moitié du filet que le lint sur le texte ne couvre pas. -->
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\postgresql.txt" LogicalName="captures.postgresql.txt" />
+    <!-- Les captures authentiques des deux moteurs de la famille MariaDB/MySQL. Elles sont le
+         filet sans conteneur du dialecte connecté (#307) : le pivot que le C# écrit doit rendre
+         les mêmes colonnes que celui que la requête servie a réellement produit, et les deux
+         moteurs sont là parce que c'est entre eux que `json` devient `longtext`. -->
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mysql84.txt"
+                      LogicalName="releve-mysql84.txt" />
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mariadb118.txt"
+                      LogicalName="releve-mariadb118.txt" />
   </ItemGroup>
 
   <ItemGroup>

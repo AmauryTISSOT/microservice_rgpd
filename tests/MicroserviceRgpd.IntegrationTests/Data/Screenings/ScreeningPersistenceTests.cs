@@ -47,6 +47,7 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 
     reread.Database.ShouldBe("galette_prod");
     reread.Dialect.ShouldBe("postgresql");
+    reread.Origin.ShouldBe(ListingOrigin.Pasted);
     reread.Engine.ShouldBe(Engine);
     reread.LaunchedOn.ShouldBe(LaunchedOn);
     reread.DeclaredColumnCount.ShouldBe(2);
@@ -70,6 +71,120 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     unflagged.Category.ShouldBe(PersonalDataCategory.Unflagged);
     unflagged.Strength.ShouldBeNull();
     unflagged.Reason.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>L'origine du relevé descend en base et se relit</b>, parce que la clause d'incomplétude est
+  /// rendue jusque sur l'archive, des mois après que la chaîne de connexion a cessé d'exister. Rien
+  /// d'autre de la ligne ne dit d'où venait le relevé.
+  /// </summary>
+  [Fact]
+  public async Task WritesTheOriginOfTheListingAndReadsItBack()
+  {
+    var scanned = AScreening(ListingOrigin.Scanned, ANothingSeenColumn("id_adh", position: 1));
+
+    await SaveAsync(scanned);
+
+    var written = await ScalarListAsync(
+      $"select listing_origin from screenings where id = '{scanned.Id.Value}'");
+
+    // Par son nom, jamais par un entier : un entier lierait le schéma à l'ordre de déclaration d'un
+    // vocabulaire fermé, et rendrait la table illisible.
+    written.ShouldBe([nameof(ListingOrigin.Scanned)]);
+
+    (await RereadAsync(scanned.Id)).Origin.ShouldBe(ListingOrigin.Scanned);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le témoin du cas nul, moitié « affichage ».</b> Un rapport dont la ligne ne dit pas d'où
+  /// venait son relevé <b>lève au rendu</b> plutôt que de se lire comme collé : la moitié
+  /// « enregistrement » est tenue par la fabrique du domaine, celle-ci vaut contre ce que le domaine
+  /// n'a pas écrit — une ligne posée en SQL nu, ou par un chemin d'écriture neuf qui aurait oublié
+  /// de la poser.
+  /// </summary>
+  [Fact]
+  public async Task RefusesToRenderAReportWhoseRowSaysNothingOfItsOrigin()
+  {
+    var screening = AScreening(ANothingSeenColumn("id_adh", position: 1));
+
+    await SaveAsync(screening);
+
+    await using (var writing = postgres.NewDbContext())
+    {
+      // Le cas nul posé en SQL nu, c'est-à-dire hors du domaine : c'est la seule façon d'en
+      // fabriquer un, et c'est très exactement la ligne contre laquelle le rendu se garde.
+      await writing.Database.ExecuteSqlAsync(
+        $"""
+         update screenings set listing_origin = 'Unspecified' where id = {screening.Id.Value}
+         """);
+    }
+
+    var reread = await RereadAsync(screening.Id);
+
+    var refusal = Should.Throw<InvalidOperationException>(() => reread.Origin);
+
+    refusal.Message.ShouldContain("sans origine de relevé");
+  }
+
+  /// <summary>
+  /// <b>La raison d'absence d'aperçu descend sur la ligne, et se relit.</b> C'est la seule chose
+  /// d'un <c>ColumnPreview</c> qui reste : sans elle, les quatre comptes de la clause seraient
+  /// incalculables une heure après le scan, et l'écran d'archive deviendrait <b>plus rassurant</b>
+  /// que celui du jour même. ⚠️ <b>Ce n'est pas une entorse à <c>Rien de réel ne reste</c></b> : une
+  /// raison n'est pas une valeur lue.
+  /// </summary>
+  [Fact]
+  public async Task WritesWhyAColumnHadNoPreviewAndReadsItBack()
+  {
+    var screening = AScreening(
+      ListingOrigin.Scanned,
+      ANothingSeenColumn("photo", position: 1, previewAbsence: PreviewAbsenceReason.UnsampleableType),
+      ANothingSeenColumn("id_adh", position: 2));
+
+    await SaveAsync(screening);
+
+    var written = await ScalarListAsync(
+      "select column_name || '/' || coalesce(preview_absence_reason, '∅') from screened_columns "
+      + $"where screening_id = '{screening.Id.Value}' order by position");
+
+    written.ShouldBe([$"photo/{nameof(PreviewAbsenceReason.UnsampleableType)}", "id_adh/∅"]);
+
+    var reread = await RereadAsync(screening.Id);
+
+    reread.ColumnAt(ColumnIdentity.Of("public", "adherents", "photo"))
+      .ShouldNotBeNull()
+      .PreviewAbsence.ShouldBe(PreviewAbsenceReason.UnsampleableType);
+
+    reread.ColumnAt(ColumnIdentity.Of("public", "adherents", "id_adh"))
+      .ShouldNotBeNull()
+      .PreviewAbsence.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Et aucune colonne ne porte une valeur lue.</b> Un <c>ColumnPreview</c> meurt avec la
+  /// session d'arbitrage ; une colonne de base qui en garderait une ferait du service un détenteur
+  /// durable de données personnelles du client. Le garde des types vit dans
+  /// <c>ArchitectureTests</c> ; celui-ci interroge le <b>schéma</b>, seul endroit d'où l'on puisse
+  /// dire qu'aucune colonne n'a été ajoutée pour les recevoir.
+  /// </summary>
+  [Fact]
+  public async Task CarriesNoReadValueInEitherTable()
+  {
+    var columns = await ScalarListAsync(
+      "select table_name || '.' || column_name from information_schema.columns "
+      + "where table_name in ('screenings', 'screened_columns') order by 1");
+
+    columns.ShouldNotBeEmpty();
+
+    var valueLike = new[] { "value", "preview", "sample", "valeur", "apercu" };
+
+    foreach (var suspect in valueLike)
+    {
+      columns.ShouldNotContain(
+        column => column.Contains(suspect, StringComparison.OrdinalIgnoreCase)
+          && !column.EndsWith("preview_absence_reason", StringComparison.Ordinal),
+        $"Une colonne portant « {suspect} » est apparue : seule la RAISON d'absence descend en base.");
+    }
   }
 
   /// <summary>
@@ -374,6 +489,10 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     shape.ShouldContain("state character varying(64) YES");
     shape.ShouldContain("rendered_on timestamp with time zone YES");
 
+    // Nullable, parce que la raison n'existe que sur le chemin scanné : sur le chemin collé rien
+    // n'a jamais été prélevé, et les quatre comptes de la clause y sont ABSENTS, jamais à zéro.
+    shape.ShouldContain("preview_absence_reason character varying(64) YES");
+
     // ⚠️ Aucune colonne ne porte qui a arbitré : ce contexte ne l'enregistre pas — ADR-0014.
     shape.ShouldNotContain(column => column.StartsWith("signed_by ", StringComparison.Ordinal));
     shape.ShouldContain("schema_name character varying(100) NO");
@@ -393,6 +512,11 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     report.ShouldContain("launched_on timestamp with time zone NO");
     report.ShouldContain("engine_name text NO");
     report.ShouldContain("engine_version text NO");
+
+    // ⚠️ Non nullable dès la migration : les rapports d'avant la connexion sont remplis en « collé »,
+    // ce qui est vrai par construction, et le cas nul reste refusé. Une colonne nullable aurait
+    // rendu « on ne sait pas » représentable en base, c'est-à-dire la panne par la porte de derrière.
+    report.ShouldContain("listing_origin character varying(64) NO");
   }
 
   /// <summary>
@@ -429,10 +553,16 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 
   private static Screening AScreening(params ScreenedColumn[] columns)
   {
+    return AScreening(ListingOrigin.Pasted, columns);
+  }
+
+  private static Screening AScreening(ListingOrigin origin, params ScreenedColumn[] columns)
+  {
     return Screening.Of(
       ScreeningId.Next(),
       "galette_prod",
       "postgresql",
+      origin,
       Engine,
       columns.Length,
       columns,
@@ -459,9 +589,13 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
       $"préfixe « adr » reconnu dans « {column} »");
   }
 
-  private static ScreenedColumn ANothingSeenColumn(string column, int position, string table = "adherents")
+  private static ScreenedColumn ANothingSeenColumn(
+    string column,
+    int position,
+    string table = "adherents",
+    PreviewAbsenceReason? previewAbsence = null)
   {
-    return ScreenedColumn.NothingSeen(AListedLine(column, position, table));
+    return ScreenedColumn.NothingSeen(AListedLine(column, position, table), previewAbsence);
   }
 
   private async Task SaveAsync(Screening screening)

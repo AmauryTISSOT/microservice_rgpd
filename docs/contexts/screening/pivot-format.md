@@ -1,10 +1,25 @@
-# `screening-pivot/1` — la forme du relevé collé
+# `screening-pivot/1` — la forme du relevé, collé comme scanné
 
-La forme exacte du `ColumnListing` que l'`Operator` colle. Elle est écrite ici parce qu'elle a
-**deux producteurs et un seul consommateur** : les trois requêtes par dialecte que
-[#129](https://github.com/AmauryTISSOT/microservice_rgpd/issues/129) écrira, l'extraction du corpus
-qui les rejoue, et l'ingestion de `ColumnListingIngestion`. Les clés vivent en dur des deux côtés ;
-si elles ne vivent nulle part en toutes lettres, elles divergeront.
+La forme exacte du `ColumnListing`. Elle est écrite ici parce qu'elle a **deux producteurs et un
+seul consommateur** :
+
+| producteur | qui l'écrit | quand |
+| --- | --- | --- |
+| **le relevé collé** | les trois requêtes de `releves/*.sql`, jouées par l'`Operator` dans son client SQL | il colle le résultat dans l'écran de dépôt |
+| **le relevé scanné** | `PivotWriter`, en C#, sur les colonnes qu'un `IDialectScanner` vient de relever | le service a joint la base lui-même |
+
+Le consommateur est unique : `ColumnListingIngestion`, que les **deux** chemins traversent. Un
+troisième écrivain existe, qui n'est pas un producteur : l'extraction du corpus, qui rejoue les
+mêmes requêtes hors du service.
+
+⚠️ **Les deux chemins produisent le même objet, et c'est une contrainte, pas une coïncidence.** Un
+relevé scanné qui différerait d'un relevé collé de la même base ferait deux formats sous un seul
+nom de version, et l'ingestion — qui est le seul juge — cesserait de prouver quoi que ce soit du
+second. C'est aussi pourquoi le scanner repasse par l'ingestion au lieu d'écrire directement un
+`Screening`.
+
+Les clés vivent en dur des deux côtés ; si elles ne vivent nulle part en toutes lettres, elles
+divergeront.
 
 ⚠️ **Ce fichier ne remplace pas le code.** Les noms de clés font foi dans
 `src/MicroserviceRgpd.Core/Screenings/ColumnListingIngestion.cs`, la version de format et le plafond
@@ -144,6 +159,16 @@ exactement pareil.
 catalogue. Deux lectures d'un catalogue vivant peuvent légitimement diverger si un `ALTER TABLE`
 passe entre elles, et le service refuserait alors un pivot sincère. C'est un contrôle d'intégrité
 **du collage**, pas de la base.
+
+⚠️ **Et sur le relevé scanné, ce contrôle n'a aucun équivalent — c'est une divergence, pas une
+nuance.** Au collage, le compte vient d'ailleurs que du texte qu'il accompagne : une troncature le
+contredit, et `CountMismatch` la prend. Au scan, c'est `PivotWriter` qui écrit ce compte, sur la
+liste qu'il vient de sérialiser : il ne peut pas se contredire, et ne peut donc rien attraper non
+plus. La clause « il est entier ou il n'existe pas » y est tenue **un cran plus haut**, par le
+dialecte, qui ne rend un relevé que s'il a lu le catalogue en entier ; en dessous, elle est vraie
+par construction et ne prouve rien. « Entier » veut dire *non interrompu*, jamais *complet* — un
+catalogue que le compte de connexion n'a montré qu'à moitié produit un pivot valide, et rien ici ne
+rougit.
 
 ## Ce que l'ingestion refuse, et dans quel ordre
 

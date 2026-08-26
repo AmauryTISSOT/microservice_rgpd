@@ -164,7 +164,8 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
 
   /// <summary>
   /// Ce que la détection a dit de cette colonne : une catégorie <b>toujours</b> présente, le degré
-  /// de la règle qui a déclenché, et le motif en prose qui les justifie.
+  /// de la règle qui a déclenché, le motif en prose qui les justifie — et, quand le relevé a été
+  /// scanné, la raison pour laquelle aucun aperçu ne l'accompagnait.
   /// </summary>
   /// <remarks>
   /// <b>Motif présent ⇔ ce n'est pas <c>Unflagged</c></b> — l'invariant du contexte, tenu par les
@@ -189,6 +190,17 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
     builder.Property(column => column.Reason)
       .HasColumnName("reason")
       .HasMaxLength(ScreenedColumn.MaxReasonLength);
+
+    // ⚠️ La raison d'absence d'aperçu descend en base, et les VALEURS jamais. Ce n'est pas une
+    // entorse à `Rien de réel ne reste` : une raison n'est pas une valeur lue. Sans cette colonne,
+    // les quatre comptes de la clause d'incomplétude seraient incalculables une heure après le scan,
+    // quand les aperçus ont expiré — et l'écran d'archive deviendrait PLUS RASSURANT que celui du
+    // jour même. Elle est nullable parce qu'elle n'existe que sur le chemin scanné : sur le chemin
+    // collé rien n'a jamais été prélevé, et les quatre comptes y sont ABSENTS, jamais à zéro.
+    builder.Property(column => column.PreviewAbsence)
+      .HasColumnName("preview_absence_reason")
+      .HasMaxLength(ScreeningSchema.ClosedVocabularyLength)
+      .HasConversion(reason => reason!.Name, name => PreviewAbsenceReason.FromName(name));
   }
 
   /// <summary>

@@ -32,13 +32,23 @@ internal static class AScreening
       tableComment);
   }
 
-  /// <summary>Un rapport portant exactement les lignes qu'on lui donne.</summary>
+  /// <summary>
+  /// Un rapport portant exactement les lignes qu'on lui donne, <b>collé</b> — l'origine du seul
+  /// chemin d'écriture qui existe, et celle que veulent dire les tests qui n'en parlent pas.
+  /// </summary>
   internal static Screening Of(params ScreenedColumn[] columns)
+  {
+    return OfListing(ListingOrigin.Pasted, columns);
+  }
+
+  /// <summary>Le même rapport, dont on nomme l'origine parce que c'est elle qu'on éprouve.</summary>
+  internal static Screening OfListing(ListingOrigin origin, params ScreenedColumn[] columns)
   {
     return Screening.Of(
       ScreeningId.Next(),
       "galette_prod",
       "postgresql",
+      origin,
       Engine,
       columns.Length,
       columns,
@@ -52,6 +62,7 @@ internal static class AScreening
       id ?? ScreeningId.Next(),
       "galette_prod",
       "postgresql",
+      ListingOrigin.Pasted,
       Engine,
       declaredColumnCount: 1,
       [ScreenedColumn.NothingSeen(AListedColumn("id_adh"))],

@@ -23,6 +23,44 @@ public class ScreeningTests
   }
 
   /// <summary>
+  /// <b>L'origine est une propriété du rapport</b>, posée au lancement et portée par lui : la clause
+  /// d'incomplétude est rendue jusque sur l'archive, des mois après que la chaîne de connexion a
+  /// cessé d'exister.
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(ListingOrigin.Pasted))]
+  [InlineData(nameof(ListingOrigin.Scanned))]
+  public void CarriesTheOriginOfTheListingItRead(string name)
+  {
+    var origin = ListingOrigin.FromName(name);
+
+    AScreening.OfListing(origin, AScreening.AFlaggedColumn()).Origin.ShouldBe(origin);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le témoin du cas nul, moitié « enregistrement ».</b> Sans ce refus, <c>Collé</c> serait la
+  /// valeur qu'on obtient par oubli, et un rapport scanné rendrait la phrase « le service n'a jamais
+  /// vu une seule valeur » sur un rapport qui en a lu cinq par colonne. L'autre moitié — le rendu
+  /// d'un rapport relu sans origine — vit dans les tests de persistance, seul endroit d'où une telle
+  /// ligne puisse venir.
+  /// </summary>
+  [Fact]
+  public void RefusesToBeLaunchedWithoutSayingWhereItsListingCameFrom()
+  {
+    var refusal = Should.Throw<ArgumentException>(
+      () => AScreening.OfListing(ListingOrigin.Unspecified, AScreening.AFlaggedColumn()));
+
+    refusal.ParamName.ShouldBe("origin");
+  }
+
+  [Fact]
+  public void RefusesToBeLaunchedWithNoOriginAtAll()
+  {
+    Should.Throw<ArgumentNullException>(
+      () => AScreening.OfListing(null!, AScreening.AFlaggedColumn()));
+  }
+
+  /// <summary>
   /// ⚠️ <b>Il est entier ou il n'existe pas.</b> Un rapport bâti sur 99 % d'un relevé se lirait comme
   /// ayant tout rendu, et les colonnes manquantes seraient précisément celles que personne ne
   /// relirait jamais.
@@ -34,6 +72,7 @@ public class ScreeningTests
       ScreeningId.Next(),
       "galette_prod",
       "postgresql",
+      ListingOrigin.Pasted,
       AScreening.Engine,
       declaredColumnCount: 3,
       [AScreening.AFlaggedColumn()],
@@ -220,6 +259,7 @@ public class ScreeningTests
       "ColumnCount",
       "Columns",
       "ColumnsWithoutACommentCount",
+      "ColumnsWithoutAPreviewCount",
       "Database",
       "DeclaredColumnCount",
       "Dialect",
@@ -227,6 +267,9 @@ public class ScreeningTests
       "FlaggedCount",
       "Id",
       "LaunchedOn",
+      // L'origine du relevé, et rien qui ressemble à un état : elle dit par quel chemin il est
+      // entré, jamais où en est le rapport.
+      "Origin",
       "RetainedCount",
       "RetainedOnUnflaggedCount",
       "SetAsideCount",

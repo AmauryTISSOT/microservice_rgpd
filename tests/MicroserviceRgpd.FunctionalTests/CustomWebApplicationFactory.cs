@@ -1,6 +1,7 @@
 ﻿using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Core.Qualifications.Audit;
+using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
@@ -52,11 +53,45 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   public ABrocantoOnTheWire Adapter { get; } = new();
 
   /// <summary>
+  /// Le scanner de base, substitué <b>sur le port du domaine</b>. C'est le seul point du contexte
+  /// <c>Screening</c> qui touche une base d'un tiers : les écrans de scan s'éprouvent donc sans
+  /// conteneur, sans réseau, et sans dépendre de ce qu'un SGBD tiers a dans le ventre ce jour-là.
+  /// <para>
+  /// ⚠️ <b>Une seule classe de test fait exception, et elle le doit.</b> Le canari à cinq surfaces
+  /// démarre son hôte <see cref="SubstitutesTheScanningPort"/> à faux et fait courir le vrai pilote
+  /// SQLite sur une base de fixture : une doublure ne peut rien laisser fuir d'une base qu'elle
+  /// n'ouvre pas, et « rien de réel ne reste » ne se prouve que sur du réel.
+  /// </para>
+  /// </summary>
+  public DatabaseScannerDouble Scanner { get; } = new();
+
+  /// <summary>
+  /// Tout ce que le service journalise. ⚠️ <b>C'est le canari de la chaîne de connexion</b> : sans
+  /// un collecteur posé sur le vrai pipeline de journalisation, « elle n'apparaît dans aucun
+  /// journal » ne serait qu'une intention écrite dans un commentaire.
+  /// </summary>
+  public CapturedLogs Logs { get; } = new();
+
+  /// <summary>
+  /// L'horloge du service, qu'un test peut faire avancer. ⚠️ <b>C'est le seul levier sur la durée de
+  /// vie des aperçus</b> : le cache n'est pas une couture de test, et un test qui voudrait le voir
+  /// expirer n'a que le temps à tourner — exactement comme l'exploitation.
+  /// </summary>
+  public AClockTheTestsAdvance Clock { get; } = new();
+
+  /// <summary>
   /// Le role de verdict est-il substitue ? <b>Non</b> dans un hote demarre LLM eteint : le laisser
   /// au cablage reel est la seule facon de prouver quelque chose du drapeau — une doublure posee
   /// par-dessus ne prouverait que la presence de cette doublure.
   /// </summary>
   protected virtual bool SubstitutesTheVerdictRole => true;
+
+  /// <summary>
+  /// Le port de scan est-il substitué ? <b>Oui</b> partout, sauf dans l'hôte du canari à cinq
+  /// surfaces : celui-là fait courir le <b>vrai</b> pilote SQLite sur une base de fixture, parce
+  /// qu'une doublure ne peut, par construction, rien laisser fuir d'une base qu'elle n'ouvre pas.
+  /// </summary>
+  protected virtual bool SubstitutesTheScanningPort => true;
 
   public Task InitializeAsync() => _dbContainer.StartAsync();
 
@@ -138,6 +173,22 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
         services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Verdict);
         services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Verdict, Verdict);
       }
+
+      if (SubstitutesTheScanningPort)
+      {
+        services.RemoveAll<IDatabaseScanner>();
+        services.AddSingleton<IDatabaseScanner>(Scanner);
+      }
+
+      // ⚠️ L'horloge est SUBSTITUÉE, jamais ajoutée : le câblage réel la pose en TryAdd, et un
+      // second enregistrement aurait laissé la première gagner. Elle dit l'heure réelle tant qu'un
+      // test ne l'avance pas — ce qui laisse intacts tous ceux qui datent à la journée.
+      services.RemoveAll<TimeProvider>();
+      services.AddSingleton<TimeProvider>(Clock);
+
+      // Le collecteur s'AJOUTE aux fournisseurs en place : rien n'est retiré, et ce que le service
+      // journalise en test est exactement ce qu'il journalise ailleurs.
+      services.AddSingleton<ILoggerProvider>(Logs);
 
       // L Adapter du client est pose sur le FIL : le vrai HttpAdapterCalls reste en place, avec son
       // en-tete de secret, son system_id en parametre et son corps de sac. C est le contrat qu on

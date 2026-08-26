@@ -180,12 +180,16 @@ Coupler l'une à l'autre ferait d'un changement d'écran une rupture de contrat,
 contrat un simple bump.
 
 **Layout** :
-Le cadre fixe que les treize écrans de la surface portent tous, écrit **une seule fois** dans
+Le cadre fixe que les quinze écrans de la surface portent tous, écrit **une seule fois** dans
 `_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
 latéral** et le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
 comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est
 l'écran. Le layout n'appartient à aucun des trois contextes — c'est ce qui les porte tous, et c'est
 pourquoi il est nommé ici plutôt que dans l'un des trois glossaires.
+⚠️ **Quinze, et non dix-sept : les deux routes de la `Cartographie` n'en sont pas.** `cartographie.json`
+et `cartographie.csv` sont des Razor Pages qui rendent un **fichier**, jamais une page — pas de
+layout, pas de panneau, pas de header. Les compter aurait fait croire à deux écrans qu'aucun test de
+layout ne couvre, et qu'aucun ne doit couvrir.
 _Avoid_ : chrome, habillage, shell, coque, enveloppe
 ⚠️ **Le mot retiré est « chrome »**, et il l'est pour une raison de lecture : il se lisait comme le
 navigateur Google Chrome — que ce dépôt nomme par ailleurs pour de vrai, dans `scripts/run-project.sh`.
@@ -214,7 +218,7 @@ prose française : ce sont des comptes-rendus datés, et un ADR acté parle avec
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Quatorze ADR de système sont en vigueur, et **cinq en supplantent un autre — toujours sur des points
+Quinze ADR de système sont en vigueur, et **cinq en supplantent un autre — toujours sur des points
 nommés**. Trois visent l'ADR-0006 : l'ADR-0007 rouvre ce qu'il avait explicitement laissé fermé,
 l'ADR-0008 renverse deux de ses clauses — la réserve n° 1, qui tenait le wordmark métier pour le
 contrepoids du mot « microservice », et la règle « un seul nom, aucune forme courte » —, et
@@ -296,6 +300,13 @@ trois points morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour v
   plus. ⚠️ **Il ne supplante rien** : il porte l'**asymétrie entre deux contextes**, que par
   construction aucun glossaire de contexte ne peut expliquer — `Casework` enregistre qui a tranché,
   `Screening` ne l'enregistre plus du tout.
+- [ADR-0015](./docs/adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md) — **un scan survit à la
+  requête HTTP qui l'a lancé, et « rien ne tourne » tient quand même** : ce que le garde interdit est
+  ce qui part **tout seul**, pas ce qui court plus longtemps qu'un échange. Un scan est déclenché par
+  un geste, il finit, et il ne laisse aucune échéance à rattraper ; le scan périodique, la relance
+  automatique et la reprise planifiée restent du mauvais côté. ⚠️ **Il ne supplante aucun ADR** ; il
+  amende un **garde de dépôt**, `NothingRunsInTheBackgroundTests`, dont la liste ne bouge pas — c'est
+  la frontière du garde qui est écrite, et non son périmètre qui est élargi.
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, et c'est délibéré** : ce sont deux décisions sans
 rapport, qui se défont séparément — on peut retirer la porte du panneau sans rien changer à ce que

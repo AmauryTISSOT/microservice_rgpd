@@ -63,6 +63,8 @@ public sealed class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
       .HasMaxLength(Screening.MaxDialectLength)
       .IsRequired();
 
+    ConfigureTheOrigin(builder);
+
     // Le compte DÉCLARÉ par le relevé, conservé à côté du compte réel des lignes filles : c'est
     // leur égalité qui rend une troncature au collage détectable, et un rapport bâti sur 99 % d'un
     // relevé se lirait sinon comme complet.
@@ -73,6 +75,41 @@ public sealed class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
     ConfigureTheEngine(builder);
     ConfigureTheColumns(builder);
     IgnoreWhatIsCounted(builder);
+  }
+
+  /// <summary>
+  /// Par quel chemin le relevé est entré : <b>une colonne, non nullable</b>, portant le nom du
+  /// membre.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Elle est enregistrée plutôt que déduite</b>, parce que la clause d'incomplétude est
+  /// rendue jusque sur l'archive, des mois après que la chaîne de connexion a cessé d'exister. Rien
+  /// d'autre de la ligne ne dit d'où venait le relevé.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>La lecture passe par le champ, et c'est nécessaire</b> : <c>Screening.Origin</c>
+  /// <b>lève</b> quand l'origine est absente ou nulle, et EF Core lit la propriété au moment
+  /// d'écrire. Sans ce mode d'accès, une ligne héritée ferait tomber le contexte de suivi plutôt que
+  /// le rendu — c'est-à-dire au mauvais endroit, et sur une phrase qui ne parlerait plus d'origine.
+  /// </para>
+  /// <para>
+  /// <b>Par son nom, jamais par un entier</b>, comme les trois autres vocabulaires fermés de ce
+  /// contexte : un entier lierait le schéma à l'ordre de déclaration et rendrait la table illisible.
+  /// ⚠️ Et <b>aucune contrainte de contrôle n'énumère les valeurs</b> — pas plus que pour
+  /// <c>category</c> : le cas nul est refusé par le domaine à l'écriture et par le rendu à la
+  /// lecture, et une liste de mots recopiée en SQL aurait exigé une migration à chaque membre neuf
+  /// pour ce que deux gardes tiennent déjà.
+  /// </para>
+  /// </remarks>
+  private static void ConfigureTheOrigin(EntityTypeBuilder<Screening> builder)
+  {
+    builder.Property(screening => screening.Origin)
+      .HasColumnName("listing_origin")
+      .HasMaxLength(ScreeningSchema.ClosedVocabularyLength)
+      .HasConversion(origin => origin.Name, name => ListingOrigin.FromName(name))
+      .UsePropertyAccessMode(PropertyAccessMode.Field)
+      .IsRequired();
   }
 
   /// <summary>

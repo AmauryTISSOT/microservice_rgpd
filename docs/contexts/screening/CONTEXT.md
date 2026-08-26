@@ -85,6 +85,13 @@ avant la lecture**. « Entier » veut dire ici *non interrompu*, jamais *complet
 la table 300 sur 312 ne produit rien, quand un relevé de 3 tables sur 300 — parce que le compte n'en
 montrait que 3 — est rendu sans que rien ne rougisse. Ce que la clause d'incomplétude en dit à
 l'`Operator` est alors la seule chose qui l'en avertisse.
+⚠️ **Un relevé au compte partiel est sincère, partiel et muet.** Si la base ne rend qu'une partie de
+son catalogue **sans le dire** — un compte qui ne voit qu'un schéma, une vue système filtrée —, le
+pivot produit sera parfaitement valide, le `Screening` parfaitement cohérent, et **rien dans le
+format** ne pourra signaler le manque : le service ne connaît pas le nombre de colonnes qu'il aurait
+dû voir. C'est le même angle mort que la provenance, un cran plus bas. Aucun mécanisme ne l'attrape,
+et aucun ne doit prétendre l'attraper — un « compte attendu » demandé à l'`Operator` serait une
+seconde source de vérité sur un fait que personne ne vérifie.
 ⚠️ **Cette rigueur-là ne s'étend pas au `ColumnPreview`, et c'est délibéré.** Le schéma est tout ou
 rien parce que l'`Omission relue` repose sur lui. Un aperçu manquant, lui, est **toléré** — il ne
 retire aucune ligne du rapport de détection — à la seule condition d'être **nommé** manquant.
@@ -103,8 +110,9 @@ l'`Omission silencieuse` déplacée d'un cran ; avec lui, l'absence est **nommé
 peut dire qu'il n'a pas regardé un signal qui n'existait pas plutôt que de laisser croire qu'il l'a
 regardé en vain.
 Sa forme exacte — les neuf champs, l'en-tête, la ligne de fin et les neuf cas de refus — vit dans
-[`pivot-format.md`](./pivot-format.md), parce qu'elle a deux producteurs (les requêtes par dialecte)
-et un consommateur, et que des clés qui ne sont écrites nulle part en toutes lettres divergent.
+[`pivot-format.md`](./pivot-format.md), parce qu'elle a deux producteurs — les requêtes par dialecte
+que l'`Operator` joue, et le scanner qui l'écrit en C# — pour un seul consommateur, et que des clés
+qui ne sont écrites nulle part en toutes lettres divergent.
 _Avoid_ : Schema, Catalog, Inventory, Dump, Export, Snapshot ⚠️ les cinq premiers sont
 sur la liste _Avoid_ de `Manifest`, qui garde la clause « déclaré, non découvert » : les reprendre
 ici ferait lire ce relevé comme un recensement du paysage du client, ce qu'il n'est pas.
@@ -130,18 +138,65 @@ juste ; ce qui a changé, c'est qu'il y a désormais **deux gestes**, et que le 
 nom. La réadmission ne tient qu'aussi longtemps que le test ci-dessus est appliqué.
 ⚠️ **Il n'existe pas sur le chemin collé**, et ce n'est pas une omission : là, l'`Operator` fait
 lui-même, hors du service et avec la requête qu'on lui fournit, ce que le scan ferait pour lui.
+⚠️ **La règle mécanique est désormais tenue par un garde, et le garde est plus grossier qu'elle.**
+`NamesTheGestureWithTheOnlyWordTheGlossaryGivesIt` refuse « scan » **sans réserve** dans l'onglet et
+le titre — qui nomment l'écran, et donc le rapport — et n'en tolère ailleurs l'emploi qu'**attaché à
+la base qu'il joint** : « connecter une base et lancer un scan ». C'est un proxy de la règle du
+glossaire, pas la règle elle-même : une phrase qui passe le garde peut encore employer le mot à tort,
+et c'est la relecture qui l'attrape. Le mot est arrivé sur les écrans avec
+[#308](https://github.com/AmauryTISSOT/microservice_rgpd/issues/308), qui livre la voie connectée.
 _Avoid_ : Crawl, Discovery, Probe, Introspection, sondage, exploration ⚠️ `Discovery` et
 `exploration` promettent que le service cherche ce qu'il ne sait pas d'avance trouver, alors qu'il
 lit un schéma puis *n* colonnes nommées ; `Probe` et `sondage` promettent un prélèvement méthodique
 visant à conclure, ce que le `ColumnPreview` n'est pas.
+
+**ListingOrigin** — « origine du relevé » :
+Par quel des deux chemins le `ColumnListing` qu'un `Screening` a lu est entré : l'`Operator` l'a
+**collé**, ou le service l'a **scanné**. C'est une propriété du `Screening`, **enregistrée avec
+lui** — la `Clause d'incomplétude` est rendue jusque sur l'archive, des mois après que la chaîne de
+connexion a cessé d'exister, et rien d'autre de la ligne ne dit d'où venait le relevé.
+⚠️ **Trois cas, et le troisième est le cas nul.** `Unspecified` occupe la position 0 et **existe pour
+être refusé** : sans lui, `Collé` serait la valeur qu'on obtient par oubli — un `default`, une
+colonne remplie par défaut, un chemin d'écriture neuf qui ne pense pas à la poser —, et la panne
+rentrerait par la porte de derrière. Un rapport **scanné** se lirait comme collé, et la clause qu'il
+rend affirmerait que le service *n'a jamais vu une seule valeur* sur un rapport qui en a lu cinq par
+colonne. Le refus est **bruyant des deux côtés** : à l'enregistrement, la fabrique lève ; à
+l'affichage, le rendu lève plutôt que de deviner.
+⚠️ **Un booléen est refusé nommément.** `IsPasted` ferait du collage le cas normal et de la connexion
+l'exception, quand les deux chemins **coexistent et qu'aucun ne remplace l'autre** — et il n'aurait
+pas de cas nul, donc pas de refus possible.
+⚠️ **Elle ne voyage pas dans `ScreeningCounts`.** La clause reçoit **deux** choses, les comptes et
+l'origine, et ce qu'elle a besoin de savoir reste lisible dans sa signature.
+⚠️ **Elle ne dit pas la provenance, et c'est la confusion à ne pas faire.** Elle nomme le **chemin**
+par lequel le relevé est entré, jamais la base dont il vient : un relevé scanné sur l'adresse de la
+recette est aussi sincère, entier et faux qu'un relevé d'hier collé à la main. `Enregistré, jamais
+vérifié` vaut des deux côtés — voir `ColumnListing`.
+_Avoid_ : `Source`, `Provenance`, `IsPasted`, mode, canal ⚠️ `Source` et `Provenance` promettent de
+dire **d'où** vient le relevé, ce qu'aucun des deux chemins ne sait ; `mode` et `canal` laisseraient
+croire à un réglage de service, quand c'est un fait daté du rapport.
 
 **ColumnPreview** — « aperçu » :
 Les quelques valeurs — **cinq**, à la livraison — que le `Scan` a lues dans une colonne, et que
 l'écran montre à l'`Operator` **pendant qu'il arbitre**. Elles ne prouvent rien, elles n'entrent dans
 aucun chiffre rendu, et elles meurent : voir `Rien de réel ne reste`.
 ⚠️ **Un aperçu n'est jamais vide.** Il est **soit** des valeurs, **soit** une **raison nommée** de
-n'en porter aucune — jamais rien, et **jamais les deux à la fois**. ⚠️ **L'énumération est close et
-tient en quatre familles**, arrêtées par
+n'en porter aucune — jamais rien, et **jamais les deux à la fois**.
+⚠️ **Mais les deux membres n'ont plus la même durée de vie, et c'est un amendement, pas une
+exception.** Les **valeurs** vivent en mémoire du processus et meurent avec la session d'arbitrage ;
+la **raison**, elle, est enregistrée sur la `ScreenedColumn` et vit aussi longtemps que le rapport —
+voir `PreviewAbsenceReason`. L'interdiction de fond ne bouge pas : jamais des valeurs **et** une
+raison. Ce qui a changé est qu'un aperçu **expiré** n'emporte pas avec lui ce que le service savait
+de son absence.
+⚠️ **Les deux bornes vivent sur ce type, et elles n'ont pas d'autre source** : les **cinq** valeurs
+et la coupure à **254** caractères. La requête de prélèvement les lit là, et la clause qui écrit
+« cinq valeurs au plus » aussi. Écrit à la main des deux côtés, le chiffre divergerait au premier
+changement de borne — et c'est le texte rendu à l'`Operator` qui se mettrait à mentir, sans que rien
+ne rougisse.
+⚠️ **Rien ne le fait ressortir.** Il descend dans `Core` pour que le port sortant le nomme, et
+**aucun champ** de `ScreenedColumn`, de `ScreenedListing` ni de `ColumnListing` ne sait porter une
+valeur lue. Un aperçu n'entre jamais dans un objet persisté, et c'est un garde d'`ArchitectureTests`
+qui le tient plutôt qu'une intention.
+⚠️ **L'énumération des raisons est close et tient en quatre familles**, arrêtées par
 [#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278) : la colonne porte un **type non
 prélevable** (un binaire, dont cinq valeurs ne diraient rien à un humain) ; les **droits sont
 refusés** ; **aucune valeur n'a été retournée** ; la **lecture a échoué** (délai, panne,
@@ -224,10 +279,167 @@ d'aperçu **quitte l'écran entièrement**. Écrire « valeurs expirées » dans
 **troisième forme**, que la clause ci-dessus interdit. L'aperçu n'est pas devenu vide : il n'existe
 plus. Et le message est vrai sans réserve — relancer un scan ferait reculer ce rapport-là, donc aucun
 geste ne rend ses aperçus.
+⚠️ **Une expiration n'est pas une péremption, et le motif de forme reste arbitrable.** L'écran le dit
+en même temps qu'il annonce la perte. Refuser l'arbitrage aurait laissé pour seule issue de relancer
+un scan — c'est-à-dire de détruire le travail déjà tranché pour récupérer cinq valeurs qui ne prouvent
+rien. Et les **raisons** d'absence, elles, restent affichées : elles sont enregistrées sur la
+`ScreenedColumn`, ce sont des propriétés de la colonne et non des aperçus.
+⚠️ **Un redémarrage du service les efface, et sa phrase n'est ni celle de l'expiration ni celle de
+l'éviction.** Les trois rendent un cache vide et ne disent pas la même chose — une durée écoulée, une
+panne, un relevé qui a pris la place —, et les confondre annoncerait une perte à qui n'a pas subi
+celle-là : voir `PreviewAvailability`. Un relevé **collé**, lui, ne dit rien du tout de ses aperçus,
+exactement comme ses quatre comptes d'absence sont **absents** plutôt qu'à zéro.
+⚠️ **L'expiration est la seule falaise dure de la tenabilité de l'écran, et elle est consignée ici
+pour être sue.** Les compteurs de l'arbitrage sont **linéaires** — `clics = 936 + 3N`,
+`chargements = 624 + N` — donc sans seuil : rien n'y bascule. La pause de deux heures, elle, bascule,
+et **une réunion de trois heures tue les aperçus à n'importe quel taux de signalement**. Ce que la
+montée du taux change n'est pas l'existence du problème mais la **fraction** des arbitrages posés à
+l'aveugle — et le danger n'y est pas le pari de l'`ADR-0012` mais les faux positifs des règles de
+forme **sans clé de contrôle**. Rien n'est rouvert ici : la falaise est écrite, elle n'est pas
+corrigée, et la corriger demanderait d'écrire les valeurs — ce que `Rien de réel ne reste` refuse.
 _Avoid_ : Sample, échantillon, ValueSample, extrait, Excerpt, Snippet, Peek ⚠️ `Sample` et
 `échantillon` sont les mots qu'on écrira par réflexe, et c'est précisément pour cela qu'ils sont
 nommés ici ; `extrait` et `Excerpt` supposeraient un tout dont on aurait pris une part
 représentative, ce qui est la même promesse sous un autre habit.
+
+**ScreeningPreviews** — « les aperçus d'un rapport » :
+Ce que le cache a **encore** à montrer pour **un rapport**, et ce qu'il en dit quand il n'a plus
+rien : les valeurs vivantes avec leur décompte, ou la phrase qui explique leur absence. C'est le
+grain du **rapport**, jamais celui de la colonne — un `ColumnPreview` est ce que porte **une**
+colonne.
+⚠️ **Il existe pour que l'expiration ne remplisse aucune case.** L'après se dit **une fois**, à
+l'échelle du rapport, et le bloc d'aperçu quitte l'écran entièrement ; écrire « valeurs expirées » là
+où les valeurs se lisaient aurait fabriqué la **troisième forme** que `ColumnPreview` interdit, dans
+le champ même que la clause protège.
+⚠️ **Il ne porte aucune raison d'absence, et c'est ce qui les fait survivre à l'expiration.** Les
+raisons sont enregistrées sur la `ScreenedColumn` : elles restent affichées quand les valeurs ne sont
+plus là — voir `PreviewAbsenceReason`.
+⚠️ **Son décompte dit un délai, jamais une échéance.** La fenêtre est glissante : « il vous reste
+1 h 47 **si vous ne rouvrez plus cet écran** » est la seule lecture honnête, et c'est celle que la
+phrase porte.
+_Avoid_ : PreviewCache, PreviewState, expiration, TTL ⚠️ `PreviewCache` nommerait le **magasin**
+quand ce type est la **réponse** qu'on lui demande — le magasin, c'est `ScanPreviews` ; `expiration`
+et `TTL` réduisent à une durée écoulée ce qui compte trois façons de n'avoir plus rien, dont deux ne
+sont pas des durées.
+
+**PreviewAvailability** — « état des aperçus d'un rapport » :
+Dans quel état le cache laisse un rapport, et **ce que l'écran en dit**. Énumération close à **cinq**
+membres : *jamais prélevé* (un relevé collé), *vivants*, *expirés*, *effacés par un redémarrage*,
+*évincés par un autre relevé*.
+⚠️ **Trois façons de n'avoir plus rien, et elles ne se disent pas de la même manière.** Une durée
+écoulée, un redémarrage du service et un jeu évincé par le relevé suivant rendent tous un cache vide.
+Fondus en une seule phrase, l'écran aurait dû choisir laquelle des trois mentir — et la plus coûteuse
+est réelle : supprimer dans l'historique le relevé qui a évincé les aperçus fait **remonter** le
+rapport scanné au rang de courant, et lui annoncer un redémarrage serait annoncer une **panne à qui
+n'en a pas subi**. Ce que les trois partagent, et qui est vrai des trois, est « ils ne reviendront pas
+pour ce rapport ».
+⚠️ **Le membre *jamais prélevé* n'a pas de phrase, et c'est délibéré.** Sur un relevé **collé**, rien
+n'a jamais été prélevé : il n'y a pas de perte à annoncer, et lui en annoncer une affirmerait qu'un
+prélèvement a eu lieu — exactement comme quatre comptes d'absence à zéro y inventeraient une
+incomplétude.
+⚠️ **La phrase est attachée au membre, écrite une fois** — la règle de `PreviewAbsenceReason`,
+appliquée ici pour le même motif. *Vivants* fait exception et n'en porte aucune : elle dit une phrase
+**et un délai** qui change à chaque rendu, et se compose donc chez `ScreeningPreviews`.
+⚠️ **Ce n'est pas une `PreviewAbsenceReason` de plus.** Une raison dit pourquoi **une colonne** n'a
+rien à montrer, elle est enregistrée, et elle entre dans les quatre comptes de la `Clause
+d'incomplétude` ; ces cinq états portent sur le **rapport**, ne sont enregistrés nulle part, et
+n'entrent dans aucun compte. Les ranger ensemble aurait fait grandir de trois une énumération dont la
+fermeture est la promesse.
+_Avoid_ : PreviewStatus, `IsExpired`, `HasPreviews` ⚠️ un booléen n'aurait pas su séparer les trois
+pertes, donc pas su éviter la phrase qui ment ; `Status` promet un état de machine quand ce qu'on
+nomme ici est **ce que l'écran dit**.
+
+**PreviewAbsenceReason** — « raison d'absence d'aperçu » :
+Le second membre d'un `ColumnPreview` : **pourquoi** une colonne n'a aucune valeur à montrer.
+Énumération close à **quatre familles** — *type non prélevable*, *droits refusés*, *aucune valeur
+retournée*, *lecture échouée* —, et le nombre compte autant que la liste.
+⚠️ **Elle quitte l'aperçu éphémère et devient une propriété enregistrée de la `ScreenedColumn`,
+nullable.** Sans cela, les **quatre comptes** de la `Clause d'incomplétude` seraient incalculables une
+heure après le `Scan`, quand les aperçus ont expiré — et l'écran d'archive deviendrait **plus
+rassurant** que celui du jour même, ce qui est le mode de panne exact que ce contexte existe pour ne
+pas avoir. **Ce n'est pas une entorse à `Rien de réel ne reste` : une raison n'est pas une valeur
+lue.**
+⚠️ **Elle est nulle sur le chemin collé, et elle l'est aussi sur les rapports d'avant la connexion.**
+Rien n'y a jamais été prélevé, et les quatre comptes y sont **absents**, jamais à zéro : « zéro
+colonne sans aperçu » se lirait comme un prélèvement qui a tout réussi.
+⚠️ **Le grain est celui du geste que l'`Operator` peut poser**, et non celui de la panne rencontrée :
+« droits refusés » vit à part parce qu'elle est la seule qu'il puisse corriger — il ira demander un
+accès. « Délai dépassé », « connexion tombée » et « scan interrompu » ne lui offrent rien de plus les
+unes que les autres et se rangent ensemble.
+⚠️ **La phrase est attachée au membre, écrite une fois.** Composée à l'écran, elle aurait divergé
+d'une surface à l'autre, et c'est le jour de cette divergence qu'une phrase se met à dire un constat
+sur la donnée plutôt que l'observation. Elle **ne cite jamais le message du pilote** — voir
+`ColumnPreview`.
+⚠️ **Une absence d'aperçu n'est pas un signalement.** Elle ne dit rien de ce que la colonne porte :
+une ligne `Unflagged` peut parfaitement en porter une, et son arbitrage n'en est pas changé.
+_Avoid_ : `PreviewError`, `SampleFailure`, erreur, échec ⚠️ trois des quatre familles ne sont pas des
+erreurs — un binaire non prélevé et une table qui rend zéro ligne sont des lectures qui ont réussi —,
+et les ranger sous « erreur » ferait chercher une panne là où il n'y en a pas.
+
+**IDatabaseScanner** — « scanner de base » :
+Le port sortant par lequel le contexte va lire une base tierce : il reçoit un **dialecte** et une
+**chaîne de connexion**, et rend le **texte pivot** du relevé et les `ColumnPreview` des colonnes.
+C'est le **seul** point du contexte qui touche une base d'un tiers, et le seul que les tests
+fonctionnels doublent.
+⚠️ **Le nom passe le test du chemin collé.** Un scanner ne travaille **jamais** sur un relevé collé :
+le mot ne peut donc désigner que ce qui va chercher. C'est exactement pour cela qu'il reste
+**interdit** sur `IScreeningEngine`, qui sert les deux chemins.
+⚠️ **Il rend un texte pivot, jamais un `ColumnListing`.** La voie connectée **repasse par
+l'ingestion** comme un collage : « un seul format pivot » tient alors par construction plutôt que par
+relecture, et les neuf refus sont réutilisés au lieu d'être réécrits. Le `ColumnListing` n'a d'ailleurs
+aucun constructeur public — la même clause, écrite dans le type.
+⚠️ **Il rapporte son avancement, et il est annulable.** L'avancement est ce qui permet à `ScanProgress`
+de compter pour de vrai — le catalogue lu, puis une table prélevée à la fois. L'annulation coupe la
+**requête en cours**, pas seulement la boucle qui l'entoure : un jeton qui se contenterait de sortir
+laisserait un `SELECT` courir sur la base du client après que l'`Operator` a quitté l'écran. Sous
+SQLite, dont le pilote n'a pas d'asynchrone et dont le jeton est inerte, cela passe par
+`sqlite3_interrupt` sur la poignée de la connexion. Sous MariaDB/MySQL, `MySqlConnector` le fait
+lui-même : il envoie la coupure au serveur, et la requête rate. ⚠️ **Ce qui décide alors est le
+jeton, jamais le numéro rendu.** Le serveur écrit `1317` — « requête interrompue » — aussi bien pour
+la coupure du service que pour un `KILL QUERY` du DBA du client ou un `max_execution_time` dépassé ;
+le relire comme une annulation ferait dire à l'écran « vous avez abandonné » d'un scan que la base a
+coupé sous lui. Sans annulation, un `1317` est donc un échec de la **base**, comme tout ce qu'elle a
+répondu.
+⚠️ **Aucune exception du pilote ne le traverse.** Ce qui rate devient une `PreviewAbsenceReason` quand
+une colonne seule est en cause, ou un échec à **phase** et **famille** nommées quand c'est le scan.
+Ni message du pilote, ni hôte, ni utilisateur : `Rien de réel ne reste` se tient **à la frontière**,
+et non dans chaque écran en aval.
+⚠️ **À zéro objet, il distingue deux fins.** La base **sans table** et la base **absente du catalogue
+de schémas** rendent toutes deux zéro colonne ; seule la seconde appelle un geste — demander un accès.
+C'est la **seule lecture d'existence** qui subsiste, et ce n'est jamais un contrôle de privilèges.
+⚠️ **Sous SQLite, la seconde fin est structurellement inatteignable**, et c'est le fichier qui le veut :
+`pragma_database_list` rend toujours `main` pour un fichier réellement ouvert. La lecture d'existence
+est faite quand même — c'est le dialecte qui répond, pas le code qui suppose —, et la distinction
+elle-même est éprouvée par la doublure. Elle devient atteignable avec PostgreSQL, où elle se lit sur
+`pg_namespace` : **zéro schéma applicatif** est la base absente du catalogue de schémas, **zéro
+table dans des schémas qui existent** est la base sans table.
+⚠️ **Sous PostgreSQL, le relevé lit `pg_catalog` et jamais l'`information_schema`.** Les vues
+conformes sont filtrées **ligne à ligne par privilège** : un compte sans droit sur une table ne la
+voit pas, et le relevé rendu serait **silencieusement partiel** — sincère, entier de son point de
+vue, amputé de la moitié des tables du client, sans que rien nulle part ne sache qu'il manque
+quelque chose. C'est l'`Omission silencieuse` que la clause d'incomplétude ne pourrait même pas
+rattraper. Deux des neuf champs du pivot n'existent d'ailleurs que là : `col_description` et
+`obj_description` n'ont aucun équivalent conforme.
+⚠️ **Le binaire s'écarte par une liste noire nommée type par type**, jamais par `typcategory = 'U'` :
+cette catégorie de PostgreSQL range `uuid`, `jsonb`, `json`, `xml` et les types PostGIS **avec**
+`bytea`. L'employer comme filtre binaire refuserait en silence de prélever un identifiant de
+personne et un document JSON entier — et une colonne PostGIS de coordonnées est de la donnée de
+localisation, qui se prélève.
+⚠️ **Sous MariaDB/MySQL, la seconde fin est atteignable elle aussi, et c'est ce qui décide de la
+forme de la connexion.**
+Le dialecte se connecte au **serveur**, sans se placer sur une base, puis demande à
+`information_schema.SCHEMATA` si le catalogue connaît celle qu'on lui a nommée. Connecté *sur* la
+base, le serveur aurait refusé l'ouverture elle-même — `1049` si elle n'existe pas, `1044` si le
+compte n'y a aucun droit —, et « absente du catalogue » se serait déguisée en échec de connexion.
+⚠️ **Et sous MariaDB/MySQL, les deux causes de l'absence se confondent en une seule fin, exprès.**
+`information_schema.SCHEMATA` ne montre que ce sur quoi le compte a un privilège : « la base n'existe
+pas » et « le compte ne la voit pas » y sont indiscernables. Les distinguer demanderait très
+exactement la requête de privilège que le retrait du garde de #286 interdit — et le geste que
+l'écran demande, *demander un accès*, est le même dans les deux cas.
+_Avoid_ : `DatabaseReader`, `SchemaLoader`, `Importer`, `Crawler` ⚠️ les deux premiers ne disent pas
+qu'on va **chercher**, et passeraient donc sans bruit sur le chemin collé ; `Importer` promet une
+entrée dans le système, alors que rien n'entre avant l'ingestion ; `Crawler` promet une exploration
+qui suit ce qu'elle trouve, quand le scanner lit un catalogue et s'arrête.
 
 **ScanProgress** — « avancement du scan » :
 Ce qu'un `Scan` en cours donne à voir pendant qu'il court : la **phase** où il en est, et le **compte
@@ -248,6 +460,18 @@ sur le chemin collé. Ce n'est pas une entorse au test, parce que le test porte 
 on colle, il n'y a ni écran d'attente ni `ScanProgress`. La raison est que l'`Operator` n'attend pas
 un `ColumnListing`, il attend un rapport, et le faire attendre deux fois pour un seul geste serait
 une fidélité au vocabulaire payée par lui.
+⚠️ **Et le scan ne contredit pas « rien ne tourne », parce que rien ne le déclenche.** Le dépôt porte
+un garde d'architecture — `NothingRunsInTheBackgroundTests` — qui refuse tout `IHostedService`, toute
+minuterie, tout ordonnanceur : le tableau des demandes RGPD est une **requête**, et jamais l'état
+qu'un processus arrêté rendrait vide et rassurant. Un scan **survit** bien à la requête HTTP qui l'a
+lancé, et c'est une nouveauté de cette livraison ; mais il est **déclenché par un geste**, il finit,
+et il ne laisse aucune échéance à rattraper. Ce que le garde interdit est ce qui part **tout seul**,
+pas ce qui court plus longtemps qu'un échange. Un scan **périodique**, un scan **relancé
+automatiquement**, une reprise **planifiée** tomberaient tous du mauvais côté — et la reprise est de
+toute façon impossible par construction, la chaîne de connexion n'ayant pas survécu. La frontière
+elle-même n'est pas décidée ici : elle porte sur un garde de **dépôt**, qui vaut pour les quatre
+assemblages de production et non pour ce seul contexte, et elle est écrite dans
+[l'ADR-0015](../../adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md).
 ⚠️ **Il est un fait du service, pas d'une session.** Un seul en vol par déploiement : un second
 `Operator` arrivant pendant un scan voit le même écran et le même compte, et se voit **refuser** un
 second lancement, celui en cours étant nommé. Fermer l'onglet n'arrête rien.
@@ -273,6 +497,34 @@ interdit. Reprendre serait de toute façon impossible : la chaîne n'a pas surv�
 la connexion a réussi, le catalogue a répondu —, mais produire un `Screening` vide ferait **reculer
 le rapport courant** au profit d'un rapport qui ne dit rien, et détruirait des jours d'arbitrage pour
 une connexion d'essai. L'écran d'attente le dit et ne produit rien.
+⚠️ **Relu contre le code livré par
+[#308](https://github.com/AmauryTISSOT/microservice_rgpd/issues/308).** Les types portent ce que
+cette entrée dit : `ScanProgress` est le transitoire, `ScanId` son identité, `ScansInFlight` le fait
+du déploiement — un seul en vol —, `ScanPreviews` le jeu d'aperçus vivant, `IScanLauncher` ce par
+quoi un scan part. La lecture rend un **`ScanSnapshot`** — la phase, le compte, la fin — pris **d'un
+seul coup** : lire la phase puis le compte aurait laissé l'écran afficher « aperçus, table 312 sur
+312 » à propos d'une phase déjà quittée. ⚠️ **Il ne s'appelle pas `ScanState`**, qui est sur la liste
+_Avoid_ ci-dessous : c'est un **instant de lecture**, pas un état rangé quelque part.
+⚠️ **Un point que cette entrée ne disait pas et que le code impose : le dernier scan reste retrouvable
+après sa fin.** Sans quoi l'écran d'attente ne pourrait pas répondre « c'est fini, voici le rapport »
+à qui arrive une seconde après la dernière ligne écrite — il dirait « ce scan n'existe plus » d'un
+scan qui a parfaitement réussi. Un seul est retenu : le précédent s'efface quand le suivant part.
+⚠️ **Relu contre le code livré par
+[#309](https://github.com/AmauryTISSOT/microservice_rgpd/issues/309), qui impose deux points de
+plus.** Le premier : **l'abandon est une fin du scan, et c'est la seule que le port ne rend pas.** Le
+`IDatabaseScanner` en rend quatre — relevé, base sans table, base absente du catalogue, échec —, et
+l'annulation reste chez lui une `OperationCanceledException` : c'est l'appelant qui reprend la main.
+Mais l'écran d'attente, lui, doit **nommer** cette reprise plutôt que se taire, sans quoi il
+rafraîchirait indéfiniment un scan que plus personne ne mène et `ScansInFlight` tiendrait la place
+jusqu'au redémarrage. La ligne de partage est donc écrite dans le type, et non dans un commentaire :
+une fin sait dire si elle **vient du scanner**, et le compte des fins de la base se lit là-dessus.
+⚠️ **Le second : l'avancement porte le SGBD, et rien d'autre de ce que l'`Operator` a fourni.** Le
+refus d'un second lancement doit nommer le scan en cours pour que l'`Operator` sache si le service
+travaille pour lui ou pour quelqu'un d'autre — et « le scan en cours » sans rien qui le décrive n'est
+qu'un identifiant. Le **dialecte** est le seul morceau de la demande qui puisse s'afficher : il est un
+choix fait dans une liste fermée de trois, que le formulaire montre déjà. L'hôte, le nom de la base et
+l'utilisateur ne se connaissent, eux, qu'en **découpant la chaîne de connexion** — et une chaîne
+rendue par morceaux reste une chaîne rendue, ce que `Rien de réel ne reste` interdit.
 _Avoid_ : ScanState, ScanJob, statut du scan, progression, pourcentage ⚠️ `ScanState` et `statut`
 rangeraient parmi les états ce qui a été délibérément tenu à côté d'eux ; `ScanJob` promet une file
 et des reprises, quand il n'y en a qu'un et qu'il ne reprend jamais ; `pourcentage` est le mot qui
@@ -283,6 +535,9 @@ Ce que la détection a rendu sur un `ColumnListing` : une `ScreenedColumn` par c
 l'agrégat de ce contexte. C'est le **rapport de détection** que l'interface nomme, et c'est **l'acte
 et son résultat**, comme une `Qualification` — il n'existe pas d'objet « lancement » distinct de
 l'objet rendu.
+Il porte la `ListingOrigin` du relevé qu'il a lu, **enregistrée avec lui** : c'est le seul endroit qui
+dise, des mois plus tard sur l'archive, si l'`Operator` l'avait collé ou si le service l'avait
+scanné.
 Il est **détenu** et vit plusieurs jours : un rapport de détection s'arbitre en plusieurs fois,
 colonne par colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au
 `EvidenceLog`, n'a aucune échéance et vit jusqu'à ce qu'un `Operator` le supprime.
@@ -365,8 +620,9 @@ relevé, **et l'identité du moteur qui les a produites**.
 rend ; un moteur servi apprend la version qu'on lui sert au moment où il répond, et une propriété
 posée à côté de l'appel dirait la version configurée plutôt que celle qui a répondu.
 ⚠️ **Ce n'est pas encore un `Screening`.** Il y manque ce que le moteur n'a pas à décider :
-l'identité du rapport de détection, l'instant du lancement, le nom de base et le dialecte. C'est le
-geste qui assemble, jamais le moteur.
+l'identité du rapport de détection, l'instant du lancement, le nom de base, le dialecte et
+la `ListingOrigin` par laquelle le relevé est entré. C'est le geste qui assemble, jamais le moteur —
+et le moteur, lui, **ne sait pas** lequel des deux chemins il lit.
 _Avoid_ : ScreeningResult, ScreeningOutcome, Predictions, Findings ⚠️ `Outcome` est le mot de l'issue,
 qui n'appartient qu'à l'humain ; `Predictions` promet un modèle et un score.
 
@@ -375,6 +631,9 @@ qui n'appartient qu'à l'humain ; `Predictions` promet un modèle et un score.
 **ScreenedColumn** :
 Ce qu'un `Screening` dit d'**une** colonne du `ColumnListing` : sa `PersonalDataCategory`, la
 `RuleStrength` de la règle qui l'a produite, un motif en prose française, et son état d'arbitrage.
+Elle porte en plus, quand le relevé a été scanné, la `PreviewAbsenceReason` qui dit pourquoi aucun
+aperçu ne l'accompagnait — **la seule chose d'un `ColumnPreview` qui lui parvienne**, et la seule qui
+descende en base.
 ⚠️ **Il y en a une par colonne du relevé, sans exception** — y compris là où le service n'a rien vu.
 Ce n'est pas un détail de présentation : c'est le mécanisme entier de l'`Omission relue`. Une colonne
 absente du `Screening` serait une colonne que personne ne relit jamais.
@@ -688,6 +947,14 @@ main le rendait impraticable ; ce prix a disparu, et il ne reste qu'un bouton te
 jamais été le motif — le nom n'en était que l'exécuteur incident. Le motif est écrit au même endroit
 que la règle, sur `IsWithinReachOfABatchGesture`, pour que qui viendra proposer d'élargir le lot le
 lise avant d'écrire la ligne.
+⚠️ **Et la forme qui porte tout cela — un écran par table, deux boutons par ligne — tient toujours,
+mais sur une jambe.** Deux motifs avaient écarté la forme concurrente, l'écran unique : le premier
+était le prix de la signature, et il est **tombé avec le nom**. Le second survit seul — le verrou
+`:has()` de l'écran unique, quoique du CSS pur, n'est qu'une **apparence**, que le domaine devrait
+doubler d'une règle vraie pour valoir quoi que ce soit. Le prix de la forme retenue est assumé et
+chiffré : 998 clics, 0 frappe, 998 chargements pour 312 tables et 4 980 colonnes. Rien n'est rouvert
+ici ; c'est écrit pour être su, parce qu'une décision qui ne tient plus que par un motif sur deux se
+rouvre un jour, et qu'il vaut mieux qu'elle se rouvre en le sachant.
 **Il pose n arbitrages individuels, jamais un état de lot** : chaque colonne atteinte porte sa propre
 date de service, exactement comme si elle avait été tranchée seule. Un
 arbitrage partagé entre n lignes ferait de n actes un seul objet, et le premier réarbitrage individuel
@@ -820,6 +1087,15 @@ une promesse générale, mais des bornes qui se vérifient une par une.
 - Les **textes longs sont tronqués par le SGBD**, avant de traverser le réseau.
 - Ce que le moteur fait de ces valeurs est borné aussi : il y cherche des **formes écrites d'avance**,
   jamais des mots. Aucun lexique ne s'applique aux valeurs.
+⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
+prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
+`commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
+celle-là qu'il faut lire. Ce que le moteur reconnaît, ce sont des **formes**, pas des entités nommées
+en contexte : `+33612345678` est un motif, reconnaissable par sa morphologie, sans modèle et sans
+corpus d'entraînement ; « Madame Dupont a téléphoné » est une entité nommée dans une phrase, et ce
+contexte n'y touche pas. Le service que rend ce corollaire — empêcher qu'on aille chercher des outils
+calibrés pour un problème qu'on n'a pas — est plus utile qu'avant, parce que c'est **maintenant**, en
+voyant des valeurs textuelles entrer, qu'un lecteur aura le réflexe d'y penser.
 ⚠️ **Une règle de forme se juge à ce qu'elle rapporte, et certaines rapportent négativement.** Un
 format sans clé de contrôle plafonne au taux de faux positifs de sa famille de colonnes, et quatre
 sont **nommément écartés** parce qu'ils coûtent plus qu'ils ne rendent : le **code postal** (81 % de
@@ -843,16 +1119,7 @@ connexion, pas de socket vers la production du client, pas d'échantillon de val
 Les trois interdictions sont tombées par
 [ADR-0012](../../adr/0012-la-connexion-le-scan-et-les-echantillons-entrent-dans-screening.md), qui
 écrit ce que le renversement achète et ce qu'il coûte. Ce qui n'est **pas** tombé est la liste
-ci-dessus, et l'entrée suivante.
-⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
-prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
-`commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
-celle-là qu'il faut lire. Ce que le moteur reconnaît, ce sont des **formes**, pas des entités nommées
-en contexte : `+33612345678` est un motif, reconnaissable par sa morphologie, sans modèle et sans
-corpus d'entraînement ; « Madame Dupont a téléphoné » est une entité nommée dans une phrase, et ce
-contexte n'y touche pas. Le service que rend ce corollaire — empêcher qu'on aille chercher des outils
-calibrés pour un problème qu'on n'a pas — est plus utile qu'avant, parce que c'est **maintenant**, en
-voyant des valeurs textuelles entrer, qu'un lecteur aura le réflexe d'y penser.
+ci-dessus, et le corollaire attaché plus haut à la reconnaissance de forme.
 _Avoid_ : NER, échantillon, sondage de valeurs, scan de contenu, profilage ⚠️ ces cinq mots ont
 survécu à la chute des trois interdictions, chacun pour une raison propre. `échantillon` et
 `sondage de valeurs` promettent un tirage qui **porte une inférence**, ce que cinq valeurs ne font
@@ -878,7 +1145,25 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   au scan dans un casier **indexé par la chaîne de connexion** : c'est une détention, même sans
   persistance, et pour une durée que le service ne contrôle pas. Le prix est un établissement de
   connexion par scan, négligeable devant un relevé qui se compte en secondes ; le gain est qu'à la
-  question « où le secret du client se trouve-t-il ? », il n'y a rien à répondre.
+  question « où le secret du client se trouve-t-il ? », il n'y a **presque** rien à répondre.
+  ⚠️ **« Presque », et le mot est mesuré, pas prudent. Il amende une phrase de l'ADR-0012**, dont
+  le premier garde-fou dit « la chaîne de connexion **ne survit pas au scan** […] elle vit en mémoire
+  le temps du relevé ». Les quatre interdits que cette phrase énumère — jamais persistée, jamais
+  journalisée, jamais tracée, jamais reprise dans un message d'erreur — tiennent tous ; ce qui ne
+  tient pas est « le temps du relevé », et la durée réelle est celle que l'ADR accorde lui-même aux
+  valeurs échantillons : **jusqu'au redémarrage du processus**. La contradiction est donc partielle
+  et elle est nommée ici plutôt qu'écrasée en silence.
+  `MySqlConnector` range la chaîne de
+  connexion **telle quelle** — mot de passe compris — comme **clé** d'un dictionnaire statique, et il
+  le fait même à `Pooling=false` ; `ClearAllPools` ne l'en retire pas, et aucune API publique du
+  pilote n'y donne prise. ⚠️ **La réserve ne vaut que pour ce pilote-là, et l'asymétrie est réelle :**
+  Npgsql cache la même chose au même endroit, mais il offre une `NpgsqlDataSource` explicite qui
+  contourne le cache — le dialecte PostgreSQL la bâtit dans un `await using`, et un garde d'IL
+  interdit le raccourci. `MySqlConnector` n'a pas d'équivalent qui échappe au registre statique : ce
+  n'est pas un choix du service, c'est le pilote qui ne laisse pas la prise. Ce qui subsiste après un scan MariaDB/MySQL est donc une **chaîne en
+  mémoire du processus**, jusqu'à son arrêt : aucune session ouverte, aucune valeur lue, rien de
+  persisté ni d'exporté — mais pas rien. C'est mesuré, épinglé par un test qui rougira le jour où le
+  pilote cessera de le faire, et c'est la seule réserve que ce contexte porte sur cette promesse.
   ⚠️ **Et côté SQLite, `base` ne porte que le nom du fichier, jamais son chemin.** Là où les deux
   autres dialectes y écrivent un mot inoffensif — `facturation` —, SQLite n'a pas de nom de base à
   donner, et le chemin complet y **est** la chaîne de connexion à peu de chose près. Or ce champ est
@@ -899,6 +1184,16 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   valeur lue ; les garder en mémoire tiendrait en RAM ce que la base a le droit de refuser. C'est
   aussi ce qui rend inutile tout plafond en octets — cinq valeurs tronquées par le SGBD, pour cinq
   mille colonnes, pèsent quelques dizaines de mégaoctets, et il n'y en a qu'un jeu à la fois.
+  ⚠️ **Et « réarmé par les seuls écrans qui montrent des aperçus » est une propriété du code, pas une
+  consigne.** Il n'existe qu'un seul geste sur le cache, et **montrer *est* réarmer** : le rapport,
+  l'historique, l'archive et l'accueil ne prolongent rien parce qu'aucun d'eux n'a quoi que ce soit à
+  appeler. Un couple « lire » / « prolonger » aurait laissé à chaque écran neuf le soin de choisir, et
+  la promesse serait devenue une note de relecture.
+  ⚠️ **Le cache n'est pas une couture de test, et aucun test ne l'instancie pour l'interroger.** Il
+  n'offre aucune méthode « fais-les expirer maintenant » : les écrans le traversent par la frontière
+  HTTP, et le seul levier sur sa durée est le `TimeProvider` injecté — c'est-à-dire très exactement le
+  levier dont l'exploitation dispose. Une porte réservée aux tests aurait éprouvé un chemin que la
+  production n'a pas.
 ⚠️ **Ce sont deux promesses et non une, et elles ne se vérifient pas au même endroit.** Qui relit le
 code du prélèvement contrôle ce qui **entre** ; qui relit le code de persistance contrôle ce qui
 **reste**. Les fondre en une seule clause ferait un champ unique dont les deux moitiés finiraient par

@@ -62,11 +62,22 @@ public sealed class IncompletenessClause
   }
 
   /// <summary>
-  /// <b>Partie 1 — le périmètre lu, fermé.</b> Ce qui a été regardé compte exactement un élément :
-  /// ce relevé. C'est la seule liste de la clause qu'on ait le droit de fermer, et c'est aussi celle
-  /// qui porte les comptes.
+  /// <b>Partie 1 — le périmètre lu.</b> C'est la <b>seule des quatre parties qui varie</b> avec
+  /// l'origine du relevé (ADR-0013), et c'est aussi celle qui porte les comptes.
   /// </summary>
   public ReadPerimeter Perimeter { get; }
+
+  /// <summary>
+  /// D'où venait le relevé que ce rapport a lu. <b>C'est ce qui fait varier la partie 1</b>, et rien
+  /// d'autre : les trois autres parties sont les mêmes des deux côtés.
+  /// </summary>
+  /// <remarks>
+  /// Elle est rendue ici plutôt que seulement au fond de <see cref="Perimeter"/> parce que ce que le
+  /// service a lu se dit <b>aussi hors de la clause</b> — le rappel sous le compteur
+  /// <c>Signalées</c>, en haut des deux écrans de rapport, est lu plus souvent qu'elle et doit varier
+  /// avec elle.
+  /// </remarks>
+  public ListingOrigin Origin => Perimeter.Origin;
 
   /// <summary>
   /// <b>Partie 2 — hors périmètre, ouvert.</b> Ses items sont des exemples et le disent ; l'ensemble
@@ -151,12 +162,18 @@ public sealed class IncompletenessClause
   /// relevé serait une clause dont les comptes ne veulent rien dire, et il n'y a aucun usage pour
   /// elle : la clause accompagne une réponse, elle n'existe pas seule.
   /// </remarks>
+  /// <remarks>
+  /// ⚠️ <b>L'origine se lit sur l'agrégat, et <c>Screening.Origin</c> lève quand elle est
+  /// absente.</b> C'est voulu : un rapport dont on ne sait pas s'il a été collé ou scanné rendrait
+  /// ici l'une des deux clauses au hasard, et l'une des deux ment.
+  /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="screening"/> est absent.</exception>
+  /// <exception cref="InvalidOperationException"><paramref name="screening"/> ne porte pas d'origine.</exception>
   public static IncompletenessClause For(Screening screening)
   {
     ArgumentNullException.ThrowIfNull(screening);
 
-    return For(ScreeningCounts.Of(screening));
+    return For(ScreeningCounts.Of(screening), screening.Origin);
   }
 
   /// <summary>
@@ -169,20 +186,63 @@ public sealed class IncompletenessClause
   /// a calculés. Sans ce chemin, rendre une <see cref="ScreenedColumn"/> sans sa clause serait
   /// devenu le chemin économe, et la clause serait tombée là où elle est le plus nécessaire.
   /// </remarks>
-  /// <exception cref="ArgumentNullException"><paramref name="counts"/> est absent.</exception>
-  public static IncompletenessClause For(ScreeningCounts counts)
+  /// <param name="counts">Les comptes de ce relevé, obtenus de la base.</param>
+  /// <param name="origin">
+  /// D'où venait ce relevé. ⚠️ <b>Elle est un paramètre, et ne voyage pas dans
+  /// <paramref name="counts"/></b> : cet objet s'appelle <em>les comptes du rapport</em>, y ranger
+  /// une non-quantité lui ferait perdre ce que son nom dit — et la clause reçoit <b>deux</b> choses,
+  /// ce qui reste lisible dans cette signature.
+  /// </param>
+  /// <exception cref="ArgumentNullException"><paramref name="counts"/> ou <paramref name="origin"/> est absent.</exception>
+  /// <exception cref="ArgumentException"><paramref name="origin"/> est le cas nul : personne n'a dit d'où venait ce relevé.</exception>
+  public static IncompletenessClause For(ScreeningCounts counts, ListingOrigin origin)
   {
     ArgumentNullException.ThrowIfNull(counts);
 
-    return new IncompletenessClause(ReadPerimeter.Of(counts));
+    return new IncompletenessClause(
+      ReadPerimeter.Of(counts, ListingOrigin.KnownOrThrow(origin, nameof(origin))));
   }
 }
 
 /// <summary>
-/// Ce que la détection <b>a</b> lu — la seule liste de la clause qui soit fermée, parce que c'est la
-/// seule qui puisse l'être sans mentir.
+/// Ce que la détection <b>a</b> lu — la seule liste de la clause qui soit fermée, et la <b>seule des
+/// quatre parties qui varie</b> avec l'origine du relevé.
 /// </summary>
-/// <param name="ReadAsSignal">Ce qui a été lu <b>comme signal</b>, c'est-à-dire comme indice de sens.</param>
+/// <remarks>
+/// <para>
+/// ⚠️ <b>Sur le chemin collé, pas un caractère ne bouge</b>, et c'est une décision et non un effet
+/// de bord : la promesse la plus forte du produit — <i>le service n'a vu aucune valeur</i> — reste
+/// <b>intégralement vraie</b> chez l'<c>Operator</c> qui colle, et on ne paie pas la vérité du
+/// chemin neuf avec la sienne.
+/// </para>
+/// <para>
+/// ⚠️ <b>La variance est portée par un type, jamais par un booléen</b> (ADR-0013). Un
+/// <c>estScanné</c> aurait fait du collage le cas normal et de la connexion l'exception, quand les
+/// deux chemins coexistent et qu'aucun ne remplace l'autre.
+/// </para>
+/// <para>
+/// ⚠️ <b><see cref="IsClosed"/> ne dit pas la même chose des deux côtés, et c'est le point le plus
+/// coûteux de la partie.</b> Ce qui a été regardé compte toujours exactement un élément — ce relevé
+/// —, mais sur le chemin scanné <b>ce relevé est celui que le compte de connexion a présenté</b> :
+/// la fermeture cesse d'être une propriété que le service tient lui-même, et rien dans la liste ne
+/// pourrait le dire. C'est la seconde phrase de <see cref="Statement"/> qui le reconnaît, et c'est
+/// pourquoi elle ne peut pas être coupée.
+/// </para>
+/// </remarks>
+/// <param name="Origin">
+/// D'où venait le relevé lu. C'est <b>le</b> fait dont tout le reste de la partie dépend.
+/// </param>
+/// <param name="ReadAsSignal">
+/// Ce qui a été lu <b>comme signal</b>, c'est-à-dire comme indice de sens.
+/// <para>
+/// ⚠️ <b>Sur le chemin scanné, les valeurs prélevées y entrent, en cinquième puce.</b> Elles ont
+/// servi à <b>deviner</b> et non à trier : une colonne <c>ref_3</c> dont le nom ne dit rien est
+/// signalée parce que ses valeurs portent une clé d'IBAN. Les ranger dans
+/// <paramref name="ReadOnlyToFilter"/> aurait été faux, et leur ouvrir une <b>troisième liste</b>
+/// aurait contredit ce qui a été tranché du moteur — une règle de forme est un <c>Trigger</c> de
+/// plus versé au même sac.
+/// </para>
+/// </param>
 /// <param name="ReadOnlyToFilter">
 /// Ce qui n'a été lu <b>que pour écarter</b>. La séparation d'avec le signal n'est pas une nuance :
 /// écrire « j'ai lu les types » ferait croire qu'un <c>varchar(10)</c> et un <c>date</c> sont deux
@@ -206,22 +266,94 @@ public sealed class IncompletenessClause
 /// SGBD n'en rendent aucun, et sur bien des relevés réels ce compte égale
 /// <paramref name="ColumnsRead"/>.
 /// </param>
+/// <param name="ColumnsWithoutAPreview">
+/// Combien de colonnes n'ont aucun aperçu, <b>par famille</b> et <b>zéros compris</b>.
+/// <para>
+/// ⚠️ <b>Sur le chemin collé, elle vaut <c>null</c> — absente, jamais <see cref="PreviewAbsenceCounts.None"/>.</b>
+/// Rendre « 0 par droits refusés » sur un relevé collé affirmerait qu'un prélèvement a eu lieu et
+/// n'a rien refusé : une incomplétude inventée là où il n'y en a pas.
+/// </para>
+/// </param>
 public sealed record ReadPerimeter(
+  ListingOrigin Origin,
   IReadOnlyList<string> ReadAsSignal,
   IReadOnlyList<string> ReadOnlyToFilter,
   int ColumnsRead,
   int TablesRead,
-  int ColumnsWithoutAComment)
+  int ColumnsWithoutAComment,
+  PreviewAbsenceCounts? ColumnsWithoutAPreview)
 {
-  /// <summary>Ce qui ouvre la partie, en une phrase.</summary>
-  public string Statement { get; } =
-    "Ce rapport de détection n'a lu qu'un relevé de colonnes, celui que vous avez collé, et rien "
-    + "d'autre.";
+  /// <summary>D'où venait le relevé lu, et ce n'est jamais le cas nul.</summary>
+  /// <remarks>
+  /// ⚠️ <b>Le refus est ici et pas seulement dans <see cref="IncompletenessClause.For(ScreeningCounts, ListingOrigin)"/>.</b>
+  /// Un record positionnel a un constructeur public : sans ce garde, <c>new ReadPerimeter(Unspecified, …)</c>
+  /// rendrait en silence les phrases du <b>chemin collé</b> — « le service n'a jamais vu une seule
+  /// valeur » — sur un relevé dont personne ne sait ce qu'il a lu, ce qui est très exactement la
+  /// panne que le cas nul existe pour empêcher.
+  /// </remarks>
+  public ListingOrigin Origin { get; } = ListingOrigin.KnownOrThrow(Origin, nameof(Origin));
+
+  /// <summary>
+  /// Ce qui ouvre la partie, en une phrase sur le chemin collé et en <b>deux</b> sur le chemin
+  /// scanné.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La seconde phrase du chemin scanné ne peut pas être coupée : ici la queue est la
+  /// preuve.</b> Sans elle, la première affirme qu'un relevé a été lu et laisse croire qu'il est
+  /// celui de la base ; ce que le service tient est seulement ce qu'un compte de connexion lui a
+  /// présenté, et lui seul sait ce qu'il a tu.
+  /// </remarks>
+  public string Statement =>
+    Origin == ListingOrigin.Scanned
+      ? "Ce rapport de détection n'a lu qu'un relevé de colonnes, celui que le compte de connexion a "
+        + "présenté au service, et rien d'autre. Le service ne peut pas savoir si ce compte lui a "
+        + "présenté toute la base."
+      : "Ce rapport de détection n'a lu qu'un relevé de colonnes, celui que vous avez collé, et rien "
+        + "d'autre.";
 
   /// <summary>Ce qui accompagne la seconde liste, et qui dit pourquoi elle n'est pas la première.</summary>
-  public string FilterStatement { get; } =
-    "Lus seulement pour écarter, jamais comme indice de sens : la forme d'une colonne ne dit pas ce "
-    + "qu'elle porte, et le service n'a jamais vu une seule valeur.";
+  /// <remarks>
+  /// ⚠️ <b>Sur le chemin scanné, la queue tombe et rien ne la remplace</b> — traitement inverse de
+  /// celui du rappel sous le compteur <c>Signalées</c>, et c'est délibéré : ici le début de phrase
+  /// porte sa propre justification et la queue n'était qu'un ajout devenu faux.
+  /// </remarks>
+  public string FilterStatement =>
+    Origin == ListingOrigin.Scanned
+      ? "Lus seulement pour écarter, jamais comme indice de sens : la forme d'une colonne ne dit pas "
+        + "ce qu'elle porte."
+      : "Lus seulement pour écarter, jamais comme indice de sens : la forme d'une colonne ne dit pas "
+        + "ce qu'elle porte, et le service n'a jamais vu une seule valeur.";
+
+  /// <summary>
+  /// La mise en garde du <b>premier venu</b> : ce que ces quelques valeurs ne prouvent pas.
+  /// <b>Absente — pas vide — sur le chemin collé</b>, où il n'y a aucune valeur à qualifier.
+  /// <para>
+  /// ⚠️ <b>Absente aussi quand <see cref="NoPreviewSucceeded"/>.</b> « Ces cinq valeurs sont les
+  /// cinq premières » ne se dit pas d'un relevé où aucune n'a été prélevée : la phrase affirmerait
+  /// une lecture qui n'a pas eu lieu, dans la partie qui existe pour ne rien surestimer.
+  /// </para>
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Sans elle, la cinquième puce devient dangereuse.</b> Une table de deux millions de
+  /// courriels réels peut n'en montrer que cinq en <c>example.com</c> — jeux d'essai, comptes de
+  /// démonstration, données d'amorçage —, et l'<c>Operator</c> qui les lit comme représentatives
+  /// <b>écarte une colonne qu'il fallait retenir</b> : une omission causée par l'écran lui-même.
+  /// </para>
+  /// <para>
+  /// <b>Elle est une propriété distincte plutôt qu'une phrase fondue dans la puce</b>, pour la raison
+  /// qui structure toute la clause : qu'elle se teste. Et elle vit dans la partie 1 parce qu'elle est
+  /// une limite de la <b>lecture</b>, valant pour tout le rapport — au contraire de la coupure à
+  /// <see cref="ColumnPreview.MaxValueLength"/> caractères, qui porte sur <b>une</b> valeur précise
+  /// et s'écrit à son contact.
+  /// </para>
+  /// </remarks>
+  public string? FirstComeBias =>
+    Origin == ListingOrigin.Scanned && !NoPreviewSucceeded
+      ? $"Ces {ColumnPreview.MaxValuesInWords} valeurs sont les {ColumnPreview.MaxValuesInWords} "
+        + "premières que la base a rendues, dans l'ordre où elle les a rendues : elles ne "
+        + "représentent pas la colonne."
+      : null;
 
   /// <summary>
   /// La condition que portent les commentaires, et elle n'est pas une précaution de style : plusieurs
@@ -231,19 +363,60 @@ public sealed record ReadPerimeter(
   /// </summary>
   public const string CommentCondition = "lorsque le SGBD en rend et lorsqu'ils existent";
 
+  /// <summary>
+  /// Ce qui se dit <b>à l'échelle du rapport</b> quand aucun prélèvement n'a abouti nulle part.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>En plus de la raison portée par chaque ligne, jamais à sa place.</b> La raison par ligne
+  /// dit pourquoi <i>cette</i> colonne n'a pas d'aperçu ; elle ne dit pas qu'aucune n'en a. Un
+  /// <c>Operator</c> qui déroule un rapport de cinq mille lignes ne recompose pas ce fait, et c'est
+  /// justement celui qui devrait le faire rescanner.
+  /// </remarks>
+  public const string NoPreviewSucceededStatement =
+    "Aucune valeur n'a pu être prélevée sur ce relevé : pas une seule des colonnes lues n'a d'aperçu. "
+    + "La détection s'y est faite sur les seuls noms, types et commentaires.";
+
+  /// <summary>
+  /// Aucun prélèvement n'a abouti sur ce relevé — toutes les colonnes lues portent une raison
+  /// d'absence.
+  /// </summary>
+  /// <remarks>
+  /// <b>Faux sur le chemin collé</b>, et pas par accident : rien n'y a été tenté, donc rien n'y a
+  /// échoué. C'est la même décision que celle qui rend <see cref="ColumnsWithoutAPreview"/> absente
+  /// plutôt que nulle.
+  /// </remarks>
+  public bool NoPreviewSucceeded =>
+    ColumnsWithoutAPreview is { } absences && ColumnsRead > 0 && absences.Total == ColumnsRead;
+
   /// <summary>Cette liste est-elle fermée ? <b>Oui</b>, et c'est la seule de la clause à l'être.</summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle ne dit pas la même chose des deux côtés</b> — voir le troisième avertissement du
+  /// type. Sur le chemin scanné, ce que <see cref="Statement"/> reconnaît en seconde phrase est
+  /// exactement ce que ce booléen ne peut plus promettre seul.
+  /// </remarks>
   public bool IsClosed => true;
 
-  /// <summary>Le périmètre lu de ce rapport : le texte constant, et ses trois comptes.</summary>
-  internal static ReadPerimeter Of(ScreeningCounts counts)
+  /// <summary>Le périmètre lu de ce rapport : le texte que son origine commande, et ses comptes.</summary>
+  internal static ReadPerimeter Of(ScreeningCounts counts, ListingOrigin origin)
   {
+    var scanned = origin == ListingOrigin.Scanned;
+
+    List<string> readAsSignal =
+    [
+      "les noms de tables",
+      "les noms de colonnes",
+      $"les commentaires de table, {CommentCondition}",
+      $"les commentaires de colonne, {CommentCondition}",
+    ];
+
+    if (scanned)
+    {
+      readAsSignal.Add($"{ColumnPreview.MaxValuesInWords} valeurs au plus de chaque colonne");
+    }
+
     return new ReadPerimeter(
-      [
-        "les noms de tables",
-        "les noms de colonnes",
-        $"les commentaires de table, {CommentCondition}",
-        $"les commentaires de colonne, {CommentCondition}",
-      ],
+      origin,
+      readAsSignal,
       [
         "le type de la colonne",
         "sa nullabilité",
@@ -251,7 +424,8 @@ public sealed record ReadPerimeter(
       ],
       counts.Columns,
       counts.Tables,
-      counts.ColumnsWithoutAComment);
+      counts.ColumnsWithoutAComment,
+      scanned ? counts.ColumnsWithoutAPreview : null);
   }
 }
 
@@ -308,18 +482,19 @@ public sealed record CategoriesBeyondReach(IReadOnlyList<CategoryBeyondReach> Ca
   [
     new CategoryBeyondReach(
       PersonalDataCategory.HealthData,
-      "Une donnée de santé peut n'exister que dans les valeurs d'une colonne au nom parfaitement "
-      + "neutre. Le nom ne dit rien, le type ne dit rien : une détection de schéma ne la verra "
-      + "pas."),
+      "Aucune forme ne dit « donnée de santé ». Un IBAN porte une clé de contrôle, un courriel une "
+      + "arobase ; un diagnostic est de la prose, et ce service reconnaît des formes, jamais des "
+      + "entités nommées en contexte."),
     new CategoryBeyondReach(
       PersonalDataCategory.SpecialCategoryData,
       "La biométrie ne relève de l'art. 9 qu'« aux fins d'identifier une personne de manière "
-      + "unique » : c'est une finalité, et aucun lecteur de schéma ne connaît la finalité d'un "
-      + "traitement."),
+      + "unique » : c'est une finalité, et une finalité ne se déclare nulle part dans une base — ni "
+      + "dans un nom, ni dans un type, ni dans une valeur."),
     new CategoryBeyondReach(
       PersonalDataCategory.CriminalOffenceData,
-      "L'art. 10 réserve ces traitements aux autorités publiques, et rien dans un nom de colonne ne "
-      + "l'annonce de façon fiable."),
+      "L'art. 10 réserve ces traitements aux autorités publiques : c'est une qualité du responsable "
+      + "du traitement, et rien dans une base ne l'annonce — la donnée d'une condamnation ressemble "
+      + "à n'importe quel texte."),
   ]);
 
   /// <summary>Ce qui ouvre la partie, et qui dit sur quel registre elle parle.</summary>

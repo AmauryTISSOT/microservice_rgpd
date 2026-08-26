@@ -174,10 +174,14 @@ public class ScreenedColumnsTests(PostgreSqlFixture postgres)
   }
 
   /// <summary>
-  /// ⚠️ <b>Les deux producteurs des neuf comptes rendent les mêmes neuf nombres.</b> L'agrégat
-  /// chargé sert le sommaire, la base sert l'écran d'une table, et rien dans un type de neuf entiers
-  /// n'empêche les deux de diverger : retenues et écartées interverties d'un côté, l'
-  /// <c>Operator</c> lit deux écrans qui se contredisent sans qu'aucun ne paraisse faux.
+  /// ⚠️ <b>Les deux producteurs des comptes rendent les mêmes nombres.</b> L'agrégat chargé sert le
+  /// sommaire, la base sert l'écran d'une table, et rien dans un type de comptes n'empêche les deux
+  /// de diverger : retenues et écartées interverties d'un côté, l'<c>Operator</c> lit deux écrans
+  /// qui se contredisent sans qu'aucun ne paraisse faux.
+  /// <para>
+  /// ⚠️ <b>Le relevé porte des absences d'aperçu dans plusieurs familles, et pas une seule</b> : à
+  /// zéro partout, l'égalité des quatre comptes serait vraie de deux calculs également muets.
+  /// </para>
   /// </summary>
   [Fact]
   public async Task CountsTheSameNineNumbersFromTheDatabaseAsFromTheLoadedReport()
@@ -187,6 +191,12 @@ public class ScreenedColumnsTests(PostgreSqlFixture postgres)
       AFlaggedColumn("email", position: 2),
       ANothingSeenColumn("id_adh", position: 3),
       ANothingSeenColumn("nom", position: 4, tableComment: null),
+      ANothingSeenColumn(
+        "photo", position: 5, previewAbsence: PreviewAbsenceReason.UnsampleableType),
+      ANothingSeenColumn(
+        "iban", position: 6, previewAbsence: PreviewAbsenceReason.AccessDenied),
+      ANothingSeenColumn(
+        "notes", position: 7, previewAbsence: PreviewAbsenceReason.AccessDenied),
       ANothingSeenColumn("montant", position: 1, table: "cotisations"));
 
     await SaveAsync(screening);
@@ -236,6 +246,7 @@ public class ScreenedColumnsTests(PostgreSqlFixture postgres)
       ScreeningId.Next(),
       "galette_prod",
       "postgresql",
+      ListingOrigin.Pasted,
       Engine,
       columns.Length,
       columns,
@@ -272,10 +283,12 @@ public class ScreenedColumnsTests(PostgreSqlFixture postgres)
     int position,
     string table = "adherents",
     string? columnComment = null,
-    string? tableComment = "Les adhérents de l'association.")
+    string? tableComment = "Les adhérents de l'association.",
+    PreviewAbsenceReason? previewAbsence = null)
   {
     return ScreenedColumn.NothingSeen(
-      AListedLine(column, position, table, columnComment, tableComment));
+      AListedLine(column, position, table, columnComment, tableComment),
+      previewAbsence);
   }
 
   private async Task SaveAsync(Screening screening)

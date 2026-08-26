@@ -13,7 +13,9 @@ namespace MicroserviceRgpd.UseCases.Screenings;
 /// </remarks>
 /// <param name="Flagged">
 /// Combien de colonnes la détection a signalées. ⚠️ Le complément est ce qu'elle <b>n'a pas vu</b>,
-/// jamais ce qui serait inoffensif : le service n'a jamais vu une seule valeur.
+/// jamais ce qui serait inoffensif : sur un relevé collé le service n'a vu aucune valeur, et sur un
+/// relevé scanné il n'en a lu que <see cref="ColumnPreview.MaxValues"/> par colonne — ce qui ne dit
+/// pas ce qu'une colonne contient.
 /// </param>
 /// <param name="Retained">Combien un humain a retenues.</param>
 /// <param name="SetAside">Combien un humain a écartées.</param>

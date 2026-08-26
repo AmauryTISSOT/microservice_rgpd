@@ -1,0 +1,141 @@
+@page "/detection/connexion"
+@model MicroserviceRgpd.Web.Pages.Screenings.ConnectionModel
+@using MicroserviceRgpd.Core.Screenings
+@{
+  ViewData["Title"] = "Connecter une base et lancer le scan";
+}
+
+<h1>Connecter une base et lancer le scan</h1>
+
+@*
+  LES TROIS PHRASES SE LISENT AVANT LE CHAMP. Ce sont les trois conséquences que l'Operator ne peut
+  pas deviner : ce que son compte doit avoir, ce que le service fait de sa chaîne, et ce qu'il perd
+  de vue en lançant. Sous le bouton, elles auraient été lues après coup.
+*@
+<p class="caveat">@ConnectionModel.RightsSentence</p>
+
+<p class="caveat">
+  La chaîne de connexion n'est <strong>ni conservée, ni journalisée, ni rejouée</strong> : elle est
+  remise au pilote pour la durée du scan, et le service n'en garde rien — il n'existe aucun écran, ni
+  aucune table, où la retrouver. Un scan suivant redemandera la chaîne.
+</p>
+
+<p class="caveat">
+  Lancer un scan <strong>renvoie le rapport de détection courant à l'archive</strong>, et le nouveau
+  prend sa place. Les arbitrages déjà rendus restent lisibles dans l'archive ; ils ne sont
+  <strong>pas repris</strong> sur le nouveau rapport.
+</p>
+
+@if (Model.AlreadyRunning is { } running)
+{
+  @*
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
+    LE SECOND LANCEMENT EST REFUSÉ, ET LE REFUS NOMME LE SCAN QUI COURT.
+
+    Un seul scan en vol par déploiement : sans cet écran, l'Operator ne saurait pas si le service
+    travaille pour lui ou pour quelqu'un d'autre — et il relancerait, sur la production d'un tiers,
+    une lecture déjà en cours. Rien n'a été lancé ici : le port n'a pas été appelé une seconde fois.
+
+    ⚠️ LE SGBD, ET RIEN DE PLUS DE CE QUE L'AUTRE OPERATOR A FOURNI. Ni hôte, ni nom de base, ni
+    utilisateur : ceux-là ne se connaissent qu'en découpant la chaîne de connexion, et une chaîne
+    rendue par morceaux reste une chaîne rendue.
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
+  *@
+  <div class="refusals">
+    <p class="refusal">
+      <strong>Un scan est déjà en cours sur ce déploiement</strong>, et le service n'en mène qu'un à
+      la fois. Rien n'a été lancé : votre chaîne de connexion n'a été remise à personne.
+    </p>
+
+    <dl class="facts">
+      <dt>Le scan en cours</dt>
+      <dd>@running.Scan</dd>
+
+      <dt>Son SGBD</dt>
+      <dd>@running.Dialect</dd>
+
+      <dt>Où il en est</dt>
+      <dd>en phase « @running.Phase »</dd>
+
+      <dt>Lancé à</dt>
+      <dd>@running.StartedAt</dd>
+    </dl>
+
+    <p><a asp-page="Scan" asp-route-scanId="@running.Scan">Suivre le scan en cours</a></p>
+  </div>
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+  <div class="refusals">
+    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+    {
+      <p class="refusal">@refusal.ErrorMessage</p>
+    }
+  </div>
+}
+
+<form method="post">
+  <h2>1. Le SGBD</h2>
+
+  <fieldset class="dialects">
+    <legend>Le SGBD de la base à scanner</legend>
+    @foreach (var dialect in ConnectionModel.Dialects)
+    {
+      <p>
+        <input type="radio" id="dialect-@dialect.PivotName" name="Dialect"
+               value="@dialect.PivotName"
+               checked="@(dialect.PivotName == Model.Dialect)" />
+        <label for="dialect-@dialect.PivotName">@dialect.FrenchLabel</label>
+      </p>
+    }
+  </fieldset>
+
+  @*
+    AUCUN CHAMP DE TÉLÉVERSEMENT. Sous SQLite, la tentation serait d'accepter le fichier ; ce serait
+    faire entrer une base entière — des valeurs réelles, en masse — dans un service dont la propriété
+    première est de n'en conserver aucune. Le fichier reste chez le client, et c'est le SERVICE qui
+    doit pouvoir l'atteindre.
+  *@
+  <p class="caveat">
+    Sous <strong>SQLite</strong>, le chemin donné doit désigner un fichier
+    <strong>joignable par le service lui-même</strong>, sur la machine où il tourne ou sur un
+    montage qu'il voit. Aucun fichier ne se téléverse ici : le service ne reçoit pas votre base, il
+    va la lire là où elle est.
+  </p>
+
+  <h2>2. La chaîne de connexion</h2>
+
+  <p>
+    <label for="connection-string">La chaîne de connexion</label>
+    <span class="hint">
+      Un compte en lecture sur toute la base, comme dit plus haut. Elle n'est pas réaffichée après
+      l'envoi, et le champ repart vide.
+    </span>
+    @*
+      Le champ repart TOUJOURS vide : rien n'y est réécrit, pas même après un refus. Un secret
+      d'accès recopié dans la réponse se retrouve dans le cache du navigateur, dans un cliché
+      d'écran, et dans le signalement de bogue qui l'accompagne.
+    *@
+    <input type="password" id="connection-string" name="ConnectionString"
+           autocomplete="off" spellcheck="false" value="" />
+  </p>
+
+  @*
+    LE SCAN NE VOUS ATTEND PAS. Il court hors de cette requête : l'onglet fermé ne l'annule pas, et
+    l'écran d'attente donne le compte réel de la phase où il en est.
+  *@
+  <p class="hint">
+    Le scan part <strong>maintenant</strong> et vous mène à son écran d'attente. Fermer l'onglet ne
+    l'annule pas ; le service n'en mène <strong>qu'un à la fois</strong>.
+  </p>
+
+  <button type="submit" class="primary">Lancer le scan</button>
+</form>
+
+<p>
+  <a asp-page="Deposit">Déposer plutôt un relevé collé</a> — c'est la voie à prendre quand le service
+  n'a pas le droit de joindre la base.
+</p>
+
+<p><a asp-page="Report">Revenir au rapport de détection courant</a></p>

@@ -3,6 +3,10 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Screenings;
+using MicroserviceRgpd.Infrastructure.Data;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MicroserviceRgpd.FunctionalTests.Screenings;
 
@@ -49,6 +53,19 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
 
   /// <summary>Une table d'un rapport de détection archivé.</summary>
   internal const string ArchivedTable = "/detection/archive/table";
+
+  /// <summary>
+  /// La <c>Cartographie</c> du rapport courant, en JSON.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'adresse annonce ce qu'elle rend, et c'est tout son intérêt</b> : elle se colle dans un
+  /// courriel, s'ouvre d'un clic et se met en favori. Deux routes plutôt qu'une route et un
+  /// paramètre de format — sans script, un menu n'existe pas.
+  /// </remarks>
+  internal const string MapAsJson = "/detection/cartographie.json";
+
+  /// <summary>La <c>Cartographie</c> du rapport courant, en CSV.</summary>
+  internal const string MapAsCsv = "/detection/cartographie.csv";
 
   private static readonly DateTimeOffset GeneratedOn = new(2026, 8, 10, 9, 30, 0, TimeSpan.Zero);
 
@@ -169,6 +186,57 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
     return $"{Table}?schema={Uri.EscapeDataString(schema)}&table={Uri.EscapeDataString(table)}";
   }
 
+  /// <summary>
+  /// L'<b>ancre</b> d'une colonne, telle que l'écran d'une table la pose et telle que la
+  /// redirection d'un arbitrage la vise.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle est écrite ici en toutes lettres, et non calculée par le code de production.</b>
+  /// La recalculer avec la fonction qu'elle éprouve aurait rendu vert n'importe quel changement
+  /// de forme : ce qu'un test garde d'une ancre, c'est très exactement qu'elle ne bouge pas.
+  /// </remarks>
+  internal static string AnchorOf(string column)
+  {
+    return $"colonne-{column}";
+  }
+
+  /// <summary>
+  /// Le <b>bloc</b> d'une colonne sur l'écran d'une table : sa <b>fiche</b> si la détection l'a
+  /// signalée, sa <b>ligne</b> sinon — ou <c>null</c> si l'écran ne la porte pas.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Un seul lecteur pour les deux temps de l'écran.</b> Les signalées se lisent en fiches
+  /// dépliables et les <c>Unflagged</c> en lignes : un helper par forme aurait laissé chaque
+  /// fichier de tests décider tout seul de ce qu'il regarde, et une colonne passée d'un temps à
+  /// l'autre serait devenue introuvable sans qu'aucun test ne rougisse.
+  /// </remarks>
+  internal static string? BlockOf(string table, string column)
+  {
+    var anchor = Regex.Escape(AnchorOf(column));
+
+    var card = Regex.Match(
+      table, $@"<details[^>]*id=""{anchor}""[^>]*>.*?</details>", RegexOptions.Singleline);
+
+    if (card.Success)
+    {
+      return card.Value;
+    }
+
+    var row = Regex.Match(
+      table, $@"<tr[^>]*id=""{anchor}""[^>]*>.*?</tr>", RegexOptions.Singleline);
+
+    return row.Success ? row.Value : null;
+  }
+
+  /// <summary>
+  /// Combien de colonnes l'écran d'une table rend vraiment, <b>les deux temps confondus</b> — la
+  /// mesure que « celle-ci est là » ne donne pas.
+  /// </summary>
+  internal static int ColumnCountOf(string table)
+  {
+    return Regex.Matches(table, @"id=""colonne-").Count;
+  }
+
   /// <summary>L'adresse du sommaire d'un rapport de détection archivé.</summary>
   internal static string ArchiveOf(string screening)
   {
@@ -262,6 +330,59 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
       "Le dépôt d'un relevé sincère doit mener au rapport qu'il vient de produire.");
 
     return await ReadAsync(Report);
+  }
+
+  /// <summary>
+  /// Fait de ce rapport un rapport <b>scanné</b>, et pose au besoin une raison d'absence d'aperçu
+  /// sur des colonnes nommées.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>C'est la seule entorse de ce fichier à sa propre règle — « aucun rapport n'est posé en
+  /// base à la main » —, et elle est bornée.</b> Aucun rapport n'est posé : le dépôt HTTP produit
+  /// celui-ci en entier, avec son ingestion, son moteur et son écriture. Ce qui est amendé après
+  /// coup est <b>l'origine</b>, et uniquement parce qu'<b>aucun chemin d'écriture ne rend encore un
+  /// relevé scanné</b> : le dépôt écrit <c>Pasted</c>, et le scan arrive plus tard dans la même
+  /// livraison.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Sans cette entorse, le témoin de la clause n'aurait pas de niveau 2</b> — celui qui
+  /// regarde l'écran —, et le rappel écrit en dur dans deux <c>.cshtml</c> n'aurait aucun test du
+  /// tout. Le jour où le dépôt par connexion existe, ce levier disparaît et les témoins passent par
+  /// lui.
+  /// </para>
+  /// </remarks>
+  internal async Task MakeItScannedAsync(
+    string screening, params (string Column, PreviewAbsenceReason Reason)[] withoutAPreview)
+  {
+    using var scope = factory.Services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var origin = await database.Database.ExecuteSqlRawAsync(
+      "update screenings set listing_origin = {0} where id = {1}",
+      ListingOrigin.Scanned.Name,
+      Guid.Parse(screening));
+
+    origin.ShouldBe(
+      1,
+      "Le levier n'a atteint aucun rapport : le témoin du chemin scanné serait vert sur un rapport "
+      + "resté collé, ce qui est très exactement la correspondance inversée qu'il existe pour "
+      + "attraper.");
+
+    foreach (var (column, reason) in withoutAPreview)
+    {
+      var touched = await database.Database.ExecuteSqlRawAsync(
+        "update screened_columns set preview_absence_reason = {0} "
+        + "where screening_id = {1} and column_name = {2}",
+        reason.Name,
+        Guid.Parse(screening),
+        column);
+
+      touched.ShouldBe(
+        1,
+        $"Le levier n'a atteint aucune ligne pour « {column} » : le témoin serait vert sur un "
+        + "rapport que rien n'a amendé.");
+    }
   }
 
   internal async Task<string> ReadAsync(string address)

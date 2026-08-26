@@ -2,6 +2,7 @@ using Ardalis.Result;
 using Mediator;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.UseCases;
+using MicroserviceRgpd.UseCases.Screenings.ExportPersonalDataMap;
 
 namespace MicroserviceRgpd.ArchitectureTests;
 
@@ -30,8 +31,54 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// </remarks>
 public class IncompletenessClauseTravelsWithEveryAnswerTests
 {
-  /// <summary>Ce qu'un rendu ne peut pas exposer sans clause : le rapport, et sa ligne.</summary>
-  private static readonly Type[] WhatCannotTravelAlone = [typeof(Screening), typeof(ScreenedColumn)];
+  /// <summary>
+  /// Ce qu'un rendu ne peut pas exposer sans clause : le rapport, sa ligne, et les deux formes sous
+  /// lesquelles il s'exporte.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La <see cref="PersonalDataMap"/> y figure, et c'est ce qui rend l'exemption
+  /// non décorative.</b> Sans elle, l'export serait passé <b>en silence</b> : une projection n'étant
+  /// ni un <c>Screening</c> ni une <c>ScreenedColumn</c>, le garde ne l'aurait même pas regardée, et
+  /// la seule réponse du contexte qui rende un rapport sans sa clause n'aurait été inscrite nulle
+  /// part. Elle est ici pour que le geste soit vu, puis exempté <b>par son nom et pour un motif
+  /// écrit</b> — voir <see cref="ExemptedAndWhy"/>.
+  /// </remarks>
+  private static readonly Type[] WhatCannotTravelAlone =
+  [
+    typeof(Screening),
+    typeof(ScreenedColumn),
+    typeof(PersonalDataMap),
+    typeof(MappedColumn),
+  ];
+
+  /// <summary>
+  /// <b>La seule exemption, nommée et motivée.</b>
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>La <c>Cartographie</c> est la seule réponse de ce contexte qui rende un rapport sans sa
+  /// <c>Clause d'incomplétude</c></b>, et le renversement est assumé plutôt que subi :
+  /// l'<c>Operator</c> a tranché chaque ligne et choisit d'expédier le fichier ; ce qu'il en dit au
+  /// destinataire lui appartient. Quatre mécanismes de rattrapage ont été construits puis écartés —
+  /// bloc avant l'en-tête, bloc après les données, colonne répétée, ZIP — et un cinquième, une
+  /// colonne de provenance par ligne, examiné et écarté.
+  /// </para>
+  /// <para>
+  /// <b>Elle est écrite ici plutôt que tue.</b> Une exception qu'aucun test ne nomme est
+  /// indiscernable d'un oubli : celle-ci se lit, se date par le dépôt, et toute <i>autre</i> réponse
+  /// rendant un rapport sans clause rougit toujours.
+  /// </para>
+  /// </remarks>
+  private static readonly IReadOnlyDictionary<Type, string> ExemptedAndWhy =
+    new Dictionary<Type, string>
+    {
+      [typeof(ExportPersonalDataMapHandler)] =
+        "La Cartographie s'expédie hors du service par un geste explicite de l'Operator, qui a "
+        + "tranché chaque ligne : le service ne parle pas par-dessus son épaule dans un document "
+        + "qu'il n'expédie pas. Ce qui borne le renversement est que la clause reste sur TOUS les "
+        + "écrans, l'écran d'export compris, et que l'Omission relue est tenue dans le fichier "
+        + "lui-même, qui porte toutes les lignes.",
+    };
 
   /// <summary>
   /// Aucun gestionnaire du contexte ne rend un rapport ni une de ses lignes autrement que dans un
@@ -46,6 +93,7 @@ public class IncompletenessClauseTravelsWithEveryAnswerTests
   public void RendersNoScreeningNorScreenedColumnOutsideAScreeningAnswer()
   {
     var bare = HandlersOfTheContext()
+      .Where(handler => !ExemptedAndWhy.ContainsKey(handler.Handler))
       .Select(handler => (handler.Handler, Answer: AnswerOf(handler.Interface)))
       .Where(rendered => Exposes(rendered.Answer) && !IsAScreeningAnswer(rendered.Answer))
       .Select(rendered => $"  {rendered.Handler.FullName} → {Readable(rendered.Answer)}")
@@ -57,7 +105,51 @@ public class IncompletenessClauseTravelsWithEveryAnswerTests
       + Environment.NewLine + string.Join(Environment.NewLine, bare) + Environment.NewLine
       + "La clause est une propriété de la réponse, jamais une mention en pied de page : elle a été "
       + "choisie structurée pour être testable, et sans ce test l'argument qui l'a fait préférer à "
-      + "une prose tombe.");
+      + "une prose tombe. Une seule réponse en est exemptée — l'export de la Cartographie — et elle "
+      + "l'est nommément, pour un motif écrit : voir ExemptedAndWhy.");
+  }
+
+  /// <summary>
+  /// <b>L'exemption de l'export est réelle, unique, motivée — et elle porte.</b>
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ce test est ce qui empêche l'exemption d'être décorative.</b> Il vérifie que le geste
+  /// exempté existe pour de bon dans le contexte, et surtout que <b>sans l'exemption il rougirait</b>
+  /// : une exemption qui ne retient rien serait une ligne de commentaire déguisée en garde, et le
+  /// jour où l'export se remettrait à porter une clause — ou disparaîtrait — personne ne l'apprendrait
+  /// ici.
+  /// </remarks>
+  [Fact]
+  public void NamesTheOnlyExemptionAndTheReasonForIt()
+  {
+    ExemptedAndWhy.Count.ShouldBe(
+      1,
+      "La Cartographie est la SEULE réponse de ce contexte qui rende un rapport sans sa clause. En "
+      + "exempter une seconde n'est pas une ligne de configuration : c'est une décision de cadrage, "
+      + "et elle se prend ailleurs qu'ici.");
+
+    foreach (var (handler, why) in ExemptedAndWhy)
+    {
+      HandlersOfTheContext().Select(found => found.Handler).ShouldContain(
+        handler,
+        $"{handler.FullName} est exempté du garde et n'est plus un geste de Screening : "
+        + "l'exemption ne retient plus rien, et se lit comme une permission ouverte.");
+
+      why.ShouldNotBeNullOrWhiteSpace();
+
+      // ⚠️ Le cœur du test : sans son nom dans la liste, ce geste serait rouge. C'est ce qui fait
+      // du silence une impossibilité — le garde VOIT l'export, et le laisse passer sciemment.
+      var answer = AnswerOf(HandlersOfTheContext().Single(found => found.Handler == handler).Interface);
+
+      Exposes(answer).ShouldBeTrue(
+        $"{handler.FullName} est exempté, mais le garde ne l'aurait de toute façon pas retenu : "
+        + "l'exemption ne dit plus rien de ce qui se passe, et la seule réponse rendant un rapport "
+        + "sans clause redevient invisible.");
+
+      IsAScreeningAnswer(answer).ShouldBeFalse(
+        $"{handler.FullName} porte de nouveau une clause : retirez son exemption plutôt que de la "
+        + "laisser mentir.");
+    }
   }
 
   /// <summary>
@@ -71,6 +163,11 @@ public class IncompletenessClauseTravelsWithEveryAnswerTests
     Exposes(typeof(Screening)).ShouldBeTrue();
     Exposes(typeof(IReadOnlyList<ScreenedColumn>)).ShouldBeTrue();
     Exposes(typeof(Result<Screening>)).ShouldBeTrue();
+
+    // ⚠️ Et la cartographie aussi, sous ses deux formes : c'est le rapport rendu autrement, et une
+    // projection qui échapperait au garde le ferait taire sur la seule réponse qui l'intéresse.
+    Exposes(typeof(PersonalDataMap)).ShouldBeTrue();
+    Exposes(typeof(IReadOnlyList<MappedColumn>)).ShouldBeTrue();
 
     // Ce qui passe : l'enveloppe qui porte la clause, y compris lorsqu'elle est elle-même enveloppée.
     IsAScreeningAnswer(typeof(ScreeningAnswer<Screening>)).ShouldBeTrue();

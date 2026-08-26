@@ -128,7 +128,7 @@ public class ScreeningOnTheTemoinPivotTests
   {
     var listing = TheTemoinPivot();
 
-    var screened = await AScreeningEngine.Wired().ScreenAsync(listing);
+    var screened = await AScreeningEngine.Wired().ScreenAsync(listing, IScreeningEngine.NoPreviews);
 
     screened.Columns.Select(Line).ShouldBe(WhatTheFrozenMontageRendered);
   }
@@ -144,7 +144,7 @@ public class ScreeningOnTheTemoinPivotTests
   {
     var listing = TheTemoinPivot();
 
-    var screened = await AScreeningEngine.Wired().ScreenAsync(listing);
+    var screened = await AScreeningEngine.Wired().ScreenAsync(listing, IScreeningEngine.NoPreviews);
 
     screened.Columns.Count.ShouldBe(listing.ColumnCount);
     screened.Columns.Select(column => column.Identity).ShouldBe(listing.Columns.Select(column => column.Identity));
@@ -158,7 +158,7 @@ public class ScreeningOnTheTemoinPivotTests
   [Fact]
   public async Task LeavesNoFlaggedLineWithoutAReasonAndNoUnflaggedLineWithOne()
   {
-    var screened = await AScreeningEngine.Wired().ScreenAsync(TheTemoinPivot());
+    var screened = await AScreeningEngine.Wired().ScreenAsync(TheTemoinPivot(), IScreeningEngine.NoPreviews);
 
     foreach (var column in screened.Columns)
     {
@@ -177,25 +177,30 @@ public class ScreeningOnTheTemoinPivotTests
     var engine = AScreeningEngine.Wired();
     var listing = TheTemoinPivot();
 
-    var first = await engine.ScreenAsync(listing);
-    var second = await engine.ScreenAsync(listing);
+    var first = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews);
+    var second = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews);
 
     second.Columns.Select(Line).ShouldBe(first.Columns.Select(Line));
     second.Engine.ShouldBe(first.Engine);
   }
 
   /// <summary>
-  /// Le rapport de détection porte <b>qui</b> a détecté : le montage retenu par le banc, et le gel
-  /// dont ses
-  /// lexiques sortent. C'est ce qui dit à l'humain pourquoi un nouveau rapport diffère de l'ancien.
+  /// Le rapport de détection porte <b>qui</b> a détecté : le montage retenu par le banc, ses règles
+  /// de forme, et le gel dont ses lexiques sortent. C'est ce qui dit à l'humain pourquoi un nouveau
+  /// rapport diffère de l'ancien — et <b>laquelle</b> des trois pièces a bougé.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Sur le chemin collé, les formes se déclarent « inactives », et non absentes.</b> Une
+  /// pièce absente se lirait comme un moteur d'avant les formes, et deux rapports qui ne portent pas
+  /// les mêmes règles se compareraient comme s'ils les portaient.
+  /// </remarks>
   [Fact]
   public async Task JoinsTheNameAndTheVersionOfTheEngineThatScreened()
   {
-    var screened = await AScreeningEngine.Wired().ScreenAsync(TheTemoinPivot());
+    var screened = await AScreeningEngine.Wired().ScreenAsync(TheTemoinPivot(), IScreeningEngine.NoPreviews);
 
     screened.Engine.Name.ShouldBe("regles-lexique-fr-en");
-    screened.Engine.Version.ShouldBe("regles-1+lexiques-d413d55");
+    screened.Engine.Version.ShouldBe("regles-2+formes-inactives+lexiques-d413d55");
   }
 
   /// <summary>

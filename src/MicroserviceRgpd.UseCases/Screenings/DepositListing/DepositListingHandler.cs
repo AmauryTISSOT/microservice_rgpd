@@ -14,7 +14,8 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// ⚠️ <b>C'est le geste qui assemble, jamais le moteur.</b> Ce que rend un <c>IScreeningEngine</c>
 /// est une <c>ScreenedListing</c> : une ligne par colonne, et l'identité du moteur qui les a
 /// produites. Il y manque ce que le moteur n'a pas à décider — l'identité du rapport, l'instant du
-/// lancement, le nom de base et le dialecte —, et c'est ici que les quatre se posent.
+/// lancement, le nom de base, le dialecte et l'<c>origine du relevé</c> —, et c'est ici que les cinq
+/// se posent.
 /// </para>
 /// <para>
 /// ⚠️ <b>L'identité du moteur est celle qui a répondu</b>, prise sur ce qu'il rend et jamais lue à
@@ -33,10 +34,12 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// Le port de la détection. ⚠️ Le geste ignore s'il parle à des règles locales ou à un moteur servi, et
 /// c'est la couture de réversibilité d'ADR-0004 — pas une couture de test.
 /// </param>
+/// <param name="previews">Le cache mémoire des aperçus, qu'un collage vide sans rien y déposer.</param>
 /// <param name="clock">L'horloge. C'est elle, et elle seule, qui décide quel rapport sera le courant.</param>
 public sealed class DepositListingHandler(
   IRepository<Screening> screenings,
   IScreeningEngine engine,
+  ScanPreviews previews,
   TimeProvider clock)
   : ICommandHandler<DepositListingCommand, Result<ScreeningId>>
 {
@@ -76,18 +79,31 @@ public sealed class DepositListingHandler(
 
     var listing = ingested.Listing!;
 
-    var screened = await engine.ScreenAsync(listing, cancellationToken);
+    // ⚠️ Aucun aperçu : c'est le chemin COLLÉ, et c'est la seule chose qui l'en distingue. Les
+    // règles de forme y sont donc inactives, et le relevé se détecte exactement comme avant.
+    var screened = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews, cancellationToken);
 
     var screening = Screening.Of(
       ScreeningId.Next(),
       listing.Database,
       listing.Dialect,
+      // ⚠️ L'origine est posée par LE GESTE, et non lue sur le `ColumnListing` : rien en aval ne
+      // distingue un relevé collé d'un relevé scanné — c'est le même objet, et la détection ne sait
+      // pas lequel des deux elle lit. Ce qui sait, c'est le chemin d'entrée, et il n'y en a qu'un
+      // ici.
+      ListingOrigin.Pasted,
       screened.Engine,
       listing.DeclaredColumnCount,
       screened.Columns,
       clock.GetUtcNow());
 
     await screenings.AddAsync(screening, cancellationToken);
+
+    // ⚠️ Le collage vient d'archiver le rapport courant, et ce rapport-là pouvait être un rapport
+    // SCANNÉ : ses aperçus — des valeurs réelles du client — n'ont plus aucun écran qui les montre.
+    // « L'éviction est immédiate » ne peut pas dépendre de la voie par laquelle le rapport suivant
+    // est arrivé, et un collage n'a rien lu qui prendrait leur place.
+    previews.Forget();
 
     return screening.Id;
   }

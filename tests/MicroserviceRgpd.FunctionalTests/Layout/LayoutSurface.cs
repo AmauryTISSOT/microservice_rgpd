@@ -138,9 +138,9 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
       "/manifest"),
     (
       "Détection des données personnelles",
-      "Vous y collez un schéma de base de données, et le service signale les colonnes susceptibles " +
-      "de porter des données personnelles. Il lit des noms de tables et de colonnes, jamais une " +
-      "valeur ; vous tranchez, ligne par ligne.",
+      "Vous y faites scanner une base par le service, ou vous collez un schéma vous-même. Il " +
+      "signale les colonnes susceptibles de porter des données personnelles ; aucune valeur lue " +
+      "n'est conservée, et vous tranchez ligne par ligne.",
       "/detection"),
     (
       "Qualification",
@@ -194,6 +194,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   private const string CaseDeposit = "/dossiers/depot";
   private const string Manifest = "/manifest";
   private const string ScreeningDeposit = "/detection/depot";
+  private const string Connection = "/detection/connexion";
   private const string Report = "/detection";
   private const string ScreeningTable = "/detection/table";
   private const string History = "/detection/historique";
@@ -213,7 +214,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
   /// <summary>
-  /// <b>Les treize adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de
+  /// <b>Les quatorze adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de
   /// chacune posé par le chemin que le domaine autorise — un dépôt manuel pour le dossier, une
   /// déclaration pour la reprise, deux dépôts de relevé pour qu'il existe un rapport courant et un
   /// rapport archivé.
@@ -238,7 +239,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// <b>Les six écrans du contexte de détection</b>, et eux seuls — l'état posé par le seul chemin
+  /// <b>Les sept écrans du contexte de détection</b>, et eux seuls — l'état posé par le seul chemin
   /// que le domaine autorise, deux dépôts de relevé pour qu'il existe un rapport courant et un
   /// rapport archivé.
   /// </summary>
@@ -602,6 +603,11 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     return
     [
       ScreeningDeposit,
+      // ⚠️ L'écran d'attente d'un scan n'est PAS ici, et son absence est délibérée : son adresse
+      // porte l'identité d'un scan vivant, qui meurt avec le processus. Le harnais aurait dû faire
+      // partir un vrai scan et le prendre en cours de route pour l'y mettre — c'est-à-dire faire
+      // dépendre le test du LAYOUT d'une course entre deux fils.
+      Connection,
       Report,
       TableOf(ScreeningTable),
       History,

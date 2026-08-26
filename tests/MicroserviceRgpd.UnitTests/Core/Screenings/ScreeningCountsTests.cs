@@ -79,6 +79,7 @@ public class ScreeningCountsTests
       ScreeningId.Next(),
       "galette_prod",
       "postgresql",
+      ListingOrigin.Pasted,
       new ScreeningEngineIdentity("lexique-fr-en", "1.0.0"),
       columns.Length,
       columns,

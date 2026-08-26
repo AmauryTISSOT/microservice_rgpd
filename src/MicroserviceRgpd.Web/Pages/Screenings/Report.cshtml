@@ -1,14 +1,69 @@
 @page "/detection"
 @model MicroserviceRgpd.Web.Pages.Screenings.ReportModel
 @{
-  ViewData["Title"] = "Le rapport de détection courant";
-  var answer = Model.Answer!;
+  ViewData["Title"] = Model.Answer is null
+    ? "Détection des données personnelles"
+    : "Le rapport de détection courant";
+}
+
+@*
+  AUCUN RAPPORT N'A ENCORE ÉTÉ LANCÉ CHEZ CE CLIENT. On rend les DEUX ENTRÉES, côte à côte, et
+  AUCUNE CLAUSE : un rapport vide portant « ce rapport n'a pas regardé le CRM en SaaS, les tableurs
+  partagés… » serait un aveu sans acte, et userait la clause avant son premier usage réel.
+
+  ⚠️ LES DEUX VOIES SE PRÉSENTENT ENSEMBLE, et la connectée n'est pas la voie « moderne » dont
+  l'autre serait le repli : le dépôt collé est celui qu'on prend quand le service n'a pas le droit
+  de joindre la base, ce qui est le cas le plus fréquent.
+*@
+@if (Model.Answer is null)
+{
+  <h1>Détection des données personnelles</h1>
+
+  <p class="caveat">
+    Aucun rapport de détection n'a encore été lancé sur ce déploiement. Deux voies y mènent, et
+    elles produisent le <strong>même rapport</strong> : le service signale des colonnes susceptibles
+    de porter des données personnelles, et vous tranchez ligne par ligne.
+  </p>
+
+  <div class="doorways">
+    <a class="doorway" asp-page="Connection">
+      <h2>Connecter une base et lancer un scan</h2>
+      <p>
+        Le service joint lui-même la base avec un compte en lecture que vous lui donnez, relève le
+        schéma et prélève quelques valeurs pour affiner la détection. La chaîne de connexion n'est
+        ni conservée, ni journalisée, ni rejouée.
+      </p>
+    </a>
+    <a class="doorway" asp-page="Deposit">
+      <h2>Déposer un relevé collé</h2>
+      <p>
+        Vous exécutez la requête chez vous et vous collez ce qu'elle rend ; le service ne se
+        connecte à rien et ne lit <strong>aucune valeur</strong>. C'est la voie à prendre quand il
+        n'a pas le droit de joindre la base.
+      </p>
+    </a>
+  </div>
+}
+
+@{
+  if (Model.Answer is null)
+  {
+    return;
+  }
+
+  var answer = Model.Answer;
   var summary = answer.Content;
   var clause = answer.Clause;
 
   // Un compte et son nom, accordés : une surface dont tout le propos est que l'Operator lise le
   // nombre plutôt qu'un mot d'état ne peut pas lui écrire « 1 tables ».
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+
+  // ⚠️ LE CHIFFRE VIENT DE LA BORNE DU PRÉLÈVEMENT, jamais de la main du rédacteur : écrit à la
+  // main ici, il divergerait au premier changement de borne et le rappel mentirait sans que rien
+  // ne rougisse.
+  var previewSize = MicroserviceRgpd.Core.Screenings.ColumnPreview.MaxValuesInWords;
+  var scanned = clause.Origin == MicroserviceRgpd.Core.Screenings.ListingOrigin.Scanned;
 }
 
 <h1>Le rapport de détection courant</h1>
@@ -39,6 +94,17 @@ else
   <p class="hint">@summary.Lock.Statement</p>
 }
 
+@*
+  AUCUN APERÇU N'A ABOUTI, DIT À L'ÉCHELLE DU RAPPORT — en plus de la raison que porte chaque
+  ligne, jamais à sa place. La raison par ligne dit pourquoi CETTE colonne n'a pas d'aperçu ; elle
+  ne dit pas qu'aucune n'en a, et un Operator qui déroule cinq mille lignes ne recompose pas ce
+  fait — qui est justement celui qui devrait le faire rescanner.
+*@
+@if (clause.Perimeter.NoPreviewSucceeded)
+{
+  <p class="unfinished">@MicroserviceRgpd.Core.Screenings.ReadPerimeter.NoPreviewSucceededStatement</p>
+}
+
 <dl class="banner">
   <dt>Base</dt>
   <dd>
@@ -66,9 +132,43 @@ else
   <dt>Signalées</dt>
   <dd>
     @summary.Tally.Flagged
+    @*
+      ⚠️ LA QUEUE EST REMPLACÉE, PAS COUPÉE — traitement inverse de celui de FilterStatement, et
+      c'est délibéré : ici la queue EST la preuve. Ce qui interdit de conclure « les 4 933 autres
+      colonnes sont inoffensives », c'est précisément le peu que le service a lu.
+
+      ⚠️ CE RAPPEL EST ÉCRIT EN DUR ICI : aucun test sur l'objet ne le verra jamais, et c'est très
+      exactement pourquoi le témoin de la clause a un second niveau, sur l'écran.
+    *@
     <span class="hint">
-      Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
-      inoffensif : le service n'a jamais vu une seule valeur.
+      @if (scanned && clause.Perimeter.NoPreviewSucceeded)
+      {
+        @*
+          ⚠️ SUR UN SCAN OÙ RIEN N'A ÉTÉ PRÉLEVÉ, la queue chiffrée serait fausse : elle
+          affirmerait cinq valeurs par colonne trois lignes sous la clause qui dit qu'aucune n'a pu
+          l'être. La phrase du chemin collé, elle, reste interdite ici — elle promettrait que le
+          service n'a JAMAIS vu de valeur, quand il en a demandé et s'est fait refuser.
+        *@
+        <text>
+          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+          inoffensif : aucune valeur n'a pu être prélevée sur ce relevé.
+        </text>
+      }
+      else if (scanned)
+      {
+        <text>
+          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+          inoffensif : le service n'a lu que @previewSize valeurs par colonne,
+          et @previewSize valeurs ne disent pas ce qu'une colonne contient.
+        </text>
+      }
+      else
+      {
+        <text>
+          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+          inoffensif : le service n'a jamais vu une seule valeur.
+        </text>
+      }
     </span>
   </dd>
   <dt>Retenues</dt>
@@ -127,6 +227,44 @@ else
   </tbody>
 </table>
 
+@*
+  DEUX LIENS, ET NON UN MENU. Sans script un menu n'existe pas, et rien ici n'en justifierait un :
+  un lien collé dans un courriel annonce ce qu'il rend, s'ouvre d'un clic et se met en favori.
+  Le « bouton » est ce titre et ce qui le suit — la surface entière du geste, pas un contrôle qui
+  n'agirait qu'avec du script.
+*@
+<h2>Exporter la cartographie des données personnelles</h2>
+
+<p class="hint">
+  Le fichier porte <strong>toutes</strong> les lignes de ce rapport — retenues, écartées, en attente,
+  et celles où la détection n'a rien signalé — avec ce que vous en avez dit et la date à laquelle
+  vous l'avez dit. Il ne porte <strong>aucune valeur lue</strong> de votre base.
+</p>
+
+@*
+  CE QUE LE FICHIER NE PORTE PAS, DIT ICI ET NON DANS LE FICHIER. La Clause d'incomplétude reste
+  sur tous les écrans et ne voyage pas dans l'export : l'Operator a tranché chaque ligne et choisit
+  d'expédier le fichier ; ce qu'il en dit au destinataire lui appartient. Cette phrase-ci est le
+  seul rattrapage retenu, et elle est sur l'écran, pas dans le document.
+*@
+<p class="caveat">
+  ⚠️ Ce fichier <strong>ne porte pas</strong> la clause d'incomplétude ci-dessous. Il ne dit donc de
+  lui-même ni ce qu'il n'a pas regardé, ni comment il a été produit : à vous de le dire à qui vous
+  l'adressez.
+</p>
+
+<p>
+  <a asp-page="PersonalDataMapCsv">La cartographie en CSV, pour un tableur</a>
+  <span class="hint">Séparé par des points-virgules, s'ouvre en tableau d'un double-clic.</span>
+</p>
+
+<p>
+  <a asp-page="PersonalDataMapJson">La cartographie en JSON, pour un outil</a>
+  <span class="hint">
+    Porte en tête la base, le SGBD, le moteur qui a détecté et les dates — ce que le CSV ne dit pas.
+  </span>
+</p>
+
 <partial name="_IncompletenessClause" model="clause" />
 
 @*
@@ -135,6 +273,19 @@ else
   les porte deviendra un archivé qu'on relit sans pouvoir le reprendre. C'est un coût déclaré, pas
   une surprise.
 *@
+@*
+  LES DEUX VOIES SONT OFFERTES CÔTE À CÔTE, et elles coûtent la même chose : dans les deux cas le
+  rapport courant part à l'archive et aucun arbitrage n'est repris. La connectée n'est pas la voie
+  « normale » dont l'autre serait le repli.
+*@
+<p>
+  <a asp-page="Connection">Connecter une base et lancer un scan</a>
+  <span class="hint">
+    Le service joint lui-même la base et prélève quelques valeurs pour affiner la détection. Comme
+    le dépôt, un scan produit un rapport neuf et range celui-ci dans l'historique.
+  </span>
+</p>
+
 <p>
   <a asp-page="Deposit">Déposer un nouveau relevé</a>
   <span class="hint">
