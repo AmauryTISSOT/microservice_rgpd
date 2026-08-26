@@ -141,7 +141,7 @@ public class ScanProgressTests
     var second = ScanId.Next();
 
     first.ShouldNotBe(second);
-    ScanProgress.Starting(first, StartedOn).Id.ShouldBe(first);
+    ScanProgress.Starting(first, DatabaseDialect.PostgreSql, StartedOn).Id.ShouldBe(first);
   }
 
   /// <summary>
@@ -195,8 +195,68 @@ public class ScanProgressTests
     progress.Snapshot.Report.ShouldBe(report);
   }
 
+  /// <summary>
+  /// L'abandon s'arrête <b>là où le scan en était</b> : la phase est celle du dernier pas, et c'est
+  /// elle que l'écran de fin nomme.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'abandon ne porte aucune <see cref="ScanFailure"/>.</b> Rien n'a raté : c'est
+  /// l'<c>Operator</c> qui a repris la main, et lui coller une famille de cause l'enverrait chercher
+  /// une panne du réseau ou de la base là où il n'y en a eu aucune.
+  /// </remarks>
+  [Fact]
+  public void RemembersThePhaseTheScanWasInWhenItWasAbandoned()
+  {
+    var progress = AScan();
+
+    progress.Record(ScanStep.CatalogueRead(312));
+    progress.Record(ScanStep.TableSampled(148, 312));
+    progress.Abandon();
+
+    progress.Snapshot.Ending.ShouldBe(ScanEnding.Abandoned);
+    progress.Snapshot.Phase.ShouldBe(ScanPhase.Sampling);
+    progress.Snapshot.Failure.ShouldBeNull();
+    progress.Snapshot.Report.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un geste d'abandon arrivé après la fin n'a aucune conséquence.</b> Le rapport vient
+  /// d'être écrit ; dire « abandonné » par-dessus annoncerait à l'<c>Operator</c> le contraire de ce
+  /// qui s'est passé, et son rapport courant serait déjà parti à l'archive.
+  /// </summary>
+  [Fact]
+  public void IgnoresAnAbandonmentThatArrivesAfterTheReportWasWritten()
+  {
+    var progress = AScan();
+    var report = ScreeningId.Next();
+
+    progress.Produced(report);
+    progress.Abandon();
+
+    progress.Snapshot.Ending.ShouldBe(ScanEnding.Listed);
+    progress.Snapshot.Report.ShouldBe(report);
+  }
+
+  /// <summary>
+  /// Le SGBD est porté par l'avancement, parce que le refus d'un second lancement doit dire de
+  /// <b>quelle sorte</b> de base le service est en train de lire le schéma.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le SGBD, et rien de plus.</b> Ni hôte, ni nom de base, ni utilisateur : ceux-là ne se
+  /// connaissent qu'en découpant la chaîne de connexion, et une chaîne rendue par morceaux reste une
+  /// chaîne rendue. Le dialecte, lui, est un choix fait dans une liste fermée de trois — il n'apprend
+  /// rien que le formulaire n'ait déjà affiché.
+  /// </remarks>
+  [Fact]
+  public void CarriesTheDialectSoThatARefusalCanNameWhatIsRunning()
+  {
+    var progress = ScanProgress.Starting(ScanId.Next(), DatabaseDialect.Sqlite, StartedOn);
+
+    progress.Dialect.ShouldBe(DatabaseDialect.Sqlite);
+  }
+
   private static ScanProgress AScan()
   {
-    return ScanProgress.Starting(ScanId.Next(), StartedOn);
+    return ScanProgress.Starting(ScanId.Next(), DatabaseDialect.PostgreSql, StartedOn);
   }
 }

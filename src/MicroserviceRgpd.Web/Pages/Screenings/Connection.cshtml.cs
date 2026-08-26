@@ -64,8 +64,10 @@ public class ConnectionModel(IScanLauncher launcher) : PageModel
   [BindProperty]
   public string? ConnectionString { get; set; }
 
-  /// <summary>Le scan qui courait déjà, quand un second lancement a été refusé.</summary>
-  public ScanProgress? AlreadyRunning { get; private set; }
+  /// <summary>
+  /// Ce que l'écran dit du scan qui courait déjà, quand un second lancement a été refusé.
+  /// </summary>
+  public ScanRefusalScreen? AlreadyRunning { get; private set; }
 
   /// <summary>Les trois SGBD que le service sait joindre, dans l'ordre où l'écran les propose.</summary>
   public static IReadOnlyList<DatabaseDialect> Dialects => DatabaseDialect.List.ToList();
@@ -102,17 +104,15 @@ public class ConnectionModel(IScanLauncher launcher) : PageModel
 
     if (!launch.TookOff)
     {
-      // ⚠️ Le refus NOMME le scan en cours, et donne son écran. Un « réessayez plus tard » laisserait
-      // l'Operator ignorer si le service travaille pour lui ou pour quelqu'un d'autre — et il
-      // relancerait, sur la production d'un tiers, une lecture déjà en cours.
-      AlreadyRunning = launch.AlreadyRunning;
-
-      ModelState.AddModelError(
-        string.Empty,
-        $"Un scan est déjà en cours sur ce déploiement — scan {launch.AlreadyRunning!.Id.Value}, "
-        + $"phase « {launch.AlreadyRunning.Snapshot.Phase.FrenchLabel} », lancé à "
-        + $"{launch.AlreadyRunning.StartedOn:HH:mm:ss} UTC. Le service n'en mène qu'un à la fois : "
-        + "suivez celui-ci, ou attendez qu'il finisse.");
+      // ⚠️ Le refus NOMME le scan en cours, et l'écran qui le dit lui donne son identité, son SGBD,
+      // sa phase et le lien vers son attente. Un « réessayez plus tard » laisserait l'Operator
+      // ignorer si le service travaille pour lui ou pour quelqu'un d'autre — et il relancerait, sur
+      // la production d'un tiers, une lecture déjà en cours.
+      //
+      // ⚠️ Ce n'est PAS une erreur de saisie, et cela ne passe donc pas par le ModelState : rien de
+      // ce que l'Operator a écrit n'est en cause, et le lui dire au même endroit que « la chaîne est
+      // vide » l'enverrait relire un champ qui n'a rien.
+      AlreadyRunning = ScanRefusalScreen.Of(launch.AlreadyRunning!);
 
       return Page();
     }

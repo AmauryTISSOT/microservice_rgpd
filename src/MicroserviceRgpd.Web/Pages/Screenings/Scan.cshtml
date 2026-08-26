@@ -2,7 +2,7 @@
 @model MicroserviceRgpd.Web.Pages.Screenings.ScanModel
 @using MicroserviceRgpd.Core.Screenings
 @{
-  ViewData["Title"] = "Scan en cours";
+  ViewData["Title"] = Model.Ending?.Title ?? "Scan en cours";
 }
 
 @*
@@ -17,42 +17,19 @@
   }
 }
 
-<h1>Scan en cours</h1>
-
-@if (Model.Snapshot is not { } state)
+@if (Model.Ending is { } ending)
 {
   @*
-    « CE SCAN N'EXISTE PLUS » SE DIT, il ne se redirige pas. Le service a redémarré, ou un autre scan
-    a pris la place : rediriger en silence vers le rapport courant aurait laissé l'Operator croire
-    que c'est le sien.
+    TOUTES LES FINS PASSENT PAR LE MÊME BLOC — l'abandon, le scan inconnu, l'échec, et les deux fins
+    à zéro objet. Elles disent donc toutes où le scan s'est arrêté, d'où vient la cause, que le
+    rapport courant n'a pas bougé, et par où relancer. Aucune ne propose de reprendre.
   *@
-  <p class="caveat">
-    <strong>Ce scan n'existe plus.</strong> Un scan ne survit pas au redémarrage du service, et le
-    service n'en retient qu'un à la fois : celui-ci a été remplacé, ou le processus a redémarré. Rien
-    n'a été écrit à moitié — un scan qui n'a pas fini n'a produit aucun rapport.
-  </p>
-
-  <p><a asp-page="Connection">Relancer un scan</a></p>
-  <p><a asp-page="Report">Voir le rapport de détection courant</a></p>
+  <partial name="_ScanEnding" model="ending" />
 }
-else if (state.HasEnded)
+else if (Model.Snapshot is { } state)
 {
-  @*
-    LA FIN SANS RAPPORT EST DITE ICI EN UNE PHRASE, et son écran complet vient avec le ticket des
-    fins anormales. Ce qui compte à ce stade : elle ne se lit pas comme un succès, et elle ne laisse
-    pas l'écran tourner en rond.
-  *@
-  <p class="caveat">
-    <strong>Le scan s'est arrêté sans produire de rapport</strong>, en phase
-    « @state.Phase.FrenchLabel ». Le rapport de détection courant n'a pas bougé : il est resté celui
-    que vous aviez, et rien n'est parti à l'archive.
-  </p>
+  <h1>Scan en cours</h1>
 
-  <p><a asp-page="Connection">Relancer un scan</a></p>
-  <p><a asp-page="Report">Voir le rapport de détection courant</a></p>
-}
-else
-{
   <p class="hint">
     Cet écran se rafraîchit tout seul, toutes les @ScanModel.RefreshInSeconds secondes. Vous pouvez
     fermer l'onglet : <strong>le scan continue</strong>, et cette adresse le retrouvera.
@@ -86,4 +63,23 @@ else
       service ne sait pas combien de tables ce compte lui présente.
     </p>
   }
+
+  @*
+    L'ABANDON EST UN FORMULAIRE, ET C'EST TOUT CE QU'IL LUI FAUT. Pas une ligne de script : cet
+    écran se rafraîchit par un `meta`, et un bouton qui aurait eu besoin de JavaScript n'aurait pas
+    marché là où le reste de l'écran marche.
+
+    L'annulation COUPE LA REQUÊTE EN COURS sur la base — sqlite3_interrupt sous SQLite, le jeton
+    ailleurs —, et pas seulement la boucle qui l'entoure : sans cela, un SELECT continuerait de
+    courir sur la base d'un tiers après que l'Operator a dit d'arrêter.
+  *@
+  <form method="post" class="abandon">
+    <p class="hint">
+      Abandonner arrête <strong>la lecture en cours sur la base</strong>, et pas seulement cet
+      écran. Rien n'aura été relevé : ni rapport, ni ligne d'historique — et le rapport de détection
+      courant restera celui que vous avez.
+    </p>
+
+    <button type="submit">Abandonner ce scan</button>
+  </form>
 }

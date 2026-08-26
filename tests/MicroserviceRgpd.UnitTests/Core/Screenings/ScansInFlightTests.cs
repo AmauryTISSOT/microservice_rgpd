@@ -95,6 +95,6 @@ public class ScansInFlightTests
 
   private static ScanProgress AScan()
   {
-    return ScanProgress.Starting(ScanId.Next(), StartedOn);
+    return ScanProgress.Starting(ScanId.Next(), DatabaseDialect.PostgreSql, StartedOn);
   }
 }

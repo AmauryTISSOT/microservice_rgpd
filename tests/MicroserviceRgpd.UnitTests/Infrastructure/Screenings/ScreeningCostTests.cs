@@ -184,7 +184,10 @@ public class ScreeningCostTests
       new ScanPreviews(TimeProvider.System),
       TimeProvider.System);
 
-    var progress = ScanProgress.Starting(ScanId.Next(), TimeProvider.System.GetUtcNow());
+    var progress = ScanProgress.Starting(
+      ScanId.Next(),
+      DatabaseDialect.PostgreSql,
+      TimeProvider.System.GetUtcNow());
 
     // Un premier passage à part : les lexiques et la compilation à la volée ne sont pas le geste
     // qu'on mesure, et ils n'ont lieu qu'une fois pour la vie du service.

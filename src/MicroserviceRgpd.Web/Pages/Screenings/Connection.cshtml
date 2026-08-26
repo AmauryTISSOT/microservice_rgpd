@@ -26,16 +26,51 @@
   <strong>pas repris</strong> sur le nouveau rapport.
 </p>
 
+@if (Model.AlreadyRunning is { } running)
+{
+  @*
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
+    LE SECOND LANCEMENT EST REFUSÉ, ET LE REFUS NOMME LE SCAN QUI COURT.
+
+    Un seul scan en vol par déploiement : sans cet écran, l'Operator ne saurait pas si le service
+    travaille pour lui ou pour quelqu'un d'autre — et il relancerait, sur la production d'un tiers,
+    une lecture déjà en cours. Rien n'a été lancé ici : le port n'a pas été appelé une seconde fois.
+
+    ⚠️ LE SGBD, ET RIEN DE PLUS DE CE QUE L'AUTRE OPERATOR A FOURNI. Ni hôte, ni nom de base, ni
+    utilisateur : ceux-là ne se connaissent qu'en découpant la chaîne de connexion, et une chaîne
+    rendue par morceaux reste une chaîne rendue.
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
+  *@
+  <div class="refusals">
+    <p class="refusal">
+      <strong>Un scan est déjà en cours sur ce déploiement</strong>, et le service n'en mène qu'un à
+      la fois. Rien n'a été lancé : votre chaîne de connexion n'a été remise à personne.
+    </p>
+
+    <dl class="facts">
+      <dt>Le scan en cours</dt>
+      <dd>@running.Scan</dd>
+
+      <dt>Son SGBD</dt>
+      <dd>@running.Dialect</dd>
+
+      <dt>Où il en est</dt>
+      <dd>en phase « @running.Phase »</dd>
+
+      <dt>Lancé à</dt>
+      <dd>@running.StartedAt</dd>
+    </dl>
+
+    <p><a asp-page="Scan" asp-route-scanId="@running.Scan">Suivre le scan en cours</a></p>
+  </div>
+}
+
 @if (!ViewData.ModelState.IsValid)
 {
   <div class="refusals">
     @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
     {
       <p class="refusal">@refusal.ErrorMessage</p>
-    }
-    @if (Model.AlreadyRunning is { } running)
-    {
-      <p><a asp-page="Scan" asp-route-scanId="@running.Id.Value">Suivre le scan en cours</a></p>
     }
   </div>
 }

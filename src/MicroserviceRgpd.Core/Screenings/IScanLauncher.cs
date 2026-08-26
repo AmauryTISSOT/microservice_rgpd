@@ -34,6 +34,28 @@ public interface IScanLauncher
   /// <param name="dialect">Le SGBD que l'<c>Operator</c> a choisi.</param>
   /// <param name="connectionString">Sa chaîne de connexion, qui ne ressort d'aucun côté.</param>
   ScanLaunch Launch(DatabaseDialect dialect, string connectionString);
+
+  /// <summary>
+  /// L'<c>Operator</c> reprend la main : la fin est posée sur l'avancement, et la <b>requête en
+  /// cours</b> est coupée.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Elle coupe la requête, pas seulement la boucle.</b> Un abandon qui se contenterait de
+  /// sortir de la boucle laisserait un <c>SELECT</c> courir sur la base d'un tiers après que
+  /// l'<c>Operator</c> a dit d'arrêter — et le service ne saurait même pas qu'il le fait courir.
+  /// C'est le port qui sait interrompre ; ce qui se tient ici est de lui en donner l'ordre.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Un geste annulé n'a aucune conséquence, et il ne rend donc rien.</b> Abandonner un scan
+  /// déjà fini, un scan qui n'est pas celui qui court, ou un scan que le processus ne connaît plus :
+  /// les trois ne font rien, et aucun ne fait reculer la fin déjà posée. Un booléen dirait à
+  /// l'appelant lequel des cas il a rencontré — alors qu'aucun écran n'a rien d'autre à répondre que
+  /// la fin que ce scan a réellement connue, qu'il vient de l'arrêter ou non.
+  /// </para>
+  /// </remarks>
+  /// <param name="scan">L'identité lue dans l'adresse de l'écran d'attente.</param>
+  void Abandon(ScanId scan);
 }
 
 /// <summary>

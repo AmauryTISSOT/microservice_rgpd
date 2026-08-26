@@ -483,6 +483,22 @@ _Avoid_ ci-dessous : c'est un **instant de lecture**, pas un état rangé quelqu
 après sa fin.** Sans quoi l'écran d'attente ne pourrait pas répondre « c'est fini, voici le rapport »
 à qui arrive une seconde après la dernière ligne écrite — il dirait « ce scan n'existe plus » d'un
 scan qui a parfaitement réussi. Un seul est retenu : le précédent s'efface quand le suivant part.
+⚠️ **Relu contre le code livré par
+[#309](https://github.com/AmauryTISSOT/microservice_rgpd/issues/309), qui impose deux points de
+plus.** Le premier : **l'abandon est une fin du scan, et c'est la seule que le port ne rend pas.** Le
+`IDatabaseScanner` en rend quatre — relevé, base sans table, base absente du catalogue, échec —, et
+l'annulation reste chez lui une `OperationCanceledException` : c'est l'appelant qui reprend la main.
+Mais l'écran d'attente, lui, doit **nommer** cette reprise plutôt que se taire, sans quoi il
+rafraîchirait indéfiniment un scan que plus personne ne mène et `ScansInFlight` tiendrait la place
+jusqu'au redémarrage. La ligne de partage est donc écrite dans le type, et non dans un commentaire :
+une fin sait dire si elle **vient du scanner**, et le compte des fins de la base se lit là-dessus.
+⚠️ **Le second : l'avancement porte le SGBD, et rien d'autre de ce que l'`Operator` a fourni.** Le
+refus d'un second lancement doit nommer le scan en cours pour que l'`Operator` sache si le service
+travaille pour lui ou pour quelqu'un d'autre — et « le scan en cours » sans rien qui le décrive n'est
+qu'un identifiant. Le **dialecte** est le seul morceau de la demande qui puisse s'afficher : il est un
+choix fait dans une liste fermée de trois, que le formulaire montre déjà. L'hôte, le nom de la base et
+l'utilisateur ne se connaissent, eux, qu'en **découpant la chaîne de connexion** — et une chaîne
+rendue par morceaux reste une chaîne rendue, ce que `Rien de réel ne reste` interdit.
 _Avoid_ : ScanState, ScanJob, statut du scan, progression, pourcentage ⚠️ `ScanState` et `statut`
 rangeraient parmi les états ce qui a été délibérément tenu à côté d'eux ; `ScanJob` promet une file
 et des reprises, quand il n'y en a qu'un et qu'il ne reprend jamais ; `pourcentage` est le mot qui

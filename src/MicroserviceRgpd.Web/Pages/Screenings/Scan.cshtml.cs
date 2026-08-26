@@ -31,7 +31,8 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 /// </para>
 /// </remarks>
 /// <param name="inFlight">Le fait du déploiement, où l'on retrouve le scan que l'adresse nomme.</param>
-public class ScanModel(ScansInFlight inFlight) : PageModel
+/// <param name="launcher">Ce par quoi l'abandon coupe la requête en cours.</param>
+public class ScanModel(ScansInFlight inFlight, IScanLauncher launcher) : PageModel
 {
   /// <summary>Le délai du rafraîchissement, en secondes.</summary>
   /// <remarks>
@@ -46,6 +47,18 @@ public class ScanModel(ScansInFlight inFlight) : PageModel
 
   /// <summary>Où en est ce scan, pris <b>d'un seul coup</b>, ou <c>null</c> s'il n'est plus connu.</summary>
   public ScanSnapshot? Snapshot { get; private set; }
+
+  /// <summary>
+  /// L'écran de la fin, quand ce scan en a une — ou celui du scan que le processus ne connaît plus.
+  /// <c>null</c> tant qu'il court.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Toutes les fins passent par le même bloc</b>, y compris le scan inconnu, qui n'est
+  /// pourtant la fin d'aucun scan que ce processus ait mené. C'est ce qui garantit qu'aucune d'elles
+  /// n'oublie de dire où ça s'est arrêté, d'où vient la cause, et que le rapport courant n'a pas
+  /// bougé.
+  /// </remarks>
+  public ScanEndingScreen? Ending { get; private set; }
 
   /// <summary>
   /// La largeur de la barre, en pour cent — <b>et il n'y en a une que si le compte est réel</b>.
@@ -70,17 +83,14 @@ public class ScanModel(ScansInFlight inFlight) : PageModel
 
   public IActionResult OnGet()
   {
-    // ⚠️ La contrainte de route ne dit que « c'est un GUID », et le GUID vide en est un. Le bâtir
-    // sans précaution lèverait sur une adresse tapée à la main ou tronquée, et l'Operator recevrait
-    // un 500 nu là où cet écran a une phrase à lui dire.
-    var progress = Core.Screenings.ScanId.TryFrom(ScanId, out var scanId)
-      ? inFlight.Find(scanId)
-      : null;
+    var progress = TheScanThisAddressNames();
 
     if (progress is null)
     {
       // Le processus a redémarré, ou un autre scan a pris la place. L'écran le DIT plutôt que de
       // rediriger en silence vers un rapport qui n'est peut-être pas celui qu'on attendait.
+      Ending = ScanEndingScreen.NoLongerKnown();
+
       return Page();
     }
 
@@ -94,7 +104,63 @@ public class ScanModel(ScansInFlight inFlight) : PageModel
       return SeeOther(Url.Page("Report")!);
     }
 
+    Ending = ScanEndingScreen.Of(Snapshot);
+
     return Page();
+  }
+
+  /// <summary>
+  /// L'<c>Operator</c> abandonne ce scan : la fin est posée, et la <b>requête en cours</b> sur la
+  /// base est coupée.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Un <c>form method="post"</c>, et pas une ligne de JavaScript.</b> Cet écran se rafraîchit
+  /// par un <c>meta</c> ; un bouton qui aurait eu besoin d'un script n'aurait pas marché là où le
+  /// reste de l'écran marche.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Un <c>303</c> vers ce même écran, et non la page rendue ici.</b> Sans lui, un
+  /// rechargement du navigateur reposterait l'abandon — sur un scan qui, entre-temps, peut être un
+  /// <b>autre</b> scan portant la place. Le geste ne se rejoue pas.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Un geste annulé n'a aucune conséquence.</b> Abandonner un scan déjà fini ou un scan qui
+  /// n'est plus celui qui court ne fait rien du tout : la réponse est la même, et c'est l'écran de
+  /// la fin que ce scan a réellement connue.
+  /// </para>
+  /// </remarks>
+  public IActionResult OnPost()
+  {
+    if (TryReadTheScanId(out var scanId))
+    {
+      launcher.Abandon(scanId);
+    }
+
+    return SeeOther(Url.Page("Scan", new { scanId = ScanId })!);
+  }
+
+  /// <summary>
+  /// Le scan que cette adresse nomme, s'il est encore connu du processus.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Une adresse illisible et un scan oublié mènent au <i>même</i> écran</b> — celui qui dit
+  /// « ce scan n'existe plus ». L'<c>Operator</c> qui a tronqué son adresse n'a pas d'autre geste à
+  /// poser que celui qui l'a vue expirer : relancer.
+  /// </remarks>
+  private ScanProgress? TheScanThisAddressNames()
+  {
+    return TryReadTheScanId(out var scanId) ? inFlight.Find(scanId) : null;
+  }
+
+  /// <summary>
+  /// L'identité que l'adresse porte, quand c'en est une. ⚠️ <b>Le GUID vide passe la contrainte de
+  /// route</b> — elle ne dit que « c'est un GUID » —, et le bâtir sans précaution lèverait sur une
+  /// adresse tapée à la main ou tronquée.
+  /// </summary>
+  private bool TryReadTheScanId(out ScanId scanId)
+  {
+    return Core.Screenings.ScanId.TryFrom(ScanId, out scanId);
   }
 
   /// <summary>

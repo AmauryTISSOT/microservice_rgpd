@@ -111,9 +111,23 @@ public sealed class ScanOutcome
 }
 
 /// <summary>
-/// Les quatre fins d'un <c>Scan</c>, closes. Un cinquième membre serait une fin que les écrans déjà
-/// écrits ne sauraient pas dire.
+/// Les fins d'un <c>Scan</c>, closes : les <b>quatre</b> que la base rend, et <b>l'abandon</b>, que
+/// l'<c>Operator</c> pose et que le port ne rend jamais.
 /// </summary>
+/// <remarks>
+/// <para>
+/// ⚠️ <b>La ligne de partage est <see cref="ComesFromTheScanner"/>, et c'est elle que ce type
+/// garde.</b> Une cinquième fin <i>venue de la base</i> serait une fin que les écrans déjà écrits ne
+/// sauraient pas dire ; <see cref="Abandoned"/>, lui, ne sort d'aucune fabrique de
+/// <see cref="ScanOutcome"/> — il n'existe pas de <c>ScanOutcome.Abandoned()</c>, et il n'en
+/// existera pas.
+/// </para>
+/// <para>
+/// ⚠️ <b>L'abandon est une fin, et non le silence.</b> Le laisser sans fin aurait fait rafraîchir
+/// indéfiniment un écran d'attente que plus personne ne mène, et laissé <c>ScansInFlight</c> tenir
+/// la place jusqu'au redémarrage du service.
+/// </para>
+/// </remarks>
 public sealed class ScanEnding : SmartEnum<ScanEnding>
 {
   public static readonly ScanEnding Listed = new(nameof(Listed), 1, "relevé");
@@ -127,14 +141,35 @@ public sealed class ScanEnding : SmartEnum<ScanEnding>
 
   public static readonly ScanEnding Failed = new(nameof(Failed), 4, "scan échoué");
 
-  private ScanEnding(string name, int value, string frenchLabel)
+  /// <summary>
+  /// L'<c>Operator</c> a repris la main : la requête en cours a été coupée, et le scan s'est arrêté
+  /// là où il en était. ⚠️ <b>La seule fin que la base ne rend pas.</b>
+  /// </summary>
+  public static readonly ScanEnding Abandoned = new(
+    nameof(Abandoned),
+    5,
+    "scan abandonné",
+    comesFromTheScanner: false);
+
+  private ScanEnding(
+    string name,
+    int value,
+    string frenchLabel,
+    bool comesFromTheScanner = true)
     : base(name, value)
   {
     FrenchLabel = frenchLabel;
+    ComesFromTheScanner = comesFromTheScanner;
   }
 
   /// <summary>Ce que l'écran nomme.</summary>
   public string FrenchLabel { get; }
+
+  /// <summary>
+  /// Cette fin sort-elle du port de scan ? ⚠️ <b>Faux pour le seul <see cref="Abandoned"/></b> — et
+  /// c'est ce qui permet de compter les fins que la base rend sans compter les membres du type.
+  /// </summary>
+  public bool ComesFromTheScanner { get; }
 }
 
 /// <summary>

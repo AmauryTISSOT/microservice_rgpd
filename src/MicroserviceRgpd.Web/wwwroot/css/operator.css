@@ -452,6 +452,15 @@ table.queue:not(.columns) {
   margin: 0 0 var(--space-xxs);
 }
 
+/*
+  ⚠️ LES FAITS NOMMÉS EMPRUNTENT LA GRILLE DES PRÉMISSES, et n'inventent rien. Ce qu'ils portent est
+  de la même nature : deux ou quatre faits, chacun sur sa ligne, dont l'intitulé dit ce que la valeur
+  est. Une seconde grille écrite pour eux aurait divergé au premier espacement retouché.
+
+  ⚠️ LE NOM DIT LA FORME, PAS L'OCCASION. Une classe `ending` aurait menti sur l'écran de refus d'un
+  second lancement, qui nomme un scan très exactement en train de courir.
+*/
+.facts,
 .premises dl,
 .system dl {
   display: grid;
@@ -460,15 +469,35 @@ table.queue:not(.columns) {
   margin: var(--space-xs) 0 0;
 }
 
+.facts dt,
 .premises dt,
 .system dt {
   font-weight: var(--weight-semibold);
 }
 
+.facts dd,
 .premises dd,
 .system dd {
   margin: 0;
   white-space: pre-wrap;
+}
+
+/*
+  LE GESTE À POSER SE VOIT, parce qu'il est la seule ligne de l'écran sur laquelle l'Operator ait
+  quelque chose à FAIRE. Il n'apparaît que sur les fins qui en appellent un : posé sur toutes, il
+  aurait fait de chacune une chose à corriger.
+*/
+.gesture {
+  font-weight: var(--weight-semibold);
+}
+
+/*
+  L'ABANDON EST UN GESTE SANS CÉRÉMONIE, ET SON BOUTON N'EST PAS LE BOUTON PRINCIPAL. Rien n'est
+  détruit : un scan abandonné ne laisse aucun objet, et le rapport courant ne bouge pas. Lui donner
+  la couleur d'un danger aurait fait hésiter là où il n'y a rien à perdre.
+*/
+.abandon {
+  margin: var(--space-lg) 0;
 }
 
 /*
