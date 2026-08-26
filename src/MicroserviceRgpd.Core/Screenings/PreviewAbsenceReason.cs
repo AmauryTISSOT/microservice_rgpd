@@ -103,7 +103,4 @@ public sealed class PreviewAbsenceReason : SmartEnum<PreviewAbsenceReason>
   /// lieu</b>, jamais ce que la colonne contient — et elle ne cite jamais le message du pilote.
   /// </summary>
   public string Statement { get; }
-
-  /// <summary>Le numéro de la famille. C'est <see cref="SmartEnum{TEnum,TValue}.Value"/> lui-même.</summary>
-  public int FamilyNumber => Value;
 }

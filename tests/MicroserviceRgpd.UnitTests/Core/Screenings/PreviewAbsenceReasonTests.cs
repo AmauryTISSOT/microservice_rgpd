@@ -81,7 +81,10 @@ public class PreviewAbsenceReasonTests
   [Fact]
   public void KeepsTheOneReasonTheOperatorCanActOnAsAFamilyOfItsOwn()
   {
-    PreviewAbsenceReason.AccessDenied.FamilyNumber.ShouldBe(2);
+    PreviewAbsenceReason.List
+      .Where(reason => reason != PreviewAbsenceReason.AccessDenied)
+      .ShouldAllBe(reason => reason.Statement != PreviewAbsenceReason.AccessDenied.Statement);
+
     PreviewAbsenceReason.AccessDenied.Statement.ShouldContain("droit de lire");
   }
 

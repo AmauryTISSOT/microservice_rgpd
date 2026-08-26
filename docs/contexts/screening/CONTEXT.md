@@ -160,8 +160,7 @@ ne rougisse.
 **aucun champ** de `ScreenedColumn`, de `ScreenedListing` ni de `ColumnListing` ne sait porter une
 valeur lue. Un aperçu n'entre jamais dans un objet persisté, et c'est un garde d'`ArchitectureTests`
 qui le tient plutôt qu'une intention.
-⚠️ **L'énumération est close et
-tient en quatre familles**, arrêtées par
+⚠️ **L'énumération des raisons est close et tient en quatre familles**, arrêtées par
 [#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278) : la colonne porte un **type non
 prélevable** (un binaire, dont cinq valeurs ne diraient rien à un humain) ; les **droits sont
 refusés** ; **aucune valeur n'a été retournée** ; la **lecture a échoué** (délai, panne,
@@ -330,7 +329,7 @@ Ce que la détection a rendu sur un `ColumnListing` : une `ScreenedColumn` par c
 l'agrégat de ce contexte. C'est le **rapport de détection** que l'interface nomme, et c'est **l'acte
 et son résultat**, comme une `Qualification` — il n'existe pas d'objet « lancement » distinct de
 l'objet rendu.
-Il porte l'`ListingOrigin` du relevé qu'il a lu, **enregistrée avec lui** : c'est le seul endroit qui
+Il porte la `ListingOrigin` du relevé qu'il a lu, **enregistrée avec lui** : c'est le seul endroit qui
 dise, des mois plus tard sur l'archive, si l'`Operator` l'avait collé ou si le service l'avait
 scanné.
 Il est **détenu** et vit plusieurs jours : un rapport de détection s'arbitre en plusieurs fois,
@@ -416,7 +415,7 @@ rend ; un moteur servi apprend la version qu'on lui sert au moment où il répon
 posée à côté de l'appel dirait la version configurée plutôt que celle qui a répondu.
 ⚠️ **Ce n'est pas encore un `Screening`.** Il y manque ce que le moteur n'a pas à décider :
 l'identité du rapport de détection, l'instant du lancement, le nom de base, le dialecte et
-l'`ListingOrigin` par laquelle le relevé est entré. C'est le geste qui assemble, jamais le moteur —
+la `ListingOrigin` par laquelle le relevé est entré. C'est le geste qui assemble, jamais le moteur —
 et le moteur, lui, **ne sait pas** lequel des deux chemins il lit.
 _Avoid_ : ScreeningResult, ScreeningOutcome, Predictions, Findings ⚠️ `Outcome` est le mot de l'issue,
 qui n'appartient qu'à l'humain ; `Predictions` promet un modèle et un score.

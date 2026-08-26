@@ -42,7 +42,7 @@ public sealed class ListingOrigin : SmartEnum<ListingOrigin>
   /// est ce qui reste quand la question n'a pas été posée, et il se refuse partout.
   /// </summary>
   public static readonly ListingOrigin Unspecified =
-    new(nameof(Unspecified), 0, "origine non renseignée", isKnown: false);
+    new(nameof(Unspecified), 0, "origine non renseignée");
 
   /// <summary>L'<c>Operator</c> a produit le relevé lui-même, avec la requête que le service lui fournit, et l'a collé.</summary>
   public static readonly ListingOrigin Pasted = new(nameof(Pasted), 1, "collé");
@@ -50,11 +50,10 @@ public sealed class ListingOrigin : SmartEnum<ListingOrigin>
   /// <summary>Le service s'est connecté à la base et a relevé le schéma lui-même — c'est le <c>Scan</c>.</summary>
   public static readonly ListingOrigin Scanned = new(nameof(Scanned), 2, "scanné");
 
-  private ListingOrigin(string name, int value, string frenchLabel, bool isKnown = true)
+  private ListingOrigin(string name, int value, string frenchLabel)
     : base(name, value)
   {
     FrenchLabel = frenchLabel;
-    IsKnown = isKnown;
   }
 
   /// <summary>Le libellé destiné à l'<c>Operator</c>. Le français reste hors des identifiants.</summary>
@@ -62,9 +61,10 @@ public sealed class ListingOrigin : SmartEnum<ListingOrigin>
 
   /// <summary>
   /// Sait-on d'où vient ce relevé ? Faux du seul <see cref="Unspecified"/>, et c'est ce qui distingue
-  /// une origine d'une case vide.
+  /// une origine d'une case vide. <b>Il se calcule</b> : deux champs qu'un chemin d'écriture peut
+  /// dissocier finiraient par se contredire, et c'est le membre lui-même qui dit s'il est le cas nul.
   /// </summary>
-  public bool IsKnown { get; }
+  public bool IsKnown => this != Unspecified;
 
   /// <summary>
   /// Cette origine, si c'en est une — sinon une programmation fautive nommée. Le garde vit ici

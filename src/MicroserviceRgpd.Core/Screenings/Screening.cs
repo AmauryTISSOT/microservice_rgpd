@@ -121,8 +121,8 @@ public sealed class Screening : IAggregateRoot
   public ListingOrigin Origin => _origin is { IsKnown: true }
     ? _origin
     : throw new InvalidOperationException(
-      $"Le Screening {Id.Value} est rendu sans origine de relevé « "
-      + $"{_origin?.Name ?? "∅"} ». On ne sait donc pas s'il a lu un relevé collé ou un relevé "
+      $"Le Screening {Id.Value} est rendu sans origine de relevé : sa ligne porte "
+      + $"« {_origin?.Name ?? "∅"} ». On ne sait donc pas s'il a lu un relevé collé ou un relevé "
       + "scanné, et la clause d'incomplétude qu'il rendrait dirait l'un pour l'autre. L'origine est "
       + "posée au lancement et enregistrée avec le rapport : une ligne qui n'en porte pas n'a pas "
       + "été écrite par le domaine.");
