@@ -18,6 +18,22 @@ public class DatabaseScannerWiringTests
   }
 
   /// <summary>
+  /// ⚠️ <b>Un dialecte câblé ne lève pas, il rend une fin.</b> L'aiguillage lève sur un dialecte
+  /// <b>sans</b> pilote — c'est un défaut de câblage, pas une panne de la base du client —, et c'est
+  /// très exactement ce qui distingue un dialecte inscrit d'un dialecte oublié.
+  /// </summary>
+  [Fact]
+  public async Task ResolvesAScannerThatKnowsPostgreSql()
+  {
+    using var provider = new ServiceCollection().AddDatabaseScanner().BuildServiceProvider();
+
+    var outcome = await provider.GetRequiredService<IDatabaseScanner>()
+      .ScanAsync(DatabaseDialect.PostgreSql, "Database=sans-hote");
+
+    outcome.Ending.ShouldBe(ScanEnding.Failed);
+  }
+
+  /// <summary>
   /// ⚠️ <b>Un câblage écrit deux fois ne fait pas tomber le service.</b> L'aiguillage range ses
   /// dialectes par dialecte : un second scanner du même dialecte le ferait tomber à la première
   /// résolution — une panne au démarrage pour une inscription en double, ce qu'aucune autre

@@ -318,7 +318,21 @@ C'est la **seule lecture d'existence** qui subsiste, et ce n'est jamais un contr
 ⚠️ **Sous SQLite, la seconde fin est structurellement inatteignable**, et c'est le fichier qui le veut :
 `pragma_database_list` rend toujours `main` pour un fichier réellement ouvert. La lecture d'existence
 est faite quand même — c'est le dialecte qui répond, pas le code qui suppose —, et la distinction
-elle-même est éprouvée par la doublure. Elle deviendra atteignable avec PostgreSQL et MySQL.
+elle-même est éprouvée par la doublure. Elle devient atteignable avec PostgreSQL, où elle se lit sur
+`pg_namespace` : **zéro schéma applicatif** est la base absente du catalogue de schémas, **zéro
+table dans des schémas qui existent** est la base sans table.
+⚠️ **Sous PostgreSQL, le relevé lit `pg_catalog` et jamais l'`information_schema`.** Les vues
+conformes sont filtrées **ligne à ligne par privilège** : un compte sans droit sur une table ne la
+voit pas, et le relevé rendu serait **silencieusement partiel** — sincère, entier de son point de
+vue, amputé de la moitié des tables du client, sans que rien nulle part ne sache qu'il manque
+quelque chose. C'est l'`Omission silencieuse` que la clause d'incomplétude ne pourrait même pas
+rattraper. Deux des neuf champs du pivot n'existent d'ailleurs que là : `col_description` et
+`obj_description` n'ont aucun équivalent conforme.
+⚠️ **Le binaire s'écarte par une liste noire nommée type par type**, jamais par `typcategory = 'U'` :
+cette catégorie de PostgreSQL range `uuid`, `jsonb`, `json`, `xml` et les types PostGIS **avec**
+`bytea`. L'employer comme filtre binaire refuserait en silence de prélever un identifiant de
+personne et un document JSON entier — et une colonne PostGIS de coordonnées est de la donnée de
+localisation, qui se prélève.
 _Avoid_ : `DatabaseReader`, `SchemaLoader`, `Importer`, `Crawler` ⚠️ les deux premiers ne disent pas
 qu'on va **chercher**, et passeraient donc sans bruit sur le chemin collé ; `Importer` promet une
 entrée dans le système, alors que rien n'entre avant l'ingestion ; `Crawler` promet une exploration
