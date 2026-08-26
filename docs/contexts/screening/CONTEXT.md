@@ -51,6 +51,18 @@ jamais que c'était le **bon**. L'`Operator` qui saisit l'adresse de la recette 
 sincère, entier et faux — exactement comme celui qui colle le relevé d'hier. Deux régimes de
 provenance pour un même champ seraient deux règles pour un même fait, et la seconde finirait par
 contredire la première.
+⚠️ **Le même régime vaut sur un second objet, le compte.** Une connexion sait quel **périmètre** le
+compte lui a présenté, jamais que c'était **toute la base**. Sur MySQL et MariaDB, un compte dont les
+droits ne portent que sur une partie des tables produit un catalogue amputé **et cohérent avec
+lui-même** — ni clé étrangère, ni index, ni vue orpheline ne le trahissent —, là où PostgreSQL rend
+`pg_catalog` entier quels que soient les droits. Celui-là obtient un relevé sincère, **partiel** et
+muet, quand celui de la recette en obtenait un sincère, entier et faux : deux façons d'être trompé
+par un relevé qu'aucune inspection du relevé ne distingue du bon. Le service ne peut pas voir la
+différence, et **il ne cherche plus** : la condition est dite à l'`Operator` au moment où il saisit
+sa connexion, et c'est lui qui en répond. ⚠️ **Un garde lisant les droits du compte a été construit,
+mesuré, puis retiré** — il attrapait le compte restreint **colonne par colonne** et laissait passer
+le compte restreint **table par table**, si bien que le passer se serait lu comme une vérification
+alors qu'il n'en était pas une. Une fausse assurance sur ce point coûte plus cher que l'aveu.
 
 ⚠️ **Il est entier ou il n'existe pas.** La requête fournie **produit elle-même** le relevé plutôt
 que de laisser un client SQL le mettre en forme : il déclare donc le SGBD dont il vient et le nombre
@@ -64,6 +76,15 @@ l'`Operator` relance sa requête, il ne perd aucun arbitrage.
 Sur le chemin connecté la question ne se pose pas de la même façon — rien n'est retranscrit, donc
 rien ne se tronque au collage — mais la règle est identique : un relevé de schéma qui échoue en
 cours de route ne produit **aucun** `ColumnListing`, jamais un `ColumnListing` partiel.
+⚠️ **Cette clause promet l'atomicité, jamais la complétude, et les deux chemins ne la tiennent pas
+par le même mécanisme.** Au collage, le compte de fin est déclaré par la requête que l'`Operator` a
+exécutée : il vient d'ailleurs que du texte qu'il accompagne, donc une troncature le contredit et se
+voit. Au scan, **c'est le service qui produit ce compte**, à partir de ce que le catalogue lui a
+montré — il est donc toujours cohérent avec lui-même, et **aucun mécanisme ne dit ce qui manquait
+avant la lecture**. « Entier » veut dire ici *non interrompu*, jamais *complet* : un relevé arrêté à
+la table 300 sur 312 ne produit rien, quand un relevé de 3 tables sur 300 — parce que le compte n'en
+montrait que 3 — est rendu sans que rien ne rougisse. Ce que la clause d'incomplétude en dit à
+l'`Operator` est alors la seule chose qui l'en avertisse.
 ⚠️ **Cette rigueur-là ne s'étend pas au `ColumnPreview`, et c'est délibéré.** Le schéma est tout ou
 rien parce que l'`Omission relue` repose sur lui. Un aperçu manquant, lui, est **toléré** — il ne
 retire aucune ligne du rapport de détection — à la seule condition d'être **nommé** manquant.
