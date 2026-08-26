@@ -92,10 +92,12 @@ else
   écran où l'omission a cessé d'être relisible. Il n'y a donc aucun bouton pour les masquer.
 *@
 <p class="hint">
-  Les <strong>@Counted(read.ColumnCountInThisTable, "colonne")</strong> de cette table sont ici, dans l'ordre où
-  votre base les rend — celles où la détection n'a rien vu comprises, et il n'y a aucun moyen de les
-  masquer. Ce sont elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part
-  ailleurs. @Counted(read.AwaitingCountInThisTable, "colonne")
+  Les <strong>@Counted(read.ColumnCountInThisTable, "colonne")</strong> de cette table sont ici —
+  celles où la détection n'a rien vu comprises, et il n'y a aucun moyen de les masquer. Ce sont
+  elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part ailleurs. Elles se
+  lisent en deux temps — les signalées d'abord, une par une ; les autres ensuite —, et
+  <strong>dans chacun, l'ordre est celui où votre base les rend</strong> : rien n'est trié.
+  @Counted(read.AwaitingCountInThisTable, "colonne")
   y @(read.AwaitingCountInThisTable == 1 ? "attend" : "attendent") encore, signalées et non
   signalées confondues.
 </p>
@@ -139,12 +141,18 @@ else
     @foreach (var column in read.FlaggedColumns)
     {
       @*
-        ⚠️ L'ATTRIBUT `open` EST ÉCRIT EN BRUT, ET C'EST DÉLIBÉRÉ. Un `open="@expression"` laisse à
-        Razor le soin de décider ce qu'il fait d'un booléen, et un `open="False"` rendu serait un
-        attribut PRÉSENT — donc une fiche dépliée là où le domaine dit qu'elle est close. La chaîne
-        posée ici est littérale : il n'y a rien à injecter.
+        ⚠️ L'OUVERTURE SE LIT SUR L'ÉTAT, ET NON SUR LA PRÉSENCE D'UN ARBITRAGE. Les deux coïncident
+        aujourd'hui — Awaiting est très exactement « aucun arbitrage » —, et c'est justement pour
+        cela qu'il faut nommer le bon des deux : le jour où une issue Awaiting serait rendable, une
+        colonne qui attend encore se serait repliée hors de ce qu'il reste à lire, et l'écran aurait
+        cessé de dire ce qu'il promet ici.
+
+        ⚠️ L'ATTRIBUT EST ÉCRIT EN BRUT, ET C'EST DÉLIBÉRÉ. Un `open="@expression"` laisse à Razor le
+        soin de décider ce qu'il fait d'un booléen, et un `open="False"` rendu serait un attribut
+        PRÉSENT — donc une fiche dépliée là où le domaine dit qu'elle est close. La chaîne posée ici
+        est littérale : il n'y a rien à injecter.
       *@
-      <details class="column-card" id="@ColumnAnchor.For(column.Identity.Column)"@Html.Raw(column.AwaitsAnArbitration ? " open" : "")>
+      <details class="column-card" id="@ColumnAnchor.For(column.Identity.Column)"@Html.Raw(column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting ? " open" : "")>
         @*
           LE RÉSUMÉ EST CE QUI SURVIT AU REPLI : le nom de la colonne, ce que la détection y a
           reconnu, et l'issue rendue. Un résumé qui ne dirait que le nom obligerait à rouvrir trente
@@ -153,7 +161,9 @@ else
         <summary>
           <span class="column-name">@column.Identity.Column</span>
           <span class="category">@column.Category.FrenchLabel</span>
-          @if (column.AwaitsAnArbitration)
+          @* ⚠️ LE MÊME PRÉDICAT QUE L'OUVERTURE, et il doit le rester : une fiche repliée qui dirait
+             « En attente » serait un écran qui se contredit lui-même. *@
+          @if (column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting)
           {
             <span class="none">En attente</span>
           }
@@ -234,6 +244,22 @@ else
 <section class="unflagged">
   <h2>Les colonnes de cette table où rien n'a été vu</h2>
 
+@*
+  ⚠️ LE SECOND TEMPS EST TOUT ENTIER SOUS CETTE CONDITION, geste de lot compris. Une table dont
+  chaque colonne a été signalée n'a rien à montrer ici : laisser le geste de lot y dire « celles où
+  rien n'a été vu ont toutes été relues » aurait affirmé qu'on a relu ce qui n'existe pas, deux
+  lignes avant de dire qu'il n'en existe aucune.
+*@
+@if (read.UnflaggedCountInThisTable == 0)
+{
+  <p class="hint">
+    Toutes les colonnes de cette table ont été signalées : il n'y a rien ici que la détection
+    n'ait vu, et donc rien qu'un geste de lot puisse atteindre. Elles se lisent une par une, plus
+    haut.
+  </p>
+}
+else
+{
 @*
   LE GESTE DE LOT, ET SES BORNES ÉCRITES À CÔTÉ DE SON BOUTON.
 
@@ -325,15 +351,6 @@ else
   }
 </section>
 
-@if (read.ColumnCountInThisTable == read.FlaggedCountInThisTable)
-{
-  <p class="hint">
-    Toutes les colonnes de cette table ont été signalées : il n'y a rien ici que le service n'ait
-    vu.
-  </p>
-}
-else
-{
 <table class="queue columns">
   @*
     ⚠️ CETTE LÉGENDE COMPTE CE QUE CE TABLEAU-CI PORTE, et rien d'autre. Elle disait naguère la

@@ -436,6 +436,56 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     table.ShouldNotContain("ontoggle", Case.Insensitive);
   }
 
+  /// <summary>
+  /// ⚠️ <b>Une table dont tout a été signalé n'a pas de second temps, et n'en dit pas un mot de
+  /// travers.</b> Un geste de lot laissé là aurait affirmé que « celles où rien n'a été vu ont
+  /// toutes été relues » — c'est-à-dire qu'on a relu ce qui n'existe pas — deux lignes avant de
+  /// dire qu'il n'en existe aucune.
+  /// </summary>
+  [Fact]
+  public async Task SaysOnceAndOnlyOnceThatATableHasNoColumnWhereNothingWasSeen()
+  {
+    var table = await DepositAndOpenAsync(
+      ScreeningSurface.Column("email", position: 1),
+      ScreeningSurface.Column("adr_l1", position: 2));
+
+    // Les deux sont signalées : le second temps n'a rien à porter.
+    ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull().ShouldStartWith("<details");
+    ScreeningSurface.BlockOf(table, "adr_l1").ShouldNotBeNull().ShouldStartWith("<details");
+
+    table.ShouldContain("Toutes les colonnes de cette table ont été signalées");
+
+    // ⚠️ Et aucun geste de lot : il n'aurait rien à atteindre, et sa phrase se lirait comme un
+    // constat sur des colonnes qui n'existent pas.
+    table.ShouldNotContain("handler=Batch");
+    table.ShouldNotContain("ont toutes été relues");
+  }
+
+  /// <summary>
+  /// <b>Un nom de colonne que la base rend tel quel s'ancre quand même</b> : une base nomme ses
+  /// colonnes comme elle veut, et un fragment d'URL n'accepte presque rien. L'échappement est
+  /// injectif — deux colonnes distinctes ne peuvent pas atterrir sur la même ancre —, faute de quoi
+  /// un arbitrage renverrait l'<c>Operator</c> sur une colonne qu'il n'a pas tranchée.
+  /// </summary>
+  [Fact]
+  public async Task AnchorsAColumnWhoseNameCarriesWhatAFragmentWouldNotAccept()
+  {
+    await _surface.DepositAsync(ScreeningSurface.Paste(
+      ScreeningSurface.Column("e-mail", position: 1),
+      ScreeningSurface.Column("e002Dmail", position: 2)));
+
+    var table = await ReadTheTableAsync();
+
+    // Le tiret est échappé, et le nom qui porte déjà sa séquence d'échappement ne s'y confond pas :
+    // les deux ancres sont distinctes.
+    table.ShouldContain("id=\"colonne-e-002Dmail\"");
+    table.ShouldContain("id=\"colonne-e002Dmail\"");
+
+    var arbitrated = await _surface.ArbitrateAsync("e-mail", ScreenedColumnState.Retained.Name);
+
+    arbitrated.Headers.Location!.OriginalString.ShouldEndWith("#colonne-e-002Dmail");
+  }
+
   /// <summary>L'écran d'une table, relu par une adresse neuve — jamais la page rendue par le POST.</summary>
   private async Task<string> ReadTheTableAsync()
   {
