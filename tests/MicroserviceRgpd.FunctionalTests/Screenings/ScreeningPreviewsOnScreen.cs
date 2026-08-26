@@ -65,8 +65,9 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
     // pouvoir s'appliquer.
     card.ShouldContain(RealLengthOfTheTruncatedValue.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
-    // Le biais du premier venu est dit, une fois, là où les valeurs se lisent.
-    table.ShouldContain("premières venues");
+    // Le biais du premier venu est dit, une fois, là où les valeurs se lisent — et c'est la phrase
+    // du domaine, jamais une prose de l'écran.
+    table.ShouldContain(ColumnPreview.FirstComeStatement);
 
     // Et le décompte : l'avant se dit par écran.
     table.ShouldContain("Les aperçus de ce rapport disparaîtront dans");
@@ -88,7 +89,7 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
   {
     foreach (var reason in PreviewAbsenceReason.List)
     {
-      var table = await ScanAndOpenAsync(AScanShowing(Flagged, ColumnPreview.Absent(reason)));
+      var table = await ScanAndOpenAsync(AScanWhereNothingWasRead(reason));
 
       var card = ScreeningSurface.BlockOf(table, Flagged);
 
@@ -103,6 +104,16 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
       // ⚠️ Le service ne dit jamais ce que la colonne CONTIENT : il dit ce qu'il a OBSERVÉ.
       table.ShouldNotContain("cette table est vide");
       table.ShouldNotContain("ne contient aucune ligne");
+
+      // ⚠️ ET LA PHRASE DU BIAIS SE TAIT : aucune des trois colonnes de ce scan n'a de valeur à
+      // montrer. Mettre en garde contre le biais de valeurs que personne n'a sous les yeux aurait
+      // décrit un travers qui n'a rien travesti — et le décompte, lui, reste dû : les aperçus
+      // existent, ils portent des raisons.
+      table.ShouldNotContain(
+        ColumnPreview.FirstComeStatement,
+        Case.Sensitive,
+        "L'écran met en garde contre le biais du premier venu sur un scan qui n'a rendu aucune "
+        + "valeur : la phrase compte des entrées d'aperçu au lieu de compter des valeurs lues.");
     }
   }
 
@@ -164,7 +175,10 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
 
       factory.Clock.Advance(TimeSpan.FromMinutes(90));
 
-      // Trois écrans visités, et pas un ne montre d'aperçu : pas un ne prolonge.
+      // Les quatre écrans que la spec nomme sont visités, et pas un ne montre d'aperçu : pas un ne
+      // prolonge. ⚠️ L'accueil en fait partie — c'est l'écran devant lequel un onglet reste ouvert
+      // toute une journée, et donc celui par qui un cache deviendrait une rétention.
+      await _surface.ReadAsync("/");
       await _surface.ReadAsync(ScreeningSurface.Report);
       await _surface.ReadAsync(ScreeningSurface.History);
       await _surface.ReadAsync(ScreeningSurface.ArchiveOf(archived));
@@ -304,6 +318,70 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
+  /// ⚠️ <b>Un rapport qui remonte après une suppression n'entend pas parler de redémarrage.</b> Ses
+  /// aperçus ont bien disparu — un relevé plus récent a pris leur place —, mais aucune panne n'a eu
+  /// lieu, et lui annoncer une panne serait annoncer une perte à qui n'en a pas subi celle-là.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// C'est le seul chemin par lequel l'éviction du cache s'observe depuis la frontière HTTP : un
+  /// rapport évincé est normalement archivé, et un écran d'archive ne rend aucun aperçu. Supprimer
+  /// celui qui l'a évincé le ramène au rang de courant, et son écran de table redevient lisible.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Il éprouve du même geste les deux gestes du cache</b> : le dépôt du jeu suivant, qui
+  /// évince — le collage appelle <c>Forget</c>, un second scan appelle <c>Keep</c> — et la mémoire
+  /// qu'il garde d'avoir tenu quelque chose, sans laquelle la phrase du redémarrage se mettrait à
+  /// mentir.
+  /// </para>
+  /// </remarks>
+  [Theory]
+  [InlineData(true)]
+  [InlineData(false)]
+  public async Task SaysAnotherListingTookTheirPlaceRatherThanBlamingARestart(bool byPasting)
+  {
+    var table = await ScanAndOpenAsync(AScanShowing(Flagged, AnAssortedPreview()));
+
+    table.ShouldContain("jean@exemple.fr");
+
+    var scanned = await _surface.CurrentScreeningAsync();
+
+    if (byPasting)
+    {
+      await _surface.DepositAsync(
+        ScreeningSurface.Paste(ScreeningSurface.Column(Flagged, position: 1)));
+    }
+    else
+    {
+      await new ScanSurface(factory).ScanAsync(
+        DatabaseScannerDouble.AListing(("adherents", Flagged)));
+    }
+
+    var evicting = await _surface.CurrentScreeningAsync();
+
+    // Le relevé qui vient d'évincer part, et le rapport scanné redevient le courant.
+    var deleted = await _surface.DeleteAsync(evicting, "galette_prod");
+
+    deleted.StatusCode.ShouldBe(
+      HttpStatusCode.Redirect,
+      "La suppression du relevé qui a évincé les aperçus a été refusée : le rapport scanné ne "
+      + "redevient pas le courant, et ce test n'éprouve plus rien.");
+
+    (await _surface.CurrentScreeningAsync()).ShouldBe(scanned);
+
+    var afterwards = await ReadTheTableAsync();
+
+    afterwards.ShouldContain(
+      PreviewAvailability.Evicted.Statement!,
+      Case.Sensitive,
+      "L'écran ne dit pas qu'un autre relevé a pris la place des aperçus.");
+
+    // ⚠️ ET SURTOUT PAS CELLE-CI : aucun redémarrage n'a eu lieu.
+    afterwards.ShouldNotContain(PreviewAvailability.ClearedByRestart.Statement!);
+    afterwards.ShouldNotContain("jean@exemple.fr");
+  }
+
+  /// <summary>
   /// ⚠️ <b>Un redémarrage efface les aperçus, et c'est DIT plutôt que réparé.</b> Les faire survivre
   /// demanderait de les écrire, c'est-à-dire de faire du service un détenteur durable de données
   /// personnelles du client.
@@ -326,12 +404,12 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
     var afterTheRestart = WebUtility.HtmlDecode(
       await client.GetStringAsync(ScreeningSurface.TableOf()));
 
-    afterTheRestart.ShouldContain(ScreeningPreviews.ClearedByRestartStatement);
+    afterTheRestart.ShouldContain(PreviewAvailability.ClearedByRestart.Statement!);
     afterTheRestart.ShouldNotContain("jean@exemple.fr");
 
     // ⚠️ Et la phrase du redémarrage n'est pas celle de l'expiration : l'une dit une panne, l'autre
     // une durée écoulée, et confondre les deux annoncerait une perte à qui n'en a pas subi.
-    afterTheRestart.ShouldNotContain(ScreeningPreviews.ExpiredStatement);
+    afterTheRestart.ShouldNotContain(PreviewAvailability.Expired.Statement!);
   }
 
   /// <summary>
@@ -350,8 +428,8 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
     var table = await ReadTheTableAsync();
 
     table.ShouldNotContain("disparaîtront dans");
-    table.ShouldNotContain(ScreeningPreviews.ExpiredStatement);
-    table.ShouldNotContain(ScreeningPreviews.ClearedByRestartStatement);
+    table.ShouldNotContain(PreviewAvailability.Expired.Statement!);
+    table.ShouldNotContain(PreviewAvailability.ClearedByRestart.Statement!);
   }
 
   /// <summary>
@@ -366,7 +444,7 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
   private static void ShouldHaveExpired(string table, string? because = null)
   {
     table.ShouldContain(
-      ScreeningPreviews.ExpiredStatement,
+      PreviewAvailability.Expired.Statement!,
       Case.Sensitive,
       because ?? "L'écran ne dit pas que les aperçus de ce rapport ont expiré.");
 
@@ -395,6 +473,25 @@ public class ScreeningPreviewsOnScreen(CustomWebApplicationFactory<Program> fact
     previews[ColumnIdentity.Of("public", "adherents", column)] = preview;
 
     return ScanOutcome.Listed(listed.Pivot!, previews);
+  }
+
+  /// <summary>
+  /// Un relevé scanné dont <b>aucune</b> colonne n'a rendu de valeur : toutes portent la même raison
+  /// nommée.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est le seul relevé qui distingue « compter des entrées » de « compter des valeurs ».</b>
+  /// Un relevé où une seule colonne est refusée porte encore des valeurs ailleurs, et une phrase qui
+  /// compte les entrées d'aperçu y resterait verte.
+  /// </remarks>
+  private static ScanOutcome AScanWhereNothingWasRead(PreviewAbsenceReason reason)
+  {
+    var listed = DatabaseScannerDouble.AListing(
+      ("adherents", "id_adh"), ("adherents", Flagged), ("adherents", "montant"));
+
+    return ScanOutcome.Listed(
+      listed.Pivot!,
+      listed.Previews.ToDictionary(entry => entry.Key, _ => ColumnPreview.Absent(reason)));
   }
 
   /// <summary>

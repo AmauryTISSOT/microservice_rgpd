@@ -64,7 +64,14 @@ public sealed class ReadScreeningTableHandler(
     // ⚠️ LE CACHE EST TOUCHÉ ICI, ET CE TOUCHER RÉARME LES DEUX HEURES GLISSANTES. Il l'est APRÈS
     // les deux refus au-dessus : réarmer sur une adresse mal recopiée aurait fait prolonger les
     // aperçus par un écran qui ne se rend pas.
-    var living = previews.Show(current.Id, current.Origin);
+    //
+    // ⚠️ ET L'ORIGINE EST LUE ICI, JAMAIS DANS LE CACHE. Un relevé COLLÉ n'a rien à annoncer : rien
+    // n'y a jamais été prélevé, et lui demander l'état de ses aperçus aurait fait dire au cache
+    // « ils ont expiré » d'un prélèvement qui n'a pas eu lieu. Le cache ne connaît qu'une durée ;
+    // savoir par quel chemin un relevé est entré est une affaire de cas d'usage.
+    var living = current.Origin == ListingOrigin.Scanned
+      ? previews.Show(current.Id)
+      : ScreeningPreviews.NeverTaken;
 
     return new ScreeningAnswer<ScreenedTable>(
       ScreenedTable.Of(current, query.Table, read, counts, living),

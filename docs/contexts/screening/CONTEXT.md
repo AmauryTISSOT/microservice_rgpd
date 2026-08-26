@@ -270,11 +270,11 @@ en même temps qu'il annonce la perte. Refuser l'arbitrage aurait laissé pour s
 un scan — c'est-à-dire de détruire le travail déjà tranché pour récupérer cinq valeurs qui ne prouvent
 rien. Et les **raisons** d'absence, elles, restent affichées : elles sont enregistrées sur la
 `ScreenedColumn`, ce sont des propriétés de la colonne et non des aperçus.
-⚠️ **Un redémarrage du service les efface, et sa phrase n'est pas celle de l'expiration.** Les deux
-rendent un cache vide et ne disent pas la même chose : l'une annonce une durée écoulée, l'autre une
-panne. Les confondre annoncerait une perte à qui n'en a pas subi — un relevé **collé**, où aucun
-prélèvement n'a jamais eu lieu, ne dit d'ailleurs rien du tout de ses aperçus, exactement comme ses
-quatre comptes d'absence sont **absents** plutôt qu'à zéro.
+⚠️ **Un redémarrage du service les efface, et sa phrase n'est ni celle de l'expiration ni celle de
+l'éviction.** Les trois rendent un cache vide et ne disent pas la même chose — une durée écoulée, une
+panne, un relevé qui a pris la place —, et les confondre annoncerait une perte à qui n'a pas subi
+celle-là : voir `PreviewAvailability`. Un relevé **collé**, lui, ne dit rien du tout de ses aperçus,
+exactement comme ses quatre comptes d'absence sont **absents** plutôt qu'à zéro.
 ⚠️ **L'expiration est la seule falaise dure de la tenabilité de l'écran, et elle est consignée ici
 pour être sue.** Les compteurs de l'arbitrage sont **linéaires** — `clics = 936 + 3N`,
 `chargements = 624 + N` — donc sans seuil : rien n'y bascule. La pause de deux heures, elle, bascule,
@@ -287,6 +287,53 @@ _Avoid_ : Sample, échantillon, ValueSample, extrait, Excerpt, Snippet, Peek ⚠
 `échantillon` sont les mots qu'on écrira par réflexe, et c'est précisément pour cela qu'ils sont
 nommés ici ; `extrait` et `Excerpt` supposeraient un tout dont on aurait pris une part
 représentative, ce qui est la même promesse sous un autre habit.
+
+**ScreeningPreviews** — « les aperçus d'un rapport » :
+Ce que le cache a **encore** à montrer pour **un rapport**, et ce qu'il en dit quand il n'a plus
+rien : les valeurs vivantes avec leur décompte, ou la phrase qui explique leur absence. C'est le
+grain du **rapport**, jamais celui de la colonne — un `ColumnPreview` est ce que porte **une**
+colonne.
+⚠️ **Il existe pour que l'expiration ne remplisse aucune case.** L'après se dit **une fois**, à
+l'échelle du rapport, et le bloc d'aperçu quitte l'écran entièrement ; écrire « valeurs expirées » là
+où les valeurs se lisaient aurait fabriqué la **troisième forme** que `ColumnPreview` interdit, dans
+le champ même que la clause protège.
+⚠️ **Il ne porte aucune raison d'absence, et c'est ce qui les fait survivre à l'expiration.** Les
+raisons sont enregistrées sur la `ScreenedColumn` : elles restent affichées quand les valeurs ne sont
+plus là — voir `PreviewAbsenceReason`.
+⚠️ **Son décompte dit un délai, jamais une échéance.** La fenêtre est glissante : « il vous reste
+1 h 47 **si vous ne rouvrez plus cet écran** » est la seule lecture honnête, et c'est celle que la
+phrase porte.
+_Avoid_ : PreviewCache, PreviewState, expiration, TTL ⚠️ `PreviewCache` nommerait le **magasin**
+quand ce type est la **réponse** qu'on lui demande — le magasin, c'est `ScanPreviews` ; `expiration`
+et `TTL` réduisent à une durée écoulée ce qui compte trois façons de n'avoir plus rien, dont deux ne
+sont pas des durées.
+
+**PreviewAvailability** — « état des aperçus d'un rapport » :
+Dans quel état le cache laisse un rapport, et **ce que l'écran en dit**. Énumération close à **cinq**
+membres : *jamais prélevé* (un relevé collé), *vivants*, *expirés*, *effacés par un redémarrage*,
+*évincés par un autre relevé*.
+⚠️ **Trois façons de n'avoir plus rien, et elles ne se disent pas de la même manière.** Une durée
+écoulée, un redémarrage du service et un jeu évincé par le relevé suivant rendent tous un cache vide.
+Fondus en une seule phrase, l'écran aurait dû choisir laquelle des trois mentir — et la plus coûteuse
+est réelle : supprimer dans l'historique le relevé qui a évincé les aperçus fait **remonter** le
+rapport scanné au rang de courant, et lui annoncer un redémarrage serait annoncer une **panne à qui
+n'en a pas subi**. Ce que les trois partagent, et qui est vrai des trois, est « ils ne reviendront pas
+pour ce rapport ».
+⚠️ **Le membre *jamais prélevé* n'a pas de phrase, et c'est délibéré.** Sur un relevé **collé**, rien
+n'a jamais été prélevé : il n'y a pas de perte à annoncer, et lui en annoncer une affirmerait qu'un
+prélèvement a eu lieu — exactement comme quatre comptes d'absence à zéro y inventeraient une
+incomplétude.
+⚠️ **La phrase est attachée au membre, écrite une fois** — la règle de `PreviewAbsenceReason`,
+appliquée ici pour le même motif. *Vivants* fait exception et n'en porte aucune : elle dit une phrase
+**et un délai** qui change à chaque rendu, et se compose donc chez `ScreeningPreviews`.
+⚠️ **Ce n'est pas une `PreviewAbsenceReason` de plus.** Une raison dit pourquoi **une colonne** n'a
+rien à montrer, elle est enregistrée, et elle entre dans les quatre comptes de la `Clause
+d'incomplétude` ; ces cinq états portent sur le **rapport**, ne sont enregistrés nulle part, et
+n'entrent dans aucun compte. Les ranger ensemble aurait fait grandir de trois une énumération dont la
+fermeture est la promesse.
+_Avoid_ : PreviewStatus, `IsExpired`, `HasPreviews` ⚠️ un booléen n'aurait pas su séparer les trois
+pertes, donc pas su éviter la phrase qui ment ; `Status` promet un état de machine quand ce qu'on
+nomme ici est **ce que l'écran dit**.
 
 **PreviewAbsenceReason** — « raison d'absence d'aperçu » :
 Le second membre d'un `ColumnPreview` : **pourquoi** une colonne n'a aucune valeur à montrer.

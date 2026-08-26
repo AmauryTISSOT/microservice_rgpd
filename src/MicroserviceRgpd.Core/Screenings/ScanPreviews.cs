@@ -64,6 +64,15 @@ public sealed class ScanPreviews(TimeProvider clock)
   private DateTimeOffset _lastShown;
 
   /// <summary>
+  /// Ce cache a-t-il tenu un jeu <b>depuis le démarrage du processus</b> ? ⚠️ <b>Il ne se remet
+  /// jamais à faux</b>, éviction comprise : c'est ce qui distingue « les valeurs ont été remplacées »
+  /// de « le service a redémarré », deux causes qu'un cache vide ne sait pas départager toute seule.
+  /// Sans lui, le rapport qu'une suppression dans l'historique fait remonter s'entendrait annoncer
+  /// une panne qui n'a pas eu lieu.
+  /// </summary>
+  private bool _hasHeldASet;
+
+  /// <summary>
   /// Dépose le jeu d'aperçus d'un rapport, et <b>évince celui d'avant</b>. C'est aussi l'instant
   /// d'où court le plafond absolu.
   /// </summary>
@@ -82,6 +91,7 @@ public sealed class ScanPreviews(TimeProvider clock)
       _previews = previews;
       _keptOn = now;
       _lastShown = now;
+      _hasHeldASet = true;
     }
   }
 
@@ -127,31 +137,20 @@ public sealed class ScanPreviews(TimeProvider clock)
   /// </para>
   /// </remarks>
   /// <param name="of">Le rapport dont l'écran montre les colonnes.</param>
-  /// <param name="origin">
-  /// Par quel chemin son relevé est entré. ⚠️ <b>Un relevé collé n'a rien à annoncer</b> : dire d'un
-  /// rapport collé que ses aperçus ont expiré affirmerait qu'un prélèvement a eu lieu, exactement
-  /// comme quatre comptes à zéro y inventeraient une incomplétude.
-  /// </param>
-  /// <exception cref="ArgumentNullException"><paramref name="origin"/> est absent.</exception>
-  public ScreeningPreviews Show(ScreeningId of, ListingOrigin origin)
+  public ScreeningPreviews Show(ScreeningId of)
   {
-    ArgumentNullException.ThrowIfNull(origin);
-
-    if (origin != ListingOrigin.Scanned)
-    {
-      return ScreeningPreviews.NeverTaken;
-    }
-
     var now = clock.GetUtcNow();
 
     lock (_turn)
     {
-      // Le cache ne porte pas ce rapport : le processus a redémarré depuis son scan. Un autre
-      // rapport ne peut pas être en cause — le courant est le dernier lancé, et le geste qui en
-      // dépose un autre est très exactement celui qui évince ce jeu-ci.
+      // ⚠️ LE CACHE NE PORTE PAS CE RAPPORT, ET IL Y A DEUX FAÇONS D'EN ARRIVER LÀ. Un jeu déposé
+      // depuis a pris la place de celui-ci — un relevé plus récent, que l'historique a pu supprimer
+      // ensuite, ce qui fait remonter ce rapport-ci —, ou bien ce processus n'a jamais rien tenu et
+      // le service a redémarré depuis le scan. Les deux ne se disent pas de la même manière :
+      // annoncer un redémarrage à qui n'en a pas subi est le mensonge que le témoin évite.
       if (_of != of)
       {
-        return ScreeningPreviews.ClearedByRestart;
+        return _hasHeldASet ? ScreeningPreviews.Evicted : ScreeningPreviews.ClearedByRestart;
       }
 
       var cap = _keptOn + AbsoluteLifetime;

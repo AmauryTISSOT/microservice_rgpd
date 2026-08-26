@@ -31,36 +31,6 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </remarks>
 public sealed class ScreeningPreviews
 {
-  /// <summary>
-  /// Ce que l'<c>Operator</c> lit quand les aperçus ont expiré. <b>Une phrase de rapport, jamais de
-  /// colonne</b>, et elle dit du même souffle que l'arbitrage reste ouvert.
-  /// </summary>
-  /// <remarks>
-  /// ⚠️ <b>La seconde moitié est la moitié utile.</b> Sans elle, un <c>Operator</c> devant une fiche
-  /// dont l'aperçu a disparu lit une <b>péremption</b> — et la seule issue qu'il imaginerait,
-  /// relancer un scan, détruirait le travail déjà tranché. Le motif de forme reste lisible, il
-  /// reste arbitrable, et l'écran le dit plutôt que de le laisser deviner.
-  /// </remarks>
-  public const string ExpiredStatement =
-    "Les aperçus de ce rapport ont expiré ; ils ne reviendront pas pour ce rapport. Vous pouvez "
-    + "arbitrer quand même : le motif de chaque colonne signalée reste lisible, et les raisons de "
-    + "n'avoir aucune valeur à montrer sont toujours affichées.";
-
-  /// <summary>
-  /// Ce que l'<c>Operator</c> lit quand le service a redémarré depuis le scan.
-  /// </summary>
-  /// <remarks>
-  /// ⚠️ <b>C'est dit, et ce n'est pas réparé.</b> Les valeurs lues vivent en mémoire du processus et
-  /// nulle part ailleurs : les faire survivre à un redémarrage demanderait de les <b>écrire</b>,
-  /// c'est-à-dire de faire du service un détenteur durable de données personnelles du client. Le
-  /// prix est sans commune mesure avec le gain, et il est refusé nommément — voir <c>Rien de réel
-  /// ne reste</c>.
-  /// </remarks>
-  public const string ClearedByRestartStatement =
-    "Les aperçus de ce rapport ont été effacés par un redémarrage du service ; ils ne reviendront "
-    + "pas pour ce rapport. Vous pouvez arbitrer quand même : le motif de chaque colonne signalée "
-    + "reste lisible, et les raisons de n'avoir aucune valeur à montrer sont toujours affichées.";
-
   private static readonly IReadOnlyDictionary<ColumnIdentity, ColumnPreview> Nothing =
     new Dictionary<ColumnIdentity, ColumnPreview>();
 
@@ -91,10 +61,14 @@ public sealed class ScreeningPreviews
   public static ScreeningPreviews ClearedByRestart { get; } =
     new(PreviewAvailability.ClearedByRestart, Nothing, TimeSpan.Zero);
 
+  /// <summary>Un autre relevé a pris la place de celui-ci dans le cache, qui n'en tient qu'un.</summary>
+  public static ScreeningPreviews Evicted { get; } =
+    new(PreviewAvailability.Evicted, Nothing, TimeSpan.Zero);
+
   /// <summary>Dans quel état le cache laisse ce rapport.</summary>
   public PreviewAvailability Availability { get; }
 
-  /// <summary>Les aperçus vivants, par colonne — <b>vides</b> dans les trois autres états.</summary>
+  /// <summary>Les aperçus vivants, par colonne — <b>vides</b> dans les quatre autres états.</summary>
   public IReadOnlyDictionary<ColumnIdentity, ColumnPreview> Previews { get; }
 
   /// <summary>
@@ -104,40 +78,49 @@ public sealed class ScreeningPreviews
   /// </summary>
   public TimeSpan Remaining { get; }
 
-  /// <summary>Ce rapport a-t-il des valeurs à montrer, à cet instant ?</summary>
-  public bool CarriesValues => Availability == PreviewAvailability.Live && Previews.Count > 0;
+  /// <summary>
+  /// Ce rapport a-t-il, à cet instant, au moins <b>une valeur lue</b> à montrer ?
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il compte des valeurs, et non des entrées.</b> Un aperçu qui porte une
+  /// <see cref="PreviewAbsenceReason"/> occupe une entrée du dictionnaire sans rien donner à lire :
+  /// compter les entrées aurait fait afficher, sur un scan dont chaque colonne a été refusée par les
+  /// droits, la phrase qui met en garde contre le biais de valeurs qu'on n'a pas.
+  /// </remarks>
+  public bool CarriesValues =>
+    Availability == PreviewAvailability.Live
+    && Previews.Values.Any(preview => preview.CarriesValues);
 
   /// <summary>
   /// Ce que l'écran dit <b>du rapport</b> à propos de ses aperçus, ou <c>null</c> quand il n'y a
   /// rien à en dire — le relevé a été collé, et aucun prélèvement n'a jamais eu lieu.
   /// </summary>
-  public string? Statement
-  {
-    get
-    {
-      if (Availability == PreviewAvailability.Live)
-      {
-        return $"Les aperçus de ce rapport disparaîtront dans {Countdown}.";
-      }
-
-      if (Availability == PreviewAvailability.Expired)
-      {
-        return ExpiredStatement;
-      }
-
-      return Availability == PreviewAvailability.ClearedByRestart
-        ? ClearedByRestartStatement
-        : null;
-    }
-  }
+  /// <remarks>
+  /// ⚠️ <b>Les phrases sont attachées à leur membre, écrites une fois, et une seule ne l'est pas.</b>
+  /// <see cref="PreviewAvailability.Live"/> ne dit pas une phrase mais une phrase <b>et un délai</b>
+  /// qui change à chaque rendu : la composer ici est le seul endroit où elle peut l'être. Les trois
+  /// autres sont sur le membre, comme celles de <see cref="PreviewAbsenceReason"/> — composées à
+  /// l'écran, elles auraient divergé d'une surface à l'autre.
+  /// </remarks>
+  public string? Statement => Availability == PreviewAvailability.Live
+    ? $"Les aperçus de ce rapport disparaîtront dans {Countdown}."
+    : Availability.Statement;
 
   /// <summary>
   /// Le délai restant <b>tel qu'une phrase le dit</b> — « 1 h 47 ».
   /// </summary>
   /// <remarks>
+  /// <para>
   /// ⚠️ <b>Heures et minutes, jamais de secondes.</b> Un décompte à la seconde sur une page qui ne
   /// se rafraîchit pas — il n'y a aucun JavaScript ici — serait faux dès la seconde suivante, et
   /// faux avec une précision qui le ferait croire.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Les deux formes courtes ne sont pas des ornements.</b> Sous le plafond absolu, le délai
+  /// restant descend sous l'heure : « 0 h 47 » se lit mal, et une phrase qui s'arrêterait aux heures
+  /// dirait « dans 0 h » pendant les cinquante-neuf dernières minutes — c'est-à-dire au moment
+  /// précis où le chiffre compte.
+  /// </para>
   /// </remarks>
   public string Countdown
   {
@@ -176,35 +159,63 @@ public sealed class ScreeningPreviews
   /// aperçus de ce rapport ne sont plus là.
   /// </summary>
   /// <param name="column">La colonne dont on cherche l'aperçu.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="column"/> est absent.</exception>
   public ColumnPreview? Of(ColumnIdentity column)
   {
-    return column is not null && Previews.TryGetValue(column, out var preview) ? preview : null;
+    ArgumentNullException.ThrowIfNull(column);
+
+    return Previews.TryGetValue(column, out var preview) ? preview : null;
   }
 }
 
 /// <summary>
-/// Dans quel état le cache d'aperçus laisse un rapport. <b>Quatre états, et l'écran ne dit pas la
-/// même chose dans trois d'entre eux</b> — il ne dit rien du tout dans le quatrième.
+/// Dans quel état le cache d'aperçus laisse un rapport, et <b>ce que l'écran en dit</b>. Cinq états,
+/// dont quatre ont une phrase — le cinquième n'a rien à annoncer.
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b><see cref="NeverTaken"/> et <see cref="ClearedByRestart"/> ne se confondent pas, et c'est
-/// tout l'objet du type.</b> Les deux rendent un cache vide ; l'un est un relevé <b>collé</b>, où
-/// aucun prélèvement n'a jamais eu lieu et où il n'y a donc rien à annoncer, l'autre un rapport
-/// <b>scanné</b> dont les valeurs ont été effacées par un redémarrage — un fait à dire. Fondus en un
-/// seul, l'écran aurait dû choisir entre annoncer une perte à qui n'a rien perdu et taire une perte
-/// à qui vient d'en subir une.
+/// ⚠️ <b>Trois façons de n'avoir plus rien, et elles ne se disent pas de la même manière.</b> Une
+/// durée écoulée, un redémarrage du service et un jeu évincé par le relevé suivant rendent tous un
+/// cache vide. Fondus en une seule phrase, l'écran aurait dû choisir laquelle des trois mentir :
+/// annoncer un redémarrage qui n'a pas eu lieu à qui vient de supprimer un rapport, ou taire une
+/// expiration en la déguisant en panne. La formule commune — « ils ne reviendront pas pour ce
+/// rapport » — est vraie des trois, et c'est elle qui les fait tenir ensemble.
 /// </para>
 /// <para>
-/// ⚠️ <b><see cref="Expired"/> n'est pas une cinquième <see cref="PreviewAbsenceReason"/>.</b> Une
-/// raison d'absence dit pourquoi <b>une colonne</b> n'a rien à montrer, et elle est enregistrée ;
-/// l'expiration porte sur le <b>rapport</b> entier, elle n'est enregistrée nulle part, et elle
-/// n'entre dans aucun des quatre comptes de la <see cref="IncompletenessClause"/>. Les ranger
-/// ensemble aurait fait grandir de un une énumération dont la fermeture est la promesse.
+/// ⚠️ <b><see cref="NeverTaken"/> ne se confond avec aucune des trois.</b> C'est un relevé
+/// <b>collé</b>, où aucun prélèvement n'a jamais eu lieu : il n'y a pas de perte à annoncer, et
+/// l'écran se tait. Lui donner une phrase affirmerait qu'un prélèvement a eu lieu, exactement comme
+/// quatre comptes d'absence à zéro y inventeraient une incomplétude.
+/// </para>
+/// <para>
+/// ⚠️ <b>Aucun de ces états n'est une <see cref="PreviewAbsenceReason"/> de plus.</b> Une raison
+/// d'absence dit pourquoi <b>une colonne</b> n'a rien à montrer, et elle est enregistrée ; ceux-ci
+/// portent sur le <b>rapport</b> entier, ne sont enregistrés nulle part, et n'entrent dans aucun des
+/// quatre comptes de la <see cref="IncompletenessClause"/>. Les ranger ensemble aurait fait grandir
+/// de trois une énumération dont la fermeture est la promesse.
+/// </para>
+/// <para>
+/// ⚠️ <b>La phrase est attachée au membre, écrite une fois</b> — la règle de
+/// <see cref="PreviewAbsenceReason"/>, appliquée ici pour le même motif. <see cref="Live"/> fait
+/// exception et n'en porte aucune : elle dit une phrase <b>et un délai</b> qui change à chaque
+/// rendu, et se compose donc chez <see cref="ScreeningPreviews"/>.
 /// </para>
 /// </remarks>
 public sealed class PreviewAvailability : SmartEnum<PreviewAvailability>
 {
+  /// <summary>
+  /// Ce que les trois pertes disent toutes les trois, et qui est la moitié utile de leur phrase.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Sans elle, un <c>Operator</c> devant une fiche dont l'aperçu a disparu lit une
+  /// <b>péremption</b> — et la seule issue qu'il imaginerait, relancer un scan, détruirait le
+  /// travail déjà tranché. Le motif de forme reste lisible, il reste arbitrable, et l'écran le dit
+  /// plutôt que de le laisser deviner.
+  /// </remarks>
+  private const string StillArbitrable =
+    " Vous pouvez arbitrer quand même : le motif de chaque colonne signalée reste lisible, et les "
+    + "raisons de n'avoir aucune valeur à montrer sont toujours affichées.";
+
   /// <summary>Le relevé a été collé : rien n'a jamais été prélevé, et il n'y a rien à en dire.</summary>
   public static readonly PreviewAvailability NeverTaken = new(nameof(NeverTaken), 1);
 
@@ -217,13 +228,56 @@ public sealed class PreviewAvailability : SmartEnum<PreviewAvailability>
   /// ne fait rien faire à l'<c>Operator</c> : dans les deux cas les valeurs ne reviendront pas pour
   /// ce rapport, et il lui reste très exactement le même geste.
   /// </remarks>
-  public static readonly PreviewAvailability Expired = new(nameof(Expired), 3);
+  public static readonly PreviewAvailability Expired = new(
+    nameof(Expired),
+    3,
+    "Les aperçus de ce rapport ont expiré ; ils ne reviendront pas pour ce rapport." + StillArbitrable);
 
   /// <summary>Le service a redémarré depuis le scan, et les valeurs vivaient dans sa mémoire.</summary>
-  public static readonly PreviewAvailability ClearedByRestart = new(nameof(ClearedByRestart), 4);
+  /// <remarks>
+  /// ⚠️ <b>C'est dit, et ce n'est pas réparé.</b> Les faire survivre à un redémarrage demanderait de
+  /// les <b>écrire</b>, c'est-à-dire de faire du service un détenteur durable de données
+  /// personnelles du client — voir <c>Rien de réel ne reste</c>.
+  /// </remarks>
+  public static readonly PreviewAvailability ClearedByRestart = new(
+    nameof(ClearedByRestart),
+    4,
+    "Les aperçus de ce rapport ont été effacés par un redémarrage du service ; ils ne reviendront "
+    + "pas pour ce rapport." + StillArbitrable);
 
-  private PreviewAvailability(string name, int value)
+  /// <summary>
+  /// Un relevé plus récent a pris la place de celui-ci dans un cache qui n'en tient qu'un — et ce
+  /// rapport-ci est redevenu le courant depuis, parce qu'on a supprimé celui qui l'avait évincé.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il existe pour que <see cref="ClearedByRestart"/> cesse d'être une déduction.</b> Le
+  /// cache vide se lisait « le service a redémarré », ce qui est faux du rapport qu'une suppression
+  /// dans l'historique vient de faire remonter : ses aperçus ont bien disparu, mais aucune panne
+  /// n'a eu lieu, et annoncer un redémarrage à qui n'en a pas subi est exactement ce que ce
+  /// glossaire refuse ailleurs.
+  /// </remarks>
+  public static readonly PreviewAvailability Evicted = new(
+    nameof(Evicted),
+    5,
+    "Les aperçus de ce rapport ne sont plus là : un autre relevé a pris leur place. Ils ne "
+    + "reviendront pas pour ce rapport." + StillArbitrable);
+
+  private PreviewAvailability(string name, int value, string? statement = null)
     : base(name, value)
   {
+    Statement = statement;
   }
+
+  /// <summary>
+  /// Ce que l'<c>Operator</c> lit, ou <c>null</c> quand cet état n'a rien à annoncer — le relevé
+  /// collé, qui n'a rien perdu, et l'état vivant, dont la phrase porte un délai.
+  /// </summary>
+  public string? Statement { get; }
+
+  /// <summary>
+  /// Cet état annonce-t-il une <b>perte</b> ? ⚠️ <b>C'est ce qui décide du ton de l'écran</b>, et il
+  /// est lu ici plutôt que recomposé à chaque surface : un aiguillage rendu au gabarit aurait été
+  /// à reprendre à chaque état neuf, sur une surface où personne ne pense à le chercher.
+  /// </summary>
+  public bool AnnouncesALoss => Statement is not null && this != Live;
 }
