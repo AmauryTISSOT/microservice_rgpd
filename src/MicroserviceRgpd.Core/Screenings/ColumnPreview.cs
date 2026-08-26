@@ -86,6 +86,24 @@ public sealed class ColumnPreview
   /// </summary>
   public const int MaxValueLength = 254;
 
+  /// <summary>
+  /// Le <b>biais du premier venu</b>, dit en toutes lettres à côté du bloc d'aperçu. C'est la seule
+  /// chose qui empêche un aperçu de se lire comme l'échantillon que son nom refuse d'être.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est un biais à dire, pas à corriger.</b> Trier coûterait un balayage complet de la
+  /// table, prix que la base de production d'un tiers n'a pas à payer pour cinq valeurs qui ne
+  /// prouvent rien. Sans la phrase, un <c>Operator</c> qui lit cinq adresses en <c>example.com</c>
+  /// écarte une colonne de deux millions de courriels réels — et c'est une <c>Omission
+  /// silencieuse</c> que l'écran vient de lui souffler.
+  /// </remarks>
+  public const string FirstComeStatement =
+    "Ces valeurs sont les premières venues, dans l'ordre où votre base les a rendues : rien ne les "
+    + "trie, et ce sont très souvent les plus anciennes lignes de la table — jeux d'essai, comptes "
+    + "de démonstration, données d'amorçage. Une colonne de deux millions de courriels réels peut "
+    + "n'en montrer que cinq en « example.com » : elles ne prouvent rien, ni dans un sens ni dans "
+    + "l'autre.";
+
   private ColumnPreview(IReadOnlyList<PreviewedValue> values, PreviewAbsenceReason? absence)
   {
     Values = values;

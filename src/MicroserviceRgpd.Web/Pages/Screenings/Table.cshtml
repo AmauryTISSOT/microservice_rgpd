@@ -4,6 +4,7 @@
   var answer = Model.Answer!;
   var read = answer.Content;
   var clause = answer.Clause;
+  var previews = read.Previews;
 
   ViewData["Title"] = $"La table {read.Identity} du rapport de détection courant";
 
@@ -138,6 +139,45 @@ else
       fois sa colonne tranchée : ce qui reste déplié est ce qu'il vous reste à lire.
     </p>
 
+    @*
+      ═════════════════════════════════════════════════════════════════════════════════════════════
+      CE QUE LES APERÇUS DE CE RAPPORT SONT DEVENUS, DIT UNE FOIS ET À L'ÉCHELLE DU RAPPORT.
+
+      ⚠️ L'AVANT SE DIT PAR ÉCRAN, L'APRÈS SE DIT PAR RAPPORT, et les deux vivent ICI plutôt que
+      dans la case de chaque colonne. Écrire « valeurs expirées » à la place des valeurs y aurait
+      fabriqué une TROISIÈME FORME, que ColumnPreview interdit : un aperçu est soit des valeurs,
+      soit une raison nommée. Un aperçu expiré n'est pas devenu vide — il n'existe plus, et son
+      bloc quitte l'écran entièrement.
+
+      ⚠️ ET LE BIAIS DU PREMIER VENU EST DIT LÀ OÙ LES VALEURS SE LISENT, une fois pour l'écran.
+      Recopié sur trente fiches, il aurait cessé d'être lu dès la seconde ; absent, l'aperçu se
+      serait lu comme l'échantillon que son nom refuse d'être, et cinq adresses en example.com
+      auraient fait écarter une colonne de deux millions de courriels réels.
+
+      ⚠️ RIEN NE S'AFFICHE SUR UN RELEVÉ COLLÉ. La phrase est nulle, et ce n'est pas un oubli :
+      annoncer une expiration là où aucun prélèvement n'a eu lieu affirmerait qu'il y en a eu un.
+      ═════════════════════════════════════════════════════════════════════════════════════════════
+    *@
+    @*
+      ⚠️ UN SEUL AIGUILLAGE, ET IL EST LU SUR L'ÉTAT PLUTÔT QUE RECOMPOSÉ ICI. Le ton — une mise en
+      garde ou une simple indication — vient de `AnnouncesALoss`, et non d'une comparaison écrite au
+      gabarit : un état neuf se serait sinon rendu du mauvais ton sur une surface où personne ne
+      pense à aller le chercher.
+    *@
+    @if (previews.Statement is not null)
+    {
+      <p class="@(previews.Availability.AnnouncesALoss ? "unfinished" : "hint") previews">
+        @* La phrase du premier venu ne se dit que s'il y a des VALEURS à lire : sur un scan dont
+           chaque colonne porte une raison, elle aurait mis en garde contre le biais de valeurs que
+           personne n'a sous les yeux. *@
+        @if (previews.CarriesValues)
+        {
+          <text>@MicroserviceRgpd.Core.Screenings.ColumnPreview.FirstComeStatement</text>
+        }
+        <strong>@previews.Statement</strong>
+      </p>
+    }
+
     @foreach (var column in read.FlaggedColumns)
     {
       @*
@@ -203,13 +243,59 @@ else
           LE MOTIF, EN CLAIR, EN ENTIER ET EN PLEINE LARGEUR. Replié derrière une infobulle, il
           n'existe plus — et c'est lui qui rend l'arbitrage possible.
 
-          ⚠️ L'EMPLACEMENT DE L'APERÇU EST RÉSERVÉ ICI, ET IL EST VIDE. Le chemin collé ne donne au
-          service aucune valeur à montrer ; le ticket des aperçus le remplira sans rebâtir la fiche.
-          Y écrire « aucun aperçu » ferait passer un relevé collé pour un scan qui n'aurait rien vu.
+          ⚠️ L'APERÇU EST SUR LA MÊME LIGNE QUE LE MOTIF QU'IL PORTE, et c'est ce qui permet de dire
+          non à la machine : « toutes les valeurs lues portent une clé de contrôle d'IBAN » se
+          vérifie en regardant les valeurs, jamais en croyant la phrase.
+
+          ⚠️ ET LA CASE NE CONNAÎT QUE DEUX FORMES : des valeurs, ou la raison nommée de n'en avoir
+          aucune. Il n'y en a pas de troisième — un aperçu expiré ne se rend pas « vide », son bloc
+          QUITTE L'ÉCRAN, et ce que le rapport en dit est écrit une fois, en tête de ce temps-ci.
+
+          ⚠️ LA RAISON SURVIT À L'EXPIRATION, ET LES VALEURS NON. Elle est enregistrée sur la ligne :
+          c'est une propriété de la colonne, pas un aperçu. La retirer avec les valeurs rendrait un
+          rapport d'une heure MOINS renseigné que son archive.
         *@
+        @{
+          var absence = column.PreviewAbsence;
+          var preview = previews.Of(column.Identity);
+          var showsValues = preview is { CarriesValues: true };
+        }
         <div class="reason-line">
           <p class="reason">@column.Reason</p>
-          <div class="preview"></div>
+          @* ⚠️ LA CASE N'EST PAS RENDUE QUAND ELLE N'A RIEN À PORTER, et non rendue vide : c'est un
+             élément absent, pas un élément blanc, et la piste de la grille se referme avec lui. *@
+          @if (absence is not null)
+          {
+            <div class="preview">
+              <p class="none">
+                <strong>@absence.FrenchLabel</strong>
+                <span class="hint">@absence.Statement</span>
+              </p>
+            </div>
+          }
+          else if (showsValues)
+          {
+            <div class="preview">
+              @* ⚠️ ⟨null⟩ ET ⟨vide⟩ SONT DES VALEURS LUES, portant deux marqueurs distincts. Rendus
+                 en cellules blanches, ils se liraient comme l'absence que la raison nommée vient de
+                 chasser un cran plus bas — et ce sont deux choses différentes en base. *@
+              <ul class="values">
+                @foreach (var value in preview!.Values)
+                {
+                  <li>
+                    <span class="@(value.IsNull || value.IsEmpty ? "marker" : "value")">@value.Display</span>
+                    @* ⚠️ LA LONGUEUR RÉELLE ACCOMPAGNE TOUTE VALEUR COUPÉE. La coupure est faite par
+                       le SGBD, et une règle de forme écarte de son compte une valeur tronquée : sans
+                       ce chiffre, l'Operator lirait un courriel amputé comme un courriel. *@
+                    @if (value.IsTruncated)
+                    {
+                      <span class="hint">coupée — @value.ActualLength caractères en base</span>
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
+          }
         </div>
 
         @*

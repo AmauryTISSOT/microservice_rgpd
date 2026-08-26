@@ -67,6 +67,13 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   public CapturedLogs Logs { get; } = new();
 
   /// <summary>
+  /// L'horloge du service, qu'un test peut faire avancer. ⚠️ <b>C'est le seul levier sur la durée de
+  /// vie des aperçus</b> : le cache n'est pas une couture de test, et un test qui voudrait le voir
+  /// expirer n'a que le temps à tourner — exactement comme l'exploitation.
+  /// </summary>
+  public AClockTheTestsAdvance Clock { get; } = new();
+
+  /// <summary>
   /// Le role de verdict est-il substitue ? <b>Non</b> dans un hote demarre LLM eteint : le laisser
   /// au cablage reel est la seule facon de prouver quelque chose du drapeau — une doublure posee
   /// par-dessus ne prouverait que la presence de cette doublure.
@@ -156,6 +163,12 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
       services.RemoveAll<IDatabaseScanner>();
       services.AddSingleton<IDatabaseScanner>(Scanner);
+
+      // ⚠️ L'horloge est SUBSTITUÉE, jamais ajoutée : le câblage réel la pose en TryAdd, et un
+      // second enregistrement aurait laissé la première gagner. Elle dit l'heure réelle tant qu'un
+      // test ne l'avance pas — ce qui laisse intacts tous ceux qui datent à la journée.
+      services.RemoveAll<TimeProvider>();
+      services.AddSingleton<TimeProvider>(Clock);
 
       // Le collecteur s'AJOUTE aux fournisseurs en place : rien n'est retiré, et ce que le service
       // journalise en test est exactement ce qu'il journalise ailleurs.

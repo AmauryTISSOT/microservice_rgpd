@@ -265,10 +265,75 @@ d'aperçu **quitte l'écran entièrement**. Écrire « valeurs expirées » dans
 **troisième forme**, que la clause ci-dessus interdit. L'aperçu n'est pas devenu vide : il n'existe
 plus. Et le message est vrai sans réserve — relancer un scan ferait reculer ce rapport-là, donc aucun
 geste ne rend ses aperçus.
+⚠️ **Une expiration n'est pas une péremption, et le motif de forme reste arbitrable.** L'écran le dit
+en même temps qu'il annonce la perte. Refuser l'arbitrage aurait laissé pour seule issue de relancer
+un scan — c'est-à-dire de détruire le travail déjà tranché pour récupérer cinq valeurs qui ne prouvent
+rien. Et les **raisons** d'absence, elles, restent affichées : elles sont enregistrées sur la
+`ScreenedColumn`, ce sont des propriétés de la colonne et non des aperçus.
+⚠️ **Un redémarrage du service les efface, et sa phrase n'est ni celle de l'expiration ni celle de
+l'éviction.** Les trois rendent un cache vide et ne disent pas la même chose — une durée écoulée, une
+panne, un relevé qui a pris la place —, et les confondre annoncerait une perte à qui n'a pas subi
+celle-là : voir `PreviewAvailability`. Un relevé **collé**, lui, ne dit rien du tout de ses aperçus,
+exactement comme ses quatre comptes d'absence sont **absents** plutôt qu'à zéro.
+⚠️ **L'expiration est la seule falaise dure de la tenabilité de l'écran, et elle est consignée ici
+pour être sue.** Les compteurs de l'arbitrage sont **linéaires** — `clics = 936 + 3N`,
+`chargements = 624 + N` — donc sans seuil : rien n'y bascule. La pause de deux heures, elle, bascule,
+et **une réunion de trois heures tue les aperçus à n'importe quel taux de signalement**. Ce que la
+montée du taux change n'est pas l'existence du problème mais la **fraction** des arbitrages posés à
+l'aveugle — et le danger n'y est pas le pari de l'`ADR-0012` mais les faux positifs des règles de
+forme **sans clé de contrôle**. Rien n'est rouvert ici : la falaise est écrite, elle n'est pas
+corrigée, et la corriger demanderait d'écrire les valeurs — ce que `Rien de réel ne reste` refuse.
 _Avoid_ : Sample, échantillon, ValueSample, extrait, Excerpt, Snippet, Peek ⚠️ `Sample` et
 `échantillon` sont les mots qu'on écrira par réflexe, et c'est précisément pour cela qu'ils sont
 nommés ici ; `extrait` et `Excerpt` supposeraient un tout dont on aurait pris une part
 représentative, ce qui est la même promesse sous un autre habit.
+
+**ScreeningPreviews** — « les aperçus d'un rapport » :
+Ce que le cache a **encore** à montrer pour **un rapport**, et ce qu'il en dit quand il n'a plus
+rien : les valeurs vivantes avec leur décompte, ou la phrase qui explique leur absence. C'est le
+grain du **rapport**, jamais celui de la colonne — un `ColumnPreview` est ce que porte **une**
+colonne.
+⚠️ **Il existe pour que l'expiration ne remplisse aucune case.** L'après se dit **une fois**, à
+l'échelle du rapport, et le bloc d'aperçu quitte l'écran entièrement ; écrire « valeurs expirées » là
+où les valeurs se lisaient aurait fabriqué la **troisième forme** que `ColumnPreview` interdit, dans
+le champ même que la clause protège.
+⚠️ **Il ne porte aucune raison d'absence, et c'est ce qui les fait survivre à l'expiration.** Les
+raisons sont enregistrées sur la `ScreenedColumn` : elles restent affichées quand les valeurs ne sont
+plus là — voir `PreviewAbsenceReason`.
+⚠️ **Son décompte dit un délai, jamais une échéance.** La fenêtre est glissante : « il vous reste
+1 h 47 **si vous ne rouvrez plus cet écran** » est la seule lecture honnête, et c'est celle que la
+phrase porte.
+_Avoid_ : PreviewCache, PreviewState, expiration, TTL ⚠️ `PreviewCache` nommerait le **magasin**
+quand ce type est la **réponse** qu'on lui demande — le magasin, c'est `ScanPreviews` ; `expiration`
+et `TTL` réduisent à une durée écoulée ce qui compte trois façons de n'avoir plus rien, dont deux ne
+sont pas des durées.
+
+**PreviewAvailability** — « état des aperçus d'un rapport » :
+Dans quel état le cache laisse un rapport, et **ce que l'écran en dit**. Énumération close à **cinq**
+membres : *jamais prélevé* (un relevé collé), *vivants*, *expirés*, *effacés par un redémarrage*,
+*évincés par un autre relevé*.
+⚠️ **Trois façons de n'avoir plus rien, et elles ne se disent pas de la même manière.** Une durée
+écoulée, un redémarrage du service et un jeu évincé par le relevé suivant rendent tous un cache vide.
+Fondus en une seule phrase, l'écran aurait dû choisir laquelle des trois mentir — et la plus coûteuse
+est réelle : supprimer dans l'historique le relevé qui a évincé les aperçus fait **remonter** le
+rapport scanné au rang de courant, et lui annoncer un redémarrage serait annoncer une **panne à qui
+n'en a pas subi**. Ce que les trois partagent, et qui est vrai des trois, est « ils ne reviendront pas
+pour ce rapport ».
+⚠️ **Le membre *jamais prélevé* n'a pas de phrase, et c'est délibéré.** Sur un relevé **collé**, rien
+n'a jamais été prélevé : il n'y a pas de perte à annoncer, et lui en annoncer une affirmerait qu'un
+prélèvement a eu lieu — exactement comme quatre comptes d'absence à zéro y inventeraient une
+incomplétude.
+⚠️ **La phrase est attachée au membre, écrite une fois** — la règle de `PreviewAbsenceReason`,
+appliquée ici pour le même motif. *Vivants* fait exception et n'en porte aucune : elle dit une phrase
+**et un délai** qui change à chaque rendu, et se compose donc chez `ScreeningPreviews`.
+⚠️ **Ce n'est pas une `PreviewAbsenceReason` de plus.** Une raison dit pourquoi **une colonne** n'a
+rien à montrer, elle est enregistrée, et elle entre dans les quatre comptes de la `Clause
+d'incomplétude` ; ces cinq états portent sur le **rapport**, ne sont enregistrés nulle part, et
+n'entrent dans aucun compte. Les ranger ensemble aurait fait grandir de trois une énumération dont la
+fermeture est la promesse.
+_Avoid_ : PreviewStatus, `IsExpired`, `HasPreviews` ⚠️ un booléen n'aurait pas su séparer les trois
+pertes, donc pas su éviter la phrase qui ment ; `Status` promet un état de machine quand ce qu'on
+nomme ici est **ce que l'écran dit**.
 
 **PreviewAbsenceReason** — « raison d'absence d'aperçu » :
 Le second membre d'un `ColumnPreview` : **pourquoi** une colonne n'a aucune valeur à montrer.
@@ -1069,6 +1134,16 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   valeur lue ; les garder en mémoire tiendrait en RAM ce que la base a le droit de refuser. C'est
   aussi ce qui rend inutile tout plafond en octets — cinq valeurs tronquées par le SGBD, pour cinq
   mille colonnes, pèsent quelques dizaines de mégaoctets, et il n'y en a qu'un jeu à la fois.
+  ⚠️ **Et « réarmé par les seuls écrans qui montrent des aperçus » est une propriété du code, pas une
+  consigne.** Il n'existe qu'un seul geste sur le cache, et **montrer *est* réarmer** : le rapport,
+  l'historique, l'archive et l'accueil ne prolongent rien parce qu'aucun d'eux n'a quoi que ce soit à
+  appeler. Un couple « lire » / « prolonger » aurait laissé à chaque écran neuf le soin de choisir, et
+  la promesse serait devenue une note de relecture.
+  ⚠️ **Le cache n'est pas une couture de test, et aucun test ne l'instancie pour l'interroger.** Il
+  n'offre aucune méthode « fais-les expirer maintenant » : les écrans le traversent par la frontière
+  HTTP, et le seul levier sur sa durée est le `TimeProvider` injecté — c'est-à-dire très exactement le
+  levier dont l'exploitation dispose. Une porte réservée aux tests aurait éprouvé un chemin que la
+  production n'a pas.
 ⚠️ **Ce sont deux promesses et non une, et elles ne se vérifient pas au même endroit.** Qui relit le
 code du prélèvement contrôle ce qui **entre** ; qui relit le code de persistance contrôle ce qui
 **reste**. Les fondre en une seule clause ferait un champ unique dont les deux moitiés finiraient par

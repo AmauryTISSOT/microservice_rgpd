@@ -17,12 +17,20 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 /// ⚠️ <b>La clause est attachée ici, et elle porte sur le rapport entier.</b> Une clause bornée à la
 /// table ouverte aurait dit d'un écran de treize colonnes qu'il est le périmètre lu de la détection.
 /// </para>
+/// <para>
+/// ⚠️ <b>C'est le seul écran qui touche au cache d'aperçus, et le toucher <em>est</em> réarmer.</b>
+/// « Deux heures réarmées par les seuls écrans qui montrent des aperçus » est tenu par là : le
+/// rapport, l'historique, l'archive et l'accueil ne prolongent rien parce qu'aucun d'eux n'a de
+/// <see cref="ScanPreviews"/> à appeler.
+/// </para>
 /// </remarks>
 /// <param name="screenings">Les rapports du déploiement, en lecture seule.</param>
 /// <param name="columns">Les colonnes du rapport, lues par table.</param>
+/// <param name="previews">Le cache mémoire du jeu d'aperçus vivant.</param>
 public sealed class ReadScreeningTableHandler(
   IReadRepository<Screening> screenings,
-  IScreenedColumns columns)
+  IScreenedColumns columns,
+  ScanPreviews previews)
   : IQueryHandler<ReadScreeningTableQuery, ScreeningAnswer<ScreenedTable>?>
 {
   /// <inheritdoc />
@@ -53,8 +61,20 @@ public sealed class ReadScreeningTableHandler(
 
     var counts = await columns.CountsOfAsync(current.Id, cancellationToken);
 
+    // ⚠️ LE CACHE EST TOUCHÉ ICI, ET CE TOUCHER RÉARME LES DEUX HEURES GLISSANTES. Il l'est APRÈS
+    // les deux refus au-dessus : réarmer sur une adresse mal recopiée aurait fait prolonger les
+    // aperçus par un écran qui ne se rend pas.
+    //
+    // ⚠️ ET L'ORIGINE EST LUE ICI, JAMAIS DANS LE CACHE. Un relevé COLLÉ n'a rien à annoncer : rien
+    // n'y a jamais été prélevé, et lui demander l'état de ses aperçus aurait fait dire au cache
+    // « ils ont expiré » d'un prélèvement qui n'a pas eu lieu. Le cache ne connaît qu'une durée ;
+    // savoir par quel chemin un relevé est entré est une affaire de cas d'usage.
+    var living = current.Origin == ListingOrigin.Scanned
+      ? previews.Show(current.Id)
+      : ScreeningPreviews.NeverTaken;
+
     return new ScreeningAnswer<ScreenedTable>(
-      ScreenedTable.Of(current, query.Table, read, counts),
+      ScreenedTable.Of(current, query.Table, read, counts, living),
       IncompletenessClause.For(counts, current.Origin));
   }
 }
