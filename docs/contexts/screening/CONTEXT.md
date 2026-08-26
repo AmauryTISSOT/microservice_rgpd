@@ -308,8 +308,12 @@ de compter pour de vrai — le catalogue lu, puis une table prélevée à la foi
 laisserait un `SELECT` courir sur la base du client après que l'`Operator` a quitté l'écran. Sous
 SQLite, dont le pilote n'a pas d'asynchrone et dont le jeton est inerte, cela passe par
 `sqlite3_interrupt` sur la poignée de la connexion. Sous MariaDB/MySQL, `MySqlConnector` le fait
-lui-même : la requête coupée revient en `1317`, que le dialecte relit comme une annulation et non
-comme une panne.
+lui-même : il envoie la coupure au serveur, et la requête rate. ⚠️ **Ce qui décide alors est le
+jeton, jamais le numéro rendu.** Le serveur écrit `1317` — « requête interrompue » — aussi bien pour
+la coupure du service que pour un `KILL QUERY` du DBA du client ou un `max_execution_time` dépassé ;
+le relire comme une annulation ferait dire à l'écran « vous avez abandonné » d'un scan que la base a
+coupé sous lui. Sans annulation, un `1317` est donc un échec de la **base**, comme tout ce qu'elle a
+répondu.
 ⚠️ **Aucune exception du pilote ne le traverse.** Ce qui rate devient une `PreviewAbsenceReason` quand
 une colonne seule est en cause, ou un échec à **phase** et **famille** nommées quand c'est le scan.
 Ni message du pilote, ni hôte, ni utilisateur : `Rien de réel ne reste` se tient **à la frontière**,
@@ -993,7 +997,14 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   persistance, et pour une durée que le service ne contrôle pas. Le prix est un établissement de
   connexion par scan, négligeable devant un relevé qui se compte en secondes ; le gain est qu'à la
   question « où le secret du client se trouve-t-il ? », il n'y a **presque** rien à répondre.
-  ⚠️ **« Presque », et le mot est mesuré, pas prudent.** `MySqlConnector` range la chaîne de
+  ⚠️ **« Presque », et le mot est mesuré, pas prudent. Il amende une phrase de l'ADR-0012**, dont
+  le premier garde-fou dit « la chaîne de connexion **ne survit pas au scan** […] elle vit en mémoire
+  le temps du relevé ». Les quatre interdits que cette phrase énumère — jamais persistée, jamais
+  journalisée, jamais tracée, jamais reprise dans un message d'erreur — tiennent tous ; ce qui ne
+  tient pas est « le temps du relevé », et la durée réelle est celle que l'ADR accorde lui-même aux
+  valeurs échantillons : **jusqu'au redémarrage du processus**. La contradiction est donc partielle
+  et elle est nommée ici plutôt qu'écrasée en silence.
+  `MySqlConnector` range la chaîne de
   connexion **telle quelle** — mot de passe compris — comme **clé** d'un dictionnaire statique, et il
   le fait même à `Pooling=false` ; `ClearAllPools` ne l'en retire pas, et aucune API publique du
   pilote n'y donne prise. Ce qui subsiste après un scan MariaDB/MySQL est donc une **chaîne en

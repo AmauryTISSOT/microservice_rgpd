@@ -140,10 +140,17 @@ internal static class MySqlScanQueries
   /// <para>
   /// ⚠️ <b>Rien d'autre que des octets n'y figure.</b> Les familles listées ont toutes en commun
   /// que le serveur les rend en <b>binaire</b> — les <c>BLOB</c> et les chaînes d'octets
-  /// littéralement, <c>BIT</c> comme un paquet de bits, les types spatiaux en WKB. Cinq valeurs
-  /// binaires ne diraient rien à qui les regarde, et les lire comme du texte rendrait des octets
-  /// mutilés par le décodage. Un type qui n'est pas dans ce cas n'a rien à faire ici : ajouter une
-  /// ligne, c'est décider qu'une colonne du client ne sera <b>jamais</b> regardée.
+  /// littéralement, les types spatiaux en WKB. Cinq valeurs binaires ne diraient rien à qui les
+  /// regarde, et les lire comme du texte rendrait des octets mutilés par le décodage. Un type qui
+  /// n'est pas dans ce cas n'a rien à faire ici : ajouter une ligne, c'est décider qu'une colonne
+  /// du client ne sera <b>jamais</b> regardée.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b><c>BIT</c> n'y est pas, et c'est délibéré.</b> Le nom trompe : <c>MySqlConnector</c> rend
+  /// un <c>BIT</c> en <c>ulong</c>, pas en octets, et un <c>bit(1)</c> qui sert de booléen se lit
+  /// donc très bien. L'inscrire ici condamnerait une colonne parfaitement lisible sur la foi de son
+  /// nom — et si un jour le pilote rendait autre chose, le filet posé sur les <c>byte[]</c>, plus
+  /// bas, le rattraperait sans que cette liste ait à deviner.
   /// </para>
   /// </remarks>
   internal static readonly IReadOnlySet<string> UnsampleableTypes =
@@ -155,7 +162,6 @@ internal static class MySqlScanQueries
       "blob",
       "mediumblob",
       "longblob",
-      "bit",
       "geometry",
       "point",
       "linestring",

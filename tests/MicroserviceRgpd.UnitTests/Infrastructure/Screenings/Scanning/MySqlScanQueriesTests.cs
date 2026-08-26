@@ -201,7 +201,6 @@ public class MySqlScanQueriesTests
     MySqlScanQueries.UnsampleableTypes.Order(StringComparer.Ordinal).ShouldBe(
       [
         "binary",
-        "bit",
         "blob",
         "geometry",
         "geometrycollection",
@@ -253,6 +252,19 @@ public class MySqlScanQueriesTests
   public void RefusesEveryBinaryContainer(string dataType)
   {
     MySqlScanQueries.IsSampleable(dataType).ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// ⚠️ <b><c>BIT</c> se lit, malgré son nom.</b> <c>MySqlConnector</c> le rend en <c>ulong</c> et
+  /// non en octets : le <c>bit(1)</c> qui sert de booléen partout est une colonne parfaitement
+  /// regardable, et l'inscrire dans la liste noire la condamnerait sur la foi de son nom.
+  /// </summary>
+  [Theory]
+  [InlineData("bit")]
+  [InlineData("BIT")]
+  public void SamplesABitBecauseTheDriverRendersItAsANumber(string dataType)
+  {
+    MySqlScanQueries.IsSampleable(dataType).ShouldBeTrue();
   }
 
   /// <summary>

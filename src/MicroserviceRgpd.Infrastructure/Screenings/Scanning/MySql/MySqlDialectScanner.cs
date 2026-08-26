@@ -74,7 +74,7 @@ internal sealed class MySqlDialectScanner : IDialectScanner
     }
     catch (MySqlException failure)
     {
-      if (MySqlFailures.IsInterrupt(failure, cancellationToken))
+      if (MySqlFailures.IsInterrupt(cancellationToken))
       {
         throw new OperationCanceledException(cancellationToken);
       }
@@ -106,7 +106,7 @@ internal sealed class MySqlDialectScanner : IDialectScanner
     }
     catch (MySqlException failure)
     {
-      if (MySqlFailures.IsInterrupt(failure, cancellationToken))
+      if (MySqlFailures.IsInterrupt(cancellationToken))
       {
         throw new OperationCanceledException(cancellationToken);
       }
@@ -181,18 +181,21 @@ internal sealed class MySqlDialectScanner : IDialectScanner
 
     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
     {
+      // ⚠️ Nommés un par un, et ce n'est pas de la décoration : six chaînes se suivent, et deux
+      // d'entre elles sont les deux commentaires. Interverties, elles compileraient sans un mot et
+      // le relevé porterait le commentaire de la table sur la colonne.
       columns.Add(
         MySqlCatalogue.ToColumn(
-          reader.GetString(0),
-          reader.GetString(1),
-          reader.GetString(2),
-          reader.GetInt32(3),
-          Text(reader, 4),
-          Text(reader, 5),
-          Text(reader, 6),
-          Text(reader, 7),
-          Text(reader, 8),
-          Text(reader, 9)));
+          schema: reader.GetString(0),
+          table: reader.GetString(1),
+          column: reader.GetString(2),
+          position: reader.GetInt32(3),
+          columnType: Text(reader, 4),
+          dataType: Text(reader, 5),
+          isNullable: Text(reader, 6),
+          columnComment: Text(reader, 7),
+          tableComment: Text(reader, 8),
+          referencedTable: Text(reader, 9)));
     }
 
     return columns;
@@ -278,15 +281,18 @@ internal sealed class MySqlDialectScanner : IDialectScanner
     var table = columns[0].Scanned.RawTable;
 
     // Le binaire ne coûte pas une requête : il est écarté sur le type déclaré, avant d'aller voir.
-    foreach (var column in columns.Where(column => !MySqlScanQueries.IsSampleable(column.DataType)))
+    // ⚠️ Une seule partition, et non deux filtres complémentaires : deux prédicats qui se veulent
+    // contraires finissent par cesser de l'être, et la colonne tombée entre les deux n'aurait alors
+    // aucun aperçu — pas même une raison.
+    var sampleable = new List<MySqlCataloguedColumn>();
+    var binary = new List<MySqlCataloguedColumn>();
+
+    foreach (var column in columns)
     {
-      previews[column.Scanned.Identity] =
-        ColumnPreview.Absent(PreviewAbsenceReason.UnsampleableType);
+      (MySqlScanQueries.IsSampleable(column.DataType) ? sampleable : binary).Add(column);
     }
 
-    var sampleable = columns
-      .Where(column => MySqlScanQueries.IsSampleable(column.DataType))
-      .ToList();
+    MarkAbsent(binary, PreviewAbsenceReason.UnsampleableType, previews);
 
     for (var start = 0; start < sampleable.Count; start += MySqlScanQueries.MaxBranchesPerQuery)
     {
@@ -315,7 +321,7 @@ internal sealed class MySqlDialectScanner : IDialectScanner
       }
       catch (MySqlException failure)
       {
-        if (MySqlFailures.IsInterrupt(failure, cancellationToken))
+        if (MySqlFailures.IsInterrupt(cancellationToken))
         {
           throw new OperationCanceledException(cancellationToken);
         }
@@ -329,13 +335,18 @@ internal sealed class MySqlDialectScanner : IDialectScanner
   }
 
   /// <summary>
-  /// Ce qu'une table qui a raté laisse derrière elle : une raison nommee sur <b>chacune</b> de ses
+  /// Ce qu'une table qui a raté laisse derrière elle : une raison nommée sur <b>chacune</b> de ses
   /// colonnes.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Jamais une case vide.</b> Sans raison, « cette colonne ne contenait rien » et « on n'a
   /// pas regardé cette colonne » se liraient pareil à l'écran, ce qui est l'<c>Omission
   /// silencieuse</c> réintroduite par une cellule vide.
+  /// <para>
+  /// ⚠️ <b>Elle n'écrase jamais un aperçu déjà posé.</b> C'est la seule règle d'écriture des raisons,
+  /// et elle vaut pour les deux appelants : une valeur lue vaut mieux qu'une raison, et une raison
+  /// posée la première est la plus proche de la cause.
+  /// </para>
   /// </remarks>
   internal static void MarkAbsent(
     IEnumerable<MySqlCataloguedColumn> columns,

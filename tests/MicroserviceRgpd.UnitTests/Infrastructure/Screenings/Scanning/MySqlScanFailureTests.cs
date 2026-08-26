@@ -21,8 +21,7 @@ public class MySqlScanFailureTests
   /// <summary>
   /// Un port fermé sur la boucle locale : le refus est immédiat, et il n'y a rien à monter.
   /// ⚠️ Le compte porte un nom reconnaissable — c'est lui que
-  /// <see cref="KeepsNoLockerHoldingTheConnectionStringAfterTheScan"/> cherchera dans les casiers du
-  /// pilote.
+  /// <see cref="KeepsNoOpenSessionAfterTheScan"/> cherchera dans les casiers du pilote.
   /// </summary>
   private const string NothingListensThere =
     "Server=127.0.0.1;Port=1;User ID=temoin-du-casier;Password=secret;Database=epreuve;"

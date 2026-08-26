@@ -51,31 +51,30 @@ internal static class MySqlFailures
   /// <summary>Le compte n'a pas le droit de lire cette colonne.</summary>
   internal const int ColumnAccessDenied = 1143;
 
-  /// <summary>La requête a été coupée — c'est ce que rend l'annulation, côté serveur.</summary>
-  internal const int QueryInterrupted = 1317;
-
   /// <summary>
   /// L'annulation a-t-elle produit cette panne ? ⚠️ Une requête coupée par le jeton revient en
   /// <c>MySqlException</c>, pas en <see cref="OperationCanceledException"/> : la rendre telle quelle
   /// ferait de l'<c>Operator</c> qui quitte l'écran un scan tombé, avec un écran d'échec à la clé.
   /// </summary>
-  internal static bool IsInterrupt(MySqlException failure, CancellationToken cancellationToken)
-  {
-    ArgumentNullException.ThrowIfNull(failure);
-
-    return IsInterrupt((int)failure.ErrorCode, cancellationToken);
-  }
-
-  /// <inheritdoc cref="IsInterrupt(MySqlException, CancellationToken)" />
   /// <remarks>
-  /// ⚠️ <b>La surcharge sur l'entier existe pour que le rangement soit éprouvable.</b>
-  /// <c>MySqlException</c> n'a aucun constructeur public : un test qui voudrait présenter au service
-  /// un « droits refusés sur la table » n'aurait aucun moyen d'en fabriquer un. Ce qui décide est
-  /// donc écrit sur le numéro, que n'importe qui peut passer.
+  /// <para>
+  /// ⚠️ <b>C'est le <b>jeton</b> qui répond, et jamais le numéro d'erreur.</b> Le serveur rend
+  /// <c>1317</c> — « requête interrompue » — pour l'annulation du service, mais <b>aussi</b> pour un
+  /// <c>KILL QUERY</c> lancé par le DBA du client et pour un <c>max_execution_time</c> dépassé. Lire
+  /// <c>1317</c> comme une annulation ferait lever une
+  /// <see cref="OperationCanceledException"/> portant un jeton qui n'a jamais été annulé : une
+  /// exception traverserait le port là où l'écran attend une fin nommée, et l'<c>Operator</c>
+  /// verrait « vous avez abandonné » d'un scan que la base a coupé sous lui.
+  /// </para>
+  /// <para>
+  /// Un <c>1317</c> sans annulation retombe donc là où il doit : <see cref="ScanFailureFamily"/>
+  /// <c>.Database</c> pour le scan, <see cref="PreviewAbsenceReason"/><c>.ReadFailed</c> pour une
+  /// colonne — la base a répondu, et ce qu'elle a répondu est un échec.
+  /// </para>
   /// </remarks>
-  internal static bool IsInterrupt(int errorCode, CancellationToken cancellationToken)
+  internal static bool IsInterrupt(CancellationToken cancellationToken)
   {
-    return cancellationToken.IsCancellationRequested || errorCode == QueryInterrupted;
+    return cancellationToken.IsCancellationRequested;
   }
 
   /// <summary>De quel côté vient ce qui a fait tomber le scan.</summary>

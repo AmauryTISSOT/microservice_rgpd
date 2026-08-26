@@ -95,22 +95,7 @@ public class MySqlFailuresTests
   }
 
   /// <summary>
-  /// ⚠️ <b>Une requête coupée n'est pas un scan tombé.</b> Le serveur rend <c>1317</c> quand
-  /// l'annulation l'a interrompu ; le rendre tel quel ferait de l'<c>Operator</c> qui quitte
-  /// l'écran un échec, avec un écran d'échec à la clé.
-  /// </summary>
-  [Fact]
-  public void ReadsAnInterruptedQueryAsTheCallerTakingBackControl()
-  {
-    MySqlFailures.IsInterrupt(MySqlFailures.QueryInterrupted, CancellationToken.None)
-      .ShouldBeTrue();
-
-    MySqlFailures.IsInterrupt(MySqlFailures.AccessDenied, CancellationToken.None)
-      .ShouldBeFalse();
-  }
-
-  /// <summary>
-  /// ⚠️ <b>Le jeton fait foi même quand le serveur a dit autre chose.</b> Une connexion coupée sous
+  /// ⚠️ <b>Le jeton fait foi, et le serveur n'a pas voix au chapitre.</b> Une connexion coupée sous
   /// une requête annulée remonte parfois en « connexion perdue » plutôt qu'en « requête
   /// interrompue » : c'est la même annulation, et elle ne doit pas se déguiser en panne.
   /// </summary>
@@ -121,7 +106,25 @@ public class MySqlFailuresTests
 
     abandon.Cancel();
 
-    MySqlFailures.IsInterrupt(2013, abandon.Token).ShouldBeTrue();
+    MySqlFailures.IsInterrupt(abandon.Token).ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un <c>1317</c> sans annulation n'est pas une annulation, et c'est le piège du numéro.</b>
+  /// Le serveur rend « requête interrompue » pour l'annulation du service, mais <b>aussi</b> pour un
+  /// <c>KILL QUERY</c> lancé par le DBA du client et pour un <c>max_execution_time</c> dépassé. Le
+  /// lire comme une annulation ferait lever une <see cref="OperationCanceledException"/> portant un
+  /// jeton jamais annulé : une exception traverserait le port, et l'<c>Operator</c> lirait « vous
+  /// avez abandonné » d'un scan que la base a coupé sous lui.
+  /// </summary>
+  [Fact]
+  public void DoesNotMistakeAQueryTheDatabaseKilledForOneTheOperatorAbandoned()
+  {
+    const int QueryInterrupted = 1317;
+
+    MySqlFailures.IsInterrupt(CancellationToken.None).ShouldBeFalse();
+    MySqlFailures.FamilyOf(QueryInterrupted, inner: null).ShouldBe(ScanFailureFamily.Database);
+    MySqlFailures.ReasonFor(QueryInterrupted).ShouldBe(PreviewAbsenceReason.ReadFailed);
   }
 
   /// <summary>Les pannes de transport que le pilote enveloppe.</summary>
