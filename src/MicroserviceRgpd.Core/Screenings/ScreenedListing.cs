@@ -14,7 +14,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <para>
 /// ⚠️ <b>Ce n'est pas encore un <see cref="Screening"/>.</b> Il manque ce que le moteur n'a pas à
 /// décider : l'identité du rapport, l'instant du lancement, le nom de base et le dialecte que le
-/// relevé déclare. C'est le geste qui assemble, pas le moteur.
+/// relevé déclare, et l'<see cref="ListingOrigin"/> par laquelle il est entré. C'est le geste qui
+/// assemble, pas le moteur — et le moteur, lui, <b>ne sait pas</b> lequel des deux chemins il lit.
 /// </para>
 /// </remarks>
 /// <param name="Engine">Qui a détecté, et dans quelle version. Le domaine ne l'interprète jamais.</param>

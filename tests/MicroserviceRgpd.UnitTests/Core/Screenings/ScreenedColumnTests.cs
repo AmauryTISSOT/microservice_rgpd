@@ -39,6 +39,55 @@ public class ScreenedColumnTests
   }
 
   /// <summary>
+  /// <b>La raison d'absence d'aperçu est une propriété de la ligne</b>, et la seule chose d'un
+  /// <c>ColumnPreview</c> qui lui parvienne. Sans elle, les quatre comptes de la clause seraient
+  /// incalculables une heure après le scan, quand les aperçus ont expiré — et l'écran d'archive
+  /// deviendrait <b>plus rassurant</b> que celui du jour même.
+  /// </summary>
+  [Fact]
+  public void CarriesWhyNoPreviewAccompaniedIt()
+  {
+    ScreenedColumn
+      .NothingSeen(AScreening.AListedColumn("photo"), PreviewAbsenceReason.UnsampleableType)
+      .PreviewAbsence.ShouldBe(PreviewAbsenceReason.UnsampleableType);
+
+    ScreenedColumn.Flagged(
+      AScreening.AListedColumn("iban"),
+      PersonalDataCategory.FinancialData,
+      RuleStrength.ExactName,
+      "le nom entier figure au lexique",
+      PreviewAbsenceReason.AccessDenied)
+      .PreviewAbsence.ShouldBe(PreviewAbsenceReason.AccessDenied);
+  }
+
+  /// <summary>
+  /// <b>Elle est nulle quand la question ne se pose pas</b> : le relevé a été collé, et rien n'a
+  /// jamais été prélevé. Les quatre comptes de la clause y sont <b>absents</b>, jamais à zéro.
+  /// </summary>
+  [Fact]
+  public void LeavesTheAbsenceReasonNullWhenNothingWasEverSampled()
+  {
+    ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh")).PreviewAbsence.ShouldBeNull();
+    AScreening.AFlaggedColumn().PreviewAbsence.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une absence d'aperçu n'est pas un signalement</b>, et elle ne dit rien de ce que la
+  /// colonne porte : une ligne où rien n'a été vu peut parfaitement en porter une.
+  /// </summary>
+  [Fact]
+  public void DoesNotFlagAColumnBecauseItsPreviewIsMissing()
+  {
+    var column = ScreenedColumn.NothingSeen(
+      AScreening.AListedColumn("ref_3"),
+      PreviewAbsenceReason.ReadFailed);
+
+    column.IsFlagged.ShouldBeFalse();
+    column.Category.ShouldBe(PersonalDataCategory.Unflagged);
+    column.IsWithinReachOfABatchGesture.ShouldBeTrue();
+  }
+
+  /// <summary>
   /// ⚠️ <b>Aucun chemin ne pose <c>Unflagged</c> avec un motif.</b> Une ligne « rien vu » qui se
   /// justifierait serait une ligne « vue et écartée » déguisée, et c'est exactement la distinction
   /// que <c>PersonalDataUncategorised</c> existe pour tenir.

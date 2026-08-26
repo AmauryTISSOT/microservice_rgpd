@@ -159,6 +159,7 @@ public class ScreeningDeletionCostTests(PostgreSqlFixture postgres, ITestOutputH
       ScreeningId.Next(),
       "dolibarr_prod",
       "postgresql",
+      ListingOrigin.Pasted,
       Engine,
       columns,
       screened,

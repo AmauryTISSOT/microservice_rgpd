@@ -236,6 +236,7 @@ public class ScreenedColumnsTests(PostgreSqlFixture postgres)
       ScreeningId.Next(),
       "galette_prod",
       "postgresql",
+      ListingOrigin.Pasted,
       Engine,
       columns.Length,
       columns,

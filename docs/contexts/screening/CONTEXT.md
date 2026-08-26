@@ -114,12 +114,53 @@ _Avoid_ : Crawl, Discovery, Probe, Introspection, sondage, exploration ⚠️ `D
 lit un schéma puis *n* colonnes nommées ; `Probe` et `sondage` promettent un prélèvement méthodique
 visant à conclure, ce que le `ColumnPreview` n'est pas.
 
+**ListingOrigin** — « origine du relevé » :
+Par quel des deux chemins le `ColumnListing` qu'un `Screening` a lu est entré : l'`Operator` l'a
+**collé**, ou le service l'a **scanné**. C'est une propriété du `Screening`, **enregistrée avec
+lui** — la `Clause d'incomplétude` est rendue jusque sur l'archive, des mois après que la chaîne de
+connexion a cessé d'exister, et rien d'autre de la ligne ne dit d'où venait le relevé.
+⚠️ **Trois cas, et le troisième est le cas nul.** `Unspecified` occupe la position 0 et **existe pour
+être refusé** : sans lui, `Collé` serait la valeur qu'on obtient par oubli — un `default`, une
+colonne remplie par défaut, un chemin d'écriture neuf qui ne pense pas à la poser —, et la panne
+rentrerait par la porte de derrière. Un rapport **scanné** se lirait comme collé, et la clause qu'il
+rend affirmerait que le service *n'a jamais vu une seule valeur* sur un rapport qui en a lu cinq par
+colonne. Le refus est **bruyant des deux côtés** : à l'enregistrement, la fabrique lève ; à
+l'affichage, le rendu lève plutôt que de deviner.
+⚠️ **Un booléen est refusé nommément.** `IsPasted` ferait du collage le cas normal et de la connexion
+l'exception, quand les deux chemins **coexistent et qu'aucun ne remplace l'autre** — et il n'aurait
+pas de cas nul, donc pas de refus possible.
+⚠️ **Elle ne voyage pas dans `ScreeningCounts`.** La clause reçoit **deux** choses, les comptes et
+l'origine, et ce qu'elle a besoin de savoir reste lisible dans sa signature.
+⚠️ **Elle ne dit pas la provenance, et c'est la confusion à ne pas faire.** Elle nomme le **chemin**
+par lequel le relevé est entré, jamais la base dont il vient : un relevé scanné sur l'adresse de la
+recette est aussi sincère, entier et faux qu'un relevé d'hier collé à la main. `Enregistré, jamais
+vérifié` vaut des deux côtés — voir `ColumnListing`.
+_Avoid_ : `Source`, `Provenance`, `IsPasted`, mode, canal ⚠️ `Source` et `Provenance` promettent de
+dire **d'où** vient le relevé, ce qu'aucun des deux chemins ne sait ; `mode` et `canal` laisseraient
+croire à un réglage de service, quand c'est un fait daté du rapport.
+
 **ColumnPreview** — « aperçu » :
 Les quelques valeurs — **cinq**, à la livraison — que le `Scan` a lues dans une colonne, et que
 l'écran montre à l'`Operator` **pendant qu'il arbitre**. Elles ne prouvent rien, elles n'entrent dans
 aucun chiffre rendu, et elles meurent : voir `Rien de réel ne reste`.
 ⚠️ **Un aperçu n'est jamais vide.** Il est **soit** des valeurs, **soit** une **raison nommée** de
-n'en porter aucune — jamais rien, et **jamais les deux à la fois**. ⚠️ **L'énumération est close et
+n'en porter aucune — jamais rien, et **jamais les deux à la fois**.
+⚠️ **Mais les deux membres n'ont plus la même durée de vie, et c'est un amendement, pas une
+exception.** Les **valeurs** vivent en mémoire du processus et meurent avec la session d'arbitrage ;
+la **raison**, elle, est enregistrée sur la `ScreenedColumn` et vit aussi longtemps que le rapport —
+voir `PreviewAbsenceReason`. L'interdiction de fond ne bouge pas : jamais des valeurs **et** une
+raison. Ce qui a changé est qu'un aperçu **expiré** n'emporte pas avec lui ce que le service savait
+de son absence.
+⚠️ **Les deux bornes vivent sur ce type, et elles n'ont pas d'autre source** : les **cinq** valeurs
+et la coupure à **254** caractères. La requête de prélèvement les lit là, et la clause qui écrit
+« cinq valeurs au plus » aussi. Écrit à la main des deux côtés, le chiffre divergerait au premier
+changement de borne — et c'est le texte rendu à l'`Operator` qui se mettrait à mentir, sans que rien
+ne rougisse.
+⚠️ **Rien ne le fait ressortir.** Il descend dans `Core` pour que le port sortant le nomme, et
+**aucun champ** de `ScreenedColumn`, de `ScreenedListing` ni de `ColumnListing` ne sait porter une
+valeur lue. Un aperçu n'entre jamais dans un objet persisté, et c'est un garde d'`ArchitectureTests`
+qui le tient plutôt qu'une intention.
+⚠️ **L'énumération est close et
 tient en quatre familles**, arrêtées par
 [#278](https://github.com/AmauryTISSOT/microservice_rgpd/issues/278) : la colonne porte un **type non
 prélevable** (un binaire, dont cinq valeurs ne diraient rien à un humain) ; les **droits sont
@@ -208,6 +249,33 @@ _Avoid_ : Sample, échantillon, ValueSample, extrait, Excerpt, Snippet, Peek ⚠
 nommés ici ; `extrait` et `Excerpt` supposeraient un tout dont on aurait pris une part
 représentative, ce qui est la même promesse sous un autre habit.
 
+**PreviewAbsenceReason** — « raison d'absence d'aperçu » :
+Le second membre d'un `ColumnPreview` : **pourquoi** une colonne n'a aucune valeur à montrer.
+Énumération close à **quatre familles** — *type non prélevable*, *droits refusés*, *aucune valeur
+retournée*, *lecture échouée* —, et le nombre compte autant que la liste.
+⚠️ **Elle quitte l'aperçu éphémère et devient une propriété enregistrée de la `ScreenedColumn`,
+nullable.** Sans cela, les **quatre comptes** de la `Clause d'incomplétude` seraient incalculables une
+heure après le `Scan`, quand les aperçus ont expiré — et l'écran d'archive deviendrait **plus
+rassurant** que celui du jour même, ce qui est le mode de panne exact que ce contexte existe pour ne
+pas avoir. **Ce n'est pas une entorse à `Rien de réel ne reste` : une raison n'est pas une valeur
+lue.**
+⚠️ **Elle est nulle sur le chemin collé, et elle l'est aussi sur les rapports d'avant la connexion.**
+Rien n'y a jamais été prélevé, et les quatre comptes y sont **absents**, jamais à zéro : « zéro
+colonne sans aperçu » se lirait comme un prélèvement qui a tout réussi.
+⚠️ **Le grain est celui du geste que l'`Operator` peut poser**, et non celui de la panne rencontrée :
+« droits refusés » vit à part parce qu'elle est la seule qu'il puisse corriger — il ira demander un
+accès. « Délai dépassé », « connexion tombée » et « scan interrompu » ne lui offrent rien de plus les
+unes que les autres et se rangent ensemble.
+⚠️ **La phrase est attachée au membre, écrite une fois.** Composée à l'écran, elle aurait divergé
+d'une surface à l'autre, et c'est le jour de cette divergence qu'une phrase se met à dire un constat
+sur la donnée plutôt que l'observation. Elle **ne cite jamais le message du pilote** — voir
+`ColumnPreview`.
+⚠️ **Une absence d'aperçu n'est pas un signalement.** Elle ne dit rien de ce que la colonne porte :
+une ligne `Unflagged` peut parfaitement en porter une, et son arbitrage n'en est pas changé.
+_Avoid_ : `PreviewError`, `SampleFailure`, erreur, échec ⚠️ trois des quatre familles ne sont pas des
+erreurs — un binaire non prélevé et une table qui rend zéro ligne sont des lectures qui ont réussi —,
+et les ranger sous « erreur » ferait chercher une panne là où il n'y en a pas.
+
 **ScanProgress** — « avancement du scan » :
 Ce qu'un `Scan` en cours donne à voir pendant qu'il court : la **phase** où il en est, et le **compte
 réel** de cette phase. Il vit **en mémoire du processus**, n'est **jamais** persisté, et porte un
@@ -262,6 +330,9 @@ Ce que la détection a rendu sur un `ColumnListing` : une `ScreenedColumn` par c
 l'agrégat de ce contexte. C'est le **rapport de détection** que l'interface nomme, et c'est **l'acte
 et son résultat**, comme une `Qualification` — il n'existe pas d'objet « lancement » distinct de
 l'objet rendu.
+Il porte l'`ListingOrigin` du relevé qu'il a lu, **enregistrée avec lui** : c'est le seul endroit qui
+dise, des mois plus tard sur l'archive, si l'`Operator` l'avait collé ou si le service l'avait
+scanné.
 Il est **détenu** et vit plusieurs jours : un rapport de détection s'arbitre en plusieurs fois,
 colonne par colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au
 `EvidenceLog`, n'a aucune échéance et vit jusqu'à ce qu'un `Operator` le supprime.
@@ -344,8 +415,9 @@ relevé, **et l'identité du moteur qui les a produites**.
 rend ; un moteur servi apprend la version qu'on lui sert au moment où il répond, et une propriété
 posée à côté de l'appel dirait la version configurée plutôt que celle qui a répondu.
 ⚠️ **Ce n'est pas encore un `Screening`.** Il y manque ce que le moteur n'a pas à décider :
-l'identité du rapport de détection, l'instant du lancement, le nom de base et le dialecte. C'est le
-geste qui assemble, jamais le moteur.
+l'identité du rapport de détection, l'instant du lancement, le nom de base, le dialecte et
+l'`ListingOrigin` par laquelle le relevé est entré. C'est le geste qui assemble, jamais le moteur —
+et le moteur, lui, **ne sait pas** lequel des deux chemins il lit.
 _Avoid_ : ScreeningResult, ScreeningOutcome, Predictions, Findings ⚠️ `Outcome` est le mot de l'issue,
 qui n'appartient qu'à l'humain ; `Predictions` promet un modèle et un score.
 
@@ -354,6 +426,9 @@ qui n'appartient qu'à l'humain ; `Predictions` promet un modèle et un score.
 **ScreenedColumn** :
 Ce qu'un `Screening` dit d'**une** colonne du `ColumnListing` : sa `PersonalDataCategory`, la
 `RuleStrength` de la règle qui l'a produite, un motif en prose française, et son état d'arbitrage.
+Elle porte en plus, quand le relevé a été scanné, la `PreviewAbsenceReason` qui dit pourquoi aucun
+aperçu ne l'accompagnait — **la seule chose d'un `ColumnPreview` qui lui parvienne**, et la seule qui
+descende en base.
 ⚠️ **Il y en a une par colonne du relevé, sans exception** — y compris là où le service n'a rien vu.
 Ce n'est pas un détail de présentation : c'est le mécanisme entier de l'`Omission relue`. Une colonne
 absente du `Screening` serait une colonne que personne ne relit jamais.
