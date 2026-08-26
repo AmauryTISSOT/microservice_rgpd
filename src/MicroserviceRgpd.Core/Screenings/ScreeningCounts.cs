@@ -25,7 +25,9 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </param>
 /// <param name="Flagged">
 /// Combien la détection en a signalées. ⚠️ Le complément est ce qu'elle <b>n'a pas vu</b>, jamais ce
-/// qui serait inoffensif : le service n'a jamais vu une seule valeur.
+/// qui serait inoffensif — <b>ce que le service a lu du contenu d'une colonne ne dit pas ce qu'elle
+/// contient</b> : rien du tout sur le chemin collé, au plus
+/// <see cref="ColumnPreview.MaxValues"/> valeurs sur le chemin scanné.
 /// </param>
 /// <param name="Retained">Combien un humain a retenues.</param>
 /// <param name="SetAside">Combien un humain a écartées.</param>
@@ -37,6 +39,13 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <param name="UnreadUnflagged">
 /// Combien de colonnes où rien n'a été vu n'ont pas encore été relues — le compte du verrou.
 /// </param>
+/// <param name="ColumnsWithoutAPreview">
+/// Combien de colonnes n'ont aucun aperçu, <b>par famille</b>. ⚠️ Ils sont ici — dans les comptes —
+/// et non à côté : ce sont des <b>quantités de ce relevé</b>, calculées comme les autres et par les
+/// deux mêmes chemins. <b>C'est la clause qui décide de les taire</b> sur le chemin collé, où ils
+/// valent tous zéro faute de prélèvement ; les taire ici les aurait rendus incalculables pour
+/// l'écran d'une table, qui ne charge jamais l'agrégat.
+/// </param>
 public sealed record ScreeningCounts(
   int Columns,
   int Tables,
@@ -46,8 +55,25 @@ public sealed record ScreeningCounts(
   int SetAside,
   int Awaiting,
   int RetainedOnUnflagged,
-  int UnreadUnflagged)
+  int UnreadUnflagged,
+  PreviewAbsenceCounts ColumnsWithoutAPreview)
 {
+  /// <summary>Combien de colonnes n'ont aucun aperçu, par famille — et jamais <c>null</c>.</summary>
+  /// <remarks>
+  /// ⚠️ <b>Le refus est bruyant, comme partout ailleurs dans ce dessin.</b> Absents, ces comptes
+  /// feraient rendre à <see cref="ReadPerimeter.ColumnsWithoutAPreview"/> <c>null</c> sur un relevé
+  /// <b>scanné</b> : les quatre familles disparaîtraient de l'écran et
+  /// <see cref="ReadPerimeter.NoPreviewSucceeded"/> vaudrait faux — un rapport scanné rendu
+  /// exactement comme un rapport collé, sans que rien ne rougisse. C'est
+  /// <see cref="PreviewAbsenceCounts.None"/> qu'écrit un scan dont tous les prélèvements ont abouti.
+  /// </remarks>
+  public PreviewAbsenceCounts ColumnsWithoutAPreview { get; } =
+    ColumnsWithoutAPreview
+    ?? throw new ArgumentNullException(
+      nameof(ColumnsWithoutAPreview),
+      "Les comptes d'absence d'aperçu ne sont jamais absents : un scan qui a tout prélevé rend "
+      + "PreviewAbsenceCounts.None, et c'est la clause qui décide de les taire sur le chemin collé.");
+
   /// <summary>
   /// Les comptes d'un rapport <b>chargé avec toutes ses colonnes</b>.
   /// </summary>
@@ -88,6 +114,7 @@ public sealed record ScreeningCounts(
       screening.SetAsideCount,
       screening.AwaitingCount,
       screening.RetainedOnUnflaggedCount,
-      screening.UnreadUnflaggedCount);
+      screening.UnreadUnflaggedCount,
+      screening.ColumnsWithoutAPreviewCount);
   }
 }

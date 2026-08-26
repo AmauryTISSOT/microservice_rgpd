@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
@@ -43,6 +45,38 @@ public sealed class ColumnPreview
   /// l'<c>ADR-0012</c>.
   /// </summary>
   public const int MaxValues = 5;
+
+  /// <summary>
+  /// La borne de prélèvement <b>telle qu'une phrase la dit</b> — « cinq » —, et elle est
+  /// <b>dérivée</b> de <see cref="MaxValues"/>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle existe parce que la clause d'incomplétude écrit un chiffre en toutes lettres.</b>
+  /// « cinq valeurs au plus de chaque colonne » se lit ; « 5 valeurs au plus » se lit moins bien au
+  /// milieu d'une phrase, et « quelques » ne se lit pas du tout — un <c>Operator</c> qui le lit ne
+  /// sait pas si le service a vu cinq lignes ou cinquante mille, imagine le pire, et bloque. Écrit à
+  /// la main dans le texte, le mot aurait survécu au premier changement de borne : il vient d'ici,
+  /// où <see cref="MaxValues"/> le décide.
+  /// <para>
+  /// <b>La table s'arrête à dix, et le repli est le chiffre lui-même</b> : au-delà, la borne aurait
+  /// depuis longtemps cessé d'être l'ordre de grandeur qu'un humain lit de ses yeux, et c'est cette
+  /// bascule-là que <see cref="MaxValues"/> documente.
+  /// </para>
+  /// </remarks>
+  public static string MaxValuesInWords => MaxValues switch
+  {
+    1 => "une",
+    2 => "deux",
+    3 => "trois",
+    4 => "quatre",
+    5 => "cinq",
+    6 => "six",
+    7 => "sept",
+    8 => "huit",
+    9 => "neuf",
+    10 => "dix",
+    _ => MaxValues.ToString(CultureInfo.InvariantCulture),
+  };
 
   /// <summary>
   /// La borne de coupure d'une valeur, en unités UTF-16. <b>254 : la plus longue valeur à motif

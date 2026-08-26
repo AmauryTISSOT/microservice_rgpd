@@ -275,6 +275,252 @@ public class IncompletenessClauseTests
     // calcule pour l'écran d'une table. ⚠️ Le second n'affaiblit pas la règle — la clause reste
     // inconstruisible sans les comptes de CE relevé ; ce qui change est qui les a calculés.
     Should.Throw<ArgumentNullException>(() => IncompletenessClause.For((Screening)null!));
-    Should.Throw<ArgumentNullException>(() => IncompletenessClause.For((ScreeningCounts)null!));
+    Should.Throw<ArgumentNullException>(
+      () => IncompletenessClause.For(null!, ListingOrigin.Pasted));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le cas nul échoue bruyamment, à l'affichage comme à l'enregistrement.</b> Un rapport dont
+  /// on ne sait pas s'il a été collé ou scanné rendrait l'une des deux clauses au hasard, et l'une
+  /// des deux ment.
+  /// </summary>
+  [Fact]
+  public void RefusesToRenderAClauseForAListingNobodySaidTheOriginOf()
+  {
+    var counts = ScreeningCounts.Of(AScreening.Of(AScreening.AFlaggedColumn()));
+
+    Should.Throw<ArgumentException>(
+      () => IncompletenessClause.For(counts, ListingOrigin.Unspecified));
+    Should.Throw<ArgumentNullException>(() => IncompletenessClause.For(counts, null!));
+
+    // ⚠️ Le refus vit AUSSI sur le record : un record positionnel a un constructeur public, et sans
+    // ce garde le périmètre rendrait en silence les phrases du chemin collé sur un relevé dont
+    // personne ne sait ce qu'il a lu.
+    Should.Throw<ArgumentException>(() => new ReadPerimeter(
+      ListingOrigin.Unspecified, [], [], 1, 1, 0, PreviewAbsenceCounts.None));
+
+    // Et sur les comptes : absents, les quatre familles disparaîtraient de l'écran d'un rapport
+    // scanné, qui se rendrait alors exactement comme un rapport collé.
+    Should.Throw<ArgumentNullException>(() => new ScreeningCounts(1, 1, 0, 0, 0, 0, 0, 0, 0, null!));
+  }
+
+  /// <summary>
+  /// <b>Une seule des quatre parties varie.</b> Les trois autres sont mot pour mot les mêmes des
+  /// deux côtés — et pour la partie 3, c'est ce que la réécriture des trois motifs a acheté : ainsi
+  /// écrits, ils sont vrais aussi bien d'un relevé collé que d'un relevé scanné.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Faire sortir la santé de la liste sur le chemin scanné aurait été le pire des trois
+  /// choix</b> : promettre qu'on sait voir la santé parce qu'on a lu cinq valeurs, dans la seule
+  /// partie du produit qui existe pour dire l'inverse.
+  /// </remarks>
+  [Fact]
+  public void VariesTheReadPerimeterAndNotOneOfTheThreeOtherParts()
+  {
+    var pasted = IncompletenessClause.For(AScreening.Of(AScreening.AFlaggedColumn()));
+    var scanned = IncompletenessClause.For(
+      AScreening.OfListing(ListingOrigin.Scanned, AScreening.AFlaggedColumn()));
+
+    scanned.Beyond.ShouldBe(pasted.Beyond);
+    scanned.BeyondReach.ShouldBe(pasted.BeyondReach);
+    scanned.RelationToManifest.ShouldBe(pasted.RelationToManifest);
+
+    scanned.Perimeter.Statement.ShouldNotBe(pasted.Perimeter.Statement);
+  }
+
+  /// <summary>
+  /// <b>Les trois motifs hors de portée sont vrais des deux côtés</b> : chacun nomme ce que ni le
+  /// nom, ni le type, ni quelques valeurs ne peuvent atteindre — une forme qui n'existe pas, une
+  /// finalité que rien ne déclare, une qualité du responsable que rien n'annonce.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Deux des trois motifs d'origine ne parlaient que du schéma ou du nom</b>, et le chemin
+  /// scanné les rendait faux ou muets : « une détection <b>de schéma</b> ne la verra pas » est faux
+  /// dès que le service lit des valeurs.
+  /// </remarks>
+  [Fact]
+  public void GivesReasonsThatStayTrueOnceTheServiceHasReadSomeValues()
+  {
+    var reasons = IncompletenessClause
+      .For(AScreening.OfListing(ListingOrigin.Scanned, AScreening.AFlaggedColumn()))
+      .BeyondReach.Categories.ToDictionary(entry => entry.Category, entry => entry.Reason);
+
+    // Aucun des trois ne peut plus fonder sa limite sur le seul schéma : le service en a lu, des
+    // valeurs, et un motif qui l'ignore ment.
+    reasons.Values.ShouldAllBe(reason => !reason.Contains("détection de schéma", StringComparison.Ordinal));
+    reasons.Values.ShouldAllBe(reason => !reason.Contains("lecteur de schéma", StringComparison.Ordinal));
+
+    reasons[PersonalDataCategory.HealthData].ShouldContain("forme", Case.Insensitive);
+    reasons[PersonalDataCategory.SpecialCategoryData].ShouldContain("finalité", Case.Insensitive);
+    reasons[PersonalDataCategory.CriminalOffenceData].ShouldContain("responsable", Case.Insensitive);
+  }
+
+  /// <summary>
+  /// <b>Le témoin de la clause, niveau 1 — sur l'objet, et symétrique.</b> Construit en
+  /// <c>Scanné</c>, le périmètre porte les valeurs dans <see cref="ReadPerimeter.ReadAsSignal"/>, la
+  /// mise en garde du premier venu et les quatre comptes ; en <c>Collé</c>, aucun des trois.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Symétrique, sans quoi une correspondance inversée passerait</b> : le code qui rendrait la
+  /// phrase du scan sur un relevé collé serait vert.
+  /// </remarks>
+  [Fact]
+  public void CarriesTheThreeScannedOnlyThingsOnTheScannedPathAndNoneOfThemOnThePastedOne()
+  {
+    var scanned = ScannedPerimeter();
+    var pasted = IncompletenessClause.For(AScreening.Of(AScreening.AFlaggedColumn())).Perimeter;
+
+    scanned.ReadAsSignal.ShouldContain(
+      entry => entry.Contains("valeurs au plus de chaque colonne", StringComparison.Ordinal));
+    scanned.FirstComeBias.ShouldNotBeNullOrWhiteSpace();
+    scanned.ColumnsWithoutAPreview.ShouldNotBeNull();
+
+    pasted.ReadAsSignal.ShouldNotContain(
+      entry => entry.Contains("valeur", StringComparison.OrdinalIgnoreCase));
+    pasted.FirstComeBias.ShouldBeNull();
+
+    // ⚠️ ABSENTS, jamais à zéro : rendre « 0 par droits refusés » sur un relevé collé affirmerait
+    // qu'un prélèvement a eu lieu et n'a rien refusé — une incomplétude inventée là où il n'y en a
+    // pas.
+    pasted.ColumnsWithoutAPreview.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Sur le chemin collé, pas un caractère ne bouge.</b> La promesse la plus forte du produit
+  /// reste intégralement vraie chez l'<c>Operator</c> qui colle : on ne paie pas la vérité du chemin
+  /// neuf avec la sienne.
+  /// </summary>
+  [Fact]
+  public void LeavesEverySingleCharacterOfThePastedPathWhereItWas()
+  {
+    var perimeter = IncompletenessClause.For(AScreening.Of(AScreening.AFlaggedColumn())).Perimeter;
+
+    perimeter.Statement.ShouldBe(
+      "Ce rapport de détection n'a lu qu'un relevé de colonnes, celui que vous avez collé, et rien "
+      + "d'autre.");
+
+    perimeter.FilterStatement.ShouldBe(
+      "Lus seulement pour écarter, jamais comme indice de sens : la forme d'une colonne ne dit pas "
+      + "ce qu'elle porte, et le service n'a jamais vu une seule valeur.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Sur le chemin scanné, la seconde phrase ne peut pas être coupée : ici la queue est la
+  /// preuve.</b> Ce que le service tient est ce qu'un compte de connexion lui a présenté, et lui
+  /// seul sait ce qu'il a tu.
+  /// </summary>
+  [Fact]
+  public void OwnsUpToNotKnowingWhatTheConnectionAccountKeptFromIt()
+  {
+    var perimeter = ScannedPerimeter();
+
+    perimeter.Statement.ShouldBe(
+      "Ce rapport de détection n'a lu qu'un relevé de colonnes, celui que le compte de connexion a "
+      + "présenté au service, et rien d'autre. Le service ne peut pas savoir si ce compte lui a "
+      + "présenté toute la base.");
+
+    // La queue de FilterStatement, elle, tombe et rien ne la remplace : traitement inverse, et
+    // délibéré — là-bas le début de phrase porte sa propre justification.
+    perimeter.FilterStatement.ShouldBe(
+      "Lus seulement pour écarter, jamais comme indice de sens : la forme d'une colonne ne dit pas "
+      + "ce qu'elle porte.");
+  }
+
+  /// <summary>
+  /// <b>Le témoin du chiffre unique.</b> « Cinq valeurs au plus » affiché dans la clause vient de la
+  /// même source que la borne du prélèvement.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Écrit à la main des deux côtés, il divergerait au premier changement de borne</b>, et le
+  /// texte mentirait sans que rien ne rougisse. ⚠️ Et c'est un <b>chiffre</b>, jamais « quelques » :
+  /// un <c>Operator</c> qui lit « quelques » ne sait pas si le service a lu cinq lignes ou cinquante
+  /// mille, imagine le pire, et bloque — alors que le chiffre exact est la bonne nouvelle.
+  /// </remarks>
+  [Fact]
+  public void SpellsTheSamplingBoundFromTheOnlyPlaceThatHoldsIt()
+  {
+    var perimeter = ScannedPerimeter();
+
+    var everything = string.Join(" ", perimeter.ReadAsSignal.Append(perimeter.FirstComeBias!));
+
+    everything.ShouldContain(ColumnPreview.MaxValuesInWords, Case.Sensitive);
+    everything.ShouldNotContain("quelques", Case.Insensitive);
+
+    // La borne elle-même, écrite en toutes lettres : c'est la seule assertion qui rougirait si
+    // MaxValues bougeait sans que MaxValuesInWords suive.
+    ColumnPreview.MaxValuesInWords.ShouldBe("cinq");
+    ColumnPreview.MaxValues.ShouldBe(5);
+  }
+
+  /// <summary>
+  /// Les quatre comptes sont ceux de <b>ce</b> relevé, familles séparées et <b>zéros compris</b> :
+  /// « 412 colonnes sans aperçu » ne fait rien faire à personne, « 18 par droits refusés » envoie
+  /// l'<c>Operator</c> demander un accès à son DBA.
+  /// </summary>
+  [Fact]
+  public void CountsTheColumnsWithoutAPreviewFamilyByFamilyAndShowsTheZeroes()
+  {
+    var perimeter = ScannedPerimeter();
+
+    var counted = perimeter.ColumnsWithoutAPreview.ShouldNotBeNull();
+
+    counted.AccessDenied.ShouldBe(1);
+    counted.UnsampleableType.ShouldBe(1);
+    counted.NoValueReturned.ShouldBe(0);
+    counted.ReadFailed.ShouldBe(0);
+
+    // Les quatre familles sont rendues, y compris celles qui valent zéro : un énoncé particulier
+    // quand il n'y a rien à dire rétablirait la réassurance un cran plus haut.
+    counted.ByReason.Count.ShouldBe(PreviewAbsenceReason.List.Count);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Aucun aperçu n'a abouti se dit à l'échelle du rapport</b>, en plus de la raison portée par
+  /// chaque ligne et jamais à sa place : un <c>Operator</c> qui déroule cinq mille lignes ne
+  /// recompose pas ce fait, et c'est justement celui qui devrait le faire rescanner.
+  /// </summary>
+  [Fact]
+  public void SaysAtTheScaleOfTheReportWhenNotOneSinglePreviewSucceeded()
+  {
+    // La première colonne porte un aperçu abouti : rien ne se dit à l'échelle du rapport.
+    IncompletenessClause.For(AScreening.OfListing(
+      ListingOrigin.Scanned,
+      AScreening.AFlaggedColumn(),
+      ScreenedColumn.NothingSeen(
+        AScreening.AListedColumn("id_adh", position: 2),
+        PreviewAbsenceReason.AccessDenied)))
+      .Perimeter.NoPreviewSucceeded.ShouldBeFalse();
+
+    IncompletenessClause.For(AScreening.OfListing(
+      ListingOrigin.Scanned,
+      ScreenedColumn.NothingSeen(
+        AScreening.AListedColumn("id_adh", position: 1),
+        PreviewAbsenceReason.AccessDenied),
+      ScreenedColumn.NothingSeen(
+        AScreening.AListedColumn("photo", position: 2),
+        PreviewAbsenceReason.UnsampleableType)))
+      .Perimeter.NoPreviewSucceeded.ShouldBeTrue();
+
+    // ⚠️ Faux sur le chemin collé, et pas par accident : rien n'y a été tenté, donc rien n'y a
+    // échoué.
+    IncompletenessClause.For(AScreening.Of(AScreening.AFlaggedColumn()))
+      .Perimeter.NoPreviewSucceeded.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Un relevé scanné dont deux colonnes n'ont aucun aperçu, une par famille corrigeable et une par
+  /// famille structurelle : c'est le relevé qu'attendent les témoins du chemin scanné.
+  /// </summary>
+  private static ReadPerimeter ScannedPerimeter()
+  {
+    return IncompletenessClause.For(AScreening.OfListing(
+      ListingOrigin.Scanned,
+      AScreening.AFlaggedColumn(),
+      ScreenedColumn.NothingSeen(
+        AScreening.AListedColumn("id_adh", position: 2),
+        PreviewAbsenceReason.AccessDenied),
+      ScreenedColumn.NothingSeen(
+        AScreening.AListedColumn("photo", position: 3),
+        PreviewAbsenceReason.UnsampleableType))).Perimeter;
   }
 }

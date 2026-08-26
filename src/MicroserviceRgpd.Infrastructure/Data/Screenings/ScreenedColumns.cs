@@ -54,8 +54,8 @@ public sealed class ScreenedColumns(AppDbContext dbContext) : IScreenedColumns
     // ⚠️ Les quatre traits sont dans la CLÉ du regroupement, et non dans des `count(filter)` : ce
     // qui les porte — la ligne du relevé, l'arbitrage — sont des types possédés, que le fournisseur
     // sait lire dans un `where` ou une clé mais pas à l'intérieur du prédicat d'un agrégat. Le
-    // `group by` rend au plus seize lignes, qu'on additionne ici ; c'est le même aller-retour, et
-    // le rapport reste hors de la mémoire du service.
+    // `group by` rend au plus quatre-vingts lignes, qu'on additionne ici ; c'est le même
+    // aller-retour, et le rapport reste hors de la mémoire du service.
     var buckets = await columns
       .GroupBy(column => new
       {
@@ -65,6 +65,10 @@ public sealed class ScreenedColumns(AppDbContext dbContext) : IScreenedColumns
         SetAside = column.Arbitration != null
           && column.Arbitration.State == ScreenedColumnState.SetAside,
         WithoutAComment = column.Listed.ColumnComment == null && column.Listed.TableComment == null,
+        // La raison d'absence d'aperçu entre dans la même clé plutôt que dans quatre
+        // `count(filter)` : elle est une valeur close et convertie, que le fournisseur sait rendre
+        // dans une clé. C'est elle qui fait passer le regroupement de seize seaux à quatre-vingts.
+        column.PreviewAbsence,
       })
       .Select(group => new
       {
@@ -72,6 +76,7 @@ public sealed class ScreenedColumns(AppDbContext dbContext) : IScreenedColumns
         group.Key.Retained,
         group.Key.SetAside,
         group.Key.WithoutAComment,
+        group.Key.PreviewAbsence,
         Count = group.Count(),
       })
       .ToListAsync(cancellationToken);
@@ -101,7 +106,19 @@ public sealed class ScreenedColumns(AppDbContext dbContext) : IScreenedColumns
       total - retained - setAside,
       buckets.Where(bucket => !bucket.Flagged && bucket.Retained).Sum(bucket => bucket.Count),
       buckets.Where(bucket => !bucket.Flagged && !bucket.Retained && !bucket.SetAside)
-        .Sum(bucket => bucket.Count));
+        .Sum(bucket => bucket.Count),
+      // ⚠️ Les quatre comptes se somment SUR LES SEAUX, comme les cinq autres. Les redéplier en une
+      // ligne par colonne pour les recompter aurait rematérialisé le rapport entier en mémoire —
+      // très exactement ce que ce chemin existe pour éviter.
+      new PreviewAbsenceCounts(
+        buckets.Where(bucket => bucket.PreviewAbsence == PreviewAbsenceReason.UnsampleableType)
+          .Sum(bucket => bucket.Count),
+        buckets.Where(bucket => bucket.PreviewAbsence == PreviewAbsenceReason.AccessDenied)
+          .Sum(bucket => bucket.Count),
+        buckets.Where(bucket => bucket.PreviewAbsence == PreviewAbsenceReason.NoValueReturned)
+          .Sum(bucket => bucket.Count),
+        buckets.Where(bucket => bucket.PreviewAbsence == PreviewAbsenceReason.ReadFailed)
+          .Sum(bucket => bucket.Count)));
   }
 
   /// <summary>

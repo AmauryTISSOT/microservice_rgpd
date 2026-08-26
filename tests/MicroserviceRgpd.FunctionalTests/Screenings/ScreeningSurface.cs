@@ -3,6 +3,10 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Screenings;
+using MicroserviceRgpd.Infrastructure.Data;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MicroserviceRgpd.FunctionalTests.Screenings;
 
@@ -313,6 +317,59 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
       "Le dépôt d'un relevé sincère doit mener au rapport qu'il vient de produire.");
 
     return await ReadAsync(Report);
+  }
+
+  /// <summary>
+  /// Fait de ce rapport un rapport <b>scanné</b>, et pose au besoin une raison d'absence d'aperçu
+  /// sur des colonnes nommées.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>C'est la seule entorse de ce fichier à sa propre règle — « aucun rapport n'est posé en
+  /// base à la main » —, et elle est bornée.</b> Aucun rapport n'est posé : le dépôt HTTP produit
+  /// celui-ci en entier, avec son ingestion, son moteur et son écriture. Ce qui est amendé après
+  /// coup est <b>l'origine</b>, et uniquement parce qu'<b>aucun chemin d'écriture ne rend encore un
+  /// relevé scanné</b> : le dépôt écrit <c>Pasted</c>, et le scan arrive plus tard dans la même
+  /// livraison.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Sans cette entorse, le témoin de la clause n'aurait pas de niveau 2</b> — celui qui
+  /// regarde l'écran —, et le rappel écrit en dur dans deux <c>.cshtml</c> n'aurait aucun test du
+  /// tout. Le jour où le dépôt par connexion existe, ce levier disparaît et les témoins passent par
+  /// lui.
+  /// </para>
+  /// </remarks>
+  internal async Task MakeItScannedAsync(
+    string screening, params (string Column, PreviewAbsenceReason Reason)[] withoutAPreview)
+  {
+    using var scope = factory.Services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var origin = await database.Database.ExecuteSqlRawAsync(
+      "update screenings set listing_origin = {0} where id = {1}",
+      ListingOrigin.Scanned.Name,
+      Guid.Parse(screening));
+
+    origin.ShouldBe(
+      1,
+      "Le levier n'a atteint aucun rapport : le témoin du chemin scanné serait vert sur un rapport "
+      + "resté collé, ce qui est très exactement la correspondance inversée qu'il existe pour "
+      + "attraper.");
+
+    foreach (var (column, reason) in withoutAPreview)
+    {
+      var touched = await database.Database.ExecuteSqlRawAsync(
+        "update screened_columns set preview_absence_reason = {0} "
+        + "where screening_id = {1} and column_name = {2}",
+        reason.Name,
+        Guid.Parse(screening),
+        column);
+
+      touched.ShouldBe(
+        1,
+        $"Le levier n'a atteint aucune ligne pour « {column} » : le témoin serait vert sur un "
+        + "rapport que rien n'a amendé.");
+    }
   }
 
   internal async Task<string> ReadAsync(string address)
