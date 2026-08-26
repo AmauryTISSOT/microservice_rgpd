@@ -214,7 +214,7 @@ prose française : ce sont des comptes-rendus datés, et un ADR acté parle avec
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Treize ADR de système sont en vigueur, et **cinq en supplantent un autre — toujours sur des points
+Quatorze ADR de système sont en vigueur, et **cinq en supplantent un autre — toujours sur des points
 nommés**. Trois visent l'ADR-0006 : l'ADR-0007 rouvre ce qu'il avait explicitement laissé fermé,
 l'ADR-0008 renverse deux de ses clauses — la réserve n° 1, qui tenait le wordmark métier pour le
 contrepoids du mot « microservice », et la règle « un seul nom, aucune forme courte » —, et
@@ -289,6 +289,13 @@ trois points morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour v
   avec le rapport, le cas nul refusé bruyamment. ⚠️ **Il supplante l'ADR-0012 sur un point** : celui-ci
   rangeait le contenu de la clause parmi ce qu'il ne décide pas, tout en rendant sa partie 1 fausse
   sur le chemin scanné. Tout le reste de l'ADR-0012 reste en vigueur, et son texte n'a pas été édité.
+- [ADR-0014](./docs/adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md) — `Screening`
+  **n'enregistre pas qui a arbitré** : l'`Arbitration` devient `(State, RenderedOn)`, et le nom saisi
+  à chaque arbitrage est détruit, y compris sur les rapports archivés. Ce que la trace doit prouver
+  est **qu'un humain a tranché**, et la date le prouve — un nom non authentifié ne prouvait rien de
+  plus. ⚠️ **Il ne supplante rien** : il porte l'**asymétrie entre deux contextes**, que par
+  construction aucun glossaire de contexte ne peut expliquer — `Casework` enregistre qui a tranché,
+  `Screening` ne l'enregistre plus du tout.
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, et c'est délibéré** : ce sont deux décisions sans
 rapport, qui se défont séparément — on peut retirer la porte du panneau sans rien changer à ce que
