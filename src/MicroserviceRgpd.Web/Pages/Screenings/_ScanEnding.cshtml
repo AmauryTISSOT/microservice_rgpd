@@ -1,0 +1,64 @@
+@model MicroserviceRgpd.Web.Pages.Screenings.ScanEndingScreen
+
+@*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES FINS D'UN SCAN ONT TOUTES LA MÊME FORME, ET ELLE EST ÉCRITE ICI UNE FOIS.
+
+  Où le scan s'est arrêté, d'où vient la cause, ce qui n'a PAS été écrit, et la relance sous la
+  main. Un écran par fin aurait dérivé au premier ticket suivant : l'un aurait perdu la phase,
+  l'autre aurait oublié de dire que le rapport courant n'a pas bougé, et un troisième aurait fini
+  par proposer de « reprendre » un scan dont la chaîne de connexion n'a jamais survécu.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*@
+
+<h1>@Model.Title</h1>
+
+<p class="caveat"><strong>@Model.Statement</strong></p>
+
+@*
+  LA PHASE ET LA FAMILLE SE LISENT EN DEUX LIGNES NOMMÉES, sur toutes les fins. « Une erreur est
+  survenue » ne dit ni où chercher ni de quel côté ; ces deux-là le disent, et elles ne disent que
+  cela : ni message du pilote, ni hôte, ni utilisateur — la chaîne de connexion ne se reconstitue
+  pas par morceaux.
+*@
+<dl class="ending">
+  <dt>Où le scan s'est arrêté</dt>
+  <dd>@Model.Where</dd>
+
+  <dt>D'où vient la cause</dt>
+  <dd>@Model.Cause</dd>
+</dl>
+
+@*
+  CE QUI N'A PAS ÉTÉ ÉCRIT SE DIT AUSSI. Un scan interrompu ne rend pas un écran « vide et
+  rassurant » : il ne rend RIEN, et c'est cette phrase qui le dit. Sans elle, l'Operator ne sait
+  pas si le rapport qu'il avait sous les yeux est encore là.
+*@
+<p class="caveat">
+  <strong>Aucun rapport n'a été écrit.</strong> Le rapport de détection courant n'a pas bougé : il
+  est resté celui que vous aviez, rien n'est parti à l'archive, et l'historique ne porte pas une
+  ligne de plus.
+</p>
+
+@if (Model.Gesture is { } gesture)
+{
+  @*
+    LE GESTE N'APPARAÎT QUE LÀ OÙ IL Y EN A UN. En poser un sur chaque fin ferait de toutes des
+    choses à corriger, alors qu'une base sans table n'appelle rien du tout.
+  *@
+  <p class="gesture"><strong>Le geste à poser :</strong> @gesture</p>
+}
+
+@*
+  ON RELANCE, ON NE REPREND PAS — et l'écran ne propose donc aucune reprise. Elle est impossible
+  par construction : la chaîne de connexion n'a pas survécu au scan, et le service n'a nulle part
+  où l'avoir gardée. Un bouton « reprendre » aurait promis ce qu'aucune ligne du service ne sait
+  faire.
+*@
+<p class="hint">
+  Ce scan ne se reprend pas là où il s'est arrêté : la chaîne de connexion n'est ni conservée, ni
+  journalisée, ni rejouée. Un nouveau scan la redemande, et repart du début.
+</p>
+
+<p><a asp-page="Connection">Relancer un scan</a></p>
+<p><a asp-page="Report">Voir le rapport de détection courant</a></p>

@@ -156,14 +156,51 @@ internal sealed class ScanSurface(CustomWebApplicationFactory<Program> factory)
     return await UntilItEndsAsync(scanId);
   }
 
-  private async Task<string> TokenAsync()
+  /// <summary>
+  /// Abandonne un scan comme l'<c>Operator</c> le fait : en postant le formulaire de son écran
+  /// d'attente, <b>sans une ligne de JavaScript</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le jeton anti-rejeu est lu sur l'écran d'attente, et non sur celui de la connexion.</b>
+  /// Le prendre ailleurs aurait fait passer le test là où un navigateur, lui, n'aurait eu que le
+  /// formulaire qu'il a sous les yeux.
+  /// </remarks>
+  internal async Task<HttpResponseMessage> AbandonAsync(string scanId, string? withToken = null)
   {
-    var rendered = await _client.GetStringAsync(Connection);
+    var address = WaitingFor(scanId);
+
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", withToken ?? await TokenAsync(address)),
+    };
+
+    return await _client.PostAsync(address, new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// Le jeton anti-rejeu du formulaire d'abandon, <b>pris pendant que le scan court</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est la seule façon d'éprouver un abandon qui arrive trop tard.</b> Un scan fini
+  /// n'offre plus de bouton — son écran cède la place au rapport —, et le jeton ne se lirait donc
+  /// plus nulle part. Un navigateur, lui, a le sien depuis que la page s'est affichée : c'est
+  /// exactement ce que fait l'<c>Operator</c> qui clique une seconde après la dernière ligne
+  /// écrite.
+  /// </remarks>
+  internal async Task<string> AbandonTokenAsync(string scanId)
+  {
+    return await TokenAsync(WaitingFor(scanId));
+  }
+
+  private async Task<string> TokenAsync(string? of = null)
+  {
+    var address = of ?? Connection;
+    var rendered = await _client.GetStringAsync(address);
     var token = Regex.Match(
       rendered,
       @"<input name=""__RequestVerificationToken""[^>]*value=""([^""]+)""");
 
-    token.Success.ShouldBeTrue($"Le formulaire de {Connection} ne porte aucun jeton anti-rejeu.");
+    token.Success.ShouldBeTrue($"Le formulaire de {address} ne porte aucun jeton anti-rejeu.");
 
     return token.Groups[1].Value;
   }

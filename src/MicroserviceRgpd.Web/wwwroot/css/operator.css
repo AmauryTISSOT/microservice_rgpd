@@ -452,6 +452,12 @@ table.queue:not(.columns) {
   margin: 0 0 var(--space-xxs);
 }
 
+/*
+  ⚠️ LA FIN D'UN SCAN EMPRUNTE LA GRILLE DES PRÉMISSES, et n'invente rien. Ce qu'elle porte est de
+  la même nature : deux ou quatre faits nommés, chacun sur sa ligne, dont l'intitulé dit ce que la
+  valeur est. Une seconde grille écrite pour elle aurait divergé au premier espacement retouché.
+*/
+.ending,
 .premises dl,
 .system dl {
   display: grid;
@@ -460,15 +466,35 @@ table.queue:not(.columns) {
   margin: var(--space-xs) 0 0;
 }
 
+.ending dt,
 .premises dt,
 .system dt {
   font-weight: var(--weight-semibold);
 }
 
+.ending dd,
 .premises dd,
 .system dd {
   margin: 0;
   white-space: pre-wrap;
+}
+
+/*
+  LE GESTE À POSER SE VOIT, parce qu'il est la seule ligne de l'écran sur laquelle l'Operator ait
+  quelque chose à FAIRE. Il n'apparaît que sur les fins qui en appellent un : posé sur toutes, il
+  aurait fait de chacune une chose à corriger.
+*/
+.gesture {
+  font-weight: var(--weight-semibold);
+}
+
+/*
+  L'ABANDON EST UN GESTE SANS CÉRÉMONIE, ET SON BOUTON N'EST PAS LE BOUTON PRINCIPAL. Rien n'est
+  détruit : un scan abandonné ne laisse aucun objet, et le rapport courant ne bouge pas. Lui donner
+  la couleur d'un danger aurait fait hésiter là où il n'y a rien à perdre.
+*/
+.abandon {
+  margin: var(--space-lg) 0;
 }
 
 /*

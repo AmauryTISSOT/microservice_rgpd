@@ -102,17 +102,15 @@ public class ConnectionModel(IScanLauncher launcher) : PageModel
 
     if (!launch.TookOff)
     {
-      // ⚠️ Le refus NOMME le scan en cours, et donne son écran. Un « réessayez plus tard » laisserait
-      // l'Operator ignorer si le service travaille pour lui ou pour quelqu'un d'autre — et il
-      // relancerait, sur la production d'un tiers, une lecture déjà en cours.
+      // ⚠️ Le refus NOMME le scan en cours, et l'écran qui le dit lui donne son identité, son SGBD,
+      // sa phase et le lien vers son attente. Un « réessayez plus tard » laisserait l'Operator
+      // ignorer si le service travaille pour lui ou pour quelqu'un d'autre — et il relancerait, sur
+      // la production d'un tiers, une lecture déjà en cours.
+      //
+      // ⚠️ Ce n'est PAS une erreur de saisie, et cela ne passe donc pas par le ModelState : rien de
+      // ce que l'Operator a écrit n'est en cause, et le lui dire au même endroit que « la chaîne est
+      // vide » l'enverrait relire un champ qui n'a rien.
       AlreadyRunning = launch.AlreadyRunning;
-
-      ModelState.AddModelError(
-        string.Empty,
-        $"Un scan est déjà en cours sur ce déploiement — scan {launch.AlreadyRunning!.Id.Value}, "
-        + $"phase « {launch.AlreadyRunning.Snapshot.Phase.FrenchLabel} », lancé à "
-        + $"{launch.AlreadyRunning.StartedOn:HH:mm:ss} UTC. Le service n'en mène qu'un à la fois : "
-        + "suivez celui-ci, ou attendez qu'il finisse.");
 
       return Page();
     }

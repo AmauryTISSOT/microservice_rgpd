@@ -42,14 +42,28 @@ public sealed class ScanProgress
 
   private ScanSnapshot _snapshot = new(ScanPhase.Connecting, Done: null, Total: null);
 
-  private ScanProgress(ScanId id, DateTimeOffset startedOn)
+  private ScanProgress(ScanId id, DatabaseDialect dialect, DateTimeOffset startedOn)
   {
     Id = id;
+    Dialect = dialect;
     StartedOn = startedOn;
   }
 
   /// <summary>L'identité de ce scan, celle que porte l'adresse de l'écran d'attente.</summary>
   public ScanId Id { get; }
+
+  /// <summary>
+  /// Le SGBD que l'<c>Operator</c> a choisi — <b>le seul morceau de sa demande qui vive ici</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le dialecte, et jamais l'hôte, le nom de base ou l'utilisateur.</b> Ces trois-là ne se
+  /// connaissent qu'en découpant la chaîne de connexion, et une chaîne rendue par morceaux reste une
+  /// chaîne rendue. Le dialecte est un choix fait dans une liste fermée de trois, affichée sur le
+  /// formulaire : il est ici parce que le <b>refus d'un second lancement</b> doit dire de quelle
+  /// sorte de base le service lit le schéma, sans quoi l'<c>Operator</c> ne sait pas si le service
+  /// travaille pour lui ou pour quelqu'un d'autre.
+  /// </remarks>
+  public DatabaseDialect Dialect { get; }
 
   /// <summary>L'instant où l'<c>Operator</c> a lancé ce scan, lu sur l'horloge injectée.</summary>
   public DateTimeOffset StartedOn { get; }
@@ -73,10 +87,17 @@ public sealed class ScanProgress
   /// Un scan qui commence : la phase de connexion, et <b>aucun compte</b> — rien n'a encore répondu.
   /// </summary>
   /// <param name="id">L'identité engendrée pour ce scan.</param>
+  /// <param name="dialect">Le SGBD choisi, seul morceau de la demande qui vive ici.</param>
   /// <param name="startedOn">L'instant du lancement, lu sur l'horloge injectée.</param>
-  public static ScanProgress Starting(ScanId id, DateTimeOffset startedOn)
+  /// <exception cref="ArgumentNullException"><paramref name="dialect"/> est absent.</exception>
+  public static ScanProgress Starting(
+    ScanId id,
+    DatabaseDialect dialect,
+    DateTimeOffset startedOn)
   {
-    return new ScanProgress(id, startedOn);
+    ArgumentNullException.ThrowIfNull(dialect);
+
+    return new ScanProgress(id, dialect, startedOn);
   }
 
   /// <summary>
@@ -185,6 +206,32 @@ public sealed class ScanProgress
 
       _snapshot = _snapshot with { Ending = ending, Failure = failure };
     }
+  }
+
+  /// <summary>
+  /// L'<c>Operator</c> reprend la main : le scan s'arrête <b>là où il en est</b>, et n'aura pas de
+  /// rapport.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>La fin est posée <i>avant</i> que la requête soit coupée, et c'est ce qui rend l'écran
+  /// honnête.</b> Attendre que le port lève ferait répondre à la requête d'abandon un écran d'attente
+  /// qui se rafraîchit encore, à propos d'un scan que l'<c>Operator</c> vient d'arrêter.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Un abandon arrivé après la fin n'a aucune conséquence.</b> Le rapport vient peut-être
+  /// d'être écrit : dire « abandonné » par-dessus annoncerait le contraire de ce qui s'est passé,
+  /// alors que le rapport d'avant est déjà parti à l'archive.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Aucune <see cref="ScanFailure"/> n'accompagne l'abandon.</b> Rien n'a raté : lui coller
+  /// une famille de cause enverrait l'<c>Operator</c> chercher une panne du réseau ou de la base là
+  /// où il n'y en a eu aucune.
+  /// </para>
+  /// </remarks>
+  public void Abandon()
+  {
+    EndedWithoutAReport(ScanEnding.Abandoned);
   }
 }
 

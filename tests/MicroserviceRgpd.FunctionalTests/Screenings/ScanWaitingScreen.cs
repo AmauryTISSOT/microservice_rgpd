@@ -44,7 +44,14 @@ public class ScanWaitingScreen(CustomWebApplicationFactory<Program> factory)
       rendered.ShouldContain(ScanPhase.Connecting.FrenchLabel);
       rendered.ShouldContain("Le catalogue n'a pas encore répondu");
       rendered.ShouldNotContain("class=\"progress\"");
-      rendered.ShouldNotContain(" sur ");
+
+      // ⚠️ CE QU'ON INTERDIT EST UN COMPTE, pas la préposition. Chercher « sur » tout court aurait
+      // interdit à l'écran la moindre phrase française — « la lecture en cours sur la base » en est
+      // une — alors que ce qui ne doit pas s'afficher est un dénominateur : deux nombres de part et
+      // d'autre, dont aucun n'est honnête tant que le catalogue n'a pas répondu.
+      System.Text.RegularExpressions.Regex
+        .IsMatch(rendered, @"\d+\s+sur\s+\d+")
+        .ShouldBeFalse("L'écran affiche un dénominateur avant que le catalogue ait répondu.");
     }
     finally
     {

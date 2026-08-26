@@ -79,10 +79,38 @@ public class ScanOutcomeTests
     outcome.Previews.ShouldBeEmpty();
   }
 
+  /// <summary>
+  /// Le <b>port</b> rend quatre fins, et il n'en rendra pas une cinquième. L'abandon en est une
+  /// aussi, mais il ne vient pas de la base : c'est l'<c>Operator</c> qui le pose, et aucune
+  /// fabrique de <see cref="ScanOutcome"/> ne sait l'écrire.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le compte se lit sur <see cref="ScanEnding.ComesFromTheScanner"/>, jamais sur la taille de
+  /// la liste.</b> Compter les membres aurait fait tomber ce test le jour où une fin posée par le
+  /// service s'ajoute — alors que ce qu'il garde est tout autre : qu'aucune fin <b>de la base</b>
+  /// n'apparaisse sans que les écrans déjà écrits sachent la dire.
+  /// </remarks>
   [Fact]
-  public void KnowsFourEndingsAndNoMore()
+  public void KnowsFourEndingsFromTheScannerAndNoMore()
   {
-    ScanEnding.List.Count.ShouldBe(4);
-    ScanEnding.List.Select(ending => ending.FrenchLabel).Distinct().Count().ShouldBe(4);
+    var fromTheScanner = ScanEnding.List.Where(ending => ending.ComesFromTheScanner).ToList();
+
+    fromTheScanner.Count.ShouldBe(4);
+    ScanEnding.List.Select(ending => ending.FrenchLabel).Distinct().Count()
+      .ShouldBe(ScanEnding.List.Count);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>L'abandon n'est pas une fin que la base rend.</b> Aucune fabrique ne l'écrit : il se
+  /// pose sur l'avancement, par le geste de l'<c>Operator</c>, et le port n'en sait rien.
+  /// </summary>
+  [Fact]
+  public void KnowsThatAbandonmentIsNotAnEndingTheScannerCanReturn()
+  {
+    ScanEnding.Abandoned.ComesFromTheScanner.ShouldBeFalse();
+
+    ScanEnding.List
+      .Where(ending => ending.ComesFromTheScanner)
+      .ShouldNotContain(ScanEnding.Abandoned);
   }
 }

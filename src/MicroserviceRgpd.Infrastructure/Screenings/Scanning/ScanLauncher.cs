@@ -45,30 +45,99 @@ public sealed class ScanLauncher(
   ILogger<ScanLauncher> logger)
   : IScanLauncher
 {
+  private readonly Lock _turn = new();
+
+  private ScanId? _abandonable;
+
+  private CancellationTokenSource? _abandon;
+
   /// <inheritdoc />
   public ScanLaunch Launch(DatabaseDialect dialect, string connectionString)
   {
     ArgumentNullException.ThrowIfNull(dialect);
     ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
-    var progress = ScanProgress.Starting(ScanId.Next(), clock.GetUtcNow());
+    var progress = ScanProgress.Starting(ScanId.Next(), dialect, clock.GetUtcNow());
 
     if (!inFlight.TryTakeOff(progress, out var alreadyRunning))
     {
       return ScanLaunch.RefusedBecause(alreadyRunning!);
     }
 
+    // ⚠️ Le jeton est celui de PERSONNE d'autre. Il n'est ni celui de la requête — un onglet fermé
+    // couperait une lecture de quarante secondes lancée sur la base d'un tiers —, ni celui de
+    // l'hôte : c'est un jeton que seul l'abandon de l'Operator déclenche.
+    var abandon = new CancellationTokenSource();
+
+    lock (_turn)
+    {
+      _abandonable = progress.Id;
+      _abandon = abandon;
+    }
+
     // ⚠️ La place est prise AVANT que la tâche parte : la prendre après aurait laissé deux requêtes
     // simultanées lancer deux lectures sur la base du client avant que l'une des deux n'écrive.
-    _ = Task.Run(() => RunAsync(progress, dialect, connectionString), CancellationToken.None);
+    _ = Task.Run(
+      () => RunAsync(progress, dialect, connectionString, abandon),
+      CancellationToken.None);
 
     return ScanLaunch.TakenOff(progress.Id);
+  }
+
+  /// <inheritdoc />
+  public bool Abandon(ScanId scan)
+  {
+    if (inFlight.Running is not { } running || running.Id != scan)
+    {
+      // ⚠️ Un geste annulé n'a aucune conséquence : ce scan a déjà fini, ce n'est pas celui qui
+      // court, ou le processus ne le connaît plus. Aucun des trois ne fait reculer quoi que ce soit.
+      return false;
+    }
+
+    // ⚠️ LA FIN EST POSÉE D'ABORD, et la requête coupée ensuite. Attendre que le port lève ferait
+    // répondre à ce POST un écran d'attente qui se rafraîchit encore, à propos d'un scan que
+    // l'Operator vient précisément d'arrêter.
+    running.Abandon();
+
+    Cut(scan);
+
+    return true;
+  }
+
+  /// <summary>
+  /// Coupe la requête que ce scan a en cours, si c'est bien lui que le jeton retenu commande.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'ordre part <i>hors</i> du verrou.</b> <see cref="CancellationTokenSource.Cancel()"/>
+  /// exécute les rappels d'annulation sur le fil qui l'appelle : les lancer sous le verrou aurait
+  /// laissé le fil du scan, qui prend ce même verrou en rendant la main, attendre celui qui
+  /// l'annule.
+  /// </remarks>
+  private void Cut(ScanId scan)
+  {
+    CancellationTokenSource? abandon;
+
+    lock (_turn)
+    {
+      abandon = _abandonable == scan ? _abandon : null;
+    }
+
+    try
+    {
+      abandon?.Cancel();
+    }
+    catch (ObjectDisposedException)
+    {
+      // Le scan a fini entre la lecture du jeton et cet appel : il n'y a plus rien à couper, et la
+      // fin qu'il a posée gagne de toute façon sur l'abandon.
+    }
   }
 
   private async Task RunAsync(
     ScanProgress progress,
     DatabaseDialect dialect,
-    string connectionString)
+    string connectionString,
+    CancellationTokenSource abandon)
   {
     try
     {
@@ -80,7 +149,14 @@ public sealed class ScanLauncher(
 
       var gesture = scope.ServiceProvider.GetRequiredService<ScanGesture>();
 
-      await gesture.RunAsync(progress, dialect, connectionString, CancellationToken.None);
+      await gesture.RunAsync(progress, dialect, connectionString, abandon.Token);
+    }
+    catch (OperationCanceledException)
+    {
+      // ⚠️ L'ABANDON N'EST PAS UN ÉCHEC, et il ne s'écrit pas au journal comme une panne. La fin est
+      // déjà posée — Abandon la pose avant de couper —, et la redire ici ne changerait rien ; ce qui
+      // compte est que cette exception ne devienne PAS un « scan échoué, famille : la base », qui
+      // enverrait l'Operator chercher une panne là où il a lui-même arrêté la lecture.
     }
 #pragma warning disable CA1031 // Personne n'attend cette tâche : ce qui n'est pas rattrapé ici est perdu.
     catch (Exception exception)
@@ -94,6 +170,22 @@ public sealed class ScanLauncher(
       progress.EndedWithoutAReport(
         ScanEnding.Failed,
         new ScanFailure(progress.Snapshot.Phase, ScanFailureFamily.Database));
+    }
+    finally
+    {
+      // ⚠️ LA RÉFÉRENCE EST LÂCHÉE SOUS LE VERROU, ET LA LIBÉRATION VIENT APRÈS. Un abandon qui
+      // arriverait pendant ces deux lignes lit le jeton sous ce même verrou : il le trouve déjà
+      // absent, et n'appelle donc jamais Cancel sur un objet libéré.
+      lock (_turn)
+      {
+        if (_abandonable == progress.Id)
+        {
+          _abandonable = null;
+          _abandon = null;
+        }
+      }
+
+      abandon.Dispose();
     }
   }
 }
