@@ -50,6 +50,19 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// <summary>Une table d'un rapport de détection archivé.</summary>
   internal const string ArchivedTable = "/detection/archive/table";
 
+  /// <summary>
+  /// La <c>Cartographie</c> du rapport courant, en JSON.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'adresse annonce ce qu'elle rend, et c'est tout son intérêt</b> : elle se colle dans un
+  /// courriel, s'ouvre d'un clic et se met en favori. Deux routes plutôt qu'une route et un
+  /// paramètre de format — sans script, un menu n'existe pas.
+  /// </remarks>
+  internal const string MapAsJson = "/detection/cartographie.json";
+
+  /// <summary>La <c>Cartographie</c> du rapport courant, en CSV.</summary>
+  internal const string MapAsCsv = "/detection/cartographie.csv";
+
   private static readonly DateTimeOffset GeneratedOn = new(2026, 8, 10, 9, 30, 0, TimeSpan.Zero);
 
   /// <summary>

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using MicroserviceRgpd.Core.Screenings;
+using MicroserviceRgpd.Infrastructure.Screenings;
 using MicroserviceRgpd.UnitTests.Core.Screenings;
 
 namespace MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
@@ -57,6 +58,54 @@ public class ScreeningCostTests
 
     screened.Columns.Count.ShouldBe(DolibarrSized);
     (clock.Elapsed.TotalMilliseconds / DolibarrSized).ShouldBeLessThan(MeanCeilingInMillisecondsPerColumn);
+  }
+
+  /// <summary>
+  /// <b>Le geste d'export tient dans le même budget</b>, sur le même relevé.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Il est gardé ici, dans la famille du moteur, et non à part</b> : c'est le second geste du
+  /// contexte qui traverse <i>toutes</i> les colonnes d'un coup — le rapport n'en montre jamais plus
+  /// d'une table — et le mode de panne est le même, une régression qui ferait passer d'un balayage
+  /// linéaire à autre chose. La concaténation quadratique du CSV en est l'exemple exact.
+  /// </para>
+  /// <para>
+  /// <b>Le calcul et les deux rendus sont mesurés ensemble</b>, parce que c'est ce que l'Operator
+  /// attend en cliquant : mesurer le seul formateur aurait laissé hors du budget le tri des tables
+  /// et la mise à plat, qui traversent les mêmes cinq mille lignes.
+  /// </para>
+  /// </remarks>
+  [Fact]
+  public async Task ExportsTheMapOfTheLargestSchemaWithinTheSameBudget()
+  {
+    var screened = await AScreeningEngine.Wired().ScreenAsync(ABigListing());
+
+    var screening = Screening.Of(
+      ScreeningId.Next(),
+      "dolibarr_prod",
+      "mysql",
+      ListingOrigin.Pasted,
+      screened.Engine,
+      screened.Columns.Count,
+      screened.Columns,
+      new DateTimeOffset(2026, 8, 6, 9, 30, 0, TimeSpan.Zero));
+
+    var export = new ScreeningExportService();
+    var exportedOn = new DateTimeOffset(2026, 8, 26, 14, 5, 30, TimeSpan.FromHours(2));
+
+    var clock = Stopwatch.StartNew();
+    var map = PersonalDataMap.Of(screening, exportedOn);
+    var csv = export.AsCsv(map);
+    var json = export.AsJson(map);
+    clock.Stop();
+
+    map.Columns.Count.ShouldBe(DolibarrSized);
+    csv.Content.Length.ShouldBeGreaterThan(DolibarrSized);
+    json.Content.Length.ShouldBeGreaterThan(DolibarrSized);
+
+    (clock.Elapsed.TotalMilliseconds / DolibarrSized)
+      .ShouldBeLessThan(MeanCeilingInMillisecondsPerColumn);
   }
 
   /// <summary>

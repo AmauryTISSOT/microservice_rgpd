@@ -127,6 +127,44 @@ else
   </tbody>
 </table>
 
+@*
+  DEUX LIENS, ET NON UN MENU. Sans script un menu n'existe pas, et rien ici n'en justifierait un :
+  un lien collé dans un courriel annonce ce qu'il rend, s'ouvre d'un clic et se met en favori.
+  Le « bouton » est ce titre et ce qui le suit — la surface entière du geste, pas un contrôle qui
+  n'agirait qu'avec du script.
+*@
+<h2>Exporter la cartographie des données personnelles</h2>
+
+<p class="hint">
+  Le fichier porte <strong>toutes</strong> les lignes de ce rapport — retenues, écartées, en attente,
+  et celles où la détection n'a rien signalé — avec ce que vous en avez dit et la date à laquelle
+  vous l'avez dit. Il ne porte <strong>aucune valeur lue</strong> de votre base.
+</p>
+
+@*
+  CE QUE LE FICHIER NE PORTE PAS, DIT ICI ET NON DANS LE FICHIER. La Clause d'incomplétude reste
+  sur tous les écrans et ne voyage pas dans l'export : l'Operator a tranché chaque ligne et choisit
+  d'expédier le fichier ; ce qu'il en dit au destinataire lui appartient. Cette phrase-ci est le
+  seul rattrapage retenu, et elle est sur l'écran, pas dans le document.
+*@
+<p class="caveat">
+  ⚠️ Ce fichier <strong>ne porte pas</strong> la clause d'incomplétude ci-dessous. Il ne dit donc de
+  lui-même ni ce qu'il n'a pas regardé, ni comment il a été produit : à vous de le dire à qui vous
+  l'adressez.
+</p>
+
+<p>
+  <a asp-page="PersonalDataMapCsv">La cartographie en CSV, pour un tableur</a>
+  <span class="hint">Séparé par des points-virgules, s'ouvre en tableau d'un double-clic.</span>
+</p>
+
+<p>
+  <a asp-page="PersonalDataMapJson">La cartographie en JSON, pour un outil</a>
+  <span class="hint">
+    Porte en tête la base, le SGBD, le moteur qui a détecté et les dates — ce que le CSV ne dit pas.
+  </span>
+</p>
+
 <partial name="_IncompletenessClause" model="clause" />
 
 @*

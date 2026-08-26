@@ -75,6 +75,11 @@ public static class InfrastructureServiceExtensions
     // sidecar, sans adresse et sans échéance. Il démarre avec le service.
     services.AddScreeningEngine();
 
+    // Le rendu de la Cartographie en fichier. ⚠️ Il est enregistré par son port et sans état : il ne
+    // lit aucun dépôt, ne consulte aucune horloge et n'écrit nulle part — ce qui sépare cet export
+    // du pont interdit vers le Manifest est qu'il a un destinataire humain qui l'a demandé.
+    services.AddSingleton<IScreeningExport, ScreeningExportService>();
+
     // Les appels sortants vers les Adapter du client. Le secret absent arrête le démarrage : aucun
     // mode « sans » ne survit à l'intégration.
     services.AddAdapterCalls(config);
