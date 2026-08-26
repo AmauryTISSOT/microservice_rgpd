@@ -30,6 +30,15 @@
         <li>@signal</li>
       }
     </ul>
+    @*
+      ⚠️ LE BIAIS DU PREMIER VENU SE DIT AU CONTACT DE LA PUCE DES VALEURS, et pas plus bas : sans
+      lui, la cinquième puce laisse lire cinq valeurs comme représentatives, et l'Operator écarte
+      une colonne qu'il fallait retenir. C'est une omission causée par l'écran lui-même.
+    *@
+    @if (clause.Perimeter.FirstComeBias is { } firstComeBias)
+    {
+      <p class="caveat">@firstComeBias</p>
+    }
     <p>@clause.Perimeter.FilterStatement</p>
     <ul>
       @foreach (var filter in clause.Perimeter.ReadOnlyToFilter)
@@ -47,6 +56,24 @@
       <strong>@clause.Perimeter.ColumnsWithoutAComment sans aucun commentaire</strong> — ni au niveau
       de la colonne, ni à celui de sa table.
     </p>
+    @*
+      ⚠️ LES QUATRE COMPTES, ZÉROS COMPRIS, ET JAMAIS AGRÉGÉS. « 412 colonnes sans aperçu » ne fait
+      rien faire à personne ; « 18 par droits refusés » envoie l'Operator demander un accès à son
+      DBA et rescanner. Agréger, c'est éteindre la seule des quatre familles qui appelle un geste.
+
+      ⚠️ RIEN NE S'AFFICHE ICI SUR LE CHEMIN COLLÉ — pas même des zéros. Écrire « 0 par droits
+      refusés » sur un relevé collé affirmerait qu'un prélèvement a eu lieu et n'a rien refusé.
+    *@
+    @if (clause.Perimeter.ColumnsWithoutAPreview is { } withoutAPreview)
+    {
+      <p>Colonnes dont aucune valeur n'a pu être prélevée :</p>
+      <ul>
+        @foreach (var absence in withoutAPreview.ByReason)
+        {
+          <li><strong>@Counted(absence.Columns, "colonne")</strong> — @absence.Reason.FrenchLabel</li>
+        }
+      </ul>
+    }
   </section>
 
   <section>

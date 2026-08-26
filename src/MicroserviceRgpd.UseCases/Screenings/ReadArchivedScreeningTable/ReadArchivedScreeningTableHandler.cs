@@ -58,6 +58,6 @@ public sealed class ReadArchivedScreeningTableHandler(
 
     return new ScreeningAnswer<ArchivedTable>(
       ArchivedTable.Of(archived, query.Table, read, counts),
-      IncompletenessClause.For(counts));
+      IncompletenessClause.For(counts, archived.Origin));
   }
 }

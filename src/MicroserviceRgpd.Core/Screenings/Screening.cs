@@ -172,6 +172,19 @@ public sealed class Screening : IAggregateRoot
   /// <summary>Combien de colonnes n'ont de commentaire ni à leur niveau ni à celui de leur table.</summary>
   public int ColumnsWithoutACommentCount => _columns.Count(column => !column.Listed.CarriesAComment);
 
+  /// <summary>
+  /// Combien de colonnes n'ont aucun aperçu, <b>par famille</b> — les quatre comptes que la clause
+  /// rend sur le chemin scanné.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il se calcule sur la raison <em>enregistrée</em> de la colonne, jamais sur l'aperçu.</b>
+  /// Les aperçus meurent avec la session d'arbitrage : lus sur eux, ces quatre comptes seraient
+  /// pleins le matin et vides l'après-midi, et l'écran d'archive deviendrait plus rassurant que
+  /// celui du jour même.
+  /// </remarks>
+  public PreviewAbsenceCounts ColumnsWithoutAPreviewCount =>
+    PreviewAbsenceCounts.Of(_columns.Select(column => column.PreviewAbsence));
+
   /// <summary>Combien de tables distinctes ce relevé couvre.</summary>
   public int TableCount => _columns.Select(column => column.Identity.TableIdentity).Distinct().Count();
 
