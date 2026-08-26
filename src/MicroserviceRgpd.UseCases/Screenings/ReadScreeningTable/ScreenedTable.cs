@@ -56,8 +56,31 @@ public sealed record ScreenedTable(
   /// <summary>Combien la détection en a signalées, <b>dans cette table</b>.</summary>
   public int FlaggedCountInThisTable => Columns.Count(column => column.IsFlagged);
 
+  /// <summary>
+  /// Les colonnes <b>signalées</b>, dans l'ordre du relevé : celles qui se lisent une par une.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ces deux vues ne retirent rien : leur réunion est <see cref="Columns"/>, à la colonne
+  /// près.</b> Elles disent l'ordre dans lequel la table se lit — ce qui se juge sur pièces avant
+  /// ce qui se tranche d'un geste — et jamais ce qu'on montre : un partage qui perdrait une
+  /// colonne en chemin serait une <c>Omission silencieuse</c> rétablie par la mise en page.
+  /// </remarks>
+  public IEnumerable<ScreenedColumn> FlaggedColumns => Columns.Where(column => column.IsFlagged);
+
+  /// <summary>
+  /// Les colonnes où <b>rien n'a été vu</b>, dans l'ordre du relevé : celles que le geste de lot
+  /// peut atteindre, et qui restent toutes à l'écran.
+  /// </summary>
+  public IEnumerable<ScreenedColumn> UnflaggedColumns => Columns.Where(column => !column.IsFlagged);
+
   /// <summary>Combien attendent encore qu'un humain les tranche, <b>dans cette table</b>.</summary>
   public int AwaitingCountInThisTable => Columns.Count(column => column.AwaitsAnArbitration);
+
+  /// <summary>
+  /// Combien de colonnes de cette table la détection <b>n'a pas</b> signalées — celles que
+  /// l'<c>Operator</c> relit sans que rien ne l'y ait appelé.
+  /// </summary>
+  public int UnflaggedCountInThisTable => ColumnCountInThisTable - FlaggedCountInThisTable;
 
   /// <summary>
   /// Combien de colonnes de cette table le <b>geste de lot</b> atteindrait : celles où rien n'a été

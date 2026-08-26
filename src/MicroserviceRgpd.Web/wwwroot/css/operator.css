@@ -700,10 +700,79 @@ table.columns {
   table-layout: fixed;
 }
 
-table.columns td.reason,
-table.columns th.reason {
-  min-width: 26rem;
-  width: 26rem;
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA FICHE D'UNE COLONNE SIGNALÉE. Le premier temps de l'écran d'une table : ce qui se juge sur
+  pièces, une colonne à la fois.
+
+  ⚠️ C'EST UNE CARTE, ET LE TABLEAU DES UNFLAGGED N'EN EST PAS UNE. Les deux ne portent pas le même
+  volume : quelques dizaines de fiches d'un côté, plusieurs milliers de lignes de l'autre, où les
+  marges d'une carte feraient déjà une table haute de cent écrans.
+
+  ⚠️ SON REPLI EST CELUI DU NAVIGATEUR, et son ouverture vient du serveur : pas une ligne de
+  JavaScript, pas un état client (ADR-0005, ADR-0009).
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.column-card {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+/*
+  ⚠️ LE RÉSUMÉ EST CE QUI SURVIT AU REPLI : le nom, la catégorie, l'issue. Il se lit comme un geste
+  — curseur et graisse d'un intitulé —, faute de quoi rien ne dirait qu'il s'ouvre.
+*/
+.column-card > summary {
+  align-items: baseline;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+}
+
+.column-card .column-name {
+  font-weight: var(--weight-semibold);
+}
+
+.column-card .category,
+.column-card .settled {
+  color: var(--ink-secondary);
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+}
+
+.column-card .banner {
+  margin-bottom: var(--space-md);
+}
+
+/*
+  LA LIGNE DU MOTIF, ET L'EMPLACEMENT DE L'APERÇU À CÔTÉ DE LUI. Le motif garde sa colonne — ~26 rem,
+  l'exception de largeur de cet écran —, et l'emplacement d'aperçu occupe le reste : vide tant que
+  le service ne lit aucune valeur, il ne dessine rien et ne réserve aucune hauteur.
+*/
+.column-card .reason-line {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: minmax(26rem, 2fr) 1fr;
+}
+
+.column-card .reason {
+  margin: 0;
+}
+
+.column-card .preview:empty {
+  display: none;
+}
+
+.column-card form {
+  margin: var(--space-md) 0 0;
+}
+
+.column-card button {
+  padding: var(--space-xxs) var(--space-sm);
 }
 
 /*

@@ -113,6 +113,12 @@ public class TableModel(IMediator mediator) : PageModel
   /// pour l'une ni pour l'autre : l'instant est posé par le service, et ce contexte n'enregistre
   /// pas qui a tranché — voir l'<c>ADR-0014</c>.
   /// </para>
+  /// <para>
+  /// ⚠️ <b>La redirection porte un fragment, et il nomme la colonne qu'on vient de trancher.</b>
+  /// Sans lui, un arbitrage rendu à la trois-centième ligne renverrait l'<c>Operator</c> en haut
+  /// d'un écran de cinq mille — et ancrer sur la <b>suivante</b> aurait fait de l'écran un tapis
+  /// roulant, où l'on ne peut plus se raviser sans remonter le fil.
+  /// </para>
   /// </remarks>
   public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
   {
@@ -190,7 +196,15 @@ public class TableModel(IMediator mediator) : PageModel
       return await ReadTheTableAsync(cancellationToken);
     }
 
-    return RedirectToPage(new { Schema, Table });
+    // ⚠️ L'ANCRE VISE LA COLONNE QU'ON VIENT DE TRANCHER, JAMAIS LA SUIVANTE. Ancrer sur la
+    // suivante ferait de l'écran un tapis roulant : l'Operator perdrait de vue ce qu'il vient de
+    // dire à l'instant même où il pourrait encore se raviser — et se raviser doit rester sans
+    // cérémonie sur une surface qu'on reprend pendant trois jours.
+    return RedirectToPage(
+      pageName: null,
+      pageHandler: null,
+      routeValues: new { Schema, Table },
+      fragment: ColumnAnchor.For(column.Column));
   }
 
   /// <summary>
