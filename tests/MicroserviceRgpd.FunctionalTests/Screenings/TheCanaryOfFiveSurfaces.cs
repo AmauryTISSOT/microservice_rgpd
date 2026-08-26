@@ -72,9 +72,20 @@ public class TheCanaryOfFiveSurfaces(ARealScannerWebApplicationFactory factory)
 
   /// <summary>Aucun tag de trace, sur aucune <c>Activity</c>, ne porte de sentinelle.</summary>
   /// <remarks>
+  /// <para>
   /// ⚠️ <b>Les tags de trace partent chez un tiers.</b> Une valeur posée là voyage vers un
   /// collecteur que le service ne contrôle pas, et elle y reste aussi longtemps que la rétention de
   /// ce collecteur — c'est-à-dire hors de portée de toute promesse que ce contexte peut tenir.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Et l'on vérifie d'abord que l'écouteur a entendu quelque chose.</b> C'est la seule des
+  /// cinq surfaces qu'on ne puisse pas faire rougir en injectant une sentinelle dans du code de
+  /// production — il faudrait poser un tag pour l'occasion. Elle a donc besoin de sa propre preuve
+  /// de morsure : une liste vide — parce que le scan aurait cessé d'ouvrir une <c>Activity</c>, ou
+  /// parce que l'écouteur ne serait plus branché — rendrait cette assertion verte pour toujours,
+  /// sur une surface que plus personne ne regarde. C'est le motif de
+  /// <c>SeesThePostgreSqlDriverItWatches</c>, appliqué à une trace.
+  /// </para>
   /// </remarks>
   [Fact]
   public async Task NoActivityTagCarriesASentinel()
@@ -87,6 +98,8 @@ public class TheCanaryOfFiveSurfaces(ARealScannerWebApplicationFactory factory)
     {
       ShouldListenTo = _ => true,
       Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+        ActivitySamplingResult.AllData,
+      SampleUsingParentId = (ref ActivityCreationOptions<string> _) =>
         ActivitySamplingResult.AllData,
       ActivityStopped = activity =>
       {
@@ -105,6 +118,11 @@ public class TheCanaryOfFiveSurfaces(ARealScannerWebApplicationFactory factory)
 
     lock (tagged)
     {
+      tagged.ShouldNotBeEmpty(
+        "L'écouteur n'a capté aucune Activity pendant le scénario du canari. Soit le scan a cessé "
+        + "d'en ouvrir une, soit cet écouteur n'est plus branché — dans les deux cas l'assertion "
+        + "qui suit afficherait vert pour toujours, sur une surface que plus personne ne lit.");
+
       foreach (var sentinel in ABaseOfSentinels.All)
       {
         tagged.ShouldNotContain(
@@ -236,11 +254,11 @@ public class TheCanaryOfFiveSurfaces(ARealScannerWebApplicationFactory factory)
   private static IEnumerable<string> RefusedConnectionStrings(ABaseOfSentinels database)
   {
     var absent = Path.Combine(
-      Path.GetDirectoryName(database.Path)!,
+      Path.GetDirectoryName(database.FilePath)!,
       "celle-qui-n-existe-pas.db");
 
     var notADatabase = Path.Combine(
-      Path.GetDirectoryName(database.Path)!,
+      Path.GetDirectoryName(database.FilePath)!,
       "pas-une-base.db");
 
     File.WriteAllText(notADatabase, "ceci n'est pas une base SQLite");
@@ -250,7 +268,7 @@ public class TheCanaryOfFiveSurfaces(ARealScannerWebApplicationFactory factory)
 
     // Une chaîne que le pilote refuse de lire : c'est son message d'erreur, s'il traversait, qui la
     // recopierait entière.
-    yield return $"Data Source={database.Path};Mode=CeQuiNExistePas";
+    yield return $"Data Source={database.FilePath};Mode=CeQuiNExistePas";
   }
 
   /// <summary>Ce qu'une action a laissé traverser — message et pile —, ou rien.</summary>

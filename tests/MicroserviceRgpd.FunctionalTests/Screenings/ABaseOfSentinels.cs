@@ -73,19 +73,19 @@ internal sealed class ABaseOfSentinels : IDisposable
   private ABaseOfSentinels(string directory, string path)
   {
     Directory = directory;
-    Path = path;
+    FilePath = path;
   }
 
   /// <summary>Toutes les sentinelles, celle du chemin comprise : ce que le canari cherche.</summary>
   internal static IReadOnlyList<string> All => [ValuePrefix, PathSentinel];
 
   /// <summary>Le chemin du fichier. Seul son nom devra ressortir du scan.</summary>
-  internal string Path { get; }
+  internal string FilePath { get; }
 
   /// <summary>
   /// La chaîne de connexion telle qu'un <c>Operator</c> la fournirait — sentinelle comprise.
   /// </summary>
-  internal string ConnectionString => $"Data Source={Path}";
+  internal string ConnectionString => $"Data Source={FilePath}";
 
   /// <summary>Le dossier dont le nom porte la sentinelle du chemin.</summary>
   private string Directory { get; }
@@ -93,13 +93,13 @@ internal sealed class ABaseOfSentinels : IDisposable
   /// <summary>Écrit la base et y pose cinq lignes dont chaque valeur est une sentinelle.</summary>
   internal static ABaseOfSentinels Written()
   {
-    var directory = System.IO.Path.Combine(
-      System.IO.Path.GetTempPath(),
+    var directory = Path.Combine(
+      Path.GetTempPath(),
       $"{PathSentinel}-{Guid.NewGuid():N}");
 
     System.IO.Directory.CreateDirectory(directory);
 
-    var path = System.IO.Path.Combine(directory, FileName);
+    var path = Path.Combine(directory, FileName);
 
     var writable = new SqliteConnectionStringBuilder
     {

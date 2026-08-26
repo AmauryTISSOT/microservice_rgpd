@@ -218,7 +218,7 @@ prose française : ce sont des comptes-rendus datés, et un ADR acté parle avec
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucun n'existe à ce jour.
 
-Quatorze ADR de système sont en vigueur, et **cinq en supplantent un autre — toujours sur des points
+Quinze ADR de système sont en vigueur, et **cinq en supplantent un autre — toujours sur des points
 nommés**. Trois visent l'ADR-0006 : l'ADR-0007 rouvre ce qu'il avait explicitement laissé fermé,
 l'ADR-0008 renverse deux de ses clauses — la réserve n° 1, qui tenait le wordmark métier pour le
 contrepoids du mot « microservice », et la règle « un seul nom, aucune forme courte » —, et
@@ -300,6 +300,13 @@ trois points morts, pour qu'un lecteur qui l'ouvre seul ne les tienne pas pour v
   plus. ⚠️ **Il ne supplante rien** : il porte l'**asymétrie entre deux contextes**, que par
   construction aucun glossaire de contexte ne peut expliquer — `Casework` enregistre qui a tranché,
   `Screening` ne l'enregistre plus du tout.
+- [ADR-0015](./docs/adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md) — **un scan survit à la
+  requête HTTP qui l'a lancé, et « rien ne tourne » tient quand même** : ce que le garde interdit est
+  ce qui part **tout seul**, pas ce qui court plus longtemps qu'un échange. Un scan est déclenché par
+  un geste, il finit, et il ne laisse aucune échéance à rattraper ; le scan périodique, la relance
+  automatique et la reprise planifiée restent du mauvais côté. ⚠️ **Il ne supplante aucun ADR** ; il
+  amende un **garde de dépôt**, `NothingRunsInTheBackgroundTests`, dont la liste ne bouge pas — c'est
+  la frontière du garde qui est écrite, et non son périmètre qui est élargi.
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, et c'est délibéré** : ce sont deux décisions sans
 rapport, qui se défont séparément — on peut retirer la porte du panneau sans rien changer à ce que

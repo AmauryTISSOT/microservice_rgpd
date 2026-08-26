@@ -28,6 +28,16 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// « Timer » attraperait <c>TimeProvider</c>, et un garde qui crie faux finit par être désactivé.
 /// </para>
 /// <para>
+/// ⚠️ <b>Un scan, lui, survit à la requête HTTP qui l'a lancé — et ce garde tient quand même.</b>
+/// Ce qu'il interdit est ce qui part <b>tout seul</b>, pas ce qui court plus longtemps qu'un
+/// échange : un scan est déclenché par un geste, il finit, et il ne laisse aucune échéance à
+/// rattraper. Le <c>Task.Run</c> de <c>ScanLauncher</c> n'a donc jamais eu à figurer dans les
+/// listes ci-dessous, et rien n'en a été retiré pour lui. La frontière est écrite dans
+/// <c>docs/adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md</c> ; un scan
+/// <b>périodique</b>, <b>relancé automatiquement</b> ou <b>repris sur planification</b> tomberait
+/// du mauvais côté.
+/// </para>
+/// <para>
 /// ⚠️ <b>La liste est écrite à la main, et l'allonger est un geste délibéré.</b> Le jour où une
 /// bibliothèque d'ordonnancement entre dans le dépôt, c'est ici qu'on le verra — et la bonne réponse
 /// sera de la sortir, jamais d'assouplir la règle.

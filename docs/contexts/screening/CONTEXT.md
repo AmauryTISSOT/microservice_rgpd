@@ -468,7 +468,10 @@ lancé, et c'est une nouveauté de cette livraison ; mais il est **déclenché p
 et il ne laisse aucune échéance à rattraper. Ce que le garde interdit est ce qui part **tout seul**,
 pas ce qui court plus longtemps qu'un échange. Un scan **périodique**, un scan **relancé
 automatiquement**, une reprise **planifiée** tomberaient tous du mauvais côté — et la reprise est de
-toute façon impossible par construction, la chaîne de connexion n'ayant pas survécu.
+toute façon impossible par construction, la chaîne de connexion n'ayant pas survécu. La frontière
+elle-même n'est pas décidée ici : elle porte sur un garde de **dépôt**, qui vaut pour les quatre
+assemblages de production et non pour ce seul contexte, et elle est écrite dans
+[l'ADR-0015](../../adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md).
 ⚠️ **Il est un fait du service, pas d'une session.** Un seul en vol par déploiement : un second
 `Operator` arrivant pendant un scan voit le même écran et le même compte, et se voit **refuser** un
 second lancement, celui en cours étant nommé. Fermer l'onglet n'arrête rien.
