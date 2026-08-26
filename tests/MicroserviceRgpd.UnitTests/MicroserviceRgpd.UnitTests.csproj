@@ -28,6 +28,12 @@
          fumée du moteur de détection doit s'éprouver sur *le* pivot témoin, et une copie de test
          finirait par diverger de celle que le banc a laissée hors de ses deux côtés. -->
     <EmbeddedResource Include="..\..\corpus\schemas\pivots\temoin.jsonl" LogicalName="temoin.jsonl" />
+    <!-- La requête du chemin collé, embarquée depuis sa source : le test qui met les deux chemins
+         côte à côte doit s'éprouver sur *la* requête que l'Operator exécute, et une copie de test
+         finirait par diverger de celle que releves/ publie. -->
+    <EmbeddedResource Include="..\..\releves\sqlite.sql" LogicalName="releves.sqlite.sql" />
+    <EmbeddedResource Include="..\..\releves\postgresql.sql" LogicalName="releves.postgresql.sql" />
+    <EmbeddedResource Include="..\..\releves\mariadb.sql" LogicalName="releves.mariadb.sql" />
   </ItemGroup>
 
   <ItemGroup>
