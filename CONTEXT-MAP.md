@@ -180,12 +180,16 @@ Coupler l'une à l'autre ferait d'un changement d'écran une rupture de contrat,
 contrat un simple bump.
 
 **Layout** :
-Le cadre fixe que les treize écrans de la surface portent tous, écrit **une seule fois** dans
+Le cadre fixe que les quinze écrans de la surface portent tous, écrit **une seule fois** dans
 `_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
 latéral** et le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
 comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est
 l'écran. Le layout n'appartient à aucun des trois contextes — c'est ce qui les porte tous, et c'est
 pourquoi il est nommé ici plutôt que dans l'un des trois glossaires.
+⚠️ **Quinze, et non dix-sept : les deux routes de la `Cartographie` n'en sont pas.** `cartographie.json`
+et `cartographie.csv` sont des Razor Pages qui rendent un **fichier**, jamais une page — pas de
+layout, pas de panneau, pas de header. Les compter aurait fait croire à deux écrans qu'aucun test de
+layout ne couvre, et qu'aucun ne doit couvrir.
 _Avoid_ : chrome, habillage, shell, coque, enveloppe
 ⚠️ **Le mot retiré est « chrome »**, et il l'est pour une raison de lecture : il se lisait comme le
 navigateur Google Chrome — que ce dépôt nomme par ailleurs pour de vrai, dans `scripts/run-project.sh`.
