@@ -459,6 +459,15 @@ sur le chemin collé. Ce n'est pas une entorse au test, parce que le test porte 
 on colle, il n'y a ni écran d'attente ni `ScanProgress`. La raison est que l'`Operator` n'attend pas
 un `ColumnListing`, il attend un rapport, et le faire attendre deux fois pour un seul geste serait
 une fidélité au vocabulaire payée par lui.
+⚠️ **Et le scan ne contredit pas « rien ne tourne », parce que rien ne le déclenche.** Le dépôt porte
+un garde d'architecture — `NothingRunsInTheBackgroundTests` — qui refuse tout `IHostedService`, toute
+minuterie, tout ordonnanceur : le tableau des demandes RGPD est une **requête**, et jamais l'état
+qu'un processus arrêté rendrait vide et rassurant. Un scan **survit** bien à la requête HTTP qui l'a
+lancé, et c'est une nouveauté de cette livraison ; mais il est **déclenché par un geste**, il finit,
+et il ne laisse aucune échéance à rattraper. Ce que le garde interdit est ce qui part **tout seul**,
+pas ce qui court plus longtemps qu'un échange. Un scan **périodique**, un scan **relancé
+automatiquement**, une reprise **planifiée** tomberaient tous du mauvais côté — et la reprise est de
+toute façon impossible par construction, la chaîne de connexion n'ayant pas survécu.
 ⚠️ **Il est un fait du service, pas d'une session.** Un seul en vol par déploiement : un second
 `Operator` arrivant pendant un scan voit le même écran et le même compte, et se voit **refuser** un
 second lancement, celui en cours étant nommé. Fermer l'onglet n'arrête rien.
@@ -934,6 +943,14 @@ main le rendait impraticable ; ce prix a disparu, et il ne reste qu'un bouton te
 jamais été le motif — le nom n'en était que l'exécuteur incident. Le motif est écrit au même endroit
 que la règle, sur `IsWithinReachOfABatchGesture`, pour que qui viendra proposer d'élargir le lot le
 lise avant d'écrire la ligne.
+⚠️ **Et la forme qui porte tout cela — un écran par table, deux boutons par ligne — tient toujours,
+mais sur une jambe.** Deux motifs avaient écarté la forme concurrente, l'écran unique : le premier
+était le prix de la signature, et il est **tombé avec le nom**. Le second survit seul — le verrou
+`:has()` de l'écran unique, quoique du CSS pur, n'est qu'une **apparence**, que le domaine devrait
+doubler d'une règle vraie pour valoir quoi que ce soit. Le prix de la forme retenue est assumé et
+chiffré : 998 clics, 0 frappe, 998 chargements pour 312 tables et 4 980 colonnes. Rien n'est rouvert
+ici ; c'est écrit pour être su, parce qu'une décision qui ne tient plus que par un motif sur deux se
+rouvre un jour, et qu'il vaut mieux qu'elle se rouvre en le sachant.
 **Il pose n arbitrages individuels, jamais un état de lot** : chaque colonne atteinte porte sa propre
 date de service, exactement comme si elle avait été tranchée seule. Un
 arbitrage partagé entre n lignes ferait de n actes un seul objet, et le premier réarbitrage individuel

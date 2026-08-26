@@ -1,15 +1,17 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.Infrastructure.Screenings;
 using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
 /// <summary>
-/// <b>Les rapports d'avant la connexion sont relus en <c>Collé</c>, et ils restent arbitrables.</b>
-/// Une base est montée au dernier état d'<i>avant</i> l'origine du relevé, on y écrit un rapport
-/// avec les colonnes de cette date-là, puis on joue la migration.
+/// <b>Les rapports d'avant la connexion sont relus en <c>Collé</c>, et ils restent lisibles,
+/// arbitrables et exportables.</b> Une base est montée au dernier état d'<i>avant</i> l'origine du
+/// relevé, on y écrit un rapport avec les colonnes de cette date-là, puis on joue la migration.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -97,6 +99,37 @@ public class ListingOriginBackfillTests : IAsyncLifetime
       .SingleAsync(one => one.Id == ScreeningId.From(ReportId));
 
     reread.RetainedCount.ShouldBe(1);
+  }
+
+  /// <summary>
+  /// <b>Et ils restent exportables, dans les deux formats.</b> Un rapport relu et arbitrable mais
+  /// qui ne sortirait plus du service serait un travail humain enfermé.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La cartographie se bâtit ici sur le rapport <i>relu</i>, jamais sur un rapport fabriqué
+  /// à la main.</b> C'est ce que le remplissage doit rendre possible : un <c>Screening</c> dont
+  /// l'origine vient de la migration, avec ses comptes, ses tables et ses colonnes tels que la base
+  /// les rend après coup. Un objet monté en mémoire aurait éprouvé l'export, pas la migration.
+  /// </remarks>
+  [Fact]
+  public async Task LeavesTheReportsOfTheDayBeforeExportable()
+  {
+    await using var dbContext = NewDbContext();
+
+    var reread = await dbContext.Screenings
+      .Include(one => one.Columns)
+      .SingleAsync(one => one.Id == ScreeningId.From(ReportId));
+
+    var map = PersonalDataMap.Of(reread, RenderedOn);
+    var export = new ScreeningExportService();
+
+    var csv = export.AsCsv(map);
+    var json = export.AsJson(map);
+
+    // Une ligne par colonne du rapport : l'Omission relue tient sur un rapport migré comme sur un
+    // rapport neuf.
+    Encoding.UTF8.GetString(csv.Content).ShouldContain("adr_l1");
+    Encoding.UTF8.GetString(json.Content).ShouldContain("adr_l1");
   }
 
   /// <summary>

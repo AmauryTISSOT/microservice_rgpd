@@ -64,7 +64,14 @@ internal sealed class SqliteDialectScanner : IDialectScanner
     return Task.Run(() => Scan(connectionString, progress, cancellationToken), cancellationToken);
   }
 
-  private static bool TryPrepare(
+  /// <summary>
+  /// Lit la chaîne fournie et rend celle dont le scanner se servira, ou dit non. ⚠️ <b>Elle est
+  /// visible aux tests comme ses deux jumelles</b> — <c>PostgreSqlDialectScanner.TryPrepare</c>,
+  /// <c>MySqlConnectionSettings.TryPrepare</c> — parce que la chaîne <b>effective</b> est ce qui
+  /// s'éprouve : « le pool est coupé » est une propriété de ce qu'on remet au pilote, pas de ce
+  /// qu'on a écrit à côté.
+  /// </summary>
+  internal static bool TryPrepare(
     string connectionString,
     out string prepared,
     out string database)
