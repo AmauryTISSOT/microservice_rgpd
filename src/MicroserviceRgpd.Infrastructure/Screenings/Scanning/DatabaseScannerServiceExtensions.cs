@@ -1,15 +1,16 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MicroserviceRgpd.Core.Screenings;
+using MicroserviceRgpd.Infrastructure.Screenings.Scanning.MySql;
 using MicroserviceRgpd.Infrastructure.Screenings.Scanning.Sqlite;
 
 namespace MicroserviceRgpd.Infrastructure.Screenings.Scanning;
 
 /// <summary>Câble le port de scan et les dialectes dont le service a le pilote.</summary>
 /// <remarks>
-/// ⚠️ <b>Les dialectes s'enregistrent un par un, et l'aiguillage les reçoit tous.</b> Ajouter
-/// PostgreSQL (#306) ou MySQL (#307) sera une ligne ici, et rien d'autre : ni <c>switch</c> à
-/// rallonger, ni <see cref="DatabaseScanner"/> à rouvrir.
+/// ⚠️ <b>Les dialectes s'enregistrent un par un, et l'aiguillage les reçoit tous.</b> MariaDB/MySQL
+/// (#307) n'a coûté qu'une ligne ici, et PostgreSQL (#306) n'en coûtera pas davantage : ni
+/// <c>switch</c> à rallonger, ni <see cref="DatabaseScanner"/> à rouvrir.
 /// </remarks>
 public static class DatabaseScannerServiceExtensions
 {
@@ -23,6 +24,8 @@ public static class DatabaseScannerServiceExtensions
     // autre inscription du dépôt ne punit.
     services.TryAddEnumerable(
       ServiceDescriptor.Singleton<IDialectScanner, SqliteDialectScanner>());
+    services.TryAddEnumerable(
+      ServiceDescriptor.Singleton<IDialectScanner, MySqlDialectScanner>());
     services.TryAddSingleton<IDatabaseScanner>(provider =>
       new DatabaseScanner(provider.GetServices<IDialectScanner>()));
 

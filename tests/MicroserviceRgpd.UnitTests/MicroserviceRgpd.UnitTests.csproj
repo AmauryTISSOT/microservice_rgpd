@@ -34,6 +34,14 @@
     <EmbeddedResource Include="..\..\releves\sqlite.sql" LogicalName="releves.sqlite.sql" />
     <EmbeddedResource Include="..\..\releves\postgresql.sql" LogicalName="releves.postgresql.sql" />
     <EmbeddedResource Include="..\..\releves\mariadb.sql" LogicalName="releves.mariadb.sql" />
+    <!-- Les captures authentiques des deux moteurs de la famille MariaDB/MySQL. Elles sont le
+         filet sans conteneur du dialecte connecté (#307) : le pivot que le C# écrit doit rendre
+         les mêmes colonnes que celui que la requête servie a réellement produit, et les deux
+         moteurs sont là parce que c'est entre eux que `json` devient `longtext`. -->
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mysql84.txt"
+                      LogicalName="releve-mysql84.txt" />
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mariadb118.txt"
+                      LogicalName="releve-mariadb118.txt" />
   </ItemGroup>
 
   <ItemGroup>
