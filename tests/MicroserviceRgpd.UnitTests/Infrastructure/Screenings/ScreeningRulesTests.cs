@@ -260,7 +260,7 @@ public class ScreeningRulesTests
     var listing = Ingested(APivot.Paste(APivot.Column("email", table: "clients")));
 
     await Should.ThrowAsync<OperationCanceledException>(
-      async () => await AScreeningEngine.Wired().ScreenAsync(listing, cancelled.Token));
+      async () => await AScreeningEngine.Wired().ScreenAsync(listing, IScreeningEngine.NoPreviews, cancelled.Token));
   }
 
   /// <summary>Le relevé absent est une programmation fautive, pas un relevé vide.</summary>
@@ -268,13 +268,478 @@ public class ScreeningRulesTests
   public async Task RefusesToScreenAnAbsentListing()
   {
     await Should.ThrowAsync<ArgumentNullException>(
-      async () => await AScreeningEngine.Wired().ScreenAsync(null!));
+      async () => await AScreeningEngine.Wired().ScreenAsync(null!, IScreeningEngine.NoPreviews));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────────────────────
+  // Les six règles de FORME. Elles lisent les valeurs d'un aperçu — jamais un nom, jamais un
+  // lexique. ⚠️ Elles ne peuvent qu'AJOUTER un signalement : aucune ne sait en retirer un, et la
+  // liste des déclenchements ne sait qu'accueillir.
+  // ─────────────────────────────────────────────────────────────────────────────────────────────
+
+  /// <summary>
+  /// L'IBAN porte une <b>clé de contrôle</b> — mod 97 — et se contente donc de <b>deux</b> valeurs
+  /// comptées : deux clés distinctes qui se vérifient sont deux observations indépendantes, à une
+  /// chance sur dix milliards.
+  /// </summary>
+  [Fact]
+  public async Task FlagsTheFinancialDataOfAColumnWhoseValuesCarryAnIbanCheckKey()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      "FR1420041010050500013M02606",
+      "FR7630006000011234567890189",
+      "sans objet",
+      "a renseigner",
+      "inconnu");
+
+    line.Category.ShouldBe(PersonalDataCategory.FinancialData);
+    line.Strength.ShouldBe(RuleStrength.CheckedValueForm);
+    line.Reason.ShouldBe("certaines des valeurs lues portent une clé de contrôle d'IBAN");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une seule clé ne suffit pas, et le prix est assumé</b> : une colonne dont une seule
+  /// valeur distincte est un IBAN ne signale pas par la forme. Le seuil est attaché au degré, et
+  /// non à un réglage qu'on baisserait un jour de déploiement pressé.
+  /// </summary>
+  [Fact]
+  public async Task SaysNothingOfAColumnWhereASingleCheckedValueReachedTheThreshold()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      "FR1420041010050500013M02606",
+      "sans objet",
+      "a renseigner",
+      "inconnu",
+      "neant");
+
+    line.IsFlagged.ShouldBeFalse();
+    line.Strength.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Trois valeurs ne comptent nulle part</b> — ni au numérateur, ni au dénominateur : le
+  /// <c>NULL</c>, la valeur <b>tronquée</b> par le SGBD, et le <b>doublon</b> d'une valeur déjà
+  /// comptée. Ici, le seul IBAN distinct ne fait pas deux parce qu'on l'a lu deux fois.
+  /// </summary>
+  [Fact]
+  public async Task CountsNeitherNullNorTruncatedNorDuplicateValues()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      PreviewedValue.Of("FR1420041010050500013M02606", actualLength: 27),
+      PreviewedValue.Of("FR1420041010050500013M02606", actualLength: 27),
+      PreviewedValue.NullValue,
+      PreviewedValue.Of("FR76300060000112345678901", actualLength: 27),
+      PreviewedValue.NullValue);
+
+    line.IsFlagged.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Les mêmes trois valeurs ne comptent pas davantage au <b>dénominateur</b> : deux IBAN distincts
+  /// noyés dans des <c>NULL</c> déclenchent, et le motif dit « toutes » parce que toutes les valeurs
+  /// <i>comptées</i> les portent.
+  /// </summary>
+  [Fact]
+  public async Task ReadsTheThresholdAgainstTheCountedValuesRatherThanTheReadOnes()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      PreviewedValue.Of("FR1420041010050500013M02606", actualLength: 27),
+      PreviewedValue.NullValue,
+      PreviewedValue.Of("FR7630006000011234567890189", actualLength: 27),
+      PreviewedValue.NullValue,
+      PreviewedValue.NullValue);
+
+    line.Category.ShouldBe(PersonalDataCategory.FinancialData);
+    line.Reason.ShouldBe("toutes les valeurs lues portent une clé de contrôle d'IBAN");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une clé de contrôle fausse n'est pas une clé de contrôle</b> : c'est très exactement ce
+  /// que la règle achète en échange de son seuil bas. Cinq chaînes qui ont la <i>tête</i> d'un IBAN
+  /// ne déclenchent rien.
+  /// </summary>
+  [Fact]
+  public async Task NeverTriggersOnAFalseIbanCheckKey()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      "FR1420041010050500013M02607",
+      "FR7630006000011234567890188",
+      "FR7630001007941234567890186",
+      "FR0000000000000000000000000",
+      "FR1111111111111111111111111");
+
+    line.IsFlagged.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Le NIR — et le NIA qui partage sa forme — porte lui aussi une clé mod 97. La Corse y met ses
+  /// deux départements en lettres, <c>2A</c> et <c>2B</c>, qui se lisent 19 et 18 <b>moins un
+  /// million</b> : c'est la règle officielle, et non un ajustement.
+  /// </summary>
+  [Theory]
+  [InlineData("255017511600157", "180027511600162")]
+  [InlineData("199092A00100557", "255017511600157")]
+  public async Task FlagsTheNationalIdentifierOfAColumnWhoseValuesCarryASocialSecurityCheckKey(
+    string first,
+    string second)
+  {
+    var line = await ScreenPreviewed(AMuteColumn, first, second);
+
+    line.Category.ShouldBe(PersonalDataCategory.NationalIdentifier);
+    line.Strength.ShouldBe(RuleStrength.CheckedValueForm);
+    line.Reason.ShouldBe(
+      "toutes les valeurs lues portent une clé de contrôle de numéro de sécurité sociale");
+  }
+
+  [Fact]
+  public async Task SaysNothingOfASingleSocialSecurityNumber()
+  {
+    var line = await ScreenPreviewed(AMuteColumn, "255017511600157", "sans objet");
+
+    line.IsFlagged.ShouldBeFalse();
+  }
+
+  [Fact]
+  public async Task NeverTriggersOnAFalseSocialSecurityCheckKey()
+  {
+    var line = await ScreenPreviewed(AMuteColumn, "255017511600158", "180027511600163");
+
+    line.IsFlagged.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// Le SIREN et le SIRET passent par <b>Luhn</b>, et le SIRET doit en plus porter un SIREN valide
+  /// dans ses neuf premiers chiffres — sans quoi quatorze chiffres quelconques passeraient une fois
+  /// sur dix.
+  /// </summary>
+  [Theory]
+  [InlineData("552100554", "732829320")]
+  [InlineData("73282932000074", "552100554")]
+  public async Task FlagsTheProfessionalLifeOfAColumnWhoseValuesCarryASirenOrSiretCheckKey(
+    string first,
+    string second)
+  {
+    var line = await ScreenPreviewed(AMuteColumn, first, second);
+
+    line.Category.ShouldBe(PersonalDataCategory.ProfessionalLife);
+    line.Strength.ShouldBe(RuleStrength.CheckedValueForm);
+    line.Reason.ShouldBe("toutes les valeurs lues portent une clé de contrôle de SIREN ou de SIRET");
+  }
+
+  [Fact]
+  public async Task SaysNothingOfASingleSiren()
+  {
+    var line = await ScreenPreviewed(AMuteColumn, "552100554", "sans objet");
+
+    line.IsFlagged.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// ⚠️ Un SIRET dont la clé passe mais dont le <b>SIREN interne</b> ne passe pas n'est pas un
+  /// SIRET — et <c>000000000</c>, que Luhn déclare valide, est une colonne d'entiers non
+  /// renseignés, jamais une vie professionnelle.
+  /// </summary>
+  [Theory]
+  [InlineData("55210055500018", "73282932000075")]
+  [InlineData("000000000", "000000000000000")]
+  public async Task NeverTriggersOnAFalseSirenOrSiretCheckKey(string first, string second)
+  {
+    var line = await ScreenPreviewed(AMuteColumn, first, second);
+
+    line.IsFlagged.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Sans clé de contrôle, le seuil est « toutes les valeurs comptées ».</b> Une forme ne
+  /// gagne rien à se répéter : « cinq sur cinq » n'est qu'une seule observation affichée cinq fois,
+  /// et ce qui porte la règle est qu'<b>aucune</b> valeur comptée ne la contredise.
+  /// </summary>
+  [Fact]
+  public async Task FlagsTheContactDetailsOfAColumnWhoseValuesAllLookLikeAnEmailAddress()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      "camille.durand@example.org",
+      "s.bernard@example.fr",
+      "contact@example.com");
+
+    line.Category.ShouldBe(PersonalDataCategory.ContactDetails);
+    line.Strength.ShouldBe(RuleStrength.ValueForm);
+    line.Reason.ShouldBe("toutes les valeurs lues ont la forme d'une adresse de courriel");
+  }
+
+  /// <summary>Une seule intruse suffit à éteindre une règle sans clé de contrôle.</summary>
+  [Fact]
+  public async Task SaysNothingWhenOneCountedValueContradictsTheForm()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      "camille.durand@example.org",
+      "s.bernard@example.fr",
+      "a renseigner");
+
+    line.IsFlagged.ShouldBeFalse();
+  }
+
+  [Fact]
+  public async Task FlagsTheContactDetailsOfAColumnWhoseValuesAllLookLikeAFrenchTelephoneNumber()
+  {
+    var line = await ScreenPreviewed(AMuteColumn, "+33 6 12 34 56 78", "01.42.68.53.00");
+
+    line.Category.ShouldBe(PersonalDataCategory.ContactDetails);
+    line.Strength.ShouldBe(RuleStrength.ValueForm);
+    line.Reason.ShouldBe("toutes les valeurs lues ont la forme d'un numéro de téléphone français");
+  }
+
+  [Fact]
+  public async Task FlagsTheConnectionDataOfAColumnWhoseValuesAllLookLikeAnIpAddress()
+  {
+    var line = await ScreenPreviewed(AMuteColumn, "192.168.1.14", "2001:db8::8a2e:370:7334");
+
+    line.Category.ShouldBe(PersonalDataCategory.ConnectionData);
+    line.Strength.ShouldBe(RuleStrength.ValueForm);
+    line.Reason.ShouldBe("toutes les valeurs lues ont la forme d'une adresse IP");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une règle de forme ne peut qu'AJOUTER un signalement, jamais en retirer un.</b> Une
+  /// colonne <c>email</c> dont les cinq valeurs lues sont vides reste signalée, <b>au même degré et
+  /// dans la même catégorie</b> : les valeurs muettes ne sont pas un démenti, et un moteur qui
+  /// déciderait le contraire aurait rétabli l'<c>Omission silencieuse</c> par le contenu.
+  /// </summary>
+  [Fact]
+  public async Task NeverRemovesAFlagRaisedByTheNameWhenTheValuesSayNothing()
+  {
+    var byTheNameAlone = await Screen(APivot.Column("email", table: "t1"));
+
+    var withMuteValues = await ScreenPreviewed(
+      APivot.Column("email", table: "t1"),
+      PreviewedValue.EmptyText,
+      PreviewedValue.EmptyText,
+      PreviewedValue.EmptyText,
+      PreviewedValue.EmptyText,
+      PreviewedValue.EmptyText);
+
+    withMuteValues.IsFlagged.ShouldBeTrue();
+    withMuteValues.Category.ShouldBe(byTheNameAlone.Category);
+    withMuteValues.Strength.ShouldBe(byTheNameAlone.Strength);
+    withMuteValues.Reason.ShouldBe(byTheNameAlone.Reason);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Il n'y a pas de degré « corroboré ».</b> Une colonne <c>iban</c> dont les valeurs sont
+  /// des IBAN porte <see cref="RuleStrength.ExactName"/> — celui de la règle qui parle le plus
+  /// directement —, et c'est son <b>motif</b> qui porte les deux phrases. Un degré qui monterait
+  /// parce que deux règles ont déclenché serait une quantité de preuve, c'est-à-dire un score par un
+  /// autre chemin.
+  /// </summary>
+  [Fact]
+  public async Task PutsTheNameBeforeTheFormWhenBothSpokeOfTheSameColumn()
+  {
+    var line = await ScreenPreviewed(
+      APivot.Column("iban", table: "t1"),
+      "FR1420041010050500013M02606",
+      "FR7630006000011234567890189");
+
+    line.Category.ShouldBe(PersonalDataCategory.FinancialData);
+    line.Strength.ShouldBe(RuleStrength.ExactName);
+    line.Reason.ShouldBe(
+      "jeton « iban » du nom de colonne, entrée du lexique; "
+      + "toutes les valeurs lues portent une clé de contrôle d'IBAN");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le motif ne porte ni chiffre, ni valeur lue.</b> Il est <b>enregistré</b> et vit aussi
+  /// longtemps que le <c>Screening</c> : une valeur recopiée dedans survivrait à l'aperçu qui l'a
+  /// montrée, et ferait tomber <c>Rien de réel ne reste</c> par le plus court des chemins. Quant à
+  /// « cinq sur cinq », il se comparerait d'une ligne à l'autre alors que les deux nombres ne
+  /// veulent pas dire la même chose.
+  /// </summary>
+  [Fact]
+  public async Task WritesNoDigitAndNoReadValueInTheMotifOfAFormRule()
+  {
+    var line = await ScreenPreviewed(
+      APivot.Column("iban", table: "t1"),
+      "FR1420041010050500013M02606",
+      "FR7630006000011234567890189");
+
+    var reason = line.Reason.ShouldNotBeNull();
+
+    reason.ShouldNotContain("FR14");
+    reason.ShouldNotContain("FR76");
+    reason.ShouldAllBe(character => !char.IsAsciiDigit(character));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le motif ne parle jamais de ce qui n'a pas déclenché.</b> Une phrase disant qu'une règle
+  /// a failli serait une quantité de preuve rendue par la prose, et l'<c>Operator</c> lirait
+  /// « certaines valeurs ressemblent à… » comme un signalement de second rang.
+  /// </summary>
+  [Fact]
+  public async Task SaysNothingOfTheFormRulesThatDidNotTrigger()
+  {
+    var line = await ScreenPreviewed(
+      APivot.Column("iban", table: "t1"),
+      "FR1420041010050500013M02606",
+      "FR7630006000011234567890189");
+
+    var reason = line.Reason.ShouldNotBeNull();
+
+    reason.ShouldNotContain("courriel");
+    reason.ShouldNotContain("téléphone");
+    reason.ShouldNotContain("adresse IP");
+    reason.ShouldNotContain("sécurité sociale");
+  }
+
+  /// <summary>
+  /// L'aperçu <b>absent</b> ne fait pas taire les règles de nom, et sa raison est <b>reportée sur la
+  /// ligne</b> : c'est ce qui distingue « on a regardé et il n'y avait rien » de « on n'a pas pu
+  /// regarder ».
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheReasonWhyNoValueCouldBeReadOntoTheScreenedColumn()
+  {
+    var line = await ScreenPreviewed(
+      APivot.Column("email", table: "t1"),
+      ColumnPreview.Absent(PreviewAbsenceReason.AccessDenied));
+
+    line.IsFlagged.ShouldBeTrue();
+    line.PreviewAbsence.ShouldBe(PreviewAbsenceReason.AccessDenied);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le chemin collé rend exactement ce qu'il rendait</b>, et il le <b>déclare</b> : ses
+  /// formes existent, et elles n'ont rien lu.
+  /// </summary>
+  [Fact]
+  public async Task DeclaresItsFormsInactiveWhenNoPreviewReachedIt()
+  {
+    var pasted = await AScreeningEngine.Wired().ScreenAsync(
+      Ingested(APivot.Paste(APivot.Column("email", table: "t1"))),
+      IScreeningEngine.NoPreviews);
+
+    pasted.Engine.Version.ShouldBe("regles-2+formes-inactives+lexiques-d413d55");
+  }
+
+  /// <summary>Un aperçu, fût-il muet, fait tourner les formes — et l'identité le dit.</summary>
+  [Fact]
+  public async Task DeclaresItsFormsActiveAsSoonAsOnePreviewReachedIt()
+  {
+    var listing = Ingested(APivot.Paste(APivot.Column("email", table: "t1")));
+
+    var scanned = await AScreeningEngine.Wired().ScreenAsync(
+      listing,
+      new Dictionary<ColumnIdentity, ColumnPreview>
+      {
+        [listing.Columns.Single().Identity] = ColumnPreview.Read([PreviewedValue.EmptyText]),
+      });
+
+    scanned.Engine.Version.ShouldBe("regles-2+formes-1+lexiques-d413d55");
+  }
+
+  /// <summary>Le dictionnaire d'aperçus absent est une programmation fautive, pas un chemin collé.</summary>
+  [Fact]
+  public async Task RefusesToScreenWithAnAbsentPreviewDictionary()
+  {
+    var listing = Ingested(APivot.Paste(APivot.Column("email", table: "t1")));
+
+    await Should.ThrowAsync<ArgumentNullException>(
+      async () => await AScreeningEngine.Wired().ScreenAsync(listing, null!));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La règle du conteneur libre ne bouge pas d'un pouce.</b> Une colonne <c>jsonb</c> reste
+  /// signalée <b>après</b> qu'on a lu cinq de ses valeurs : la règle ne dit pas ce que la colonne
+  /// contient, elle dit que le schéma ne permet pas de le lire, et cinq valeurs n'y changent rien.
+  /// L'éteindre parce qu'on a lu des valeurs serait laisser un aperçu <b>retirer</b> un signalement.
+  /// </summary>
+  [Fact]
+  public async Task StillCallsAFreeContainerAFreeContainerAfterReadingFiveOfItsValues()
+  {
+    var line = await ScreenPreviewed(
+      APivot.Column("c1", table: "t1", dataType: "jsonb"),
+      "{\"a\":1}",
+      "{\"a\":2}",
+      "{\"a\":3}",
+      "{\"a\":4}",
+      "{\"a\":5}");
+
+    line.Category.ShouldBe(PersonalDataCategory.PersonalDataUncategorised);
+    line.Strength.ShouldBe(RuleStrength.TypeHeuristic);
+    line.Reason.ShouldBe("conteneur libre : le contenu n'est pas lisible depuis le schéma");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une adresse IPv4 n'est jamais un SIREN.</b> Privée de ses points elle fait neuf chiffres,
+  /// très exactement la longueur d'un SIREN, et une sur dix passerait Luhn — la colonne se
+  /// signalerait alors en <c>ProfessionalLife</c>, qui l'emporte à l'arbitrage sur
+  /// <c>ConnectionData</c>. Un SIREN ne s'écrit pas avec des points, et la règle ne les lit pas.
+  /// </summary>
+  [Fact]
+  public async Task NeverReadsAnIpv4AddressAsASiren()
+  {
+    var line = await ScreenPreviewed(AMuteColumn, "212.27.48.10", "195.154.140.1");
+
+    line.Category.ShouldBe(PersonalDataCategory.ConnectionData);
+    line.Strength.ShouldBe(RuleStrength.ValueForm);
+    line.Reason.ShouldBe("toutes les valeurs lues ont la forme d'une adresse IP");
+  }
+
+  /// <summary>
+  /// L'humain écrit les identifiants à clé de contrôle avec des <b>espaces</b>, et la règle les lit
+  /// ainsi — sans quoi elle raterait la moitié des colonnes qu'elle existe pour attraper.
+  /// </summary>
+  [Fact]
+  public async Task ReadsTheCheckedFormsThroughTheSpacesAHumanPutsInThem()
+  {
+    var line = await ScreenPreviewed(
+      AMuteColumn,
+      "FR14 2004 1010 0505 0001 3M02 606",
+      "FR76 3000 6000 0112 3456 7890 189");
+
+    line.Category.ShouldBe(PersonalDataCategory.FinancialData);
+    line.Reason.ShouldBe("toutes les valeurs lues portent une clé de contrôle d'IBAN");
+  }
+
+  /// <summary>
+  /// Une ligne de colonne dont ni le nom, ni la table, ni le type ne disent rien : c'est le seul
+  /// moyen de lire ce que les <b>valeurs</b> ont dit, et rien d'autre.
+  /// </summary>
+  private static string AMuteColumn => APivot.Column("c1", table: "t1", dataType: "text");
+
+  /// <summary>Ce que le moteur dit d'une colonne dont on lui a fourni les valeurs.</summary>
+  private static Task<ScreenedColumn> ScreenPreviewed(string column, params string[] values)
+  {
+    return ScreenPreviewed(
+      column,
+      ColumnPreview.Read([.. values.Select(value => PreviewedValue.Of(value, value.Length))]));
+  }
+
+  private static Task<ScreenedColumn> ScreenPreviewed(string column, params PreviewedValue[] values)
+  {
+    return ScreenPreviewed(column, ColumnPreview.Read(values));
+  }
+
+  private static async Task<ScreenedColumn> ScreenPreviewed(string column, ColumnPreview preview)
+  {
+    var listing = Ingested(APivot.Paste(column));
+
+    var screened = await AScreeningEngine.Wired().ScreenAsync(
+      listing,
+      new Dictionary<ColumnIdentity, ColumnPreview> { [listing.Columns.Single().Identity] = preview });
+
+    return screened.Columns.Single();
   }
 
   /// <summary>Ce que le moteur dit d'une colonne collée seule.</summary>
   private static async Task<ScreenedColumn> Screen(string column)
   {
-    var screened = await AScreeningEngine.Wired().ScreenAsync(Ingested(APivot.Paste(column)));
+    var screened = await AScreeningEngine.Wired().ScreenAsync(Ingested(APivot.Paste(column)), IScreeningEngine.NoPreviews);
 
     return screened.Columns.Single();
   }

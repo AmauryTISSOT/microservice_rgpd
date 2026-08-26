@@ -41,13 +41,26 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
   /// </summary>
   public const string EngineName = "regles-lexique-fr-en";
 
+  /// <summary>La génération des règles de <b>nom</b>, celles que le banc a mesurées.</summary>
+  public const string RulesVersion = "regles-2";
+
+  /// <summary>La génération des règles de <b>forme</b>, celles qui lisent les valeurs.</summary>
+  public const string FormsVersion = "formes-1";
+
   /// <summary>
-  /// La version du moteur : celle de ses règles, et <b>le gel dont ses lexiques sortent</b>. Les deux
-  /// y sont parce que les deux peuvent changer sans l'autre — des règles réécrites sur les mêmes
-  /// lexiques rendraient autre chose, et l'humain qui compare deux rapports a besoin de savoir
-  /// lequel des deux a bougé.
+  /// Ce que la version dit quand <b>aucun aperçu</b> n'est arrivé : les règles de forme existent, et
+  /// elles n'ont rien lu.
+  /// <para>
+  /// ⚠️ <b>C'est « inactives », et non l'absence de la pièce.</b> Une pièce absente se lirait comme
+  /// un moteur d'avant les formes, et deux rapports qui ne portent pas les mêmes règles se
+  /// compareraient comme s'ils les portaient. Le chemin collé déclare donc qu'il a des formes, et
+  /// qu'elles n'ont pas parlé.
+  /// </para>
   /// </summary>
-  public const string EngineVersion = "regles-1+lexiques-d413d55";
+  public const string InactiveForms = "formes-inactives";
+
+  /// <summary>Le gel dont les lexiques sortent.</summary>
+  public const string LexiconsVersion = "lexiques-d413d55";
 
   /// <summary>Le motif de la seule règle qui ne lit pas un nom, transférée sur ce moteur par #132.</summary>
   private const string FreeContainerReason = "conteneur libre : le contenu n'est pas lisible depuis le schéma";
@@ -86,15 +99,27 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
     _lexicon = lexicon;
   }
 
-  /// <summary>Le nom et la version que ce moteur joint à tout ce qu'il rend.</summary>
-  public static ScreeningEngineIdentity Identity { get; } = new(EngineName, EngineVersion);
+  /// <summary>
+  /// Le nom et la version que ce moteur joint à ce qu'il rend, <b>selon qu'un aperçu lui soit
+  /// parvenu ou non</b>. C'est la <b>même</b> identité à une pièce près : le moteur ne se renomme pas
+  /// quand il lit des valeurs, il dit seulement que ses formes ont tourné.
+  /// </summary>
+  /// <param name="formsRan">Un aperçu, au moins, est-il arrivé jusqu'aux règles de forme ?</param>
+  public static ScreeningEngineIdentity IdentityWhen(bool formsRan)
+  {
+    return new ScreeningEngineIdentity(
+      EngineName,
+      $"{RulesVersion}+{(formsRan ? FormsVersion : InactiveForms)}+{LexiconsVersion}");
+  }
 
   /// <inheritdoc />
   public Task<ScreenedListing> ScreenAsync(
     ColumnListing listing,
+    IReadOnlyDictionary<ColumnIdentity, ColumnPreview> previews,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(listing);
+    ArgumentNullException.ThrowIfNull(previews);
 
     var screened = new List<ScreenedColumn>(listing.ColumnCount);
 
@@ -102,22 +127,26 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
     {
       cancellationToken.ThrowIfCancellationRequested();
 
-      screened.Add(Screen(column));
+      screened.Add(Screen(column, previews.GetValueOrDefault(column.Identity)));
     }
 
-    return Task.FromResult(new ScreenedListing(Identity, screened));
+    // ⚠️ La déclaration porte sur ce que l'APPELANT a fourni, jamais sur ce que les règles ont
+    // trouvé : un relevé scanné dont aucune colonne ne porte de forme reconnue a bel et bien fait
+    // tourner ses formes, et le dire autrement rendrait les deux chemins indistinguables.
+    return Task.FromResult(new ScreenedListing(IdentityWhen(previews.Count > 0), screened));
   }
 
   /// <summary>
   /// Ce que les règles disent d'<b>une</b> colonne : rien vu, ou une catégorie, un degré et un motif.
   /// </summary>
-  private ScreenedColumn Screen(ListedColumn column)
+  private ScreenedColumn Screen(ListedColumn column, ColumnPreview? preview)
   {
-    var triggered = Triggers(column);
+    var triggered = Triggers(column, preview);
+    var absence = preview?.Absence;
 
     if (triggered.Count == 0)
     {
-      return ScreenedColumn.NothingSeen(column);
+      return ScreenedColumn.NothingSeen(column, absence);
     }
 
     // L'ordre d'arbitrage est hérité du domaine, jamais redécidé ici : un second moteur qui
@@ -131,7 +160,12 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
     // Un degré qui départagerait deux catégories serait un score produisant une issue.
     var strength = retained.MinBy(trigger => trigger.Strength.Value)!.Strength;
 
-    return ScreenedColumn.Flagged(column, category, strength, Reason(retained, triggered, category));
+    return ScreenedColumn.Flagged(
+      column,
+      category,
+      strength,
+      Reason(retained, triggered, category),
+      absence);
   }
 
   /// <summary>
@@ -161,7 +195,7 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
   /// permet pas de le lire.
   /// </para>
   /// </remarks>
-  private List<Trigger> Triggers(ListedColumn column)
+  private List<Trigger> Triggers(ListedColumn column, ColumnPreview? preview)
   {
     var triggers = new List<Trigger>();
     var name = column.Identity.Column;
@@ -247,7 +281,96 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
         FreeContainerReason));
     }
 
+    // ⚠️ Les formes sont VERSÉES DANS LE MÊME SAC, et c'est tout le dessin. Aucun étage n'arbitre
+    // « ce que dit le nom » contre « ce que disent les valeurs » : une règle de forme est un
+    // Trigger de plus, et l'ordre des treize catégories tranche comme il l'a toujours fait. C'est
+    // aussi pourquoi une forme ne peut qu'AJOUTER un signalement — la liste ne sait qu'accueillir.
+    triggers.AddRange(FormTriggers(preview));
+
     return triggers;
+  }
+
+  /// <summary>
+  /// Ce que les <b>valeurs</b> disent, quand il y en a. Une colonne sans aperçu — le chemin collé
+  /// entier — n'en rend aucun, et le relevé se détecte exactement comme avant.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Trois valeurs ne comptent nulle part</b> — ni au numérateur, ni au dénominateur : le
+  /// <c>NULL</c>, qui n'est pas une valeur ; la valeur <b>tronquée</b> par le SGBD, dont on ne sait
+  /// pas ce que la coupe a emporté ; et le <b>doublon</b> d'une valeur déjà comptée, qui n'apporte
+  /// aucune observation nouvelle. Le prix est assumé et écrit ici : <b>un IBAN distinct unique ne
+  /// signale pas par la forme</b>, parce que son seuil est de deux.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une forme qui n'atteint pas son seuil n'écrit rien</b> — pas même une phrase disant
+  /// qu'elle a failli. Le motif ne parle jamais de ce qui n'a pas déclenché : ce serait une
+  /// quantité de preuve rendue par la prose, et l'<c>Operator</c> lirait « certaines valeurs
+  /// ressemblent à… » comme un signalement de second rang.
+  /// </para>
+  /// </remarks>
+  private static IEnumerable<Trigger> FormTriggers(ColumnPreview? preview)
+  {
+    if (preview is null || !preview.CarriesValues)
+    {
+      yield break;
+    }
+
+    var counted = CountedValues(preview);
+
+    if (counted.Count == 0)
+    {
+      yield break;
+    }
+
+    foreach (var rule in ValueFormRules.All)
+    {
+      var recognised = counted.Count(rule.Recognises);
+
+      if (!rule.Strength.Threshold!.IsReachedBy(recognised, counted.Count))
+      {
+        continue;
+      }
+
+      // Le quantificateur est un MOT, jamais un chiffre : « cinq sur cinq » se comparerait d'une
+      // ligne à l'autre alors que les deux nombres ne veulent pas dire la même chose, et une
+      // valeur recopiée survivrait à l'aperçu qui l'a montrée.
+      var quantifier = recognised == counted.Count
+        ? "toutes les valeurs lues"
+        : "certaines des valeurs lues";
+
+      yield return new Trigger(
+        rule.Category,
+        rule.Strength,
+        $"{quantifier} {rule.FormPhrase}",
+        FromValues: true);
+    }
+  }
+
+  /// <summary>
+  /// Les valeurs qui <b>comptent</b> : ni <c>NULL</c>, ni tronquée, ni doublon d'une valeur déjà
+  /// comptée. L'ordre de lecture est conservé — le premier exemplaire d'un doublon compte, les
+  /// suivants non.
+  /// </summary>
+  private static IReadOnlyList<string> CountedValues(ColumnPreview preview)
+  {
+    var counted = new List<string>(ColumnPreview.MaxValues);
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+
+    foreach (var value in preview.Values)
+    {
+      if (value.IsNull || value.IsTruncated || value.Text is not { } text)
+      {
+        continue;
+      }
+
+      if (seen.Add(text))
+      {
+        counted.Add(text);
+      }
+    }
+
+    return counted;
   }
 
   /// <summary>
@@ -274,9 +397,19 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
     List<Trigger> triggered,
     PersonalDataCategory category)
   {
+    // ⚠️ Le NOM D'ABORD, LA FORME ENSUITE, et jamais l'inverse. C'est l'ordre dans lequel un
+    // humain vérifie : il regarde le nom de la colonne, puis il regarde les valeurs. Un motif qui
+    // ouvrirait sur les valeurs se lirait comme un moteur qui devine à partir du contenu — ce que
+    // le glossaire refuse depuis la première ligne. À l'intérieur de chaque groupe, l'ordre est
+    // celui du montage gelé : alphabétique, stable, sans quoi deux détections du même relevé
+    // rendraient deux proses.
     var reason = string.Join(
       "; ",
-      retained.Select(trigger => trigger.Reason).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+      retained
+        .OrderBy(trigger => trigger.FromValues)
+        .ThenBy(trigger => trigger.Reason, StringComparer.Ordinal)
+        .Select(trigger => trigger.Reason)
+        .Distinct(StringComparer.Ordinal));
 
     var setAside = triggered
       .Select(trigger => trigger.Category)
@@ -325,5 +458,17 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
   }
 
   /// <summary>Une règle qui a déclenché : ce qu'elle a reconnu, le degré qu'elle porte, et sa prose.</summary>
-  private sealed record Trigger(PersonalDataCategory Category, RuleStrength Strength, string Reason);
+  /// <param name="Category">Ce que la règle désigne.</param>
+  /// <param name="Strength">Le degré, dérivé de la règle — jamais d'une auto-évaluation.</param>
+  /// <param name="Reason">Ce que la règle écrit dans le motif.</param>
+  /// <param name="FromValues">
+  /// La règle a-t-elle lu des <b>valeurs</b> ? Cela ne sert qu'à <b>ordonner la prose</b> — le nom
+  /// d'abord, la forme ensuite. ⚠️ Cela n'arbitre rien : un déclenchement de forme pèse exactement
+  /// ce que pèse un déclenchement de nom, et c'est l'ordre des catégories qui tranche.
+  /// </param>
+  private sealed record Trigger(
+    PersonalDataCategory Category,
+    RuleStrength Strength,
+    string Reason,
+    bool FromValues = false);
 }

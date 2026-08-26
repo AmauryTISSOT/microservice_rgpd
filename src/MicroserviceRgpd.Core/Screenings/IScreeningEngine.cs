@@ -30,18 +30,50 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// la réversibilité : une signature synchrone obligerait un futur moteur servi à bloquer sur son
 /// propre transport, et cette dette-là se paierait dans <c>Core</c>.
 /// </para>
+/// <para>
+/// ⚠️ <b>Il reçoit les aperçus <i>à côté</i> du relevé, jamais dedans, et ils ne ressortent pas.</b>
+/// Le <see cref="ColumnListing"/> est <b>persisté</b> : y loger des valeurs ferait tomber
+/// <c>Rien de réel ne reste</c> par le plus court des chemins, et effacerait au passage la clause qui
+/// veut qu'un relevé scanné et un relevé collé soient le même objet. Le chemin collé n'en fournit
+/// simplement aucun — <see cref="NoPreviews"/> — et rien ne les fait ressortir : ce que le port rend
+/// est un <see cref="ScreenedListing"/>, dont aucun champ ne sait porter une valeur.
+/// </para>
+/// <para>
+/// ⚠️ <b>Il n'y a pas de second port pour les valeurs.</b> Un moteur de formes appelé à côté de
+/// celui-ci rendrait <b>deux</b> rapports à fusionner, donc un étage qui arbitre « ce que dit le
+/// nom » contre « ce que disent les valeurs » — l'étage exact que le modèle refuse. Il n'y a qu'une
+/// détection, et elle lit les deux.
+/// </para>
 /// </remarks>
 public interface IScreeningEngine
 {
   /// <summary>
+  /// Ce que le <b>chemin collé</b> passe en second : aucun aperçu. Il est nommé plutôt que fabriqué
+  /// à chaque appel, parce qu'un dictionnaire vide écrit à la main sur chaque site d'appel se lirait
+  /// comme un oubli — alors que c'est une propriété du chemin, et la seule chose qui distingue les
+  /// deux.
+  /// </summary>
+  public static IReadOnlyDictionary<ColumnIdentity, ColumnPreview> NoPreviews { get; } =
+    new Dictionary<ColumnIdentity, ColumnPreview>();
+
+  /// <summary>
   /// Détecte sur le relevé entier, et rend <b>une ligne par colonne</b> — dans l'ordre du relevé — avec
   /// l'identité du moteur qui les a produites.
   /// </summary>
-  /// <param name="listing">Le relevé collé, déjà accepté en entier par son ingestion.</param>
+  /// <param name="listing">Le relevé, collé ou scanné, déjà accepté en entier par son ingestion.</param>
+  /// <param name="previews">
+  /// Les aperçus, par colonne — <see cref="NoPreviews"/> sur le chemin collé. Une colonne absente de
+  /// ce dictionnaire est une colonne dont aucune valeur n'a été lue, ce qui n'est <b>jamais</b> un
+  /// motif de ne pas la signaler : une règle de forme ne peut qu'<b>ajouter</b> un signalement,
+  /// jamais en retirer un.
+  /// </param>
   /// <param name="cancellationToken">
   /// L'annulation de l'appelant, propagée jusqu'au moteur : un relevé de vingt mille colonnes
   /// détecté pour quelqu'un qui est parti occupe la place de celui qui est resté.
   /// </param>
-  /// <exception cref="ArgumentNullException"><paramref name="listing"/> est absent.</exception>
-  Task<ScreenedListing> ScreenAsync(ColumnListing listing, CancellationToken cancellationToken = default);
+  /// <exception cref="ArgumentNullException"><paramref name="listing"/> ou <paramref name="previews"/> est absent.</exception>
+  Task<ScreenedListing> ScreenAsync(
+    ColumnListing listing,
+    IReadOnlyDictionary<ColumnIdentity, ColumnPreview> previews,
+    CancellationToken cancellationToken = default);
 }
