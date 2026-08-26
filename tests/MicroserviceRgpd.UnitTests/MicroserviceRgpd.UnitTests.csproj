@@ -34,6 +34,10 @@
     <EmbeddedResource Include="..\..\releves\sqlite.sql" LogicalName="releves.sqlite.sql" />
     <EmbeddedResource Include="..\..\releves\postgresql.sql" LogicalName="releves.postgresql.sql" />
     <EmbeddedResource Include="..\..\releves\mariadb.sql" LogicalName="releves.mariadb.sql" />
+    <!-- La capture authentique du relevé PostgreSQL, mesurée sur conteneur hors du dépôt (#275).
+         Le dialecte PostgreSQL n'ajoute aucun test à conteneurs : c'est elle, rejouée contre
+         l'ingestion, qui tient la moitié du filet que le lint sur le texte ne couvre pas. -->
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\postgresql.txt" LogicalName="captures.postgresql.txt" />
     <!-- Les captures authentiques des deux moteurs de la famille MariaDB/MySQL. Elles sont le
          filet sans conteneur du dialecte connecté (#307) : le pivot que le C# écrit doit rendre
          les mêmes colonnes que celui que la requête servie a réellement produit, et les deux

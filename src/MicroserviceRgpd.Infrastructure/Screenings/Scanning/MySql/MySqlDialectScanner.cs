@@ -207,28 +207,6 @@ internal sealed class MySqlDialectScanner : IDialectScanner
   }
 
   /// <summary>
-  /// Coupe une valeur qui, malgré le <c>LEFT</c> du SGBD, compte plus de 254 unités UTF-16 : MySQL
-  /// compte en caractères Unicode, .NET en unités UTF-16, et un caractère hors du plan multilingue
-  /// de base en vaut deux. Le garde-fou ne coupe jamais une paire de substituts en deux.
-  /// </summary>
-  private static string Fit(string text)
-  {
-    if (text.Length <= ColumnPreview.MaxValueLength)
-    {
-      return text;
-    }
-
-    var length = ColumnPreview.MaxValueLength;
-
-    if (char.IsHighSurrogate(text[length - 1]))
-    {
-      length--;
-    }
-
-    return text[..length];
-  }
-
-  /// <summary>
   /// Une valeur lue, ou <c>null</c> quand le serveur a rendu des <b>octets</b> : c'est le filet
   /// sous la liste noire.
   /// </summary>
@@ -257,7 +235,7 @@ internal sealed class MySqlDialectScanner : IDialectScanner
       return PreviewedValue.EmptyText;
     }
 
-    var fitted = Fit(text);
+    var fitted = SampledText.Fit(text);
     var declared = reader.IsDBNull(2)
       ? 0
       : (int)Math.Min(int.MaxValue, Convert.ToInt64(reader.GetValue(2), CultureInfo.InvariantCulture));

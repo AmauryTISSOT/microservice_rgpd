@@ -18,11 +18,23 @@ public class DatabaseScannerWiringTests
   }
 
   /// <summary>
-  /// ⚠️ <b>Un dialecte câblé se résout, et un dialecte sans pilote lève.</b> L'aiguillage ne rend
-  /// pas un échec de scan pour un dialecte qu'il ne sait pas joindre : un <c>ScanOutcome.Failed</c>
-  /// dirait à l'<c>Operator</c> qu'un geste peut le sauver, alors que c'est une erreur de
-  /// programmation, et elle doit s'entendre plutôt que se déguiser en écran d'échec.
+  /// ⚠️ <b>Un dialecte câblé ne lève pas, il rend une fin.</b> L'aiguillage ne rend pas un échec de
+  /// scan pour un dialecte qu'il ne sait pas joindre — ce serait dire à l'<c>Operator</c> qu'un
+  /// geste peut le sauver, alors que c'est un défaut de câblage. Rendre une fin est donc, très
+  /// exactement, ce qui distingue un dialecte inscrit d'un dialecte oublié.
   /// </summary>
+  [Fact]
+  public async Task ResolvesAScannerThatKnowsPostgreSql()
+  {
+    using var provider = new ServiceCollection().AddDatabaseScanner().BuildServiceProvider();
+
+    var outcome = await provider.GetRequiredService<IDatabaseScanner>()
+      .ScanAsync(DatabaseDialect.PostgreSql, "Database=sans-hote");
+
+    outcome.Ending.ShouldBe(ScanEnding.Failed);
+  }
+
+  /// <inheritdoc cref="ResolvesAScannerThatKnowsPostgreSql" />
   [Fact]
   public async Task ResolvesAScannerThatKnowsTheMariaDbAndMySqlFamily()
   {
@@ -39,17 +51,23 @@ public class DatabaseScannerWiringTests
   }
 
   /// <summary>
-  /// Le dialecte qu'aucun ticket n'a encore câblé lève, et l'écran ne le voit jamais.
+  /// Le dialecte qu'aucun pilote ne sert lève, et l'écran ne le voit jamais.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'aiguillage est monté à vide plutôt que résolu du conteneur.</b> Les trois dialectes du
+  /// service ont désormais leur pilote : ce test n'a plus de dialecte orphelin à demander, et le
+  /// seul moyen honnête d'éprouver le refus est de bâtir un aiguillage qui n'en sert aucun. Le
+  /// câblage réel, lui, est tenu par les trois tests au-dessus.
+  /// </remarks>
   [Fact]
   public async Task ThrowsForADialectNoDriverAnswersFor()
   {
-    using var provider = new ServiceCollection().AddDatabaseScanner().BuildServiceProvider();
+    IDatabaseScanner orphaned = new DatabaseScanner([]);
 
     await Should.ThrowAsync<ArgumentOutOfRangeException>(
-      () => provider.GetRequiredService<IDatabaseScanner>().ScanAsync(
-        DatabaseDialect.PostgreSql,
-        "Host=nulle-part",
+      () => orphaned.ScanAsync(
+        DatabaseDialect.MySql,
+        "Server=nulle-part",
         progress: null,
         CancellationToken.None));
   }

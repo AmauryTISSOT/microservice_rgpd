@@ -324,8 +324,23 @@ C'est la **seule lecture d'existence** qui subsiste, et ce n'est jamais un contr
 ⚠️ **Sous SQLite, la seconde fin est structurellement inatteignable**, et c'est le fichier qui le veut :
 `pragma_database_list` rend toujours `main` pour un fichier réellement ouvert. La lecture d'existence
 est faite quand même — c'est le dialecte qui répond, pas le code qui suppose —, et la distinction
-elle-même est éprouvée par la doublure. Elle deviendra atteignable avec PostgreSQL.
-⚠️ **Sous MariaDB/MySQL, elle est atteignable, et c'est ce qui décide de la forme de la connexion.**
+elle-même est éprouvée par la doublure. Elle devient atteignable avec PostgreSQL, où elle se lit sur
+`pg_namespace` : **zéro schéma applicatif** est la base absente du catalogue de schémas, **zéro
+table dans des schémas qui existent** est la base sans table.
+⚠️ **Sous PostgreSQL, le relevé lit `pg_catalog` et jamais l'`information_schema`.** Les vues
+conformes sont filtrées **ligne à ligne par privilège** : un compte sans droit sur une table ne la
+voit pas, et le relevé rendu serait **silencieusement partiel** — sincère, entier de son point de
+vue, amputé de la moitié des tables du client, sans que rien nulle part ne sache qu'il manque
+quelque chose. C'est l'`Omission silencieuse` que la clause d'incomplétude ne pourrait même pas
+rattraper. Deux des neuf champs du pivot n'existent d'ailleurs que là : `col_description` et
+`obj_description` n'ont aucun équivalent conforme.
+⚠️ **Le binaire s'écarte par une liste noire nommée type par type**, jamais par `typcategory = 'U'` :
+cette catégorie de PostgreSQL range `uuid`, `jsonb`, `json`, `xml` et les types PostGIS **avec**
+`bytea`. L'employer comme filtre binaire refuserait en silence de prélever un identifiant de
+personne et un document JSON entier — et une colonne PostGIS de coordonnées est de la donnée de
+localisation, qui se prélève.
+⚠️ **Sous MariaDB/MySQL, la seconde fin est atteignable elle aussi, et c'est ce qui décide de la
+forme de la connexion.**
 Le dialecte se connecte au **serveur**, sans se placer sur une base, puis demande à
 `information_schema.SCHEMATA` si le catalogue connaît celle qu'on lui a nommée. Connecté *sur* la
 base, le serveur aurait refusé l'ouverture elle-même — `1049` si elle n'existe pas, `1044` si le
@@ -1007,7 +1022,11 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   `MySqlConnector` range la chaîne de
   connexion **telle quelle** — mot de passe compris — comme **clé** d'un dictionnaire statique, et il
   le fait même à `Pooling=false` ; `ClearAllPools` ne l'en retire pas, et aucune API publique du
-  pilote n'y donne prise. Ce qui subsiste après un scan MariaDB/MySQL est donc une **chaîne en
+  pilote n'y donne prise. ⚠️ **La réserve ne vaut que pour ce pilote-là, et l'asymétrie est réelle :**
+  Npgsql cache la même chose au même endroit, mais il offre une `NpgsqlDataSource` explicite qui
+  contourne le cache — le dialecte PostgreSQL la bâtit dans un `await using`, et un garde d'IL
+  interdit le raccourci. `MySqlConnector` n'a pas d'équivalent qui échappe au registre statique : ce
+  n'est pas un choix du service, c'est le pilote qui ne laisse pas la prise. Ce qui subsiste après un scan MariaDB/MySQL est donc une **chaîne en
   mémoire du processus**, jusqu'à son arrêt : aucune session ouverte, aucune valeur lue, rien de
   persisté ni d'exporté — mais pas rien. C'est mesuré, épinglé par un test qui rougira le jour où le
   pilote cessera de le faire, et c'est la seule réserve que ce contexte porte sur cette promesse.
