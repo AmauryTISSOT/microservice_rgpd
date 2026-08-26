@@ -8,10 +8,12 @@ namespace MicroserviceRgpd.FunctionalTests.Screenings;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Aucun test fonctionnel n'ouvre de base réelle.</b> Le scanner est le seul point du contexte
-/// qui touche une base d'un tiers ; le doubler sur le port est ce qui permet d'éprouver les écrans
-/// de scan sans conteneur, sans réseau, et sans qu'un test dépende de ce qu'un SGBD tiers a
-/// justement dans le ventre ce jour-là.
+/// ⚠️ <b>Un seul test fonctionnel ouvre une base réelle, et c'est le canari à cinq surfaces.</b> Le
+/// scanner est le seul point du contexte qui touche une base d'un tiers ; le doubler sur le port est
+/// ce qui permet d'éprouver <b>les écrans</b> de scan sans conteneur, sans réseau, et sans qu'un
+/// test dépende de ce qu'un SGBD tiers a justement dans le ventre ce jour-là. Ce que la doublure ne
+/// peut pas prouver — qu'aucune valeur réelle ne ressort d'une base réellement lue — est éprouvé
+/// une fois, ailleurs, sur une base SQLite de fixture.
 /// </para>
 /// <para>
 /// Les écrans qui consommeront ces scénarios viennent avec #308 et #309. Ce qui est prouvé ici,

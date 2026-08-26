@@ -488,7 +488,7 @@ public class ScanAbnormalEndings(CustomWebApplicationFactory<Program> factory)
   /// ⚠️ <b>« Le cache est vide » se mesure par le jeu du rapport courant, et c'en est bien la
   /// mesure.</b> <see cref="ScanPreviews"/> ne retient <b>qu'un seul jeu vivant à la fois</b>, et
   /// l'éviction est immédiate : tout dépôt d'un autre scan aurait donc chassé celui du rapport
-  /// courant, et <see cref="ScanPreviews.Of"/> rendrait vide sur un rapport qui, lui, a bien des
+  /// courant, et <see cref="ScanPreviews.Show"/> rendrait vide sur un rapport qui, lui, a bien des
   /// aperçus. Un jeu déposé « à côté » n'existe pas — il n'y a pas de seconde place où le mettre.
   /// </remarks>
   private async Task<SettledState> SettledStateAsync()
@@ -504,7 +504,7 @@ public class ScanAbnormalEndings(CustomWebApplicationFactory<Program> factory)
 
     var previews = _factory.Services.GetRequiredService<ScanPreviews>();
 
-    return new SettledState(reports, current, previews.Of(current).Count);
+    return new SettledState(reports, current, previews.Show(current).Previews.Count);
   }
 
   /// <summary>Ce qu'une fin anormale laisse strictement intact.</summary>

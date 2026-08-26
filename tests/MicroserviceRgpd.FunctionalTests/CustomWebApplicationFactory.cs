@@ -54,8 +54,14 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
   /// <summary>
   /// Le scanner de base, substitué <b>sur le port du domaine</b>. C'est le seul point du contexte
-  /// <c>Screening</c> qui touche une base d'un tiers : aucun test fonctionnel n'ouvre de base
-  /// réelle, et un écran de scan s'éprouve sans conteneur.
+  /// <c>Screening</c> qui touche une base d'un tiers : les écrans de scan s'éprouvent donc sans
+  /// conteneur, sans réseau, et sans dépendre de ce qu'un SGBD tiers a dans le ventre ce jour-là.
+  /// <para>
+  /// ⚠️ <b>Une seule classe de test fait exception, et elle le doit.</b> Le canari à cinq surfaces
+  /// démarre son hôte <see cref="SubstitutesTheScanningPort"/> à faux et fait courir le vrai pilote
+  /// SQLite sur une base de fixture : une doublure ne peut rien laisser fuir d'une base qu'elle
+  /// n'ouvre pas, et « rien de réel ne reste » ne se prouve que sur du réel.
+  /// </para>
   /// </summary>
   public DatabaseScannerDouble Scanner { get; } = new();
 
@@ -79,6 +85,13 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   /// par-dessus ne prouverait que la presence de cette doublure.
   /// </summary>
   protected virtual bool SubstitutesTheVerdictRole => true;
+
+  /// <summary>
+  /// Le port de scan est-il substitué ? <b>Oui</b> partout, sauf dans l'hôte du canari à cinq
+  /// surfaces : celui-là fait courir le <b>vrai</b> pilote SQLite sur une base de fixture, parce
+  /// qu'une doublure ne peut, par construction, rien laisser fuir d'une base qu'elle n'ouvre pas.
+  /// </summary>
+  protected virtual bool SubstitutesTheScanningPort => true;
 
   public Task InitializeAsync() => _dbContainer.StartAsync();
 
@@ -161,8 +174,11 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
         services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Verdict, Verdict);
       }
 
-      services.RemoveAll<IDatabaseScanner>();
-      services.AddSingleton<IDatabaseScanner>(Scanner);
+      if (SubstitutesTheScanningPort)
+      {
+        services.RemoveAll<IDatabaseScanner>();
+        services.AddSingleton<IDatabaseScanner>(Scanner);
+      }
 
       // ⚠️ L'horloge est SUBSTITUÉE, jamais ajoutée : le câblage réel la pose en TryAdd, et un
       // second enregistrement aurait laissé la première gagner. Elle dit l'heure réelle tant qu'un
