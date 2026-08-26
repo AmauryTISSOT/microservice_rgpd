@@ -265,6 +265,24 @@ d'aperçu **quitte l'écran entièrement**. Écrire « valeurs expirées » dans
 **troisième forme**, que la clause ci-dessus interdit. L'aperçu n'est pas devenu vide : il n'existe
 plus. Et le message est vrai sans réserve — relancer un scan ferait reculer ce rapport-là, donc aucun
 geste ne rend ses aperçus.
+⚠️ **Une expiration n'est pas une péremption, et le motif de forme reste arbitrable.** L'écran le dit
+en même temps qu'il annonce la perte. Refuser l'arbitrage aurait laissé pour seule issue de relancer
+un scan — c'est-à-dire de détruire le travail déjà tranché pour récupérer cinq valeurs qui ne prouvent
+rien. Et les **raisons** d'absence, elles, restent affichées : elles sont enregistrées sur la
+`ScreenedColumn`, ce sont des propriétés de la colonne et non des aperçus.
+⚠️ **Un redémarrage du service les efface, et sa phrase n'est pas celle de l'expiration.** Les deux
+rendent un cache vide et ne disent pas la même chose : l'une annonce une durée écoulée, l'autre une
+panne. Les confondre annoncerait une perte à qui n'en a pas subi — un relevé **collé**, où aucun
+prélèvement n'a jamais eu lieu, ne dit d'ailleurs rien du tout de ses aperçus, exactement comme ses
+quatre comptes d'absence sont **absents** plutôt qu'à zéro.
+⚠️ **L'expiration est la seule falaise dure de la tenabilité de l'écran, et elle est consignée ici
+pour être sue.** Les compteurs de l'arbitrage sont **linéaires** — `clics = 936 + 3N`,
+`chargements = 624 + N` — donc sans seuil : rien n'y bascule. La pause de deux heures, elle, bascule,
+et **une réunion de trois heures tue les aperçus à n'importe quel taux de signalement**. Ce que la
+montée du taux change n'est pas l'existence du problème mais la **fraction** des arbitrages posés à
+l'aveugle — et le danger n'y est pas le pari de l'`ADR-0012` mais les faux positifs des règles de
+forme **sans clé de contrôle**. Rien n'est rouvert ici : la falaise est écrite, elle n'est pas
+corrigée, et la corriger demanderait d'écrire les valeurs — ce que `Rien de réel ne reste` refuse.
 _Avoid_ : Sample, échantillon, ValueSample, extrait, Excerpt, Snippet, Peek ⚠️ `Sample` et
 `échantillon` sont les mots qu'on écrira par réflexe, et c'est précisément pour cela qu'ils sont
 nommés ici ; `extrait` et `Excerpt` supposeraient un tout dont on aurait pris une part
@@ -1069,6 +1087,16 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   valeur lue ; les garder en mémoire tiendrait en RAM ce que la base a le droit de refuser. C'est
   aussi ce qui rend inutile tout plafond en octets — cinq valeurs tronquées par le SGBD, pour cinq
   mille colonnes, pèsent quelques dizaines de mégaoctets, et il n'y en a qu'un jeu à la fois.
+  ⚠️ **Et « réarmé par les seuls écrans qui montrent des aperçus » est une propriété du code, pas une
+  consigne.** Il n'existe qu'un seul geste sur le cache, et **montrer *est* réarmer** : le rapport,
+  l'historique, l'archive et l'accueil ne prolongent rien parce qu'aucun d'eux n'a quoi que ce soit à
+  appeler. Un couple « lire » / « prolonger » aurait laissé à chaque écran neuf le soin de choisir, et
+  la promesse serait devenue une note de relecture.
+  ⚠️ **Le cache n'est pas une couture de test, et aucun test ne l'instancie pour l'interroger.** Il
+  n'offre aucune méthode « fais-les expirer maintenant » : les écrans le traversent par la frontière
+  HTTP, et le seul levier sur sa durée est le `TimeProvider` injecté — c'est-à-dire très exactement le
+  levier dont l'exploitation dispose. Une porte réservée aux tests aurait éprouvé un chemin que la
+  production n'a pas.
 ⚠️ **Ce sont deux promesses et non une, et elles ne se vérifient pas au même endroit.** Qui relit le
 code du prélèvement contrôle ce qui **entre** ; qui relit le code de persistance contrôle ce qui
 **reste**. Les fondre en une seule clause ferait un champ unique dont les deux moitiés finiraient par

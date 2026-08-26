@@ -181,7 +181,7 @@ public class ScreeningCostTests
       scanner,
       engine,
       Substitute.For<IRepository<Screening>>(),
-      new ScanPreviews(),
+      new ScanPreviews(TimeProvider.System),
       TimeProvider.System);
 
     var progress = ScanProgress.Starting(ScanId.Next(), TimeProvider.System.GetUtcNow());

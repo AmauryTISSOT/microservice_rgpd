@@ -768,8 +768,14 @@ table.columns th.reason {
   ⚠️ UNE SEULE COLONNE DÉCLARÉE, ET LA SECONDE NAÎT DE L'APERÇU. Déclarer deux pistes aurait laissé
   le motif dans les deux tiers de la ligne, avec un tiers blanc à côté, TANT QU'AUCUN APERÇU
   N'EXISTE — c'est-à-dire tout le temps aujourd'hui, le chemin collé ne donnant aucune valeur à
-  montrer — sur le seul écran qui ait obtenu une exception de largeur POUR ce motif. L'emplacement
-  vide s'efface, la piste implicite ne s'ouvre que le jour où il portera quelque chose.
+  montrer — sur le seul écran qui ait obtenu une exception de largeur POUR ce motif. La piste
+  implicite ne s'ouvre que quand la case porte quelque chose.
+
+  ⚠️ ET C'EST LE DOMAINE QUI DÉCIDE DE LA CASE, PAS UNE RÈGLE DE STYLE. Un `:empty` gardait naguère
+  la ligne propre : il suffisait d'une espace insérée par le gabarit pour qu'il cesse de mordre et
+  qu'un blanc réapparaisse là où « jamais une cellule vide » est la promesse. La case n'est
+  désormais rendue que si elle porte des valeurs ou une raison nommée, et il n'y a plus rien à
+  rattraper ici.
 */
 .column-card .reason-line {
   display: grid;
@@ -783,8 +789,67 @@ table.columns th.reason {
   margin: 0;
 }
 
-.column-card .preview:empty {
-  display: none;
+/*
+  LES VALEURS LUES, LES UNES SOUS LES AUTRES ET SANS PUCE.
+
+  ⚠️ C'EST UNE LISTE, ET NON UN TABLEAU NI UNE PHRASE. Cinq valeurs séparées par des virgules se
+  seraient lues comme une valeur unique dès que l'une d'elles en porte une — un nom composé, une
+  adresse — et c'est exactement le genre de valeur qu'on montre ici.
+*/
+.column-card .values {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.column-card .values li {
+  margin: 0 0 var(--space-xxs);
+}
+
+/*
+  ⚠️ UNE VALEUR SE COUPE N'IMPORTE OÙ, et c'est la seule chose que cette règle achète. Un courriel de
+  254 caractères sans espace déborderait sinon de la fiche et pousserait l'écran entier en défilement
+  horizontal — sur le seul écran du service qui ait obtenu une exception de largeur.
+
+  ⚠️ AUCUNE CHASSE FIXE : le langage de dessin n'en déclare pas (ADR-0005), et en inventer une ici
+  ferait entrer une police non documentée par la porte d'un aperçu.
+*/
+.column-card .values .value,
+.column-card .values .marker {
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  overflow-wrap: anywhere;
+}
+
+/*
+  ⚠️ ⟨null⟩ ET ⟨vide⟩ SE DISTINGUENT DU TEXTE, ET NE S'EFFACENT PAS. Ce sont des valeurs lues : le
+  prélèvement a parfaitement réussi. Les peindre comme une absence rétablirait la cellule blanche que
+  la raison nommée vient de chasser un cran plus bas.
+*/
+.column-card .values .marker {
+  color: var(--ink-secondary);
+}
+
+/*
+  LA RAISON DE N'AVOIR AUCUNE VALEUR, DANS LA CASE DE L'APERÇU. Le libellé de la famille se lit
+  d'abord — c'est lui qui dit s'il y a un geste à poser —, la phrase ensuite.
+*/
+.column-card .preview .none {
+  margin: 0;
+}
+
+.column-card .preview .none .hint {
+  display: block;
+}
+
+/*
+  CE QUE LES APERÇUS DU RAPPORT SONT DEVENUS, DIT UNE FOIS AU-DESSUS DES FICHES.
+
+  ⚠️ ELLE PORTE SUR LE RAPPORT, PAS SUR UNE COLONNE, et sa place le dit : hors des fiches, au-dessus
+  d'elles. Posée dans une fiche, elle aurait été lue comme un fait de cette colonne-là.
+*/
+.previews {
+  max-width: 60rem;
 }
 
 .column-card form {

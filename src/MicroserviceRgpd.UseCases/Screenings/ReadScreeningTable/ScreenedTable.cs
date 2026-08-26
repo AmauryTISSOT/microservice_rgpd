@@ -34,6 +34,11 @@ namespace MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 /// <param name="Columns">Ses colonnes, toutes, dans l'ordre du relevé.</param>
 /// <param name="Tally">Les comptes du rapport entier.</param>
 /// <param name="Lock">Le verrou d'inachèvement du rapport entier, recalculé à ce rendu.</param>
+/// <param name="Previews">
+/// Les aperçus vivants du rapport, ou la raison de n'en avoir aucun. ⚠️ <b>Ils portent sur le
+/// rapport entier, jamais sur la table ouverte</b> : la durée court depuis le scan, et une phrase
+/// bornée à treize colonnes aurait laissé croire qu'ouvrir la table voisine en rendrait d'autres.
+/// </param>
 public sealed record ScreenedTable(
   ScreeningId Screening,
   string Database,
@@ -42,7 +47,8 @@ public sealed record ScreenedTable(
   string? Comment,
   IReadOnlyList<ScreenedColumn> Columns,
   ScreeningTally Tally,
-  UnfinishedScreening Lock)
+  UnfinishedScreening Lock,
+  ScreeningPreviews Previews)
 {
   /// <summary>Combien de colonnes cette table porte, <b>toutes</b>.</summary>
   /// <remarks>
@@ -110,17 +116,24 @@ public sealed record ScreenedTable(
   /// <param name="table">Le schéma et la table.</param>
   /// <param name="columns">Ses colonnes, déjà rendues dans l'ordre du relevé.</param>
   /// <param name="counts">Les comptes du rapport entier.</param>
+  /// <param name="previews">
+  /// Ce que le cache d'aperçus a encore à montrer pour ce rapport — <b>déjà lu</b>, parce que le
+  /// lire <em>est</em> réarmer la durée glissante, et qu'un modèle de lecture n'a pas à décider de
+  /// la durée de vie de quoi que ce soit.
+  /// </param>
   /// <exception cref="ArgumentNullException">Un des arguments est absent.</exception>
   internal static ScreenedTable Of(
     Screening screening,
     TableIdentity table,
     IReadOnlyList<ScreenedColumn> columns,
-    ScreeningCounts counts)
+    ScreeningCounts counts,
+    ScreeningPreviews previews)
   {
     ArgumentNullException.ThrowIfNull(screening);
     ArgumentNullException.ThrowIfNull(table);
     ArgumentNullException.ThrowIfNull(columns);
     ArgumentNullException.ThrowIfNull(counts);
+    ArgumentNullException.ThrowIfNull(previews);
 
     return new ScreenedTable(
       screening.Id,
@@ -130,6 +143,7 @@ public sealed record ScreenedTable(
       columns.Count == 0 ? null : columns[0].Listed.TableComment,
       columns,
       ScreeningTally.Of(counts),
-      UnfinishedScreening.Of(counts));
+      UnfinishedScreening.Of(counts),
+      previews);
   }
 }

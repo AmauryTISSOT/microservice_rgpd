@@ -400,22 +400,38 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Une fiche signalée réserve l'emplacement de son aperçu, sur la ligne de son motif.</b> Il
-  /// est vide tant que le service ne lit aucune valeur — le chemin collé ne lui en donne aucune —
-  /// et le ticket des aperçus le remplira sans rebâtir la fiche.
+  /// <b>Une fiche signalée d'un relevé COLLÉ rend son motif et rien à côté de lui.</b> Le chemin
+  /// collé ne donne au service aucune valeur : la case d'aperçu ne se rend pas du tout.
   /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Absente, et non rendue vide.</b> La case d'aperçu ne connaît que deux formes — des
+  /// valeurs, ou la raison nommée de n'en avoir aucune —, et il n'en existe pas de troisième. Une
+  /// case blanche en aurait été une, et elle aurait fait passer un relevé collé pour un scan qui
+  /// n'aurait rien vu.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Elle disparaissait naguère par une règle de style, et c'était un cran trop bas.</b> La
+  /// fiche portait un <c>&lt;div class="preview"&gt;&lt;/div&gt;</c> nu que <c>:empty</c> effaçait ;
+  /// il suffisait d'une espace insérée par le gabarit pour que le sélecteur cesse de mordre et
+  /// qu'un blanc réapparaisse sur la ligne du motif. Ce qui décide de la case est désormais le
+  /// domaine, et le style n'a plus rien à rattraper.
+  /// </para>
+  /// <para>
+  /// La case <b>remplie</b>, elle, s'éprouve sur le chemin qui la remplit — voir
+  /// <c>ScreeningPreviewsOnScreen</c>.
+  /// </para>
+  /// </remarks>
   [Fact]
-  public async Task ReservesAnEmptyPreviewSlotOnTheReasonLineOfEveryFlaggedCard()
+  public async Task RendersNoPreviewSlotAtAllOnAFlaggedCardOfAPastedListing()
   {
     var table = await DepositAndOpenAsync(ScreeningSurface.Column("email", position: 1));
 
     var flagged = ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull();
 
-    flagged.ShouldContain("class=\"preview\"");
-
-    // ⚠️ VIDE, et il le reste : un relevé collé ne porte aucune valeur, et un emplacement qui
-    // dirait « aucun aperçu » ferait passer le chemin collé pour un scan qui n'aurait rien vu.
-    flagged.ShouldMatch(@"class=""preview""[^>]*>\s*</");
+    // Le motif, lui, est bien là : c'est la ligne qui accueillerait l'aperçu.
+    flagged.ShouldContain("class=\"reason\"");
+    flagged.ShouldNotContain("class=\"preview\"");
   }
 
   /// <summary>
