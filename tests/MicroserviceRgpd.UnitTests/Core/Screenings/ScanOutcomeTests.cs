@@ -1,0 +1,88 @@
+using MicroserviceRgpd.Core.Screenings;
+
+namespace MicroserviceRgpd.UnitTests.Core.Screenings;
+
+/// <summary>
+/// Un scan a quatre fins, et aucune n'est le silence.
+/// </summary>
+public class ScanOutcomeTests
+{
+  private static readonly ColumnIdentity Courriel =
+    ColumnIdentity.Of("main", "abonne", "courriel");
+
+  [Fact]
+  public void CarriesThePivotAndThePreviewsWhenItHasListed()
+  {
+    var previews = new Dictionary<ColumnIdentity, ColumnPreview>
+    {
+      [Courriel] = ColumnPreview.Absent(PreviewAbsenceReason.NoValueReturned),
+    };
+
+    var outcome = ScanOutcome.Listed("{\"format\":\"screening-pivot/1\"}", previews);
+
+    outcome.Ending.ShouldBe(ScanEnding.Listed);
+    outcome.Pivot.ShouldNotBeNullOrWhiteSpace();
+    outcome.Previews.ShouldContainKey(Courriel);
+    outcome.Failure.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un relevé n'est jamais vide de texte.</b> Un pivot blanc franchirait le port pour être
+  /// refusé un cran plus loin, et le refus dirait « collage vide » d'un scan qui, lui, a répondu.
+  /// </summary>
+  [Fact]
+  public void RefusesToCallAnEmptyTextAListing()
+  {
+    Should.Throw<ArgumentException>(() => ScanOutcome.Listed("   ", new Dictionary<ColumnIdentity, ColumnPreview>()));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Les deux fins à zéro objet sont deux, et une seule appelle un geste.</b> Les confondre
+  /// enverrait l'<c>Operator</c> chercher une base vide quand il lui faut demander un accès.
+  /// </summary>
+  [Fact]
+  public void TellsAnEmptyDatabaseFromOneItCannotSee()
+  {
+    var empty = ScanOutcome.NoTable();
+    var invisible = ScanOutcome.DatabaseAbsentFromCatalogue();
+
+    empty.Ending.ShouldBe(ScanEnding.NoTable);
+    invisible.Ending.ShouldBe(ScanEnding.DatabaseAbsentFromCatalogue);
+    empty.Ending.ShouldNotBe(invisible.Ending);
+
+    empty.Ending.FrenchLabel.ShouldNotBe(invisible.Ending.FrenchLabel);
+  }
+
+  /// <summary>Ni l'une ni l'autre ne rend un relevé : un rapport de zéro colonne ferait reculer le rapport courant.</summary>
+  [Fact]
+  public void NeitherOfTheTwoEmptyEndingsCarriesAListing()
+  {
+    ScanOutcome.NoTable().Pivot.ShouldBeNull();
+    ScanOutcome.NoTable().Previews.ShouldBeEmpty();
+    ScanOutcome.DatabaseAbsentFromCatalogue().Pivot.ShouldBeNull();
+    ScanOutcome.DatabaseAbsentFromCatalogue().Previews.ShouldBeEmpty();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>L'échec dit où et de quel côté, et rien d'autre.</b> Il n'y a pas de champ où glisser le
+  /// message du pilote, l'hôte ou l'utilisateur : c'est le type qui tient la règle.
+  /// </summary>
+  [Fact]
+  public void SaysWhereItFellAndWhichSideTheCauseCameFrom()
+  {
+    var outcome = ScanOutcome.Failed(ScanPhase.Sampling, ScanFailureFamily.Network);
+
+    outcome.Ending.ShouldBe(ScanEnding.Failed);
+    outcome.Failure!.Phase.ShouldBe(ScanPhase.Sampling);
+    outcome.Failure.Family.ShouldBe(ScanFailureFamily.Network);
+    outcome.Pivot.ShouldBeNull();
+    outcome.Previews.ShouldBeEmpty();
+  }
+
+  [Fact]
+  public void KnowsFourEndingsAndNoMore()
+  {
+    ScanEnding.List.Count.ShouldBe(4);
+    ScanEnding.List.Select(ending => ending.FrenchLabel).Distinct().Count().ShouldBe(4);
+  }
+}

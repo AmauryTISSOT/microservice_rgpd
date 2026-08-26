@@ -9,6 +9,7 @@ using MicroserviceRgpd.Infrastructure.Data.Casework;
 using MicroserviceRgpd.Infrastructure.Data.Screenings;
 using MicroserviceRgpd.Infrastructure.Qualifications;
 using MicroserviceRgpd.Infrastructure.Screenings;
+using MicroserviceRgpd.Infrastructure.Screenings.Scanning;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MicroserviceRgpd.Infrastructure;
@@ -74,6 +75,11 @@ public static class InfrastructureServiceExtensions
     // Le moteur de détection, lui, ne se configure pas : ADR-0004 l'a mis en C# ici même, sans
     // sidecar, sans adresse et sans échéance. Il démarre avec le service.
     services.AddScreeningEngine();
+
+    // Le port par lequel le service ira lire une base tierce, et le seul dialecte dont il a le
+    // pilote aujourd'hui. Il ne se configure pas davantage : la chaîne de connexion arrive par
+    // l'écran, à l'appel, et ne se pose nulle part.
+    services.AddDatabaseScanner();
 
     // Le rendu de la Cartographie en fichier. ⚠️ Il est enregistré par son port et sans état : il ne
     // lit aucun dépôt, ne consulte aucune horloge et n'écrit nulle part — ce qui sépare cet export

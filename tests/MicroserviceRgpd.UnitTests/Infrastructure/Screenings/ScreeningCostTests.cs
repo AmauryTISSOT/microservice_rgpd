@@ -50,10 +50,10 @@ public class ScreeningCostTests
 
     // Un premier passage à part : le chargement des lexiques et la compilation à la volée ne sont
     // pas le geste qu'on mesure, et ils n'ont lieu qu'une fois pour la vie du service.
-    await engine.ScreenAsync(listing);
+    await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews);
 
     var clock = Stopwatch.StartNew();
-    var screened = await engine.ScreenAsync(listing);
+    var screened = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews);
     clock.Stop();
 
     screened.Columns.Count.ShouldBe(DolibarrSized);
@@ -79,7 +79,8 @@ public class ScreeningCostTests
   [Fact]
   public async Task ExportsTheMapOfTheLargestSchemaWithinTheSameBudget()
   {
-    var screened = await AScreeningEngine.Wired().ScreenAsync(ABigListing());
+    var screened = await AScreeningEngine.Wired()
+      .ScreenAsync(ABigListing(), IScreeningEngine.NoPreviews);
 
     var screening = Screening.Of(
       ScreeningId.Next(),

@@ -55,6 +55,6 @@ public sealed class ReadScreeningTableHandler(
 
     return new ScreeningAnswer<ScreenedTable>(
       ScreenedTable.Of(current, query.Table, read, counts),
-      IncompletenessClause.For(counts));
+      IncompletenessClause.For(counts, current.Origin));
   }
 }

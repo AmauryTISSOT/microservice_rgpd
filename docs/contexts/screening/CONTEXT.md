@@ -64,6 +64,21 @@ l'`Operator` relance sa requête, il ne perd aucun arbitrage.
 Sur le chemin connecté la question ne se pose pas de la même façon — rien n'est retranscrit, donc
 rien ne se tronque au collage — mais la règle est identique : un relevé de schéma qui échoue en
 cours de route ne produit **aucun** `ColumnListing`, jamais un `ColumnListing` partiel.
+⚠️ **Mais la clause y tient sans mécanisme, et c'est une divergence, pas une nuance.** Au collage,
+« il est entier ou il n'existe pas » est tenue **par un dispositif** : la requête déclare son propre
+compte de colonnes, et un collage amputé se fait prendre par `CountMismatch`. À la connexion, ce
+dispositif **n'a aucun équivalent** : c'est le service lui-même qui produit ce compte, en le
+calculant sur les lignes qu'il vient d'écrire — il ne peut donc pas se contredire, et ne peut pas non
+plus rien attraper. `CountMismatch` ne garde plus rien sur cette voie. La clause y est tenue **un cran
+plus haut**, par le scanner, qui ne rend un relevé que s'il a lu le catalogue en entier ; en dessous,
+elle est vraie par construction et ne prouve rien.
+⚠️ **Un relevé au compte partiel est sincère, partiel et muet.** Si la base ne rend qu'une partie de
+son catalogue **sans le dire** — un compte qui ne voit qu'un schéma, une vue système filtrée —, le
+pivot produit sera parfaitement valide, le `Screening` parfaitement cohérent, et **rien dans le
+format** ne pourra signaler le manque : le service ne connaît pas le nombre de colonnes qu'il aurait
+dû voir. C'est le même angle mort que la provenance, un cran plus bas. Aucun mécanisme ne l'attrape,
+et aucun ne doit prétendre l'attraper — un « compte attendu » demandé à l'`Operator` serait une
+seconde source de vérité sur un fait que personne ne vérifie.
 ⚠️ **Cette rigueur-là ne s'étend pas au `ColumnPreview`, et c'est délibéré.** Le schéma est tout ou
 rien parce que l'`Omission relue` repose sur lui. Un aperçu manquant, lui, est **toléré** — il ne
 retire aucune ligne du rapport de détection — à la seule condition d'être **nommé** manquant.
@@ -274,6 +289,40 @@ une ligne `Unflagged` peut parfaitement en porter une, et son arbitrage n'en est
 _Avoid_ : `PreviewError`, `SampleFailure`, erreur, échec ⚠️ trois des quatre familles ne sont pas des
 erreurs — un binaire non prélevé et une table qui rend zéro ligne sont des lectures qui ont réussi —,
 et les ranger sous « erreur » ferait chercher une panne là où il n'y en a pas.
+
+**IDatabaseScanner** — « scanner de base » :
+Le port sortant par lequel le contexte va lire une base tierce : il reçoit un **dialecte** et une
+**chaîne de connexion**, et rend le **texte pivot** du relevé et les `ColumnPreview` des colonnes.
+C'est le **seul** point du contexte qui touche une base d'un tiers, et le seul que les tests
+fonctionnels doublent.
+⚠️ **Le nom passe le test du chemin collé.** Un scanner ne travaille **jamais** sur un relevé collé :
+le mot ne peut donc désigner que ce qui va chercher. C'est exactement pour cela qu'il reste
+**interdit** sur `IScreeningEngine`, qui sert les deux chemins.
+⚠️ **Il rend un texte pivot, jamais un `ColumnListing`.** La voie connectée **repasse par
+l'ingestion** comme un collage : « un seul format pivot » tient alors par construction plutôt que par
+relecture, et les neuf refus sont réutilisés au lieu d'être réécrits. Le `ColumnListing` n'a d'ailleurs
+aucun constructeur public — la même clause, écrite dans le type.
+⚠️ **Il rapporte son avancement, et il est annulable.** L'avancement est ce qui permet à `ScanProgress`
+de compter pour de vrai — le catalogue lu, puis une table prélevée à la fois. L'annulation coupe la
+**requête en cours**, pas seulement la boucle qui l'entoure : un jeton qui se contenterait de sortir
+laisserait un `SELECT` courir sur la base du client après que l'`Operator` a quitté l'écran. Sous
+SQLite, dont le pilote n'a pas d'asynchrone et dont le jeton est inerte, cela passe par
+`sqlite3_interrupt` sur la poignée de la connexion.
+⚠️ **Aucune exception du pilote ne le traverse.** Ce qui rate devient une `PreviewAbsenceReason` quand
+une colonne seule est en cause, ou un échec à **phase** et **famille** nommées quand c'est le scan.
+Ni message du pilote, ni hôte, ni utilisateur : `Rien de réel ne reste` se tient **à la frontière**,
+et non dans chaque écran en aval.
+⚠️ **À zéro objet, il distingue deux fins.** La base **sans table** et la base **absente du catalogue
+de schémas** rendent toutes deux zéro colonne ; seule la seconde appelle un geste — demander un accès.
+C'est la **seule lecture d'existence** qui subsiste, et ce n'est jamais un contrôle de privilèges.
+⚠️ **Sous SQLite, la seconde fin est structurellement inatteignable**, et c'est le fichier qui le veut :
+`pragma_database_list` rend toujours `main` pour un fichier réellement ouvert. La lecture d'existence
+est faite quand même — c'est le dialecte qui répond, pas le code qui suppose —, et la distinction
+elle-même est éprouvée par la doublure. Elle deviendra atteignable avec PostgreSQL et MySQL.
+_Avoid_ : `DatabaseReader`, `SchemaLoader`, `Importer`, `Crawler` ⚠️ les deux premiers ne disent pas
+qu'on va **chercher**, et passeraient donc sans bruit sur le chemin collé ; `Importer` promet une
+entrée dans le système, alors que rien n'entre avant l'ingestion ; `Crawler` promet une exploration
+qui suit ce qu'elle trouve, quand le scanner lit un catalogue et s'arrête.
 
 **ScanProgress** — « avancement du scan » :
 Ce qu'un `Scan` en cours donne à voir pendant qu'il court : la **phase** où il en est, et le **compte
@@ -873,6 +922,15 @@ une promesse générale, mais des bornes qui se vérifient une par une.
 - Les **textes longs sont tronqués par le SGBD**, avant de traverser le réseau.
 - Ce que le moteur fait de ces valeurs est borné aussi : il y cherche des **formes écrites d'avance**,
   jamais des mots. Aucun lexique ne s'applique aux valeurs.
+⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
+prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
+`commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
+celle-là qu'il faut lire. Ce que le moteur reconnaît, ce sont des **formes**, pas des entités nommées
+en contexte : `+33612345678` est un motif, reconnaissable par sa morphologie, sans modèle et sans
+corpus d'entraînement ; « Madame Dupont a téléphoné » est une entité nommée dans une phrase, et ce
+contexte n'y touche pas. Le service que rend ce corollaire — empêcher qu'on aille chercher des outils
+calibrés pour un problème qu'on n'a pas — est plus utile qu'avant, parce que c'est **maintenant**, en
+voyant des valeurs textuelles entrer, qu'un lecteur aura le réflexe d'y penser.
 ⚠️ **Une règle de forme se juge à ce qu'elle rapporte, et certaines rapportent négativement.** Un
 format sans clé de contrôle plafonne au taux de faux positifs de sa famille de colonnes, et quatre
 sont **nommément écartés** parce qu'ils coûtent plus qu'ils ne rendent : le **code postal** (81 % de
@@ -896,16 +954,7 @@ connexion, pas de socket vers la production du client, pas d'échantillon de val
 Les trois interdictions sont tombées par
 [ADR-0012](../../adr/0012-la-connexion-le-scan-et-les-echantillons-entrent-dans-screening.md), qui
 écrit ce que le renversement achète et ce qu'il coûte. Ce qui n'est **pas** tombé est la liste
-ci-dessus, et l'entrée suivante.
-⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
-prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
-`commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
-celle-là qu'il faut lire. Ce que le moteur reconnaît, ce sont des **formes**, pas des entités nommées
-en contexte : `+33612345678` est un motif, reconnaissable par sa morphologie, sans modèle et sans
-corpus d'entraînement ; « Madame Dupont a téléphoné » est une entité nommée dans une phrase, et ce
-contexte n'y touche pas. Le service que rend ce corollaire — empêcher qu'on aille chercher des outils
-calibrés pour un problème qu'on n'a pas — est plus utile qu'avant, parce que c'est **maintenant**, en
-voyant des valeurs textuelles entrer, qu'un lecteur aura le réflexe d'y penser.
+ci-dessus, et le corollaire attaché plus haut à la reconnaissance de forme.
 _Avoid_ : NER, échantillon, sondage de valeurs, scan de contenu, profilage ⚠️ ces cinq mots ont
 survécu à la chute des trois interdictions, chacun pour une raison propre. `échantillon` et
 `sondage de valeurs` promettent un tirage qui **porte une inférence**, ce que cinq valeurs ne font

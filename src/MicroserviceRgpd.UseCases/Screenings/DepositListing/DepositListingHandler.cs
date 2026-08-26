@@ -77,7 +77,9 @@ public sealed class DepositListingHandler(
 
     var listing = ingested.Listing!;
 
-    var screened = await engine.ScreenAsync(listing, cancellationToken);
+    // ⚠️ Aucun aperçu : c'est le chemin COLLÉ, et c'est la seule chose qui l'en distingue. Les
+    // règles de forme y sont donc inactives, et le relevé se détecte exactement comme avant.
+    var screened = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews, cancellationToken);
 
     var screening = Screening.Of(
       ScreeningId.Next(),

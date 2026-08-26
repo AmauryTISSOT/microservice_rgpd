@@ -9,6 +9,12 @@
   // Un compte et son nom, accordés : une surface dont tout le propos est que l'Operator lise le
   // nombre plutôt qu'un mot d'état ne peut pas lui écrire « 1 tables ».
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+
+  // ⚠️ LE CHIFFRE VIENT DE LA BORNE DU PRÉLÈVEMENT, jamais de la main du rédacteur : écrit à la
+  // main ici, il divergerait au premier changement de borne et le rappel mentirait sans que rien
+  // ne rougisse.
+  var previewSize = MicroserviceRgpd.Core.Screenings.ColumnPreview.MaxValuesInWords;
+  var scanned = clause.Origin == MicroserviceRgpd.Core.Screenings.ListingOrigin.Scanned;
 }
 
 <h1>Le rapport de détection courant</h1>
@@ -39,6 +45,17 @@ else
   <p class="hint">@summary.Lock.Statement</p>
 }
 
+@*
+  AUCUN APERÇU N'A ABOUTI, DIT À L'ÉCHELLE DU RAPPORT — en plus de la raison que porte chaque
+  ligne, jamais à sa place. La raison par ligne dit pourquoi CETTE colonne n'a pas d'aperçu ; elle
+  ne dit pas qu'aucune n'en a, et un Operator qui déroule cinq mille lignes ne recompose pas ce
+  fait — qui est justement celui qui devrait le faire rescanner.
+*@
+@if (clause.Perimeter.NoPreviewSucceeded)
+{
+  <p class="unfinished">@MicroserviceRgpd.Core.Screenings.ReadPerimeter.NoPreviewSucceededStatement</p>
+}
+
 <dl class="banner">
   <dt>Base</dt>
   <dd>
@@ -66,9 +83,43 @@ else
   <dt>Signalées</dt>
   <dd>
     @summary.Tally.Flagged
+    @*
+      ⚠️ LA QUEUE EST REMPLACÉE, PAS COUPÉE — traitement inverse de celui de FilterStatement, et
+      c'est délibéré : ici la queue EST la preuve. Ce qui interdit de conclure « les 4 933 autres
+      colonnes sont inoffensives », c'est précisément le peu que le service a lu.
+
+      ⚠️ CE RAPPEL EST ÉCRIT EN DUR ICI : aucun test sur l'objet ne le verra jamais, et c'est très
+      exactement pourquoi le témoin de la clause a un second niveau, sur l'écran.
+    *@
     <span class="hint">
-      Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
-      inoffensif : le service n'a jamais vu une seule valeur.
+      @if (scanned && clause.Perimeter.NoPreviewSucceeded)
+      {
+        @*
+          ⚠️ SUR UN SCAN OÙ RIEN N'A ÉTÉ PRÉLEVÉ, la queue chiffrée serait fausse : elle
+          affirmerait cinq valeurs par colonne trois lignes sous la clause qui dit qu'aucune n'a pu
+          l'être. La phrase du chemin collé, elle, reste interdite ici — elle promettrait que le
+          service n'a JAMAIS vu de valeur, quand il en a demandé et s'est fait refuser.
+        *@
+        <text>
+          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+          inoffensif : aucune valeur n'a pu être prélevée sur ce relevé.
+        </text>
+      }
+      else if (scanned)
+      {
+        <text>
+          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+          inoffensif : le service n'a lu que @previewSize valeurs par colonne,
+          et @previewSize valeurs ne disent pas ce qu'une colonne contient.
+        </text>
+      }
+      else
+      {
+        <text>
+          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+          inoffensif : le service n'a jamais vu une seule valeur.
+        </text>
+      }
     </span>
   </dd>
   <dt>Retenues</dt>
