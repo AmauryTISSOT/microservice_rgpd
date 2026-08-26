@@ -32,7 +32,7 @@ namespace MicroserviceRgpd.Infrastructure.Screenings.Scanning.Sqlite;
 /// </para>
 /// <para>
 /// ⚠️ <b>La famille <see cref="ScanFailureFamily.Network"/> ne sort jamais d'ici.</b> Un fichier
-/// SQLite est local : il n'y a pas d'hôte à joindre. Elle attend PostgreSQL et MySQL.
+/// SQLite est local : il n'y a pas d'hôte à joindre. Elle vit chez PostgreSQL, et attend MySQL.
 /// </para>
 /// </remarks>
 internal sealed class SqliteDialectScanner : IDialectScanner
@@ -196,28 +196,6 @@ internal sealed class SqliteDialectScanner : IDialectScanner
     };
   }
 
-  /// <summary>
-  /// Coupe une valeur qui, malgré le <c>substr</c> du SGBD, compte plus de 254 unités UTF-16 :
-  /// SQLite compte en caractères Unicode, .NET en unités UTF-16, et un caractère hors du plan
-  /// multilingue de base en vaut deux. Le garde-fou ne coupe jamais une paire de substituts en deux.
-  /// </summary>
-  private static string Fit(string text)
-  {
-    if (text.Length <= ColumnPreview.MaxValueLength)
-    {
-      return text;
-    }
-
-    var length = ColumnPreview.MaxValueLength;
-
-    if (char.IsHighSurrogate(text[length - 1]))
-    {
-      length--;
-    }
-
-    return text[..length];
-  }
-
   private static PreviewedValue ReadValue(SqliteDataReader reader)
   {
     if (reader.IsDBNull(1))
@@ -232,7 +210,7 @@ internal sealed class SqliteDialectScanner : IDialectScanner
       return PreviewedValue.EmptyText;
     }
 
-    var fitted = Fit(text);
+    var fitted = SampledText.Fit(text);
     var declared = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
 
     // ⚠️ La longueur se compare à ce que le SGBD a <b>envoyé</b>, pas à ce que le garde-fou a gardé.
