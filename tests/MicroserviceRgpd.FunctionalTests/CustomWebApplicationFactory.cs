@@ -1,6 +1,7 @@
 ﻿using MicroserviceRgpd.Core.Casework.Adapters;
 using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Core.Qualifications.Audit;
+using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
@@ -50,6 +51,13 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   /// comportement d'une doublure.
   /// </summary>
   public ABrocantoOnTheWire Adapter { get; } = new();
+
+  /// <summary>
+  /// Le scanner de base, substitué <b>sur le port du domaine</b>. C'est le seul point du contexte
+  /// <c>Screening</c> qui touche une base d'un tiers : aucun test fonctionnel n'ouvre de base
+  /// réelle, et un écran de scan s'éprouve sans conteneur.
+  /// </summary>
+  public DatabaseScannerDouble Scanner { get; } = new();
 
   /// <summary>
   /// Le role de verdict est-il substitue ? <b>Non</b> dans un hote demarre LLM eteint : le laisser
@@ -138,6 +146,9 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
         services.RemoveAllKeyed<IQualificationEngine>(QualificationEngineRole.Verdict);
         services.AddKeyedSingleton<IQualificationEngine>(QualificationEngineRole.Verdict, Verdict);
       }
+
+      services.RemoveAll<IDatabaseScanner>();
+      services.AddSingleton<IDatabaseScanner>(Scanner);
 
       // L Adapter du client est pose sur le FIL : le vrai HttpAdapterCalls reste en place, avec son
       // en-tete de secret, son system_id en parametre et son corps de sac. C est le contrat qu on

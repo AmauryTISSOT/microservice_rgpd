@@ -6,6 +6,9 @@
     <PackageReference Include="Ardalis.Specification.EntityFrameworkCore" />
     <PackageReference Include="Azure.Identity" />
     <PackageReference Include="MailKit" />
+    <!-- Le pilote du dialecte SQLite du IDatabaseScanner (#304). Il embarque SQLitePCLRaw, dont
+         sqlite3_interrupt est ce qui coupe une requête en cours quand l'Operator quitte l'écran. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" 
                       ExcludeAssets="contentFiles" PrivateAssets="all" />
@@ -25,6 +28,13 @@
          moteur démarre avec le service et ne lit aucun fichier du disque. Les rééditer est interdit
          (#155) — FrozenLexiconsTests ancre leur empreinte. -->
     <EmbeddedResource Include="Screenings\Lexicons\*.tsv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Le texte des requêtes embarquées du scanner se relit en test — c'est la moitié « filet de
+         sécurité sans conteneur » de #304 —, et le rendre public pour cela ferait d'un détail de
+         pilote une surface d'assemblage. -->
+    <InternalsVisibleTo Include="MicroserviceRgpd.UnitTests" />
   </ItemGroup>
 
   <ItemGroup>
