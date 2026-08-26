@@ -307,7 +307,13 @@ de compter pour de vrai — le catalogue lu, puis une table prélevée à la foi
 **requête en cours**, pas seulement la boucle qui l'entoure : un jeton qui se contenterait de sortir
 laisserait un `SELECT` courir sur la base du client après que l'`Operator` a quitté l'écran. Sous
 SQLite, dont le pilote n'a pas d'asynchrone et dont le jeton est inerte, cela passe par
-`sqlite3_interrupt` sur la poignée de la connexion.
+`sqlite3_interrupt` sur la poignée de la connexion. Sous MariaDB/MySQL, `MySqlConnector` le fait
+lui-même : il envoie la coupure au serveur, et la requête rate. ⚠️ **Ce qui décide alors est le
+jeton, jamais le numéro rendu.** Le serveur écrit `1317` — « requête interrompue » — aussi bien pour
+la coupure du service que pour un `KILL QUERY` du DBA du client ou un `max_execution_time` dépassé ;
+le relire comme une annulation ferait dire à l'écran « vous avez abandonné » d'un scan que la base a
+coupé sous lui. Sans annulation, un `1317` est donc un échec de la **base**, comme tout ce qu'elle a
+répondu.
 ⚠️ **Aucune exception du pilote ne le traverse.** Ce qui rate devient une `PreviewAbsenceReason` quand
 une colonne seule est en cause, ou un échec à **phase** et **famille** nommées quand c'est le scan.
 Ni message du pilote, ni hôte, ni utilisateur : `Rien de réel ne reste` se tient **à la frontière**,
@@ -333,6 +339,17 @@ cette catégorie de PostgreSQL range `uuid`, `jsonb`, `json`, `xml` et les types
 `bytea`. L'employer comme filtre binaire refuserait en silence de prélever un identifiant de
 personne et un document JSON entier — et une colonne PostGIS de coordonnées est de la donnée de
 localisation, qui se prélève.
+⚠️ **Sous MariaDB/MySQL, la seconde fin est atteignable elle aussi, et c'est ce qui décide de la
+forme de la connexion.**
+Le dialecte se connecte au **serveur**, sans se placer sur une base, puis demande à
+`information_schema.SCHEMATA` si le catalogue connaît celle qu'on lui a nommée. Connecté *sur* la
+base, le serveur aurait refusé l'ouverture elle-même — `1049` si elle n'existe pas, `1044` si le
+compte n'y a aucun droit —, et « absente du catalogue » se serait déguisée en échec de connexion.
+⚠️ **Et sous MariaDB/MySQL, les deux causes de l'absence se confondent en une seule fin, exprès.**
+`information_schema.SCHEMATA` ne montre que ce sur quoi le compte a un privilège : « la base n'existe
+pas » et « le compte ne la voit pas » y sont indiscernables. Les distinguer demanderait très
+exactement la requête de privilège que le retrait du garde de #286 interdit — et le geste que
+l'écran demande, *demander un accès*, est le même dans les deux cas.
 _Avoid_ : `DatabaseReader`, `SchemaLoader`, `Importer`, `Crawler` ⚠️ les deux premiers ne disent pas
 qu'on va **chercher**, et passeraient donc sans bruit sur le chemin collé ; `Importer` promet une
 entrée dans le système, alors que rien n'entre avant l'ingestion ; `Crawler` promet une exploration
@@ -994,7 +1011,25 @@ qu'il a perdue, et elle porte sur deux choses distinctes.
   au scan dans un casier **indexé par la chaîne de connexion** : c'est une détention, même sans
   persistance, et pour une durée que le service ne contrôle pas. Le prix est un établissement de
   connexion par scan, négligeable devant un relevé qui se compte en secondes ; le gain est qu'à la
-  question « où le secret du client se trouve-t-il ? », il n'y a rien à répondre.
+  question « où le secret du client se trouve-t-il ? », il n'y a **presque** rien à répondre.
+  ⚠️ **« Presque », et le mot est mesuré, pas prudent. Il amende une phrase de l'ADR-0012**, dont
+  le premier garde-fou dit « la chaîne de connexion **ne survit pas au scan** […] elle vit en mémoire
+  le temps du relevé ». Les quatre interdits que cette phrase énumère — jamais persistée, jamais
+  journalisée, jamais tracée, jamais reprise dans un message d'erreur — tiennent tous ; ce qui ne
+  tient pas est « le temps du relevé », et la durée réelle est celle que l'ADR accorde lui-même aux
+  valeurs échantillons : **jusqu'au redémarrage du processus**. La contradiction est donc partielle
+  et elle est nommée ici plutôt qu'écrasée en silence.
+  `MySqlConnector` range la chaîne de
+  connexion **telle quelle** — mot de passe compris — comme **clé** d'un dictionnaire statique, et il
+  le fait même à `Pooling=false` ; `ClearAllPools` ne l'en retire pas, et aucune API publique du
+  pilote n'y donne prise. ⚠️ **La réserve ne vaut que pour ce pilote-là, et l'asymétrie est réelle :**
+  Npgsql cache la même chose au même endroit, mais il offre une `NpgsqlDataSource` explicite qui
+  contourne le cache — le dialecte PostgreSQL la bâtit dans un `await using`, et un garde d'IL
+  interdit le raccourci. `MySqlConnector` n'a pas d'équivalent qui échappe au registre statique : ce
+  n'est pas un choix du service, c'est le pilote qui ne laisse pas la prise. Ce qui subsiste après un scan MariaDB/MySQL est donc une **chaîne en
+  mémoire du processus**, jusqu'à son arrêt : aucune session ouverte, aucune valeur lue, rien de
+  persisté ni d'exporté — mais pas rien. C'est mesuré, épinglé par un test qui rougira le jour où le
+  pilote cessera de le faire, et c'est la seule réserve que ce contexte porte sur cette promesse.
   ⚠️ **Et côté SQLite, `base` ne porte que le nom du fichier, jamais son chemin.** Là où les deux
   autres dialectes y écrivent un mot inoffensif — `facturation` —, SQLite n'a pas de nom de base à
   donner, et le chemin complet y **est** la chaîne de connexion à peu de chose près. Or ce champ est

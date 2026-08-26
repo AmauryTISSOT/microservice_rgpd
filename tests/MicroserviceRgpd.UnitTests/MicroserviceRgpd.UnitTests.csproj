@@ -38,6 +38,14 @@
          Le dialecte PostgreSQL n'ajoute aucun test à conteneurs : c'est elle, rejouée contre
          l'ingestion, qui tient la moitié du filet que le lint sur le texte ne couvre pas. -->
     <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\postgresql.txt" LogicalName="captures.postgresql.txt" />
+    <!-- Les captures authentiques des deux moteurs de la famille MariaDB/MySQL. Elles sont le
+         filet sans conteneur du dialecte connecté (#307) : le pivot que le C# écrit doit rendre
+         les mêmes colonnes que celui que la requête servie a réellement produit, et les deux
+         moteurs sont là parce que c'est entre eux que `json` devient `longtext`. -->
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mysql84.txt"
+                      LogicalName="releve-mysql84.txt" />
+    <EmbeddedResource Include="..\..\exploration\releves-authentiques\captures\mariadb118.txt"
+                      LogicalName="releve-mariadb118.txt" />
   </ItemGroup>
 
   <ItemGroup>

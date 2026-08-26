@@ -10,6 +10,10 @@
          sqlite3_interrupt est ce qui coupe une requête en cours quand l'Operator quitte l'écran. -->
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <!-- Le pilote du dialecte MariaDB/MySQL du IDatabaseScanner (#307). MIT, asynchrone pour de
+         vrai, et il coupe la requête en cours sur annulation. MySql.Data est écarté : licence GPL
+         à exception, et un asynchrone qui bloque le fil sous le capot. -->
+    <PackageReference Include="MySqlConnector" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" 
                       ExcludeAssets="contentFiles" PrivateAssets="all" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
