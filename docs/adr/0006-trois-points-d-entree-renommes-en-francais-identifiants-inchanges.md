@@ -213,6 +213,12 @@ Trois choses amortissent ce risque, et aucune ne l'annule :
 1. **La phrase de la carte nomme où s'arrête le regard de la machine** — « Il lit des noms de tables
    et de colonnes, jamais une valeur ; vous tranchez, ligne par ligne. » C'est cette moitié-là qui
    rend le terme tenable, et elle reprend ce que `Screenings/Deposit.cshtml:17` écrit déjà.
+   ⚠️ **Cette phrase a été réécrite par
+   [#308](https://github.com/AmauryTISSOT/microservice_rgpd/issues/308)**, qui livre la voie
+   connectée : le service prélève désormais quelques valeurs par colonne, et « jamais une valeur »
+   avait cessé d'être vrai. Ce qui amortit le risque à sa place est ce qui reste vrai des deux
+   chemins — **« aucune valeur lue n'est conservée »**. La décision de cet ADR, elle, ne bouge pas :
+   c'est l'amortissement qui a changé de phrase, pas le nom.
 2. **La clause de doctrine est réécrite, pas supprimée** : « calibré pour la sensibilité » devient
    **« réglé pour signaler large, quitte à se tromper souvent — c'est à l'humain de trancher. »** Le
    vocabulaire d'épidémiologie part avec le reste, sans quoi l'image médicale rentrerait par la

@@ -1,8 +1,57 @@
 @page "/detection"
 @model MicroserviceRgpd.Web.Pages.Screenings.ReportModel
 @{
-  ViewData["Title"] = "Le rapport de détection courant";
-  var answer = Model.Answer!;
+  ViewData["Title"] = Model.Answer is null
+    ? "Détection des données personnelles"
+    : "Le rapport de détection courant";
+}
+
+@*
+  AUCUN RAPPORT N'A ENCORE ÉTÉ LANCÉ CHEZ CE CLIENT. On rend les DEUX ENTRÉES, côte à côte, et
+  AUCUNE CLAUSE : un rapport vide portant « ce rapport n'a pas regardé le CRM en SaaS, les tableurs
+  partagés… » serait un aveu sans acte, et userait la clause avant son premier usage réel.
+
+  ⚠️ LES DEUX VOIES SE PRÉSENTENT ENSEMBLE, et la connectée n'est pas la voie « moderne » dont
+  l'autre serait le repli : le dépôt collé est celui qu'on prend quand le service n'a pas le droit
+  de joindre la base, ce qui est le cas le plus fréquent.
+*@
+@if (Model.Answer is null)
+{
+  <h1>Détection des données personnelles</h1>
+
+  <p class="caveat">
+    Aucun rapport de détection n'a encore été lancé sur ce déploiement. Deux voies y mènent, et
+    elles produisent le <strong>même rapport</strong> : le service signale des colonnes susceptibles
+    de porter des données personnelles, et vous tranchez ligne par ligne.
+  </p>
+
+  <div class="doorways">
+    <a class="doorway" asp-page="Connection">
+      <h2>Connecter une base et lancer un scan</h2>
+      <p>
+        Le service joint lui-même la base avec un compte en lecture que vous lui donnez, relève le
+        schéma et prélève quelques valeurs pour affiner la détection. La chaîne de connexion n'est
+        ni conservée, ni journalisée, ni rejouée.
+      </p>
+    </a>
+    <a class="doorway" asp-page="Deposit">
+      <h2>Déposer un relevé collé</h2>
+      <p>
+        Vous exécutez la requête chez vous et vous collez ce qu'elle rend ; le service ne se
+        connecte à rien et ne lit <strong>aucune valeur</strong>. C'est la voie à prendre quand il
+        n'a pas le droit de joindre la base.
+      </p>
+    </a>
+  </div>
+}
+
+@{
+  if (Model.Answer is null)
+  {
+    return;
+  }
+
+  var answer = Model.Answer;
   var summary = answer.Content;
   var clause = answer.Clause;
 
@@ -224,6 +273,19 @@ else
   les porte deviendra un archivé qu'on relit sans pouvoir le reprendre. C'est un coût déclaré, pas
   une surprise.
 *@
+@*
+  LES DEUX VOIES SONT OFFERTES CÔTE À CÔTE, et elles coûtent la même chose : dans les deux cas le
+  rapport courant part à l'archive et aucun arbitrage n'est repris. La connectée n'est pas la voie
+  « normale » dont l'autre serait le repli.
+*@
+<p>
+  <a asp-page="Connection">Connecter une base et lancer un scan</a>
+  <span class="hint">
+    Le service joint lui-même la base et prélève quelques valeurs pour affiner la détection. Comme
+    le dépôt, un scan produit un rapport neuf et range celui-ci dans l'historique.
+  </span>
+</p>
+
 <p>
   <a asp-page="Deposit">Déposer un nouveau relevé</a>
   <span class="hint">

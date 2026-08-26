@@ -34,10 +34,12 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// Le port de la détection. ⚠️ Le geste ignore s'il parle à des règles locales ou à un moteur servi, et
 /// c'est la couture de réversibilité d'ADR-0004 — pas une couture de test.
 /// </param>
+/// <param name="previews">Le cache mémoire des aperçus, qu'un collage vide sans rien y déposer.</param>
 /// <param name="clock">L'horloge. C'est elle, et elle seule, qui décide quel rapport sera le courant.</param>
 public sealed class DepositListingHandler(
   IRepository<Screening> screenings,
   IScreeningEngine engine,
+  ScanPreviews previews,
   TimeProvider clock)
   : ICommandHandler<DepositListingCommand, Result<ScreeningId>>
 {
@@ -96,6 +98,12 @@ public sealed class DepositListingHandler(
       clock.GetUtcNow());
 
     await screenings.AddAsync(screening, cancellationToken);
+
+    // ⚠️ Le collage vient d'archiver le rapport courant, et ce rapport-là pouvait être un rapport
+    // SCANNÉ : ses aperçus — des valeurs réelles du client — n'ont plus aucun écran qui les montre.
+    // « L'éviction est immédiate » ne peut pas dépendre de la voie par laquelle le rapport suivant
+    // est arrivé, et un collage n'a rien lu qui prendrait leur place.
+    previews.Forget();
 
     return screening.Id;
   }

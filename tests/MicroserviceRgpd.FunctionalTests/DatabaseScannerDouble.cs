@@ -22,6 +22,8 @@ public sealed class DatabaseScannerDouble : IDatabaseScanner
 {
   private TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+  private TaskCompletionSource? _held;
+
   /// <summary>La fin que le scanner rendra au prochain appel.</summary>
   public ScanOutcome Outcome { get; set; } = ScanOutcome.NoTable();
 
@@ -52,6 +54,26 @@ public sealed class DatabaseScannerDouble : IDatabaseScanner
 
   /// <summary>Les pas que le scanner rapportera pendant qu'il travaille.</summary>
   public IReadOnlyList<ScanStep> Steps { get; set; } = [];
+
+  /// <summary>
+  /// Retient le scanner <b>après ses pas</b> et jusqu'à <see cref="Release"/> : c'est ce qui rend
+  /// l'écran d'attente observable.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Une retenue, et non un <see cref="Delay"/> assez long.</b> Un délai est lu au moment où
+  /// le scanner s'y met : le raccourcir ensuite ne libère pas celui qui attend déjà, et le test
+  /// aurait dû attendre pour de vrai la durée qu'il avait écrite.
+  /// </remarks>
+  public void Hold()
+  {
+    _held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+  }
+
+  /// <summary>Libère le scanner retenu, qui rend sa fin tout de suite.</summary>
+  public void Release()
+  {
+    _held?.TrySetResult();
+  }
 
   /// <summary>Signale que le scanner a commencé à travailler, avant même d'avoir répondu.</summary>
   public Task Started => _started.Task;
@@ -119,6 +141,13 @@ public sealed class DatabaseScannerDouble : IDatabaseScanner
     Steps = [];
     Interrupted = false;
     _started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // ⚠️ La retenue en cours est LIBÉRÉE avant d'être lâchée. Un test dont une assertion tombe entre
+    // le Hold() et le Release() laisserait sinon un scan garé pour toujours sur cette attente : le
+    // déploiement de la fabrique partagée refuserait tout lancement, et chaque test suivant de la
+    // collection échouerait à cause du premier.
+    _held?.TrySetResult();
+    _held = null;
   }
 
   public async Task<ScanOutcome> ScanAsync(
@@ -147,6 +176,20 @@ public sealed class DatabaseScannerDouble : IDatabaseScanner
       {
         // Le travail en cours s'arrête vraiment : sous SQLite, l'annulation coupe la requête, pas
         // seulement la boucle. La doublure doit laisser observer la même chose.
+        Interrupted = true;
+
+        throw;
+      }
+    }
+
+    if (_held is { } held)
+    {
+      try
+      {
+        await held.Task.WaitAsync(cancellationToken);
+      }
+      catch (OperationCanceledException)
+      {
         Interrupted = true;
 
         throw;

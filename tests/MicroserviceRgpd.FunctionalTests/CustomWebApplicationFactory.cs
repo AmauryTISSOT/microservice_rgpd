@@ -60,6 +60,13 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   public DatabaseScannerDouble Scanner { get; } = new();
 
   /// <summary>
+  /// Tout ce que le service journalise. ⚠️ <b>C'est le canari de la chaîne de connexion</b> : sans
+  /// un collecteur posé sur le vrai pipeline de journalisation, « elle n'apparaît dans aucun
+  /// journal » ne serait qu'une intention écrite dans un commentaire.
+  /// </summary>
+  public CapturedLogs Logs { get; } = new();
+
+  /// <summary>
   /// Le role de verdict est-il substitue ? <b>Non</b> dans un hote demarre LLM eteint : le laisser
   /// au cablage reel est la seule facon de prouver quelque chose du drapeau — une doublure posee
   /// par-dessus ne prouverait que la presence de cette doublure.
@@ -149,6 +156,10 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 
       services.RemoveAll<IDatabaseScanner>();
       services.AddSingleton<IDatabaseScanner>(Scanner);
+
+      // Le collecteur s'AJOUTE aux fournisseurs en place : rien n'est retiré, et ce que le service
+      // journalise en test est exactement ce qu'il journalise ailleurs.
+      services.AddSingleton<ILoggerProvider>(Logs);
 
       // L Adapter du client est pose sur le FIL : le vrai HttpAdapterCalls reste en place, avec son
       // en-tete de secret, son system_id en parametre et son corps de sac. C est le contrat qu on

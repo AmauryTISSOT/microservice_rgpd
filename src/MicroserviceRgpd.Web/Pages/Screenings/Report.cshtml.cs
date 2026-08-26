@@ -16,10 +16,12 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 /// seul fait qu'il existe, et rien n'a été écrit pour cela.
 /// </para>
 /// <para>
-/// ⚠️ <b>Quand aucun rapport de détection n'a été lancé, on rend l'écran de dépôt seul.</b> Un
-/// rapport de détection vide portant « ce rapport de détection n'a pas regardé le CRM en SaaS, les
-/// tableurs partagés, les journaux… » serait un <b>aveu sans acte</b>, et userait la clause avant
-/// son premier usage réel.
+/// ⚠️ <b>Quand aucun rapport de détection n'a été lancé, on rend les deux entrées, et aucune
+/// clause.</b> Un rapport de détection vide portant « ce rapport de détection n'a pas regardé le CRM
+/// en SaaS, les tableurs partagés, les journaux… » serait un <b>aveu sans acte</b>, et userait la
+/// clause avant son premier usage réel. ⚠️ <b>Les deux voies s'y présentent <i>ensemble</i></b> :
+/// rediriger vers le dépôt collé aurait rendu la voie connectée introuvable sur un déploiement
+/// neuf, qui est très exactement celui où l'on scanne pour la première fois.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le verrou et les comptes ne sont mémorisés nulle part.</b> Ils se recalculent ici, à
@@ -49,8 +51,8 @@ public class ReportModel(IMediator mediator) : PageModel
   {
     Answer = await mediator.Send(new ReadCurrentScreeningQuery(), cancellationToken);
 
-    // Aucun rapport de détection n'a encore été lancé chez ce client : l'écran de dépôt, seul, et
-    // sans clause — il n'y a rien dont on puisse déclarer l'incomplétude.
-    return Answer is null ? RedirectToPage("Deposit") : Page();
+    // Aucun rapport de détection n'a encore été lancé chez ce client : les deux entrées, côte à
+    // côte, et sans clause — il n'y a rien dont on puisse déclarer l'incomplétude.
+    return Page();
   }
 }

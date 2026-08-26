@@ -124,6 +124,13 @@ juste ; ce qui a changé, c'est qu'il y a désormais **deux gestes**, et que le 
 nom. La réadmission ne tient qu'aussi longtemps que le test ci-dessus est appliqué.
 ⚠️ **Il n'existe pas sur le chemin collé**, et ce n'est pas une omission : là, l'`Operator` fait
 lui-même, hors du service et avec la requête qu'on lui fournit, ce que le scan ferait pour lui.
+⚠️ **La règle mécanique est désormais tenue par un garde, et le garde est plus grossier qu'elle.**
+`NamesTheGestureWithTheOnlyWordTheGlossaryGivesIt` refuse « scan » **sans réserve** dans l'onglet et
+le titre — qui nomment l'écran, et donc le rapport — et n'en tolère ailleurs l'emploi qu'**attaché à
+la base qu'il joint** : « connecter une base et lancer un scan ». C'est un proxy de la règle du
+glossaire, pas la règle elle-même : une phrase qui passe le garde peut encore employer le mot à tort,
+et c'est la relecture qui l'attrape. Le mot est arrivé sur les écrans avec
+[#308](https://github.com/AmauryTISSOT/microservice_rgpd/issues/308), qui livre la voie connectée.
 _Avoid_ : Crawl, Discovery, Probe, Introspection, sondage, exploration ⚠️ `Discovery` et
 `exploration` promettent que le service cherche ce qu'il ne sait pas d'avance trouver, alors qu'il
 lit un schéma puis *n* colonnes nommées ; `Probe` et `sondage` promettent un prélèvement méthodique
@@ -399,6 +406,18 @@ interdit. Reprendre serait de toute façon impossible : la chaîne n'a pas surv�
 la connexion a réussi, le catalogue a répondu —, mais produire un `Screening` vide ferait **reculer
 le rapport courant** au profit d'un rapport qui ne dit rien, et détruirait des jours d'arbitrage pour
 une connexion d'essai. L'écran d'attente le dit et ne produit rien.
+⚠️ **Relu contre le code livré par
+[#308](https://github.com/AmauryTISSOT/microservice_rgpd/issues/308).** Les types portent ce que
+cette entrée dit : `ScanProgress` est le transitoire, `ScanId` son identité, `ScansInFlight` le fait
+du déploiement — un seul en vol —, `ScanPreviews` le jeu d'aperçus vivant, `IScanLauncher` ce par
+quoi un scan part. La lecture rend un **`ScanSnapshot`** — la phase, le compte, la fin — pris **d'un
+seul coup** : lire la phase puis le compte aurait laissé l'écran afficher « aperçus, table 312 sur
+312 » à propos d'une phase déjà quittée. ⚠️ **Il ne s'appelle pas `ScanState`**, qui est sur la liste
+_Avoid_ ci-dessous : c'est un **instant de lecture**, pas un état rangé quelque part.
+⚠️ **Un point que cette entrée ne disait pas et que le code impose : le dernier scan reste retrouvable
+après sa fin.** Sans quoi l'écran d'attente ne pourrait pas répondre « c'est fini, voici le rapport »
+à qui arrive une seconde après la dernière ligne écrite — il dirait « ce scan n'existe plus » d'un
+scan qui a parfaitement réussi. Un seul est retenu : le précédent s'efface quand le suivant part.
 _Avoid_ : ScanState, ScanJob, statut du scan, progression, pourcentage ⚠️ `ScanState` et `statut`
 rangeraient parmi les états ce qui a été délibérément tenu à côté d'eux ; `ScanJob` promet une file
 et des reprises, quand il n'y en a qu'un et qu'il ne reprend jamais ; `pourcentage` est le mot qui
