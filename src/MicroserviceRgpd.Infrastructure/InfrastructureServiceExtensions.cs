@@ -81,6 +81,11 @@ public static class InfrastructureServiceExtensions
     // l'écran, à l'appel, et ne se pose nulle part.
     services.AddDatabaseScanner();
 
+    // Ce qui fait courir un scan hors de la requête qui l'a demandé : le fait du déploiement — un
+    // seul en vol —, le jeu d'aperçus vivant, le geste et son lanceur. ⚠️ Rien de tout cela ne
+    // tourne en fond : il n'y a de scan que parce qu'un Operator vient d'en lancer un.
+    services.AddScanning();
+
     // Le rendu de la Cartographie en fichier. ⚠️ Il est enregistré par son port et sans état : il ne
     // lit aucun dépôt, ne consulte aucune horloge et n'écrit nulle part — ce qui sépare cet export
     // du pont interdit vers le Manifest est qu'il a un destinataire humain qui l'a demandé.

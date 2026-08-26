@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace MicroserviceRgpd.FunctionalTests.Layout;
 
 /// <summary>
-/// Le layout partagé des treize écrans de la surface : une feuille de style et une police que <b>le service sert
+/// Le layout partagé des quatorze écrans de la surface : une feuille de style et une police que <b>le service sert
 /// lui-même</b>, et aucune ressource tierce.
 /// </summary>
 /// <remarks>
@@ -242,7 +242,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   /// ⚠️ <b>AUCUN CHIFFRE DANS LA BARRE</b>, ni compteur ni badge. La règle des chiffres que le
   /// tableau des demandes RGPD applique — un « 0 dossier en retard » se lit comme une mesure
   /// rassurante là où la phrase dit ce qu'elle est — vaut aussi pour une barre qu'on lit sur les
-  /// treize écrans sans jamais l'ouvrir.
+  /// quatorze écrans sans jamais l'ouvrir.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Une exception, nommée et étroite : la version du produit</b>, à l'extrémité droite de la
@@ -349,10 +349,10 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     var screens = await _layout.ScreeningScreensAsync();
 
-    // Six, écrit en clair, et non le compte de la liste des adresses retirées : les deux valent six
-    // par histoire et non par règle, et les dériver l'une de l'autre ferait qu'en retirer une
-    // affaiblirait les deux tests d'un coup.
-    screens.Count.ShouldBe(6, "Le contexte de détection compte six écrans.");
+    // Sept, écrit en clair, et non le compte de la liste des adresses retirées : les deux comptes
+    // valent ce qu'ils valent par histoire et non par règle, et les dériver l'un de l'autre ferait
+    // qu'en retirer une adresse affaiblirait les deux tests d'un coup.
+    screens.Count.ShouldBe(7, "Le contexte de détection compte sept écrans.");
 
     foreach (var screen in screens)
     {
@@ -371,7 +371,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   /// le service n'a pas ; le second est une décision explicite du demandeur.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les treize écrans sans moyen de la
+  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les quatorze écrans sans moyen de la
   /// sauter au clavier, ce qui est une régression d'accessibilité par rapport à l'état d'avant, où
   /// aucune barre n'existait. Aucun chantier d'accessibilité n'est ouvert ici.
   /// </remarks>

@@ -148,9 +148,14 @@ internal static class Navigation
       "Détection des données personnelles",
       "Détection des données personnelles",
       "/detection",
-      "Vous y collez un schéma de base de données, et le service signale les colonnes susceptibles " +
-      "de porter des données personnelles. Il lit des noms de tables et de colonnes, jamais une " +
-      "valeur ; vous tranchez, ligne par ligne."),
+      // ⚠️ « JAMAIS UNE VALEUR » A CESSÉ D'ÊTRE VRAI, et la phrase a suivi. La voie connectée
+      // prélève quelques valeurs par colonne pour affiner la détection : les laisser promises
+      // absentes ici aurait fait de la carte d'accueil le seul endroit du service qui mente sur ce
+      // que le scan lit. Ce qui reste vrai, et que la phrase dit, est qu'aucune valeur lue ne
+      // survit au scan.
+      "Vous y faites scanner une base par le service, ou vous collez un schéma vous-même. Il " +
+      "signale les colonnes susceptibles de porter des données personnelles ; aucune valeur lue " +
+      "n'est conservée, et vous tranchez ligne par ligne."),
 
     // ⚠️ UNE SEULE PHRASE, ET C'EST DÉLIBÉRÉ. « Lire » est le seul des trois verbes qui ne soit pas
     // un geste, et la brièveté dit par sa forme qu'on ne pose rien sur cet écran. Le parallélisme ne

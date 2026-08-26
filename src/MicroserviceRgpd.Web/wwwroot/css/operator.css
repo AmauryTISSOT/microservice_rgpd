@@ -830,6 +830,34 @@ td.ruling button {
   font-weight: var(--weight-bold);
 }
 
+/*
+  L'AVANCEMENT DU SCAN EST UNE LARGEUR, ET RIEN D'AUTRE. Pas d'animation, pas de `<progress>` dont
+  le rendu varie d'un navigateur à l'autre, pas une ligne de JavaScript : le serveur rend un
+  pourcentage dans un attribut `style`, et le navigateur dessine un rectangle. Ce qui est LU par
+  l'Operator reste le compte réel — « table 148 sur 312 » —, écrit juste au-dessus.
+
+  ⚠️ La barre n'apparaît QUE lorsque le catalogue a répondu : c'est l'écran qui décide de ne pas la
+  rendre, pas la feuille de la masquer. Une barre à zéro pour cent se lirait comme « le travail a
+  commencé et n'a rien fait », alors que rien n'est encore comptable.
+*/
+.count {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-bold);
+}
+
+.progress {
+  background: var(--hairline);
+  border-radius: var(--radius-full);
+  height: var(--space-xs);
+  margin: var(--space-xs) 0 var(--space-md);
+  overflow: hidden;
+}
+
+.progress-done {
+  background: var(--accent);
+  height: 100%;
+}
+
 /* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
 .clause {
   display: grid;

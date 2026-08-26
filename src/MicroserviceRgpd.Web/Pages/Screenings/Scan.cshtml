@@ -1,0 +1,89 @@
+@page "/detection/scan/{scanId:guid}"
+@model MicroserviceRgpd.Web.Pages.Screenings.ScanModel
+@using MicroserviceRgpd.Core.Screenings
+@{
+  ViewData["Title"] = "Scan en cours";
+}
+
+@*
+  LE RAFRAÎCHISSEMENT EST UN `meta`, ET IL N'Y A PAS UNE LIGNE DE JAVASCRIPT DERRIÈRE. Il ne s'arme
+  que tant que le scan court : posé sur la fin, il rechargerait indéfiniment un écran qui ne bouge
+  plus, et sur le succès il courrait après un 303 déjà rendu.
+*@
+@section Head {
+  @if (Model.Snapshot is { HasEnded: false })
+  {
+    <meta http-equiv="refresh" content="@ScanModel.RefreshInSeconds" />
+  }
+}
+
+<h1>Scan en cours</h1>
+
+@if (Model.Snapshot is not { } state)
+{
+  @*
+    « CE SCAN N'EXISTE PLUS » SE DIT, il ne se redirige pas. Le service a redémarré, ou un autre scan
+    a pris la place : rediriger en silence vers le rapport courant aurait laissé l'Operator croire
+    que c'est le sien.
+  *@
+  <p class="caveat">
+    <strong>Ce scan n'existe plus.</strong> Un scan ne survit pas au redémarrage du service, et le
+    service n'en retient qu'un à la fois : celui-ci a été remplacé, ou le processus a redémarré. Rien
+    n'a été écrit à moitié — un scan qui n'a pas fini n'a produit aucun rapport.
+  </p>
+
+  <p><a asp-page="Connection">Relancer un scan</a></p>
+  <p><a asp-page="Report">Voir le rapport de détection courant</a></p>
+}
+else if (state.HasEnded)
+{
+  @*
+    LA FIN SANS RAPPORT EST DITE ICI EN UNE PHRASE, et son écran complet vient avec le ticket des
+    fins anormales. Ce qui compte à ce stade : elle ne se lit pas comme un succès, et elle ne laisse
+    pas l'écran tourner en rond.
+  *@
+  <p class="caveat">
+    <strong>Le scan s'est arrêté sans produire de rapport</strong>, en phase
+    « @state.Phase.FrenchLabel ». Le rapport de détection courant n'a pas bougé : il est resté celui
+    que vous aviez, et rien n'est parti à l'archive.
+  </p>
+
+  <p><a asp-page="Connection">Relancer un scan</a></p>
+  <p><a asp-page="Report">Voir le rapport de détection courant</a></p>
+}
+else
+{
+  <p class="hint">
+    Cet écran se rafraîchit tout seul, toutes les @ScanModel.RefreshInSeconds secondes. Vous pouvez
+    fermer l'onglet : <strong>le scan continue</strong>, et cette adresse le retrouvera.
+  </p>
+
+  <p class="phase">Phase : <strong>@state.Phase.FrenchLabel</strong></p>
+
+  @*
+    AUCUNE BARRE AVANT QUE LE CATALOGUE AIT RÉPONDU. Tant qu'aucun dénominateur n'est honnête, il
+    n'y a ni barre ni compte : « 0 sur 0 » se lirait comme une mesure, et l'absence, elle, ne se lit
+    pas du tout — ce qui est exactement ce qu'il faut montrer quand on ne sait pas encore.
+  *@
+  @if (state.ShowsABar)
+  {
+    <p class="count">@Model.Unit @state.Done sur @state.Total</p>
+
+    @*
+      L'AVANCEMENT EST UNE LARGEUR, ET LE CHIFFRE MONTRÉ EST LE COMPTE RÉEL. Le pour-cent ne sert
+      qu'à dessiner le rectangle ; il ne s'écrit nulle part, parce qu'un pourcentage se lit comme
+      une mesure du temps restant, ce qu'il n'est pas.
+    *@
+    <div class="progress" role="img"
+         aria-label="@Model.Unit @state.Done sur @state.Total">
+      <div class="progress-done" style="width: @Model.BarWidth%"></div>
+    </div>
+  }
+  else
+  {
+    <p class="hint">
+      Le catalogue n'a pas encore répondu : il n'y a <strong>rien à compter</strong> tant que le
+      service ne sait pas combien de tables ce compte lui présente.
+    </p>
+  }
+}

@@ -11,6 +11,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>@ViewData["Title"] — @Navigation.ServiceName</title>
   <link rel="stylesheet" href="/css/operator.css" />
+  @*
+    ⚠️ LA SEULE CHOSE QU'UN ÉCRAN AJOUTE ICI EST UN `meta`, ET IL N'Y AURA JAMAIS DE `script`.
+    Cette section existe pour l'écran d'attente du scan, qui se rafraîchit par
+    `<meta http-equiv="refresh">` — le rafraîchissement sans une ligne de JavaScript. Un écran qui
+    s'en servirait pour poser un script romprait la règle que tout le reste du layout tient.
+  *@
+  @await RenderSectionAsync("Head", required: false)
 </head>
 <body class="@(ViewData["Wide"] is true ? "wide" : null)">
   @*
