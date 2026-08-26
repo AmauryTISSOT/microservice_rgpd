@@ -169,6 +169,57 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
     return $"{Table}?schema={Uri.EscapeDataString(schema)}&table={Uri.EscapeDataString(table)}";
   }
 
+  /// <summary>
+  /// L'<b>ancre</b> d'une colonne, telle que l'écran d'une table la pose et telle que la
+  /// redirection d'un arbitrage la vise.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle est écrite ici en toutes lettres, et non calculée par le code de production.</b>
+  /// La recalculer avec la fonction qu'elle éprouve aurait rendu vert n'importe quel changement
+  /// de forme : ce qu'un test garde d'une ancre, c'est très exactement qu'elle ne bouge pas.
+  /// </remarks>
+  internal static string AnchorOf(string column)
+  {
+    return $"colonne-{column}";
+  }
+
+  /// <summary>
+  /// Le <b>bloc</b> d'une colonne sur l'écran d'une table : sa <b>fiche</b> si la détection l'a
+  /// signalée, sa <b>ligne</b> sinon — ou <c>null</c> si l'écran ne la porte pas.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Un seul lecteur pour les deux temps de l'écran.</b> Les signalées se lisent en fiches
+  /// dépliables et les <c>Unflagged</c> en lignes : un helper par forme aurait laissé chaque
+  /// fichier de tests décider tout seul de ce qu'il regarde, et une colonne passée d'un temps à
+  /// l'autre serait devenue introuvable sans qu'aucun test ne rougisse.
+  /// </remarks>
+  internal static string? BlockOf(string table, string column)
+  {
+    var anchor = Regex.Escape(AnchorOf(column));
+
+    var card = Regex.Match(
+      table, $@"<details[^>]*id=""{anchor}""[^>]*>.*?</details>", RegexOptions.Singleline);
+
+    if (card.Success)
+    {
+      return card.Value;
+    }
+
+    var row = Regex.Match(
+      table, $@"<tr[^>]*id=""{anchor}""[^>]*>.*?</tr>", RegexOptions.Singleline);
+
+    return row.Success ? row.Value : null;
+  }
+
+  /// <summary>
+  /// Combien de colonnes l'écran d'une table rend vraiment, <b>les deux temps confondus</b> — la
+  /// mesure que « celle-ci est là » ne donne pas.
+  /// </summary>
+  internal static int ColumnCountOf(string table)
+  {
+    return Regex.Matches(table, @"id=""colonne-").Count;
+  }
+
   /// <summary>L'adresse du sommaire d'un rapport de détection archivé.</summary>
   internal static string ArchiveOf(string screening)
   {

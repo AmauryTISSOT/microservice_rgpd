@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.FunctionalTests.Layout;
 
 namespace MicroserviceRgpd.FunctionalTests.Screenings;
@@ -41,20 +42,20 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("date_crea", table: "cotisations", position: 1));
 
     // Les trois de la table ouverte, signalées comme non signalées.
-    RowOf(table, "id_adh").ShouldNotBeNull();
-    RowOf(table, "email").ShouldNotBeNull();
-    RowOf(table, "montant").ShouldNotBeNull();
+    ScreeningSurface.BlockOf(table, "id_adh").ShouldNotBeNull();
+    ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull();
+    ScreeningSurface.BlockOf(table, "montant").ShouldNotBeNull();
 
     // Au moins une de ces trois est une colonne où le moteur n'a rien vu, et elle est là quand même.
     table.ShouldContain("Rien n'a été vu");
 
-    // ⚠️ Et il y en a EXACTEMENT trois. Nommer trois lignes présentes ne dit rien d'une quatrième
-    // qu'on aurait laissée tomber — et la colonne qu'un écran laisse tomber est très exactement
+    // ⚠️ Et il y en a EXACTEMENT trois. Nommer trois blocs présents ne dit rien d'un quatrième
+    // qu'on aurait laissé tomber — et la colonne qu'un écran laisse tomber est très exactement
     // celle que personne ne relira jamais.
-    RowCountOf(table).ShouldBe(3);
+    ScreeningSurface.ColumnCountOf(table).ShouldBe(3);
 
     // Et la table voisine n'est pas de la partie : l'unité de travail est UNE table.
-    RowOf(table, "date_crea").ShouldBeNull();
+    ScreeningSurface.BlockOf(table, "date_crea").ShouldBeNull();
   }
 
   /// <summary>
@@ -81,30 +82,35 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     content.ShouldNotContain("<select");
     content.ShouldNotContain("type=\"checkbox\"");
 
-    // ⚠️ Les SEULS formulaires de l'écran sont les arbitrages — un par ligne, plus le geste de lot —
-    // et aucun ne masque quoi que ce soit. Interdire tout <form> était tenable tant que l'écran
-    // était en lecture seule ; ce qui doit rester interdit est le formulaire qui MASQUE, jamais
-    // celui qui tranche.
+    // ⚠️ Les SEULS formulaires de l'écran sont les arbitrages — un par colonne, fiche ou ligne,
+    // plus le geste de lot — et aucun ne masque quoi que ce soit. Interdire tout <form> était
+    // tenable tant que l'écran était en lecture seule ; ce qui doit rester interdit est le
+    // formulaire qui MASQUE, jamais celui qui tranche.
     // ⚠️ Le compte attendu se DÉDUIT de la présence du geste de lot, qui n'est rendu que si la table
     // a encore quelque chose à sa portée : figer « +1 » ferait tomber ce test le jour où un jeu de
     // colonnes n'en offrirait plus aucune — et il tomberait pour une raison étrangère à ce qu'il garde.
     var batchGestures = Regex.Matches(table, "handler=Batch").Count;
 
     Regex.Matches(table, "<form").Count.ShouldBe(
-      RowCountOf(table) + batchGestures,
+      ScreeningSurface.ColumnCountOf(table) + batchGestures,
       "Il y a un formulaire par colonne et au plus un geste de lot, et aucun autre : un formulaire "
       + "de plus serait un filtre.");
 
     // ⚠️ Et le lot n'en est un que par ce qu'il NE porte PAS : il ne nomme aucune colonne. Le compte
-    // reste donc celui des lignes — un name=\"Column\" de plus serait une liste de colonnes postée,
-    // c'est-à-dire le chemin par lequel un formulaire forgé écarterait en masse des signalées.
-    Regex.Matches(table, "name=\"Column\"").Count.ShouldBe(RowCountOf(table));
+    // reste donc celui des colonnes — un name=\"Column\" de plus serait une liste de colonnes
+    // postée, c'est-à-dire le chemin par lequel un formulaire forgé écarterait en masse des signalées.
+    Regex.Matches(table, "name=\"Column\"").Count.ShouldBe(ScreeningSurface.ColumnCountOf(table));
+
+    // ⚠️ LE REPLI D'UNE FICHE N'EST PAS UN FILTRE, et c'est le nom lisible qui l'atteste : une
+    // colonne signalée déjà tranchée se replie, mais son nom et son issue restent à l'écran. Ce qui
+    // se replie est ce qu'on a fini de lire, jamais ce qu'on n'a pas encore vu.
+    table.ShouldContain("email");
 
     // Et le geste lui-même n'écoute aucun paramètre de filtre : le demander ne change rien.
     var asked = WebUtility.HtmlDecode(await _surface.ReadAsync(
       $"{ScreeningSurface.Table}?schema=public&table=adherents&flagged=true&filtre=signalees"));
 
-    RowCountOf(asked).ShouldBe(RowCountOf(table));
+    ScreeningSurface.ColumnCountOf(asked).ShouldBe(ScreeningSurface.ColumnCountOf(table));
     asked.ShouldContain("Rien n'a été vu");
   }
 
@@ -137,9 +143,12 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("adr_l1", position: 2),
       ScreeningSurface.Column("cp", position: 3));
 
+    // ⚠️ Les trois sont signalées : elles se lisent donc dans le MÊME temps de l'écran, et leur
+    // ordre relatif y est celui du relevé. L'écran range les signalées avant les Unflagged, ce qui
+    // est une mise en page ; à l'intérieur d'un temps, rien ne trie.
     var rendered = new[] { "ville", "adr_l1", "cp" }
-      .Select(column => RowOf(table, column) is { } row
-        ? table.IndexOf(row, StringComparison.Ordinal)
+      .Select(column => ScreeningSurface.BlockOf(table, column) is { } block
+        ? table.IndexOf(block, StringComparison.Ordinal)
         : -1)
       .ToArray();
 
@@ -162,7 +171,7 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("id_adh", position: 1),
       ScreeningSurface.Column("email", position: 2));
 
-    var flagged = RowOf(table, "email");
+    var flagged = ScreeningSurface.BlockOf(table, "email");
 
     flagged.ShouldNotBeNull("« email » est au lexique gelé : le moteur réel doit la signaler.");
 
@@ -172,8 +181,9 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     // Le NOM DE LA RÈGLE qui a déclenché — jamais une échelle, jamais un score.
     flagged.ShouldContain("correspondance exacte");
 
-    // Le MOTIF, en clair : ni replié, ni tronqué. Replié derrière une infobulle, il n'existe plus.
-    flagged.ShouldMatch("(?s)<td class=\"reason\">\\s*\\S");
+    // Le MOTIF, en clair, en PLEINE LARGEUR et dans la fiche : ni tronqué, ni replié derrière une
+    // infobulle, où il n'existerait plus.
+    flagged.ShouldMatch("(?s)class=\"reason\">\\s*\\S");
 
     // ⚠️ Et c'est le motif de CETTE colonne-ci, non un texte de remplissage : le moteur cite le
     // jeton qui a déclenché, et un motif générique se lirait comme une pièce sans l'être.
@@ -198,13 +208,14 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column("montant", position: 1),
       ScreeningSurface.Column("email", position: 2));
 
-    var nothingSeen = RowOf(table, "montant");
+    var nothingSeen = ScreeningSurface.BlockOf(table, "montant");
 
     nothingSeen.ShouldNotBeNull("« montant » n'est à aucun lexique : elle doit être rendue non signalée.");
     nothingSeen.ShouldContain("Rien n'a été vu");
 
-    // La cellule du motif est VIDE, et non « aucun motif » ou un tiret qui se lirait comme un motif.
-    nothingSeen.ShouldMatch("(?s)<td class=\"reason\">\\s*</td>");
+    // ⚠️ Aucun motif, et pas même la place d'en poser un : ni « aucun motif », ni un tiret qui se
+    // lirait comme un motif. Le second temps de l'écran n'a pas de colonne de motif du tout.
+    nothingSeen.ShouldNotContain("class=\"reason\"");
   }
 
   /// <summary>
@@ -312,8 +323,8 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       ScreeningSurface.Column(
         "ref_x", position: 2, columnComment: "L'adresse postale de l'adhérent."));
 
-    var byName = RowOf(table, "email");
-    var byComment = RowOf(table, "ref_x");
+    var byName = ScreeningSurface.BlockOf(table, "email");
+    var byComment = ScreeningSurface.BlockOf(table, "ref_x");
 
     byName.ShouldNotBeNull();
     byComment.ShouldNotBeNull("Le commentaire porte « adresse » : le moteur réel doit la signaler.");
@@ -321,6 +332,164 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     // Le motif de chacune cite ce qui a déclenché chez ELLE.
     ReasonOf(byComment).ShouldContain("adresse");
     ReasonOf(byName).ShouldNotBe(ReasonOf(byComment));
+  }
+
+  /// <summary>
+  /// <b>L'écran se lit en deux temps</b> : les signalées d'abord, en fiches ; les <c>Unflagged</c>
+  /// ensuite, avec le geste de lot.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le rythme de la table est une mise en page, jamais un geste de plus.</b> Rien n'est
+  /// retiré de l'écran : les deux temps portent ensemble toutes les colonnes de la table, et
+  /// l'ordre est celui de ce qui se lit une par une avant ce qui se tranche d'un geste.
+  /// </remarks>
+  [Fact]
+  public async Task ReadsInTwoTimesTheFlaggedCardsFirstAndTheUnflaggedColumnsAfterThem()
+  {
+    var table = await DepositAndOpenAsync(
+      ScreeningSurface.Column("email", position: 1),
+      ScreeningSurface.Column("montant", position: 2));
+
+    var flagged = ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull();
+    var unflagged = ScreeningSurface.BlockOf(table, "montant").ShouldNotBeNull();
+
+    // Une signalée est une FICHE, motif compris ; une Unflagged reste une ligne du tableau.
+    flagged.ShouldStartWith("<details");
+    unflagged.ShouldStartWith("<tr");
+
+    // Et le premier temps précède le second : ce qui se lit une par une vient avant ce qui se
+    // tranche d'un geste.
+    table.IndexOf(flagged, StringComparison.Ordinal)
+      .ShouldBeLessThan(table.IndexOf(unflagged, StringComparison.Ordinal));
+
+    // Le geste de lot appartient au second temps, et il est toujours là, inchangé.
+    table.ShouldContain("handler=Batch");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>L'ouverture d'une fiche se DÉDUIT du domaine, et rien d'autre ne la décide.</b> Dépliée
+  /// tant que la colonne attend, repliée dès qu'elle est arbitrée : il reste à l'écran exactement
+  /// ce qu'il reste à lire, sans état client et sans une ligne de JavaScript.
+  /// </summary>
+  [Fact]
+  public async Task LeavesAFlaggedCardOpenWhileItsColumnAwaitsAndFoldsItOnceArbitrated()
+  {
+    await _surface.DepositAsync(ScreeningSurface.Paste(
+      ScreeningSurface.Column("email", position: 1),
+      ScreeningSurface.Column("montant", position: 2)));
+
+    var awaiting = ScreeningSurface
+      .BlockOf(await ReadTheTableAsync(), "email")
+      .ShouldNotBeNull();
+
+    awaiting.ShouldMatch(@"^<details[^>]*\sopen[\s>]");
+
+    await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name);
+
+    var arbitrated = ScreeningSurface
+      .BlockOf(await ReadTheTableAsync(), "email")
+      .ShouldNotBeNull();
+
+    arbitrated.ShouldNotMatch(@"^<details[^>]*\sopen[\s>]");
+
+    // ⚠️ Repliée, la fiche dit toujours QUI elle est et CE QU'ON EN A DIT : un repli qui effacerait
+    // l'issue rendrait l'écran illisible d'un coup d'œil, et l'Operator rouvrirait trente fiches
+    // pour retrouver ce qu'il vient de trancher.
+    arbitrated.ShouldContain("email");
+    arbitrated.ShouldContain("retenue");
+  }
+
+  /// <summary>
+  /// <b>Une fiche signalée réserve l'emplacement de son aperçu, sur la ligne de son motif.</b> Il
+  /// est vide tant que le service ne lit aucune valeur — le chemin collé ne lui en donne aucune —
+  /// et le ticket des aperçus le remplira sans rebâtir la fiche.
+  /// </summary>
+  [Fact]
+  public async Task ReservesAnEmptyPreviewSlotOnTheReasonLineOfEveryFlaggedCard()
+  {
+    var table = await DepositAndOpenAsync(ScreeningSurface.Column("email", position: 1));
+
+    var flagged = ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull();
+
+    flagged.ShouldContain("class=\"preview\"");
+
+    // ⚠️ VIDE, et il le reste : un relevé collé ne porte aucune valeur, et un emplacement qui
+    // dirait « aucun aperçu » ferait passer le chemin collé pour un scan qui n'aurait rien vu.
+    flagged.ShouldMatch(@"class=""preview""[^>]*>\s*</");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Zéro JavaScript, sans exception</b> — <c>ADR-0005</c> et <c>ADR-0009</c>. Le repli des
+  /// fiches est celui du navigateur : le jour où il demanderait un script, c'est le repli qu'il
+  /// faudrait retirer, pas la règle.
+  /// </summary>
+  [Fact]
+  public async Task ServesNotOneLineOfJavaScriptToFoldItsCards()
+  {
+    var table = await DepositAndOpenAsync(
+      ScreeningSurface.Column("email", position: 1),
+      ScreeningSurface.Column("montant", position: 2));
+
+    table.ShouldNotContain("<script", Case.Insensitive);
+    table.ShouldNotContain(".js", Case.Insensitive);
+    table.ShouldNotContain("onclick", Case.Insensitive);
+    table.ShouldNotContain("ontoggle", Case.Insensitive);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une table dont tout a été signalé n'a pas de second temps, et n'en dit pas un mot de
+  /// travers.</b> Un geste de lot laissé là aurait affirmé que « celles où rien n'a été vu ont
+  /// toutes été relues » — c'est-à-dire qu'on a relu ce qui n'existe pas — deux lignes avant de
+  /// dire qu'il n'en existe aucune.
+  /// </summary>
+  [Fact]
+  public async Task SaysOnceAndOnlyOnceThatATableHasNoColumnWhereNothingWasSeen()
+  {
+    var table = await DepositAndOpenAsync(
+      ScreeningSurface.Column("email", position: 1),
+      ScreeningSurface.Column("adr_l1", position: 2));
+
+    // Les deux sont signalées : le second temps n'a rien à porter.
+    ScreeningSurface.BlockOf(table, "email").ShouldNotBeNull().ShouldStartWith("<details");
+    ScreeningSurface.BlockOf(table, "adr_l1").ShouldNotBeNull().ShouldStartWith("<details");
+
+    table.ShouldContain("Toutes les colonnes de cette table ont été signalées");
+
+    // ⚠️ Et aucun geste de lot : il n'aurait rien à atteindre, et sa phrase se lirait comme un
+    // constat sur des colonnes qui n'existent pas.
+    table.ShouldNotContain("handler=Batch");
+    table.ShouldNotContain("ont toutes été relues");
+  }
+
+  /// <summary>
+  /// <b>Un nom de colonne que la base rend tel quel s'ancre quand même</b> : une base nomme ses
+  /// colonnes comme elle veut, et un fragment d'URL n'accepte presque rien. L'échappement est
+  /// injectif — deux colonnes distinctes ne peuvent pas atterrir sur la même ancre —, faute de quoi
+  /// un arbitrage renverrait l'<c>Operator</c> sur une colonne qu'il n'a pas tranchée.
+  /// </summary>
+  [Fact]
+  public async Task AnchorsAColumnWhoseNameCarriesWhatAFragmentWouldNotAccept()
+  {
+    await _surface.DepositAsync(ScreeningSurface.Paste(
+      ScreeningSurface.Column("e-mail", position: 1),
+      ScreeningSurface.Column("e002Dmail", position: 2)));
+
+    var table = await ReadTheTableAsync();
+
+    // Le tiret est échappé, et le nom qui porte déjà sa séquence d'échappement ne s'y confond pas :
+    // les deux ancres sont distinctes.
+    table.ShouldContain("id=\"colonne-e-002Dmail\"");
+    table.ShouldContain("id=\"colonne-e002Dmail\"");
+
+    var arbitrated = await _surface.ArbitrateAsync("e-mail", ScreenedColumnState.Retained.Name);
+
+    arbitrated.Headers.Location!.OriginalString.ShouldEndWith("#colonne-e-002Dmail");
+  }
+
+  /// <summary>L'écran d'une table, relu par une adresse neuve — jamais la page rendue par le POST.</summary>
+  private async Task<string> ReadTheTableAsync()
+  {
+    return WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.TableOf()));
   }
 
   /// <summary>Dépose un relevé, puis ouvre la table <c>public.adherents</c> du rapport qu'il rend.</summary>
@@ -336,29 +505,12 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
       await _surface.ReadAsync($"{ScreeningSurface.Table}?schema=public&table=adherents"));
   }
 
-  /// <summary>La ligne d'une colonne, telle que l'écran la rend — ou <c>null</c> si elle n'y est pas.</summary>
-  private static string? RowOf(string table, string column)
+  /// <summary>Le motif tel que la fiche le rend, débarrassé de son balisage.</summary>
+  private static string ReasonOf(string card)
   {
-    var row = Regex.Match(
-      table,
-      $@"<tr>\s*<th scope=""row"">\s*{Regex.Escape(column)}\b.*?</tr>",
-      RegexOptions.Singleline);
+    var reason = Regex.Match(card, @"class=""reason"">(.*?)</", RegexOptions.Singleline);
 
-    return row.Success ? row.Value : null;
-  }
-
-  /// <summary>Combien de colonnes l'écran rend vraiment — la mesure que « celle-ci est là » ne donne pas.</summary>
-  private static int RowCountOf(string table)
-  {
-    return Regex.Matches(table, @"<tr>\s*<th scope=""row"">", RegexOptions.Singleline).Count;
-  }
-
-  /// <summary>Le motif tel que la ligne le rend, débarrassé de son balisage.</summary>
-  private static string ReasonOf(string row)
-  {
-    var reason = Regex.Match(row, @"<td class=""reason"">(.*?)</td>", RegexOptions.Singleline);
-
-    reason.Success.ShouldBeTrue("La ligne ne porte aucune cellule de motif.");
+    reason.Success.ShouldBeTrue("La fiche ne porte aucun motif.");
 
     return reason.Groups[1].Value.Trim();
   }
