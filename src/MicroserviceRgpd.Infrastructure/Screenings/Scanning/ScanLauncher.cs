@@ -47,9 +47,7 @@ public sealed class ScanLauncher(
 {
   private readonly Lock _turn = new();
 
-  private ScanId? _abandonable;
-
-  private CancellationTokenSource? _abandon;
+  private Interruptible? _interruptible;
 
   /// <inheritdoc />
   public ScanLaunch Launch(DatabaseDialect dialect, string connectionString)
@@ -71,8 +69,7 @@ public sealed class ScanLauncher(
 
     lock (_turn)
     {
-      _abandonable = progress.Id;
-      _abandon = abandon;
+      _interruptible = new Interruptible(progress.Id, abandon);
     }
 
     // ⚠️ La place est prise AVANT que la tâche parte : la prendre après aurait laissé deux requêtes
@@ -85,13 +82,13 @@ public sealed class ScanLauncher(
   }
 
   /// <inheritdoc />
-  public bool Abandon(ScanId scan)
+  public void Abandon(ScanId scan)
   {
     if (inFlight.Running is not { } running || running.Id != scan)
     {
       // ⚠️ Un geste annulé n'a aucune conséquence : ce scan a déjà fini, ce n'est pas celui qui
       // court, ou le processus ne le connaît plus. Aucun des trois ne fait reculer quoi que ce soit.
-      return false;
+      return;
     }
 
     // ⚠️ LA FIN EST POSÉE D'ABORD, et la requête coupée ensuite. Attendre que le port lève ferait
@@ -100,8 +97,6 @@ public sealed class ScanLauncher(
     running.Abandon();
 
     Cut(scan);
-
-    return true;
   }
 
   /// <summary>
@@ -119,7 +114,7 @@ public sealed class ScanLauncher(
 
     lock (_turn)
     {
-      abandon = _abandonable == scan ? _abandon : null;
+      abandon = _interruptible is { } running && running.Scan == scan ? running.Abandon : null;
     }
 
     try
@@ -141,6 +136,17 @@ public sealed class ScanLauncher(
   {
     try
     {
+      // ⚠️ RIEN NE PART SI LA FIN EST DÉJÀ POSÉE, et cette ligne ferme une course étroite mais
+      // réelle. Entre la prise de place et l'armement du jeton, ce scan est déjà TROUVABLE : un
+      // abandon qui tombe là pose la fin, puis ne trouve aucun jeton à couper. Sans ce garde, la
+      // lecture partirait ensuite sur la base d'un tiers — l'écran disant « scan abandonné »
+      // pendant qu'un SELECT y court encore, ce qui est très exactement ce que l'abandon existe
+      // pour empêcher. Un scan qui n'a jamais commencé n'a, lui, rien à interrompre.
+      if (progress.Snapshot.HasEnded)
+      {
+        return;
+      }
+
       // ⚠️ L'ouverture de la portée est DANS le rattrapage, et sa fermeture aussi. Le fournisseur
       // racine disposé — un arrêt d'hôte pendant un scan — ferait sinon échapper l'exception d'une
       // tâche que personne n'attend : elle serait perdue, le scan resterait « en vol » pour
@@ -167,6 +173,13 @@ public sealed class ScanLauncher(
       // l'accès approche du journal, et c'est le port de scan qui l'arrête avant d'arriver ici.
       logger.LogError(exception, "Le scan {ScanId} s'est arrêté sur une erreur non prévue.", progress.Id);
 
+      // ⚠️ « LA BASE », ET C'EST UN CHOIX PAR DÉFAUT, NON UNE LECTURE DE L'EXCEPTION. Ce rattrapage
+      // ne voit que ce que le port N'A PAS su nommer : les familles vraies — le réseau, ce qui a été
+      // fourni — sortent du port, qui seul sait ce qu'il a tenté. Ici, on ne sait pas, et il n'y a
+      // pas de quatrième famille : en ajouter une « inconnue » ferait, à chaque panne neuve, une
+      // valeur que du code déjà écrit ne saurait pas afficher. Reste la moins trompeuse des trois :
+      // elle n'envoie l'Operator ni vérifier une chaîne qui n'est peut-être pas en cause, ni
+      // soupçonner un réseau qui a répondu.
       progress.EndedWithoutAReport(
         ScanEnding.Failed,
         new ScanFailure(progress.Snapshot.Phase, ScanFailureFamily.Database));
@@ -178,14 +191,27 @@ public sealed class ScanLauncher(
       // absent, et n'appelle donc jamais Cancel sur un objet libéré.
       lock (_turn)
       {
-        if (_abandonable == progress.Id)
+        if (_interruptible is { } running && running.Scan == progress.Id)
         {
-          _abandonable = null;
-          _abandon = null;
+          _interruptible = null;
         }
       }
 
       abandon.Dispose();
     }
   }
+
+  /// <summary>
+  /// Le scan que l'on sait encore <b>interrompre</b> : son identité, et le jeton qui coupe sa
+  /// requête.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Les deux ne voyagent jamais l'un sans l'autre.</b> Séparés en deux champs, l'invariant
+  /// « posés ensemble, lâchés ensemble » se tenait à la main sur trois sites — et il suffisait d'en
+  /// oublier un pour couper la requête d'un <i>autre</i> scan que celui qu'on abandonne, ou pour
+  /// appeler <c>Cancel</c> sur un jeton déjà libéré.
+  /// </remarks>
+  /// <param name="Scan">Le scan que ce jeton commande.</param>
+  /// <param name="Abandon">Ce qui coupe sa requête en cours.</param>
+  private sealed record Interruptible(ScanId Scan, CancellationTokenSource Abandon);
 }

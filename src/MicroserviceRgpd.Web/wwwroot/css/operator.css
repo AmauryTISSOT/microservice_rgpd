@@ -453,11 +453,14 @@ table.queue:not(.columns) {
 }
 
 /*
-  ⚠️ LA FIN D'UN SCAN EMPRUNTE LA GRILLE DES PRÉMISSES, et n'invente rien. Ce qu'elle porte est de
-  la même nature : deux ou quatre faits nommés, chacun sur sa ligne, dont l'intitulé dit ce que la
-  valeur est. Une seconde grille écrite pour elle aurait divergé au premier espacement retouché.
+  ⚠️ LES FAITS NOMMÉS EMPRUNTENT LA GRILLE DES PRÉMISSES, et n'inventent rien. Ce qu'ils portent est
+  de la même nature : deux ou quatre faits, chacun sur sa ligne, dont l'intitulé dit ce que la valeur
+  est. Une seconde grille écrite pour eux aurait divergé au premier espacement retouché.
+
+  ⚠️ LE NOM DIT LA FORME, PAS L'OCCASION. Une classe `ending` aurait menti sur l'écran de refus d'un
+  second lancement, qui nomme un scan très exactement en train de courir.
 */
-.ending,
+.facts,
 .premises dl,
 .system dl {
   display: grid;
@@ -466,13 +469,13 @@ table.queue:not(.columns) {
   margin: var(--space-xs) 0 0;
 }
 
-.ending dt,
+.facts dt,
 .premises dt,
 .system dt {
   font-weight: var(--weight-semibold);
 }
 
-.ending dd,
+.facts dd,
 .premises dd,
 .system dd {
   margin: 0;

@@ -93,9 +93,16 @@ public class ScanOutcomeTests
   [Fact]
   public void KnowsFourEndingsFromTheScannerAndNoMore()
   {
-    var fromTheScanner = ScanEnding.List.Where(ending => ending.ComesFromTheScanner).ToList();
+    ScanEnding.List.Count(ending => ending.ComesFromTheScanner).ShouldBe(4);
+  }
 
-    fromTheScanner.Count.ShouldBe(4);
+  /// <summary>
+  /// Deux fins ne portent jamais le même libellé : c'est celui-là que l'écran montre, et deux fins
+  /// qui se disent pareil sont deux fins que l'<c>Operator</c> ne peut pas distinguer.
+  /// </summary>
+  [Fact]
+  public void GivesEachEndingALabelOfItsOwn()
+  {
     ScanEnding.List.Select(ending => ending.FrenchLabel).Distinct().Count()
       .ShouldBe(ScanEnding.List.Count);
   }

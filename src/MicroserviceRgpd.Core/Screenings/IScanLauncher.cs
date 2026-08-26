@@ -47,14 +47,15 @@ public interface IScanLauncher
   /// C'est le port qui sait interrompre ; ce qui se tient ici est de lui en donner l'ordre.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Un geste annulé n'a aucune conséquence.</b> Abandonner un scan déjà fini, un scan qui
-  /// n'est pas celui qui court, ou un scan que le processus ne connaît plus : les trois ne font
-  /// rien, et aucun ne fait reculer la fin déjà posée.
+  /// ⚠️ <b>Un geste annulé n'a aucune conséquence, et il ne rend donc rien.</b> Abandonner un scan
+  /// déjà fini, un scan qui n'est pas celui qui court, ou un scan que le processus ne connaît plus :
+  /// les trois ne font rien, et aucun ne fait reculer la fin déjà posée. Un booléen dirait à
+  /// l'appelant lequel des cas il a rencontré — alors qu'aucun écran n'a rien d'autre à répondre que
+  /// la fin que ce scan a réellement connue, qu'il vient de l'arrêter ou non.
   /// </para>
   /// </remarks>
   /// <param name="scan">L'identité lue dans l'adresse de l'écran d'attente.</param>
-  /// <returns>Vrai si c'est bien ce scan-là qui courait, et qu'il vient d'être arrêté.</returns>
-  bool Abandon(ScanId scan);
+  void Abandon(ScanId scan);
 }
 
 /// <summary>

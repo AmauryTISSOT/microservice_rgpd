@@ -83,7 +83,7 @@ public class ScanModel(ScansInFlight inFlight, IScanLauncher launcher) : PageMod
 
   public IActionResult OnGet()
   {
-    var progress = Known();
+    var progress = TheScanThisAddressNames();
 
     if (progress is null)
     {
@@ -132,7 +132,7 @@ public class ScanModel(ScansInFlight inFlight, IScanLauncher launcher) : PageMod
   /// </remarks>
   public IActionResult OnPost()
   {
-    if (Core.Screenings.ScanId.TryFrom(ScanId, out var scanId))
+    if (TryReadTheScanId(out var scanId))
     {
       launcher.Abandon(scanId);
     }
@@ -144,13 +144,23 @@ public class ScanModel(ScansInFlight inFlight, IScanLauncher launcher) : PageMod
   /// Le scan que cette adresse nomme, s'il est encore connu du processus.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>La contrainte de route ne dit que « c'est un GUID », et le GUID vide en est un.</b> Le
-  /// bâtir sans précaution lèverait sur une adresse tapée à la main ou tronquée, et l'<c>Operator</c>
-  /// recevrait un 500 nu là où cet écran a une phrase à lui dire.
+  /// ⚠️ <b>Une adresse illisible et un scan oublié mènent au <i>même</i> écran</b> — celui qui dit
+  /// « ce scan n'existe plus ». L'<c>Operator</c> qui a tronqué son adresse n'a pas d'autre geste à
+  /// poser que celui qui l'a vue expirer : relancer.
   /// </remarks>
-  private ScanProgress? Known()
+  private ScanProgress? TheScanThisAddressNames()
   {
-    return Core.Screenings.ScanId.TryFrom(ScanId, out var scanId) ? inFlight.Find(scanId) : null;
+    return TryReadTheScanId(out var scanId) ? inFlight.Find(scanId) : null;
+  }
+
+  /// <summary>
+  /// L'identité que l'adresse porte, quand c'en est une. ⚠️ <b>Le GUID vide passe la contrainte de
+  /// route</b> — elle ne dit que « c'est un GUID » —, et le bâtir sans précaution lèverait sur une
+  /// adresse tapée à la main ou tronquée.
+  /// </summary>
+  private bool TryReadTheScanId(out ScanId scanId)
+  {
+    return Core.Screenings.ScanId.TryFrom(ScanId, out scanId);
   }
 
   /// <summary>

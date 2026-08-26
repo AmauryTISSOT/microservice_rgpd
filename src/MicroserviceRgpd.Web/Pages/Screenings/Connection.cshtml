@@ -47,21 +47,21 @@
       la fois. Rien n'a été lancé : votre chaîne de connexion n'a été remise à personne.
     </p>
 
-    <dl class="ending">
+    <dl class="facts">
       <dt>Le scan en cours</dt>
-      <dd>@running.Id.Value</dd>
+      <dd>@running.Scan</dd>
 
       <dt>Son SGBD</dt>
-      <dd>@running.Dialect.FrenchLabel</dd>
+      <dd>@running.Dialect</dd>
 
       <dt>Où il en est</dt>
-      <dd>en phase « @running.Snapshot.Phase.FrenchLabel »</dd>
+      <dd>en phase « @running.Phase »</dd>
 
       <dt>Lancé à</dt>
-      <dd>@running.StartedOn.ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture) UTC</dd>
+      <dd>@running.StartedAt</dd>
     </dl>
 
-    <p><a asp-page="Scan" asp-route-scanId="@running.Id.Value">Suivre le scan en cours</a></p>
+    <p><a asp-page="Scan" asp-route-scanId="@running.Scan">Suivre le scan en cours</a></p>
   </div>
 }
 

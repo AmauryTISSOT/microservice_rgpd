@@ -53,7 +53,7 @@ public sealed record ScanEndingScreen(
 
     return new ScanEndingScreen(
       "Scan abandonné",
-      $"en phase « {phase.FrenchLabel} »",
+      InPhase(phase),
       "vous : vous avez arrêté ce scan",
       "Vous avez arrêté ce scan, et la lecture en cours sur la base a été coupée — pas seulement "
       + "la boucle qui l'entourait. Rien n'a été relevé à moitié.");
@@ -69,17 +69,14 @@ public sealed record ScanEndingScreen(
   {
     ArgumentNullException.ThrowIfNull(failure);
 
+    // ⚠️ LA PHASE ET LA FAMILLE, ET RIEN D'AUTRE. Pas de geste : la phrase de la famille dit déjà
+    // de quel côté chercher, et en ajouter un ferait de l'écran d'échec une consigne — alors que
+    // sur deux des trois familles, le réseau et la base, l'Operator n'a rien à poser.
     return new ScanEndingScreen(
       "Scan échoué",
-      $"en phase « {failure.Phase.FrenchLabel} »",
+      InPhase(failure.Phase),
       failure.Family.FrenchLabel,
-      failure.Family.Statement,
-      // ⚠️ Seule la famille de ce que l'Operator a FOURNI appelle un geste de sa part : les deux
-      // autres se règlent ailleurs, et lui demander d'agir sur le réseau ou sur la base d'un tiers
-      // serait lui demander ce qu'il ne peut pas faire.
-      failure.Family == ScanFailureFamily.Supplied
-        ? "Vérifiez le SGBD choisi, la chaîne de connexion et les droits du compte, puis relancez."
-        : null);
+      failure.Family.Statement);
   }
 
   /// <summary>
@@ -112,7 +109,7 @@ public sealed record ScanEndingScreen(
   {
     return new ScanEndingScreen(
       "Cette base ne porte aucune table",
-      $"en phase « {ScanPhase.Cataloguing.FrenchLabel} »",
+      InPhase(ScanPhase.Cataloguing),
       "la base : elle a répondu, et son catalogue est vide",
       "La base a répondu, et elle ne porte aucune table. Rien n'a raté : il n'y avait rien à "
       + "relever. Aucun rapport de zéro colonne n'a été écrit — un rapport vide aurait renvoyé à "
@@ -132,7 +129,7 @@ public sealed record ScanEndingScreen(
   {
     return new ScanEndingScreen(
       "Ce compte ne voit aucune base",
-      $"en phase « {ScanPhase.Cataloguing.FrenchLabel} »",
+      InPhase(ScanPhase.Cataloguing),
       "ce qui a été fourni au service : la base est absente du catalogue de schémas",
       "La base ne figure pas au catalogue de schémas que ce compte présente au service. Ce n'est "
       + "pas une base vide : c'est un compte qui ne la voit pas. Le service relève le schéma tel "
@@ -175,4 +172,16 @@ public sealed record ScanEndingScreen(
           nameof(snapshot))),
     };
   }
+
+  /// <summary>
+  /// Comment une phase se nomme sur un écran de fin — <b>écrit ici, et une seule fois</b>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Recopié sur chaque fabrique, ce tour de phrase aurait divergé.</b> Le jour où l'on
+  /// retouche la tournure, une fin sur quatre serait restée à l'ancienne — et les fins anormales
+  /// n'auraient plus tout à fait la même forme, ce qui est précisément ce que ce type existe pour
+  /// tenir.
+  /// </remarks>
+  /// <param name="phase">La phase où le scan s'est arrêté.</param>
+  private static string InPhase(ScanPhase phase) => $"en phase « {phase.FrenchLabel} »";
 }

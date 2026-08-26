@@ -35,8 +35,15 @@ public class ScanAbnormalEndings(CustomWebApplicationFactory<Program> factory)
   /// Un message de pilote comme il en existe : il porte l'<b>hôte</b> et l'<b>utilisateur</b>, et
   /// c'est très exactement ce qu'aucun écran ne doit rendre.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle n'affirme pas de quelle famille cette panne relève, et c'est voulu.</b> Une panne
+  /// qui traverse le port est une panne <b>que le port n'a pas su nommer</b> : les familles vraies —
+  /// le réseau, ce qui a été fourni — sortent de lui, jamais du rattrapage de dernier recours. Ce
+  /// que cette fixture éprouve est donc ce qui <b>ne sort pas</b>, et la famille rendue par le port
+  /// se tient au test d'à côté.
+  /// </remarks>
   private const string AnInjectedDriverMessage =
-    "28P01: authentification par mot de passe échouée pour l'utilisateur « lecteur » "
+    "la connexion à galette.exemple pour l'utilisateur « lecteur » a échoué "
     + "(Host=galette.exemple, Database=galette_prod)";
 
   private const string AnInjectedHost = "galette.exemple";
@@ -197,13 +204,56 @@ public class ScanAbnormalEndings(CustomWebApplicationFactory<Program> factory)
     rendered.ShouldNotContain(AnInjectedDriverMessage);
     rendered.ShouldNotContain(AnInjectedHost);
     rendered.ShouldNotContain(AnInjectedUser);
-    rendered.ShouldNotContain("28P01");
 
     (await SettledStateAsync()).ShouldBe(
       settled,
       "Un scan tombé à la table 300 sur 312 a laissé un objet : le relevé n'est pas perdu en "
       + "entier, et un rapport partiel se lirait comme complet.");
   }
+
+  /// <summary>
+  /// L'écran rend la famille <b>que le port a nommée</b>, et les trois se distinguent : de quoi
+  /// savoir s'il s'agit de ce qui a été fourni, du réseau ou de la base.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est le port qui nomme la famille, et lui seul.</b> Le rattrapage de dernier recours du
+  /// lanceur ne voit, lui, que ce que le port n'a <i>pas</i> su nommer — l'éprouver à sa place
+  /// aurait figé « la base » comme la réponse à tout, et l'écran aurait envoyé chercher une panne de
+  /// base sur un hôte injoignable.
+  /// </remarks>
+  /// <param name="phase">La phase où le port dit être tombé.</param>
+  /// <param name="family">La famille qu'il nomme.</param>
+  [Theory]
+  [MemberData(nameof(TheThreeFamilies))]
+  public async Task RendersTheFamilyThePortNamed(ScanPhase phase, ScanFailureFamily family)
+  {
+    var surface = new ScanSurface(_factory);
+
+    var rendered = await EndingScreenOfAsync(surface, ScanOutcome.Failed(phase, family));
+
+    rendered.ShouldContain(phase.FrenchLabel);
+    rendered.ShouldContain(family.FrenchLabel);
+    rendered.ShouldContain(family.Statement);
+
+    // Les deux autres familles ne s'affichent pas : une seule cause est nommée, et l'Operator sait
+    // de quel côté chercher.
+    foreach (var other in ScanFailureFamily.List.Where(known => known != family))
+    {
+      rendered.ShouldNotContain(
+        other.Statement,
+        Case.Sensitive,
+        $"L'écran nomme « {other.FrenchLabel} » en plus de « {family.FrenchLabel} ».");
+    }
+  }
+
+  /// <summary>Les trois familles, chacune sur la phase où elle se rencontre le plus.</summary>
+  public static TheoryData<ScanPhase, ScanFailureFamily> TheThreeFamilies =>
+    new()
+    {
+      { ScanPhase.Connecting, ScanFailureFamily.Supplied },
+      { ScanPhase.Sampling, ScanFailureFamily.Network },
+      { ScanPhase.Cataloguing, ScanFailureFamily.Database },
+    };
 
   /// <summary>
   /// Pendant un scan, un second POST rend un écran qui <b>nomme le scan en cours</b> — son SGBD, sa
@@ -435,9 +485,11 @@ public class ScanAbnormalEndings(CustomWebApplicationFactory<Program> factory)
   /// courant, et le jeu d'aperçus vivant.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Le cache d'aperçus se lit par le rapport qu'il accompagne.</b> Un scan abandonné qui y
-  /// aurait déposé quoi que ce soit aurait évincé le jeu du rapport courant — et
-  /// <see cref="ScanPreviews.Of"/> rendrait alors vide sur un rapport qui, lui, a bien des aperçus.
+  /// ⚠️ <b>« Le cache est vide » se mesure par le jeu du rapport courant, et c'en est bien la
+  /// mesure.</b> <see cref="ScanPreviews"/> ne retient <b>qu'un seul jeu vivant à la fois</b>, et
+  /// l'éviction est immédiate : tout dépôt d'un autre scan aurait donc chassé celui du rapport
+  /// courant, et <see cref="ScanPreviews.Of"/> rendrait vide sur un rapport qui, lui, a bien des
+  /// aperçus. Un jeu déposé « à côté » n'existe pas — il n'y a pas de seconde place où le mettre.
   /// </remarks>
   private async Task<SettledState> SettledStateAsync()
   {

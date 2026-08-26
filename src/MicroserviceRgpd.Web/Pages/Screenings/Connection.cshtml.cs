@@ -64,8 +64,10 @@ public class ConnectionModel(IScanLauncher launcher) : PageModel
   [BindProperty]
   public string? ConnectionString { get; set; }
 
-  /// <summary>Le scan qui courait déjà, quand un second lancement a été refusé.</summary>
-  public ScanProgress? AlreadyRunning { get; private set; }
+  /// <summary>
+  /// Ce que l'écran dit du scan qui courait déjà, quand un second lancement a été refusé.
+  /// </summary>
+  public ScanRefusalScreen? AlreadyRunning { get; private set; }
 
   /// <summary>Les trois SGBD que le service sait joindre, dans l'ordre où l'écran les propose.</summary>
   public static IReadOnlyList<DatabaseDialect> Dialects => DatabaseDialect.List.ToList();
@@ -110,7 +112,7 @@ public class ConnectionModel(IScanLauncher launcher) : PageModel
       // ⚠️ Ce n'est PAS une erreur de saisie, et cela ne passe donc pas par le ModelState : rien de
       // ce que l'Operator a écrit n'est en cause, et le lui dire au même endroit que « la chaîne est
       // vide » l'enverrait relire un champ qui n'a rien.
-      AlreadyRunning = launch.AlreadyRunning;
+      AlreadyRunning = ScanRefusalScreen.Of(launch.AlreadyRunning!);
 
       return Page();
     }
