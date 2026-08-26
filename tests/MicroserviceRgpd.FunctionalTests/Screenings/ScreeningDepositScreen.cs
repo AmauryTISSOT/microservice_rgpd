@@ -195,8 +195,17 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   /// tout ce qui <b>nomme</b>.
   /// </para>
   /// <para>
-  /// <c>cartographie</c> et <c>scan</c>, eux, n'ont aucun emploi légitime nulle part sur ces écrans,
-  /// et sont refusés sur la page entière.
+  /// <c>scan</c>, lui, n'a aucun emploi légitime nulle part sur ces écrans, et est refusé sur la
+  /// page entière.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b><c>cartographie</c> a cessé d'être un synonyme et est devenu un terme du glossaire</b> :
+  /// il nomme <b>ce qui sort du service</b> — le fichier exporté —, pas le geste qui l'a produit.
+  /// La doctrine tient donc <b>mot pour mot</b>, et c'est ce que le garde vérifie désormais : le
+  /// rapport garde son seul mot dans l'onglet et le titre, où le mot est refusé sans réserve, et
+  /// partout ailleurs « cartographie » n'a droit de cité qu'<b>attaché à son export</b> — « exporter
+  /// la cartographie », « la cartographie en CSV ». Un lien qui dirait « la cartographie » tout court
+  /// rougirait : ce serait le second nom du rapport que la règle refuse.
   /// </para>
   /// </remarks>
   [Theory]
@@ -219,7 +228,7 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
 
     naming.ShouldNotBeEmpty("La page doit bien nommer quelque chose.");
 
-    foreach (var banned in new[] { "recensement", "cartographie", "scan" })
+    foreach (var banned in new[] { "recensement", "scan" })
     {
       naming.ShouldAllBe(
         named => !named.Contains(banned, StringComparison.OrdinalIgnoreCase),
@@ -227,8 +236,29 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
         + "contexte n'a qu'un seul mot, et un contexte qui en a deux en aura trois dans un an.");
     }
 
-    // Ceux-là n'ont aucun emploi légitime, pas même en prose.
-    rendered.ShouldNotContain("cartographie", Case.Insensitive);
+    // ⚠️ « Cartographie » nomme CE QUI SORT du service, jamais le rapport : l'onglet et le titre,
+    // qui nomment l'écran et donc le rapport, le refusent sans réserve.
+    System.Text.RegularExpressions.Regex
+      .Matches(rendered, @"<(title|h1)\b[^>]*>(.*?)</\1>",
+        System.Text.RegularExpressions.RegexOptions.Singleline)
+      .Select(named => named.Groups[2].Value)
+      .ShouldAllBe(
+        named => !named.Contains("cartographie", StringComparison.OrdinalIgnoreCase),
+        "L'onglet ou le titre nomme le rapport « cartographie ». Le geste central de ce contexte "
+        + "n'a qu'un seul mot ; la cartographie est ce qui en sort, pas lui.");
+
+    // Et partout ailleurs, le mot n'a droit de cité qu'attaché à son export : « la cartographie »
+    // tout court serait le second nom du rapport que la règle refuse.
+    naming
+      .Where(named => named.Contains("cartographie", StringComparison.OrdinalIgnoreCase))
+      .ShouldAllBe(
+        named => named.Contains("export", StringComparison.OrdinalIgnoreCase)
+          || named.Contains("CSV", StringComparison.OrdinalIgnoreCase)
+          || named.Contains("JSON", StringComparison.OrdinalIgnoreCase),
+        "Un libellé dit « cartographie » sans dire de quel export il parle : détaché de son "
+        + "fichier, le mot redevient un second nom du rapport de détection.");
+
+    // Celui-là n'a aucun emploi légitime, pas même en prose.
     rendered.ShouldNotContain("scan", Case.Insensitive);
   }
 

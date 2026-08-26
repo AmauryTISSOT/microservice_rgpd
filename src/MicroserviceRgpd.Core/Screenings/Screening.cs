@@ -94,6 +94,13 @@ public sealed class Screening : IAggregateRoot
   /// un repère pour l'humain qui relit trois jours plus tard, jamais une identité sur laquelle bâtir
   /// une comparaison.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il ne porte jamais un chemin.</b> C'est la seule chose qui lui soit faite avant
+  /// l'enregistrement, et elle a un motif : ce champ <b>quitte le service</b> dans la
+  /// <see cref="PersonalDataMap"/>, et jusque dans le nom du fichier CSV. Côté SQLite le SGBD ne
+  /// connaît sa base que par son chemin, et le dossier parent est l'endroit où l'on écrit le nom du
+  /// client. Voir <see cref="DatabaseName.WithoutAnyPath"/>.
+  /// </remarks>
   public string Database { get; private set; }
 
   /// <summary>
@@ -307,7 +314,14 @@ public sealed class Screening : IAggregateRoot
 
     return new Screening(
       id,
-      ScreeningText.OrThrow(database, "Le nom de la base", MaxDatabaseNameLength, nameof(database)),
+      // ⚠️ Le dossier parent est écarté AVANT le contrôle de longueur : ce champ quitte le service
+      // dans la Cartographie, et un chemin SQLite y publierait l'arborescence interne et le nom du
+      // client. Voir DatabaseName.WithoutAnyPath, où la règle est écrite une fois.
+      ScreeningText.OrThrow(
+        DatabaseName.WithoutAnyPath(database),
+        "Le nom de la base",
+        MaxDatabaseNameLength,
+        nameof(database)),
       ScreeningText.OrThrow(dialect, "Le dialecte du relevé", MaxDialectLength, nameof(dialect)),
       ListingOrigin.KnownOrThrow(origin, nameof(origin)),
       engine,
