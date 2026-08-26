@@ -873,6 +873,15 @@ une promesse générale, mais des bornes qui se vérifient une par une.
 - Les **textes longs sont tronqués par le SGBD**, avant de traverser le réseau.
 - Ce que le moteur fait de ces valeurs est borné aussi : il y cherche des **formes écrites d'avance**,
   jamais des mots. Aucun lexique ne s'applique aux valeurs.
+⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
+prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
+`commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
+celle-là qu'il faut lire. Ce que le moteur reconnaît, ce sont des **formes**, pas des entités nommées
+en contexte : `+33612345678` est un motif, reconnaissable par sa morphologie, sans modèle et sans
+corpus d'entraînement ; « Madame Dupont a téléphoné » est une entité nommée dans une phrase, et ce
+contexte n'y touche pas. Le service que rend ce corollaire — empêcher qu'on aille chercher des outils
+calibrés pour un problème qu'on n'a pas — est plus utile qu'avant, parce que c'est **maintenant**, en
+voyant des valeurs textuelles entrer, qu'un lecteur aura le réflexe d'y penser.
 ⚠️ **Une règle de forme se juge à ce qu'elle rapporte, et certaines rapportent négativement.** Un
 format sans clé de contrôle plafonne au taux de faux positifs de sa famille de colonnes, et quatre
 sont **nommément écartés** parce qu'ils coûtent plus qu'ils ne rendent : le **code postal** (81 % de
@@ -896,16 +905,7 @@ connexion, pas de socket vers la production du client, pas d'échantillon de val
 Les trois interdictions sont tombées par
 [ADR-0012](../../adr/0012-la-connexion-le-scan-et-les-echantillons-entrent-dans-screening.md), qui
 écrit ce que le renversement achète et ce qu'il coûte. Ce qui n'est **pas** tombé est la liste
-ci-dessus, et l'entrée suivante.
-⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
-prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
-`commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
-celle-là qu'il faut lire. Ce que le moteur reconnaît, ce sont des **formes**, pas des entités nommées
-en contexte : `+33612345678` est un motif, reconnaissable par sa morphologie, sans modèle et sans
-corpus d'entraînement ; « Madame Dupont a téléphoné » est une entité nommée dans une phrase, et ce
-contexte n'y touche pas. Le service que rend ce corollaire — empêcher qu'on aille chercher des outils
-calibrés pour un problème qu'on n'a pas — est plus utile qu'avant, parce que c'est **maintenant**, en
-voyant des valeurs textuelles entrer, qu'un lecteur aura le réflexe d'y penser.
+ci-dessus, et le corollaire attaché plus haut à la reconnaissance de forme.
 _Avoid_ : NER, échantillon, sondage de valeurs, scan de contenu, profilage ⚠️ ces cinq mots ont
 survécu à la chute des trois interdictions, chacun pour une raison propre. `échantillon` et
 `sondage de valeurs` promettent un tirage qui **porte une inférence**, ce que cinq valeurs ne font

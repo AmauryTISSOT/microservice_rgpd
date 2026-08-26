@@ -49,10 +49,10 @@ public class ScreeningCostTests
 
     // Un premier passage à part : le chargement des lexiques et la compilation à la volée ne sont
     // pas le geste qu'on mesure, et ils n'ont lieu qu'une fois pour la vie du service.
-    await engine.ScreenAsync(listing);
+    await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews);
 
     var clock = Stopwatch.StartNew();
-    var screened = await engine.ScreenAsync(listing);
+    var screened = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews);
     clock.Stop();
 
     screened.Columns.Count.ShouldBe(DolibarrSized);
