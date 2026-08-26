@@ -156,6 +156,7 @@ public class ScreeningWriteCostTests(PostgreSqlFixture postgres, ITestOutputHelp
       ScreeningId.Next(),
       "dolibarr_prod",
       "postgresql",
+      ListingOrigin.Pasted,
       Engine,
       columns,
       screened,

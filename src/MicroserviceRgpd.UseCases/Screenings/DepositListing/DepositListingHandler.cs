@@ -14,7 +14,8 @@ namespace MicroserviceRgpd.UseCases.Screenings.DepositListing;
 /// ⚠️ <b>C'est le geste qui assemble, jamais le moteur.</b> Ce que rend un <c>IScreeningEngine</c>
 /// est une <c>ScreenedListing</c> : une ligne par colonne, et l'identité du moteur qui les a
 /// produites. Il y manque ce que le moteur n'a pas à décider — l'identité du rapport, l'instant du
-/// lancement, le nom de base et le dialecte —, et c'est ici que les quatre se posent.
+/// lancement, le nom de base, le dialecte et l'<c>origine du relevé</c> —, et c'est ici que les cinq
+/// se posent.
 /// </para>
 /// <para>
 /// ⚠️ <b>L'identité du moteur est celle qui a répondu</b>, prise sur ce qu'il rend et jamais lue à
@@ -82,6 +83,11 @@ public sealed class DepositListingHandler(
       ScreeningId.Next(),
       listing.Database,
       listing.Dialect,
+      // ⚠️ L'origine est posée par LE GESTE, et non lue sur le `ColumnListing` : rien en aval ne
+      // distingue un relevé collé d'un relevé scanné — c'est le même objet, et la détection ne sait
+      // pas lequel des deux elle lit. Ce qui sait, c'est le chemin d'entrée, et il n'y en a qu'un
+      // ici.
+      ListingOrigin.Pasted,
       screened.Engine,
       listing.DeclaredColumnCount,
       screened.Columns,

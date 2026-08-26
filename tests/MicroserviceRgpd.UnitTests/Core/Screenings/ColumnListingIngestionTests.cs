@@ -443,7 +443,7 @@ public class ColumnListingIngestionTests
     listing.Columns.ShouldContain(column => column.ReferencedTable == "adherents");
 
     var perimeter = IncompletenessClause
-      .For(AScreening.Of([.. listing.Columns.Select(ScreenedColumn.NothingSeen)]))
+      .For(AScreening.Of([.. listing.Columns.Select(column => ScreenedColumn.NothingSeen(column))]))
       .Perimeter;
 
     perimeter.ReadOnlyToFilter.ShouldContain(entry => entry.Contains(field, StringComparison.OrdinalIgnoreCase));
@@ -574,9 +574,10 @@ public class ColumnListingIngestionTests
       ScreeningId.Next(),
       listing.Database,
       listing.Dialect,
+      ListingOrigin.Pasted,
       AScreening.Engine,
       listing.DeclaredColumnCount,
-      listing.Columns.Select(ScreenedColumn.NothingSeen),
+      listing.Columns.Select(column => ScreenedColumn.NothingSeen(column)),
       APivot.GeneratedOn);
 
     screening.ColumnCount.ShouldBe(4);

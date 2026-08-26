@@ -44,12 +44,14 @@ public sealed class ScreenedColumn
     ListedColumn listed,
     PersonalDataCategory category,
     RuleStrength? strength,
-    string? reason)
+    string? reason,
+    PreviewAbsenceReason? previewAbsence)
   {
     Listed = listed;
     Category = category;
     Strength = strength;
     Reason = reason;
+    PreviewAbsence = previewAbsence;
   }
 
   /// <summary>Le constructeur qu'EF Core emprunte pour rematérialiser une ligne. Il ne rejoue aucun invariant.</summary>
@@ -76,6 +78,27 @@ public sealed class ScreenedColumn
   /// <c>null</c> quand rien ne l'est. Il n'y a rien à motiver sur une colonne où rien n'a été vu.
   /// </summary>
   public string? Reason { get; private set; }
+
+  /// <summary>
+  /// Pourquoi cette colonne n'a eu <b>aucun aperçu</b>, ou <c>null</c> quand la question ne se pose
+  /// pas — elle en a eu un, ou le relevé a été collé et rien n'a jamais été prélevé.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>C'est la seule chose d'un <see cref="ColumnPreview"/> qui descende en base, et ce n'est
+  /// pas une entorse à <c>Rien de réel ne reste</c> : une raison n'est pas une valeur lue.</b> Sans
+  /// elle, les quatre comptes de la <see cref="IncompletenessClause"/> seraient incalculables une
+  /// heure après le scan, quand les aperçus ont expiré — et l'écran d'archive deviendrait <b>plus
+  /// rassurant</b> que celui du jour même, ce qui est le mode de panne exact que ce contexte existe
+  /// pour ne pas avoir.
+  /// </para>
+  /// <para>
+  /// <b>Nulle sur le chemin collé, et nulle sur les rapports d'avant la connexion.</b> Les quatre
+  /// comptes y sont <b>absents</b>, jamais à zéro : « zéro colonne sans aperçu » se lirait comme un
+  /// prélèvement qui a tout réussi, sur un rapport où rien n'a jamais été prélevé.
+  /// </para>
+  /// </remarks>
+  public PreviewAbsenceReason? PreviewAbsence { get; private set; }
 
   /// <summary>
   /// L'issue rendue, ou <c>null</c> tant que personne n'a tranché. <b>C'est le seul porteur de
@@ -143,13 +166,19 @@ public sealed class ScreenedColumn
   /// <param name="category">Ce qui a été reconnu. Jamais <see cref="PersonalDataCategory.Unflagged"/>.</param>
   /// <param name="strength">Le degré de la règle qui a déclenché.</param>
   /// <param name="reason">La prose qui dit pourquoi.</param>
+  /// <param name="previewAbsence">
+  /// Pourquoi aucun aperçu n'accompagne cette ligne, ou <c>null</c> quand la question ne se pose
+  /// pas. Facultative parce qu'elle n'existe que sur le chemin scanné, et <b>jamais</b> parce
+  /// qu'elle serait optionnelle là où un prélèvement a échoué.
+  /// </param>
   /// <exception cref="ArgumentNullException">Un des arguments est absent.</exception>
   /// <exception cref="ArgumentException">La catégorie est <see cref="PersonalDataCategory.Unflagged"/>, ou le motif est vide, démesuré, ou porte un caractère de contrôle.</exception>
   public static ScreenedColumn Flagged(
     ListedColumn listed,
     PersonalDataCategory category,
     RuleStrength strength,
-    string? reason)
+    string? reason,
+    PreviewAbsenceReason? previewAbsence = null)
   {
     ArgumentNullException.ThrowIfNull(listed);
     ArgumentNullException.ThrowIfNull(category);
@@ -168,7 +197,8 @@ public sealed class ScreenedColumn
       listed,
       category,
       strength,
-      ScreeningText.OrThrow(reason, "Le motif de la ligne", MaxReasonLength, nameof(reason)));
+      ScreeningText.OrThrow(reason, "Le motif de la ligne", MaxReasonLength, nameof(reason)),
+      previewAbsence);
   }
 
   /// <summary>
@@ -179,12 +209,25 @@ public sealed class ScreenedColumn
   /// ⚠️ Ce n'est pas « cette colonne ne porte pas de données personnelles » : c'est un constat sur le
   /// détection, et non sur la donnée — que le service n'a jamais vue.
   /// </remarks>
+  /// <param name="listed">La ligne du relevé.</param>
+  /// <param name="previewAbsence">
+  /// Pourquoi aucun aperçu n'accompagne cette ligne, ou <c>null</c> quand la question ne se pose
+  /// pas. ⚠️ <b>Une absence d'aperçu n'est pas un signalement</b> : elle ne dit rien de ce que la
+  /// colonne porte, et une ligne où rien n'a été vu peut parfaitement en porter une.
+  /// </param>
   /// <exception cref="ArgumentNullException"><paramref name="listed"/> est absent.</exception>
-  public static ScreenedColumn NothingSeen(ListedColumn listed)
+  public static ScreenedColumn NothingSeen(
+    ListedColumn listed,
+    PreviewAbsenceReason? previewAbsence = null)
   {
     ArgumentNullException.ThrowIfNull(listed);
 
-    return new ScreenedColumn(listed, PersonalDataCategory.Unflagged, strength: null, reason: null);
+    return new ScreenedColumn(
+      listed,
+      PersonalDataCategory.Unflagged,
+      strength: null,
+      reason: null,
+      previewAbsence);
   }
 
   /// <summary>
