@@ -27,8 +27,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// Combien la détection en a signalées. ⚠️ Le complément est ce qu'elle <b>n'a pas vu</b>, jamais ce
 /// qui serait inoffensif : le service n'a jamais vu une seule valeur.
 /// </param>
-/// <param name="Retained">Combien un humain a retenues, sous son nom.</param>
-/// <param name="SetAside">Combien un humain a écartées, sous son nom.</param>
+/// <param name="Retained">Combien un humain a retenues.</param>
+/// <param name="SetAside">Combien un humain a écartées.</param>
 /// <param name="Awaiting">Combien attendent encore qu'un humain les tranche.</param>
 /// <param name="RetainedOnUnflagged">
 /// Combien un humain a retenues là où la détection n'avait <b>rien vu</b> — la mesure directe de ce

@@ -32,8 +32,8 @@ public class ScreeningLifecycle(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// ⚠️ <b>Le test central de ce fichier.</b> Un second dépôt range le premier rapport sans
-  /// <b>toucher</b> à ce qu'un humain y avait tranché : la signature d'alors se relit, à la date et
-  /// au nom près, sur le rapport archivé.
+  /// <b>toucher</b> à ce qu'un humain y avait tranché : l'arbitrage d'alors se relit, à la date
+  /// près, sur le rapport archivé.
   /// </summary>
   [Fact]
   public async Task ANewDepositArchivesThePreviousReportWithoutTouchingItsArbitrations()
@@ -43,7 +43,7 @@ public class ScreeningLifecycle(CustomWebApplicationFactory<Program> factory)
         ScreeningSurface.Column("email", position: 1),
         ScreeningSurface.Column("montant", position: 2)));
 
-    await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name, "Camille Roux");
+    await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name);
 
     var archived = await _surface.CurrentScreeningAsync();
 
@@ -56,12 +56,11 @@ public class ScreeningLifecycle(CustomWebApplicationFactory<Program> factory)
 
     // ⚠️ L'arbitrage d'alors est INTACT sur le rapport qui le portait : ni repris, ni effacé.
     var table = await _surface.ReadAsync(ScreeningSurface.ArchivedTableOf(archived));
-    table.ShouldContain("Camille Roux");
     table.ShouldContain(ScreenedColumnState.Retained.FrenchLabel);
 
     // Et le courant est reparti d'une page blanche : il ne l'a pas repris.
     var live = await _surface.ReadAsync(ScreeningSurface.TableOf());
-    live.ShouldNotContain("Camille Roux");
+    live.ShouldContain("En attente");
   }
 
   /// <summary>L'historique nomme les archivés — et distingue celui qui ne l'est pas.</summary>

@@ -2,7 +2,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
 /// Ce qu'on exige d'un texte que le service <b>recopie sans l'interpréter</b> : un nom de colonne
-/// tiré du relevé, le nom d'un signataire, un motif en prose.
+/// tiré du relevé, un motif en prose.
 /// </summary>
 /// <remarks>
 /// <para>

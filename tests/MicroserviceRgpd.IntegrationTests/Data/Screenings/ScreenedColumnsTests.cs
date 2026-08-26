@@ -23,7 +23,7 @@ namespace MicroserviceRgpd.IntegrationTests.Data.Screenings;
 public class ScreenedColumnsTests(PostgreSqlFixture postgres)
 {
   private static readonly DateTimeOffset LaunchedOn = new(2026, 8, 6, 9, 30, 0, TimeSpan.Zero);
-  private static readonly DateTimeOffset SignedOn = new(2026, 8, 7, 14, 5, 0, TimeSpan.Zero);
+  private static readonly DateTimeOffset RenderedOn = new(2026, 8, 7, 14, 5, 0, TimeSpan.Zero);
   private static readonly ScreeningEngineIdentity Engine = new("lexique-fr-en", "1.0.0");
 
   /// <summary>
@@ -301,7 +301,7 @@ public class ScreenedColumnsTests(PostgreSqlFixture postgres)
       .SingleAsync(one => one.Id == id);
 
     screening.Arbitrate(
-      ColumnIdentity.Of("public", table, column), ruling, "Claire Martin", SignedOn).ShouldNotBeNull();
+      ColumnIdentity.Of("public", table, column), ruling, RenderedOn).ShouldNotBeNull();
 
     await dbContext.SaveChangesAsync();
   }

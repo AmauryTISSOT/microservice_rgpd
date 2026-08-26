@@ -104,8 +104,8 @@
         }
         <td class="ruling">
           @*
-            ⚠️ AUCUN FORMULAIRE ICI, et c'est tout ce qui distingue cette cellule de sa jumelle. La
-            signature d'alors se lit ; elle ne se reprend pas.
+            ⚠️ AUCUN FORMULAIRE ICI, et c'est tout ce qui distingue cette cellule de sa jumelle.
+            L'arbitrage d'alors se lit ; il ne se reprend pas.
           *@
           @if (column.AwaitsAnArbitration)
           {
@@ -115,8 +115,7 @@
           {
             @column.Arbitration!.State.FrenchLabel
             <span class="hint">
-              @column.Arbitration.SignedBy, le
-              @column.Arbitration.SignedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
+              le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
             </span>
           }
         </td>

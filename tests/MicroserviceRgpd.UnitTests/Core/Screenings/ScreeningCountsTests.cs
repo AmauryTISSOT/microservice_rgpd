@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.UnitTests.Core.Screenings;
 public class ScreeningCountsTests
 {
   private static readonly DateTimeOffset LaunchedOn = new(2026, 8, 6, 9, 30, 0, TimeSpan.Zero);
-  private static readonly DateTimeOffset SignedOn = new(2026, 8, 7, 14, 5, 0, TimeSpan.Zero);
+  private static readonly DateTimeOffset RenderedOn = new(2026, 8, 7, 14, 5, 0, TimeSpan.Zero);
 
   /// <summary>Chaque compte du rapport arrive au champ qui porte son nom, et à aucun autre.</summary>
   [Fact]
@@ -29,13 +29,13 @@ public class ScreeningCountsTests
     // Une signalée retenue, une non signalée retenue — l'Omission relue en acte — et une écartée.
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "adr_l1"),
-      ScreenedColumnState.Retained, "Claire Martin", SignedOn);
+      ScreenedColumnState.Retained, RenderedOn);
     screening.Arbitrate(
       ColumnIdentity.Of("public", "adherents", "id_adh"),
-      ScreenedColumnState.Retained, "Claire Martin", SignedOn);
+      ScreenedColumnState.Retained, RenderedOn);
     screening.Arbitrate(
       ColumnIdentity.Of("public", "cotisations", "montant"),
-      ScreenedColumnState.SetAside, "Claire Martin", SignedOn);
+      ScreenedColumnState.SetAside, RenderedOn);
 
     var counts = ScreeningCounts.Of(screening);
 

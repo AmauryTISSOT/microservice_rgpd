@@ -17,7 +17,7 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateTableInBatch;
 /// un geste réussi.
 /// </para>
 /// </remarks>
-/// <param name="Arbitrated">Combien de colonnes le lot a tranchées, chacune signée et datée pour elle-même.</param>
+/// <param name="Arbitrated">Combien de colonnes le lot a tranchées, chacune datée pour elle-même.</param>
 /// <param name="FlaggedStillAwaiting">
 /// Combien de colonnes <b>signalées</b> de cette table attendent encore. Le lot ne les a pas
 /// touchées, et aucun lot ne les touchera jamais.

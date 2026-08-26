@@ -78,15 +78,15 @@ public sealed class ScreenedColumn
   public string? Reason { get; private set; }
 
   /// <summary>
-  /// L'issue signée, ou <c>null</c> tant que personne n'a tranché. <b>C'est le seul porteur de
+  /// L'issue rendue, ou <c>null</c> tant que personne n'a tranché. <b>C'est le seul porteur de
   /// l'état</b> : voir <see cref="State"/>.
   /// </summary>
   public Arbitration? Arbitration { get; private set; }
 
   /// <summary>
   /// Où en est l'arbitrage — et c'est un <b>calcul</b>, jamais un champ. Un état stocké à côté de la
-  /// signature pourrait s'en dissocier ; ici <see cref="ScreenedColumnState.Awaiting"/> est très
-  /// exactement « aucune signature », et il ne peut pas mentir.
+  /// date pourrait s'en dissocier ; ici <see cref="ScreenedColumnState.Awaiting"/> est très
+  /// exactement « aucun arbitrage », et il ne peut pas mentir.
   /// </summary>
   public ScreenedColumnState State => Arbitration?.State ?? ScreenedColumnState.Awaiting;
 
@@ -108,8 +108,16 @@ public sealed class ScreenedColumn
   /// </para>
   /// <para>
   /// <b>Une ligne déjà tranchée est hors de portée elle aussi</b>, pour l'autre raison : le lot
-  /// liquide ce qui attend, il n'écrase pas sous un autre nom ce qu'un humain avait dit. Se raviser
-  /// reste possible, mais colonne par colonne — c'est-à-dire en le voyant.
+  /// liquide ce qui attend, il n'écrase pas d'un clic ce qu'un humain avait dit. Se raviser reste
+  /// possible, mais colonne par colonne — c'est-à-dire en le voyant.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le retrait du nom saisi ne rend pas le geste licite sur une signalée.</b> Il fut un
+  /// temps où signer trois cent soixante-quatorze fois à la main rendait la chose impraticable ;
+  /// ce prix a disparu, et il ne restera bientôt qu'un bouton tentant. <b>Le prix n'a jamais été
+  /// le motif</b> — le nom n'en était que l'exécuteur incident. Le motif est celui du paragraphe
+  /// au-dessus, et il n'a pas bougé d'un mot : <c>une suspicion ne s'écarte jamais sans avoir été
+  /// lue une par une</c>. Qui viendra proposer d'élargir ce lot lira ceci d'abord.
   /// </para>
   /// <para>
   /// ⚠️ <b>La règle vit ici, sur la ligne, et à un seul endroit.</b> La poser dans la requête qui
@@ -180,21 +188,21 @@ public sealed class ScreenedColumn
   }
 
   /// <summary>
-  /// Porte l'issue qu'un humain vient de rendre, <b>signée et datée</b>.
+  /// Porte l'issue qu'un humain vient de rendre, <b>datée</b>.
   /// </summary>
   /// <remarks>
   /// <b>Un second arbitrage écrase le premier</b>, à l'inverse de <c>Reservation</c> dont « le
   /// premier arbitrage est le bon » parce qu'un <c>EvidenceLog</c> en garde la trace. Ici il n'y a pas de
   /// <c>EvidenceLog</c> : la trace <b>est</b> l'état courant, et se raviser doit rester possible sur une
-  /// surface qu'on reprend pendant trois jours. Le coût est déclaré — qui avait dit quoi est effacé.
+  /// surface qu'on reprend pendant trois jours. Le coût est déclaré — la date de l'arbitrage
+  /// remplacé est effacée.
   /// </remarks>
   /// <param name="ruling">Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>
-  /// <param name="signedBy">Le nom saisi par celui qui tranche.</param>
-  /// <param name="signedOn">L'instant où il a tranché.</param>
+  /// <param name="renderedOn">L'instant où il a tranché.</param>
   /// <exception cref="ArgumentNullException"><paramref name="ruling"/> est absent.</exception>
-  /// <exception cref="ArgumentException">L'état n'est pas une issue, ou la signature est vide, démesurée, ou porte un caractère de contrôle.</exception>
-  internal void Arbitrate(ScreenedColumnState ruling, string? signedBy, DateTimeOffset signedOn)
+  /// <exception cref="ArgumentException">L'état n'est pas une issue.</exception>
+  internal void Arbitrate(ScreenedColumnState ruling, DateTimeOffset renderedOn)
   {
-    Arbitration = Screenings.Arbitration.Rendered(ruling, signedBy, signedOn);
+    Arbitration = Screenings.Arbitration.Rendered(ruling, renderedOn);
   }
 }

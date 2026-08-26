@@ -65,9 +65,9 @@ public sealed record ScreenedTable(
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Il dit à l'<c>Operator</c> la portée exacte du geste avant qu'il ne le pose.</b> Un bouton
-  /// qui ne dirait pas sur combien de colonnes il va signer serait un bouton qu'on presse sans savoir
-  /// ce qu'on signe — sur la seule trace que ce contexte garde d'un acte humain. Le compte est celui
-  /// du domaine, lu ligne par ligne : la règle n'est pas réécrite ici.
+  /// qui ne dirait pas sur combien de colonnes il va trancher serait un bouton qu'on presse sans
+  /// savoir ce qu'on tranche — sur la seule trace que ce contexte garde d'un acte humain. Le compte
+  /// est celui du domaine, lu ligne par ligne : la règle n'est pas réécrite ici.
   /// </remarks>
   public int WithinReachOfABatchGestureInThisTable =>
     Columns.Count(column => column.IsWithinReachOfABatchGesture);

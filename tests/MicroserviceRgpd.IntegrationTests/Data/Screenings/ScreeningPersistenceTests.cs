@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Globalization;
 using MicroserviceRgpd.Core.Screenings;
 using Npgsql;
 
@@ -25,7 +26,7 @@ namespace MicroserviceRgpd.IntegrationTests.Data.Screenings;
 public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 {
   private static readonly DateTimeOffset LaunchedOn = new(2026, 8, 6, 9, 30, 0, TimeSpan.Zero);
-  private static readonly DateTimeOffset SignedOn = new(2026, 8, 7, 14, 5, 0, TimeSpan.Zero);
+  private static readonly DateTimeOffset RenderedOn = new(2026, 8, 7, 14, 5, 0, TimeSpan.Zero);
   private static readonly ScreeningEngineIdentity Engine = new("lexique-fr-en", "1.0.0");
 
   /// <summary>
@@ -194,13 +195,14 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 
     await SaveAsync(screening);
 
-    await ArbitrateAsync(screening.Id, "adr_l1", ScreenedColumnState.Retained, "Claire Martin", SignedOn);
+    await ArbitrateAsync(screening.Id, "adr_l1", ScreenedColumnState.Retained, RenderedOn);
 
     var written = await ScalarListAsync(
-      "select state || '/' || signed_by from screened_columns "
+      $"select state || '/' || (rendered_on = timestamptz '{AsSql(RenderedOn)}')::text "
+      + "from screened_columns "
       + $"where screening_id = '{screening.Id.Value}' and column_name = 'adr_l1'");
 
-    written.ShouldBe([$"{nameof(ScreenedColumnState.Retained)}/Claire Martin"]);
+    written.ShouldBe([$"{nameof(ScreenedColumnState.Retained)}/true"]);
 
     var reread = await RereadAsync(screening.Id);
     var column = reread.ColumnAt(ColumnIdentity.Of("public", "adherents", "adr_l1"));
@@ -208,40 +210,39 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     column.ShouldNotBeNull();
     column.State.ShouldBe(ScreenedColumnState.Retained);
     column.Arbitration.ShouldNotBeNull();
-    column.Arbitration.SignedBy.ShouldBe("Claire Martin");
-    column.Arbitration.SignedOn.ShouldBe(SignedOn);
+    column.Arbitration.RenderedOn.ShouldBe(RenderedOn);
     reread.RetainedCount.ShouldBe(1);
     reread.AwaitingCount.ShouldBe(0);
   }
 
   /// <summary>
-  /// <b>« En attente » est l'absence des trois colonnes</b>, et non un mot écrit dans une colonne
-  /// d'état. Un <c>Awaiting</c> stocké aurait pu se dissocier de la signature qui n'existe pas.
+  /// <b>« En attente » est l'absence des deux colonnes</b>, et non un mot écrit dans une colonne
+  /// d'état. Un <c>Awaiting</c> stocké aurait pu se dissocier de la date qui n'existe pas.
   /// </summary>
   [Fact]
-  public async Task LeavesTheThreeArbitrationColumnsNullWhileNobodyHasRuled()
+  public async Task LeavesTheTwoArbitrationColumnsNullWhileNobodyHasRuled()
   {
     var screening = AScreening(ANothingSeenColumn("id_adh", position: 1));
 
     await SaveAsync(screening);
 
     var written = await ScalarListAsync(
-      "select coalesce(state, '∅') || '/' || coalesce(signed_by, '∅') || '/' "
-      + "|| coalesce(signed_on::text, '∅') from screened_columns "
+      "select coalesce(state, '∅') || '/' || coalesce(rendered_on::text, '∅') "
+      + "from screened_columns "
       + $"where screening_id = '{screening.Id.Value}'");
 
-    written.ShouldBe(["∅/∅/∅"]);
+    written.ShouldBe(["∅/∅"]);
   }
 
   /// <summary>
-  /// ⚠️ <b>La signature n'est pas facultative : la base refuse un état sans elle.</b> Le domaine ne
-  /// sait pas poser l'un sans l'autre — les trois champs entrent ensemble dans un seul type — et la
+  /// ⚠️ <b>La date n'est pas facultative : la base refuse un état sans elle.</b> Le domaine ne
+  /// sait pas poser l'un sans l'autre — les deux champs entrent ensemble dans un seul type — et la
   /// contrainte de contrôle le tient <b>aussi</b> contre qui écrirait en SQL nu. Sans elle, la
-  /// promesse « il n'existe ni <c>Retained</c> ni <c>SetAside</c> non signé » ne vaudrait que tant
+  /// promesse « il n'existe ni <c>Retained</c> ni <c>SetAside</c> sans date » ne vaudrait que tant
   /// que tout le monde passe par le domaine.
   /// </summary>
   [Fact]
-  public async Task RefusesARulingThatCarriesNoSignature()
+  public async Task RefusesARulingThatCarriesNoDate()
   {
     var screening = AScreening(ANothingSeenColumn("id_adh", position: 1));
 
@@ -265,7 +266,7 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 
   /// <summary>
   /// <b>Le réarbitrage écrase l'état courant</b>, et n'ajoute pas une ligne. La trace <b>est</b>
-  /// l'état courant seul : le coût est déclaré — qui avait dit quoi est effacé.
+  /// l'état courant seul : le coût est déclaré — la date de l'arbitrage remplacé est effacée.
   /// </summary>
   [Fact]
   public async Task OverwritesTheStandingArbitrationRatherThanKeepingAHistory()
@@ -274,17 +275,18 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 
     await SaveAsync(screening);
 
-    await ArbitrateAsync(screening.Id, "adr_l1", ScreenedColumnState.Retained, "Claire Martin", SignedOn);
+    await ArbitrateAsync(screening.Id, "adr_l1", ScreenedColumnState.Retained, RenderedOn);
     await ArbitrateAsync(
-      screening.Id, "adr_l1", ScreenedColumnState.SetAside, "Yanis Bouchard", SignedOn.AddDays(1));
+      screening.Id, "adr_l1", ScreenedColumnState.SetAside, RenderedOn.AddDays(1));
 
     var written = await ScalarListAsync(
-      "select state || '/' || signed_by || '/' || signed_on::text from screened_columns "
+      $"select state || '/' || (rendered_on = timestamptz '{AsSql(RenderedOn.AddDays(1))}')::text "
+      + "from screened_columns "
       + $"where screening_id = '{screening.Id.Value}' and column_name = 'adr_l1'");
 
     // Une seule ligne, portant la seconde issue : la première n'a laissé aucune trace nulle part.
     written.Count.ShouldBe(1);
-    written[0].ShouldStartWith($"{nameof(ScreenedColumnState.SetAside)}/Yanis Bouchard/");
+    written[0].ShouldBe($"{nameof(ScreenedColumnState.SetAside)}/true");
 
     var reread = await RereadAsync(screening.Id);
 
@@ -307,7 +309,7 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 
     await SaveAsync(screening);
 
-    await ArbitrateAsync(screening.Id, "adr_l1", ScreenedColumnState.Retained, "Claire Martin", SignedOn);
+    await ArbitrateAsync(screening.Id, "adr_l1", ScreenedColumnState.Retained, RenderedOn);
 
     (await ScalarListAsync(
       $"select count(*)::text from screened_columns where screening_id = '{screening.Id.Value}'"))
@@ -370,8 +372,10 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     shape.ShouldContain("strength character varying(64) YES");
     shape.ShouldContain("reason character varying(2000) YES");
     shape.ShouldContain("state character varying(64) YES");
-    shape.ShouldContain("signed_by character varying(100) YES");
-    shape.ShouldContain("signed_on timestamp with time zone YES");
+    shape.ShouldContain("rendered_on timestamp with time zone YES");
+
+    // ⚠️ Aucune colonne ne porte qui a arbitré : ce contexte ne l'enregistre pas — ADR-0014.
+    shape.ShouldNotContain(column => column.StartsWith("signed_by ", StringComparison.Ordinal));
     shape.ShouldContain("schema_name character varying(100) NO");
     shape.ShouldContain("table_name character varying(100) NO");
     shape.ShouldContain("column_name character varying(100) NO");
@@ -411,6 +415,16 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     // ⚠️ Et rien d'autre que les trois index décidés : un index de plus se paierait sur chaque
     // dépôt, cinq mille lignes à la fois.
     indexes.Count.ShouldBe(3);
+  }
+
+  /// <summary>
+  /// L'instant tel que PostgreSQL le lit, <b>tiré de la constante</b> et jamais recopié à la main :
+  /// un littéral écrit à côté de la valeur qu'il doit refléter finit par en diverger, et le test
+  /// resterait vert sur une date que le service n'a pas écrite.
+  /// </summary>
+  private static string AsSql(DateTimeOffset instant)
+  {
+    return instant.ToString("yyyy-MM-dd HH:mm:sszzz", CultureInfo.InvariantCulture);
   }
 
   private static Screening AScreening(params ScreenedColumn[] columns)
@@ -468,8 +482,7 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
     ScreeningId id,
     string column,
     ScreenedColumnState ruling,
-    string signedBy,
-    DateTimeOffset signedOn)
+    DateTimeOffset renderedOn)
   {
     await using var dbContext = postgres.NewDbContext();
 
@@ -480,7 +493,7 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
       .SingleAsync(one => one.Id == id);
 
     screening.Arbitrate(
-      ColumnIdentity.Of("public", "adherents", column), ruling, signedBy, signedOn).ShouldNotBeNull();
+      ColumnIdentity.Of("public", "adherents", column), ruling, renderedOn).ShouldNotBeNull();
 
     await dbContext.SaveChangesAsync();
   }

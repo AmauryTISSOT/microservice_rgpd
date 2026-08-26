@@ -53,10 +53,6 @@ public class TableModel(IMediator mediator) : PageModel
   [BindProperty]
   public string? Ruling { get; set; }
 
-  /// <summary>Le nom saisi par celui qui tranche. Non authentifié, et non facultatif.</summary>
-  [BindProperty]
-  public string? SignedBy { get; set; }
-
   /// <summary>
   /// Le rapport de détection que l'écran rendait quand l'humain a cliqué. ⚠️ <b>Il ne désigne pas
   /// où écrire</b> — le geste écrit toujours le courant — <b>il permet de refuser</b> quand le
@@ -113,9 +109,9 @@ public class TableModel(IMediator mediator) : PageModel
   /// à chaque retour en arrière.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Aucune date ne circule.</b> Le formulaire n'en porte pas de champ, et il ne doit jamais
-  /// en porter : l'instant est posé par le service, sur la seule trace que ce contexte garde d'un
-  /// acte humain.
+  /// ⚠️ <b>Aucune date ne circule, et aucun nom non plus.</b> Le formulaire ne porte de champ ni
+  /// pour l'une ni pour l'autre : l'instant est posé par le service, et ce contexte n'enregistre
+  /// pas qui a tranché — voir l'<c>ADR-0014</c>.
   /// </para>
   /// </remarks>
   public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -156,7 +152,7 @@ public class TableModel(IMediator mediator) : PageModel
     }
 
     var arbitrated = await mediator.Send(
-      new ArbitrateColumnCommand(column, ScreeningId.From(read), ruling, SignedBy),
+      new ArbitrateColumnCommand(column, ScreeningId.From(read), ruling),
       cancellationToken);
 
     // Aucun rapport de détection courant, ou un courant qui ne porte pas cette colonne : l'écran
@@ -169,8 +165,8 @@ public class TableModel(IMediator mediator) : PageModel
     }
 
     // ⚠️ Le rapport de détection a changé pendant votre lecture — un relevé a été déposé entre le
-    // rendu de l'écran et le clic. Écrire aurait posé votre nom sur un rapport de détection que vous
-    // n'avez pas lu.
+    // rendu de l'écran et le clic. Écrire aurait porté votre arbitrage sur un rapport de détection
+    // que vous n'avez pas lu.
     if (arbitrated.Status == ResultStatus.Conflict)
     {
       return NothingWasArbitrated(
@@ -234,8 +230,7 @@ public class TableModel(IMediator mediator) : PageModel
     }
 
     var batch = await mediator.Send(
-      new ArbitrateTableInBatchCommand(
-        new TableIdentity(Schema, Table), ScreeningId.From(read), ruling, SignedBy),
+      new ArbitrateTableInBatchCommand(new TableIdentity(Schema, Table), ScreeningId.From(read), ruling),
       cancellationToken);
 
     if (batch.Status == ResultStatus.NotFound)
@@ -245,8 +240,8 @@ public class TableModel(IMediator mediator) : PageModel
         + "rien n'a été enregistré. Voici le rapport de détection tel qu'il est.");
     }
 
-    // ⚠️ Un relevé a été déposé entre le rendu de l'écran et le clic : écrire aurait posé votre nom,
-    // d'un seul coup, sur des dizaines de colonnes d'un rapport de détection que vous n'avez pas lu.
+    // ⚠️ Un relevé a été déposé entre le rendu de l'écran et le clic : écrire aurait porté votre
+    // geste, d'un seul coup, sur des dizaines de colonnes d'un rapport que vous n'avez pas lu.
     if (batch.Status == ResultStatus.Conflict)
     {
       return NothingWasArbitrated(
@@ -286,8 +281,8 @@ public class TableModel(IMediator mediator) : PageModel
         + "n'a été vu en attente."
       : $"{batch.Arbitrated} colonne{(batch.Arbitrated == 1 ? "" : "s")} où rien n'avait été vu "
         + $"{(batch.Arbitrated == 1 ? "a été" : "ont été")} {ruling.FrenchLabel}"
-        + $"{(batch.Arbitrated == 1 ? "" : "s")} sous votre nom, dans cette table et nulle part "
-        + "ailleurs — chacune signée et datée pour elle-même.";
+        + $"{(batch.Arbitrated == 1 ? "" : "s")} dans cette table et nulle part "
+        + "ailleurs — chacune datée pour elle-même.";
 
     return batch.FlaggedStillAwaiting == 0
       ? done
