@@ -62,8 +62,30 @@ if ((${#manquants[@]})); then
   echec "Outils absents du PATH : ${manquants[*]}. Voir la section « Démarrer » du README."
 fi
 
-docker info >/dev/null 2>&1 \
-  || echec "Docker ne répond pas. Postgres et le sidecar en dépendent : démarrez le démon puis relancez."
+# `docker info` échoue pour deux raisons opposées : le démon est arrêté, ou il tourne mais refuse
+# son socket à cet utilisateur. Le geste correctif n'est pas le même, d'où le tri ci-dessous — et
+# la sortie réelle est conservée, parce qu'un troisième cas finira bien par arriver.
+if ! sortie_docker="$(docker info 2>&1)"; then
+  socket="${DOCKER_HOST:-unix:///var/run/docker.sock}"
+  if grep -qi 'permission denied' <<<"$sortie_docker"; then
+    echec "$(printf '%s\n' \
+      "Docker tourne mais refuse son socket à cet utilisateur ($socket)." \
+      "    Il manque l'appartenance au groupe « docker » — inutile de redémarrer le démon." \
+      "    Corriger  : sudo usermod -aG docker \"\$USER\"  puis rouvrir la session (« newgrp docker » ne vaut que pour ce terminal)." \
+      "    Vérifier  : id -nG | grep docker && docker info" \
+      "    À savoir  : le groupe « docker » équivaut à un accès root sur la machine.")"
+  elif grep -qiE 'cannot connect to the docker daemon|is the docker daemon running' <<<"$sortie_docker"; then
+    echec "$(printf '%s\n' \
+      "Le démon Docker ne tourne pas ($socket). Postgres et le sidecar en dépendent." \
+      "    Corriger  : sudo systemctl start docker" \
+      "    Au boot   : sudo systemctl enable --now docker.socket")"
+  else
+    echec "$(printf '%s\n' \
+      "Docker ne répond pas. Postgres et le sidecar en dépendent." \
+      "    Sortie de « docker info » :" \
+      "$(sed 's/^/        /' <<<"$sortie_docker")")"
+  fi
+fi
 
 # Sans certificat de développement approuvé, l'accueil s'ouvre sur un avertissement de sécurité et
 # l'attente ci-dessous passerait quand même : l'alerte est donc préventive, pas bloquante.
