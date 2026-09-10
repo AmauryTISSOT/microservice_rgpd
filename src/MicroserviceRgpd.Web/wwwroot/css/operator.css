@@ -423,6 +423,7 @@ a.doorway,
 .clause,
 .premises,
 .refusals,
+.right,
 .system,
 table.queue:not(.columns) {
   background: var(--surface);
@@ -445,6 +446,7 @@ table.queue:not(.columns) {
 }
 
 .premises h3,
+.right h2,
 .system h2,
 .system h3 {
   font: var(--type-heading-3);
@@ -462,6 +464,7 @@ table.queue:not(.columns) {
 */
 .facts,
 .premises dl,
+.right dl,
 .system dl {
   display: grid;
   gap: var(--space-xxs) var(--space-md);
@@ -471,12 +474,14 @@ table.queue:not(.columns) {
 
 .facts dt,
 .premises dt,
+.right dt,
 .system dt {
   font-weight: var(--weight-semibold);
 }
 
 .facts dd,
 .premises dd,
+.right dd,
 .system dd {
   margin: 0;
   white-space: pre-wrap;

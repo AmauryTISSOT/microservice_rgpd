@@ -1,0 +1,41 @@
+@page "/parametrage"
+@model ParametrageModel
+@{
+  ViewData["Title"] = "Paramétrage du microservice RGPD";
+}
+
+<h1>Paramétrage du microservice RGPD</h1>
+
+@*
+  La phrase dit ce que l'écran est : la configuration, droit par droit, de l'adresse à laquelle le
+  service exercera chacun des six droits RGPD. Un droit sans adresse est « non configuré », et c'est
+  l'état d'un service qu'on vient d'installer.
+*@
+<p class="caveat">
+  Chacun des six droits ouverts par le RGPD porte l'adresse à laquelle le service l'exercera. Un
+  droit sans adresse est <strong>« non configuré »</strong> : c'est un état normal, et rien ne vous
+  oblige à les renseigner tous.
+</p>
+
+@foreach (var right in Model.Settings.Rights)
+{
+  <div class="right">
+    <h2>@right.Right.FrenchLabel</h2>
+    <dl>
+      <dt>Article</dt>
+      <dd>Article @right.Right.Article du RGPD</dd>
+
+      <dt>Adresse d'exercice</dt>
+      <dd>
+        @if (right.IsConfigured)
+        {
+          @right.Endpoint!.Value.Value
+        }
+        else
+        {
+          <span class="none">non configuré</span>
+        }
+      </dd>
+    </dl>
+  </div>
+}

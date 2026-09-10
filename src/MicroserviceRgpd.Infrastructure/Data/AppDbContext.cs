@@ -1,4 +1,5 @@
 using MicroserviceRgpd.Core.Casework;
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.Infrastructure.Data.Casework;
@@ -21,6 +22,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// date de déclaration.
   /// </summary>
   public DbSet<DeclaredSystem> DeclaredSystems => Set<DeclaredSystem>();
+
+  /// <summary>
+  /// Le <c>Settings</c> — le Paramétrage : la configuration applicative du service, <b>singleton</b>.
+  /// La table ne porte qu'une ligne, sa clé est figée, et elle naît paresseusement au premier
+  /// enregistrement d'une adresse.
+  /// </summary>
+  public DbSet<Settings> Settings => Set<Settings>();
 
   /// <summary>
   /// Les <c>Case</c> — <b>la racine, et la seule</b>. Il n'existe volontairement aucun <c>DbSet</c>
