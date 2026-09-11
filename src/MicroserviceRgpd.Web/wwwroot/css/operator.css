@@ -1210,6 +1210,11 @@ button.modal-close {
   margin-top: var(--space-lg);
 }
 
+/* La confirmation : un titre, une phrase, deux boutons — elle n'a pas besoin de la largeur d'un formulaire. */
+dialog.modal.confirmation {
+  width: 28rem;
+}
+
 /* Les actions en pied, à droite, l'action principale en dernier : là où l'œil finit sa lecture. */
 .modal-actions {
   display: flex;

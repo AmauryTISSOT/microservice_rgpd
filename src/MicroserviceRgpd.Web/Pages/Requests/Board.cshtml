@@ -135,3 +135,26 @@
     </div>
   </form>
 </dialog>
+
+@*
+  LA CONFIRMATION D'ABANDON, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Le module l'ouvre
+  par-dessus la modale de création quand l'Operator la ferme — par l'un des quatre modes — alors
+  que sa saisie diffère des valeurs par défaut. Elle est sœur de la modale, et non dedans : chacune
+  est un `dialog` entier.
+
+  ⚠️ « CONTINUER LA SAISIE » A LE FOCUS PAR DÉFAUT (`autofocus`, que `showModal` honore) : une touche
+  Entrée réflexe ramène au formulaire intact, et ne détruit rien. C'est aussi l'action principale,
+  en dernier ; « Abandonner » la précède.
+*@
+<dialog class="modal confirmation" id="abandon-entry" role="alertdialog"
+        aria-labelledby="abandon-entry-title" aria-describedby="abandon-entry-consequence">
+  <div class="modal-head">
+    <h2 id="abandon-entry-title">Abandonner la saisie ?</h2>
+  </div>
+  <p id="abandon-entry-consequence">Les informations saisies seront perdues.</p>
+
+  <div class="modal-actions">
+    <button type="button" data-abandon>Abandonner</button>
+    <button type="button" class="primary" data-continue autofocus>Continuer la saisie</button>
+  </div>
+</dialog>
