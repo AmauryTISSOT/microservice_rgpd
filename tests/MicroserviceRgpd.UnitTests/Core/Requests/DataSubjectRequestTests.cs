@@ -71,6 +71,16 @@ public class DataSubjectRequestTests
     request.Id.Value.ShouldNotBe(Guid.Empty);
   }
 
+  /// <summary>
+  /// <b>Une demande naît <c>InProgress</c></b> : c'est <see cref="DataSubjectRequest.Receive"/> qui
+  /// le fixe, et aucun <c>Gesture</c> ne le fait encore changer.
+  /// </summary>
+  [Fact]
+  public void IsBornInProgress()
+  {
+    Receive(AValidEntry()).Value.Status.ShouldBe(RequestStatus.InProgress);
+  }
+
   [Fact]
   public void GivesEachReceivedRequestItsOwnIdentity()
   {

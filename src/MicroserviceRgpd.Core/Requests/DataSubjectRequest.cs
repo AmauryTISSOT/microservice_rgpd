@@ -48,6 +48,7 @@ public sealed class DataSubjectRequest : IAggregateRoot
     IdentityVerified = identityVerified;
     Message = message;
     Right = right;
+    Status = RequestStatus.InProgress;
     CreatedBy = OperatorAuthor;
     CreatedAt = createdAt;
   }
@@ -78,6 +79,12 @@ public sealed class DataSubjectRequest : IAggregateRoot
 
   /// <summary>Le droit invoqué — l'un des six, jamais <see cref="DataSubjectRight.OutOfScope"/>.</summary>
   public DataSubjectRight Right { get; private set; }
+
+  /// <summary>
+  /// Où en est la demande — un état qu'elle tient, pas la trace d'un <c>Gesture</c>. Elle naît
+  /// <see cref="RequestStatus.InProgress"/>, et rien ne la fait encore changer.
+  /// </summary>
+  public RequestStatus Status { get; private set; }
 
   /// <summary>Qui a enregistré la demande : toujours <see cref="OperatorAuthor"/>.</summary>
   public string CreatedBy { get; private set; }

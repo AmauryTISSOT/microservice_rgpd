@@ -18,7 +18,7 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// </remarks>
 public class CreateDataSubjectRequestsTests : IAsyncLifetime
 {
-  private const string TheCreation = "20260911161754_CreateDataSubjectRequests";
+  internal const string TheCreation = "20260911161754_CreateDataSubjectRequests";
 
   private readonly PostgreSqlContainer _container =
     new PostgreSqlBuilder("postgres:18-alpine").Build();

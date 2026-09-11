@@ -8,13 +8,13 @@ namespace MicroserviceRgpd.Infrastructure.Data.Requests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Ni statut, ni échéance.</b> Le contexte ne connaît encore que la réception : une colonne
-/// d'état n'aurait rien à dire, et se lirait comme la promesse d'une instruction qui n'existe pas.
+/// ⚠️ <b>La colonne <c>status</c> tient un état, pas la trace d'un <c>Gesture</c></b> (ADR-0021) :
+/// elle est ce que le tableau lira, et non la promesse d'une instruction qui n'existe pas.
 /// </para>
 /// <para>
 /// <b>Les vocabulaires fermés sont stockés par leur nom, jamais par un entier</b> — l'origine comme
-/// <c>ListingOrigin</c>, le droit sous son nom canonique, celui du fil JSON. Un entier lierait le
-/// schéma à l'ordre de déclaration et rendrait la table illisible.
+/// <c>ListingOrigin</c>, le statut de même, le droit sous son nom canonique, celui du fil JSON. Un
+/// entier lierait le schéma à l'ordre de déclaration et rendrait la table illisible.
 /// </para>
 /// <para>
 /// <b>Les textes sont en <c>text</c>, sans plafond déclaré</b> : les plafonds sont ceux des objets
@@ -77,6 +77,11 @@ public sealed class DataSubjectRequestConfiguration : IEntityTypeConfiguration<D
     builder.Property(request => request.Right)
       .HasColumnName("data_subject_right")
       .HasConversion(right => right.Name, name => DataSubjectRight.FromName(name))
+      .IsRequired();
+
+    builder.Property(request => request.Status)
+      .HasColumnName("status")
+      .HasConversion(status => status.Name, name => RequestStatus.FromName(name))
       .IsRequired();
 
     builder.Property(request => request.CreatedBy).HasColumnName("created_by").IsRequired();
