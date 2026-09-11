@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.FunctionalTests.Layout;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>L'accueil ne relève ni du <c>Casework</c> ni du <c>Screening</c> : il est du layout</b>, au
+/// ⚠️ <b>L'accueil ne relève ni du <c>Requests</c> ni du <c>Screening</c> : il est du layout</b>, au
 /// même titre que la barre. Il est donc éprouvé dans le harnais du layout, par la <b>seule frontière
 /// HTTP</b>, exactement ce que fait un navigateur — et le reste du layout le tient déjà pour un
 /// écran comme les dix autres, puisqu'il entre dans <see cref="LayoutSurface.ScreensAsync"/>.

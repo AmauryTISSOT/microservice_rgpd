@@ -13,8 +13,9 @@ namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Reporting;
 /// matrice devant lui.</b> Un type qui n'habite aucun contexte n'est jamais un <c>from</c> ni un
 /// <c>to</c> : il n'apparaît dans aucune paire ordonnée, et la matrice n'a donc rien à examiner.
 /// Le <c>ScreeningExportService</c> que la liste <i>Avoid</i> de la clause
-/// <c>Aucune modification vers le Manifest</c> bannit nommément est exactement cette forme — il rapprocherait les colonnes retenues des
-/// <c>DeclaredSystem</c> pour pré-remplir le <c>Manifest</c>.
+/// <c>Aucune modification vers le Manifest</c> bannit nommément est exactement cette forme — il
+/// rapprocherait les colonnes retenues de ce qui est déjà déclaré pour pré-remplir le
+/// <c>Manifest</c>.
 /// </para>
 /// <para>
 /// Il vit dans un dossier <c>Reporting/</c> pour la même raison : c'est le nom qu'un tel fichier

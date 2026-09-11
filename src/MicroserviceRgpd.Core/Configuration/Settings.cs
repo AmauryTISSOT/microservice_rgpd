@@ -27,8 +27,8 @@ namespace MicroserviceRgpd.Core.Configuration;
 /// </para>
 /// <para>
 /// Les libellés et les articles ne sont <b>pas</b> recopiés ici : ils se lisent sur <see
-/// cref="DataSubjectRight"/> (SharedKernel), et <c>Configuration</c> en est un troisième
-/// consommateur, aux côtés de <c>Casework</c> et <c>Qualification</c>.
+/// cref="DataSubjectRight"/> (SharedKernel), et <c>Configuration</c> en est l'un des trois
+/// consommateurs, aux côtés de <c>Qualification</c> et <c>Requests</c>.
 /// </para>
 /// </remarks>
 public sealed class Settings : IAggregateRoot
