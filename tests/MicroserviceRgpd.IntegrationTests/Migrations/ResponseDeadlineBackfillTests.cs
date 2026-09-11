@@ -7,7 +7,7 @@ using Testcontainers.PostgreSql;
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
 /// <summary>
-/// <b>Les demandes enregistrées avant la date limite la reçoivent depuis leur date de réception</b>
+/// <b>Les demandes enregistrées avant l'ajout de la date limite la reçoivent depuis leur date de réception</b>
 /// (ADR-0021). Une base est montée au dernier état d'<i>avant</i> la date limite, on y écrit trois
 /// demandes avec les colonnes de cette date-là — dont un 31 janvier et un 31 mars —, puis on joue la
 /// migration.
@@ -69,7 +69,7 @@ public class ResponseDeadlineBackfillTests : IAsyncLifetime
 
     deadlines.Select(read => (read.Id.Value, read.ResponseDeadline)).ShouldBe(
       [
-        (AnEndOfJanuary, new DateOnly(2027, 2, 28)),
+        (AnEndOfJanuary, new DateOnly(2026, 2, 28)),
         (AnEndOfMarch, new DateOnly(2026, 4, 30)),
         (AnOrdinaryDay, new DateOnly(2026, 10, 1)),
       ],
@@ -103,9 +103,9 @@ public class ResponseDeadlineBackfillTests : IAsyncLifetime
         (id, origin, received_on, last_name, first_name, email, identity_verified, message,
          data_subject_right, status, created_by, created_at)
       VALUES
-        ({AnEndOfJanuary}, 'Email', DATE '2027-01-31', NULL, NULL, 'jeanne@exemple.fr', false,
+        ({AnEndOfJanuary}, 'Email', DATE '2026-01-31', NULL, NULL, 'jeanne@exemple.fr', false,
          'Je souhaite accéder à mes données.', 'Access', 'InProgress', 'operator',
-         TIMESTAMPTZ '2027-02-01 08:00:00+00'),
+         TIMESTAMPTZ '2026-02-01 08:00:00+00'),
         ({AnEndOfMarch}, 'Letter', DATE '2026-03-31', 'Martin', 'Paul', NULL, true,
          'Merci d''effacer mon compte.', 'Erasure', 'InProgress', 'operator',
          TIMESTAMPTZ '2026-09-02 09:00:00+00'),
