@@ -3,7 +3,7 @@ using Ardalis.ListStartupServices;
 using MicroserviceRgpd.Infrastructure.Data;
 using Scalar.AspNetCore;
 
-namespace MicroserviceRgpd.Web.Configurations;
+namespace MicroserviceRgpd.Web.Composition;
 
 public static class MiddlewareConfig
 {

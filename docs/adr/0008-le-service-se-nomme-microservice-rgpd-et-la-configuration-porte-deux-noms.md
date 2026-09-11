@@ -117,3 +117,29 @@ sans qu'aucun test ne s'y oppose.
 - **Le `README.md`** ne portait pas l'ancien wordmark. Vérifié, rien à y changer.
 - **Les identifiants du code** restent en anglais, et aucun n'est touché par ce renommage hors du
   `EntryPoint` lui-même : `Manifest` reste `Manifest`, `/manifest` reste `/manifest`.
+
+## Suite — l'écran de configuration se nomme « Paramétrage » (2026-09-11)
+
+⚠️ **Rien de ce qui précède n'a été édité** : on supplante un ADR, on ne le réécrit pas. Cette
+section nomme les deux points qui ne valent plus depuis
+l'[ADR-0016](./0016-le-manifest-cede-la-place-au-parametrage-un-droit-une-adresse.md), qui remplace
+le `Manifest` par le Paramétrage.
+
+- **Les deux noms « Configuration » et « Configuration du microservice RGPD »** quittent la
+  surface. L'écran a un seul nom, « Paramétrage » : le panneau dit « Paramétrage » ; la carte de
+  l'accueil, le `<h1>` et le titre d'onglet disent « Paramétrage du microservice RGPD ». Ce qui
+  tient est le mécanisme — forme courte là où le wordmark précède, forme pleine ailleurs, deux
+  champs d'`EntryPoint` —, appliqué à un mot qui n'est plus celui du tableau ci-dessus.
+- **« `Manifest` reste `Manifest`, `/manifest` reste `/manifest` »**, dans « Ce que cet ADR n'ouvre
+  pas ». Le type `Manifest` et l'écran à `/manifest` ont été supprimés ; `/manifest` rend 404.
+
+Trois conséquences écrites ci-dessus changent d'objet :
+
+- **Le lien de retour du tableau des demandes** (`Queue.cshtml`) dit « Paramétrage » et mène à
+  `/parametrage`. Il reste un lien d'un mot qui répète la première entrée du panneau.
+- **La clause d'incomplétude et le message d'appel refusé** (`Case.cshtml`) citent toujours
+  « Configuration », une entrée que le panneau ne porte plus. L'ADR-0016 les nomme comme dette ; ils
+  ne sont pas corrigés.
+- **Le garde du double nom**
+  (`SharedLayout.CarriesTheFourNavigationLabelsWordForWordAndInOrder`) est toujours le seul, et
+  recopie désormais « Paramétrage ».

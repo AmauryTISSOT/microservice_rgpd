@@ -17,21 +17,27 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// Un segment est reconnu par son <b>préfixe</b> : le dossier dit <c>Qualifications</c> là où le
 /// contexte se nomme <c>Qualification</c>.
 /// </para>
+/// <para>
+/// ⚠️ Le préfixe attrape aussi ce qui n'est pas un pluriel : un dossier <c>Configurations/</c> se lit
+/// comme du <c>Configuration</c>. C'est pourquoi le point de montage de <c>Web</c>, qui portait ce
+/// nom par héritage du gabarit, s'appelle <c>Composition/</c> depuis l'ADR-0016.
+/// </para>
 /// </summary>
 internal static class ContextInspector
 {
   internal const string Casework = "Casework";
   internal const string Qualification = "Qualification";
   internal const string Screening = "Screening";
+  internal const string Configuration = "Configuration";
   internal const string SharedKernel = "SharedKernel";
 
   /// <summary>
-  /// Tout ce qui peut être d'un côté ou de l'autre d'une frontière : les trois contextes bornés, et
+  /// Tout ce qui peut être d'un côté ou de l'autre d'une frontière : les quatre contextes bornés, et
   /// le noyau partagé qui n'en est pas un. La liste est écrite en toutes lettres plutôt que
   /// découverte, et <see cref="ContextRosterTests"/> l'ancre sur les glossaires du dépôt — un nom
   /// qui ne désignerait aucun dossier réel rendrait ses règles vertes pour toujours.
   /// </summary>
-  internal static readonly string[] All = [Qualification, Casework, Screening, SharedKernel];
+  internal static readonly string[] All = [Qualification, Casework, Screening, Configuration, SharedKernel];
 
   /// <summary>
   /// Toutes les traversées <paramref name="from"/> → <paramref name="to"/> portées par l'IL de

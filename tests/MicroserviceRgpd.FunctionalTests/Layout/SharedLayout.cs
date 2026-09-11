@@ -167,8 +167,8 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>La barre porte ses quatre libellés mot pour mot</b>, et le premier est <b>plus court</b> que
-  /// le nom que la carte de l'accueil donne au même écran : la barre dit <c>Configuration</c> là où
-  /// la carte dit <c>Configuration du microservice RGPD</c>.
+  /// le nom que la carte de l'accueil donne au même écran : la barre dit <c>Paramétrage</c> là où
+  /// la carte dit <c>Paramétrage du microservice RGPD</c>.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>C'est le garde du double nom, et il n'a de sens que lu avec

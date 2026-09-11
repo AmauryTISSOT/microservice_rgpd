@@ -61,7 +61,7 @@ _Avoid_ : Honoured, Fulfilled, Satisfied, Completed, Done
 est **structurel et annonçable au premier jour** (une comptabilité scellée dix ans ne pourra jamais
 effacer), le second est un **aveu constaté à la fin** ; ils n'ont ni le même lecteur — la réponse à
 la personne d'un côté, la preuve destinée au contrôle de l'autre — ni la même vérité dans le temps,
-`OutOfReach` figeant ce que le `Manifest` disait au moment du `Case`.
+`OutOfReach` figeant ce que les `DeclaredSystem` disaient au moment du `Case`.
 _Avoid_ : Pending, Failed, Skipped, Blocked
 
 ### Le temps, et ce qu'on en fait
@@ -132,21 +132,26 @@ lui sont dues — la prolongation, le refus et ses mentions de l'art. 12.4, la r
 humains **déclarés** au service, jamais émis par lui. Le temps est de la matière de preuve, lue par
 le contrôle ; il n'est pas de la matière de relation.
 
-### Configuration du microservice RGPD
+### Les systèmes déclarés
 
 **DeclaredSystem** :
 Un endroit où des données personnelles vivent chez le client, parce qu'**un humain l'a déclaré**.
 Unité de recensement, jamais de déploiement : le paysage du client, pas sa topologie. L'adjectif
 n'est pas décoratif — c'est parce que ces systèmes sont déclarés, et non découverts, que
 l'`Omission silencieuse` est le risque cardinal de ce contexte.
-_Avoid_ : System, Target, Datastore, source
+L'ensemble des `DeclaredSystem` forme le **catalogue** du client : à **gros grain** — des systèmes,
+jamais des champs, la précision du contenu appartenant à l'application —, daté par système, et qui
+**vieillit exprès**. Un `Case` le lit une fois, à son ouverture.
+⚠️ **Aucun écran ne déclare plus de `DeclaredSystem`.** L'écran qui le faisait est parti avec le
+`Manifest` (ADR-0016) ; la fabrique demeure, et l'instruction continue de lire le catalogue, mais
+une base neuve n'en a aucun. C'est la dette de recâblage : l'instruction appellera par droit, aux
+adresses du Paramétrage de [Configuration](../configuration/CONTEXT.md).
+_Avoid_ : System, Target, Datastore, source ⚠️ pour le catalogue : Manifest, Catalog, Schema,
+Inventory, Map, cartographie (prise par `Screening`)
 
-**Manifest** :
-Le catalogue des `DeclaredSystem` et de leurs `Capability`, déclaré par un humain et détenu par le
-service. À **gros grain** : des systèmes, jamais des champs — la précision du contenu appartient à
-l'application. Il **vieillit exprès**, daté par système, et se vérifie contre l'`Adapter` sans jamais
-se corriger en silence.
-_Avoid_ : Schema, Catalog, Inventory, Map, cartographie
+`Manifest` a nommé le catalogue et l'écran qui le déclarait jusqu'à l'ADR-0016. Le mot survit dans
+le code, les commentaires et la clause `Aucune modification vers le Manifest` de `Screening` ; il y
+désigne l'ensemble des `DeclaredSystem`. On ne le réemploie pas pour un concept nouveau.
 
 **Capability** :
 Ce qu'un `Adapter` sait faire sur un `DeclaredSystem` donné. Quatre valeurs — `Locate`, `Read`,
@@ -160,12 +165,13 @@ la forme. Imposer la forme depuis le service reviendrait à arbitrer la seule ch
 arbitrer, ayant renoncé au grain du champ.
 _Avoid_ : Operation (pris par l'art. 4.2), acte, verbe, diligence, permission
 
-**Désaccord `Manifest`/`Adapter`** :
+**Désaccord catalogue/`Adapter`** :
 Ce qu'un refus d'`Adapter` révèle : le catalogue déclaré et le programme qui le sert ne parlent plus
 du même système, ou les deux moitiés du secret ont divergé. Il se signale **une seule fois, au grain
 du déploiement** — une panne unique n'est pas N pannes, et la crier une fois par dossier ferait
 dépendre le volume du signal du nombre de demandes en cours, qui n'en dit rien. Il ne corrige jamais
-le `Manifest` en silence : un humain tranche lequel des deux avait tort.
+un `DeclaredSystem` en silence : un humain tranche lequel des deux avait tort. Le journal le nomme
+encore « Désaccord Manifest/Adapter ».
 ⚠️ Le `EvidenceLog`, lui, garde **toutes** les tentatives, datées, dossier par dossier : ce sont deux
 lecteurs et deux grains — l'exploitant d'un côté, le contrôle de l'autre.
 _Avoid_ : erreur, panne, incident, alerte
@@ -185,53 +191,6 @@ vocabulaire fermé : personne ne saurait qu'en conclure.
 ⚠️ Le mot **verdict** est réservé à la `Qualification` et ne nomme jamais la réponse d'un
 `Adapter` : une machine ne rend pas d'issue.
 _Avoid_ : Connector, Plugin, Integration, Webhook ⚠️ pour sa réponse : Verdict, Result, Status
-
-**Vérification du `Manifest`** :
-⚠️ **Le mot « vérification » est sur la liste _Avoid_ de `Enregistré, jamais vérifié`, et il est repris ici
-sciemment** — il n'y a pas de contradiction, parce que les deux ne portent pas sur la même chose. Ce
-qui reste interdit, c'est de vérifier ce qu'un humain **déclare** : un `Step` `Done` prouve qu'on a
-déclaré l'avoir fait, jamais qu'il l'a été. Ici, l'objet vérifié n'est pas une déclaration sur le
-monde mais **une déclaration sur le service lui-même** — quelle adresse répond, et à quoi — et c'est
-la seule chose que le service puisse constater de ses propres yeux, en appelant. Tout le reste reste
-enregistré, jamais vérifié.
-L'opération d'exploitation qui confronte le catalogue déclaré à ce que les `Adapter` servent
-réellement, système par système, pour les seuls `DeclaredSystem` dotés d'une adresse. Elle
-**rapporte** l'écart et ne corrige **jamais** le `Manifest` : un humain tranche lequel des deux avait
-tort. Son grain est le **déploiement** — elle ne touche aucun `Case` et n'écrit rien au `EvidenceLog`.
-Elle ne se déclenche que sur demande : rien ne tourne, sans quoi un processus interrompu rendrait un
-rapport **vide et rassurant**, soit l'`Omission silencieuse` sous sa forme la plus dangereuse.
-⚠️ **Une seule `Capability` sur quatre est vérifiable, et les trois autres sont nommées comme telles.**
-`Locate` se sonde — c'est le plancher, une requête et rien de destructeur. `Erase` et `Rectify` ne se
-constateraient qu'en détruisant ou en réécrivant des données réelles, **définitivement** ; `Read`
-n'a pas encore de forme d'appel fixée, le contrat lui promettant un champ de plus, et sonder avant
-qu'elle le soit enverrait chez le client une requête que le contrat ne décrit pas. Elles sont donc
-rapportées **non vérifiables**, une par une, plutôt que tues — le silence les aurait fait lire comme
-conformes.
-⚠️ **Un `Adapter` nu ne prouve rien de son catalogue non plus.** Son `200` peut venir d'une route qui
-sert tout à tout le monde, système inconnu compris : la vérification ne le rappelle pas sous le vrai
-secret et ne conclut rien de ses capacités, plutôt que d'écrire un accord que personne n'a constaté.
-⚠️ **Non vérifiable et sans conclusion ne fusionnent pas**, pour la raison qui sépare `OutOfReach` de
-`Untreated` : le premier est structurel et annonçable au premier jour, le second est le constat d'un
-jour, que la prochaine passe peut lever.
-_Avoid_ : audit, contrôle, conformité, synchronisation, réconciliation ⚠️ « synchroniser » promet
-dans son nom la correction que cette opération refuse.
-
-**Appel au faux secret** :
-Un `Locate` — plancher obligatoire, non destructeur, sac de désignations vide — envoyé à un `Adapter`
-avec un secret **volontairement invalide**. Un `200` en réponse prouve un `Adapter` **nu**,
-c'est-à-dire ouvert à qui l'atteint : il a travaillé pour un appelant que le contrat lui demandait de
-refuser. C'est un résultat d'**exploitation**, jamais une affaire de dossier.
-Le secret présenté est **fixe et public**, et sans aucun rapport avec celui du déploiement : un faux
-dérivé du vrai le livrerait, octet par octet, à l'`Adapter` même dont on soupçonne qu'il ne garde
-rien. Sa publicité ne coûte rien — il n'ouvre aucune porte, il est fait pour s'en faire fermer une.
-⚠️ **La sonde ne lit jamais le corps de ce qu'elle reçoit.** Le corps d'un `200` rendu à un secret
-faux est fait des données personnelles que l'`Adapter` n'aurait pas dû servir : les lire ferait
-entrer dans le service, au titre de la vérification, exactement ce qu'elle vient dénoncer.
-⚠️ Seul le `200` — et le `202`, qui est un travail **pris en charge** — démontre quelque chose. Un
-refus de secret dit que la porte a été fermée **ce jour-là, sur ce chemin-là**, jamais que le
-périmètre réseau, l'autre moitié du dispositif, est en place ; et un serveur muet ne se range pas
-avec les portes fermées.
-_Avoid_ : test de pénétration, scan, audit de sécurité, attaque
 
 ### La personne, et comment on la désigne
 
@@ -397,7 +356,7 @@ contenu, alors que ce sont deux chaînes que personne n'a vérifiées.
 Le mot par lequel **l'application** désigne une ligne qu'elle a rattachée — `clients#1203`,
 `/var/log/app-2026-03.log:88`. Le service ne la découpe pas, ne la compare pas d'un système à
 l'autre, n'en tire aucun compte : il la garde et la réaffiche mot pour mot à un humain qui saura la
-lire chez le client. C'est le grain du champ, fermé dans le `Manifest`, qui l'est encore au retour.
+lire chez le client. C'est le grain du champ, fermé dans le catalogue, qui l'est encore au retour.
 _Avoid_ : Id, Key, RowId, Locator, identifiant ⚠️ tous promettraient une structure que le service
 s'interdit de lire.
 
@@ -486,7 +445,7 @@ n'étant pas celui de l'art. 15, une pièce par système seul aurait forcé à r
 le service **n'en ouvre jamais le corps** : c'est un flux d'octets,
 écrit dans le vocabulaire de l'application et non dans un vocabulaire commun — il n'en existe aucun
 sur le terrain, et en inventer un le ferait payer à chaque `Adapter`. Le grain du champ, fermé dans
-le `Manifest`, l'est donc aussi au retour. Le service n'en connaît que ce que le **transport** lui
+le catalogue, l'est donc aussi au retour. Le service n'en connaît que ce que le **transport** lui
 met dans la main — `Content-Type`, `Content-Disposition: filename=` — qu'il **recopie sans
 l'interpréter**, en ne gardant du nom que son dernier segment ; à défaut d'en-tête il retombe sur le
 `system_id`. Il en résulte qu'il **rassemble sans jamais fusionner** : les pièces se posent côte à
@@ -558,9 +517,9 @@ _Avoid_ : Export, Package, Response, Bundle, Download, envoi
 La page que le service écrit lui-même dans chaque `Delivery`, seul texte du dossier dont il soit
 l'auteur. Elle range les `DeclaredSystem` du `Case` en **trois listes** : ceux dont une pièce est
 jointe ; ceux qui ont été interrogés **sans qu'aucun rattachement soit trouvé sous les `Designations`
-dont on dispose** ; ceux qui ne sont pas couverts, nommés un par un dans les mots du champ « contient »
-du `Manifest`. Elle se clôt en disant que cette liste est celle des systèmes **recensés**, et qu'elle
-ne garantit pas qu'il n'en existe pas d'autres.
+dont on dispose** ; ceux qui ne sont pas couverts, nommés un par un dans les mots du champ
+« contient » de leur `DeclaredSystem`. Elle se clôt en disant que cette liste est celle des systèmes
+**recensés**, et qu'elle ne garantit pas qu'il n'en existe pas d'autres.
 Une pièce **vide** n'est pas jointe à l'archive : elle est une réponse datée, la page la range parmi
 les systèmes interrogés sans rattachement, et joindre en plus un fichier de zéro octet ferait deux
 dires contradictoires dans le même envoi.
@@ -571,8 +530,8 @@ La troisième liste ne fusionne pas avec la première : une pièce vide n'est pa
 deuxième ne dit jamais « vous n'avez rien chez nous » — un `Locate` ne distingue pas « cherché, aucun
 rattachement » de « désignation insuffisante », et la seule phrase vraie porte ce doute avec elle,
 invitant la personne à fournir d'autres `Designation`.
-Le service l'écrit **sans ouvrir une seule pièce** : le `Manifest` et les `Step` du `Case` lui
-suffisent, l'enveloppe du transport distinguant à elle seule la pièce absente, la pièce vide et la
+Le service l'écrit **sans ouvrir une seule pièce** : les `DeclaredSystem` et les `Step` du `Case`
+lui suffisent, l'enveloppe du transport distinguant à elle seule la pièce absente, la pièce vide et la
 pièce pleine. L'incomplétude ne coûte donc rien à l'`Adapter`.
 Elle énumère les systèmes du travail dû **et** ceux dont une pièce est détenue : un `DeclaredSystem`
 recensé **après** l'ouverture du `Case` n'a aucun `Step`, et sa pièce partirait pourtant dans
@@ -581,7 +540,7 @@ lui faire croire qu'elle a tout.
 ⚠️ Le service n'y écrit **pas un chiffre**, et le nom du droit s'y lit en toutes lettres — « au titre
 du droit d'accès », jamais « article 15 ». Les mots d'un `DeclaredSystem` sont ceux du client : s'il
 a nommé son système avec un nombre, la page le recopie sans le réécrire.
-_Avoid_ : Summary, Report, Notice, Manifest (le mot est pris), note (pris par la prose)
+_Avoid_ : Summary, Report, Notice, Manifest (le mot a nommé le catalogue), note (pris par la prose)
 
 ### Ce qui meurt à la clôture, et ce qui reste
 
@@ -663,8 +622,8 @@ Le régime d'erreur de ce contexte. Omettre un `DeclaredSystem` est une infracti
 signale : elle ne produit pas une ligne fausse, elle produit une **ligne manquante**, qu'aucune
 relecture ne peut lever — on ne valide pas l'absence de ce qu'on ne voit pas. Trois conséquences
 non négociables en découlent : le service ne présente **jamais** un recensement comme complet,
-l'incomplétude est visible par construction, et la déclaration du `Manifest` est un prérequis, pas
-une option.
+l'incomplétude est visible par construction, et la déclaration des `DeclaredSystem` est un
+prérequis, pas une option. Aucun écran ne permet plus de la faire : voir `DeclaredSystem`.
 _Avoid_ : oubli, erreur de recensement, faux négatif, angle mort
 
 **Enregistré, jamais vérifié** :

@@ -573,3 +573,12 @@ de l'ADR-0006 ne les tienne pas pour vivants faute d'ouvrir la carte des context
 
 Tout le reste de cet ADR reste en vigueur — les trois noms français des points d'entrée, les
 identifiants C# inchangés, le texte gelé de la clause d'incomplétude, le tableau des mots bloqués.
+
+## Suite — `Manifest` quitte la liste des identifiants inchangés (2026-09-11)
+
+⚠️ **Rien de ce qui précède n'a été édité.** L'[ADR-0016](./0016-le-manifest-cede-la-place-au-parametrage-un-droit-une-adresse.md)
+supplante cet ADR sur un quatrième point : `Manifest`, dans « Les identifiants C# ne bougent pas ».
+Le type et l'écran à `/manifest` ont été supprimés, et non renommés ; le Paramétrage les remplace.
+Le motif de la clause — le contrat public, `system_id` — reste entier, et les autres identifiants
+de la liste ne bougent pas. L'écran de configuration, lui, ne se nomme plus « Configuration du
+microservice RGPD » : il se nomme « Paramétrage » (voir la suite de l'ADR-0008).

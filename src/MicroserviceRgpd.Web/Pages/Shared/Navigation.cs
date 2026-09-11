@@ -61,11 +61,11 @@ internal sealed record EntryPoint(
 /// qu'ils mènent.
 /// </para>
 /// <para>
-/// ⚠️ <b>Celui de la configuration, lui, est court, et il est le seul</b> : la configuration se dit
-/// <c>Configuration</c> ici et <c>Configuration du microservice RGPD</c> partout ailleurs — parce
-/// que le wordmark <see cref="ServiceName"/> la précède <b>dans cette barre et nulle part
+/// ⚠️ <b>Celui du paramétrage, lui, est court, et il est le seul</b> : l'écran se dit
+/// <c>Paramétrage</c> ici et <c>Paramétrage du microservice RGPD</c> partout ailleurs — parce
+/// que le wordmark <see cref="ServiceName"/> le précède <b>dans cette barre et nulle part
 /// ailleurs</b>. Ce n'est donc pas un précédent pour raccourcir les trois autres : leur forme pleine
-/// ne répète rien de ce qui les précède. Voir <c>ADR-0008</c>.
+/// ne répète rien de ce qui les précède. Voir <c>ADR-0008</c> et, pour le nom, <c>ADR-0016</c>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucun compteur, aucun badge numérique</b>, et il ne doit jamais y en avoir. La règle des
@@ -125,9 +125,8 @@ internal static class Navigation
   /// on détecte, on qualifie, on traite. ⚠️ <b>Ce n'est plus un ordre de mise en route</b> : rien
   /// n'oblige à qualifier un texte avant d'instruire une demande — une demande peut arriver déjà
   /// qualifiée, et un <c>Case</c> s'ouvre sans qu'aucune qualification n'ait eu lieu. Ce que la
-  /// position apprend et qu'aucun nom ne dit tient au premier rang seul : rien ne fonctionne dans le
-  /// service tant que l'<c>Operator</c> n'a pas déclaré ses systèmes et les adresses de leurs
-  /// <c>Adapter</c>. Voir <c>ADR-0010</c>.
+  /// position apprend et qu'aucun nom ne dit tient au premier rang seul : on y règle les adresses
+  /// dont l'exercice des droits dépendra. Voir <c>ADR-0010</c> et <c>ADR-0016</c>.
   /// </summary>
   internal static IReadOnlyList<EntryPoint> EntryPoints { get; } =
   [

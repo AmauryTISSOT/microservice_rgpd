@@ -1,8 +1,8 @@
 # Carte des contextes
 
-Ce dépôt porte **trois contextes bornés**. Ils se distinguent par le temps qu'ils couvrent :
-l'instant d'un verdict, la durée d'une instruction, et le temps d'avant — celui où aucune demande
-n'existe encore.
+Ce dépôt porte **quatre contextes bornés**. Ils se distinguent par le temps qu'ils couvrent :
+l'instant d'un verdict, la durée d'une instruction, le temps d'avant — celui où aucune demande
+n'existe encore —, et ce qui vaut pour toutes les demandes à la fois.
 
 Les identifiants du code sont en anglais ; les textes lus par un humain — libellés, messages,
 documentation d'API — sont en français. La prose française reprend les identifiants anglais tels
@@ -23,22 +23,30 @@ quels : « la `Qualification` », « le `EvidenceLog` ».
   **scanne** la base. Chaque colonne est rendue une par une à l'`Operator`, qui la retient ou
   l'écarte. C'est la **détection des données personnelles** ; ce qu'elle produit est un **rapport de
   détection**. Le service se connecte et lit quelques valeurs par colonne, mais n'en garde aucune —
-  ni les valeurs, ni la chaîne de connexion — et ne touche jamais au `Manifest`.
+  ni les valeurs, ni la chaîne de connexion — et ne touche jamais aux `DeclaredSystem`.
+- [Configuration](./docs/contexts/configuration/CONTEXT.md) — **ce qui vaut pour toutes les
+  demandes.** Tient le `Settings` — à l'écran, le **Paramétrage** — qui associe à chacun des six
+  droits l'adresse à laquelle le service l'exercera. Un droit, une adresse ; un droit sans adresse
+  est « non configuré ». Enregistrer une adresse n'appelle rien.
 
-Les deux premiers contextes parlent du même sujet : les droits que le RGPD ouvre aux personnes
-concernées. Le troisième regarde le paysage de données du client avant que quiconque réclame quoi
-que ce soit.
+`Qualification`, `Casework` et `Configuration` parlent du même sujet : les droits que le RGPD ouvre
+aux personnes concernées. `Screening` regarde le paysage de données du client avant que quiconque
+réclame quoi que ce soit.
 
 ## Relations
 
 **Noyau partagé : `DataSubjectRight`, et lui seul.** Cette taxonomie fermée de sept valeurs est
-écrite par le RGPD, articles 15 à 21. `Qualification` et `Casework` s'y conforment ; aucun des deux
-ne la possède. Elle vit donc en dehors des deux, dans `src/MicroserviceRgpd.Core/SharedKernel/`. Sa
-clause de gouvernance est écrite dans
+écrite par le RGPD, articles 15 à 21. Trois contextes s'y conforment — `Qualification`, `Casework`
+et, depuis l'ADR-0016, `Configuration` — et aucun ne la possède. Elle vit donc en dehors d'eux, dans
+`src/MicroserviceRgpd.Core/SharedKernel/`. Sa clause de gouvernance est écrite dans
 [`data-subject-rights.wire.json`](./data-subject-rights.wire.json) : *ajouter une valeur est une
 rupture du contrat public, pas une extension — un événement de niveau ADR.*
 
-Le noyau partagé vaut par sa petitesse. Ce qui n'est pas vrai des trois contextes n'y entre pas.
+`Configuration` en lit six valeurs sur sept, avec leur libellé français et leur article, qu'il ne
+recopie pas. `OutOfScope` est un verdict, pas un droit qu'on exerce : il n'a pas d'adresse.
+
+Le noyau partagé vaut par sa petitesse. Ce qui n'est pas vrai des contextes qui le partagent n'y
+entre pas.
 `Capability` est du `Casework` pur et reste dehors. L'`Operator` de `Screening` porte le même mot
 que celui de `Casework` sans partager aucun type : l'identité de mot n'est pas une identité de
 modèle.
@@ -55,10 +63,17 @@ se clore sans qu'aucune qualification n'ait eu lieu.
 
 **`Screening` : `Separate Ways` intégral.** C'est le seul contexte sans aucune intersection avec les
 autres : pas de noyau partagé, pas de fournisseur amont, pas même un identifiant opaque qui
-traverserait comme le `qualificationId` que porte un `Case`. Rien ne va du `Screening` au
-`Manifest` — c'est la clause `Aucune modification vers le Manifest`, écrite dans son glossaire : un
-`Manifest` pré-rempli par une machine se lirait comme complet, ce qui est l'`Omission silencieuse`
-sous sa forme la plus dangereuse.
+traverserait comme le `qualificationId` que porte un `Case`. Rien ne va du `Screening` aux
+`DeclaredSystem` — c'est la clause `Aucune modification vers le Manifest`, écrite dans son
+glossaire : un catalogue pré-rempli par une machine se lirait comme complet, ce qui est
+l'`Omission silencieuse` sous sa forme la plus dangereuse. La clause garde le nom du `Manifest`, que
+l'ADR-0016 a retiré de l'écran et du glossaire de `Casework` ; elle protège désormais l'ensemble des
+`DeclaredSystem`.
+
+**`Configuration` : `Separate Ways`, en attendant le recâblage.** Rien ne lit encore le
+Paramétrage : un `Case` instruit toujours sur les `DeclaredSystem`, qu'aucun écran ne permet plus de
+déclarer. C'est la dette que l'ADR-0016 nomme. Le jour où l'instruction appellera par droit, une
+traversée entre `Casework` et `Configuration` s'ouvrira, et elle demandera son propre ADR.
 
 **`Separate Ways` pour tout le reste.** `QualificationOpinion`, `LexiconOpinion`, `ReviewSignal`,
 `DeclaredConfidence` et `Mode dégradé` n'ont aucun sens dans la durée. Un `Case` référence un
@@ -68,15 +83,18 @@ on ne traduit pas un opaque.
 **Deux gardes de compilation**, tous deux dans `tests/MicroserviceRgpd.ArchitectureTests/`, tous deux
 lus au niveau de l'IL :
 
-- Aucune dépendance `Casework` → `Qualification`. C'est l'optionnalité rendue vérifiable. Un test de
-  signatures seules afficherait vert sur un gestionnaire qui appelle le moteur dans un corps de
-  méthode, c'est-à-dire sur la fuite même que l'on craint.
-- Aucune dépendance entre `Screening` et les deux autres, dans les deux sens.
+- Rien ne traverse d'un contexte à l'autre sauf trois lignes, toutes vers le noyau partagé :
+  `Qualification`, `Casework` et `Configuration`. En particulier, aucune dépendance `Casework` →
+  `Qualification` — l'optionnalité rendue vérifiable ; un test de signatures seules afficherait vert
+  sur un gestionnaire qui appelle le moteur dans un corps de méthode, c'est-à-dire sur la fuite même
+  que l'on craint.
+- Aucun type hors contexte n'en atteint plusieurs, sauf trois fichiers nommés — dont
+  l'`AppDbContext`, qui porte les tables de `Casework`, `Screening` et `Configuration`.
 
 ## Langue de système
 
-Cinq termes valent pour les trois contextes à la fois. Ils sont écrits ici plutôt que dupliqués dans
-les trois glossaires.
+Cinq termes valent au-delà d'un seul contexte. Ils sont écrits ici plutôt que dupliqués dans les
+glossaires.
 
 ### Aide à la décision
 
@@ -108,6 +126,9 @@ dépôt : un `Screening` n'a aucun état, l'avancement est un compte, `Arbitrate
 arbitrages individuels et jamais un état de lot.
 
 `Screening` et `Casework` emploient le mot au même sens ; il n'appartient donc à aucun des deux.
+`Configuration` ne l'emploie pas : poser l'adresse d'un droit est un réglage, qui remplace l'état
+précédent sans laisser de trace datée. Le `Settings` est un état, et c'est ce qui le tient hors de
+la matière de preuve.
 
 _Avoid_ : action, opération, commande, traitement
 
@@ -126,7 +147,7 @@ l'opposition à l'état, qui est tout le propos du mot.
 Le nom du produit, tel que l'utilisateur le lit : le wordmark devant les quatre entrées du panneau,
 le titre de l'accueil, la moitié droite du titre d'onglet de chaque écran. C'est un **nom propre** :
 la capitale à **M**icroservice le distingue du nom commun « microservice RGPD » que portent les
-phrases du domaine. Comme le `Layout`, il n'appartient à aucun des trois contextes.
+phrases du domaine. Comme le `Layout`, il n'appartient à aucun des quatre contextes.
 
 _Avoid_ : Droits des personnes concernées, l'application, l'outil, la plateforme, le portail
 
@@ -136,7 +157,7 @@ que par une seule phrase : la présentation de l'accueil (`Navigation.Presentati
 
 ⚠️ **Le `RGPD` du nom du produit n'est pas celui des `demandes RGPD`.** Ici il nomme le service ; là
 il qualifie les demandes que le règlement régit. C'est pourquoi l'entrée « Tableau des demandes
-RGPD » garde son complément alors que celle de la configuration l'a perdu.
+RGPD » garde son complément alors que celle du Paramétrage l'a perdu.
 
 ### Version du produit
 
@@ -158,11 +179,11 @@ SHA
 
 ### Layout
 
-Le cadre fixe que les quinze écrans de la surface portent tous, écrit une seule fois dans
+Le cadre fixe que les quatorze écrans de la surface portent tous, écrit une seule fois dans
 `_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
 latéral**, le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
 comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est
-l'écran. Le layout n'appartient à aucun des trois contextes.
+l'écran. Le layout n'appartient à aucun des quatre contextes.
 
 _Avoid_ : chrome, habillage, shell, coque, enveloppe
 
@@ -181,7 +202,7 @@ relève des deux. C'est ce qui autorise `SharedLayout` à porter les deux famill
 Le mot est **header**, pas « bandeau » : le dépôt emploie déjà « bandeau » pour le bandeau
 d'avertissement permanent d'un écran (`DepositScreen`, `CaseScreen`, `LocateHandlerTests`).
 
-⚠️ **Quinze écrans, et non dix-sept : les deux routes de la `Cartographie` n'en sont pas.**
+⚠️ **Quatorze écrans, et non seize : les deux routes de la `Cartographie` n'en sont pas.**
 `cartographie.json` et `cartographie.csv` sont des Razor Pages qui rendent un fichier, jamais une
 page — pas de layout, pas de panneau, pas de header. Aucun test de layout ne les couvre, et aucun ne
 doit les couvrir.
@@ -191,9 +212,9 @@ doit les couvrir.
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
-Quinze ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
-écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006, visé trois fois, porte en
-fin de fichier une suite datée qui nomme ses points morts.
+Seize ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
+écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006, visé quatre fois, et
+l'ADR-0008 portent en fin de fichier une suite datée qui nomme leurs points morts.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -212,6 +233,7 @@ fin de fichier une suite datée qui nomme ses points morts.
 | [0013](./docs/adr/0013-la-clause-d-incompletude-varie-avec-l-origine-du-releve.md) | La clause d'incomplétude varie avec l'origine du relevé : une clause, quatre parties, une seule qui varie — le périmètre lu. L'origine est une valeur fermée `Collé` / `Scanné`, enregistrée avec le rapport. | 0012 : la réserve qui rangeait le contenu de la clause parmi ce qu'il ne décide pas. |
 | [0014](./docs/adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md) | `Screening` n'enregistre pas qui a arbitré : l'`Arbitration` devient `(State, RenderedOn)`. Ce que la trace doit prouver est qu'un humain a tranché, et la date le prouve. Asymétrie assumée avec `Casework`, qui enregistre qui a tranché. | — |
 | [0015](./docs/adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md) | Un scan survit à la requête HTTP qui l'a lancé. Ce que le garde interdit est ce qui part tout seul, pas ce qui court plus longtemps qu'un échange. Amende `NothingRunsInTheBackgroundTests` sans élargir sa liste. | — |
+| [0016](./docs/adr/0016-le-manifest-cede-la-place-au-parametrage-un-droit-une-adresse.md) | Le `Manifest` cède la place au Paramétrage : un droit, une adresse. Nouveau contexte `Configuration`, troisième consommateur du noyau partagé ; `DeclaredSystem` reste, et la dette de recâblage de l'instruction est nommée. | 0008 : les noms « Configuration » / « Configuration du microservice RGPD », et « `Manifest` reste `Manifest` ». 0006 : `Manifest` parmi les identifiants inchangés. |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se
@@ -222,11 +244,14 @@ supplanter à moitié.
 `src/` est découpé **par couche** (Clean Architecture : `Core`, `UseCases`, `Infrastructure`, `Web`),
 et chaque contexte traverse les quatre. Il n'existe donc pas de `src/<contexte>/` où poser un
 `CONTEXT.md` — d'où `docs/contexts/<contexte>/`. À l'intérieur des couches, les contextes se lisent
-au dossier : `Core/Qualifications/`, `Core/Casework/`, `Core/Screenings/`, `Core/SharedKernel/`.
+au dossier : `Core/Qualifications/`, `Core/Casework/`, `Core/Screenings/`, `Core/Configuration/`,
+`Core/SharedKernel/`.
 
 ⚠️ **Deux dossiers sont au pluriel, pour une raison mécanique.** Un type `Qualification` dans un
 espace de noms `Qualification` est un piège de résolution de noms en C# : le compilateur doit
 départager le type et l'espace de noms à chaque usage, et il ne le fait pas partout de la même façon.
 Le dossier prend donc le pluriel là où le contexte a un type qui porte son nom. Le garde d'ADR-0003
-lit l'appartenance **par préfixe** pour que ce pluriel ne lui échappe pas. `Casework` et
-`SharedKernel` restent au singulier : aucun type ne porte ces noms.
+lit l'appartenance **par préfixe** pour que ce pluriel ne lui échappe pas. `Casework`,
+`Configuration` et `SharedKernel` restent au singulier : aucun type ne porte ces noms. Le préfixe attrape aussi tout
+dossier qui commence par le nom d'un contexte : c'est pourquoi le point de montage de `Web` s'appelle
+`Composition/` et non `Configurations/` (ADR-0016).
