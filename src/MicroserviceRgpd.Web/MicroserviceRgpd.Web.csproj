@@ -8,6 +8,21 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!-- PAS DE SERVEUR DE COMPILATION PARTAGÉ POUR CE PROJET, le seul qui porte du Razor (#340). Sous
+       les runtimes .NET 10 jusqu'à 10.0.12 inclus, le JIT recompile mal une partie du parseur Razor
+       une fois le code passé en Tier1 avec PGO (dotnet/runtime#132370, symptôme dotnet/razor#13184).
+       Seul un processus qui dure en arrive là : le VBCSCompiler persistant. Il lève alors des RZ1021,
+       RZ1000… sur des .cshtml valides, à chaque build, jusqu'à ce qu'on l'arrête. La charge CPU
+       suffit à le déclencher (un autre build en parallèle, par exemple), et épingler le SDK ne sert
+       à rien : 10.0.400 et 10.0.401 sont tous deux touchés.
+
+       Un csc par build ne dure pas assez pour que le JIT réoptimise : chaque compilation de ce
+       projet démarre plus lentement, mais le résultat est juste. À retirer quand le SDK retenu par
+       global.json embarquera un runtime qui contient le correctif (dotnet/runtime#132631). -->
+  <PropertyGroup>
+    <UseSharedCompilation>false</UseSharedCompilation>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Ardalis.ListStartupServices" />
     <PackageReference Include="Ardalis.Result" />
