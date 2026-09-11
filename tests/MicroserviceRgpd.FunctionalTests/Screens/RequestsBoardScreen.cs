@@ -10,8 +10,8 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>L'écran ne porte RIEN D'AUTRE, et c'est ce que ces tests gardent d'abord</b> — ni liste,
-/// ni message « aucune demande ». La raison est consignée dans le gabarit de l'écran.
+/// <b>Sous le bouton, le tableau des demandes enregistrées</b> : ces tests gardent qu'il est là,
+/// seul ; ce qu'il rend se garde dans <c>RequestConsultation</c>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le bouton ouvre une modale, que le serveur rend avec l'écran</b> : un <c>dialog</c>
@@ -97,21 +97,23 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>Rien d'autre que le titre et le bouton</b> hors de la modale : ni liste, ni tableau, ni
-  /// lien, ni phrase « aucune demande ». Ce qui se lit dans le contenu, la modale mise à part, est
-  /// exactement le nom de l'écran puis le libellé du bouton.
+  /// <b>Hors des modales, l'écran porte son titre, son bouton, puis le tableau des demandes</b> — un
+  /// seul tableau, et ni liste ni lien : les demandes se lisent dans le tableau et nulle part
+  /// ailleurs. Ce que le tableau rend se garde dans <c>RequestConsultation</c>.
   /// </summary>
   [Fact]
-  public async Task CarriesNothingButTheTitleAndTheButton()
+  public async Task CarriesTheTitleTheButtonThenTheTableOfRequests()
   {
     var outside = OutsideTheDialogs(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
 
-    LayoutSurface.TextIn(outside).ShouldBe(
-      $"{ScreenName} {CreateLabel}", "Le contenu de l'écran porte autre chose que son titre et son bouton.");
+    LayoutSurface.TextIn(outside).ShouldStartWith(
+      $"{ScreenName} {CreateLabel}", Case.Sensitive, "Le contenu de l'écran ne s'ouvre plus sur son titre et son bouton.");
 
-    foreach (var element in new[] { "<table", "<ul", "<ol", "<a " })
+    Regex.Matches(outside, @"<table\b").Count.ShouldBe(1, "L'écran ne porte pas un tableau des demandes, un seul.");
+
+    foreach (var element in new[] { "<ul", "<ol", "<a " })
     {
-      outside.ShouldNotContain(element, Case.Insensitive, $"L'écran porte un {element}>, qu'aucune demande ne remplit encore.");
+      outside.ShouldNotContain(element, Case.Insensitive, $"L'écran porte un {element}>, hors du tableau des demandes.");
     }
   }
 

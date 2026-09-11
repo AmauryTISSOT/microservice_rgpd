@@ -117,6 +117,21 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
   internal async Task<int> CountAllAsync() =>
     await CountAsync($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests");
 
+  /// <summary>
+  /// Retire <b>toutes</b> les demandes enregistrées — pour qui doit lire le tableau vide.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Ne vaut que parce que toute la collection <see cref="WebCollection"/> s'exécute en série, et
+  /// qu'aucun test n'y compte sur une demande qu'il n'a pas créée lui-même.
+  /// </remarks>
+  internal async Task DeleteAllAsync()
+  {
+    using var scope = factory.Services.CreateScope();
+
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .ExecuteSqlAsync($"DELETE FROM data_subject_requests");
+  }
+
   private async Task<int> CountAsync(FormattableString query)
   {
     using var scope = factory.Services.CreateScope();

@@ -1,5 +1,6 @@
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,8 +8,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace MicroserviceRgpd.Web.Pages.Requests;
 
 /// <summary>
-/// Le <b>tableau des demandes RGPD</b> : le nom de l'écran, le bouton « Créer une demande », et la
-/// modale de création que le serveur rend fermée, avec son formulaire à ses valeurs par défaut.
+/// Le <b>tableau des demandes RGPD</b> : le nom de l'écran, le bouton « Créer une demande », le
+/// tableau de toutes les demandes enregistrées, et la modale de création que le serveur rend fermée,
+/// avec son formulaire à ses valeurs par défaut.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -41,9 +43,19 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   /// <summary>Aujourd'hui à Paris, à l'instant où la page est rendue.</summary>
   public DateOnly Today { get; private set; }
 
-  public void OnGet()
+  /// <summary>
+  /// Les lignes de toutes les demandes enregistrées, <b>déjà dans l'ordre par défaut</b> : le serveur
+  /// rend le tableau entier, sans chargement asynchrone.
+  /// </summary>
+  public IReadOnlyList<RequestRow> Rows { get; private set; } = [];
+
+  public async Task OnGetAsync(CancellationToken cancellationToken)
   {
     Today = ParisCalendar.Today(clock);
+
+    var recorded = await mediator.Send(new ReadDataSubjectRequestsQuery(), cancellationToken);
+
+    Rows = [.. recorded.Select(RequestRow.Of)];
   }
 
   /// <summary>

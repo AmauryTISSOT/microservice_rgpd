@@ -1,0 +1,21 @@
+@model MicroserviceRgpd.Web.Pages.Requests.RequestRow
+
+@*
+  LA LIGNE D'UNE DEMANDE, RENDUE PAR LE SERVEUR. Le tableau la rend pour chaque demande au
+  chargement ; la création la rendra pour la demande qu'elle vient d'enregistrer, que le script
+  insérera à sa place. Une seule vue partielle : deux gabarits de ligne finiraient par diverger.
+
+  ⚠️ LA DERNIÈRE CELLULE PORTE LES ACTIONS, ET N'EN PORTE AUCUNE ENCORE : elles viendront avec leurs
+  propres tickets.
+*@
+<tr>
+  <td>@Model.Email</td>
+  <td>@Model.LastName</td>
+  <td>@Model.FirstName</td>
+  <td>@Model.ReceivedOn</td>
+  <td>@Model.IdentityVerified</td>
+  <td>@Model.Right</td>
+  <td>@Model.CreatedAt</td>
+  <td>@Model.CreatedBy</td>
+  <td></td>
+</tr>
