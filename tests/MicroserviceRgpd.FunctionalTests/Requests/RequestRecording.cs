@@ -112,6 +112,21 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>Une demande enregistrée est relue <c>InProgress</c></b>, sous le nom de la valeur — comme
+  /// l'origine et le droit (ADR-0021).
+  /// </summary>
+  [Fact]
+  public async Task StoresTheRequestInProgress()
+  {
+    var fields = RequestSurface.AValidRequest();
+
+    var response = await _surface.CreateAsync(fields);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+    (await _surface.RowOfAsync(fields["message"]))["status"].ShouldBe("InProgress");
+  }
+
+  /// <summary>
   /// <b>Les trois façons d'identifier la personne sont acceptées</b> — un email seul ; un nom et un
   /// prénom sans email ; un email avec un nom partiel —, et un champ laissé vide est enregistré
   /// comme absent, non comme une chaîne vide.
