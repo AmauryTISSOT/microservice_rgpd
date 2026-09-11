@@ -12,14 +12,15 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// L'écran du <c>Settings</c> — le <b>Paramétrage</b> —, exercé par sa <b>seule frontière HTTP</b>.
 /// Un intégrateur arrivant sur un service vierge y voit les <b>six droits RGPD d'emblée</b>, chacun
 /// avec son libellé français et son article, tous « non configuré ». Il y saisit, droit par droit,
-/// l'adresse d'exercice, la relit, et la corrige sans repartir de zéro.
+/// l'adresse d'exercice, la relit, la corrige sans repartir de zéro, et l'efface pour ramener le
+/// droit à « non configuré ».
 /// </summary>
 /// <remarks>
 /// <para>
 /// Ce que ces tests gardent n'est pas la mise en page : c'est que les six droits paraissent, que
 /// <see cref="Core.SharedKernel.DataSubjectRight.OutOfScope"/> ne paraît <b>jamais</b>, qu'un service
 /// vierge les dit tous « non configuré » sans qu'aucune ligne n'ait été semée, qu'un enregistrement
-/// ne touche <b>qu'un droit</b>, et que l'écran <b>énumère sans compter</b> — aucun agrégat, aucun
+/// ou un effacement ne touche <b>qu'un droit</b>, et que l'écran <b>énumère sans compter</b> — aucun agrégat, aucun
 /// ratio « 4/6 ».
 /// </para>
 /// <para>
@@ -37,6 +38,9 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
 
   /// <summary>L'adresse du formulaire d'un droit : la page, et le gestionnaire d'enregistrement.</summary>
   private const string Save = "/parametrage?handler=Set";
+
+  /// <summary>L'adresse du bouton Effacer d'un droit : la page, et le gestionnaire d'effacement.</summary>
+  private const string Clear = "/parametrage?handler=Clear";
 
   /// <summary>Le nom que l'écran porte en titre et en tête, recopié à dessein.</summary>
   private const string ScreenName = "Paramétrage du microservice RGPD";
@@ -378,6 +382,133 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     (await ReadAsync()).ShouldNotContain("https://brocanto.example.fr/rgpd");
   }
 
+  /// <summary>
+  /// Le critère du ticket : <b>effacer l'adresse d'un droit configuré le ramène à « non
+  /// configuré »</b>, et l'effacement suit le Post-Redirect-Get — une redirection vers l'écran, que
+  /// recharger ne renvoie pas.
+  /// </summary>
+  [Fact]
+  public async Task ClearsTheEndpointOfAConfiguredRightBackToUnconfigured()
+  {
+    const string Endpoint = "https://brocanto.example.fr/rgpd/effacement";
+
+    await SaveAsync("Erasure", Endpoint);
+
+    var response = await ClearAsync("Erasure");
+
+    response.StatusCode.ShouldBe(HttpStatusCode.Found);
+    response.Headers.Location!.OriginalString.ShouldBe(Parametrage);
+
+    var erasure = await SectionAsync("droit à l'effacement");
+
+    erasure.ShouldContain("non configuré");
+    erasure.ShouldNotContain(Endpoint);
+  }
+
+  /// <summary>
+  /// <b>Effacer un droit ne touche que ce droit.</b> Les six droits configurés, un seul effacé : les
+  /// cinq autres se relisent à l'identique, adresse pour adresse.
+  /// </summary>
+  [Fact]
+  public async Task EachClearTouchesOnlyItsOwnRight()
+  {
+    foreach (var (name, _, _) in TheSixRights)
+    {
+      await SaveAsync(name, $"https://brocanto.example.fr/rgpd/{name.ToLowerInvariant()}");
+    }
+
+    var before = await SectionsAsync();
+
+    await ClearAsync("Portability");
+
+    var after = await SectionsAsync();
+
+    foreach (var (_, label, _) in TheSixRights.Where(right => right.Label != Portability))
+    {
+      after[label].ShouldBe(before[label]);
+    }
+
+    after[Portability].ShouldContain("non configuré");
+  }
+
+  /// <summary>
+  /// <b>Effacer n'est offert qu'à un droit configuré</b> : un droit « non configuré » n'a rien à
+  /// oublier, et un bouton qui ne ferait rien serait une promesse vide.
+  /// </summary>
+  [Fact]
+  public async Task OffersToClearOnlyARightThatIsConfigured()
+  {
+    await SaveAsync("Objection", "https://brocanto.example.fr/rgpd/opposition");
+
+    var sections = await SectionsAsync();
+
+    sections["droit d'opposition"].ShouldContain(">Effacer</button>");
+
+    foreach (var (_, label, _) in TheSixRights.Where(right => right.Name != "Objection"))
+    {
+      sections[label].ShouldNotContain(">Effacer</button>");
+    }
+  }
+
+  /// <summary>
+  /// <b>Effacer un droit déjà « non configuré » ne change rien</b> — même sur un service vierge, où
+  /// aucune ligne n'existe encore : l'envoi suit la même redirection, et les six droits restent
+  /// « non configuré ». Un double envoi du bouton ne se solde donc pas par une erreur.
+  /// </summary>
+  [Fact]
+  public async Task ClearingARightThatIsNotConfiguredChangesNothing()
+  {
+    var response = await ClearAsync("Access");
+
+    response.StatusCode.ShouldBe(HttpStatusCode.Found);
+    response.Headers.Location!.OriginalString.ShouldBe(Parametrage);
+
+    foreach (var (_, label, _) in TheSixRights)
+    {
+      (await SectionAsync(label)).ShouldContain("non configuré");
+    }
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un effacement forgé est refusé en le nommant</b> — <c>OutOfScope</c> compris —, rendu à
+  /// l'écran sans redirection, et rien n'est effacé.
+  /// </summary>
+  [Theory]
+  [InlineData("OutOfScope")]
+  [InlineData("Profiling")]
+  public async Task RefusesToClearARightTheScreenDoesNotConfigure(string right)
+  {
+    const string Endpoint = "https://brocanto.example.fr/rgpd/acces";
+
+    await SaveAsync("Access", Endpoint);
+
+    var response = await ClearAsync(right);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    response.Headers.Location.ShouldBeNull();
+    WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync())
+      .ShouldContain($"« {right} » n'est pas un droit du Paramétrage");
+
+    (await SectionAsync("droit d'accès")).ShouldContain(Endpoint);
+  }
+
+  /// <summary>
+  /// <b>Un effacement sans jeton anti-rejeu est refusé</b>, et l'adresse reste : un site tiers n'a pas
+  /// à déconfigurer un droit à la place de l'intégrateur.
+  /// </summary>
+  [Fact]
+  public async Task RefusesAClearThatCarriesNoAntiforgeryToken()
+  {
+    const string Endpoint = "https://brocanto.example.fr/rgpd/acces";
+
+    await SaveAsync("Access", Endpoint);
+
+    var response = await _client.PostAsync(Clear, new FormUrlEncodedContent([new("Form.Right", "Access")]));
+
+    response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    (await SectionAsync("droit d'accès")).ShouldContain(Endpoint);
+  }
+
   private async Task<string> ReadAsync()
   {
     var response = await _client.GetAsync(Parametrage);
@@ -419,6 +550,19 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
       new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
       new("Form.Right", right),
       new("Form.Url", url),
+    ]));
+  }
+
+  /// <summary>
+  /// Envoie le bouton <b>Effacer</b> de la mini-form d'un droit, jeton anti-rejeu compris : l'envoi
+  /// ne porte que le droit, jamais d'adresse.
+  /// </summary>
+  private async Task<HttpResponseMessage> ClearAsync(string right)
+  {
+    return await _client.PostAsync(Clear, new FormUrlEncodedContent(
+    [
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
+      new("Form.Right", right),
     ]));
   }
 

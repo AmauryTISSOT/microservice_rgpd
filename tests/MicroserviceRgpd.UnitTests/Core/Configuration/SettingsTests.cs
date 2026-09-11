@@ -109,6 +109,47 @@ public class SettingsTests
   }
 
   /// <summary>
+  /// <b>Effacer un droit le ramène à « non configuré », et ne touche que lui</b> : l'autre droit
+  /// configuré garde son adresse.
+  /// </summary>
+  [Fact]
+  public void ClearsTheEndpointOfOneRightAndOfThatRightAlone()
+  {
+    var settings = Settings.Unconfigured();
+    var access = EndpointUrl.From("https://brocanto.example.fr/rgpd/acces");
+
+    settings.SetEndpoint(DataSubjectRight.Access, access);
+    settings.SetEndpoint(DataSubjectRight.Erasure, EndpointUrl.From("https://brocanto.example.fr/rgpd/effacement"));
+
+    settings.ClearEndpoint(DataSubjectRight.Erasure);
+
+    settings.EndpointFor(DataSubjectRight.Erasure).ShouldBeNull();
+    settings.EndpointFor(DataSubjectRight.Access).ShouldBe(access);
+  }
+
+  /// <summary>Effacer un droit déjà « non configuré » le laisse tel, sans erreur.</summary>
+  [Fact]
+  public void ClearingAnUnconfiguredRightLeavesItUnconfigured()
+  {
+    var settings = Settings.Unconfigured();
+
+    settings.ClearEndpoint(DataSubjectRight.Restriction);
+
+    settings.Rights.ShouldAllBe(entry => !entry.IsConfigured);
+  }
+
+  /// <summary>
+  /// ⚠️ <b><see cref="DataSubjectRight.OutOfScope"/> n'a rien à effacer</b> : le lui demander est la
+  /// même programmation fautive que de lui poser une adresse.
+  /// </summary>
+  [Fact]
+  public void RefusesToClearAnEndpointForOutOfScope()
+  {
+    Should.Throw<ArgumentOutOfRangeException>(
+      () => Settings.Unconfigured().ClearEndpoint(DataSubjectRight.OutOfScope));
+  }
+
+  /// <summary>
   /// ⚠️ <b><see cref="DataSubjectRight.OutOfScope"/> ne reçoit pas d'adresse</b> : il n'y a pas de
   /// septième colonne où l'écrire, et l'écrire nulle part serait une perte silencieuse.
   /// </summary>
