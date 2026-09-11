@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.FunctionalTests.Layout;
 /// ⚠️ <b>L'accueil ne relève ni du <c>Casework</c> ni du <c>Screening</c> : il est du layout</b>, au
 /// même titre que la barre. Il est donc éprouvé dans le harnais du layout, par la <b>seule frontière
 /// HTTP</b>, exactement ce que fait un navigateur — et le reste du layout le tient déjà pour un
-/// écran comme les douze autres, puisqu'il entre dans <see cref="LayoutSurface.ScreensAsync"/>.
+/// écran comme les dix autres, puisqu'il entre dans <see cref="LayoutSurface.ScreensAsync"/>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucune assertion de ce fichier ne porte sur une valeur de design</b> : pas une couleur, pas
@@ -181,7 +181,7 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   /// qu'une ligne de script ne soit servie ni exécutée.
   /// </summary>
   /// <remarks>
-  /// L'absence de ressource tierce, elle, est gardée pour les quatorze écrans à la fois par
+  /// L'absence de ressource tierce, elle, est gardée pour les douze écrans à la fois par
   /// <see cref="SharedLayout.LoadsNothingFromAThirdPartyOnAnyScreen"/>.
   /// </remarks>
   [Fact]

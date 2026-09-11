@@ -2,7 +2,6 @@
 using System.Net;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Core.SharedKernel;
 
@@ -60,7 +59,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// qu'elle offre : cette liste se met à jour <b>à la main</b>.
   /// </remarks>
   internal static readonly IReadOnlyList<string> EntryPoints =
-    ["/parametrage", "/detection", "/qualification", "/dossiers"];
+    ["/parametrage", "/detection", "/qualification", "/demandes"];
 
   /// <summary>Le nom du service, que la barre porte devant ses quatre liens.</summary>
   internal const string ServiceName = "Microservice RGPD";
@@ -113,16 +112,16 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </summary>
   /// <remarks>
   /// <para>
-  /// ⚠️ <b>Recopiées à dessein</b>, elles aussi. Les phrases sont gelées : deuxième personne,
-  /// parallèles sur « Vous y + verbe », et <b>sans un chiffre</b>.
+  /// ⚠️ <b>Recopiées à dessein</b>, elles aussi. Les phrases sont gelées, et <b>sans un
+  /// chiffre</b> : les trois premières à la deuxième personne, parallèles sur « Vous y + verbe ».
   /// </para>
   /// <para>
-  /// ⚠️ <b>La dernière n'a qu'une phrase, délibérément.</b> « Lire » est le seul des quatre verbes
-  /// qui ne soit pas un geste, et la brièveté dit par sa forme qu'on ne pose rien sur cet écran. Le
-  /// parallélisme ne doit pas être « rétabli ».
+  /// ⚠️ <b>La dernière n'est pas une phrase, délibérément</b> : « Consultation des demandes RGPD en
+  /// cours » nomme ce qu'on lit derrière la porte, sans verbe. Le parallélisme ne doit pas être
+  /// « rétabli ».
   /// </para>
   /// <para>
-  /// ⚠️ <b>La phrase de la qualification dit qu'aucun dossier n'en découle</b>, et c'est ce qui la
+  /// ⚠️ <b>La phrase de la qualification dit qu'aucune demande n'en découle</b>, et c'est ce qui la
   /// distingue des trois autres : elle est la seule à écarter un geste plutôt qu'à en annoncer un.
   /// Le verbe y est <b>proposer</b>, jamais « décider ». Ce membre de phrase est gelé comme le
   /// reste — sans lui, on arriverait sur l'écran en croyant y déposer une demande.
@@ -144,12 +143,12 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     (
       "Qualification",
       "Vous y collez le texte libre d'une demande, et le service propose les droits RGPD qu'elle " +
-      "exerce. Aucun dossier n'en découle : la proposition se lit ici, elle ne s'y dépose pas.",
+      "exerce. Aucune demande n'en découle : la proposition se lit ici, elle ne s'y dépose pas.",
       "/qualification"),
     (
       "Tableau des demandes RGPD",
-      "Vous y lisez les demandes RGPD en cours, rangées par échéance.",
-      "/dossiers"),
+      "Consultation des demandes RGPD en cours",
+      "/demandes"),
   ];
 
   /// <summary>
@@ -182,15 +181,16 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     "/depistage/archive/table",
   ];
 
-  private const string Queue = "/dossiers";
-
   /// <summary>
   /// L'écran de la qualification, et <b>la racine de son point d'entrée</b> : l'ADR-0010 lui donne
   /// la quatrième entrée du panneau et sa carte à l'accueil, au troisième rang. Il se marque donc
   /// comme les trois autres, et il porte le cadre partagé comme tous les écrans.
   /// </summary>
   private const string Qualification = "/qualification";
-  private const string CaseDeposit = "/dossiers/depot";
+
+  /// <summary>Le tableau des demandes RGPD, et la racine de son point d'entrée.</summary>
+  private const string Board = "/demandes";
+
   private const string Parametrage = "/parametrage";
   private const string ScreeningDeposit = "/detection/depot";
   private const string Connection = "/detection/connexion";
@@ -214,22 +214,23 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// <b>Les adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de chacune
-  /// posé par le chemin que le domaine autorise — un dépôt manuel pour le dossier, deux dépôts de
-  /// relevé pour qu'il existe un rapport courant et un rapport archivé. Le Paramétrage se lit sans
-  /// qu'aucun état n'ait à être posé : les six droits y paraissent « non configuré » d'emblée.
+  /// posé par le chemin que le domaine autorise — deux dépôts de relevé pour qu'il existe un
+  /// rapport courant et un rapport archivé. Le Paramétrage et le tableau des demandes RGPD se lisent
+  /// sans qu'aucun état n'ait à être posé.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Les écrans de <c>/dossiers</c> n'y sont plus</b> : ils répondent encore jusqu'à leur
+  /// retrait, mais plus aucun point d'entrée n'y mène, et ils ne relèvent donc d'aucun.
+  /// </remarks>
   internal async Task<IReadOnlyList<string>> ScreensAsync()
   {
-    var opened = await OpenACaseAsync();
     var archived = await ScreenTwiceAsync();
 
     return
     [
       Doorstep,
       Qualification,
-      Queue,
-      CaseDeposit,
-      $"{Queue}/{opened}",
+      Board,
       Parametrage,
       .. ScreeningScreens(archived),
     ];
@@ -571,10 +572,9 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// Le point d'entrée <b>dont un écran relève</b>, lu sur sa seule adresse : le dépôt d'une
-  /// demande et un dossier relèvent du tableau des demandes RGPD, la reprise d'une déclaration du
-  /// <c>Manifest</c>, tout ce qui pend sous la détection des données personnelles, et l'écran de la
-  /// qualification de sa propre racine.
+  /// Le point d'entrée <b>dont un écran relève</b>, lu sur sa seule adresse : tout ce qui pend sous
+  /// la détection des données personnelles relève de <c>/detection</c>, et le Paramétrage, la
+  /// qualification et le tableau des demandes RGPD de leur propre racine.
   /// </summary>
   internal static string EntryPointOf(string screen)
   {
@@ -616,31 +616,6 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   private static string TableOf(string screen, string leading = "")
   {
     return $"{screen}?{leading}schema={Uri.EscapeDataString(Schema)}&table={Uri.EscapeDataString(Table)}";
-  }
-
-  /// <summary>Ouvre un dossier par le formulaire du dépôt manuel, et rend son identifiant.</summary>
-  private async Task<string> OpenACaseAsync()
-  {
-    var fields = new List<KeyValuePair<string, string>>
-    {
-      new("__RequestVerificationToken", await TokenOfAsync(CaseDeposit)),
-      new("Form.IdentityDeclaration", nameof(IdentityDeclaration.OperatorAttested)),
-      new("Form.Origin", nameof(ClaimOrigin.Named)),
-      new("Form.ReceivedOn", string.Empty),
-      new("Form.VerificationMethod", nameof(IdentityVerificationMethod.PersonalRecognition)),
-      new("Form.MotivationDetail", string.Empty),
-      new("Form.SignedBy", "Claire Martin"),
-      new("Form.DesignationKinds", DesignationKind.Email.Token),
-      new("Form.DesignationValues", "layout@example.fr"),
-      new("Form.Rights", nameof(DataSubjectRight.Access)),
-    };
-
-    var deposited = await _client.PostAsync(CaseDeposit, new FormUrlEncodedContent(fields));
-
-    deposited.StatusCode.ShouldBe(
-      HttpStatusCode.Found, "Le dépôt manuel doit mener au dossier qu'il vient d'ouvrir.");
-
-    return deposited.Headers.Location!.ToString().Split('/')[^1];
   }
 
   /// <summary>

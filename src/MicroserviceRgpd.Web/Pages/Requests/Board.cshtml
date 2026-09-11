@@ -1,0 +1,21 @@
+@page "/demandes"
+@{
+  ViewData["Title"] = "Tableau des demandes RGPD";
+}
+
+@*
+  LE TABLEAU DES DEMANDES RGPD, repris d'une page blanche : le nom de l'écran, et le bouton qui
+  enregistrera une demande dès sa réception.
+
+  ⚠️ RIEN D'AUTRE, ET C'EST DÉLIBÉRÉ : ni liste, ni message « aucune demande ». Une liste vide se
+  lirait comme l'absence de demandes, là où elle ne dirait que l'absence d'un écran qui les liste.
+  La consultation viendra avec son propre ticket.
+
+  ⚠️ LE BOUTON EST DANS LE CONTENU, PAS DANS LE HEADER : l'ADR-0009 ne pose aucune action dans la
+  barre du service. Il est ENCORE INERTE — un simple bouton, hors de tout formulaire — : la modale
+  qu'il ouvrira arrive avec le ticket suivant.
+*@
+<div class="screen-head">
+  <h1>Tableau des demandes RGPD</h1>
+  <button type="button" class="primary">Créer une demande</button>
+</div>
