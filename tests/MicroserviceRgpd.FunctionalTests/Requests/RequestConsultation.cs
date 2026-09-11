@@ -67,7 +67,8 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>Une demande enregistrée se lit sur sa ligne</b>, chaque cellule sous le libellé que le
   /// serveur lui donne : la date de réception en <c>jj/mm/aaaa</c>, « Oui », le droit avec une
-  /// majuscule initiale et sans article du RGPD, « Opérateur », et une cellule d'actions vide.
+  /// majuscule initiale et sans article du RGPD, et « Opérateur ». La cellule d'actions se garde
+  /// dans <see cref="CarriesThreeActionsOnEachRowNamedForAScreenReader"/>.
   /// </summary>
   [Fact]
   public async Task RendersARecordedRequestWithTheLabelsOfTheServer()

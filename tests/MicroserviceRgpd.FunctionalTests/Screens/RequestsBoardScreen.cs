@@ -87,8 +87,9 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task KeepsTheCreateButtonASimpleButton()
   {
-    var outside = OutsideTheDialogs(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
-    var button = ButtonsIn(OutsideTheTableAndTheDialogs(outside)).ShouldHaveSingleItem();
+    var main = LayoutSurface.MainOf(await _layout.ReadAsync(Board));
+    var outside = OutsideTheDialogs(main);
+    var button = ButtonsIn(OutsideTheTableAndTheDialogs(main)).ShouldHaveSingleItem();
 
     button.Attributes.ShouldContain(@"type=""button""", Case.Sensitive, "Le bouton de création n'est pas un simple bouton.");
     button.Attributes.ShouldNotContain("formaction", Case.Insensitive, "Le bouton de création envoie quelque part.");
