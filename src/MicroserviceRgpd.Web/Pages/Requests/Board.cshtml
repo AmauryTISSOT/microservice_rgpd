@@ -12,7 +12,7 @@
 
 @*
   LE TABLEAU DES DEMANDES RGPD : le nom de l'écran, le bouton qui enregistre une demande dès sa
-  réception, puis la recherche et le tableau de toutes les demandes enregistrées.
+  réception, puis la recherche, le tri et le tableau de toutes les demandes enregistrées.
 
   ⚠️ LE BOUTON EST DANS LE CONTENU, PAS DANS LE HEADER : l'ADR-0009 ne pose aucune action dans la
   barre du service. C'est un simple bouton, hors de tout formulaire : c'est le module de l'écran qui
@@ -40,16 +40,37 @@
 
   LE CHAMP SE NOMME pour qui ne le voit pas ; son texte d'aide dit ce qu'il parcourt. Le ✕ est un
   simple bouton qui vide la recherche ; il ne se montre que s'il y a une recherche à vider.
+
+  LE TRI, EN HAUT À DROITE DU TABLEAU, SUR LA LIGNE DE LA RECHERCHE. Il réordonne les lignes du DOM,
+  sans revenir au serveur — hors de tout formulaire, lui aussi. Il ordonne toutes les lignes, celles
+  que la recherche cache comme les autres, sans en montrer ni en cacher aucune : le tri s'applique
+  aux résultats de la recherche en cours, et une recherche vidée retrouve ses lignes à leur place.
+
+  ⚠️ « LA PLUS RÉCENTE » EST SÉLECTIONNÉE À L'OUVERTURE, ET C'EST L'ORDRE QUE LE SERVEUR A RENDU : le
+  script n'a rien à réordonner au chargement, et rien ne clignote. `autocomplete="off"` empêche le
+  navigateur de restaurer, au retour sur la page, un choix qui ne serait plus celui des lignes.
+
+  ⚠️ LES EN-TÊTES DE COLONNES NE TRIENT PAS : seul ce menu trie.
 *@
-<div class="board-search" role="search">
-  <input type="search" id="requests-search" aria-label="Rechercher une demande"
-         placeholder="Rechercher par email, nom ou prénom" autocomplete="off" spellcheck="false" />
-  <button type="button" class="board-search-clear" id="requests-search-clear" aria-label="Vider la recherche">
-    <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8"
-            stroke-linecap="round" fill="none" />
-    </svg>
-  </button>
+<div class="board-tools">
+  <div class="board-search" role="search">
+    <input type="search" id="requests-search" aria-label="Rechercher une demande"
+           placeholder="Rechercher par email, nom ou prénom" autocomplete="off" spellcheck="false" />
+    <button type="button" class="board-search-clear" id="requests-search-clear" aria-label="Vider la recherche">
+      <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" fill="none" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="board-sort">
+    <label for="requests-sort">Trier par</label>
+    <select id="requests-sort" autocomplete="off">
+      <option value="newest" selected>Date de réception la plus récente</option>
+      <option value="oldest">Date de réception la plus ancienne</option>
+    </select>
+  </div>
 </div>
 
 @*
@@ -72,7 +93,7 @@
   en-têtes, là où les lignes se liraient.
 
   ⚠️ L'ÉCRAN TIENT DANS LA FENÊTRE, ET SEUL LE CADRE DU TABLEAU DÉFILE — dans les deux sens. Ce qui
-  est au-dessus de lui — le titre, le bouton, la recherche, et demain le tri — reste donc en vue
+  est au-dessus de lui — le titre, le bouton, la recherche et le tri — reste donc en vue
   par construction, et l'en-tête des colonnes colle au haut du cadre. Sur un écran étroit, c'est
   le cadre qui défile de côté, jamais la page.
 

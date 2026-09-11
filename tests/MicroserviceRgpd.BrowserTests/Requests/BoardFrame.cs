@@ -31,7 +31,8 @@ public class BoardFrame(BrowserHarness harness)
 
   /// <summary>
   /// ⚠️ <b>Seul le corps du tableau défile</b> : amener la dernière ligne en vue laisse l'en-tête des
-  /// colonnes, le bouton « Créer une demande » et la recherche à leur place, et la page ne bouge pas.
+  /// colonnes, le bouton « Créer une demande », la recherche et le tri à leur place, et la page ne
+  /// bouge pas.
   /// </summary>
   [Fact]
   public async Task KeepsTheColumnHeadersAndTheButtonInSightWhileTheBodyScrolls()
@@ -47,6 +48,7 @@ public class BoardFrame(BrowserHarness harness)
     await Expect(Header(page, "Email")).ToBeInViewportAsync(new() { Ratio = 1 });
     await Expect(CreateButton(page)).ToBeInViewportAsync(new() { Ratio = 1 });
     await Expect(Search(page)).ToBeInViewportAsync(new() { Ratio = 1 });
+    await Expect(SortMenu(page)).ToBeInViewportAsync(new() { Ratio = 1 });
     (await page.EvaluateAsync<double>("window.scrollY")).ShouldBe(0, "La page a défilé, pas le corps du tableau.");
   }
 
@@ -102,8 +104,8 @@ public class BoardFrame(BrowserHarness harness)
 
   /// <summary>
   /// ⚠️ <b>La région qui défile s'atteint au clavier</b> : sans souris, la tabulation passe du bouton
-  /// « Créer une demande » à la recherche, puis au tableau, que le clavier fait alors défiler. Le ✕
-  /// d'une recherche vide ne s'y intercale pas : il n'y a rien à vider.
+  /// « Créer une demande » à la recherche, puis au tri, puis au tableau, que le clavier fait alors
+  /// défiler. Le ✕ d'une recherche vide ne s'y intercale pas : il n'y a rien à vider.
   /// </summary>
   [Fact]
   public async Task LetsTheKeyboardReachAndScrollTheTable()
@@ -116,6 +118,10 @@ public class BoardFrame(BrowserHarness harness)
     await page.Keyboard.PressAsync("Tab");
 
     await Expect(Search(page)).ToBeFocusedAsync();
+
+    await page.Keyboard.PressAsync("Tab");
+
+    await Expect(SortMenu(page)).ToBeFocusedAsync();
 
     await page.Keyboard.PressAsync("Tab");
 
@@ -164,5 +170,10 @@ public class BoardFrame(BrowserHarness harness)
   private static ILocator Search(IPage page)
   {
     return page.GetByRole(AriaRole.Searchbox, new() { Name = "Rechercher une demande", Exact = true });
+  }
+
+  private static ILocator SortMenu(IPage page)
+  {
+    return page.GetByRole(AriaRole.Combobox, new() { Name = "Trier par", Exact = true });
   }
 }

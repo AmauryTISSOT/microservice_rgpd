@@ -422,6 +422,82 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>Le menu de tri est au-dessus du tableau</b>, après la recherche : un menu déroulant nommé pour
+  /// qui ne le voit pas, qui propose « Date de réception la plus récente » — sélectionnée à
+  /// l'ouverture, c'est l'ordre que le serveur a rendu — puis « Date de réception la plus
+  /// ancienne ». Il n'est dans aucun formulaire : rien ne part au serveur.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheSortMenuWithTheMostRecentReceptionSelected()
+  {
+    var main = await BoardAsync();
+    var menu = Regex.Matches(main, @"<select\b(?<attributes>[^>]*)>(?<options>.*?)</select>", RegexOptions.Singleline)
+      .ShouldHaveSingleItem("L'écran ne porte pas un menu de tri, un seul.");
+
+    main.IndexOf(menu.Value, StringComparison.Ordinal).ShouldBeGreaterThan(
+      main.IndexOf(SearchBarIn(main), StringComparison.Ordinal), "Le menu de tri ne suit pas la recherche.");
+    main.IndexOf(menu.Value, StringComparison.Ordinal).ShouldBeLessThan(
+      main.IndexOf("<table", StringComparison.Ordinal), "Le menu de tri n'est pas au-dessus du tableau.");
+
+    var id = Regex.Match(menu.Groups["attributes"].Value, @"\bid=""([^""]+)""");
+    id.Success.ShouldBeTrue("Le menu de tri n'a pas d'identifiant, que son libellé désignerait.");
+    Regex.Matches(main, $@"<label\b[^>]*\bfor=""{Regex.Escape(id.Groups[1].Value)}""[^>]*>(.*?)</label>", RegexOptions.Singleline)
+      .ShouldHaveSingleItem("Le menu de tri ne se nomme pas.")
+      .Groups[1].Value.ShouldNotBeNullOrWhiteSpace("Le libellé du menu de tri est vide.");
+
+    var options = Regex.Matches(menu.Groups["options"].Value, @"<option\b(?<attributes>[^>]*)>(?<text>[^<]*)</option>");
+
+    options
+      .Select(option => LayoutSurface.TextIn(option.Groups["text"].Value))
+      .ShouldBe(
+        ["Date de réception la plus récente", "Date de réception la plus ancienne"],
+        "Le menu de tri ne propose pas ses deux options, dans l'ordre.");
+
+    options
+      .Where(option => Regex.IsMatch(option.Groups["attributes"].Value, @"\bselected\b"))
+      .Select(option => LayoutSurface.TextIn(option.Groups["text"].Value))
+      .ShouldBe(["Date de réception la plus récente"], "« Date de réception la plus récente » n'est pas sélectionnée à l'ouverture, ou pas seule.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Les en-têtes de colonnes ne se cliquent pas</b> : ni lien, ni bouton — seul le menu trie.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheColumnHeadersUnclickable()
+  {
+    var head = Regex.Match(TableIn(await BoardAsync()), @"<thead\b[^>]*>(.*?)</thead>", RegexOptions.Singleline).Groups[1].Value;
+
+    foreach (var clickable in new[] { "<a ", "<button" })
+    {
+      head.ShouldNotContain(clickable, Case.Insensitive, $"Un en-tête de colonne porte un {clickable}>.");
+    }
+  }
+
+  /// <summary>
+  /// <b>Chaque ligne porte ses clés de tri</b> : sa date de réception en ISO, et son instant
+  /// d'enregistrement en ISO, en UTC. Le script les compare comme des textes : c'est pourquoi
+  /// l'instant est toujours écrit à la même largeur, six décimales comprises — la microseconde que la
+  /// table retient, et rien de plus fin.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheSortKeysOfEachRow()
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+    var message = await CreateAsync(new() { ["email"] = email, ["receivedOn"] = "2026-02-03" });
+
+    var row = Regex.Match(RowMarkupWith(await BoardAsync(), email), @"<tr\b([^>]*)>").Groups[1].Value;
+
+    AttributeOf(row, "data-received-on").ShouldBe("2026-02-03");
+
+    var createdAt = AttributeOf(row, "data-created-at");
+    createdAt.ShouldMatch(@"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$", "L'instant d'enregistrement n'est pas en ISO UTC, à largeur fixe.");
+
+    var stored = (await _surface.RowOfAsync(message))["created_at"].ShouldBeOfType<DateTime>();
+    DateTime.Parse(createdAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+      .ShouldBe(stored.ToUniversalTime(), "La ligne ne porte pas l'instant d'enregistrement de sa demande.");
+  }
+
+  /// <summary>
   /// Enregistre une demande valide, les valeurs de <paramref name="fields"/> posées par-dessus ; rend
   /// son message unique.
   /// </summary>
