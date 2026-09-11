@@ -24,7 +24,7 @@ public sealed record RequestRow(
   string CreatedBy)
 {
   /// <summary>Ce qu'affiche une cellule dont la valeur est absente : une absence, pas une cellule mal rendue.</summary>
-  internal const string Absent = "—";
+  private const string Absent = "—";
 
   private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
@@ -41,8 +41,7 @@ public sealed record RequestRow(
       request.ReceivedOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
       request.IdentityVerified ? "Oui" : "Non",
       Capitalized(request.Right.FrenchLabel),
-      TimeZoneInfo.ConvertTime(request.CreatedAt, ParisCalendar.TimeZone)
-        .ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture),
+      ParisCalendar.InParis(request.CreatedAt).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture),
       request.CreatedBy == DataSubjectRequest.OperatorAuthor ? "Opérateur" : request.CreatedBy);
   }
 

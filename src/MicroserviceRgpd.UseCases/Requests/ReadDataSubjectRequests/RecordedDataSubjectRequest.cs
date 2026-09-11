@@ -30,9 +30,9 @@ public sealed record RecordedDataSubjectRequest(
   string CreatedBy,
   DateTimeOffset CreatedAt)
 {
-  /// <summary>La ligne d'une demande enregistrée.</summary>
+  /// <summary>Ce que le tableau rend d'une demande enregistrée.</summary>
   /// <exception cref="ArgumentNullException"><paramref name="request"/> est absente.</exception>
-  public static RecordedDataSubjectRequest Of(DataSubjectRequest request)
+  internal static RecordedDataSubjectRequest Of(DataSubjectRequest request)
   {
     ArgumentNullException.ThrowIfNull(request);
 

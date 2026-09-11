@@ -31,5 +31,12 @@ public static class ParisCalendar
   /// dater deux choses du même instant.
   /// </summary>
   public static DateOnly DateOf(DateTimeOffset instant) =>
-    DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, TimeZone).DateTime);
+    DateOnly.FromDateTime(InParis(instant).DateTime);
+
+  /// <summary>
+  /// <paramref name="instant"/> tel que l'heure de Paris le lit — pour qui affiche l'heure d'un
+  /// instant enregistré en UTC.
+  /// </summary>
+  public static DateTimeOffset InParis(DateTimeOffset instant) =>
+    TimeZoneInfo.ConvertTime(instant, TimeZone);
 }

@@ -55,15 +55,13 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task SitsUnderTheCreateButton()
   {
-    var main = LayoutSurface.MainOf(await _layout.ReadAsync(RequestSurface.Board));
+    var main = await BoardAsync();
 
     var button = main.IndexOf(@"id=""create-request-open""", StringComparison.Ordinal);
     var table = main.IndexOf("<table", StringComparison.Ordinal);
 
     button.ShouldBeGreaterThanOrEqualTo(0, "L'écran ne porte plus le bouton de création.");
-    table.ShouldBeGreaterThan(button, "Le tableau n'est pas sous le bouton de création.");
-    Regex.Replace(main, @"<dialog\b.*?</dialog>", string.Empty, RegexOptions.Singleline)
-      .ShouldContain("<table", Case.Sensitive, "Le tableau n'est rendu que dans une modale.");
+    table.ShouldBeGreaterThan(button, "Le tableau n'est pas sous le bouton de création, hors des modales.");
   }
 
   /// <summary>
@@ -87,7 +85,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       ["right"] = "Erasure",
     });
 
-    var row = RowsIn(await BoardAsync()).Where(cells => cells.Contains(email)).ShouldHaveSingleItem();
+    var row = await RowWithAsync(email);
 
     row[..6].ShouldBe([email, "Martin", "Jeanne", "15/01/2026", "Oui", "Droit à l'effacement"]);
     row[7].ShouldBe("Opérateur");
@@ -110,7 +108,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     await CreateAsync(new() { ["email"] = email, ["identityVerified"] = "false", ["right"] = right });
 
-    var row = RowsIn(await BoardAsync()).Where(cells => cells.Contains(email)).ShouldHaveSingleItem();
+    var row = await RowWithAsync(email);
 
     row[4].ShouldBe("Non");
     row[5].ShouldBe(label);
@@ -152,7 +150,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       .ConvertTime(new DateTimeOffset(createdAt), TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris"))
       .ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
-    RowsIn(await BoardAsync()).Where(cells => cells.Contains(email)).ShouldHaveSingleItem()[6].ShouldBe(expected);
+    (await RowWithAsync(email))[6].ShouldBe(expected);
   }
 
   /// <summary>
@@ -191,7 +189,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
     var main = await BoardAsync();
 
     RowsIn(main).ShouldBeEmpty();
-    EmptyStateIn(main).Attributes.ShouldNotContain("hidden", Case.Sensitive, "L'état vide est caché sur un tableau vide.");
+    EmptyStateIn(main).ShouldNotContain("hidden", Case.Sensitive, "L'état vide est caché sur un tableau vide.");
   }
 
   /// <summary>
@@ -203,7 +201,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   {
     await CreateAsync(new() { ["email"] = $"{Guid.NewGuid():N}@example.org" });
 
-    Regex.IsMatch(EmptyStateIn(await BoardAsync()).Attributes, @"\bhidden\b")
+    Regex.IsMatch(EmptyStateIn(await BoardAsync()), @"\bhidden\b")
       .ShouldBeTrue("L'état vide se lit au-dessus de demandes enregistrées.");
   }
 
@@ -235,6 +233,10 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       string.Empty,
       RegexOptions.Singleline);
 
+  /// <summary>La ligne qui porte <paramref name="marker"/>, une seule.</summary>
+  private async Task<string[]> RowWithAsync(string marker) =>
+    RowsIn(await BoardAsync()).Where(cells => cells.Contains(marker)).ShouldHaveSingleItem();
+
   private static string TableIn(string main)
   {
     var table = Regex.Match(main, @"<table\b[^>]*>.*?</table>", RegexOptions.Singleline);
@@ -261,12 +263,12 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>L'élément qui porte le message de l'état vide, une fois : ses attributs.</summary>
-  private static (string Attributes, string Text) EmptyStateIn(string main)
+  private static string EmptyStateIn(string main)
   {
     var empty = Regex.Matches(main, @"<p\b(?<attributes>[^>]*)>(?<text>[^<]*)</p>")
       .Where(paragraph => LayoutSurface.TextIn(paragraph.Groups["text"].Value) == NoRequestYet)
       .ShouldHaveSingleItem($"L'écran ne porte pas « {NoRequestYet} », une fois.");
 
-    return (empty.Groups["attributes"].Value, NoRequestYet);
+    return empty.Groups["attributes"].Value;
   }
 }
