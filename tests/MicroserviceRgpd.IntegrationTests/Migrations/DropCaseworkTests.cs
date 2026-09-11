@@ -29,6 +29,12 @@ public class DropCaseworkTests : IAsyncLifetime
   /// <summary>La dernière migration écrite avant le retrait de <c>Casework</c>.</summary>
   private const string BeforeTheDrop = "20260910205826_CreateSettings";
 
+  /// <summary>
+  /// Le retrait lui-même. ⚠️ La base s'y arrête, et non à la dernière migration : celles qui le
+  /// suivent posent leurs propres tables, qui se liraient ici comme créées par le retrait.
+  /// </summary>
+  internal const string TheDrop = "20260911155714_DropCasework";
+
   private static readonly string[] CaseworkTables =
   [
     "case_claims",
@@ -61,7 +67,7 @@ public class DropCaseworkTests : IAsyncLifetime
     await dbContext.GetService<IMigrator>().MigrateAsync(BeforeTheDrop);
     _before = await TablesAsync(dbContext);
 
-    await dbContext.Database.MigrateAsync();
+    await dbContext.GetService<IMigrator>().MigrateAsync(TheDrop);
     _after = await TablesAsync(dbContext);
   }
 

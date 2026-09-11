@@ -7,6 +7,9 @@ namespace MicroserviceRgpd.Core.Requests;
 /// </summary>
 public static class DataSubjectRequestField
 {
+  /// <summary>Le canal d'arrivée.</summary>
+  public const string Origin = "origin";
+
   /// <summary>La date de réception.</summary>
   public const string ReceivedOn = "receivedOn";
 
