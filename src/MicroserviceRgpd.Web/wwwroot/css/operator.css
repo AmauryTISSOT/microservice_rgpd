@@ -1240,3 +1240,39 @@ dialog.modal.confirmation {
   justify-content: flex-end;
   margin-top: var(--space-lg);
 }
+
+/*
+  LE BANDEAU D'ÉCHEC DE LA MODALE : le filet et l'encre des refus, juste au-dessus des actions — là
+  où l'œil se pose au moment de réessayer. ⚠️ Aucun `display` ici : c'est l'attribut `hidden` qui le
+  cache, et une déclaration l'emporterait sur lui.
+*/
+.modal-failure {
+  border: var(--hairline-width) solid var(--signal-error);
+  border-radius: var(--radius-md);
+  color: var(--signal-error);
+  font-weight: var(--weight-semibold);
+  margin: var(--space-lg) 0 0;
+  padding: var(--space-sm) var(--space-md);
+}
+
+/*
+  LE TOAST — la surface blanche du document, coin large, posée en bas à droite, au-dessus de
+  l'écran. Vide, il ne prend aucune place : il n'existe à l'œil que le temps de dire ce qu'il dit.
+*/
+.toast {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-xl);
+  bottom: var(--space-lg);
+  box-shadow: var(--elevation-soft);
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  position: fixed;
+  right: var(--space-lg);
+}
+
+.toast:empty {
+  display: none;
+}
