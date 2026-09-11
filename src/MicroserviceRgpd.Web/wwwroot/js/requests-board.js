@@ -1,6 +1,7 @@
 // LE TABLEAU DES DEMANDES RGPD : le bouton « Créer une demande » ouvre la modale que le serveur a
-// rendue, formulaire remis à zéro ; « Créer » juge la saisie avec les règles du service ; et quatre
-// modes de fermeture la referment — « Annuler », la croix, Échap, un clic sur le fond.
+// rendue, formulaire remis à zéro ; « Créer » juge la saisie avec les règles du service, puis
+// l'envoie au handler de la page ; et quatre modes de fermeture la referment — « Annuler », la
+// croix, Échap, un clic sur le fond.
 //
 // ⚠️ L'OPERATOR NE PERD JAMAIS UNE SAISIE PAR MÉGARDE. Les quatre modes passent tous par
 // `requestClose` : un formulaire non modifié s'y ferme directement, un formulaire modifié y ouvre la
@@ -12,6 +13,8 @@ const opener = document.getElementById("create-request-open");
 const form = document.getElementById("create-request-form");
 const receivedOn = form.elements.namedItem("receivedOn");
 const createButton = form.querySelector("[data-create]");
+const failure = document.getElementById("create-request-failure");
+const toast = document.getElementById("create-request-toast");
 
 // Les dix messages, écrits par le serveur (DataSubjectRequestMessages) : le module n'en écrit aucun.
 const messages = JSON.parse(document.getElementById("create-request-messages").textContent);
@@ -61,6 +64,7 @@ function resetToDefaults() {
   receivedOn.value = today;
 
   forgetRefusals();
+  failure.hidden = true;
 
   valuesAtOpening = rawValues();
 }
@@ -177,25 +181,126 @@ function showRefusal(field, refusal) {
 // corrigé ; un champ valide au clic, rendu fautif ensuite, ne s'en plaint qu'au clic suivant.
 let inError = new Set();
 
+// ⚠️ LES REFUS DU SERVEUR, CHACUN AVEC LA VALEUR QU'IL A REFUSÉE. Les règles du navigateur avaient
+// laissé passer la saisie : les rejouer lèverait ces refus à la première frappe, où qu'elle tombe.
+// Un refus du serveur tient donc tant que son champ garde la valeur envoyée, et cède dès qu'elle
+// change — le navigateur ne sait pas mieux dire qu'il est corrigé.
+let refusedByTheServer = new Map();
+
+function refusalOf(field, refusals) {
+  const refused = refusedByTheServer.get(field);
+
+  if (refused && field.value === refused.value) {
+    return refused.refusal;
+  }
+
+  return refusals[field.name];
+}
+
 function forgetRefusals() {
   for (const field of validatedFields) {
     showRefusal(field, undefined);
   }
 
   inError = new Set();
+  refusedByTheServer = new Map();
 }
 
-// « CRÉER » RESTE TOUJOURS CLIQUABLE : chaque clic juge toute la saisie, affiche chaque refus sous son
-// champ et donne le focus au premier. Tant que l'envoi n'est pas branché, une saisie valide s'arrête là.
-function attemptCreation() {
-  const refusals = refusalsOfTheEntry();
-
+// Chaque refus sous son champ, le focus au premier : que les refus viennent du navigateur ou du
+// serveur, l'Operator les lit au même endroit, de la même façon.
+function showRefusals(refusals) {
   for (const field of validatedFields) {
     showRefusal(field, refusals[field.name]);
   }
 
   inError = new Set(validatedFields.filter((field) => refusals[field.name]));
   validatedFields.find((field) => inError.has(field))?.focus();
+}
+
+// « CRÉER » RESTE CLIQUABLE HORS ENVOI : chaque clic juge toute la saisie, affiche chaque refus sous
+// son champ et donne le focus au premier. Une saisie sans refus part au serveur.
+function attemptCreation() {
+  refusedByTheServer = new Map();
+  showRefusals(refusalsOfTheEntry());
+
+  if (inError.size === 0) {
+    send();
+  }
+}
+
+// L'ENVOI. Le formulaire part tel quel au handler qu'il déclare, jeton anti-rejeu compris — la date
+// au format ISO du champ, le droit sous son nom canonique : ce que le handler lit.
+//
+// ⚠️ « CRÉER » EST DÉSACTIVÉ PENDANT L'ENVOI : un double clic n'enregistre jamais deux demandes. Il
+// redevient cliquable quelle que soit l'issue. La modale, elle, ne se ferme pas tant que l'envoi
+// court : la réponse doit trouver la saisie qu'elle concerne, pas une modale rouverte à zéro.
+//
+// Trois issues. 201 : la demande est enregistrée. 400 portant des refus de la saisie : ils vont sous
+// leurs champs, comme ceux du navigateur. Tout le reste — un 400 sans refus, qui est un jeton
+// anti-rejeu refusé, une erreur du serveur, une coupure réseau — : le bandeau, et la saisie reste là.
+let sending = false;
+
+async function send() {
+  sending = true;
+  createButton.disabled = true;
+  failure.hidden = true;
+
+  const entry = new FormData(form);
+
+  try {
+    const response = await fetch(form.action, { method: "POST", body: new URLSearchParams(entry) });
+
+    if (response.status === 201) {
+      closeOnCreation();
+      return;
+    }
+
+    const refusals = response.status === 400 ? await refusalsFromTheServer(response) : {};
+    const refused = validatedFields.filter((field) => refusals[field.name]);
+
+    if (refused.length > 0) {
+      refusedByTheServer = new Map(
+        refused.map((field) => [field, { value: entry.get(field.name), refusal: refusals[field.name] }]),
+      );
+      showRefusals(refusals);
+    } else {
+      failure.hidden = false;
+    }
+  } catch {
+    failure.hidden = false;
+  } finally {
+    sending = false;
+    createButton.disabled = false;
+  }
+}
+
+// Les refus d'un `ValidationProblem`, un par champ, sous les clés mêmes du corps. Une réponse qui
+// n'en porte pas n'en rend aucun.
+async function refusalsFromTheServer(response) {
+  try {
+    const { errors } = await response.json();
+
+    return Object.fromEntries(Object.entries(errors ?? {}).map(([key, refusals]) => [key, refusals[0]]));
+  } catch {
+    return {};
+  }
+}
+
+// LA DEMANDE EST CRÉÉE : la modale se ferme — sans confirmation, rien n'est perdu —, et le toast le
+// dit quelques secondes. Ses mots sont ceux que la page a rendus. La prochaine ouverture repartira
+// des valeurs par défaut, comme toutes les ouvertures.
+const toastDuration = 5_000;
+let toastTimer;
+
+function closeOnCreation() {
+  confirmation.close();
+  dialog.close();
+
+  toast.textContent = toast.dataset.created;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.textContent = "";
+  }, toastDuration);
 }
 
 // L'identification lie trois champs : un email saisi lève le refus du nom et du prénom. C'est donc
@@ -208,9 +313,10 @@ function revalidateTheFieldsInError() {
   const refusals = refusalsOfTheEntry();
 
   for (const field of inError) {
-    showRefusal(field, refusals[field.name]);
+    const refusal = refusalOf(field, refusals);
+    showRefusal(field, refusal);
 
-    if (!refusals[field.name]) {
+    if (!refusal) {
       inError.delete(field);
     }
   }
@@ -226,6 +332,10 @@ function open() {
 }
 
 function requestClose() {
+  if (sending) {
+    return;
+  }
+
   if (isModified()) {
     confirmation.showModal();
   } else {
@@ -274,7 +384,11 @@ dialog.addEventListener("cancel", (event) => {
 
 function reopenAndConfirm() {
   dialog.showModal();
-  confirmation.showModal();
+
+  // Pendant l'envoi, aucune fermeture n'est demandée : la modale revient seule, et la réponse suivra.
+  if (!sending) {
+    confirmation.showModal();
+  }
 }
 
 // LE FOND N'EST PAS UN ÉLÉMENT : un clic dessus arrive sur le `dialog` lui-même, hors de son cadre.

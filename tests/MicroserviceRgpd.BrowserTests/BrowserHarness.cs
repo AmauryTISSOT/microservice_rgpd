@@ -1,4 +1,6 @@
-﻿using Testcontainers.PostgreSql;
+﻿using MicroserviceRgpd.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.BrowserTests;
 
@@ -49,6 +51,23 @@ public sealed class BrowserHarness : IAsyncLifetime
     return Browser.NewContextAsync(new() { BaseURL = Address.ToString() });
   }
 
+  /// <summary>
+  /// Le nombre de demandes enregistrées sous ce message, relu dans la base du service : ce qu'un
+  /// scénario a laissé derrière lui, et non ce que l'écran en dit.
+  /// </summary>
+  /// <remarks>
+  /// La table est lue en SQL, comme dans les tests fonctionnels : le message est un objet valeur, que
+  /// le modèle EF ne compare pas à une chaîne.
+  /// </remarks>
+  public async Task<int> CountOfRequestsAsync(string message)
+  {
+    using var scope = Service.Services.CreateScope();
+
+    return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests WHERE message = {message}")
+      .SingleAsync();
+  }
+
   public async Task DisposeAsync()
   {
     if (_browser is not null)
@@ -67,6 +86,8 @@ public sealed class BrowserHarness : IAsyncLifetime
   }
 
   private IBrowser Browser => _browser ?? throw new InvalidOperationException("Le navigateur n'est pas lancé.");
+
+  private ServiceOnARealPort Service => _service ?? throw new InvalidOperationException("Le service n'est pas démarré.");
 
   private Uri Address => _address ?? throw new InvalidOperationException("Le service n'est pas démarré.");
 

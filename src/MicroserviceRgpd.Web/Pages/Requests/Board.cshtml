@@ -56,8 +56,8 @@
   ⚠️ LA DATE N'A PAS DE BORNE BASSE : un courrier peut être resté longtemps en attente.
 
   LE FORMULAIRE DÉCLARE SON ENVOI — `POST /demandes?handler=Create` — ET PORTE LE JETON ANTI-REJEU,
-  que le tag helper pose en dernier champ, caché. Le script n'a qu'à envoyer le formulaire tel
-  quel ; aucun bouton ne le soumet nativement.
+  que le tag helper pose en dernier champ, caché. Le script l'envoie tel quel, par `fetch` ; aucun
+  bouton ne le soumet nativement.
 *@
 <dialog class="modal" id="create-request" aria-labelledby="create-request-title">
   <div class="modal-head">
@@ -148,12 +148,29 @@
       <span class="refusal" id="request-right-refusal"></span>
     </p>
 
+    @*
+      LE BANDEAU D'ÉCHEC, CACHÉ TANT QU'UN ENVOI N'A PAS ÉCHOUÉ AUTREMENT QUE PAR UN REFUS — jeton
+      anti-rejeu périmé, erreur du serveur, coupure réseau. Un refus de la saisie, lui, va sous ses
+      champs. La modale reste ouverte et la saisie intacte : l'Operator réessaie sans rien ressaisir.
+    *@
+    <p class="modal-failure" role="alert" id="create-request-failure" hidden>
+      La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer.
+    </p>
+
     <div class="modal-actions">
       <button type="button" data-dismiss>Annuler</button>
       <button type="button" class="primary" data-create>Créer</button>
     </div>
   </form>
 </dialog>
+
+@*
+  LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée » — les mots que la
+  page lui donne ici — quand la modale se ferme sur une création, et l'efface quelques secondes plus
+  tard. Il est hors de la modale, qui vient de se fermer ; `role="status"` le fait lire sans voler
+  le focus.
+*@
+<p class="toast" role="status" id="create-request-toast" data-created="Demande créée"></p>
 
 @*
   LA CONFIRMATION D'ABANDON, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Le module l'ouvre

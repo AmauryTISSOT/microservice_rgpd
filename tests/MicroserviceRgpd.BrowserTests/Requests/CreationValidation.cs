@@ -9,8 +9,8 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>C'est un confort : le serveur fait foi.</b> Tant que l'envoi n'est pas branché, un
-/// formulaire valide ne produit aucun effet — ce que ces tests lisent, ce sont les refus.
+/// ⚠️ <b>C'est un confort : le serveur fait foi.</b> Ce que ces tests lisent, ce sont les refus ;
+/// l'envoi d'un formulaire valide est l'affaire de <see cref="RequestCreation"/>.
 /// </para>
 /// <para>
 /// Un refus se lit comme le lit un lecteur d'écran : la <b>description accessible</b> du champ, qui
