@@ -207,8 +207,10 @@ Le mot est **header**, pas « bandeau » : un **bandeau** est un message posé d
 rapport de détection de `Screening` s'ouvre sur un bandeau — la base, le SGBD, le lancement, le
 moteur — et en porte un second pour ses comptes (`banner` dans le code) ; la modale de création
 d'une demande porte un bandeau d'échec, qui dit qu'un envoi a échoué autrement que par un refus et
-laisse la saisie en place. Le toast « Demande créée » n'en est pas un : il se pose au-dessus de
-l'écran, le temps de dire ce qu'il dit, puis s'efface.
+laisse la saisie en place. Le toast n'en est pas un — qu'il dise « Demande créée », « Demande
+supprimée » ou qu'une suppression a échoué : il se pose au-dessus de l'écran, le temps de dire ce
+qu'il dit, puis s'efface. La confirmation de suppression, elle, n'a pas de bandeau : quelle que
+soit l'issue, elle se ferme, et c'est le toast qui la dit.
 
 ⚠️ **Douze écrans, et non quatorze : les deux routes de la `Cartographie` n'en sont pas.**
 `cartographie.json` et `cartographie.csv` sont des Razor Pages qui rendent un fichier, jamais une

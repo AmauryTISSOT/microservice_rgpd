@@ -8,7 +8,8 @@
 // confirmation d'abandon. Aucun mode de fermeture ne doit pouvoir la contourner.
 //
 // La poubelle de chaque ligne ouvre la confirmation de suppression, avec la phrase de sa ligne ;
-// « Supprimer définitivement » l'envoie au handler de la page, et la ligne s'en va sans rechargement.
+// « Supprimer définitivement » l'envoie au handler de la page, et la ligne s'en va sans rechargement —
+// sauf échec, que le toast dit.
 
 // LA RECHERCHE. Elle filtre les lignes que le serveur a rendues, sans revenir à lui : une demande
 // reste affichée si son email, son nom ou son prénom — ceux que la ligne porte en `data-*`, tels
@@ -488,7 +489,6 @@ closeOnBackdropClick(dialog, requestClose);
 const deletion = document.getElementById("delete-request");
 const deletionForm = document.getElementById("delete-request-form");
 const deletionConsequence = document.getElementById("delete-request-consequence");
-const deletionFailure = document.getElementById("delete-request-failure");
 const deleteButton = deletion.querySelector("[data-delete-for-good]");
 const requests = document.getElementById("requests");
 const none = document.getElementById("requests-none");
@@ -509,14 +509,13 @@ function openDeletion(row) {
   rowToDelete = row;
   deletionConsequence.textContent = row.dataset.deletionConfirmation;
   deletionForm.elements.namedItem("id").value = row.dataset.requestId;
-  deletionFailure.hidden = true;
 
   // « Annuler » prend le focus : `showModal` honore son `autofocus`.
   deletion.showModal();
 }
 
 // ⚠️ PENDANT L'ENVOI, LA CONFIRMATION NE SE FERME PAS : la réponse doit trouver la ligne qu'elle
-// concerne, et l'échec son bandeau.
+// concerne — une autre poubelle ne peut pas la lui ravir —, et c'est elle qui la fermera.
 let deleting = false;
 
 function closeDeletion() {
@@ -537,47 +536,52 @@ deletion.addEventListener("cancel", (event) => {
 // L'ENVOI. Le formulaire part tel quel au handler qu'il déclare, jeton anti-rejeu compris.
 // « Supprimer définitivement » est désactivé pendant l'envoi : un double clic ne part qu'une fois.
 //
-// Deux issues. 204, ou 404 — la demande a déjà été supprimée ailleurs, et ce que voulait l'Operator
-// est acquis (ADR-0022) — : la ligne s'en va. Tout le reste — un jeton anti-rejeu refusé, une erreur
-// du serveur, une coupure réseau — : le bandeau, et la ligne reste, puisque rien n'a été supprimé.
+// QUELLE QUE SOIT L'ISSUE, LA CONFIRMATION SE FERME, ET LE TOAST LA DIT. 204, ou 404 — la demande a
+// déjà été supprimée ailleurs, et ce que voulait l'Operator est acquis (ADR-0022) — : la ligne s'en
+// va. Tout le reste — un jeton anti-rejeu refusé, une erreur du serveur, une coupure réseau — est un
+// échec : la ligne reste, puisque rien n'a été supprimé, et sa poubelle permet de réessayer.
 async function deleteForGood() {
   deleting = true;
   deleteButton.disabled = true;
-  deletionFailure.hidden = true;
 
+  const deleted = await sendDeletion();
+
+  deleting = false;
+  deleteButton.disabled = false;
+  deletion.close();
+
+  if (deleted) {
+    removeTheDeletedRow();
+    say(toast.dataset.deleted);
+  } else {
+    say(toast.dataset.deletionFailed);
+  }
+
+  rowToDelete = null;
+}
+
+// Envoie la suppression, et dit si la demande n'existe plus — supprimée à l'instant, ou avant.
+async function sendDeletion() {
   try {
     const response = await fetch(deletionForm.action, {
       method: "POST",
       body: new URLSearchParams(new FormData(deletionForm)),
     });
 
-    if (response.status === 204 || response.status === 404) {
-      closeOnDeletion();
-      return;
-    }
-
-    deletionFailure.hidden = false;
+    return response.status === 204 || response.status === 404;
   } catch {
-    deletionFailure.hidden = false;
-  } finally {
-    deleting = false;
-    deleteButton.disabled = false;
+    return false;
   }
 }
 
-// LA DEMANDE EST SUPPRIMÉE : la confirmation se ferme, la ligne s'en va sans rechargement, et le toast
-// le dit. La dernière ligne partie, l'état vide que le serveur a rendu reparaît.
+// LA LIGNE S'EN VA SANS RECHARGEMENT. La dernière partie, l'état vide que le serveur a rendu reparaît.
 //
 // ⚠️ LA RECHERCHE EN COURS SE REJOUE : la seule ligne trouvée partie, c'est à elle de dire que plus
 // rien ne correspond — et de se taire sur un tableau devenu vide.
-function closeOnDeletion() {
-  deletion.close();
+function removeTheDeletedRow() {
   rowToDelete.remove();
-  rowToDelete = null;
   none.hidden = requests.tBodies[0].rows.length > 0;
   applySearch();
-
-  say(toast.dataset.deleted);
 }
 
 deleteButton.addEventListener("click", deleteForGood);

@@ -232,12 +232,13 @@
 </dialog>
 
 @*
-  LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée » ou « Demande
-  supprimée » — les mots que la page lui donne ici — quand une modale se ferme sur une création ou
-  sur une suppression, et l'efface quelques secondes plus tard. Il est hors des modales, qui viennent
-  de se fermer ; `role="status"` le fait lire sans voler le focus.
+  LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée », « Demande
+  supprimée » ou l'échec d'une suppression — les mots que la page lui donne ici — quand une modale se
+  ferme sur une création ou sur une suppression, et l'efface quelques secondes plus tard. Il est hors
+  des modales, qui viennent de se fermer ; `role="status"` le fait lire sans voler le focus.
 *@
-<p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"></p>
+<p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"
+   data-deletion-failed="La suppression a échoué, veuillez réessayer."></p>
 
 @*
   LA CONFIRMATION D'ABANDON, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Le module l'ouvre
@@ -278,9 +279,10 @@
   LE FORMULAIRE DÉCLARE SON ENVOI — `POST /demandes?handler=Delete` — ET PORTE LE JETON ANTI-REJEU,
   que le tag helper pose. Le script l'envoie par `fetch` ; aucun bouton ne le soumet nativement.
 
-  LE BANDEAU D'ÉCHEC, CACHÉ TANT QU'UN ENVOI N'A PAS ÉCHOUÉ — jeton anti-rejeu périmé, erreur du
-  serveur, coupure réseau. La confirmation reste ouverte, et la ligne en place : rien n'a été
-  supprimé, et l'Operator peut réessayer. Une demande déjà supprimée ailleurs n'est pas un échec.
+  ⚠️ ELLE N'A PAS DE BANDEAU D'ÉCHEC : quelle que soit l'issue, elle se ferme, et c'est le toast qui
+  la dit. Un échec — jeton anti-rejeu périmé, erreur du serveur, coupure réseau — laisse la ligne en
+  place : rien n'a été supprimé, et sa poubelle permet de réessayer. Une demande déjà supprimée
+  ailleurs n'est pas un échec.
 *@
 <dialog class="modal confirmation" id="delete-request" role="alertdialog"
         aria-labelledby="delete-request-title" aria-describedby="delete-request-consequence">
@@ -291,10 +293,6 @@
 
   <form id="delete-request-form" method="post" asp-page-handler="Delete">
     <input type="hidden" name="id" />
-
-    <p class="modal-failure" role="alert" id="delete-request-failure" hidden>
-      La demande n'a pas pu être supprimée. Vous pouvez réessayer.
-    </p>
 
     <div class="modal-actions">
       <button type="button" data-dismiss autofocus>Annuler</button>
