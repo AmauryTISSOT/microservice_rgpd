@@ -1,6 +1,12 @@
 @page "/demandes"
+@model BoardModel
+@using System.Globalization
+@using MicroserviceRgpd.Core.Requests
 @{
   ViewData["Title"] = "Tableau des demandes RGPD";
+
+  // Le format ISO est celui du champ de date et du fil ; jj/mm/aaaa n'est que ce que le navigateur affiche.
+  var today = Model.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 }
 
 @*
@@ -16,6 +22,13 @@
   ouvre la modale — et cet écran est le seul de la surface à charger un script.
 *@
 @section Scripts {
+  @*
+    LES DIX MESSAGES D'ERREUR, FOURNIS AU MODULE PAR UN ÎLOT DE DONNÉES. Ils sont écrits une seule
+    fois, côté serveur (DataSubjectRequestMessages) : le module porte la logique des règles, jamais
+    leurs mots, et les deux validations ne divergent pas sur le texte. Un `script` de type
+    `application/json` ne s'exécute pas ; le navigateur le garde tel quel pour qui le lit.
+  *@
+  <script type="application/json" id="create-request-messages">@Json.Serialize(DataSubjectRequestMessages.All)</script>
   <script type="module" src="/js/requests-board.js"></script>
 }
 
@@ -28,10 +41,16 @@
   LA MODALE DE CRÉATION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Un `dialog` natif : le
   navigateur en tient le focus, le fond et la touche Échap, que le module n'a plus qu'à écouter.
 
-  ⚠️ ELLE N'EST ENCORE QU'UN SQUELETTE. Le formulaire arrive avec le ticket suivant, et « Créer »
-  n'envoie rien d'ici là. Tant qu'aucune saisie n'est possible, chacun des quatre modes de
-  fermeture — « Annuler », la croix, Échap, un clic sur le fond — ferme directement : la
-  confirmation d'abandon viendra avec la saisie qui la rend nécessaire.
+  LE FORMULAIRE SUIT L'ORDRE DE LECTURE D'UNE DEMANDE REÇUE : d'où elle vient, quand, de qui, ce
+  qu'elle dit, quel droit elle invoque. Ce que le serveur rend ici est l'état par défaut du
+  formulaire ; le module l'y ramène à chaque ouverture, et recalcule alors « aujourd'hui ».
+
+  ⚠️ LE NAVIGATEUR NE JUGE RIEN. Le formulaire porte `novalidate`, l'email est un champ texte, et
+  aucun champ ne porte de `maxlength` : un texte collé trop long serait tronqué en silence, là où
+  l'Operator doit lire pourquoi il est refusé. Les règles sont celles du service, que le module
+  appliquera en confort et que le serveur revalidera.
+
+  ⚠️ LA DATE N'A PAS DE BORNE BASSE : un courrier peut être resté longtemps en attente.
 *@
 <dialog class="modal" id="create-request" aria-labelledby="create-request-title">
   <div class="modal-head">
@@ -44,8 +63,75 @@
     </button>
   </div>
 
-  <div class="modal-actions">
-    <button type="button" data-dismiss>Annuler</button>
-    <button type="button" class="primary">Créer</button>
-  </div>
+  <form id="create-request-form" class="modal-form" novalidate>
+    <p>
+      <label for="request-origin">Origine</label>
+      <select id="request-origin" name="origin">
+        @foreach (var origin in BoardModel.Origins)
+        {
+          <option value="@origin.Name" selected="@(origin == Origin.Email)">@origin.FrenchLabel</option>
+        }
+      </select>
+    </p>
+
+    <p>
+      <label for="request-received-on">Date de réception</label>
+      <input type="date" lang="fr" id="request-received-on" name="@DataSubjectRequestField.ReceivedOn"
+             value="@today" max="@today" />
+    </p>
+
+    <p>
+      <label for="request-last-name">Nom</label>
+      <input type="text" id="request-last-name" name="@DataSubjectRequestField.LastName" autocomplete="off" />
+    </p>
+
+    <p>
+      <label for="request-first-name">Prénom</label>
+      <input type="text" id="request-first-name" name="@DataSubjectRequestField.FirstName" autocomplete="off" />
+    </p>
+
+    <p>
+      <label for="request-email">Email</label>
+      <input type="text" inputmode="email" id="request-email" name="@DataSubjectRequestField.Email" autocomplete="off" />
+    </p>
+
+    <p class="check">
+      <input type="checkbox" id="request-identity-verified" name="identityVerified" value="true" />
+      <label for="request-identity-verified">Identité vérifiée</label>
+    </p>
+
+    <p>
+      <label for="request-message">Message</label>
+      <textarea id="request-message" name="@DataSubjectRequestField.Message" rows="6"></textarea>
+    </p>
+
+    @*
+      LA QUALIFICATION DU DROIT PAR IA SE VOIT, MAIS NE SE DÉCLENCHE PAS : elle viendra avec son
+      propre ticket. Le bouton est désactivé, et son infobulle le dit.
+    *@
+    <p>
+      <button type="button" disabled title="Bientôt disponible">Qualification du droit par IA</button>
+    </p>
+
+    @*
+      L'INVITE D'ABORD, puis les six droits dans l'ordre des articles : l'Operator choisit le droit
+      consciemment. ⚠️ « Hors périmètre » n'est jamais proposé — c'est un verdict de qualification,
+      pas un droit qu'une personne invoque.
+    *@
+    <p>
+      <label for="request-right">Droits RGPD</label>
+      <select id="request-right" name="@DataSubjectRequestField.Right">
+        <option value="">Sélectionner un droit</option>
+        @foreach (var right in BoardModel.InvocableRights)
+        {
+          <option value="@right.Name">@right.FrenchLabel</option>
+        }
+      </select>
+    </p>
+
+    <div class="modal-actions">
+      <button type="button" data-dismiss>Annuler</button>
+      <button type="button" class="primary">Créer</button>
+    </div>
+  </form>
 </dialog>

@@ -78,6 +78,12 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   /// l'application, mais un script ne se pose que là où un écran en a besoin : les autres restent
   /// tels qu'ils étaient.
   /// </summary>
+  /// <remarks>
+  /// Le tableau porte aussi un <b>îlot de données</b> — une balise <c>script</c> de type
+  /// <c>application/json</c>, que le navigateur n'exécute pas —, par lequel la page fournit ses
+  /// messages au module. Il est écarté du compte du tableau, et d'aucun autre : un autre écran n'a
+  /// pas de module à qui fournir quoi que ce soit.
+  /// </remarks>
   [Fact]
   public async Task LoadsTheBoardModuleOnTheBoardAndNoScriptAnywhereElse()
   {
@@ -87,7 +93,9 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 
       if (screen == LayoutSurface.Board)
       {
-        var module = scripts.ShouldHaveSingleItem("Le tableau des demandes doit charger un script, et un seul.");
+        var module = scripts
+          .Where(script => !script.Contains(@"type=""application/json""", StringComparison.Ordinal))
+          .ShouldHaveSingleItem("Le tableau des demandes doit charger un script, et un seul.");
 
         module.ShouldContain(@"type=""module""", Case.Sensitive, "Le script du tableau n'est pas chargé comme un module.");
         module.ShouldContain($@"src=""{LayoutSurface.BoardModule}""", Case.Sensitive, "Le tableau ne charge pas son module.");
