@@ -85,7 +85,7 @@ public class NothingRunsInTheBackgroundTests
 
   /// <summary>
   /// <b>Le garde mord, et on le prouve.</b> Il voit la minuterie du témoin
-  /// <see cref="Fixtures.Casework.AScreenThatWouldRunOnItsOwn"/> — y compris celle qui se cache dans un
+  /// <see cref="Fixtures.Requests.AScreenThatWouldRunOnItsOwn"/> — y compris celle qui se cache dans un
   /// corps de méthode, à l'endroit qu'un test de signatures ne regarderait pas.
   /// </summary>
   /// <remarks>

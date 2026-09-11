@@ -1,11 +1,11 @@
-﻿using MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+﻿using MicroserviceRgpd.ArchitectureTests.Fixtures.Requests;
 using MicroserviceRgpd.ArchitectureTests.Fixtures.Screening;
 
 namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
 /// Ce que l'inspecteur voit vraiment. <see cref="ContextIsolationTests"/> ne trouve rien à examiner
-/// tant que <c>Casework</c> n'a pas de code : sans ces témoins, un inspecteur qui ne verrait
+/// tant que <c>Requests</c> n'a pas de code : sans ces témoins, un inspecteur qui ne verrait
 /// strictement rien afficherait exactement le même vert.
 /// <para>
 /// L'inspecteur est donc retourné contre <b>son propre assemblage</b>, où vivent trois témoins
@@ -20,7 +20,7 @@ public class ContextInspectorTests
 
   private static IReadOnlyList<CrossContextReference> Crossings()
   {
-    return ContextInspector.Inspect(ThisAssembly, from: ContextInspector.Casework, to: ContextInspector.Qualification);
+    return ContextInspector.Inspect(ThisAssembly, from: ContextInspector.Requests, to: ContextInspector.Qualification);
   }
 
   /// <summary>La raison d'être du contrôle du code compilé, tenue par un test.</summary>
@@ -81,7 +81,8 @@ public class ContextInspectorTests
 
   /// <summary>
   /// L'inspecteur est <b>orienté</b>, et il doit le rester même là où les deux sens sont interdits.
-  /// Depuis <c>docs/adr/0003</c>, <c>Qualification → Casework</c> est une règle à part entière ; ce
+  /// Depuis <c>docs/adr/0003</c>, toute traversée non écrite est interdite, <c>Qualification →
+  /// Requests</c> comme les autres ; ce
   /// qui se tient ici n'est donc plus qu'un sens soit libre, mais que l'inspecteur ne <b>confonde</b>
   /// pas les deux — sans quoi les deux seules traversées permises du dépôt, celles qui vont vers le
   /// noyau partagé, se dénonceraient elles-mêmes à l'envers.
@@ -92,7 +93,7 @@ public class ContextInspectorTests
     var backwards = ContextInspector.Inspect(
       ThisAssembly,
       from: ContextInspector.Qualification,
-      to: ContextInspector.Casework);
+      to: ContextInspector.Requests);
 
     backwards.ShouldBeEmpty();
   }

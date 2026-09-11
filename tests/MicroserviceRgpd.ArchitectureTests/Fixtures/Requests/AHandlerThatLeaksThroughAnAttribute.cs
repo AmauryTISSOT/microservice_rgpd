@@ -1,6 +1,6 @@
 ﻿using MicroserviceRgpd.ArchitectureTests.Fixtures.Qualification;
 
-namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Requests;
 
 /// <summary>
 /// La fuite par <c>typeof</c> : elle n'est ni dans une signature ni dans un corps de méthode, mais
