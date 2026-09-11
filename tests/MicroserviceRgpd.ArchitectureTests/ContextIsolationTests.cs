@@ -28,7 +28,10 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// ⚠️ Tant qu'un contexte n'a pas de code, ses règles ne trouvent rien à examiner : elles sont vertes
 /// par vacuité. C'est voulu — on pose le garde <b>avant</b> le contexte qu'il garde, pour que sa
 /// première ligne naisse déjà sous surveillance. C'était vrai de <c>Casework</c> en son temps, et de
-/// <c>Screening</c> jusqu'à <c>Core/Screenings/</c>, qui est le premier dossier qu'il porte.
+/// <c>Screening</c> jusqu'à <c>Core/Screenings/</c>, qui est le premier dossier qu'il porte. C'est
+/// vrai de <c>Requests</c> aujourd'hui : il n'a encore aucun type de production, aucune traversée
+/// ne lui est permise, et il n'entrera dans
+/// <see cref="FindsTheContextItClaimsToGuardSomewhereInProduction"/> qu'avec son premier dossier.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le premier code de <c>Screening</c> a immédiatement montré une chose que la vacuité
@@ -177,6 +180,19 @@ public class ContextIsolationTests
         "Le Case n'appelle pas encore par droit : il suit les DeclaredSystem, et le Paramétrage " +
         "n'est lu par aucune instruction. Le recâblage est une décision à venir — voir " +
         "docs/adr/0016 — et la ligne qui l'ouvrira sera écrite dans la liste blanche, pas ici.",
+
+      (ContextInspector.Requests, ContextInspector.Qualification) =>
+        "Le droit invoqué d'une demande est choisi par l'Operator, jamais lu d'un verdict : une " +
+        "demande s'enregistre sans qu'aucune qualification n'ait eu lieu. Passez par le noyau " +
+        "partagé, ou par un identifiant opaque.",
+
+      (ContextInspector.Qualification, ContextInspector.Requests) =>
+        "Qualification ne connaît que l'instant d'un verdict : elle ignore qu'une demande est " +
+        "enregistrée. Un fournisseur amont qui connaît son aval n'est plus optionnel.",
+
+      (ContextInspector.Requests, ContextInspector.SharedKernel) =>
+        "La liste blanche n'ouvre rien à Requests. Ouvrir sa traversée vers le noyau partagé est " +
+        "un geste de niveau ADR — voir docs/adr/0003 —, pas une ligne ajoutée pour faire compiler.",
 
       (ContextInspector.SharedKernel, _) =>
         "Le noyau partagé n'appartient à personne : son auteur est le RGPD. Un noyau qui dépend " +

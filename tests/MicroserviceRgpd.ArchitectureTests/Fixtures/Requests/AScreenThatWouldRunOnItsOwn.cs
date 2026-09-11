@@ -1,4 +1,4 @@
-﻿namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+﻿namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Requests;
 
 /// <summary>
 /// Un témoin, et rien d'autre : il porte exactement ce que

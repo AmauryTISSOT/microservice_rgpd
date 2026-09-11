@@ -1,4 +1,4 @@
-using MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+using MicroserviceRgpd.ArchitectureTests.Fixtures.Requests;
 
 namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Reporting;
 

@@ -1,6 +1,6 @@
 ﻿using MicroserviceRgpd.ArchitectureTests.Fixtures.Qualification;
 
-namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Requests;
 
 /// <summary>
 /// La fuite même que l'on craint, réduite à sa plus simple expression : <b>rien</b> dans la surface

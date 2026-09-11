@@ -1,6 +1,6 @@
 ﻿using MicroserviceRgpd.ArchitectureTests.Fixtures.Qualification;
 
-namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Casework;
+namespace MicroserviceRgpd.ArchitectureTests.Fixtures.Requests;
 
 /// <summary>
 /// La fuite qu'un test de signatures seules aurait vue lui aussi. Elle est ici pour que le témoin

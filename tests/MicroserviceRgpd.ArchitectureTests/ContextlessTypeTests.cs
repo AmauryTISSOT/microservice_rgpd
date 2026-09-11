@@ -139,7 +139,7 @@ public class ContextlessTypeTests
       "Le service d'export sans contexte passe : le garde ne voit pas l'angle mort qu'il existe " +
       "pour refermer, et un ScreeningExportService naîtrait sous un vert complet.");
 
-    caught.Contexts.ShouldBe([ContextInspector.Casework, ContextInspector.Screening], ignoreOrder: true);
+    caught.Contexts.ShouldBe([ContextInspector.Requests, ContextInspector.Screening], ignoreOrder: true);
   }
 
   /// <summary>
