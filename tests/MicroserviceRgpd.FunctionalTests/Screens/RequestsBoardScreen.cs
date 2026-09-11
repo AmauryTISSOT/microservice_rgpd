@@ -40,7 +40,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   private const string CreateLabel = "Créer une demande";
 
   /// <summary>Le nom accessible du ✕ de la recherche, recopié à dessein.</summary>
-  private const string ClearSearchLabel = "Effacer la recherche";
+  private const string ClearSearchLabel = "Vider la recherche";
 
   /// <summary>Le titre de la modale de création, recopié à dessein.</summary>
   private const string DialogTitle = "Créer une nouvelle demande";
@@ -75,7 +75,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   /// du service.
   /// </summary>
   [Fact]
-  public async Task CarriesTheCreateButtonInTheContentAndNotInTheHeader()
+  public async Task CarriesItsButtonsInTheContentAndNotInTheHeader()
   {
     var rendered = await _layout.ReadAsync(Board);
 

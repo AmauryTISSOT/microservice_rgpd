@@ -358,7 +358,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   /// <b>La barre de recherche est en haut à gauche du tableau</b> : entre le bouton de création et le
   /// tableau, un champ de recherche nommé pour qui ne le voit pas, dont le texte d'aide est
   /// « Rechercher par email, nom ou prénom », suivi de son bouton ✕ — un simple bouton, qui se nomme
-  /// « Effacer la recherche ». Ni l'un ni l'autre n'est dans un formulaire : rien ne part au serveur.
+  /// « Vider la recherche ». Ni l'un ni l'autre n'est dans un formulaire : rien ne part au serveur.
   /// </summary>
   [Fact]
   public async Task CarriesTheSearchBarAndItsClearButtonAboveTheTable()
@@ -378,7 +378,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     var clear = Regex.Matches(search, @"<button\b[^>]*>").ShouldHaveSingleItem().Value;
     clear.ShouldContain(@"type=""button""", Case.Sensitive, "Le bouton ✕ n'est pas un simple bouton.");
-    clear.ShouldContain(@"aria-label=""Effacer la recherche""", Case.Sensitive, "Le bouton ✕ ne se nomme pas.");
+    clear.ShouldContain(@"aria-label=""Vider la recherche""", Case.Sensitive, "Le bouton ✕ ne se nomme pas.");
   }
 
   /// <summary>

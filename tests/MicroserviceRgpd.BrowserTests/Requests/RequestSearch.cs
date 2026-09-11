@@ -143,6 +143,7 @@ public class RequestSearch(BrowserHarness harness)
 
     await using var context = await harness.NewContextAsync();
     var page = await OnTheBoardAsync(context);
+    await Expect(Row(page, other)).ToBeVisibleAsync();
 
     await Search(page).FillAsync(marker);
     await Expect(Row(page, other)).ToBeHiddenAsync();
@@ -167,13 +168,14 @@ public class RequestSearch(BrowserHarness harness)
 
     await using var context = await harness.NewContextAsync();
     var page = await OnTheBoardAsync(context);
+    await Expect(Row(page, marker)).ToBeVisibleAsync();
     await Expect(NoMatchMessage(page)).ToBeHiddenAsync();
 
     await Search(page).FillAsync(Marker());
 
     await Expect(NoMatchMessage(page)).ToBeVisibleAsync();
     await Expect(Row(page, marker)).ToBeHiddenAsync();
-    await Expect(page.GetByText(NoRequestYet)).ToBeHiddenAsync();
+    await Expect(page.GetByText(NoRequestYet, new() { Exact = true })).ToBeHiddenAsync();
 
     await Search(page).FillAsync(marker);
 
@@ -186,7 +188,7 @@ public class RequestSearch(BrowserHarness harness)
   /// pour le moment » dit déjà qu'il n'y a rien à trouver, et reste seul.
   /// </summary>
   [Fact]
-  public async Task LeavesTheEmptyBoardToSayItOnAnEmptyBoard()
+  public async Task SaysOnlyThereIsNoRequestYetOnAnEmptyBoard()
   {
     await harness.DeleteAllRequestsAsync();
 
@@ -195,11 +197,14 @@ public class RequestSearch(BrowserHarness harness)
 
     await Search(page).FillAsync(Marker());
 
-    await Expect(page.GetByText(NoRequestYet)).ToBeVisibleAsync();
+    await Expect(page.GetByText(NoRequestYet, new() { Exact = true })).ToBeVisibleAsync();
     await Expect(NoMatchMessage(page)).ToBeHiddenAsync();
   }
 
-  private static string Marker() => Guid.NewGuid().ToString("N");
+  private static string Marker()
+  {
+    return Guid.NewGuid().ToString("N");
+  }
 
   private static async Task<IPage> OnTheBoardAsync(IBrowserContext context)
   {
@@ -209,15 +214,27 @@ public class RequestSearch(BrowserHarness harness)
     return page;
   }
 
-  private static ILocator Search(IPage page) =>
-    page.GetByRole(AriaRole.Searchbox, new() { Name = "Rechercher une demande", Exact = true });
+  private static ILocator Search(IPage page)
+  {
+    return page.GetByRole(AriaRole.Searchbox, new() { Name = "Rechercher une demande", Exact = true });
+  }
 
-  private static ILocator ClearButton(IPage page) =>
-    page.GetByRole(AriaRole.Button, new() { Name = "Effacer la recherche", Exact = true });
+  private static ILocator ClearButton(IPage page)
+  {
+    return page.GetByRole(AriaRole.Button, new() { Name = "Vider la recherche", Exact = true });
+  }
 
-  /// <summary>La ligne du tableau qui porte <paramref name="text"/>, affichée.</summary>
-  private static ILocator Row(IPage page, string text) =>
-    page.GetByRole(AriaRole.Row).Filter(new() { HasText = text });
+  /// <summary>
+  /// La ligne du tableau qui porte <paramref name="text"/>. Son rôle ne la trouve que si elle est
+  /// affichée : cachée, elle ne se distingue pas d'une ligne absente.
+  /// </summary>
+  private static ILocator Row(IPage page, string text)
+  {
+    return page.GetByRole(AriaRole.Row).Filter(new() { HasText = text });
+  }
 
-  private static ILocator NoMatchMessage(IPage page) => page.GetByText(NoMatch, new() { Exact = true });
+  private static ILocator NoMatchMessage(IPage page)
+  {
+    return page.GetByText(NoMatch, new() { Exact = true });
+  }
 }

@@ -597,14 +597,10 @@ table.queue:not(.columns) {
   border-spacing: 0;
 }
 
-table.queue:not(.columns) tbody tr:last-child th,
-table.queue:not(.columns) tbody tr:last-child td {
-  border-bottom: 0;
-}
-
 /*
-  ⚠️ LA DERNIÈRE LIGNE, C'EST LA DERNIÈRE AFFICHÉE. Une recherche cache des lignes sans les retirer :
-  `:last-child` peut alors désigner une ligne cachée, et la dernière qui se lit garderait son filet.
+  ⚠️ LA DERNIÈRE LIGNE, C'EST LA DERNIÈRE AFFICHÉE — et non `:last-child`. Une recherche cache des
+  lignes sans les retirer : la dernière du DOM peut alors être cachée, et la dernière qui se lit
+  garderait son filet.
 */
 table.queue:not(.columns) tbody tr:not([hidden]):not(:has(~ tr:not([hidden]))) th,
 table.queue:not(.columns) tbody tr:not([hidden]):not(:has(~ tr:not([hidden]))) td {

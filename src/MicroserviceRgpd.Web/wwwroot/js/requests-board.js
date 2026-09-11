@@ -15,7 +15,7 @@
 // qu'enregistrés — contient le texte saisi. Les états vides sont rendus par le serveur ; le module
 // ne fait que les montrer ou les cacher, et n'en écrit aucun mot.
 const search = document.getElementById("requests-search");
-const clearSearch = document.getElementById("requests-search-clear");
+const clearButton = document.getElementById("requests-search-clear");
 const rows = document.getElementById("requests").tBodies[0].rows;
 const noMatch = document.getElementById("requests-no-match");
 
@@ -55,7 +55,7 @@ function emptySearch() {
 }
 
 search.addEventListener("input", applySearch);
-clearSearch.addEventListener("click", emptySearch);
+clearButton.addEventListener("click", emptySearch);
 
 const dialog = document.getElementById("create-request");
 const confirmation = document.getElementById("abandon-entry");
