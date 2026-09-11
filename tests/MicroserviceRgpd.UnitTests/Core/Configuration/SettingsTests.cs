@@ -74,4 +74,50 @@ public class SettingsTests
     Should.Throw<ArgumentOutOfRangeException>(
       () => Settings.Unconfigured().EndpointFor(DataSubjectRight.OutOfScope));
   }
+
+  /// <summary>
+  /// <b>Écrire un droit ne touche que ce droit</b> : l'adresse posée se relit sur lui, et les cinq
+  /// autres restent « non configuré ».
+  /// </summary>
+  [Fact]
+  public void SetsTheEndpointOfOneRightAndOfThatRightAlone()
+  {
+    var settings = Settings.Unconfigured();
+    var endpoint = EndpointUrl.From("https://brocanto.example.fr/rgpd/effacement");
+
+    settings.SetEndpoint(DataSubjectRight.Erasure, endpoint);
+
+    settings.EndpointFor(DataSubjectRight.Erasure).ShouldBe(endpoint);
+    settings.Rights
+      .Where(entry => entry.Right != DataSubjectRight.Erasure)
+      .ShouldAllBe(entry => !entry.IsConfigured);
+  }
+
+  /// <summary>Une adresse déjà posée se <b>remplace</b>, sans toucher aux autres droits configurés.</summary>
+  [Fact]
+  public void ReplacesAnEndpointAlreadySetWithoutTouchingTheOthers()
+  {
+    var settings = Settings.Unconfigured();
+    var access = EndpointUrl.From("https://brocanto.example.fr/rgpd/acces");
+
+    settings.SetEndpoint(DataSubjectRight.Access, access);
+    settings.SetEndpoint(DataSubjectRight.Objection, EndpointUrl.From("https://brocanto.example.fr/v1"));
+    settings.SetEndpoint(DataSubjectRight.Objection, EndpointUrl.From("https://brocanto.example.fr/v2"));
+
+    settings.EndpointFor(DataSubjectRight.Objection).ShouldBe(EndpointUrl.From("https://brocanto.example.fr/v2"));
+    settings.EndpointFor(DataSubjectRight.Access).ShouldBe(access);
+  }
+
+  /// <summary>
+  /// ⚠️ <b><see cref="DataSubjectRight.OutOfScope"/> ne reçoit pas d'adresse</b> : il n'y a pas de
+  /// septième colonne où l'écrire, et l'écrire nulle part serait une perte silencieuse.
+  /// </summary>
+  [Fact]
+  public void RefusesToSetAnEndpointForOutOfScope()
+  {
+    Should.Throw<ArgumentOutOfRangeException>(
+      () => Settings.Unconfigured().SetEndpoint(
+        DataSubjectRight.OutOfScope,
+        EndpointUrl.From("https://brocanto.example.fr/rgpd")));
+  }
 }
