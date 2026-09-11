@@ -276,7 +276,12 @@ public class ManifestScreen(CustomWebApplicationFactory<Program> factory)
 
     screen.ShouldContain($"<title>{ScreenName} —");
     screen.ShouldContain($"<h1>{ScreenName}</h1>");
-    screen.ShouldContain($">{ShortScreenName}</a>");
+
+    // ⚠️ TRANSITOIRE (#330) : l'entrée de barre a migré de « Configuration » (/manifest) vers
+    // « Paramétrage » (/parametrage). Cet écran garde son propre nom en titre et en tête, mais le
+    // panneau ne le nomme plus — il n'a plus de lien de panneau à lui. Le #333 retire cet écran
+    // entièrement ; d'ici là, on garde que le panneau ne porte plus l'ancienne forme courte.
+    LayoutSurface.SidepanelIn(screen).ShouldNotContain($">{ShortScreenName}</a>");
 
     // Le nom retiré ne survit nulle part sur l'écran…
     screen.ShouldNotContain("paysage déclaré");

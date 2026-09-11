@@ -132,18 +132,17 @@ internal static class Navigation
   /// </summary>
   internal static IReadOnlyList<EntryPoint> EntryPoints { get; } =
   [
-    // ⚠️ LE SEUL ÉCRAN À DEUX NOMS, et c'est la conséquence directe du wordmark. « Configuration du
+    // ⚠️ LE SEUL ÉCRAN À DEUX NOMS, et c'est la conséquence directe du wordmark. « Paramétrage du
     // microservice RGPD » dans une barre qui dit déjà « Microservice RGPD » répétait le nom du
     // service à quinze centimètres de lui-même ; la carte, elle, n'a rien qui la précède et garde
     // donc la forme pleine — qui reste aussi le titre de l'écran. Le prix consigné : la redondance
     // survit sur l'accueil, où la barre surmonte les cartes. Voir ADR-0008.
     new(
-      "Configuration",
-      "Configuration du microservice RGPD",
-      "/manifest",
-      "Vous y déclarez, à la main et un par un, les systèmes où vivent des données personnelles. " +
-      "Le service ne connaît que ceux que vous y inscrivez, et rien ne garantit qu'il n'en existe " +
-      "pas d'autres."),
+      "Paramétrage",
+      "Paramétrage du microservice RGPD",
+      "/parametrage",
+      "Vous y associez à chacun des six droits RGPD l'adresse à laquelle le service l'exercera. Un " +
+      "droit sans adresse reste « non configuré », et rien ne vous oblige à les renseigner tous."),
     new(
       "Détection des données personnelles",
       "Détection des données personnelles",

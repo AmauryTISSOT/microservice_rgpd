@@ -60,7 +60,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// qu'elle offre : cette liste se met à jour <b>à la main</b>.
   /// </remarks>
   internal static readonly IReadOnlyList<string> EntryPoints =
-    ["/manifest", "/detection", "/qualification", "/dossiers"];
+    ["/parametrage", "/detection", "/qualification", "/dossiers"];
 
   /// <summary>Le nom du service, que la barre porte devant ses quatre liens.</summary>
   internal const string ServiceName = "Microservice RGPD";
@@ -68,7 +68,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// <summary>
   /// <b>Les quatre libellés que la BARRE porte</b>, dans l'ordre où l'on rencontre les écrans — et
   /// le premier <b>n'est pas</b> le nom que la carte de l'accueil porte pour le même écran. Le
-  /// service a deux noms vivants pour la configuration : <c>Configuration</c> dans la barre, où le
+  /// service a deux noms vivants pour le paramétrage : <c>Paramétrage</c> dans la barre, où le
   /// wordmark <see cref="ServiceName"/> le précède de quinze centimètres et rendait la forme
   /// pleine redondante, et la forme pleine sur la carte, où rien ne la précède.
   /// </summary>
@@ -80,7 +80,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </remarks>
   internal static readonly IReadOnlyList<string> NavigationLabels =
   [
-    "Configuration",
+    "Paramétrage",
     "Détection des données personnelles",
     "Qualification",
     "Tableau des demandes RGPD",
@@ -131,11 +131,10 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal static readonly IReadOnlyList<(string Name, string Sentence, string Address)> Doorways =
   [
     (
-      "Configuration du microservice RGPD",
-      "Vous y déclarez, à la main et un par un, les systèmes où vivent des données personnelles. " +
-      "Le service ne connaît que ceux que vous y inscrivez, et rien ne garantit qu'il n'en existe " +
-      "pas d'autres.",
-      "/manifest"),
+      "Paramétrage du microservice RGPD",
+      "Vous y associez à chacun des six droits RGPD l'adresse à laquelle le service l'exercera. Un " +
+      "droit sans adresse reste « non configuré », et rien ne vous oblige à les renseigner tous.",
+      "/parametrage"),
     (
       "Détection des données personnelles",
       "Vous y faites scanner une base par le service, ou vous collez un schéma vous-même. Il " +
@@ -192,7 +191,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </summary>
   private const string Qualification = "/qualification";
   private const string CaseDeposit = "/dossiers/depot";
-  private const string Manifest = "/manifest";
+  private const string Parametrage = "/parametrage";
   private const string ScreeningDeposit = "/detection/depot";
   private const string Connection = "/detection/connexion";
   private const string Report = "/detection";
@@ -214,15 +213,14 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
   /// <summary>
-  /// <b>Les quatorze adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de
-  /// chacune posé par le chemin que le domaine autorise — un dépôt manuel pour le dossier, une
-  /// déclaration pour la reprise, deux dépôts de relevé pour qu'il existe un rapport courant et un
-  /// rapport archivé.
+  /// <b>Les adresses de la surface de l'<c>Operator</c></b>, l'accueil compris, l'état de chacune
+  /// posé par le chemin que le domaine autorise — un dépôt manuel pour le dossier, deux dépôts de
+  /// relevé pour qu'il existe un rapport courant et un rapport archivé. Le Paramétrage se lit sans
+  /// qu'aucun état n'ait à être posé : les six droits y paraissent « non configuré » d'emblée.
   /// </summary>
   internal async Task<IReadOnlyList<string>> ScreensAsync()
   {
     var opened = await OpenACaseAsync();
-    var declared = await DeclareASystemAsync();
     var archived = await ScreenTwiceAsync();
 
     return
@@ -232,8 +230,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
       Queue,
       CaseDeposit,
       $"{Queue}/{opened}",
-      Manifest,
-      $"{Manifest}/{declared}",
+      Parametrage,
       .. ScreeningScreens(archived),
     ];
   }
@@ -644,32 +641,6 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
       HttpStatusCode.Found, "Le dépôt manuel doit mener au dossier qu'il vient d'ouvrir.");
 
     return deposited.Headers.Location!.ToString().Split('/')[^1];
-  }
-
-  /// <summary>
-  /// Déclare un système au <c>Manifest</c> et rend son identifiant — celui que porte l'écran de
-  /// reprise. L'identifiant est unique à l'appel : la base est partagée, et une seconde déclaration
-  /// du même système ne serait plus une déclaration.
-  /// </summary>
-  private async Task<string> DeclareASystemAsync()
-  {
-    var id = $"layout-{Guid.NewGuid().ToString("n", CultureInfo.InvariantCulture)}";
-
-    var fields = new List<KeyValuePair<string, string>>
-    {
-      new("__RequestVerificationToken", await TokenOfAsync(Manifest)),
-      new("Form.Id", id),
-      new("Form.Label", "Le système du layout"),
-      new("Form.Contents", "Les adhésions et leurs coordonnées."),
-      new("Form.AdapterAddress", string.Empty),
-    };
-
-    var declared = await _client.PostAsync(Manifest, new FormUrlEncodedContent(fields));
-
-    declared.StatusCode.ShouldBe(
-      HttpStatusCode.Found, "Une déclaration acceptée doit rediriger vers le Manifest rechargé.");
-
-    return id;
   }
 
   /// <summary>
