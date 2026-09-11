@@ -9,8 +9,8 @@ namespace MicroserviceRgpd.Web.Pages.Shared;
 /// </param>
 /// <param name="Address">L'adresse de l'écran d'entrée, et la racine de tout ce qui pend sous lui.</param>
 /// <param name="DoorwaySentence">
-/// La phrase que la <b>porte de l'accueil</b> dit, et que la barre ne dit pas : celle-ci n'a la
-/// place que d'un nom. Les quatre phrases vivent ici plutôt que dans le gabarit de l'accueil parce
+/// Ce que la <b>porte de l'accueil</b> dit, et que la barre ne dit pas : celle-ci n'a la
+/// place que d'un nom. Les quatre textes vivent ici plutôt que dans le gabarit de l'accueil parce
 /// que c'est le seul endroit qui tienne ensemble, <b>dans un seul ordre</b>, le nom, l'adresse et ce
 /// qu'on trouve derrière — trois listes parallèles se seraient décalées d'un cran un jour.
 /// </param>
@@ -29,9 +29,9 @@ internal sealed record EntryPoint(
 {
   /// <summary>
   /// Si l'écran rendu relève de ce point d'entrée. La comparaison est faite <b>par segments</b> :
-  /// un dossier relève du tableau des demandes RGPD, et la table d'arbitrage de la détection des
-  /// données personnelles, de <c>/detection</c> — ce que le préfixe de texte nu n'aurait pas su dire
-  /// sans confondre aussi une adresse qui commence par les mêmes lettres.
+  /// la table d'arbitrage de la détection des données personnelles relève de <c>/detection</c> — ce
+  /// que le préfixe de texte nu n'aurait pas su dire sans confondre aussi une adresse qui commence
+  /// par les mêmes lettres.
   /// </summary>
   internal bool IsCurrent(PathString path)
   {
@@ -69,7 +69,7 @@ internal sealed record EntryPoint(
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucun compteur, aucun badge numérique</b>, et il ne doit jamais y en avoir. La règle des
-/// chiffres que le tableau des demandes RGPD applique — un « 0 dossier en retard » se lit comme une
+/// chiffres que le service applique — un « 0 demande en retard » se lit comme une
 /// mesure rassurante là où la phrase dit ce qu'elle est — vaut d'autant plus pour une barre qui se
 /// répète sur tous les écrans sans qu'on l'ouvre jamais.
 /// </para>
@@ -123,8 +123,8 @@ internal static class Navigation
   /// <summary>
   /// Les quatre points d'entrée, dans <b>l'ordre où l'on rencontre les écrans</b> : on configure,
   /// on détecte, on qualifie, on traite. ⚠️ <b>Ce n'est plus un ordre de mise en route</b> : rien
-  /// n'oblige à qualifier un texte avant d'instruire une demande — une demande peut arriver déjà
-  /// qualifiée, et un <c>Case</c> s'ouvre sans qu'aucune qualification n'ait eu lieu. Ce que la
+  /// n'oblige à qualifier un texte avant d'enregistrer une demande — une demande peut arriver déjà
+  /// qualifiée, et elle s'enregistre sans qu'aucune qualification n'ait eu lieu. Ce que la
   /// position apprend et qu'aucun nom ne dit tient au premier rang seul : on y règle les adresses
   /// dont l'exercice des droits dépendra. Voir <c>ADR-0010</c> et <c>ADR-0016</c>.
   /// </summary>
@@ -154,17 +154,11 @@ internal static class Navigation
       "signale les colonnes susceptibles de porter des données personnelles ; aucune valeur lue " +
       "n'est conservée, et vous tranchez ligne par ligne."),
 
-    // ⚠️ UNE SEULE PHRASE, ET C'EST DÉLIBÉRÉ. « Lire » est le seul des trois verbes qui ne soit pas
-    // un geste, et la brièveté dit par sa forme qu'on ne pose rien sur cet écran. Le parallélisme ne
-    // se « rétablit » pas : la seconde phrase qui l'aurait rétabli a été jugée sans apport.
-    // ⚠️ SON « RGPD » RESTE, et ce n'est pas une redondance avec le wordmark : ici le mot qualifie
-    // LES DEMANDES — celles que le règlement régit —, là il nomme LE SERVICE. Le retirer effacerait
-    // une qualification juridique, pas une répétition.
     // ⚠️ LE TROISIÈME RANG PORTE LE SENS, et c'est le seul qui rende l'ordre lisible comme une
     // phrase — on configure, on détecte, on qualifie, on traite. Premier, l'écran précéderait la
     // configuration dont tout dépend ; dernier, il suivrait le traitement qu'il précède dans les
     // faits. Voir ADR-0010.
-    // ⚠️ LA PHRASE DIT QU'AUCUN DOSSIER N'EN DÉCOULE, et elle le dit parce que la carte est le seul
+    // ⚠️ LA PHRASE DIT QU'AUCUNE DEMANDE N'EN DÉCOULE, et elle le dit parce que la carte est le seul
     // endroit où on le lit avant d'y arriver : l'écran qualifie et rend le verdict, il n'ouvre rien
     // et ne rattache rien. Le verbe est PROPOSER, jamais « décider » — le service dit, l'humain
     // tranche —, exactement comme la détection des données personnelles SIGNALE sans conclure.
@@ -173,11 +167,19 @@ internal static class Navigation
       "Qualification",
       "/qualification",
       "Vous y collez le texte libre d'une demande, et le service propose les droits RGPD qu'elle " +
-      "exerce. Aucun dossier n'en découle : la proposition se lit ici, elle ne s'y dépose pas."),
+      "exerce. Aucune demande n'en découle : la proposition se lit ici, elle ne s'y dépose pas."),
+
+    // ⚠️ PAS UNE PHRASE, ET C'EST DÉLIBÉRÉ : la carte nomme, sans verbe, ce à quoi l'écran sert, là
+    // où les trois autres disent le geste qu'on y pose. Le parallélisme « Vous y + verbe » ne se
+    // « rétablit » pas. ⚠️ L'écran ne liste encore aucune demande : la carte annonce la
+    // consultation qu'il portera, et qu'un ticket suivant construit.
+    // ⚠️ SON « RGPD » RESTE, et ce n'est pas une redondance avec le wordmark : ici le mot qualifie
+    // LES DEMANDES — celles que le règlement régit —, là il nomme LE SERVICE. Le retirer effacerait
+    // une qualification juridique, pas une répétition.
     new(
       "Tableau des demandes RGPD",
       "Tableau des demandes RGPD",
-      "/dossiers",
-      "Vous y lisez les demandes RGPD en cours, rangées par échéance."),
+      "/demandes",
+      "Consultation des demandes RGPD en cours"),
   ];
 }

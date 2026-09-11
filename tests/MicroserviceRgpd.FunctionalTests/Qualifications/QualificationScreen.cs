@@ -523,11 +523,11 @@ public class QualificationScreen
   }
 
   /// <summary>
-  /// <b>L'écran n'ouvre aucun dossier</b>, et n'en promet aucun : la qualification est l'instant
-  /// d'un verdict, et <c>Casework</c> peut s'ouvrir sans qu'aucune qualification n'ait eu lieu.
+  /// <b>L'écran n'enregistre aucune demande</b>, et n'en promet aucune : la qualification est
+  /// l'instant d'un verdict, et une demande s'enregistre sans qu'aucune qualification n'ait eu lieu.
   /// </summary>
   [Fact]
-  public async Task LeadsToNoCaseAtAll()
+  public async Task LeadsToNoDataSubjectRequestAtAll()
   {
     _factory.Verdict.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
     _factory.Lexicon.Qualification = Qualification.Of([DataSubjectRight.Erasure]);
@@ -535,8 +535,8 @@ public class QualificationScreen
     var rendered = await _surface.QualifyAndReadAsync("Supprimez mes données.");
 
     LinksInTheMainOf(rendered).ShouldNotContain(
-      link => link.Contains("/dossiers", StringComparison.Ordinal),
-      "L'écran de qualification n'ouvre ni ne promet aucun dossier.");
+      link => link.Contains("/demandes", StringComparison.Ordinal),
+      "L'écran de qualification n'enregistre ni ne promet aucune demande.");
   }
 
   /// <summary>

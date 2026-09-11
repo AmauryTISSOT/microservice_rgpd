@@ -395,6 +395,20 @@ h1 {
   margin-bottom: var(--space-xxs);
 }
 
+/*
+  LA TÊTE D'UN ÉCRAN QUI PORTE UNE ACTION : le titre à gauche, l'action en haut à droite du contenu
+  — jamais dans le header, qui ne porte aucune action (ADR-0009). Les deux s'alignent sur la ligne
+  de base du titre, dont les marges restent celles de tous les écrans ; sur un écran étroit,
+  l'action passe sous le titre plutôt que de l'écraser.
+*/
+.screen-head {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  justify-content: space-between;
+}
+
 h2 {
   font: var(--type-heading-2);
   letter-spacing: var(--type-heading-2-tracking);
