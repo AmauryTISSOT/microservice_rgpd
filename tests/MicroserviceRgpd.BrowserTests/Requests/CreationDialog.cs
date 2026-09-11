@@ -1,16 +1,14 @@
 namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
-/// <b>La modale de création s'ouvre et se ferme</b>, dans un vrai navigateur : l'<c>Operator</c>
-/// clique « Créer une demande » sur le tableau des demandes, lit la modale « Créer une nouvelle
-/// demande », et la referme par l'un des quatre modes de fermeture qu'un navigateur offre — « Annuler », la
-/// croix, Échap, ou un clic sur le fond.
+/// <b>La modale de création s'ouvre</b>, dans un vrai navigateur : l'<c>Operator</c> clique « Créer
+/// une demande » sur le tableau des demandes et lit la modale « Créer une nouvelle demande ».
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Pour l'instant, chacun des quatre ferme directement, saisie comprise.</b> La confirmation
-/// d'abandon d'une saisie viendra avec son propre ticket. Le formulaire lui-même se vérifie dans
-/// <see cref="CreationForm"/>.
+/// Ses quatre modes de fermeture — « Annuler », la croix, Échap, un clic sur le fond — se vérifient
+/// dans <see cref="AbandonConfirmation"/>, formulaire modifié ou non. Le formulaire lui-même se
+/// vérifie dans <see cref="CreationForm"/>.
 /// </para>
 /// <para>
 /// Tout se lit par le rôle et le nom accessible, comme dans <c>SidepanelToTheBoard</c> ; les
@@ -34,58 +32,6 @@ public class CreationDialog(BrowserHarness harness)
 
     await Expect(Dialog(page)).ToBeVisibleAsync();
     await Expect(Dialog(page).GetByRole(AriaRole.Heading, new() { Name = DialogTitle, Exact = true })).ToBeVisibleAsync();
-  }
-
-  [Fact]
-  public async Task ClosesOnCancel()
-  {
-    await using var context = await harness.NewContextAsync();
-    var page = await OnTheBoardAsync(context);
-    await OpenAsync(page);
-
-    await Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Annuler", Exact = true }).ClickAsync();
-
-    await Expect(Dialog(page)).ToBeHiddenAsync();
-  }
-
-  [Fact]
-  public async Task ClosesOnTheCross()
-  {
-    await using var context = await harness.NewContextAsync();
-    var page = await OnTheBoardAsync(context);
-    await OpenAsync(page);
-
-    await Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Fermer", Exact = true }).ClickAsync();
-
-    await Expect(Dialog(page)).ToBeHiddenAsync();
-  }
-
-  [Fact]
-  public async Task ClosesOnEscape()
-  {
-    await using var context = await harness.NewContextAsync();
-    var page = await OnTheBoardAsync(context);
-    await OpenAsync(page);
-
-    await page.Keyboard.PressAsync("Escape");
-
-    await Expect(Dialog(page)).ToBeHiddenAsync();
-  }
-
-  /// <summary>
-  /// Le clic tombe <b>dans le coin de la fenêtre</b>, loin de la modale centrée : c'est le fond, et
-  /// rien d'autre, qui le reçoit.
-  /// </summary>
-  [Fact]
-  public async Task ClosesOnAClickOnTheBackdrop()
-  {
-    await using var context = await harness.NewContextAsync();
-    var page = await OnTheBoardAsync(context);
-    await OpenAsync(page);
-
-    await page.Mouse.ClickAsync(5, 5);
-
-    await Expect(Dialog(page)).ToBeHiddenAsync();
   }
 
   /// <summary>

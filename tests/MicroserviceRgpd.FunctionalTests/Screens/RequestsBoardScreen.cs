@@ -19,7 +19,8 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// vérifie dans un vrai navigateur (<c>MicroserviceRgpd.BrowserTests</c>) ; ce qui est gardé ici est
 /// ce que le serveur rend. Sa place — en haut à droite du contenu, et non dans le header
 /// (ADR-0009) — se vérifie à l'œil ; ce qui est gardé ici est qu'il vit dans le <c>main</c> et
-/// nulle part ailleurs.
+/// nulle part ailleurs. La confirmation d'abandon d'une saisie est rendue de même, fermée, à côté
+/// de la modale.
 /// </para>
 /// <para>
 /// Le marquage de l'entrée courante et les libellés du panneau, eux, sont gardés pour tous les
@@ -39,6 +40,9 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>Le titre de la modale de création, recopié à dessein.</summary>
   private const string DialogTitle = "Créer une nouvelle demande";
+
+  /// <summary>Le titre de la confirmation d'abandon, recopié à dessein.</summary>
+  private const string ConfirmationTitle = "Abandonner la saisie ?";
 
   private readonly LayoutSurface _layout = new(factory);
 
@@ -67,7 +71,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   {
     var rendered = await _layout.ReadAsync(Board);
 
-    ButtonsIn(OutsideTheDialog(LayoutSurface.MainOf(rendered)))
+    ButtonsIn(OutsideTheDialogs(LayoutSurface.MainOf(rendered)))
       .Select(button => LayoutSurface.TextIn(button.Contents))
       .ShouldBe([CreateLabel], "Le contenu ne porte pas le bouton « Créer une demande », une fois.");
 
@@ -83,7 +87,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task KeepsTheCreateButtonASimpleButton()
   {
-    var outside = OutsideTheDialog(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
+    var outside = OutsideTheDialogs(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
     var button = ButtonsIn(outside).ShouldHaveSingleItem();
 
     button.Attributes.ShouldContain(@"type=""button""", Case.Sensitive, "Le bouton de création n'est pas un simple bouton.");
@@ -100,7 +104,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesNothingButTheTitleAndTheButton()
   {
-    var outside = OutsideTheDialog(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
+    var outside = OutsideTheDialogs(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
 
     LayoutSurface.TextIn(outside).ShouldBe(
       $"{ScreenName} {CreateLabel}", "Le contenu de l'écran porte autre chose que son titre et son bouton.");
@@ -112,29 +116,63 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La modale de création est rendue par le serveur</b>, une fois, dans le contenu de l'écran :
-  /// un <c>dialog</c> natif, <b>fermé au chargement</b> — l'<c>Operator</c> l'ouvre, la page ne
-  /// l'ouvre jamais pour lui —, dont le nom accessible est son titre.
+  /// <b>Les deux modales sont rendues par le serveur</b>, une fois chacune, dans le contenu de
+  /// l'écran : la création, puis la confirmation d'abandon. Ce sont des <c>dialog</c> natifs,
+  /// <b>fermés au chargement</b> — l'<c>Operator</c> les ouvre, la page ne les ouvre jamais pour
+  /// lui —, dont le nom accessible est le titre.
   /// </summary>
   [Fact]
-  public async Task RendersTheCreationDialogClosedAndNamedByItsTitle()
+  public async Task RendersBothDialogsClosedAndNamedByTheirTitle()
   {
-    var main = LayoutSurface.MainOf(await _layout.ReadAsync(Board));
+    var dialogs = Dialogs.Matches(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
 
-    Dialogs.Matches(main).ShouldHaveSingleItem("Le tableau doit porter une modale de création, une seule.");
+    dialogs.Select(NameOf).ShouldBe(
+      [DialogTitle, ConfirmationTitle],
+      "Le tableau doit porter la modale de création puis la confirmation d'abandon, une fois chacune.");
 
-    var dialog = Dialogs.Match(main);
-    var attributes = dialog.Groups["attributes"].Value;
-    var contents = dialog.Groups["contents"].Value;
+    dialogs.ShouldNotContain(
+      dialog => Regex.IsMatch(dialog.Groups["attributes"].Value, @"\bopen\b"), "Une modale est ouverte au chargement.");
+  }
 
-    Regex.IsMatch(attributes, @"\bopen\b").ShouldBeFalse("La modale est ouverte au chargement.");
+  /// <summary>
+  /// <b>La confirmation d'abandon dit ce qu'elle coûte</b> : une modale d'alerte, décrite par
+  /// « Les informations saisies seront perdues. », qui porte « Abandonner » puis « Continuer la
+  /// saisie ». Aucun des deux ne soumet quoi que ce soit.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>« Continuer la saisie » a le focus par défaut</b>, et lui seul : une touche Entrée réflexe
+  /// ne détruit rien. C'est le serveur qui le déclare ; le navigateur l'honore à l'ouverture.
+  /// </remarks>
+  [Fact]
+  public async Task RendersTheAbandonConfirmationWithContinueFocusedByDefault()
+  {
+    var confirmation = DialogNamed(LayoutSurface.MainOf(await _layout.ReadAsync(Board)), ConfirmationTitle);
+    var attributes = confirmation.Groups["attributes"].Value;
 
-    var labelledBy = Regex.Match(attributes, @"aria-labelledby=""([^""]+)""");
-    labelledBy.Success.ShouldBeTrue("La modale ne se nomme pas par son titre.");
+    attributes.ShouldContain(@"role=""alertdialog""", Case.Sensitive, "La confirmation ne se présente pas comme une alerte.");
 
-    var title = Regex.Match(contents, $@"<h2\b[^>]*\bid=""{Regex.Escape(labelledBy.Groups[1].Value)}""[^>]*>(.*?)</h2>", RegexOptions.Singleline);
-    title.Success.ShouldBeTrue("Le titre de la modale n'est pas celui qui la nomme.");
-    LayoutSurface.TextIn(title.Groups[1].Value).ShouldBe(DialogTitle);
+    var describedBy = Regex.Match(attributes, @"aria-describedby=""([^""]+)""");
+    describedBy.Success.ShouldBeTrue("La confirmation ne se décrit pas.");
+
+    var description = Regex.Match(
+      confirmation.Value, $@"<p\b[^>]*\bid=""{Regex.Escape(describedBy.Groups[1].Value)}""[^>]*>(.*?)</p>", RegexOptions.Singleline);
+    description.Success.ShouldBeTrue("La confirmation n'est pas décrite par sa phrase.");
+    LayoutSurface.TextIn(description.Groups[1].Value).ShouldBe("Les informations saisies seront perdues.");
+
+    var buttons = ButtonsIn(confirmation.Value);
+
+    buttons
+      .Select(button => LayoutSurface.TextIn(button.Contents))
+      .ShouldBe(["Abandonner", "Continuer la saisie"], "La confirmation ne porte pas « Abandonner » puis « Continuer la saisie ».");
+
+    buttons.ShouldAllBe(
+      button => button.Attributes.Contains(@"type=""button""", StringComparison.Ordinal),
+      "Un bouton de la confirmation soumet quelque chose.");
+
+    buttons
+      .Where(button => Regex.IsMatch(button.Attributes, @"\bautofocus\b"))
+      .Select(button => LayoutSurface.TextIn(button.Contents))
+      .ShouldBe(["Continuer la saisie"], "« Continuer la saisie » n'a pas le focus par défaut, ou ne l'a pas seul.");
   }
 
   /// <summary>
@@ -188,15 +226,39 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   /// <summary>La modale de création, entière — balise ouvrante comprise.</summary>
   private static string DialogIn(string main)
   {
-    var dialog = Dialogs.Match(main);
-
-    dialog.Success.ShouldBeTrue("Le tableau ne porte pas de modale de création.");
-
-    return dialog.Value;
+    return DialogNamed(main, DialogTitle).Value;
   }
 
-  /// <summary>Le contenu de l'écran, la modale retirée : ce que l'Operator lit tant qu'il ne l'a pas ouverte.</summary>
-  private static string OutsideTheDialog(string main)
+  /// <summary>La modale qui porte ce nom accessible, une seule.</summary>
+  private static Match DialogNamed(string main, string name)
+  {
+    return Dialogs.Matches(main).Where(dialog => NameOf(dialog) == name)
+      .ShouldHaveSingleItem($"Le tableau ne porte pas la modale « {name} », une fois.");
+  }
+
+  /// <summary>
+  /// Le nom accessible d'une modale : le texte du titre que son <c>aria-labelledby</c> désigne, ou
+  /// <see langword="null"/> si elle ne se nomme pas par un titre qu'elle porte.
+  /// </summary>
+  private static string? NameOf(Match dialog)
+  {
+    var labelledBy = Regex.Match(dialog.Groups["attributes"].Value, @"aria-labelledby=""([^""]+)""");
+
+    if (!labelledBy.Success)
+    {
+      return null;
+    }
+
+    var title = Regex.Match(
+      dialog.Groups["contents"].Value,
+      $@"<h2\b[^>]*\bid=""{Regex.Escape(labelledBy.Groups[1].Value)}""[^>]*>(.*?)</h2>",
+      RegexOptions.Singleline);
+
+    return title.Success ? LayoutSurface.TextIn(title.Groups[1].Value) : null;
+  }
+
+  /// <summary>Le contenu de l'écran, les modales retirées : ce que l'Operator lit tant qu'il n'en a ouvert aucune.</summary>
+  private static string OutsideTheDialogs(string main)
   {
     return Dialogs.Replace(main, string.Empty);
   }

@@ -21,6 +21,8 @@ public class CreationForm(BrowserHarness harness)
 {
   private const string DialogTitle = "Créer une nouvelle demande";
 
+  private const string ConfirmationTitle = "Abandonner la saisie ?";
+
   /// <summary>
   /// <b>À l'ouverture, les valeurs par défaut sont en place et le focus est sur l'origine.</b> À
   /// 23 h 30 UTC la veille du passage à l'heure d'été, il est déjà 0 h 30 le lendemain à Paris.
@@ -62,7 +64,8 @@ public class CreationForm(BrowserHarness harness)
 
   /// <summary>
   /// <b>Une saisie, une fermeture sans créer, puis une réouverture ramènent les valeurs par
-  /// défaut</b> : l'<c>Operator</c> n'hérite jamais d'une saisie précédente.
+  /// défaut</b> : l'<c>Operator</c> n'hérite jamais d'une saisie précédente. La saisie étant
+  /// modifiée, la fermeture passe par la confirmation d'abandon (<see cref="AbandonConfirmation"/>).
   /// </summary>
   [Fact]
   public async Task ComesBackToItsDefaultsWhenReopenedAfterAnEntry()
@@ -82,6 +85,7 @@ public class CreationForm(BrowserHarness harness)
     await Field(page, "Droits RGPD").SelectOptionAsync("Access");
 
     await Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Annuler", Exact = true }).ClickAsync();
+    await Confirmation(page).GetByRole(AriaRole.Button, new() { Name = "Abandonner", Exact = true }).ClickAsync();
     await OpenAsync(page);
 
     await ExpectTheDefaultsAsync(page, today: "2026-01-10");
@@ -140,6 +144,11 @@ public class CreationForm(BrowserHarness harness)
   private static ILocator Dialog(IPage page)
   {
     return page.GetByRole(AriaRole.Dialog, new() { Name = DialogTitle, Exact = true, IncludeHidden = true });
+  }
+
+  private static ILocator Confirmation(IPage page)
+  {
+    return page.GetByRole(AriaRole.Alertdialog, new() { Name = ConfirmationTitle, Exact = true, IncludeHidden = true });
   }
 
   private static ILocator Field(IPage page, string label)
