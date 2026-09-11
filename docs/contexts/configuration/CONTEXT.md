@@ -1,17 +1,16 @@
 # Configuration
 
 Ce contexte ne connaît que **ce qui vaut pour toutes les demandes à la fois** : le réglage du
-service, sans date et sans dossier. Il tient le `Settings` — à l'écran, le **Paramétrage** — qui
+service, sans date et sans demande. Il tient le `Settings` — à l'écran, le **Paramétrage** — qui
 associe à chacun des six droits RGPD l'adresse à laquelle le service l'exercera. **Un droit, une
 adresse.**
 
 Il **configure, il n'appelle pas.** Enregistrer une adresse est une écriture locale : aucune
-requête ne part, ni à la saisie, ni plus tard. Le déclenchement de l'appel et le recâblage de
-l'instruction d'un `Case` sur ces adresses sont des décisions à venir, et l'ADR-0016 les nomme
-comme telles.
+requête ne part, ni à la saisie, ni plus tard. Le déclenchement de l'appel est une décision à venir,
+et l'ADR-0016 la nomme comme telle.
 
-Il est le **troisième consommateur du noyau partagé**, aux côtés de
-[Qualification](../qualification/CONTEXT.md) et de [Casework](../casework/CONTEXT.md) :
+Il est un **consommateur du noyau partagé**, aux côtés de
+[Qualification](../qualification/CONTEXT.md) et de [Requests](../requests/CONTEXT.md) :
 `DataSubjectRight` est la seule chose qu'il partage. Il ne touche à rien d'autre, et rien d'autre ne
 le lit encore. [Screening](../screening/CONTEXT.md) ne communique avec lui en aucune façon. Voir
 [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
@@ -45,9 +44,6 @@ d'hôte ; une adresse qui porte `user:pw@` porterait un secret, que ce contexte 
 **La construire n'appelle rien** — ni connexion, ni résolution de nom. Une adresse bien formée peut
 désigner un hôte injoignable, et ce n'est pas à la saisie que cela se découvre.
 _Avoid_ : AdapterAddress, Webhook, Callback, lien, route
-
-`AdapterAddress` est un homonyme de `Casework`, avec ses propres règles, attaché à un
-`DeclaredSystem`. Les deux ne se convertissent pas l'un dans l'autre.
 
 **RightEndpoint** :
 Un droit et son adresse, ou son absence : ce que l'écran relit, droit par droit. Il ne recopie ni

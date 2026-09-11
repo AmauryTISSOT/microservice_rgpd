@@ -1,7 +1,7 @@
 # Requests
 
 Ce contexte enregistre une **demande RGPD dès sa réception** : ce qui est arrivé, par quel canal,
-quand, de qui, et quel droit la personne invoque. Il ne connaît à ce jour que ce geste-là ;
+quand, de qui, et quel droit la personne invoque. Il ne connaît à ce jour que ce `Gesture`-là ;
 l'instruction, les délais et les statuts n'y existent pas encore.
 
 Les identifiants du code sont en anglais (`DataSubjectRequest`, `Origin`) ; les textes destinés à

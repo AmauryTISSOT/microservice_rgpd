@@ -2,7 +2,7 @@
 
 Ce contexte ne connaît que **l'instant du verdict**. Il reçoit d'une application tierce un texte libre en français et le qualifie au regard des droits que le RGPD ouvre aux personnes concernées. Un humain valide ou corrige le verdict — c'est l'`Aide à la décision`, définie une fois pour tout le dépôt dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 
-La durée d'une demande — son instruction, son dossier, sa preuve — appartient à [Casework](../casework/CONTEXT.md), dont ce contexte est un fournisseur amont **optionnel**. Seul `DataSubjectRight` traverse la frontière. Le troisième contexte du dépôt, [Screening](../screening/CONTEXT.md), ne communique avec celui-ci en aucune façon.
+L'enregistrement d'une demande à sa réception appartient à [Requests](../requests/CONTEXT.md), avec lequel ce contexte n'entretient aucune relation : le droit invoqué d'une demande est choisi par l'`Operator`, jamais lu d'un verdict. Les deux ne partagent que `DataSubjectRight`, par le noyau partagé. [Screening](../screening/CONTEXT.md) et [Configuration](../configuration/CONTEXT.md) ne communiquent avec celui-ci en aucune façon.
 
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages, documentation d'API — sont en français.
 
@@ -19,7 +19,7 @@ Le verdict rendu sur un `RightsRequestText` : l'ensemble des droits que le texte
 _Avoid_ : classification, catégorisation, analyse, évaluation
 
 **DataSubjectRight** :
-La taxonomie fermée de sept valeurs dans laquelle une `Qualification` puise. Six sont des droits ouverts par le RGPD ; la septième dit qu'aucun d'eux n'a été reconnu. ⚠️ Elle est le **noyau partagé** de ce contexte et de `Casework`, et n'appartient à aucun des deux : son auteur est le RGPD, articles 15 à 21. `Screening` n'y touche pas. On n'y touche pas depuis ce contexte seul — voir [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
+La taxonomie fermée de sept valeurs dans laquelle une `Qualification` puise. Six sont des droits ouverts par le RGPD ; la septième dit qu'aucun d'eux n'a été reconnu. ⚠️ Elle est le **noyau partagé** de ce contexte, de `Requests` et de `Configuration`, et n'appartient à aucun d'eux : son auteur est le RGPD, articles 15 à 21. `Screening` n'y touche pas. On n'y touche pas depuis ce contexte seul — voir [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 _Avoid_ : catégorie, label, classe, type de demande
 
 ### Les sept valeurs de la taxonomie
@@ -96,8 +96,8 @@ _Avoid_ : mode secours, repli, fallback, panne partielle
 Le régime d'erreur de ce contexte. Toute `Qualification` passe sous les yeux d'un humain avant de produire le moindre effet, et le texte qui l'a produite est sous ses yeux en même temps : une erreur y est donc une ligne **fausse et visible**, et elle coûte peu. C'est ce qui autorise à reconnaître plusieurs droits plutôt qu'à choisir.
 _Avoid_ : erreur bénigne, faux positif, erreur rattrapable
 
-⚠️ Ce régime ne vaut **que dans ce contexte**. Le pendant de `Casework` est l'`Omission silencieuse`, où l'erreur est une ligne manquante que la relecture ne peut pas lever — et il commande l'exact inverse : ne jamais affirmer qu'on a tout couvert.
+⚠️ Ce régime ne vaut **que dans ce contexte**. Celui de `Screening` est l'`Omission relue`, où l'erreur qui coûte est la ligne manquante — et il commande l'inverse : ne jamais affirmer qu'on a tout couvert.
 
 **Trace d'audit** :
-Le seul écrit que ce contexte conserve d'une qualification : l'acte de l'avoir qualifiée, et rien de plus. Il n'y a ici aucune entité de demande instruite dans le temps — c'est la matière de `Casework`, et un `Case` ne référence une qualification que par un identifiant opaque.
+Le seul écrit que ce contexte conserve d'une qualification : l'acte de l'avoir qualifiée, et rien de plus. Il n'y a ici aucune entité de demande — la demande enregistrée est la matière de `Requests`, qui ne référence aucune qualification.
 _Avoid_ : historique, dossier, demande, log

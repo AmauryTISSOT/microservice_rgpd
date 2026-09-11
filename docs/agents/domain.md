@@ -7,10 +7,11 @@ How the engineering skills should consume this repo's domain documentation when 
 **This repo is multi-context.** There is no root `CONTEXT.md` — it moved into its context when the
 second one was created (ADR-0002).
 
-- **`CONTEXT-MAP.md`** at the repo root — the index. It names the two contexts, states how they
-  relate, and carries the one term that is true on both sides (`Aide à la décision`). Read it first.
+- **`CONTEXT-MAP.md`** at the repo root — the index. It names the four contexts, states how they
+  relate, and carries the terms that are true across them (`Aide à la décision`, `Gesture`, …). Read
+  it first.
 - **`docs/contexts/<context>/CONTEXT.md`** — the glossary of each context. Read the one your topic
-  belongs to. Read *both* only if you are genuinely working across the boundary.
+  belongs to. Read several only if you are genuinely working across a boundary.
 - **`docs/adr/`** — system-wide decisions. Read the ones touching the area you're about to work in.
 - **`docs/contexts/<context>/adr/`** — context-scoped decisions. None exist yet; create the folder
   lazily if one is ever needed.
@@ -27,17 +28,19 @@ This repo's actual layout:
 /
 ├── CONTEXT-MAP.md                     ← index, relationships, system-wide language
 ├── docs/
-│   ├── adr/                           ← system-wide decisions
-│   │   ├── 0001-architecture-polyglotte-et-moteur-auto-heberge.md
-│   │   └── 0002-deux-contextes-bornes-et-noyau-partage.md
+│   ├── adr/                           ← system-wide decisions, numbered NNNN-…
 │   └── contexts/
 │       ├── qualification/CONTEXT.md   ← l'instant du verdict
-│       └── casework/CONTEXT.md        ← la durée de l'instruction
+│       ├── requests/CONTEXT.md        ← l'arrivée d'une demande
+│       ├── screening/CONTEXT.md       ← le temps d'avant
+│       └── configuration/CONTEXT.md   ← ce qui vaut pour toutes les demandes
 └── src/                               ← DÉCOUPÉ PAR COUCHE, pas par contexte
     ├── MicroserviceRgpd.Core/
     │   ├── SharedKernel/              ← DataSubjectRight — n'appartient à aucun contexte
     │   ├── Qualifications/
-    │   └── Casework/
+    │   ├── Requests/
+    │   ├── Screenings/
+    │   └── Configuration/
     ├── MicroserviceRgpd.UseCases/
     ├── MicroserviceRgpd.Infrastructure/
     └── MicroserviceRgpd.Web/
@@ -48,11 +51,11 @@ use. `src/` here is partitioned by **layer** (Clean Architecture), and each boun
 across all four layers**. There is no single `src/<context>/` directory to host a `CONTEXT.md`.
 Inside each layer, contexts are readable by folder name.
 
-## Don't mix the two glossaries
+## Don't mix the glossaries
 
-A term means one thing **within a context**, not within the repo. Two homonyms on either side of the
+A term means one thing **within a context**, not within the repo. Two homonyms on either side of a
 boundary are legitimate. Before using a term, know which context you are in — and if your work
-crosses the boundary, know that only `DataSubjectRight` and an opaque `qualificationId` cross it.
+crosses a boundary, know that only `DataSubjectRight`, the shared kernel, crosses it.
 
 ## Use the glossary's vocabulary
 

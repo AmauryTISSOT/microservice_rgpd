@@ -40,11 +40,6 @@ le résultat, jamais une ressource qu'on relit.
 requête, réponse, codes d'erreur, règle d'évolution et avertissements d'exploitation. Un intégrateur
 n'a besoin que de ce document.
 
-**Le contrat d'`Adapter` — ce que le service appelle chez le client — est documenté dans
-[`docs/api/adapter.md`](docs/api/adapter.md)** : l'appel sortant, le secret partagé et sa clause de
-périmètre, le `202` et son échéance déclarée, les deux refus. Le sens est unique : le service
-appelle, l'application ne rappelle jamais.
-
 Deux moteurs qualifient le texte. Celui dont l'avis fait verdict est un LLM auto-hébergé ; le second
 est un lexique déterministe, qui ne vote pas mais **corrobore ou conteste** — c'est de leur
 comparaison que sort le `reviewSignal`. Si l'un des deux se tait, le service rend quand même un
