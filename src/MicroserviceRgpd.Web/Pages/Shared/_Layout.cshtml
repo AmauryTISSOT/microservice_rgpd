@@ -27,7 +27,12 @@
   *@
   @await RenderSectionAsync("Scripts", required: false)
 </head>
-<body class="@(ViewData["Wide"] is true ? "wide" : null)">
+@*
+  DEUX EXCEPTIONS DE MISE EN PAGE, ET UN ÉCRAN N'EN PREND QU'UNE : `wide` élargit le contenu pour
+  l'arbitrage colonne par colonne ; `fill` fait tenir l'écran dans la fenêtre, pour le tableau des
+  demandes, dont seul le corps défile.
+*@
+<body class="@(ViewData["Wide"] is true ? "wide" : ViewData["Fill"] is true ? "fill" : null)">
   @*
     ═════════════════════════════════════════════════════════════════════════════════════════════
     LE REPLI DU PANNEAU LATÉRAL EST UNE CASE À COCHER, ET IL N'Y A PAS UNE LIGNE DE JAVASCRIPT DERRIÈRE.
