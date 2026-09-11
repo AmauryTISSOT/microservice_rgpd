@@ -567,11 +567,15 @@ async function deleteForGood() {
 
 // LA DEMANDE EST SUPPRIMÉE : la confirmation se ferme, la ligne s'en va sans rechargement, et le toast
 // le dit. La dernière ligne partie, l'état vide que le serveur a rendu reparaît.
+//
+// ⚠️ LA RECHERCHE EN COURS SE REJOUE : la seule ligne trouvée partie, c'est à elle de dire que plus
+// rien ne correspond — et de se taire sur un tableau devenu vide.
 function closeOnDeletion() {
   deletion.close();
   rowToDelete.remove();
   rowToDelete = null;
   none.hidden = requests.tBodies[0].rows.length > 0;
+  applySearch();
 
   say(toast.dataset.deleted);
 }
