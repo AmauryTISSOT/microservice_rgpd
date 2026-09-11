@@ -99,21 +99,7 @@ public class RequestCreation(BrowserHarness harness)
     await using var context = await harness.NewContextAsync();
     var page = await OpenedAsync(context);
 
-    await page.RouteAsync(CreateHandler, route => route.FulfillAsync(new()
-    {
-      Status = 400,
-      ContentType = "application/problem+json",
-      Body = """
-        {
-          "title": "One or more validation errors occurred.",
-          "status": 400,
-          "errors": {
-            "lastName": ["Le nom ne peut pas dépasser 100 caractères."],
-            "message": ["Le message ne peut pas dépasser 10 000 caractères."]
-          }
-        }
-        """,
-    }));
+    await RefuseTheNameAndTheMessageAsync(page);
 
     await FillAValidEntryAsync(page, UniqueMessage());
     await Field(page, "Nom").FillAsync("Dupont");
@@ -129,6 +115,72 @@ public class RequestCreation(BrowserHarness harness)
     await Expect(Banner(page)).ToBeHiddenAsync();
     await Expect(Toast(page)).ToBeHiddenAsync();
     await Expect(CreateButton(page)).ToBeEnabledAsync();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un refus du serveur tient jusqu'à ce que son champ change</b>, comme un refus du navigateur
+  /// tient jusqu'à sa correction : les règles du navigateur, qui avaient laissé passer la saisie, ne
+  /// suffisent pas à le lever. Une frappe dans un autre champ le laisse en place.
+  /// </summary>
+  [Fact]
+  public async Task KeepsAServerRefusalUntilItsFieldChanges()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await OpenedAsync(context);
+    await RefuseTheNameAndTheMessageAsync(page);
+
+    await FillAValidEntryAsync(page, UniqueMessage());
+    await Field(page, "Nom").FillAsync("Dupont");
+    await CreateAsync(page);
+    await Expect(Field(page, "Nom")).ToHaveAttributeAsync("aria-invalid", "true");
+
+    await Field(page, "Prénom").FillAsync("Jeanne");
+
+    await Expect(Field(page, "Nom")).ToHaveAccessibleDescriptionAsync("Le nom ne peut pas dépasser 100 caractères.");
+    await Expect(Field(page, "Message")).ToHaveAttributeAsync("aria-invalid", "true");
+
+    await Field(page, "Nom").FillAsync("Martin");
+
+    await Expect(Field(page, "Nom")).ToHaveAccessibleDescriptionAsync(new Regex("^$"));
+    await Expect(Field(page, "Nom")).Not.ToHaveAttributeAsync("aria-invalid", "true");
+    await Expect(Field(page, "Message")).ToHaveAttributeAsync("aria-invalid", "true");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Pendant l'envoi, la modale ne se ferme pas</b> — ni par « Annuler », ni par la croix, ni
+  /// par le fond : la réponse qui arrive trouve la saisie qu'elle concerne, et la modale se ferme
+  /// sur la création.
+  /// </summary>
+  [Fact]
+  public async Task StaysOpenWhileSending()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await OpenedAsync(context);
+    var message = UniqueMessage();
+
+    var release = new TaskCompletionSource();
+    await page.RouteAsync(CreateHandler, async route =>
+    {
+      await release.Task;
+      await route.ContinueAsync();
+    });
+
+    await FillAValidEntryAsync(page, message);
+    await CreateAsync(page);
+    await Expect(CreateButton(page)).ToBeDisabledAsync();
+
+    await Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Annuler", Exact = true }).ClickAsync();
+    await Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Fermer", Exact = true }).ClickAsync();
+    await page.Mouse.ClickAsync(5, 5);
+
+    await Expect(Dialog(page)).ToBeVisibleAsync();
+    await Expect(page.GetByRole(AriaRole.Alertdialog)).ToBeHiddenAsync();
+
+    release.SetResult();
+
+    await Expect(Dialog(page)).ToBeHiddenAsync();
+    await Expect(Toast(page)).ToBeVisibleAsync();
+    (await harness.CountOfRequestsAsync(message)).ShouldBe(1);
   }
 
   /// <summary>Les échecs qui ne sont pas un refus de la saisie.</summary>
@@ -233,6 +285,29 @@ public class RequestCreation(BrowserHarness harness)
     await Expect(Field(page, "Message")).ToHaveValueAsync(string.Empty);
     await Expect(Field(page, "Droits RGPD")).ToHaveValueAsync(string.Empty);
     await Expect(Banner(page)).ToBeHiddenAsync();
+  }
+
+  /// <summary>
+  /// Le serveur refuse désormais toute création, au nom et au message — deux règles que le navigateur
+  /// aurait laissé passer.
+  /// </summary>
+  private static Task RefuseTheNameAndTheMessageAsync(IPage page)
+  {
+    return page.RouteAsync(CreateHandler, route => route.FulfillAsync(new()
+    {
+      Status = 400,
+      ContentType = "application/problem+json",
+      Body = """
+        {
+          "title": "One or more validation errors occurred.",
+          "status": 400,
+          "errors": {
+            "lastName": ["Le nom ne peut pas dépasser 100 caractères."],
+            "message": ["Le message ne peut pas dépasser 10 000 caractères."]
+          }
+        }
+        """,
+    }));
   }
 
   private static string UniqueMessage() => $"Je souhaite accéder à mes données. {Guid.NewGuid()}";

@@ -55,6 +55,10 @@ public sealed class BrowserHarness : IAsyncLifetime
   /// Le nombre de demandes enregistrées sous ce message, relu dans la base du service : ce qu'un
   /// scénario a laissé derrière lui, et non ce que l'écran en dit.
   /// </summary>
+  /// <remarks>
+  /// La table est lue en SQL, comme dans les tests fonctionnels : le message est un objet valeur, que
+  /// le modèle EF ne compare pas à une chaîne.
+  /// </remarks>
   public async Task<int> CountOfRequestsAsync(string message)
   {
     using var scope = Service.Services.CreateScope();
