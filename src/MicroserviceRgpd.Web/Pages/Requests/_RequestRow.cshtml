@@ -13,23 +13,27 @@
 
   ⚠️ LE CRAYON ET L'ŒIL SONT INERTES, en attendant leurs US : de simples boutons, hors de tout
   formulaire, qu'aucun script n'écoute. Ils ne sont pas désactivés — un bouton éteint ne se survole
-  pas, et son infobulle ne se lirait jamais. La poubelle est rendue ici ; sa confirmation arrive
-  avec son propre ticket.
+  pas, et son infobulle ne se lirait jamais.
+
+  LA POUBELLE OUVRE LA CONFIRMATION DE SUPPRESSION, que le module remplit avec ce que la ligne porte
+  en `data-*` : l'identifiant de la demande, et la phrase que le serveur a composée pour elle. Le
+  module n'en écrit aucun mot ; il reconnaît la poubelle à son `data-action`. ⚠️ Toujours une
+  valeur, jamais un booléen : Razor ne retire pas un attribut `data-*` à `false` ou à `null`.
 
   ⚠️ LA POUBELLE N'EST PAS ROUGE : elle ouvre une confirmation, elle ne détruit rien. Le rouge du
-  geste irréversible ira au bouton « Supprimer définitivement » de cette confirmation.
+  geste irréversible va au bouton « Supprimer définitivement ».
 
   Chaque icône est un seul tracé de 16 × 16, au trait de l'encre du bouton.
 *@
 @{
-  (string Label, string Icon)[] actions =
+  (string Label, string Icon, string Action)[] actions =
   [
-    ("Supprimer la demande", "M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5"),
-    ("Modifier la demande", "M10.5 2.5l3 3L5.5 13.5H2.5v-3zM9 4l3 3"),
-    ("Voir la fiche de la demande", "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8zM6 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0"),
+    ("Supprimer la demande", "M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5", "delete"),
+    ("Modifier la demande", "M10.5 2.5l3 3L5.5 13.5H2.5v-3zM9 4l3 3", "edit"),
+    ("Voir la fiche de la demande", "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8zM6 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "view"),
   ];
 }
-<tr>
+<tr data-request-id="@Model.Id" data-deletion-confirmation="@Model.DeletionConfirmation">
   <td>@Model.Email</td>
   <td>@Model.LastName</td>
   <td>@Model.FirstName</td>
@@ -40,9 +44,9 @@
   <td>@Model.CreatedBy</td>
   <td>
     <div class="row-actions">
-      @foreach (var (label, icon) in actions)
+      @foreach (var (label, icon, action) in actions)
       {
-        <button type="button" class="row-action" aria-label="@label">
+        <button type="button" class="row-action" aria-label="@label" data-action="@action">
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="@icon" stroke="currentColor" stroke-width="1.4"
                   stroke-linecap="round" stroke-linejoin="round" fill="none" />

@@ -1,5 +1,6 @@
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.UseCases.Requests.DeleteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.AspNetCore.Mvc;
@@ -9,8 +10,8 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 
 /// <summary>
 /// Le <b>tableau des demandes RGPD</b> : le nom de l'écran, le bouton « Créer une demande », le
-/// tableau de toutes les demandes enregistrées, et la modale de création que le serveur rend fermée,
-/// avec son formulaire à ses valeurs par défaut.
+/// tableau de toutes les demandes enregistrées, la modale de création que le serveur rend fermée,
+/// avec son formulaire à ses valeurs par défaut, et la confirmation de suppression d'une demande.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -88,6 +89,35 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
     }
 
     return StatusCode(StatusCodes.Status201Created);
+  }
+
+  /// <summary>
+  /// <b>Supprime une demande</b>, quel que soit son statut, et répond 204 — ou 404 quand elle n'existe
+  /// plus, ou 400 quand l'identifiant n'en est pas un.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La suppression ne laisse aucune trace</b> (ADR-0022), et comme la création, elle est un
+  /// handler de la page, pas une API : c'est le script de la confirmation qui l'appelle, avec le jeton
+  /// anti-rejeu que la page rend.
+  /// </remarks>
+  public async Task<IActionResult> OnPostDeleteAsync(string? id, CancellationToken cancellationToken)
+  {
+    // L'écran ne poste que l'identifiant qu'il a rendu : un autre n'est pas une saisie, mais un envoi forgé.
+    if (!Guid.TryParse(id, out var guid) || !DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest))
+    {
+      return BadRequest();
+    }
+
+    var outcome = await mediator.Send(new DeleteDataSubjectRequestCommand(dataSubjectRequest), cancellationToken);
+
+    // ⚠️ Seul « introuvable » devient 404 : l'écran le lit comme une réussite (ADR-0022), et un autre
+    // échec ne doit pas s'y faire passer pour une suppression.
+    return outcome.Status switch
+    {
+      ResultStatus.Ok => StatusCode(StatusCodes.Status204NoContent),
+      ResultStatus.NotFound => NotFound(),
+      _ => StatusCode(StatusCodes.Status500InternalServerError),
+    };
   }
 
   private static ObjectResult ValidationProblem(IDictionary<string, string[]> errors) =>
