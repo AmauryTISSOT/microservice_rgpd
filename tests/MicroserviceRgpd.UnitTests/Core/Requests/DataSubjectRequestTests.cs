@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ardalis.Result;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
@@ -79,6 +80,39 @@ public class DataSubjectRequestTests
   public void IsBornInProgress()
   {
     Receive(AValidEntry()).Value.Status.ShouldBe(RequestStatus.InProgress);
+  }
+
+  // ─── Date limite de réponse ────────────────────────────────────────────────────────────────
+
+  /// <summary>
+  /// <b>La date limite est la date de réception plus un mois</b>, ramenée au dernier jour du mois
+  /// suivant quand ce jour n'y existe pas (RG1, ADR-0021). Chaque demande est enregistrée le jour
+  /// même de sa réception, pour que les dates encore à venir restent admises.
+  /// </summary>
+  [Theory]
+  [InlineData("2026-03-31", "2026-04-30")]
+  [InlineData("2027-01-31", "2027-02-28")]
+  [InlineData("2028-01-31", "2028-02-29")]
+  [InlineData("2026-09-10", "2026-10-10")]
+  public void SetsTheResponseDeadlineOneMonthAfterReception(string receivedOn, string responseDeadline)
+  {
+    var today = DateOnly.Parse(receivedOn, CultureInfo.InvariantCulture);
+
+    var request = DataSubjectRequest.Receive(AValidEntry() with { ReceivedOn = receivedOn }, today, Now).Value;
+
+    request.ResponseDeadline.ShouldBe(DateOnly.Parse(responseDeadline, CultureInfo.InvariantCulture));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La date limite part de la date de réception, jamais de l'instant d'enregistrement</b> :
+  /// une demande reçue le 31 mars et transcrite en septembre devait sa réponse au 30 avril.
+  /// </summary>
+  [Fact]
+  public void CountsTheResponseDeadlineFromReceptionNotFromRecording()
+  {
+    var request = Receive(AValidEntry() with { ReceivedOn = "2026-03-31" }).Value;
+
+    request.ResponseDeadline.ShouldBe(new DateOnly(2026, 4, 30));
   }
 
   [Fact]

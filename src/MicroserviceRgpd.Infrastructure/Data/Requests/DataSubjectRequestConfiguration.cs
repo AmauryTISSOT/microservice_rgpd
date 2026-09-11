@@ -49,6 +49,8 @@ public sealed class DataSubjectRequestConfiguration : IEntityTypeConfiguration<D
 
     builder.Property(request => request.ReceivedOn).HasColumnName("received_on").IsRequired();
 
+    builder.Property(request => request.ResponseDeadline).HasColumnName("response_deadline").IsRequired();
+
     builder.Property(request => request.LastName)
       .HasColumnName("last_name")
       .HasConversion(
