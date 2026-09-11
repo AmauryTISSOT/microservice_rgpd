@@ -62,7 +62,7 @@ public sealed class TakeDeliveryHandler(
     var delivery = Delivery.Of(
       opened,
       command.Right,
-      Manifest.Of(await manifest.ListAsync(cancellationToken)),
+      await manifest.ListAsync(cancellationToken),
       await retrieved.HeldForAsync(command.Case, cancellationToken));
 
     // L'archive est assemblée AVANT que le dossier ne bouge : noter un téléchargement dont

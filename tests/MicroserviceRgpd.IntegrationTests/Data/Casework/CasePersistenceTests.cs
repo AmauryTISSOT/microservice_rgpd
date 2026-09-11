@@ -188,7 +188,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
       [Designation.Of(DesignationKind.Email, "sans.date@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Defaulted(Received));
 
     await SaveAsync(defaulted);
@@ -238,7 +238,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
       [Designation.Of(DesignationKind.Email, "propose@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Proposed,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
 
     await SaveAsync(proposed);
@@ -273,7 +273,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
       [Designation.Of(DesignationKind.Email, "motive@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
 
     await SaveAsync(motivated);
@@ -304,7 +304,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
       [Designation.Of(DesignationKind.Email, "non.pese@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
 
     await SaveAsync(unweighed);
@@ -415,7 +415,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
       [Designation.Of(DesignationKind.Email, "a.clore@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
 
     await SaveAsync(motivated);
@@ -441,7 +441,7 @@ public class CasePersistenceTests(PostgreSqlFixture postgres)
       designations,
       rights,
       ClaimOrigin.Named,
-      Manifest.Of(systems),
+      systems,
       ReceptionDate.Declared(Received));
   }
 

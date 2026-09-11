@@ -268,7 +268,7 @@ public class CaseLocatingTests
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Opened));
   }
 

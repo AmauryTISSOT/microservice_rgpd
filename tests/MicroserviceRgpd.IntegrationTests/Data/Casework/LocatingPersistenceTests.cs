@@ -169,7 +169,7 @@ public class LocatingPersistenceTests(PostgreSqlFixture postgres)
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
   }
 

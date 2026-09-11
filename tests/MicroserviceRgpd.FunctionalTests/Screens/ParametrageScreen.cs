@@ -175,6 +175,19 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
   }
 
   /// <summary>
+  /// ⚠️ <b>L'ancien écran du Manifest n'existe plus</b>, ni son écran de reprise : la configuration
+  /// passe par le seul Paramétrage, et une adresse qu'on aurait gardée en favori ne mène nulle part
+  /// plutôt qu'à un second modèle de configuration.
+  /// </summary>
+  [Theory]
+  [InlineData("/manifest")]
+  [InlineData("/manifest/boutique")]
+  public async Task NoLongerServesTheManifestScreen(string address)
+  {
+    (await _client.GetAsync(address)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+  }
+
+  /// <summary>
   /// Le critère du ticket : définir l'adresse d'un droit, et la <b>relire à l'écran</b>. La section
   /// du droit ne se dit plus « non configuré » ; les cinq autres, si.
   /// </summary>

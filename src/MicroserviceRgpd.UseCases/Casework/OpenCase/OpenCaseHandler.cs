@@ -66,7 +66,7 @@ public sealed class OpenCaseHandler(
       command.Designations,
       command.Rights,
       command.Origin,
-      Manifest.Of(await manifest.ListAsync(cancellationToken)),
+      await manifest.ListAsync(cancellationToken),
       reception);
 
     await cases.AddAsync(opened, cancellationToken);

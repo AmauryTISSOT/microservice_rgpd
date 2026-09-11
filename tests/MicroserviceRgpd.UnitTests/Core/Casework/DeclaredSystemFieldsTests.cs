@@ -8,7 +8,7 @@ namespace MicroserviceRgpd.UnitTests.Core.Casework;
 /// en <b>levant</b> ; la frontière de saisie, elle, parlera à l'humain en lui <b>nommant</b> ce
 /// qu'il a mal rempli.
 /// </summary>
-public class ManifestFieldsTests
+public class DeclaredSystemFieldsTests
 {
   [Theory]
   [InlineData("")]

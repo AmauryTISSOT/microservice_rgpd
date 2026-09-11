@@ -25,7 +25,7 @@ namespace MicroserviceRgpd.Core.Casework;
 /// elle en invitant la personne à fournir d'autres <see cref="Designation"/>.
 /// </para>
 /// <para>
-/// <b>Le service l'écrit sans ouvrir une seule pièce.</b> Le <see cref="Manifest"/> et les
+/// <b>Le service l'écrit sans ouvrir une seule pièce.</b> Les <see cref="DeclaredSystem"/> et les
 /// <see cref="Step"/> du dossier lui suffisent : l'enveloppe du transport distingue à elle seule la
 /// pièce absente, la pièce vide et la pièce pleine. L'incomplétude ne coûte donc rien à
 /// l'<c>Adapter</c>.
@@ -89,7 +89,7 @@ public sealed class DeliveryLetter
   public int RecordedSystemCount => Joined.Count + QueriedWithoutAttachment.Count + NotCovered.Count;
 
   /// <summary>
-  /// Range les systèmes dont ce droit portait le travail dû, à partir du <see cref="Manifest"/> et
+  /// Range les systèmes dont ce droit portait le travail dû, à partir des <see cref="DeclaredSystem"/> et
   /// des <see cref="Step"/> — et des enveloppes des pièces détenues, jamais de leur corps.
   /// </summary>
   /// <remarks>
@@ -109,7 +109,9 @@ public sealed class DeliveryLetter
   /// </remarks>
   /// <param name="opened">Le dossier, pour ses <see cref="Step"/> et ce que ses appels ont rapporté.</param>
   /// <param name="right">Le droit au titre duquel cette réponse est faite.</param>
-  /// <param name="manifest">Le catalogue d'aujourd'hui, qui donne les mots pour nommer les systèmes.</param>
+  /// <param name="declaredSystems">
+  /// Les <see cref="DeclaredSystem"/> d'aujourd'hui, qui donnent les mots pour nommer les systèmes.
+  /// </param>
   /// <param name="held">
   /// Les pièces détenues pour ce droit. Seuls leur système et le fait qu'elles soient vides sont lus ;
   /// leur corps ne s'ouvre pas.
@@ -119,18 +121,18 @@ public sealed class DeliveryLetter
   public static DeliveryLetter Compose(
     Case opened,
     DataSubjectRight right,
-    Manifest manifest,
+    IEnumerable<DeclaredSystem> declaredSystems,
     IReadOnlyList<RetrievedData> held)
   {
     ArgumentNullException.ThrowIfNull(opened);
     ArgumentNullException.ThrowIfNull(right);
-    ArgumentNullException.ThrowIfNull(manifest);
+    ArgumentNullException.ThrowIfNull(declaredSystems);
     ArgumentNullException.ThrowIfNull(held);
 
     var claim = opened.Claims.SingleOrDefault(one => one.Right == right)
       ?? throw new ArgumentException("Le dossier ne porte pas ce droit.", nameof(right));
 
-    var catalogue = manifest.Systems.ToDictionary(system => system.Id);
+    var catalogue = declaredSystems.ToDictionary(system => system.Id);
     var pieces = held.Where(piece => piece.Right == right).ToDictionary(piece => piece.DeclaredSystem);
 
     var joined = new List<NamedSystem>();
