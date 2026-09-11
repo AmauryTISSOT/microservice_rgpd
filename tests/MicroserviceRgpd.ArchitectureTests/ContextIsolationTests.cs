@@ -2,7 +2,7 @@ namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
 /// <b>Rien ne traverse d'un contexte à l'autre, sauf ce qui est écrit ici.</b> La règle s'énonce par
-/// ce qu'elle <b>permet</b> — deux traversées, toutes deux vers le noyau partagé — et tout le reste
+/// ce qu'elle <b>permet</b> — trois traversées, toutes vers le noyau partagé — et tout le reste
 /// est interdit par construction : voir <c>docs/adr/0003</c>.
 /// <para>
 /// L'énoncé à l'envers n'est pas une coquetterie. Une liste d'interdits ne protège que ce qu'on a
@@ -42,9 +42,11 @@ namespace MicroserviceRgpd.ArchitectureTests;
 public class ContextIsolationTests
 {
   /// <summary>
-  /// Les <b>seules</b> traversées permises, et elles vont toutes deux vers le noyau partagé : la
+  /// Les <b>seules</b> traversées permises, et elles vont toutes vers le noyau partagé : la
   /// taxonomie des droits n'est le modèle d'aucun contexte — son auteur est le RGPD, articles 15
-  /// à 21 — et les deux qui parlent de droits s'y <i>conforment</i> sans la <i>posséder</i>.
+  /// à 21 — et les trois qui parlent de droits s'y <i>conforment</i> sans la <i>posséder</i>.
+  /// <c>Configuration</c> est le troisième, depuis l'ADR-0016 : il associe à chacun des six droits
+  /// l'adresse à laquelle le service l'exercera, et lit leur libellé et leur article sur le type.
   /// <para>
   /// La liste est écrite en dur, comme celle de <see cref="SharedKernelTests"/> et pour le même
   /// motif : y ajouter une ligne doit demander un geste délibéré, et ce geste est de niveau ADR.
@@ -54,6 +56,7 @@ public class ContextIsolationTests
   [
     (ContextInspector.Qualification, ContextInspector.SharedKernel),
     (ContextInspector.Casework, ContextInspector.SharedKernel),
+    (ContextInspector.Configuration, ContextInspector.SharedKernel),
   ];
 
   /// <summary>
@@ -100,12 +103,13 @@ public class ContextIsolationTests
   /// change de couleur.
   /// </summary>
   [Fact]
-  public void PermitsTwoCrossingsAndNoOthers()
+  public void PermitsThreeCrossingsAndNoOthers()
   {
     Permitted.ShouldBe(
       [
         (ContextInspector.Qualification, ContextInspector.SharedKernel),
         (ContextInspector.Casework, ContextInspector.SharedKernel),
+        (ContextInspector.Configuration, ContextInspector.SharedKernel),
       ],
       "La liste blanche s'est élargie. Élargir une frontière est un geste de niveau ADR — " +
       "voir docs/adr/0003 — et non une ligne ajoutée en passant pour faire compiler.");
@@ -126,6 +130,7 @@ public class ContextIsolationTests
   [InlineData(ContextInspector.Qualification)]
   [InlineData(ContextInspector.Casework)]
   [InlineData(ContextInspector.Screening)]
+  [InlineData(ContextInspector.Configuration)]
   [InlineData(ContextInspector.SharedKernel)]
   public void FindsTheContextItClaimsToGuardSomewhereInProduction(string context)
   {
@@ -168,6 +173,11 @@ public class ContextIsolationTests
         "par l'autre bout, et c'est la corrosion par voisinage que le troisième contexte existe " +
         "pour empêcher. Le grain du Manifest est le système, jamais la colonne.",
 
+      (ContextInspector.Casework, ContextInspector.Configuration) =>
+        "Le Case n'appelle pas encore par droit : il suit les DeclaredSystem, et le Paramétrage " +
+        "n'est lu par aucune instruction. Le recâblage est une décision à venir — voir " +
+        "docs/adr/0016 — et la ligne qui l'ouvrira sera écrite dans la liste blanche, pas ici.",
+
       (ContextInspector.SharedKernel, _) =>
         "Le noyau partagé n'appartient à personne : son auteur est le RGPD. Un noyau qui dépend " +
         "d'un contexte recouple les autres en silence, et c'est le pire montage DDD. Sortez ce " +
@@ -177,6 +187,11 @@ public class ContextIsolationTests
         "Screening vit avant toute demande et n'a aucune intersection avec le reste du dépôt — pas " +
         "même le noyau partagé. Il ne rattache jamais une colonne à un DataSubjectRight : une " +
         "colonne « courriel » ne relève pas d'un droit plutôt qu'un autre, elle relève de tous.",
+
+      (ContextInspector.Configuration, _) or (_, ContextInspector.Configuration) =>
+        "Configuration ne connaît que le Paramétrage : un droit, une adresse. Il ne sait rien d'un " +
+        "dossier, d'un verdict ni d'un relevé de colonnes, et aucun d'eux ne le lit encore — voir " +
+        "docs/adr/0016.",
 
       _ =>
         "Separate Ways : rien ne traverse cette frontière. Il n'y a pas de couche anticorruption, " +

@@ -3,7 +3,7 @@ using MicroserviceRgpd.Infrastructure;
 using MicroserviceRgpd.Infrastructure.Email;
 using MicroserviceRgpd.UseCases.Casework.CallAdapter;
 
-namespace MicroserviceRgpd.Web.Configurations;
+namespace MicroserviceRgpd.Web.Composition;
 
 public static class ServiceConfigs
 {

@@ -2,7 +2,7 @@
 using MicroserviceRgpd.Infrastructure;
 using MicroserviceRgpd.UseCases;
 
-namespace MicroserviceRgpd.Web.Configurations;
+namespace MicroserviceRgpd.Web.Composition;
 
 public static class MediatorConfig
 {

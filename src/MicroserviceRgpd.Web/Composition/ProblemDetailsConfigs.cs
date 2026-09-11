@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace MicroserviceRgpd.Web.Configurations;
+namespace MicroserviceRgpd.Web.Composition;
 
 /// <summary>
 /// L'API n'a qu'une seule forme d'erreur : <c>application/problem+json</c> conforme RFC 9457.

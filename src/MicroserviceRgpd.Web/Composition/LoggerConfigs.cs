@@ -1,6 +1,6 @@
 ﻿using Serilog;
 
-namespace MicroserviceRgpd.Web.Configurations;
+namespace MicroserviceRgpd.Web.Composition;
 
 public static class LoggerConfigs
 {

@@ -1,7 +1,7 @@
 ﻿using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using MicroserviceRgpd.Infrastructure.Qualifications;
-using MicroserviceRgpd.Web.Configurations;
+using MicroserviceRgpd.Web.Composition;
 using MicroserviceRgpd.Web.Pages.Shared;
 using OpenTelemetry.Trace;
 

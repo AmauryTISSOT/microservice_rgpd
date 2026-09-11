@@ -1,7 +1,7 @@
 ﻿using Ardalis.ListStartupServices;
 using MicroserviceRgpd.Infrastructure.Email;
 
-namespace MicroserviceRgpd.Web.Configurations;
+namespace MicroserviceRgpd.Web.Composition;
 
 public static class OptionConfigs
 {
