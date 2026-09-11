@@ -30,6 +30,8 @@ internal sealed class ServiceOnARealPort : WebApplicationFactory<Program>
     _connectionString = connectionString;
 
     // Le port 0 laisse l'OS choisir : deux suites qui tournent ensemble ne se disputent aucun port.
+    // ⚠️ UseKestrel ne fait que retenir le port ; seul base.CreateHost le pose sur le serveur. Un
+    // CreateHost qui s'en passerait laisserait Kestrel sur son adresse par défaut, localhost:5000.
     UseKestrel(0);
   }
 
@@ -48,13 +50,13 @@ internal sealed class ServiceOnARealPort : WebApplicationFactory<Program>
     builder.UseEnvironment("Testing");
 
     // Le ConfigurationManager de Program se construit pendant Build : la variable d'environnement est
-    // le seul moyen de lui fournir la chaîne assez tôt. Une seule fabrique vit dans ce processus —
-    // les autres projets de test tournent chacun dans le leur —, aucun verrou n'est donc nécessaire,
-    // à la différence des tests fonctionnels.
+    // le seul moyen de lui fournir la chaîne assez tôt. Les fabriques de ce processus démarrent l'une
+    // après l'autre — toute la collection s'exécute en série — et sur la même base : aucun verrou
+    // n'est donc nécessaire, à la différence des tests fonctionnels.
     Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _connectionString);
 
-    var host = builder.Build();
-    host.Start();
+    // La base construit l'hôte, lui pose le port retenu par UseKestrel, puis le démarre.
+    var host = base.CreateHost(builder);
 
     using var scope = host.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
