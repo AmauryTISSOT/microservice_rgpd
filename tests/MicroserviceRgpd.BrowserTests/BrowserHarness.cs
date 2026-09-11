@@ -152,6 +152,9 @@ public sealed class BrowserHarness : IAsyncLifetime
     await _database.DisposeAsync();
   }
 
+  /// <summary>La chaîne de connexion de la base du service, pour qui démarre un service de plus.</summary>
+  internal string ConnectionString => _database.GetConnectionString();
+
   private IBrowser Browser => _browser ?? throw new InvalidOperationException("Le navigateur n'est pas lancé.");
 
   private ServiceOnARealPort Service => _service ?? throw new InvalidOperationException("Le service n'est pas démarré.");
