@@ -42,6 +42,7 @@ public sealed class DataSubjectRequest : IAggregateRoot
     Id = DataSubjectRequestId.Next();
     Origin = origin;
     ReceivedOn = receivedOn;
+    ResponseDeadline = receivedOn.AddMonths(1);
     LastName = lastName;
     FirstName = firstName;
     Email = email;
@@ -61,6 +62,14 @@ public sealed class DataSubjectRequest : IAggregateRoot
 
   /// <summary>Le jour où la demande est arrivée chez le responsable, jamais postérieur à aujourd'hui à Paris.</summary>
   public DateOnly ReceivedOn { get; private set; }
+
+  /// <summary>
+  /// Le jour avant lequel le responsable doit répondre : <see cref="ReceivedOn"/> plus un mois,
+  /// ramené au dernier jour du mois suivant quand ce jour n'y existe pas (ADR-0021). ⚠️ Fixée à la
+  /// réception et enregistrée : elle ne se recalcule pas à la lecture, et ne part jamais de l'instant
+  /// d'enregistrement.
+  /// </summary>
+  public DateOnly ResponseDeadline { get; private set; }
 
   /// <summary>Le nom de la personne, ou <c>null</c>.</summary>
   public LastName? LastName { get; private set; }

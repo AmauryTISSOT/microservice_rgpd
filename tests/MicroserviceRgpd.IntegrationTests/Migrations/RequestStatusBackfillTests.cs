@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// </remarks>
 public class RequestStatusBackfillTests : IAsyncLifetime
 {
-  private const string TheStatusAddition = "20260911185225_AddDataSubjectRequestStatus";
+  internal const string TheStatusAddition = "20260911185225_AddDataSubjectRequestStatus";
 
   private static readonly Guid AnEmail = new("66666666-6666-6666-6666-666666666666");
   private static readonly Guid ALetter = new("77777777-7777-7777-7777-777777777777");
