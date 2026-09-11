@@ -200,7 +200,7 @@ public class RetrievedDataPersistenceTests(PostgreSqlFixture postgres)
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       [DataSubjectRight.Access, DataSubjectRight.Portability],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
   }
 

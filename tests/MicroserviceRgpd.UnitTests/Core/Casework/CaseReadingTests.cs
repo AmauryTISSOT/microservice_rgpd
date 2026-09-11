@@ -216,7 +216,7 @@ public class CaseReadingTests
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       rights.Length == 0 ? [DataSubjectRight.Access] : rights,
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Opened));
   }
 }

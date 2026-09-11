@@ -325,7 +325,7 @@ public class CaseClosureTests
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       rights ?? [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      systems is null ? Manifest.Empty : Manifest.Of(systems),
+      systems ?? [],
       ReceptionDate.Declared(Received));
   }
 

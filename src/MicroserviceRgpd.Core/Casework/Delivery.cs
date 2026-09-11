@@ -72,14 +72,16 @@ public sealed class Delivery
   /// </summary>
   /// <param name="opened">Le dossier, pour ses <see cref="Step"/> et ce que ses appels ont rapporté.</param>
   /// <param name="right">Le droit au titre duquel on remet.</param>
-  /// <param name="manifest">Le catalogue d'aujourd'hui, qui donne les mots pour nommer les systèmes.</param>
+  /// <param name="declaredSystems">
+  /// Les <see cref="DeclaredSystem"/> d'aujourd'hui, qui donnent les mots pour nommer les systèmes.
+  /// </param>
   /// <param name="held">Les pièces détenues pour ce dossier ; celles des autres droits sont écartées.</param>
   /// <exception cref="ArgumentNullException">Un argument obligatoire est absent.</exception>
   /// <exception cref="ArgumentException">Le dossier ne porte pas ce droit.</exception>
   public static Delivery Of(
     Case opened,
     DataSubjectRight right,
-    Manifest manifest,
+    IEnumerable<DeclaredSystem> declaredSystems,
     IReadOnlyList<RetrievedData> held)
   {
     ArgumentNullException.ThrowIfNull(opened);
@@ -93,6 +95,6 @@ public sealed class Delivery
       .OrderBy(piece => piece.DeclaredSystem.Value, StringComparer.Ordinal)
       .ToArray();
 
-    return new Delivery(opened.Id, right, DeliveryLetter.Compose(opened, right, manifest, held), pieces);
+    return new Delivery(opened.Id, right, DeliveryLetter.Compose(opened, right, declaredSystems, held), pieces);
   }
 }

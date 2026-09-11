@@ -29,10 +29,9 @@ internal sealed record EntryPoint(
 {
   /// <summary>
   /// Si l'écran rendu relève de ce point d'entrée. La comparaison est faite <b>par segments</b> :
-  /// un dossier relève du tableau des demandes RGPD, la reprise d'une déclaration du
-  /// <c>Manifest</c>, et la table d'arbitrage de la détection des données personnelles, sous
-  /// <c>/detection</c> — ce que le préfixe de texte nu n'aurait pas su dire sans confondre aussi une
-  /// adresse qui commence par les mêmes lettres.
+  /// un dossier relève du tableau des demandes RGPD, et la table d'arbitrage de la détection des
+  /// données personnelles, de <c>/detection</c> — ce que le préfixe de texte nu n'aurait pas su dire
+  /// sans confondre aussi une adresse qui commence par les mêmes lettres.
   /// </summary>
   internal bool IsCurrent(PathString path)
   {

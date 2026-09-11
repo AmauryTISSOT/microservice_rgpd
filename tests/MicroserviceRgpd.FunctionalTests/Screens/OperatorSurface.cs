@@ -103,7 +103,7 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
       designations ?? [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       rights ?? [DataSubjectRight.Access],
       origin,
-      Manifest.Of(systems),
+      systems,
       reception);
 
     dbContext.Add(opened);
@@ -469,7 +469,7 @@ internal sealed class OperatorSurface(CustomWebApplicationFactory<Program> facto
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(closedOn.AddMonths(-1)));
 
     opened.Close(ClosingCause.Answered, closedOn);

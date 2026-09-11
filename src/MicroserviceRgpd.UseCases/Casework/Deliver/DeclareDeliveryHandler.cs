@@ -64,7 +64,7 @@ public sealed class DeclareDeliveryHandler(
     var delivery = Delivery.Of(
       opened,
       command.Right,
-      Manifest.Of(await manifest.ListAsync(cancellationToken)),
+      await manifest.ListAsync(cancellationToken),
       await retrieved.HeldForAsync(command.Case, cancellationToken));
 
     // La ligne de preuve est forgée d'abord : c'est elle qui exige un nom, et rien ne doit bouger si

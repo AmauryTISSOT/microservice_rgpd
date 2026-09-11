@@ -74,18 +74,6 @@ public static class AdapterServiceExtensions
       $"Aucun secret d'Adapter configure : renseigner {SecretKey}. Le service n'appelle pas un "
       + "Adapter sans secret, et il n'existe aucun mode « sans ».");
 
-    // Le secret d'un déploiement ne peut pas être celui que la sonde présente pour se faire
-    // refuser : la sonde rapporterait alors « nu » un Adapter parfaitement gardé, et l'exploitant
-    // chercherait une porte ouverte qui n'existe pas. Le refus est au démarrage plutôt qu'au
-    // premier rapport — une fausse alerte se répare mieux avant d'avoir été crue.
-    if (string.Equals(secret, HttpAdapterProbes.FalseSecret, StringComparison.Ordinal))
-    {
-      throw new ArgumentException(
-        $"Le secret d'Adapter configuré est celui que la sonde de vérification présente pour se "
-        + $"faire refuser : en choisir un autre sous {SecretKey}.",
-        nameof(configuration));
-    }
-
     services.TryAddSingleton(new AdapterSecret(secret));
 
     // `RemoveAllResilienceHandlers` est marquée expérimentale par le paquet, et pourtant elle est le
@@ -95,14 +83,6 @@ public static class AdapterServiceExtensions
       .AddHttpClient<IAdapterCalls, HttpAdapterCalls>(OnTheWire)
       .RemoveAllResilienceHandlers()
       .AddResilienceHandler("casework-adapter", pipeline => pipeline.AddTimeout(Deadline));
-
-    // Les sondes de vérification partagent le régime des appels — même échéance, aucune reprise —
-    // parce qu'elles empruntent la même route : une sonde plus patiente ou qui réessaierait aurait
-    // vérifié un chemin que les dossiers n'empruntent pas.
-    services
-      .AddHttpClient<IAdapterProbes, HttpAdapterProbes>(OnTheWire)
-      .RemoveAllResilienceHandlers()
-      .AddResilienceHandler("casework-adapter-probe", pipeline => pipeline.AddTimeout(Deadline));
 #pragma warning restore EXTEXP0001
 
     services.TryAddSingleton<IAdapterDisagreements, AdapterDisagreements>();
@@ -111,7 +91,7 @@ public static class AdapterServiceExtensions
   }
 
   /// <summary>
-  /// Le client, tel que l'appel comme la sonde le reçoivent.
+  /// Le client, tel que l'appel le reçoit.
   /// </summary>
   /// <remarks>
   /// Aucune adresse de base n'est posée : chaque appel porte celle que le <c>Manifest</c> déclare

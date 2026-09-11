@@ -465,7 +465,10 @@ public sealed class Case : IAggregateRoot
   /// D'où vient la reconnaissance de ces droits. <b>Une seule par ouverture</b> : les droits d'un
   /// dépôt arrivent tous par la même porte, et l'origine se fige sur chaque <see cref="Claim"/>.
   /// </param>
-  /// <param name="manifest">Le catalogue déclaré du client, tel qu'il se lit à cet instant.</param>
+  /// <param name="declaredSystems">
+  /// Les <see cref="DeclaredSystem"/> du client, tels qu'ils se lisent à cet instant, dans
+  /// n'importe quel ordre.
+  /// </param>
   /// <param name="reception">
   /// Le jour de réception par le responsable de traitement, et la façon dont le service le sait.
   /// </param>
@@ -481,21 +484,27 @@ public sealed class Case : IAggregateRoot
     IEnumerable<Designation> designations,
     IEnumerable<DataSubjectRight> rights,
     ClaimOrigin origin,
-    Manifest manifest,
+    IEnumerable<DeclaredSystem> declaredSystems,
     ReceptionDate reception)
   {
     ArgumentNullException.ThrowIfNull(identityDeclaration);
     ArgumentNullException.ThrowIfNull(designations);
     ArgumentNullException.ThrowIfNull(rights);
     ArgumentNullException.ThrowIfNull(origin);
-    ArgumentNullException.ThrowIfNull(manifest);
+    ArgumentNullException.ThrowIfNull(declaredSystems);
     ArgumentNullException.ThrowIfNull(reception);
 
     var claimed = Claimable(rights);
 
-    // Les systèmes dans l'ordre du catalogue, lus une seule fois : chaque Claim reçoit le même
-    // travail dû, et deux dossiers ouverts sur le même paysage se relisent dans le même ordre.
-    var declaredSystems = manifest.Systems.Select(system => system.Id).ToArray();
+    // Les systèmes rangés sous leur libellé, puis sous leur identifiant quand deux libellés se
+    // confondent, lus une seule fois : chaque Claim reçoit le même travail dû, et deux dossiers
+    // ouverts sur le même paysage se relisent dans le même ordre. La comparaison est ordinale — la
+    // culture de la machine rangerait le même paysage autrement d'un serveur à l'autre.
+    var dueWork = declaredSystems
+      .OrderBy(system => system.Label.Value, StringComparer.Ordinal)
+      .ThenBy(system => system.Id.Value, StringComparer.Ordinal)
+      .Select(system => system.Id)
+      .ToArray();
 
     return new Case(
       id,
@@ -505,7 +514,7 @@ public sealed class Case : IAggregateRoot
       Bag(designations),
       // L'identité déclarée descend sur chaque Claim, où elle se fige : le dossier porte celle
       // d'aujourd'hui, le droit garde celle sous laquelle il s'est ouvert.
-      [.. claimed.Select(right => new Claim(right, origin, identityDeclaration, declaredSystems))]);
+      [.. claimed.Select(right => new Claim(right, origin, identityDeclaration, dueWork))]);
   }
 
   /// <summary>

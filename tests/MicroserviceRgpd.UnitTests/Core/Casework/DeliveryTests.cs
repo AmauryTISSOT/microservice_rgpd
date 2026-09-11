@@ -120,13 +120,13 @@ public class DeliveryTests
       ReceptionDate.Declared(Opened));
   }
 
-  private static Manifest ALandscape()
+  private static DeclaredSystem[] ALandscape()
   {
-    return Manifest.Of(
+    return
     [
       ASystem(Boutique, "La boutique", "Les commandes et les comptes clients de la boutique."),
       ASystem(Journal, "Le journal", "Les journaux applicatifs du serveur."),
-    ]);
+    ];
   }
 
   private static DeclaredSystem ASystem(DeclaredSystemId id, string label, string contents)

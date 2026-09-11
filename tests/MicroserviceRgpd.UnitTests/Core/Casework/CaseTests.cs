@@ -107,6 +107,32 @@ public class CaseTests
   }
 
   /// <summary>
+  /// Le travail dû se range sous le <b>libellé</b> des systèmes — l'ordre sous lequel l'<c>Operator</c>
+  /// cherche —, et non sous l'ordre où la base les rend : deux dossiers ouverts sur le même paysage
+  /// se relisent dans le même ordre.
+  /// </summary>
+  [Fact]
+  public void RangesTheDueWorkUnderTheLabelTheOperatorSearchesBy()
+  {
+    var opened = Open([DataSubjectRight.Access], ASystem("photos"), ASystem("boutique"), ASystem("journal"));
+
+    opened.Claims[0].Steps.Select(step => step.DeclaredSystem.Value).ShouldBe(["boutique", "journal", "photos"]);
+  }
+
+  /// <summary>
+  /// Deux systèmes sous <b>le même libellé</b> — rien ne l'interdit — se départagent par leur
+  /// identifiant : sans cela, l'ordre serait celui où la base les rend, et le même paysage se
+  /// relirait autrement d'un dossier à l'autre.
+  /// </summary>
+  [Fact]
+  public void BreaksATieBetweenTwoIdenticalLabelsByTheSystemIdentifier()
+  {
+    var opened = Open([DataSubjectRight.Access], ASystem("export-b", "Export"), ASystem("export-a", "Export"));
+
+    opened.Claims[0].Steps.Select(step => step.DeclaredSystem.Value).ShouldBe(["export-a", "export-b"]);
+  }
+
+  /// <summary>
   /// Un catalogue vide ouvre un dossier sans aucun travail dû. C'est l'état d'un service qu'on
   /// vient d'installer, et l'écran doit pouvoir le dire plutôt que de refuser la demande.
   /// </summary>
@@ -210,7 +236,7 @@ public class CaseTests
       ],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
 
     opened.Designations.Count.ShouldBe(2);
@@ -235,7 +261,7 @@ public class CaseTests
       ],
       [DataSubjectRight.Access],
       ClaimOrigin.Named,
-      Manifest.Empty,
+      [],
       ReceptionDate.Declared(Received));
 
     // La seule chose qui distingue la référence native est sa nature, et elle est de même rang que
@@ -549,15 +575,15 @@ public class CaseTests
       [Designation.Of(DesignationKind.Email, "jean.dupont@example.fr")],
       rights,
       origin,
-      Manifest.Of(systems),
+      systems,
       ReceptionDate.Declared(Received));
   }
 
-  private static DeclaredSystem ASystem(string id)
+  private static DeclaredSystem ASystem(string id, string? label = null)
   {
     return DeclaredSystem.Declare(
       DeclaredSystemId.From(id),
-      SystemLabel.From(id),
+      SystemLabel.From(label ?? id),
       SystemContents.From("Ce qu'il contient, dans les mots de qui l'a déclaré."),
       [],
       adapterAddress: null,

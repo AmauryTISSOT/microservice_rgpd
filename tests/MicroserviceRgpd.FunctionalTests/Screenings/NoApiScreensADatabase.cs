@@ -86,12 +86,10 @@ public class NoApiScreensADatabase(CustomWebApplicationFactory<Program> factory)
   /// forme la plus dangereuse. La liste <em>Avoid</em> du glossaire dit d'elle-même qu'elle est le
   /// seul garde-fou qui accroche une revue de code sur une route de ce genre ; celui-ci la double.
   /// <para>
-  /// ⚠️ <c>/manifest/prefill-from-screening</c> n'est <b>pas</b> éprouvé ici, et son absence est
-  /// délibérée : <c>/manifest/{id}</c> est l'écran de révision de <c>Casework</c>, si bien que ce
-  /// chemin est déjà pris et rend un refus d'anti-rejeu plutôt qu'un 404. Un cas qui passerait au
-  /// vert pour cette raison-là n'aurait rien prouvé de <c>Screening</c>. Ce que le pont aurait
-  /// vraiment besoin d'ouvrir — une route qui <b>sort</b> les colonnes retenues — est éprouvé
-  /// ci-dessous.
+  /// <c>/manifest/prefill-from-screening</c> est éprouvé depuis que l'écran de révision
+  /// <c>/manifest/{id}</c> a disparu avec le Manifest : le chemin n'est plus pris par
+  /// <c>Casework</c>, et un 404 y dit bien qu'aucun pont n'existe. Ce que le pont aurait vraiment
+  /// besoin d'ouvrir — une route qui <b>sort</b> les colonnes retenues — est éprouvé ci-dessous.
   /// </para>
   /// </summary>
   [Theory]
@@ -99,6 +97,7 @@ public class NoApiScreensADatabase(CustomWebApplicationFactory<Program> factory)
   [InlineData("GET", "/screenings/export")]
   [InlineData("GET", "/screenings/retained")]
   [InlineData("POST", "/screenings/prefill-manifest")]
+  [InlineData("POST", "/manifest/prefill-from-screening")]
   public async Task ServesNoRouteThatWouldCarryADetectionAcrossIntoTheManifest(string verb, string address)
   {
     var response = await _client.SendAsync(new HttpRequestMessage(new HttpMethod(verb), address));

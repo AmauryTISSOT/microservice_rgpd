@@ -160,11 +160,10 @@ public class DeliveryLetterTests
     var sheet = DeliveryLetter.Compose(
       opened,
       DataSubjectRight.Access,
-      Manifest.Of(
       [
-        .. ALandscape().Systems,
+        .. ALandscape(),
         ASystem(late, "Le tardif", "Ce qu'on a déclaré après coup.", reachable: true),
-      ]),
+      ],
       [APieceFrom(opened, late, "nom;prénom")]);
 
     sheet.Joined.Select(system => system.DeclaredSystem).ShouldContain(late);
@@ -199,7 +198,7 @@ public class DeliveryLetterTests
   {
     var opened = ACase();
 
-    var sheet = DeliveryLetter.Compose(opened, DataSubjectRight.Access, Manifest.Empty, []);
+    var sheet = DeliveryLetter.Compose(opened, DataSubjectRight.Access, [], []);
 
     sheet.NotCovered.Count.ShouldBe(3);
     sheet.Write().ShouldContain(Agence.Value);
@@ -292,14 +291,14 @@ public class DeliveryLetterTests
   /// Trois systèmes recensés : deux joignables, et l'export mensuel que rien n'atteint — celui-là
   /// même dont la <c>DeliveryLetter</c> existe pour dire le nom.
   /// </summary>
-  private static Manifest ALandscape()
+  private static DeclaredSystem[] ALandscape()
   {
-    return Manifest.Of(
+    return
     [
       ASystem(Boutique, "La boutique", "Les commandes et les comptes clients de la boutique.", reachable: true),
       ASystem(Journal, "Le journal", "Les journaux applicatifs du serveur.", reachable: true),
       ASystem(Agence, "L'export agence", AgenceContents, reachable: false),
-    ]);
+    ];
   }
 
   private static DeclaredSystem ASystem(DeclaredSystemId id, string label, string contents, bool reachable)
