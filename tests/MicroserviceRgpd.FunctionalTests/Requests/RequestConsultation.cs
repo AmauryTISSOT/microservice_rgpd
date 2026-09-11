@@ -89,7 +89,47 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     row[..6].ShouldBe([email, "Martin", "Jeanne", "15/01/2026", "Oui", "Droit à l'effacement"]);
     row[7].ShouldBe("Opérateur");
-    row[8].ShouldBe(string.Empty, "La cellule d'actions porte quelque chose.");
+  }
+
+  /// <summary>
+  /// <b>Chaque ligne porte ses trois actions</b> dans sa dernière cellule — la poubelle, le crayon,
+  /// l'œil —, des boutons en icônes que leur libellé accessible nomme pour qui ne les voit pas :
+  /// « Supprimer la demande », « Modifier la demande », « Voir la fiche de la demande ».
+  /// </summary>
+  /// <remarks>
+  /// Ce sont de simples boutons, qui ne soumettent rien et ne mènent nulle part : aucun formulaire
+  /// ne les entoure, aucun lien ne les double. Ce qu'ils font au survol et au clic se vérifie dans
+  /// un vrai navigateur.
+  /// </remarks>
+  [Fact]
+  public async Task CarriesThreeActionsOnEachRowNamedForAScreenReader()
+  {
+    var first = $"{Guid.NewGuid():N}@example.org";
+    var second = $"{Guid.NewGuid():N}@example.org";
+
+    await CreateAsync(new() { ["email"] = first });
+    await CreateAsync(new() { ["email"] = second });
+
+    var main = await BoardAsync();
+
+    foreach (var email in new[] { first, second })
+    {
+      var actions = Regex.Matches(RowMarkupWith(main, email), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)[^1].Groups[1].Value;
+      var buttons = Regex.Matches(actions, @"<button\b([^>]*)>", RegexOptions.Singleline).Select(button => button.Groups[1].Value).ToArray();
+
+      buttons
+        .Select(attributes => Regex.Match(attributes, @"aria-label=""([^""]*)""").Groups[1].Value)
+        .ShouldBe(
+          ["Supprimer la demande", "Modifier la demande", "Voir la fiche de la demande"],
+          "La ligne ne porte pas ses trois actions, nommées dans l'ordre.");
+
+      buttons.ShouldAllBe(
+        attributes => attributes.Contains(@"type=""button""", StringComparison.Ordinal),
+        "Une action de la ligne soumet quelque chose.");
+
+      actions.ShouldNotContain("<form", Case.Insensitive, "Une action de la ligne est dans un formulaire.");
+      actions.ShouldNotContain("<a ", Case.Insensitive, "Une action de la ligne mène quelque part.");
+    }
   }
 
   /// <summary>
@@ -261,6 +301,13 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
           .ToArray()),
     ];
   }
+
+  /// <summary>La ligne qui porte <paramref name="marker"/>, une seule, telle que le serveur la rend.</summary>
+  private static string RowMarkupWith(string main, string marker) =>
+    Regex.Matches(TableIn(main), @"<tr\b[^>]*>.*?</tr>", RegexOptions.Singleline)
+      .Where(row => row.Value.Contains(marker, StringComparison.Ordinal))
+      .ShouldHaveSingleItem($"Le tableau ne porte pas la ligne de « {marker} », une fois.")
+      .Value;
 
   /// <summary>L'élément qui porte le message de l'état vide, une fois : ses attributs.</summary>
   private static string EmptyStateIn(string main)

@@ -5,8 +5,16 @@
   chargement ; la création la rendra pour la demande qu'elle vient d'enregistrer, que le script
   insérera à sa place. Une seule vue partielle : deux gabarits de ligne finiraient par diverger.
 
-  ⚠️ LA DERNIÈRE CELLULE PORTE LES ACTIONS, ET N'EN PORTE AUCUNE ENCORE : elles viendront avec leurs
-  propres tickets.
+  LA DERNIÈRE CELLULE PORTE LES TROIS ACTIONS DE LA LIGNE, EN ICÔNES : la poubelle, le crayon,
+  l'œil. Chacune est nommée par son `aria-label` pour qui ne la voit pas, et montre le même libellé
+  dans une infobulle au survol et au focus — un élément de la page, que le CSS montre, et non un
+  `title`, que chaque navigateur rend à sa façon et à son délai. L'infobulle est `aria-hidden` : le
+  nom accessible le dit déjà, un lecteur d'écran ne doit pas l'entendre deux fois.
+
+  ⚠️ LE CRAYON ET L'ŒIL SONT INERTES, en attendant leurs US : de simples boutons, hors de tout
+  formulaire, qu'aucun script n'écoute. Ils ne sont pas désactivés — un bouton éteint ne se survole
+  pas, et son infobulle ne se lirait jamais. La poubelle est rendue ici ; sa confirmation arrive
+  avec son propre ticket.
 *@
 <tr>
   <td>@Model.Email</td>
@@ -17,5 +25,30 @@
   <td>@Model.Right</td>
   <td>@Model.CreatedAt</td>
   <td>@Model.CreatedBy</td>
-  <td></td>
+  <td>
+    <div class="row-actions">
+      <button type="button" class="row-action" aria-label="Supprimer la demande">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5"
+                stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        </svg>
+        <span class="tooltip" aria-hidden="true">Supprimer la demande</span>
+      </button>
+      <button type="button" class="row-action" aria-label="Modifier la demande">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M10.5 2.5l3 3L5.5 13.5H2.5v-3zM9 4l3 3"
+                stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        </svg>
+        <span class="tooltip" aria-hidden="true">Modifier la demande</span>
+      </button>
+      <button type="button" class="row-action" aria-label="Voir la fiche de la demande">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"
+                stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none" />
+          <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4" fill="none" />
+        </svg>
+        <span class="tooltip" aria-hidden="true">Voir la fiche de la demande</span>
+      </button>
+    </div>
+  </td>
 </tr>

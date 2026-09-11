@@ -71,7 +71,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   {
     var rendered = await _layout.ReadAsync(Board);
 
-    ButtonsIn(OutsideTheDialogs(LayoutSurface.MainOf(rendered)))
+    ButtonsIn(OutsideTheTableAndTheDialogs(LayoutSurface.MainOf(rendered)))
       .Select(button => LayoutSurface.TextIn(button.Contents))
       .ShouldBe([CreateLabel], "Le contenu ne porte pas le bouton « Créer une demande », une fois.");
 
@@ -88,7 +88,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   public async Task KeepsTheCreateButtonASimpleButton()
   {
     var outside = OutsideTheDialogs(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
-    var button = ButtonsIn(outside).ShouldHaveSingleItem();
+    var button = ButtonsIn(OutsideTheTableAndTheDialogs(outside)).ShouldHaveSingleItem();
 
     button.Attributes.ShouldContain(@"type=""button""", Case.Sensitive, "Le bouton de création n'est pas un simple bouton.");
     button.Attributes.ShouldNotContain("formaction", Case.Insensitive, "Le bouton de création envoie quelque part.");
@@ -263,6 +263,15 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   private static string OutsideTheDialogs(string main)
   {
     return Dialogs.Replace(main, string.Empty);
+  }
+
+  /// <summary>
+  /// Le contenu de l'écran, le tableau et les modales retirés : ce qui entoure le tableau. Chaque
+  /// ligne porte ses propres boutons d'action, que <c>RequestConsultation</c> garde.
+  /// </summary>
+  private static string OutsideTheTableAndTheDialogs(string main)
+  {
+    return Regex.Replace(OutsideTheDialogs(main), @"<table\b.*?</table>", string.Empty, RegexOptions.Singleline);
   }
 
   private static IReadOnlyList<(string Attributes, string Contents)> ButtonsIn(string fragment)
