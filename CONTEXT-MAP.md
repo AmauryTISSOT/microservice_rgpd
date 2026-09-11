@@ -173,11 +173,15 @@ SHA
 
 ### Layout
 
-Le cadre fixe que les onze écrans de la surface portent tous, écrit une seule fois dans
+Le cadre fixe que les douze écrans de la surface portent tous, écrit une seule fois dans
 `_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
 latéral**, le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
 comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est
 l'écran. Le layout n'appartient à aucun des quatre contextes.
+
+Le layout ne charge aucun script. Il offre une section où l'écran qui en a besoin pose le sien — un
+module ES que le service sert lui-même —, et un seul écran s'en sert aujourd'hui : le tableau des
+demandes RGPD (ADR-0018).
 
 _Avoid_ : chrome, habillage, shell, coque, enveloppe
 
@@ -192,10 +196,15 @@ relation ne vaut que dans ce sens : un test de police relève du layout seul, un
 relève des deux. C'est ce qui autorise `SharedLayout` à porter les deux familles d'assertions
 (ADR-0009).
 
-Le mot est **header**, pas « bandeau » : le dépôt emploie déjà « bandeau » pour le bandeau
-d'avertissement permanent d'un écran (`DepositScreen`, `CaseScreen`, `LocateHandlerTests`).
+Le mot est **header**, pas « bandeau » : un **bandeau** est un message posé dans une surface — un
+écran ou une modale —, là où le header est une région du layout, la même sur tous les écrans. Le
+rapport de détection de `Screening` s'ouvre sur un bandeau — la base, le SGBD, le lancement, le
+moteur — et en porte un second pour ses comptes (`banner` dans le code) ; la modale de création
+d'une demande porte un bandeau d'échec, qui dit qu'un envoi a échoué autrement que par un refus et
+laisse la saisie en place. Le toast « Demande créée » n'en est pas un : il se pose au-dessus de
+l'écran, le temps de dire ce qu'il dit, puis s'efface.
 
-⚠️ **Onze écrans, et non treize : les deux routes de la `Cartographie` n'en sont pas.**
+⚠️ **Douze écrans, et non quatorze : les deux routes de la `Cartographie` n'en sont pas.**
 `cartographie.json` et `cartographie.csv` sont des Razor Pages qui rendent un fichier, jamais une
 page — pas de layout, pas de panneau, pas de header. Aucun test de layout ne les couvre, et aucun ne
 doit les couvrir.
@@ -205,10 +214,11 @@ doit les couvrir.
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
-Dix-sept ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
+Vingt ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
 écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006 et l'ADR-0008 portent en
 fin de fichier une suite datée qui nomme leurs points morts jusqu'à l'ADR-0016 ; l'ADR-0017, qui
-vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui.
+vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui. Les
+ADR-0018 à 0020 font de même.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -229,6 +239,9 @@ vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantation
 | [0015](./docs/adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md) | Un scan survit à la requête HTTP qui l'a lancé. Ce que le garde interdit est ce qui part tout seul, pas ce qui court plus longtemps qu'un échange. Amende `NothingRunsInTheBackgroundTests` sans élargir sa liste. | — |
 | [0016](./docs/adr/0016-le-manifest-cede-la-place-au-parametrage-un-droit-une-adresse.md) | Le `Manifest` cède la place au Paramétrage : un droit, une adresse. Nouveau contexte `Configuration`, consommateur du noyau partagé. | 0008 : les noms « Configuration » / « Configuration du microservice RGPD », et « `Manifest` reste `Manifest` ». 0006 : `Manifest` parmi les identifiants inchangés. |
 | [0017](./docs/adr/0017-casework-est-retire-requests-le-remplace.md) | L'ancien contexte d'instruction, `Casework`, est retiré ; `Requests` le remplace, avec la `DataSubjectRequest` pour type et `/demandes` pour route. `Requests` ne consomme que le noyau partagé ; aucune relation avec `Qualification`. « Geste » devient `Gesture`. | 0002 : le second contexte, « la durée de l'instruction ». 0003 : la liste blanche des traversées. 0006 : l'adresse `/dossiers`, `Queue` parmi les identifiants inchangés, et le contrat d'`Adapter` comme motif de cette liste. 0014 : l'asymétrie assumée. 0016 : la dette de recâblage. |
+| [0018](./docs/adr/0018-la-doctrine-zero-javascript-est-levee-pour-toute-l-application.md) | La doctrine « zéro JavaScript » est levée pour toute l'application : JavaScript vanilla en modules ES, `<dialog>` natif, ni framework ni bundler, servi par le service, chargé seulement là où un écran en a besoin. Le serveur rend, le script anime. | 0005 : « la surface reste rendue par le serveur, sans JavaScript ». 0009 : « le service continue de ne servir aucun JavaScript », et le motif qui écartait la persistance du repli par `localStorage`. |
+| [0019](./docs/adr/0019-la-reception-exige-date-message-droit-et-identification.md) | Enregistrer une demande exige une date de réception, un message, un droit parmi les six, et un email ou un nom et un prénom. Le serveur fait foi ; la validation du navigateur est un confort. Renverse deux clauses de glossaire, « rien n'est obligatoire au dépôt » et le défaut `J+9`. | — |
+| [0020](./docs/adr/0020-playwright-dotnet-pour-les-tests-navigateur.md) | Playwright pour .NET, en C# et xUnit, pour les tests navigateur : le service sous Kestrel sur un port réel, PostgreSQL Testcontainers, Chromium seul, installé par la fixture sans `pwsh`. | — |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se
