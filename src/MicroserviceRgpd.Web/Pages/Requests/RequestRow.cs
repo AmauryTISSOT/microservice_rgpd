@@ -24,7 +24,7 @@ public sealed record RequestRow(
   string Right,
   string CreatedAt,
   string CreatedBy,
-  string Status,
+  string StatusLabel,
   string StatusName)
 {
   /// <summary>Ce qu'affiche une cellule dont la valeur est absente : une absence, pas une cellule mal rendue.</summary>

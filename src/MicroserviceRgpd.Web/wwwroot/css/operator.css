@@ -100,6 +100,12 @@
   --signal-pending: #62aef0;
 
   /*
+    LA PART D'UNE TEINTE DE SIGNALEMENT DANS LE FOND D'UN BADGE : assez pour que la couleur se lise,
+    assez peu pour que l'encre posée dessus garde son contraste.
+  */
+  --signal-tint: 12%;
+
+  /*
     LE VOILE DERRIÈRE UNE MODALE : l'encre, très atténuée. Il assourdit l'écran sans le cacher, et
     c'est lui — non l'ombre — qui détache la modale de ce qu'elle recouvre. Le document n'en donne
     aucune valeur : celle-ci est une extension, signalée comme telle.
@@ -688,11 +694,11 @@ button.row-action:focus-visible .tooltip {
   texte. Le rayon est celui que le document donne aux pastilles de statut, jamais la pilule.
 
   Le badge porte le nom canonique du statut : c'est lui qui choisit la teinte, le libellé seul se
-  lit. Le teint du fond se tire de la teinte même, sans valeur nouvelle.
+  lit. Le fond est la teinte même, fondue dans la surface.
 */
 .status {
   align-items: center;
-  background: color-mix(in srgb, var(--status-tone) 12%, var(--surface));
+  background: color-mix(in srgb, var(--status-tone) var(--signal-tint), var(--surface));
   border: var(--hairline-width) solid var(--status-tone);
   border-radius: var(--radius-sm);
   color: var(--ink-secondary);

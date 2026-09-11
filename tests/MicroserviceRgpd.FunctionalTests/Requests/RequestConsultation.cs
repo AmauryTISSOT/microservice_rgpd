@@ -119,7 +119,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     foreach (var email in new[] { first, second })
     {
-      var actions = Regex.Matches(RowMarkupWith(main, email), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)[^1].Groups[1].Value;
+      var actions = CellsMarkupWith(main, email)[^1];
       var buttons = Regex.Matches(actions, @"<button\b([^>]*)>", RegexOptions.Singleline).Select(button => button.Groups[1].Value).ToArray();
 
       buttons
@@ -240,17 +240,17 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   [InlineData(null, "InProgress", "En cours")]
   [InlineData("Completed", "Completed", "Terminée")]
   [InlineData("Cancelled", "Cancelled", "Annulée")]
-  public async Task RendersTheStatusAsABadgeUnderItsLabel(string? put, string status, string label)
+  public async Task RendersTheStatusAsABadgeUnderItsLabel(string? stored, string status, string label)
   {
     var email = $"{Guid.NewGuid():N}@example.org";
     var message = await CreateAsync(new() { ["email"] = email });
 
-    if (put is not null)
+    if (stored is not null)
     {
-      await _surface.PutStatusAsync(message, put);
+      await _surface.PutStatusAsync(message, stored);
     }
 
-    var cell = Regex.Matches(RowMarkupWith(await BoardAsync(), email), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)[9].Groups[1].Value;
+    var cell = CellsMarkupWith(await BoardAsync(), email)[9];
     var badge = Regex.Match(cell, @"<span\b(?<attributes>[^>]*)>(?<text>[^<]*)</span>");
 
     badge.Success.ShouldBeTrue("Le statut n'est pas rendu en badge.");
@@ -374,6 +374,13 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       .Where(row => row.Value.Contains(marker, StringComparison.Ordinal))
       .ShouldHaveSingleItem($"Le tableau ne porte pas la ligne de « {marker} », une fois.")
       .Value;
+
+  /// <summary>Les cellules de la ligne qui porte <paramref name="marker"/>, chacune telle que le serveur la rend.</summary>
+  private static string[] CellsMarkupWith(string main, string marker) =>
+  [
+    .. Regex.Matches(RowMarkupWith(main, marker), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)
+      .Select(cell => cell.Groups[1].Value),
+  ];
 
   /// <summary>L'élément qui porte le message de l'état vide, une fois : ses attributs.</summary>
   private static string EmptyStateIn(string main)
