@@ -439,6 +439,10 @@ h2 {
     milliers de lignes, et les marges normales du service y feraient déjà une table haute de cent
     écrans. Une carte en ajouterait encore.
 
+  ⚠️ LE CADRE DU TABLEAU DES DEMANDES (`.table-frame`) EST DE LA LISTE, ET SON TABLEAU N'EN EST PLUS :
+  c'est le cadre qui défile, c'est donc lui qui porte la carte — une carte dans une carte doublerait
+  filet et marges.
+
   ⚠️ LA PORTE DE L'ACCUEIL (`a.doorway`) EST DE LA LISTE, et elle y est plutôt que recopiée plus
   bas : elle reprend LA PEAU de la carte et n'en change que la NATURE — la carte entière est un
   lien. Deux jeux de déclarations auraient divergé au premier rayon retouché, et l'accueil aurait
@@ -453,7 +457,8 @@ a.doorway,
 .refusals,
 .right,
 .system,
-table.queue:not(.columns) {
+.table-frame,
+table.queue:not(.columns, .table-frame > table) {
   background: var(--surface);
   border: var(--hairline-width) solid var(--hairline);
   border-radius: var(--radius-lg);
@@ -781,14 +786,26 @@ body.wide main {
   ⚠️ LE `min-height: 0` EST CE QUI FAIT TOUT TENIR. Un élément flex refuse par défaut de descendre
   sous la hauteur de son contenu : sans lui, cent lignes allongeraient le layout, et la page
   défilerait de nouveau à la place du cadre.
+
+  La hauteur dynamique suit la barre d'outils d'un navigateur mobile, qui va et vient ; la hauteur
+  statique la précède, pour le navigateur qui ne connaît pas la première.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
 body.fill {
   height: 100vh;
+  height: 100dvh;
 }
 
 body.fill .layout {
   min-height: 0;
+}
+
+/*
+  Le panneau latéral ne défile plus avec la page, puisqu'elle ne défile plus : dans une fenêtre
+  basse, c'est lui qui défile, pour que ses dernières entrées restent atteignables.
+*/
+body.fill nav.sidepanel {
+  overflow-y: auto;
 }
 
 body.fill main {
@@ -800,41 +817,31 @@ body.fill main {
 }
 
 /*
-  LE CADRE DU TABLEAU : il porte la carte que le tableau portait, et c'est lui qui défile. Il prend
-  la hauteur que le titre et le bouton lui laissent, même quand le tableau est court — la carte
-  descend alors jusqu'en bas, et l'écran ne change pas de forme au fil des créations.
+  LE CADRE DU TABLEAU : il porte la carte — voir la liste des cartes —, et c'est lui qui défile. Il
+  prend la hauteur que le titre et le bouton lui laissent, même quand le tableau est court : la
+  carte descend alors jusqu'en bas, et l'écran ne change pas de forme au fil des créations. Sa marge
+  intérieure est celle des cellules, pas celle de la carte : une marge au-dessus de l'en-tête
+  collant se refermerait au premier défilement, et l'en-tête sauterait.
+
+  ⚠️ IL NE DESCEND PAS SOUS 12 REM. Dans une fenêtre trop basse pour le titre, le bouton et quelques
+  lignes, c'est la page qui défile de nouveau, plutôt qu'un cadre réduit à rien.
 
   `isolation` borne l'empilement de l'en-tête collant à la carte : il passe au-dessus des lignes,
   jamais au-dessus du toast.
 */
 .table-frame {
-  background: var(--surface);
-  border: var(--hairline-width) solid var(--hairline);
-  border-radius: var(--radius-lg);
-  box-sizing: border-box;
   flex: 1 1 auto;
   isolation: isolate;
-  margin: var(--space-lg) 0 0;
-  min-height: 0;
+  margin-bottom: 0;
+  min-height: 12rem;
   overflow: auto;
+  padding: 0;
 }
 
 /* Le focus du cadre se voit comme celui d'une porte : un contour d'accent, avec décalage. */
 .table-frame:focus-visible {
   outline: var(--rule-width) solid var(--accent);
   outline-offset: var(--space-xxs);
-}
-
-/*
-  ⚠️ LE TABLEAU DANS SON CADRE REND SA CARTE, qu'il porterait sinon comme tout `table.queue` : le
-  cadre la porte à sa place, et une carte dans une carte doublerait filet et marges.
-*/
-.table-frame > table.queue {
-  background: none;
-  border: 0;
-  border-radius: 0;
-  margin: 0;
-  padding: 0;
 }
 
 /*

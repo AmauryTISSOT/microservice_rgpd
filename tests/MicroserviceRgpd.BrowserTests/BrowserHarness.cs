@@ -83,14 +83,14 @@ public sealed class BrowserHarness : IAsyncLifetime
     for (var i = 0; i < count; i++)
     {
       var entry = new DataSubjectRequestEntry(
-        Origin.Email,
-        "2026-01-15",
-        "Martin",
-        "Jeanne",
-        $"{Guid.NewGuid():N}@example.org",
-        false,
-        "Je souhaite accéder à mes données.",
-        "Access");
+        Origin: Origin.Email,
+        ReceivedOn: "2026-01-15",
+        LastName: "Martin",
+        FirstName: "Jeanne",
+        Email: $"{Guid.NewGuid():N}@example.org",
+        IdentityVerified: false,
+        Message: "Je souhaite accéder à mes données.",
+        Right: "Access");
 
       (await mediator.Send(new RecordDataSubjectRequestCommand(entry))).IsSuccess.ShouldBeTrue();
     }

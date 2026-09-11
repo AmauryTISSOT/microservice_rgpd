@@ -56,16 +56,20 @@ public class BoardFrame(BrowserHarness harness)
   [Fact]
   public async Task FillsTheWidthAndTheHeightUnderTheButton()
   {
+    const int width = 1600;
+    const int height = 900;
     await harness.RecordRequestsAsync(Overflowing);
     await using var context = await harness.NewContextAsync();
-    var page = await BoardAsync(context, 1600, 900);
+    var page = await BoardAsync(context, width, height);
 
     var frame = await BoxOfAsync(Frame(page));
     var button = await BoxOfAsync(CreateButton(page));
+    var title = await BoxOfAsync(page.GetByRole(AriaRole.Heading, new() { Name = "Tableau des demandes RGPD", Level = 1 }));
 
     frame.Y.ShouldBeGreaterThan(button.Y + button.Height, "Le tableau n'est pas sous le bouton.");
-    (900 - (frame.Y + frame.Height)).ShouldBeInRange(0, Gutter, "Le tableau n'occupe pas la hauteur disponible.");
-    (1600 - (frame.X + frame.Width)).ShouldBeInRange(0, Gutter, "Le tableau n'occupe pas la largeur disponible.");
+    (height - (frame.Y + frame.Height)).ShouldBeInRange(0, Gutter, "Le tableau n'occupe pas la hauteur disponible.");
+    (width - (frame.X + frame.Width)).ShouldBeInRange(0, Gutter, "Le tableau n'occupe pas la largeur disponible.");
+    frame.X.ShouldBe(title.X, 1, "Le tableau ne part pas du bord gauche du contenu.");
     (button.X + button.Width).ShouldBe(frame.X + frame.Width, 1, "Le tableau ne s'étend pas jusque sous le bouton.");
   }
 
@@ -96,18 +100,25 @@ public class BoardFrame(BrowserHarness harness)
   }
 
   /// <summary>
-  /// ⚠️ <b>La région qui défile s'atteint au clavier</b> : sans souris, c'est elle qui prend le focus
-  /// et que les flèches font défiler.
+  /// ⚠️ <b>La région qui défile s'atteint au clavier</b> : sans souris, la tabulation passe du bouton
+  /// « Créer une demande » au tableau, que le clavier fait alors défiler.
   /// </summary>
   [Fact]
-  public async Task LetsTheKeyboardReachTheScrollingRegion()
+  public async Task LetsTheKeyboardReachAndScrollTheTable()
   {
+    await harness.RecordRequestsAsync(Overflowing);
     await using var context = await harness.NewContextAsync();
     var page = await BoardAsync(context, 1280, 720);
 
-    await Frame(page).FocusAsync();
+    await CreateButton(page).FocusAsync();
+    await page.Keyboard.PressAsync("Tab");
 
     await Expect(Frame(page)).ToBeFocusedAsync();
+
+    await page.Keyboard.PressAsync("End");
+
+    await Expect(Rows(page).Last).ToBeInViewportAsync();
+    await Expect(Header(page, "Email")).ToBeInViewportAsync(new() { Ratio = 1 });
   }
 
   private static async Task<IPage> BoardAsync(IBrowserContext context, int width, int height)
