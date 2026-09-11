@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.FunctionalTests.Layout;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Le layout n'appartient ni au <c>Casework</c> ni au <c>Screening</c>.</b>
+/// ⚠️ <b>Le layout n'appartient ni au <c>Requests</c> ni au <c>Screening</c>.</b>
 /// Il reçoit donc son harnais à lui plutôt que d'entrer dans les harnais de contexte existants —
 /// écrire deux fois la même assertion, une par contexte, l'aurait dupliquée sans rien prouver de
 /// plus, et aurait fait se croiser deux contextes que la carte tient pour disjoints. Ce harnais pose
@@ -226,7 +226,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Les écrans de <c>/dossiers</c> n'y sont plus</b> : ils sont retirés, et leurs adresses
-  /// rendent un 404 — voir <c>NoCaseworkSurfaceRemains</c>.
+  /// rendent un 404 — voir <c>NoRetiredBoardSurfaceRemains</c>.
   /// </remarks>
   internal async Task<IReadOnlyList<string>> ScreensAsync()
   {

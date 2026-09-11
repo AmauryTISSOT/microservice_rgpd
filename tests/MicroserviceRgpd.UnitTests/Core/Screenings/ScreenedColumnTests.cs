@@ -208,8 +208,7 @@ public class ScreenedColumnTests
 
   /// <summary>
   /// <b>Un second arbitrage écrase le premier</b>, et le coût est déclaré : la date de celui qu'il
-  /// remplace est effacée. C'est l'écart assumé au précédent de <c>Reservation</c>, dont un
-  /// <c>EvidenceLog</c> gardait la trace — il n'y en a aucun ici.
+  /// remplace est effacée. Aucun journal de preuve n'en garde la trace ici.
   /// </summary>
   [Fact]
   public void OverwritesTheArbitrationWhenAHumanChangesHisMind()

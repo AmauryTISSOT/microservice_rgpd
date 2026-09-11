@@ -20,7 +20,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// des octets : aucun dépôt, aucune horloge, aucune trace. C'est ce qui garde vraie la ligne qui
 /// sépare cet export du pont interdit vers le <c>Manifest</c> — <b>l'export a un destinataire humain
 /// qui l'a demandé, le pont a un destinataire machine que personne n'a demandé</b> —, et ce qui doit
-/// arrêter une revue de code est l'écriture côté <c>Casework</c>, jamais le mot « export ».
+/// arrêter une revue de code est l'écriture vers un autre contexte, jamais le mot « export ».
 /// </para>
 /// </remarks>
 public interface IScreeningExport

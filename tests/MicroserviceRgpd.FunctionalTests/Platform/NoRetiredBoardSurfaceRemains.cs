@@ -6,9 +6,9 @@ using NSwag.Generation;
 namespace MicroserviceRgpd.FunctionalTests.Platform;
 
 /// <summary>
-/// <b>La surface de <c>Casework</c> est retirée</b> — ses trois écrans, sa route publique et le
-/// contrat qu'elle publiait dans la documentation d'API. Le Tableau des demandes RGPD vit
-/// désormais à <c>/demandes</c>, dans le contexte <c>Requests</c>.
+/// <b>L'ancienne surface du tableau des dossiers est retirée</b> — ses trois écrans, sa route
+/// publique et le contrat qu'elle publiait dans la documentation d'API. Le Tableau des demandes
+/// RGPD vit désormais à <c>/demandes</c>, dans le contexte <c>Requests</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,12 +19,11 @@ namespace MicroserviceRgpd.FunctionalTests.Platform;
 /// <para>
 /// L'absence est gardée <b>deux fois</b> : par le comportement HTTP des adresses qu'on pourrait
 /// croire servies, et par le document Swagger que l'application publie, là où un endpoint oublié
-/// se lirait encore comme un contrat. Que la couche web ne nomme plus aucun type de
-/// <c>Casework</c> est gardé à part, sur l'IL, par les tests d'architecture.
+/// se lirait encore comme un contrat.
 /// </para>
 /// </remarks>
 [Collection(WebCollection.Name)]
-public class NoCaseworkSurfaceRemains(CustomWebApplicationFactory<Program> factory)
+public class NoRetiredBoardSurfaceRemains(CustomWebApplicationFactory<Program> factory)
 {
   private readonly HttpClient _client = factory.CreateClient(
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
@@ -37,7 +36,7 @@ public class NoCaseworkSurfaceRemains(CustomWebApplicationFactory<Program> facto
   [InlineData("/dossiers")]
   [InlineData("/dossiers/depot")]
   [InlineData("/dossiers/018f0000-0000-7000-8000-000000000000")]
-  public async Task TheFormerCaseScreensAnswerNotFound(string address)
+  public async Task TheRetiredBoardScreensAnswerNotFound(string address)
   {
     var response = await _client.GetAsync(address);
 
@@ -49,7 +48,7 @@ public class NoCaseworkSurfaceRemains(CustomWebApplicationFactory<Program> facto
   /// constate sur le fil : un corps bien formé de l'ancien contrat n'y trouve personne.
   /// </summary>
   [Fact]
-  public async Task NoRouteLetsARequestInThroughCasesAnymore()
+  public async Task NoRouteLetsARequestInThroughPostCasesAnymore()
   {
     var response = await _client.PostAsJsonAsync("/cases", new { designations = Array.Empty<object>(), rights = new[] { "Access" } });
 
@@ -62,7 +61,7 @@ public class NoCaseworkSurfaceRemains(CustomWebApplicationFactory<Program> facto
   /// qu'en développement, mais c'est ce même générateur qui les nourrit.
   /// </summary>
   [Fact]
-  public async Task TheApiDocumentNoLongerPublishesTheCaseworkContract()
+  public async Task TheApiDocumentNoLongerPublishesThePostCasesContract()
   {
     using var scope = factory.Services.CreateScope();
     var document = await scope.ServiceProvider.GetRequiredService<IOpenApiDocumentGenerator>().GenerateAsync("v1");
@@ -71,7 +70,7 @@ public class NoCaseworkSurfaceRemains(CustomWebApplicationFactory<Program> facto
     document.Paths.Keys.ShouldNotContain("/cases");
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : l'assertion ci-dessus serait vide.");
 
-    foreach (var word in new[] { "Casework", "OpenCase", "DeclaredDesignation" })
+    foreach (var word in new[] { "OpenCase", "DeclaredDesignation", "DeclaredSystem" })
     {
       published.ShouldNotContain(word, Case.Sensitive, $"Le document Swagger publie encore « {word} ».");
     }

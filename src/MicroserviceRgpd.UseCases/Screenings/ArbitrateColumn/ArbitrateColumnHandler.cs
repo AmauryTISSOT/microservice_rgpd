@@ -30,8 +30,8 @@ namespace MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 /// porter l'arbitrage de l'humain sur un rapport qu'il n'a pas vu.
 /// </para>
 /// <para>
-/// <b>Rien ne descend nulle part.</b> Aucun <c>EvidenceLog</c> — ce contexte n'en a pas, son grain est le
-/// déploiement — et surtout aucun pont vers le <c>Manifest</c> : ce qui est retenu ici le reste ici,
+/// <b>Rien ne descend nulle part.</b> Aucun journal de preuve — ce contexte n'en a pas, son grain
+/// est le déploiement — et surtout aucun pont vers le <c>Manifest</c> : ce qui est retenu ici le reste ici,
 /// c'est la clause <c>Aucune modification vers le Manifest</c>.
 /// </para>
 /// </remarks>

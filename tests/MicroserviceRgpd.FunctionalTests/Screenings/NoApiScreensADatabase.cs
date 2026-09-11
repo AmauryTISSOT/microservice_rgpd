@@ -86,8 +86,8 @@ public class NoApiScreensADatabase(CustomWebApplicationFactory<Program> factory)
   /// seul garde-fou qui accroche une revue de code sur une route de ce genre ; celui-ci la double.
   /// <para>
   /// <c>/manifest/prefill-from-screening</c> est éprouvé depuis que l'écran de révision
-  /// <c>/manifest/{id}</c> a disparu avec le Manifest : le chemin n'est plus pris par
-  /// <c>Casework</c>, et un 404 y dit bien qu'aucun pont n'existe. Ce que le pont aurait vraiment
+  /// <c>/manifest/{id}</c> a disparu avec le Manifest : le chemin n'est plus pris par aucun
+  /// écran, et un 404 y dit bien qu'aucun pont n'existe. Ce que le pont aurait vraiment
   /// besoin d'ouvrir — une route qui <b>sort</b> les colonnes retenues — est éprouvé ci-dessous.
   /// </para>
   /// </summary>
