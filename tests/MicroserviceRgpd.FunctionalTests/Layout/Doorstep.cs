@@ -177,23 +177,6 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>L'écran fonctionne sans JavaScript</b> : la porte se pousse au clavier et à la souris sans
-  /// qu'une ligne de script ne soit servie ni exécutée.
-  /// </summary>
-  /// <remarks>
-  /// L'absence de ressource tierce, elle, est gardée pour les douze écrans à la fois par
-  /// <see cref="SharedLayout.LoadsNothingFromAThirdPartyOnAnyScreen"/>.
-  /// </remarks>
-  [Fact]
-  public async Task RunsWithoutASingleLineOfScript()
-  {
-    var rendered = await _layout.ReadAsync(LayoutSurface.Doorstep);
-
-    rendered.ShouldNotContain("<script", Case.Insensitive, "L'accueil sert du JavaScript.");
-    rendered.ShouldNotContain("onclick", Case.Insensitive, "L'accueil câble un geste en JavaScript.");
-  }
-
-  /// <summary>
   /// Les articles du RGPD cités dans une phrase, <b>bornes des intervalles comprises</b> : « 15 à
   /// 18 » en vaut quatre. Sans cela, la comparaison avec la taxonomie ne dirait rien d'une plage.
   /// </summary>

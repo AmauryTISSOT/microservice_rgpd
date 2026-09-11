@@ -49,11 +49,11 @@ public class ScreeningMapExport(CustomWebApplicationFactory<Program> factory)
   // ─── L'écran ────────────────────────────────────────────────────────────────────────────────
 
   /// <summary>
-  /// ⚠️ <b>Le bouton et les deux liens, et pas une ligne de script.</b> Sans script un menu n'existe
-  /// pas : deux liens sont la forme qui marche, et la seule qui se colle dans un courriel.
+  /// <b>Le bouton et les deux liens.</b> Deux liens sont la forme qui marche sans rien d'autre, et la
+  /// seule qui se colle dans un courriel.
   /// </summary>
   [Fact]
-  public async Task RendersTheButtonAndTheTwoLinksWithoutAnyScript()
+  public async Task RendersTheButtonAndTheTwoLinks()
   {
     var report = WebUtility.HtmlDecode(
       await _surface.DepositAndReadTheReportAsync(
@@ -62,9 +62,6 @@ public class ScreeningMapExport(CustomWebApplicationFactory<Program> factory)
     report.ShouldContain("Exporter la cartographie des données personnelles");
     report.ShouldContain(ScreeningSurface.MapAsCsv);
     report.ShouldContain(ScreeningSurface.MapAsJson);
-
-    report.ShouldNotContain("<script", Case.Insensitive);
-    report.ShouldNotContain("onclick", Case.Insensitive);
   }
 
   // ─── Les deux routes ────────────────────────────────────────────────────────────────────────

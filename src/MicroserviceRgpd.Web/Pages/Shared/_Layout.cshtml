@@ -1,6 +1,6 @@
 @*
   La surface de l'Operator, livrée par le service lui-même — server-rendered, sans framework
-  client, et sans aucune ressource tierce : ce qui doit rester visible par construction ne peut
+  client ni bundler, et sans aucune ressource tierce : ce qui doit rester visible par construction ne peut
   pas dépendre d'un fichier que le navigateur du client irait chercher ailleurs. Ce que le service
   sert lui-même, il le sert.
 *@
@@ -12,25 +12,33 @@
   <title>@ViewData["Title"] — @Navigation.ServiceName</title>
   <link rel="stylesheet" href="/css/operator.css" />
   @*
-    ⚠️ LA SEULE CHOSE QU'UN ÉCRAN AJOUTE ICI EST UN `meta`, ET IL N'Y AURA JAMAIS DE `script`.
     Cette section existe pour l'écran d'attente du scan, qui se rafraîchit par
-    `<meta http-equiv="refresh">` — le rafraîchissement sans une ligne de JavaScript. Un écran qui
-    s'en servirait pour poser un script romprait la règle que tout le reste du layout tient.
+    `<meta http-equiv="refresh">` — le rafraîchissement sans une ligne de JavaScript. Un script ne
+    s'y pose pas : il a sa propre section, juste en dessous.
   *@
   @await RenderSectionAsync("Head", required: false)
+  @*
+    ⚠️ LE SCRIPT D'UN ÉCRAN SE POSE ICI, ET SEUL L'ÉCRAN QUI EN A BESOIN EN POSE UN. La doctrine
+    « zéro JavaScript » est levée pour toute l'application, mais le layout, lui, n'en charge aucun :
+    un écran qui n'en demande pas n'en reçoit pas. Ce qui s'y pose est un module ES, en JavaScript
+    vanilla, sans bundler ni framework, et servi par le service lui-même depuis ses fichiers
+    statiques — jamais chez un tiers. Un module est différé par nature : le poser dans le `head` ne
+    retarde pas l'affichage.
+  *@
+  @await RenderSectionAsync("Scripts", required: false)
 </head>
 <body class="@(ViewData["Wide"] is true ? "wide" : null)">
   @*
     ═════════════════════════════════════════════════════════════════════════════════════════════
     LE REPLI DU PANNEAU LATÉRAL EST UNE CASE À COCHER, ET IL N'Y A PAS UNE LIGNE DE JAVASCRIPT DERRIÈRE.
     C'est la case qui porte l'état ; le hamburger est son `label`, et le sélecteur `:checked ~` en
-    bas de la feuille fait le reste. La règle « sans framework client » n'est donc pas seulement
-    tenue, elle est tenue SANS EXCEPTION : le service continue de ne servir aucun script.
+    bas de la feuille fait le reste. Le layout ne charge donc aucun script, et le panneau se replie
+    de la même façon sur tous les écrans — y compris sur celui qui en charge un.
 
     ⚠️ LE CHOIX NE SURVIT PAS À LA NAVIGATION, ET C'EST UNE DÉCISION EXPLICITE DU DEMANDEUR. Le
     panneau se rouvre à chaque écran. Le tenir d'un écran à l'autre aurait demandé un cookie posé
-    par un aller-retour serveur, ou un script — les deux ont été écartés au profit de zéro
-    JavaScript. La conséquence est consignée ici plutôt que découverte plus tard : l'Operator qui
+    par un aller-retour serveur, ou un script — les deux ont été écartés, et le panneau n'a besoin
+    d'aucun script. La conséquence est consignée ici plutôt que découverte plus tard : l'Operator qui
     replie le panneau le retrouve ouvert dès qu'il change d'écran.
 
     ⚠️ LA CASE RESTE ATTEIGNABLE AU CLAVIER. Elle est masquée à l'œil par `.sidepanel-toggle`, jamais
