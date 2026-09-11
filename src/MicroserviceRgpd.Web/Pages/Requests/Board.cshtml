@@ -208,12 +208,12 @@
 </dialog>
 
 @*
-  LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée » — les mots que la
-  page lui donne ici — quand la modale se ferme sur une création, et l'efface quelques secondes plus
-  tard. Il est hors de la modale, qui vient de se fermer ; `role="status"` le fait lire sans voler
-  le focus.
+  LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée » ou « Demande
+  supprimée » — les mots que la page lui donne ici — quand une modale se ferme sur une création ou
+  sur une suppression, et l'efface quelques secondes plus tard. Il est hors des modales, qui viennent
+  de se fermer ; `role="status"` le fait lire sans voler le focus.
 *@
-<p class="toast" role="status" id="create-request-toast" data-created="Demande créée"></p>
+<p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"></p>
 
 @*
   LA CONFIRMATION D'ABANDON, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Le module l'ouvre
@@ -236,4 +236,45 @@
     <button type="button" data-abandon>Abandonner</button>
     <button type="button" class="primary" data-continue autofocus>Continuer la saisie</button>
   </div>
+</dialog>
+
+@*
+  LA CONFIRMATION DE SUPPRESSION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT, sœur des deux
+  autres. La poubelle d'une ligne l'ouvre ; le module y recopie la phrase que le serveur a composée
+  pour cette ligne, et l'identifiant de sa demande. Elle n'a aucun mot à elle au chargement : aucune
+  ligne ne l'a encore choisie.
+
+  ⚠️ LA SUPPRESSION NE LAISSE AUCUNE TRACE (ADR-0022) — et « supprimer » n'est jamais « effacer »,
+  qui est un droit (art. 17).
+
+  ⚠️ « ANNULER » A LE FOCUS PAR DÉFAUT (`autofocus`, que `showModal` honore) : une touche Entrée
+  réflexe ne supprime rien. « Supprimer définitivement » vient en dernier, au rouge du geste
+  irréversible, sur fond blanc : ce n'est jamais ce que l'écran attend.
+
+  LE FORMULAIRE DÉCLARE SON ENVOI — `POST /demandes?handler=Delete` — ET PORTE LE JETON ANTI-REJEU,
+  que le tag helper pose. Le script l'envoie par `fetch` ; aucun bouton ne le soumet nativement.
+
+  LE BANDEAU D'ÉCHEC, CACHÉ TANT QU'UN ENVOI N'A PAS ÉCHOUÉ — jeton anti-rejeu périmé, erreur du
+  serveur, coupure réseau. La confirmation reste ouverte, et la ligne en place : rien n'a été
+  supprimé, et l'Operator peut réessayer. Une demande déjà supprimée ailleurs n'est pas un échec.
+*@
+<dialog class="modal confirmation" id="delete-request" role="alertdialog"
+        aria-labelledby="delete-request-title" aria-describedby="delete-request-consequence">
+  <div class="modal-head">
+    <h2 id="delete-request-title">Supprimer la demande</h2>
+  </div>
+  <p id="delete-request-consequence"></p>
+
+  <form id="delete-request-form" method="post" asp-page-handler="Delete">
+    <input type="hidden" name="id" />
+
+    <p class="modal-failure" role="alert" id="delete-request-failure" hidden>
+      La demande n'a pas pu être supprimée. Vous pouvez réessayer.
+    </p>
+
+    <div class="modal-actions">
+      <button type="button" data-dismiss autofocus>Annuler</button>
+      <button type="button" class="destructive" data-delete-for-good>Supprimer définitivement</button>
+    </div>
+  </form>
 </dialog>

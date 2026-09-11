@@ -11,10 +11,14 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>Tous les libellés sont rendus par le serveur</b> — tirets, dates, « Oui/Non », droit,
-/// auteur, statut. Le script de l'écran anime les lignes ; il n'en écrit aucun mot. Le statut vient
-/// aussi sous son <b>nom canonique</b>, que le badge porte pour que la feuille de style le colore.
+/// auteur, statut, jusqu'à la phrase qui confirme la suppression. Le script de l'écran anime les
+/// lignes ; il n'en écrit aucun mot. La ligne porte aussi l'identifiant de sa demande, que la
+/// suppression envoie, et le statut sous son <b>nom canonique</b>, que le badge porte pour que la
+/// feuille de style le colore.
 /// </remarks>
 public sealed record RequestRow(
+  string Id,
+  string DeletionConfirmation,
   string Email,
   string LastName,
   string FirstName,
@@ -39,6 +43,8 @@ public sealed record RequestRow(
     ArgumentNullException.ThrowIfNull(request);
 
     return new RequestRow(
+      request.Id.Value.ToString(),
+      DeletionConfirmationOf(request),
       request.Email?.Value ?? Absent,
       request.LastName?.Value ?? Absent,
       request.FirstName?.Value ?? Absent,
@@ -54,6 +60,31 @@ public sealed record RequestRow(
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
   private static string Day(DateOnly day) => day.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+  /// <summary>
+  /// « La demande de {Prénom} {Nom} ({email}) sera définitivement supprimée. Cette action est
+  /// irréversible. » — le prénom et le nom omis s'ils manquent, l'email entre parenthèses quand un
+  /// nom l'accompagne, <b>sans parenthèses quand il est seul</b>.
+  /// </summary>
+  /// <remarks>
+  /// Elle nomme la personne comme l'<c>Operator</c> la lit sur la ligne : c'est elle qu'il regarde
+  /// avant une suppression sans retour. « Supprimée », jamais « effacée » : l'effacement est un
+  /// droit (art. 17), que la demande peut invoquer.
+  /// </remarks>
+  private static string DeletionConfirmationOf(RecordedDataSubjectRequest request)
+  {
+    var name = string.Join(' ', new[] { request.FirstName?.Value, request.LastName?.Value }.OfType<string>());
+    var email = request.Email?.Value;
+
+    var whose = (name, email) switch
+    {
+      ("", _) => email,
+      (_, null) => name,
+      _ => $"{name} ({email})",
+    };
+
+    return $"La demande de {whose} sera définitivement supprimée. Cette action est irréversible.";
+  }
 
   /// <summary>
   /// Le libellé du droit en tête de cellule : « droit d'accès » devient « Droit d'accès ». Le

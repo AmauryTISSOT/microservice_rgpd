@@ -132,9 +132,46 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
         attributes => attributes.Contains(@"type=""button""", StringComparison.Ordinal),
         "Une action de la ligne soumet quelque chose.");
 
+      buttons
+        .Select(attributes => Regex.Match(attributes, @"data-action=""([^""]*)""").Groups[1].Value)
+        .ShouldBe(["delete", "edit", "view"], "Seule la poubelle doit se désigner comme la suppression.");
+
       actions.ShouldNotContain("<form", Case.Insensitive, "Une action de la ligne est dans un formulaire.");
       actions.ShouldNotContain("<a ", Case.Insensitive, "Une action de la ligne mène quelque part.");
     }
+  }
+
+  /// <summary>
+  /// <b>Chaque ligne porte l'identifiant de sa demande et la phrase de sa suppression</b>, composée
+  /// par le serveur : le prénom et le nom s'ils sont là, l'email entre parenthèses quand un nom
+  /// l'accompagne, et sans parenthèses quand il est seul. Le module la recopie dans la confirmation.
+  /// </summary>
+  /// <remarks>
+  /// <c>{m}</c> est remplacé par une valeur unique, qui fait retrouver la ligne.
+  /// </remarks>
+  [Theory]
+  [InlineData("Martin", "Jeanne", "jeanne.{m}@example.org", "Jeanne Martin (jeanne.{m}@example.org)")]
+  [InlineData("", "", "jeanne.{m}@example.org", "jeanne.{m}@example.org")]
+  [InlineData("Martin-{m}", "Jeanne", "", "Jeanne Martin-{m}")]
+  [InlineData("Martin", "", "jeanne.{m}@example.org", "Martin (jeanne.{m}@example.org)")]
+  public async Task CarriesTheIdAndTheDeletionSentenceComposedByTheServer(
+    string lastName, string firstName, string email, string whose)
+  {
+    var marker = Guid.NewGuid().ToString("N");
+    string Marked(string value) => value.Replace("{m}", marker, StringComparison.Ordinal);
+
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string>
+    {
+      ["lastName"] = Marked(lastName),
+      ["firstName"] = Marked(firstName),
+      ["email"] = Marked(email),
+    });
+
+    var row = Regex.Match(RowMarkupWith(await BoardAsync(), marker), @"<tr\b([^>]*)>").Groups[1].Value;
+
+    AttributeOf(row, "data-request-id").ShouldBe(id.ToString());
+    AttributeOf(row, "data-deletion-confirmation").ShouldBe(
+      $"La demande de {Marked(whose)} sera définitivement supprimée. Cette action est irréversible.");
   }
 
   /// <summary>
@@ -224,9 +261,9 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   public async Task RendersTheResponseDeadlineAsHeldByTheRequestWithoutRecomputingIt()
   {
     var email = $"{Guid.NewGuid():N}@example.org";
-    var message = await CreateAsync(new() { ["email"] = email, ["receivedOn"] = "2026-01-15" });
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email, ["receivedOn"] = "2026-01-15" });
 
-    await _surface.PutResponseDeadlineAsync(message, new DateOnly(2026, 6, 3));
+    await _surface.SetResponseDeadlineAsync(id, new DateOnly(2026, 6, 3));
 
     (await RowWithAsync(email))[4].ShouldBe("03/06/2026");
   }
@@ -243,11 +280,11 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   public async Task RendersTheStatusAsABadgeUnderItsLabel(string? stored, string status, string label)
   {
     var email = $"{Guid.NewGuid():N}@example.org";
-    var message = await CreateAsync(new() { ["email"] = email });
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email });
 
     if (stored is not null)
     {
-      await _surface.PutStatusAsync(message, stored);
+      await _surface.SetStatusAsync(id, stored);
     }
 
     var cell = CellsMarkupWith(await BoardAsync(), email)[9];
@@ -381,6 +418,16 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
     .. Regex.Matches(RowMarkupWith(main, marker), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)
       .Select(cell => cell.Groups[1].Value),
   ];
+
+  /// <summary>La valeur de l'attribut <paramref name="name"/>, décodée comme le navigateur la lit.</summary>
+  private static string AttributeOf(string attributes, string name)
+  {
+    var attribute = Regex.Match(attributes, $@"\b{Regex.Escape(name)}=""([^""]*)""");
+
+    attribute.Success.ShouldBeTrue($"La ligne ne porte pas « {name} ».");
+
+    return WebUtility.HtmlDecode(attribute.Groups[1].Value);
+  }
 
   /// <summary>L'élément qui porte le message de l'état vide, une fois : ses attributs.</summary>
   private static string EmptyStateIn(string main)
