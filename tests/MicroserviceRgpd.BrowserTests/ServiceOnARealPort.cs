@@ -33,17 +33,14 @@ internal sealed class ServiceOnARealPort : WebApplicationFactory<Program>
     UseKestrel(0);
   }
 
-  /// <summary>L'adresse à laquelle le service écoute, lue sur le serveur une fois démarré.</summary>
-  public Uri Address
+  /// <summary>Démarre le service et rend l'adresse à laquelle il écoute, lue sur le serveur.</summary>
+  public Uri Start()
   {
-    get
-    {
-      StartServer();
+    StartServer();
 
-      var addresses = Services.GetRequiredService<IServer>().Features.GetRequiredFeature<IServerAddressesFeature>();
+    var addresses = Services.GetRequiredService<IServer>().Features.GetRequiredFeature<IServerAddressesFeature>();
 
-      return new Uri(addresses.Addresses.Single());
-    }
+    return new Uri(addresses.Addresses.Single());
   }
 
   protected override IHost CreateHost(IHostBuilder builder)
@@ -51,8 +48,9 @@ internal sealed class ServiceOnARealPort : WebApplicationFactory<Program>
     builder.UseEnvironment("Testing");
 
     // Le ConfigurationManager de Program se construit pendant Build : la variable d'environnement est
-    // le seul moyen de lui fournir la chaîne assez tôt. Une seule fabrique vit dans ce processus,
-    // aucun verrou n'est donc nécessaire, à la différence des tests fonctionnels.
+    // le seul moyen de lui fournir la chaîne assez tôt. Une seule fabrique vit dans ce processus —
+    // les autres projets de test tournent chacun dans le leur —, aucun verrou n'est donc nécessaire,
+    // à la différence des tests fonctionnels.
     Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _connectionString);
 
     var host = builder.Build();

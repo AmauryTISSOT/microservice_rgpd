@@ -1,6 +1,6 @@
 # Les tests à container
 
-Trois des quatre projets de test montent une **base PostgreSQL réelle** via
+Trois des cinq projets de test montent une **base PostgreSQL réelle** via
 [Testcontainers](https://dotnet.testcontainers.org/) : `IntegrationTests`, `FunctionalTests` et
 `BrowserTests`.
 Image **`postgres:18-alpine`**, schéma posé par les **migrations du dépôt**.
@@ -27,7 +27,7 @@ choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de 
 | `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **la persistance de la trace d'audit, et rien d'autre** |
 | `FunctionalTests` | un par fabrique d'application | `Migrate()` | l'endpoint public de bout en bout |
 | `BrowserTests` | un, partagé par toute la suite | `Migrate()` | un parcours d'écrans dans un vrai Chromium |
-| `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les quatre |
+| `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les cinq |
 
 ### `IntegrationTests`
 
@@ -63,6 +63,11 @@ variable d'environnement, puis `Migrate()`.
 `Microsoft.Playwright` copie à côté des binaires : ni `pwsh`, ni `playwright install` à la main.
 Le premier lancement télécharge le navigateur dans le cache de Playwright
 (`~/.cache/ms-playwright` sous Linux) ; les suivants le trouvent en place.
+
+⚠️ **Le téléchargement n'apporte pas les bibliothèques système dont Chromium dépend.** Un poste
+de développement qui fait déjà tourner un navigateur les a ; une image Linux minimale peut ne pas
+les avoir, et le lancement de Chromium y échoue. La fixture ne les installe pas — cela demanderait
+les droits root : il faut alors les poser une fois, par le gestionnaire de paquets du système.
 
 Les tests lisent l'écran **comme l'`Operator` le lit** — par le rôle et le nom accessible d'un lien,
 d'un titre, d'un bouton —, jamais par une classe CSS ni par la forme du DOM. Rien n'y est substitué

@@ -21,7 +21,8 @@ namespace MicroserviceRgpd.BrowserTests.Navigation;
 [Collection(BrowserCollection.Name)]
 public class SidepanelToTheBoard(BrowserHarness harness)
 {
-  private const string Board = "Tableau des demandes RGPD";
+  /// <summary>Le nom de l'écran, que porte aussi son entrée du panneau, recopié à dessein.</summary>
+  private const string ScreenName = "Tableau des demandes RGPD";
 
   [Fact]
   public async Task LeadsFromTheDoorstepToTheBoardAndItsCreateButton()
@@ -32,11 +33,11 @@ public class SidepanelToTheBoard(BrowserHarness harness)
 
     await page
       .GetByRole(AriaRole.Navigation, new() { Name = "Points d'entrée" })
-      .GetByRole(AriaRole.Link, new() { Name = Board, Exact = true })
+      .GetByRole(AriaRole.Link, new() { Name = ScreenName, Exact = true })
       .ClickAsync();
 
     await Expect(page).ToHaveURLAsync(new Regex("/demandes$"));
-    await Expect(page.GetByRole(AriaRole.Heading, new() { Name = Board, Exact = true, Level = 1 })).ToBeVisibleAsync();
+    await Expect(page.GetByRole(AriaRole.Heading, new() { Name = ScreenName, Exact = true, Level = 1 })).ToBeVisibleAsync();
     await Expect(page.GetByRole(AriaRole.Button, new() { Name = "Créer une demande", Exact = true })).ToBeVisibleAsync();
   }
 }

@@ -23,6 +23,7 @@ public sealed class BrowserHarness : IAsyncLifetime
   private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:18-alpine").Build();
 
   private ServiceOnARealPort? _service;
+  private Uri? _address;
   private IPlaywright? _playwright;
   private IBrowser? _browser;
 
@@ -33,6 +34,7 @@ public sealed class BrowserHarness : IAsyncLifetime
     await _database.StartAsync();
 
     _service = new ServiceOnARealPort(_database.GetConnectionString());
+    _address = _service.Start();
 
     _playwright = await Playwright.CreateAsync();
     _browser = await _playwright.Chromium.LaunchAsync();
@@ -44,7 +46,7 @@ public sealed class BrowserHarness : IAsyncLifetime
   /// </summary>
   public Task<IBrowserContext> NewContextAsync()
   {
-    return Browser.NewContextAsync(new() { BaseURL = Service.Address.ToString() });
+    return Browser.NewContextAsync(new() { BaseURL = Address.ToString() });
   }
 
   public async Task DisposeAsync()
@@ -66,7 +68,7 @@ public sealed class BrowserHarness : IAsyncLifetime
 
   private IBrowser Browser => _browser ?? throw new InvalidOperationException("Le navigateur n'est pas lancé.");
 
-  private ServiceOnARealPort Service => _service ?? throw new InvalidOperationException("Le service n'est pas démarré.");
+  private Uri Address => _address ?? throw new InvalidOperationException("Le service n'est pas démarré.");
 
   private static void InstallChromium()
   {

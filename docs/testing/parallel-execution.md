@@ -2,7 +2,7 @@
 
 This workspace is configured to run all five test projects in parallel in Visual Studio Test Explorer.
 
-`tests/` holds a fifth directory, `MicroserviceRgpd.AspireTests`, which is **not** a test project:
+`tests/` holds a sixth directory, `MicroserviceRgpd.AspireTests`, which is **not** a test project:
 it carries `IsTestProject=false` and is deliberately empty. Its missing `xunit.runner.json` is not
 an oversight — read the comment in its `.csproj` before adding anything to it.
 
