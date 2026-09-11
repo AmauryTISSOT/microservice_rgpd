@@ -20,6 +20,9 @@
   geste irréversible ira au bouton « Supprimer définitivement » de cette confirmation.
 
   Chaque icône est un seul tracé de 16 × 16, au trait de l'encre du bouton.
+
+  LE STATUT EST UN BADGE, qui porte le nom canonique du statut : c'est ce nom que la feuille de style
+  colore, et le libellé seul qui se lit.
 *@
 @{
   (string Label, string Icon)[] actions =
@@ -34,10 +37,12 @@
   <td>@Model.LastName</td>
   <td>@Model.FirstName</td>
   <td>@Model.ReceivedOn</td>
+  <td>@Model.ResponseDeadline</td>
   <td>@Model.IdentityVerified</td>
   <td>@Model.Right</td>
   <td>@Model.CreatedAt</td>
   <td>@Model.CreatedBy</td>
+  <td><span class="status" data-status="@Model.StatusName">@Model.Status</span></td>
   <td>
     <div class="row-actions">
       @foreach (var (label, icon) in actions)

@@ -86,14 +86,14 @@ public class BoardFrame(BrowserHarness harness)
 
     (await Frame(page).EvaluateAsync<bool>("frame => frame.scrollWidth > frame.clientWidth"))
       .ShouldBeTrue("Le tableau tient dans un écran étroit : rien ne prouve qu'il y défilerait.");
-    await Expect(Header(page, "Créé par")).Not.ToBeInViewportAsync();
+    await Expect(Header(page, "Statut")).Not.ToBeInViewportAsync();
 
     var lastColumn = page.GetByRole(AriaRole.Columnheader).Last;
     await lastColumn.ScrollIntoViewIfNeededAsync();
 
     // Pas un ratio de 1 : la dernière colonne affleure le bord du cadre, qui la rogne d'une fraction de pixel.
     await Expect(lastColumn).ToBeInViewportAsync(new() { Ratio = 0.95f });
-    await Expect(Header(page, "Créé par")).ToBeInViewportAsync(new() { Ratio = 1 });
+    await Expect(Header(page, "Statut")).ToBeInViewportAsync(new() { Ratio = 1 });
     (await page.EvaluateAsync<bool>("document.documentElement.scrollWidth > document.documentElement.clientWidth"))
       .ShouldBeFalse("La page défile horizontalement.");
     (await page.EvaluateAsync<double>("window.scrollX")).ShouldBe(0, "La page a défilé de côté, pas le tableau.");

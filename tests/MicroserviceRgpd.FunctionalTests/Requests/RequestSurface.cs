@@ -132,6 +132,28 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
       .ExecuteSqlAsync($"DELETE FROM data_subject_requests");
   }
 
+  /// <summary>
+  /// Pose le statut de la demande <b>à même la table</b>, sous son nom : aucun <c>Gesture</c> ne le
+  /// fait encore changer.
+  /// </summary>
+  internal async Task PutStatusAsync(string message, string status) =>
+    await ExecuteAsync($"UPDATE data_subject_requests SET status = {status} WHERE message = {message}");
+
+  /// <summary>
+  /// Pose la date limite de réponse de la demande <b>à même la table</b> — pour qui doit prouver
+  /// qu'elle se lit telle qu'elle est tenue, sans être recalculée.
+  /// </summary>
+  internal async Task PutResponseDeadlineAsync(string message, DateOnly responseDeadline) =>
+    await ExecuteAsync($"UPDATE data_subject_requests SET response_deadline = {responseDeadline} WHERE message = {message}");
+
+  private async Task ExecuteAsync(FormattableString command)
+  {
+    using var scope = factory.Services.CreateScope();
+
+    (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.ExecuteSqlAsync(command))
+      .ShouldBe(1, "La commande n'a pas touché une demande, et une seule.");
+  }
+
   private async Task<int> CountAsync(FormattableString query)
   {
     using var scope = factory.Services.CreateScope();
