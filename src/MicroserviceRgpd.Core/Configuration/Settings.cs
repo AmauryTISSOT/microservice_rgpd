@@ -102,11 +102,48 @@ public sealed class Settings : IAggregateRoot
       nameof(DataSubjectRight.Restriction) => Restriction,
       nameof(DataSubjectRight.Portability) => Portability,
       nameof(DataSubjectRight.Objection) => Objection,
-      _ => throw new ArgumentOutOfRangeException(
-        nameof(right),
-        right,
-        "OutOfScope n'a pas d'endpoint : le Paramétrage ne configure que les six droits du périmètre."),
+      _ => throw NoEndpointFor(right),
     };
+  }
+
+  /// <summary>
+  /// Pose l'adresse à laquelle exercer <paramref name="right"/> — la <b>crée</b> s'il était « non
+  /// configuré », la <b>remplace</b> sinon. <b>Seul ce droit est touché</b> : les cinq autres gardent
+  /// leur adresse ou leur absence.
+  /// </summary>
+  /// <remarks>
+  /// Aucune validation d'adresse ici : un <see cref="EndpointUrl"/> est valide par construction, et
+  /// l'écrire n'appelle rien — configurer une adresse reste une écriture locale.
+  /// </remarks>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="right"/> est OutOfScope.</exception>
+  public void SetEndpoint(DataSubjectRight right, EndpointUrl endpoint)
+  {
+    ArgumentNullException.ThrowIfNull(right);
+
+    switch (right.Name)
+    {
+      case nameof(DataSubjectRight.Access):
+        Access = endpoint;
+        break;
+      case nameof(DataSubjectRight.Rectification):
+        Rectification = endpoint;
+        break;
+      case nameof(DataSubjectRight.Erasure):
+        Erasure = endpoint;
+        break;
+      case nameof(DataSubjectRight.Restriction):
+        Restriction = endpoint;
+        break;
+      case nameof(DataSubjectRight.Portability):
+        Portability = endpoint;
+        break;
+      case nameof(DataSubjectRight.Objection):
+        Objection = endpoint;
+        break;
+      default:
+        throw NoEndpointFor(right);
+    }
   }
 
   /// <summary>
@@ -116,4 +153,11 @@ public sealed class Settings : IAggregateRoot
   /// </summary>
   public IReadOnlyList<RightEndpoint> Rights =>
     [.. ConfigurableRights.Select(right => new RightEndpoint(right, EndpointFor(right)))];
+
+  /// <summary>Le refus d'un droit hors des six, dit une seule fois pour la lecture et l'écriture.</summary>
+  private static ArgumentOutOfRangeException NoEndpointFor(DataSubjectRight right) =>
+    new(
+      nameof(right),
+      right,
+      "OutOfScope n'a pas d'endpoint : le Paramétrage ne configure que les six droits du périmètre.");
 }

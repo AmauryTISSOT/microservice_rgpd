@@ -1,7 +1,20 @@
 @page "/parametrage"
 @model ParametrageModel
+@using MicroserviceRgpd.Core.Configuration
 @{
   ViewData["Title"] = "Paramétrage du microservice RGPD";
+
+  // Les refus d'un envoi, rendus en un seul endroit du gabarit : dans la section du droit refusé,
+  // ou en tête d'écran quand le droit envoyé n'est pas l'un des six.
+  void Refusals()
+  {
+    <div class="refusals">
+      @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+      {
+        <p class="refusal">@refusal.ErrorMessage</p>
+      }
+    </div>
+  }
 }
 
 <h1>Paramétrage du microservice RGPD</h1>
@@ -17,8 +30,17 @@
   oblige à les renseigner tous.
 </p>
 
+@if (!ViewData.ModelState.IsValid && Model.Refused is null)
+{
+  @* Un droit que l'écran ne configure pas n'a pas de section où dire son refus : il se dit ici. *@
+  Refusals();
+}
+
 @foreach (var right in Model.Settings.Rights)
 {
+  var refused = right.Right == Model.Refused;
+  var field = $"url-{right.Right.Name}";
+
   <div class="right">
     <h2>@right.Right.FrenchLabel</h2>
     <dl>
@@ -37,5 +59,26 @@
         }
       </dd>
     </dl>
+
+    @if (refused)
+    {
+      Refusals();
+    }
+
+    @*
+      Une mini-form par droit, qui n'envoie que lui. Le champ porte l'adresse déjà enregistrée —
+      on la corrige sans repartir de zéro —, ou la saisie qui vient d'être refusée, pour qu'elle se
+      corrige sans être retapée. Le champ est un texte, pas une `url` : c'est le service qui juge
+      l'adresse, et son refus qui se lit — pas celui du navigateur, dans d'autres mots.
+    *@
+    <form method="post" asp-page-handler="Set">
+      <input type="hidden" name="Form.Right" value="@right.Right.Name" />
+      <p>
+        <label for="@field">Adresse d'exercice du @right.Right.FrenchLabel</label>
+        <input type="text" inputmode="url" id="@field" name="Form.Url"
+               value="@(refused ? Model.Form.Url : right.Endpoint?.Value)" maxlength="@EndpointUrl.MaxLength" />
+      </p>
+      <button type="submit" class="primary">Enregistrer</button>
+    </form>
   </div>
 }
