@@ -54,20 +54,20 @@ public class ContextlessTypeTests
     // est entré avec la table `settings` (ADR-0016).
     (
       "MicroserviceRgpd.Infrastructure.Data.AppDbContext",
-      [ContextInspector.Casework, ContextInspector.Screening, ContextInspector.Configuration]),
+      [ContextInspector.Screening, ContextInspector.Configuration]),
 
     // Le point de montage de la couche : nommer les ports de tous les contextes EST son travail, et
     // l'y interdire n'aurait laissé qu'un point de montage par contexte, c'est-à-dire le même
-    // fichier découpé en trois. ⚠️ Il ne fait que déclarer des correspondances : il ne lit rien et
+    // fichier découpé en deux. ⚠️ Il ne fait que déclarer des correspondances : il ne lit rien et
     // n'écrit rien.
     (
       "MicroserviceRgpd.Infrastructure.InfrastructureServiceExtensions",
-      [ContextInspector.Qualification, ContextInspector.Casework, ContextInspector.Screening]),
+      [ContextInspector.Qualification, ContextInspector.Screening]),
 
     // L'adaptateur de la trace d'audit : il sert `Qualification` seul, et le noyau partagé qu'il
     // touche est celui que `Qualification` a le droit de toucher — voir la liste blanche de la
     // matrice. Il ne rapproche donc aucun contexte d'un autre. ⚠️ Sa ligne disparaîtrait le jour où
-    // il descendrait dans un dossier de contexte, comme les configurations d'entités de `Casework`,
+    // il descendrait dans un dossier de contexte, comme les configurations d'entités du `Screening`,
     // qui sont déjà gardées par la matrice pour cette seule raison.
     (
       "MicroserviceRgpd.Infrastructure.Data.Audit.QualificationAuditTrail",
@@ -95,7 +95,7 @@ public class ContextlessTypeTests
       string.Join(Environment.NewLine, reaches) + Environment.NewLine +
       "Un fichier qui n'habite aucun contexte échappe entièrement à la matrice d'ADR-0003 : il " +
       "n'est jamais un `from` ni un `to`. Rangez-le dans le dossier du contexte qu'il sert — la " +
-      "matrice le gardera alors comme elle garde les configurations d'entités de Casework — ou " +
+      "matrice le gardera alors comme elle garde les configurations d'entités du Screening — ou " +
       "coupez ce qu'il rapproche. Élargir la dérogation est un geste de niveau ADR, jamais une " +
       "ligne ajoutée en passant pour faire compiler.");
   }
@@ -118,7 +118,7 @@ public class ContextlessTypeTests
       "La liste des dérogations s'est élargie. Un fichier sans contexte qui en rapproche deux est " +
       "l'angle mort d'ADR-0003 : l'y inscrire est un geste de niveau ADR.");
 
-    Permitted.Sum(exempt => exempt.Contexts.Length).ShouldBe(8);
+    Permitted.Sum(exempt => exempt.Contexts.Length).ShouldBe(6);
   }
 
   /// <summary>
