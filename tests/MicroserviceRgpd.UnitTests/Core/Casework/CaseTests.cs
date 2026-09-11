@@ -120,6 +120,19 @@ public class CaseTests
   }
 
   /// <summary>
+  /// Deux systèmes sous <b>le même libellé</b> — rien ne l'interdit — se départagent par leur
+  /// identifiant : sans cela, l'ordre serait celui où la base les rend, et le même paysage se
+  /// relirait autrement d'un dossier à l'autre.
+  /// </summary>
+  [Fact]
+  public void BreaksATieBetweenTwoIdenticalLabelsByTheSystemIdentifier()
+  {
+    var opened = Open([DataSubjectRight.Access], ASystem("export-b", "Export"), ASystem("export-a", "Export"));
+
+    opened.Claims[0].Steps.Select(step => step.DeclaredSystem.Value).ShouldBe(["export-a", "export-b"]);
+  }
+
+  /// <summary>
   /// Un catalogue vide ouvre un dossier sans aucun travail dû. C'est l'état d'un service qu'on
   /// vient d'installer, et l'écran doit pouvoir le dire plutôt que de refuser la demande.
   /// </summary>
@@ -566,11 +579,11 @@ public class CaseTests
       ReceptionDate.Declared(Received));
   }
 
-  private static DeclaredSystem ASystem(string id)
+  private static DeclaredSystem ASystem(string id, string? label = null)
   {
     return DeclaredSystem.Declare(
       DeclaredSystemId.From(id),
-      SystemLabel.From(id),
+      SystemLabel.From(label ?? id),
       SystemContents.From("Ce qu'il contient, dans les mots de qui l'a déclaré."),
       [],
       adapterAddress: null,

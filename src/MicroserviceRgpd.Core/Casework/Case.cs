@@ -496,12 +496,13 @@ public sealed class Case : IAggregateRoot
 
     var claimed = Claimable(rights);
 
-    // Les systèmes rangés sous leur libellé, lus une seule fois : chaque Claim reçoit le même
-    // travail dû, et deux dossiers ouverts sur le même paysage se relisent dans le même ordre. La
-    // comparaison est ordinale — la culture de la machine rangerait le même paysage autrement d'un
-    // serveur à l'autre.
+    // Les systèmes rangés sous leur libellé, puis sous leur identifiant quand deux libellés se
+    // confondent, lus une seule fois : chaque Claim reçoit le même travail dû, et deux dossiers
+    // ouverts sur le même paysage se relisent dans le même ordre. La comparaison est ordinale — la
+    // culture de la machine rangerait le même paysage autrement d'un serveur à l'autre.
     var dueWork = declaredSystems
       .OrderBy(system => system.Label.Value, StringComparer.Ordinal)
+      .ThenBy(system => system.Id.Value, StringComparer.Ordinal)
       .Select(system => system.Id)
       .ToArray();
 
