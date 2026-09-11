@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 [Collection(WebCollection.Name)]
 public class RequestRecording(CustomWebApplicationFactory<Program> factory)
 {
-  private readonly CreationHandler _handler = new(factory);
+  private readonly RequestSurface _surface = new(factory);
 
   /// <summary>
   /// <b>Une demande valide, envoyée avec le jeton anti-rejeu, est enregistrée</b> : le serveur répond
@@ -31,7 +31,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task AnswersCreatedToAValidRequest()
   {
-    var response = await _handler.CreateAsync(CreationHandler.AValidRequest());
+    var response = await _surface.CreateAsync(RequestSurface.AValidRequest());
 
     response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
   }
@@ -43,12 +43,12 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task RecordsNothingWithoutTheAntiforgeryToken()
   {
-    var fields = CreationHandler.AValidRequest();
+    var fields = RequestSurface.AValidRequest();
 
-    var response = await _handler.Client.PostAsync(CreationHandler.Create, new FormUrlEncodedContent(fields));
+    var response = await _surface.CreateWithoutTokenAsync(fields);
 
     response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-    (await _handler.CountOfAsync(fields["message"])).ShouldBe(0);
+    (await _surface.CountOfAsync(fields["message"])).ShouldBe(0);
   }
 
   /// <summary>
@@ -72,7 +72,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
     {
       var before = DateTimeOffset.UtcNow + ahead;
 
-      var response = await _handler.CreateAsync(new Dictionary<string, string>
+      var response = await _surface.CreateAsync(new Dictionary<string, string>
       {
         ["origin"] = "Letter",
         ["receivedOn"] = "2026-01-15",
@@ -88,7 +88,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
 
       response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
 
-      var row = await _handler.RowOfAsync(message);
+      var row = await _surface.RowOfAsync(message);
 
       row["id"].ShouldBeOfType<Guid>().ShouldNotBe(Guid.Empty);
       row["origin"].ShouldBe("Letter");
@@ -123,16 +123,16 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   [InlineData("", "Jeanne", "jeanne.martin@example.org")]
   public async Task RecordsEachAcceptedIdentification(string lastName, string firstName, string email)
   {
-    var fields = CreationHandler.AValidRequest();
+    var fields = RequestSurface.AValidRequest();
     fields["lastName"] = lastName;
     fields["firstName"] = firstName;
     fields["email"] = email;
 
-    var response = await _handler.CreateAsync(fields);
+    var response = await _surface.CreateAsync(fields);
 
     response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
 
-    var row = await _handler.RowOfAsync(fields["message"]);
+    var row = await _surface.RowOfAsync(fields["message"]);
 
     row["last_name"].ShouldBe(lastName.Length == 0 ? null : lastName);
     row["first_name"].ShouldBe(firstName.Length == 0 ? null : firstName);
@@ -152,7 +152,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
     var published = document.ToJson();
 
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : les assertions suivantes seraient vides.");
-    document.Paths.Keys.ShouldNotContain(path => path.StartsWith(CreationHandler.Board, StringComparison.Ordinal));
+    document.Paths.Keys.ShouldNotContain(path => path.StartsWith(RequestSurface.Board, StringComparison.Ordinal));
 
     foreach (var word in new[] { "demandes", "DataSubjectRequest", "CreationForm", "receivedOn" })
     {

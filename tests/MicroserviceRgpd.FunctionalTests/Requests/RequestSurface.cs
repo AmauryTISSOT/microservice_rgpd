@@ -10,20 +10,18 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// anti-rejeu que la page rend et le cookie qui va avec — exactement ce que fait le navigateur —, et
 /// la table <c>data_subject_requests</c> relue telle qu'il l'a laissée.
 /// </summary>
-internal sealed class CreationHandler(CustomWebApplicationFactory<Program> factory)
+internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factory)
 {
-  public const string Board = "/demandes";
+  internal const string Board = "/demandes";
 
-  public const string Create = "/demandes?handler=Create";
+  internal const string Create = "/demandes?handler=Create";
 
   private readonly HttpClient _client = factory.CreateClient(
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-  /// <summary>Le client, pour qui veut poster sans jeton.</summary>
-  public HttpClient Client => _client;
 
   /// <summary>Une saisie complète et valide, identifiée par son seul email.</summary>
-  public static Dictionary<string, string> AValidRequest() => new()
+  internal static Dictionary<string, string> AValidRequest() => new()
   {
     ["origin"] = "Email",
     ["receivedOn"] = "2026-01-15",
@@ -36,7 +34,7 @@ internal sealed class CreationHandler(CustomWebApplicationFactory<Program> facto
   };
 
   /// <summary>Envoie la saisie au handler de création, jeton anti-rejeu compris.</summary>
-  public async Task<HttpResponseMessage> CreateAsync(IReadOnlyDictionary<string, string> fields)
+  internal async Task<HttpResponseMessage> CreateAsync(IReadOnlyDictionary<string, string> fields)
   {
     return await _client.PostAsync(Create, new FormUrlEncodedContent(
     [
@@ -46,10 +44,37 @@ internal sealed class CreationHandler(CustomWebApplicationFactory<Program> facto
   }
 
   /// <summary>
+  /// Envoie la saisie <b>sans</b> jeton anti-rejeu — ce que ferait une page tierce qui ferait poster
+  /// le navigateur de l'<c>Operator</c>.
+  /// </summary>
+  internal async Task<HttpResponseMessage> CreateWithoutTokenAsync(IReadOnlyDictionary<string, string> fields)
+  {
+    return await _client.PostAsync(Create, new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// Rend la saisie avec <paramref name="key"/> posée à <paramref name="value"/>, ou retirée du corps
+  /// si <paramref name="value"/> est <c>null</c>.
+  /// </summary>
+  internal static Dictionary<string, string> With(Dictionary<string, string> fields, string key, string? value)
+  {
+    if (value is null)
+    {
+      fields.Remove(key);
+    }
+    else
+    {
+      fields[key] = value;
+    }
+
+    return fields;
+  }
+
+  /// <summary>
   /// La ligne de la demande, relue <b>telle que la table la porte</b> — colonne par colonne, sous
   /// leur nom SQL, sans passer par le modèle EF qui l'a écrite.
   /// </summary>
-  public async Task<IReadOnlyDictionary<string, object?>> RowOfAsync(string message)
+  internal async Task<IReadOnlyDictionary<string, object?>> RowOfAsync(string message)
   {
     using var scope = factory.Services.CreateScope();
     var connection = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.GetDbConnection();
@@ -78,14 +103,8 @@ internal sealed class CreationHandler(CustomWebApplicationFactory<Program> facto
   }
 
   /// <summary>Le nombre de demandes enregistrées sous ce message.</summary>
-  public async Task<int> CountOfAsync(string message)
-  {
-    using var scope = factory.Services.CreateScope();
-
-    return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
-      .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests WHERE message = {message}")
-      .SingleAsync();
-  }
+  internal async Task<int> CountOfAsync(string message) =>
+    await CountAsync($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests WHERE message = {message}");
 
   /// <summary>
   /// Le nombre de demandes enregistrées, <b>toutes confondues</b> — pour qui doit prouver que rien
@@ -95,12 +114,15 @@ internal sealed class CreationHandler(CustomWebApplicationFactory<Program> facto
   /// ⚠️ Le compte ne vaut que parce que toute la collection <see cref="WebCollection"/> s'exécute en
   /// série : aucun test voisin n'enregistre de demande entre deux lectures.
   /// </remarks>
-  public async Task<int> CountAsync()
+  internal async Task<int> CountAllAsync() =>
+    await CountAsync($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests");
+
+  private async Task<int> CountAsync(FormattableString query)
   {
     using var scope = factory.Services.CreateScope();
 
     return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
-      .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests")
+      .SqlQuery<int>(query)
       .SingleAsync();
   }
 

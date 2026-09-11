@@ -26,7 +26,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 [Collection(WebCollection.Name)]
 public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
 {
-  private readonly CreationHandler _handler = new(factory);
+  private readonly RequestSurface _surface = new(factory);
 
   /// <summary>
   /// <b>Ni email, ni nom et prénom ensemble</b> : le message d'identification va sous l'email et sous
@@ -42,7 +42,7 @@ public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
   public async Task RefusesAPersonIdentifiedNeitherByEmailNorByFullName(
     string lastName, string firstName, string email, string[] keys)
   {
-    var fields = CreationHandler.AValidRequest();
+    var fields = RequestSurface.AValidRequest();
     fields["lastName"] = lastName;
     fields["firstName"] = firstName;
     fields["email"] = email;
@@ -84,18 +84,7 @@ public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
   [InlineData("right", "Consent", DataSubjectRequestMessages.RightMissing)]
   public async Task RefusesEachFieldThatBreaksItsRule(string key, string? value, string message)
   {
-    var fields = CreationHandler.AValidRequest();
-
-    if (value is null)
-    {
-      fields.Remove(key);
-    }
-    else
-    {
-      fields[key] = value;
-    }
-
-    var refusals = await RefusalsOfAsync(fields);
+    var refusals = await RefusalsOfAsync(RequestSurface.With(RequestSurface.AValidRequest(), key, value));
 
     refusals.ShouldBe([$"{key} : {message}"]);
   }
@@ -111,7 +100,7 @@ public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
   [InlineData("message", 10_001, DataSubjectRequestMessages.MessageTooLong)]
   public async Task RefusesEachValueOverItsCeiling(string key, int length, string message)
   {
-    var fields = CreationHandler.AValidRequest();
+    var fields = RequestSurface.AValidRequest();
     fields[key] = key == "email"
       ? new string('j', length - "@example.org".Length) + "@example.org"
       : new string('a', length);
@@ -147,14 +136,14 @@ public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
       var todayInParis = DateOnly.FromDateTime(lateEvening.UtcDateTime).AddDays(1);
       ParisCalendar.Today(factory.Clock).ShouldBe(todayInParis, "L'horloge du service n'a pas été avancée comme prévu.");
 
-      var sameDay = CreationHandler.AValidRequest();
+      var sameDay = RequestSurface.AValidRequest();
       sameDay["receivedOn"] = Iso(todayInParis);
 
-      var accepted = await _handler.CreateAsync(sameDay);
+      var accepted = await _surface.CreateAsync(sameDay);
 
       accepted.StatusCode.ShouldBe(HttpStatusCode.Created, await accepted.Content.ReadAsStringAsync());
 
-      var nextDay = CreationHandler.AValidRequest();
+      var nextDay = RequestSurface.AValidRequest();
       nextDay["receivedOn"] = Iso(todayInParis.AddDays(1));
 
       var refusals = await RefusalsOfAsync(nextDay);
@@ -209,18 +198,7 @@ public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
   [InlineData("Phone")]
   public async Task RefusesAnOriginOutsideTheTwoChannels(string? origin)
   {
-    var fields = CreationHandler.AValidRequest();
-
-    if (origin is null)
-    {
-      fields.Remove("origin");
-    }
-    else
-    {
-      fields["origin"] = origin;
-    }
-
-    var refusals = await RefusalsOfAsync(fields);
+    var refusals = await RefusalsOfAsync(RequestSurface.With(RequestSurface.AValidRequest(), "origin", origin));
 
     refusals.ShouldHaveSingleItem().ShouldStartWith("origin : ");
   }
@@ -231,12 +209,12 @@ public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
   /// </summary>
   private async Task<string[]> RefusalsOfAsync(IReadOnlyDictionary<string, string> fields)
   {
-    var before = await _handler.CountAsync();
+    var before = await _surface.CountAllAsync();
 
-    var response = await _handler.CreateAsync(fields);
+    var response = await _surface.CreateAsync(fields);
     var body = await response.Content.ReadAsStringAsync();
 
-    (await _handler.CountAsync()).ShouldBe(before, "Une saisie refusée a été enregistrée.");
+    (await _surface.CountAllAsync()).ShouldBe(before, "Une saisie refusée a été enregistrée.");
 
     response.StatusCode.ShouldBe(HttpStatusCode.BadRequest, body);
     response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
