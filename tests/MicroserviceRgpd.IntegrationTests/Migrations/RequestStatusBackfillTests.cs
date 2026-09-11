@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// </remarks>
 public class RequestStatusBackfillTests : IAsyncLifetime
 {
-  internal const string TheStatus = "20260911185225_AddDataSubjectRequestStatus";
+  private const string TheStatusAddition = "20260911185225_AddDataSubjectRequestStatus";
 
   private static readonly Guid AnEmail = new("66666666-6666-6666-6666-666666666666");
   private static readonly Guid ALetter = new("77777777-7777-7777-7777-777777777777");
@@ -48,7 +48,8 @@ public class RequestStatusBackfillTests : IAsyncLifetime
   [Fact]
   public void ComesRightAfterTheCreationOfTheTable()
   {
-    _migrations.IndexOf(TheStatus).ShouldBe(_migrations.IndexOf(CreateDataSubjectRequestsTests.TheCreation) + 1);
+    _migrations.IndexOf(TheStatusAddition)
+      .ShouldBe(_migrations.IndexOf(CreateDataSubjectRequestsTests.TheCreation) + 1);
   }
 
   /// <summary>
@@ -60,8 +61,10 @@ public class RequestStatusBackfillTests : IAsyncLifetime
   {
     await using var dbContext = NewDbContext();
 
+    var ids = new[] { DataSubjectRequestId.From(AnEmail), DataSubjectRequestId.From(ALetter) };
+
     var statuses = await dbContext.DataSubjectRequests
-      .Where(request => request.Id == DataSubjectRequestId.From(AnEmail) || request.Id == DataSubjectRequestId.From(ALetter))
+      .Where(request => ids.Contains(request.Id))
       .Select(request => request.Status)
       .ToListAsync();
 
@@ -96,9 +99,11 @@ public class RequestStatusBackfillTests : IAsyncLifetime
          data_subject_right, created_by, created_at)
       VALUES
         ({AnEmail}, 'Email', DATE '2026-09-01', NULL, NULL, 'jeanne@exemple.fr', false,
-         'Je souhaite accéder à mes données.', 'Access', 'operator', TIMESTAMPTZ '2026-09-01 08:00:00+00'),
+         'Je souhaite accéder à mes données.', 'Access', 'operator',
+         TIMESTAMPTZ '2026-09-01 08:00:00+00'),
         ({ALetter}, 'Letter', DATE '2026-08-20', 'Martin', 'Paul', NULL, true,
-         'Merci d''effacer mon compte.', 'Erasure', 'operator', TIMESTAMPTZ '2026-09-02 09:00:00+00');
+         'Merci d''effacer mon compte.', 'Erasure', 'operator',
+         TIMESTAMPTZ '2026-09-02 09:00:00+00');
       """);
   }
 

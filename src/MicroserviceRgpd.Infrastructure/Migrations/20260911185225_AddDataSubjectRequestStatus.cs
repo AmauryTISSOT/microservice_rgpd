@@ -5,8 +5,8 @@
 namespace MicroserviceRgpd.Infrastructure.Migrations
 {
     /// <summary>
-    /// Pose sur la demande son <c>statut</c> (ADR-0021), stocké par le nom de la valeur. <b>Un ajout,
-    /// aucun retrait.</b>
+    /// Pose sur la demande son statut, <c>status</c> (ADR-0021), stocké par le nom de la valeur.
+    /// <b>Un ajout, aucun retrait.</b>
     /// </summary>
     /// <remarks>
     /// <para>
@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.Infrastructure.Migrations
     /// construction</b> : aucun <c>Gesture</c> n'existait qui les aurait terminées ou annulées.
     /// </para>
     /// <para>
-    /// ⚠️ <b>Le remplissage se fait en trois gestes, et la colonne ne garde AUCUNE valeur par
+    /// ⚠️ <b>Le remplissage se fait en trois temps, et la colonne ne garde AUCUNE valeur par
     /// défaut</b>, comme <c>listing_origin</c> : seule <c>DataSubjectRequest.Receive</c> fixe le
     /// statut de naissance. La colonne naît donc nullable, se remplit une fois, puis se ferme.
     /// </para>
