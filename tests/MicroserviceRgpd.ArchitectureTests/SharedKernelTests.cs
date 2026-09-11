@@ -2,9 +2,9 @@
 
 /// <summary>
 /// Le noyau partagé vaut par sa <b>petitesse</b> : un noyau qui grossit recouple deux contextes en
-/// silence. La taxonomie y est seule parce qu'elle est seule à n'appartenir à aucun des deux — son
-/// auteur est le RGPD. <c>Capability</c> est du <c>Casework</c> pur, <c>DeclaredConfidence</c> de la
-/// <c>Qualification</c> pure : ni l'un ni l'autre n'entre.
+/// silence. La taxonomie y est seule parce qu'elle est seule à n'appartenir à aucun des contextes
+/// qui la lisent — son auteur est le RGPD. <c>Origin</c> est du <c>Requests</c> pur,
+/// <c>DeclaredConfidence</c> de la <c>Qualification</c> pure : ni l'un ni l'autre n'entre.
 /// <para>
 /// La liste attendue est écrite en dur. C'est le but : y ajouter un nom doit demander un geste
 /// délibéré, et ce geste est de niveau ADR — voir <c>docs/adr/0002</c>.

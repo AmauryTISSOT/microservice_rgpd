@@ -11,7 +11,7 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// <c>from</c> ni un <c>to</c></b>, n'apparaît dans aucune paire ordonnée de la matrice, et la
 /// matrice reste donc verte sur lui quoi qu'il fasse. Le cas qui fait mal, écrit avec les noms du
 /// dépôt : un <c>Infrastructure/Data/Reporting/ScreeningExportService.cs</c> qui lit les colonnes
-/// <c>Retained</c>, les rapproche des <c>DeclaredSystem</c> et pré-remplit le <c>Manifest</c> — le
+/// <c>Retained</c>, les rapproche de ce qui est déjà déclaré et pré-remplit le <c>Manifest</c> — le
 /// geste que la liste <i>Avoid</i> de la clause <c>Aucune modification vers le Manifest</c> bannit
 /// nommément.
 /// </para>
@@ -51,10 +51,11 @@ public class ContextlessTypeTests
     // unique, et un schéma par contexte aurait été une seconde base à administrer pour une
     // frontière que l'IL tient déjà. Elle nomme les racines qu'elle stocke, et rien de plus : elle
     // n'a aucun corps de méthode qui rapproche deux contextes l'un de l'autre. `Configuration` y
-    // est entré avec la table `settings` (ADR-0016).
+    // est entré avec la table `settings` (ADR-0016), `Requests` avec `data_subject_requests` — le
+    // remplaçant de `Casework` décidé par #344, qu'ADR-0017 consigne.
     (
       "MicroserviceRgpd.Infrastructure.Data.AppDbContext",
-      [ContextInspector.Screening, ContextInspector.Configuration]),
+      [ContextInspector.Requests, ContextInspector.Screening, ContextInspector.Configuration]),
 
     // Le point de montage de la couche : nommer les ports de tous les contextes EST son travail, et
     // l'y interdire n'aurait laissé qu'un point de montage par contexte, c'est-à-dire le même
@@ -118,7 +119,7 @@ public class ContextlessTypeTests
       "La liste des dérogations s'est élargie. Un fichier sans contexte qui en rapproche deux est " +
       "l'angle mort d'ADR-0003 : l'y inscrire est un geste de niveau ADR.");
 
-    Permitted.Sum(exempt => exempt.Contexts.Length).ShouldBe(6);
+    Permitted.Sum(exempt => exempt.Contexts.Length).ShouldBe(7);
   }
 
   /// <summary>

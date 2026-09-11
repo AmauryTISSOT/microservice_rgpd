@@ -215,10 +215,9 @@ public class ScreeningPersistenceTests(PostgreSqlFixture postgres)
 
   /// <summary>
   /// <b>Les colonnes se lisent par table, sans charger le rapport</b> — et c'est toute la raison
-  /// pour laquelle <c>ScreenedColumn</c> a son propre <c>DbSet</c>, contre le précédent de
-  /// <c>Claim</c> et de <c>Step</c>. L'écran d'arbitrage ouvre une table à la fois ; charger
-  /// l'agrégat entier pour treize colonnes aurait été le précédent respecté à la lettre et trahi
-  /// en pratique.
+  /// pour laquelle <c>ScreenedColumn</c> a son propre <c>DbSet</c>. L'écran d'arbitrage ouvre une
+  /// table à la fois ; charger l'agrégat entier pour treize colonnes aurait été la règle des
+  /// agrégats respectée à la lettre et trahie en pratique.
   /// </summary>
   [Fact]
   public async Task ReadsTheColumnsOfOneTableWithoutLoadingTheWholeReport()

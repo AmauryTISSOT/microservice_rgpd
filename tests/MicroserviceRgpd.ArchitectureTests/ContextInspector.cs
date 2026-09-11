@@ -13,7 +13,7 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// <para>
 /// L'appartenance d'un type à un contexte se lit à son <b>espace de noms</b>, parce que le dépôt
 /// est découpé par couche et que les contextes s'y lisent au dossier — <c>Core/Qualifications/</c>,
-/// <c>Core/Casework/</c>, <c>Core/SharedKernel/</c>, et de même dans les trois autres couches.
+/// <c>Core/Requests/</c>, <c>Core/SharedKernel/</c>, et de même dans les trois autres couches.
 /// Un segment est reconnu par son <b>préfixe</b> : le dossier dit <c>Qualifications</c> là où le
 /// contexte se nomme <c>Qualification</c>.
 /// </para>
@@ -27,7 +27,6 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// </summary>
 internal static class ContextInspector
 {
-  internal const string Casework = "Casework";
   internal const string Requests = "Requests";
   internal const string Qualification = "Qualification";
   internal const string Screening = "Screening";
@@ -35,16 +34,12 @@ internal static class ContextInspector
   internal const string SharedKernel = "SharedKernel";
 
   /// <summary>
-  /// Tout ce qui peut être d'un côté ou de l'autre d'une frontière : les cinq contextes bornés, et
+  /// Tout ce qui peut être d'un côté ou de l'autre d'une frontière : les quatre contextes bornés, et
   /// le noyau partagé qui n'en est pas un. La liste est écrite en toutes lettres plutôt que
   /// découverte, et <see cref="ContextRosterTests"/> l'ancre sur les glossaires du dépôt — un nom
   /// qui ne désignerait aucun dossier réel rendrait ses règles vertes pour toujours.
-  /// <para>
-  /// ⚠️ <c>Requests</c> y figure <b>à côté</b> de <c>Casework</c>, qu'il remplace : les deux coexistent
-  /// jusqu'au retrait de <c>Casework</c>, qui emportera sa ligne.
-  /// </para>
   /// </summary>
-  internal static readonly string[] All = [Qualification, Casework, Requests, Screening, Configuration, SharedKernel];
+  internal static readonly string[] All = [Qualification, Requests, Screening, Configuration, SharedKernel];
 
   /// <summary>
   /// Toutes les traversées <paramref name="from"/> → <paramref name="to"/> portées par l'IL de
@@ -332,7 +327,7 @@ internal static class ContextInspector
 
   /// <summary>
   /// L'espace de noms d'un type imbriqué est vide : c'est celui du type qui l'entoure qui dit où il
-  /// vit. Une fermeture engendrée dans un gestionnaire de <c>Casework</c> reste du <c>Casework</c>.
+  /// vit. Une fermeture engendrée dans un gestionnaire de <c>Screening</c> reste du <c>Screening</c>.
   /// </summary>
   private static TypeReference Outermost(TypeReference reference)
   {

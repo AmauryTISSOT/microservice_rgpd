@@ -45,12 +45,19 @@
   qu'elle dit, quel droit elle invoque. Ce que le serveur rend ici est l'état par défaut du
   formulaire ; le module l'y ramène à chaque ouverture, et recalcule alors « aujourd'hui ».
 
-  ⚠️ LE NAVIGATEUR NE JUGE RIEN. Le formulaire porte `novalidate`, l'email est un champ texte, et
-  aucun champ ne porte de `maxlength` : un texte collé trop long serait tronqué en silence, là où
-  l'Operator doit lire pourquoi il est refusé. Les règles sont celles du service, que le module
-  appliquera en confort et que le serveur revalidera.
+  ⚠️ LE NAVIGATEUR NE JUGE RIEN DE LUI-MÊME. Le formulaire porte `novalidate`, l'email est un champ
+  texte, et aucun champ ne porte de `maxlength` : un texte collé trop long serait tronqué en
+  silence, là où l'Operator doit lire pourquoi il est refusé. Les règles sont celles du service,
+  que le module applique en confort et que le serveur revalidera.
+
+  CHAQUE CHAMP VALIDÉ PORTE, SOUS LUI, LA PLACE DE SON REFUS : vide tant qu'il n'y a rien à dire, et
+  reliée au champ par `aria-describedby`, pour qu'un lecteur d'écran lise le message avec le champ.
 
   ⚠️ LA DATE N'A PAS DE BORNE BASSE : un courrier peut être resté longtemps en attente.
+
+  LE FORMULAIRE DÉCLARE SON ENVOI — `POST /demandes?handler=Create` — ET PORTE LE JETON ANTI-REJEU,
+  que le tag helper pose en dernier champ, caché. Le script n'a qu'à envoyer le formulaire tel
+  quel ; aucun bouton ne le soumet nativement.
 *@
 <dialog class="modal" id="create-request" aria-labelledby="create-request-title">
   <div class="modal-head">
@@ -63,7 +70,7 @@
     </button>
   </div>
 
-  <form id="create-request-form" class="modal-form" novalidate>
+  <form id="create-request-form" class="modal-form" method="post" asp-page-handler="Create" novalidate>
     <p>
       <label for="request-origin">Origine</label>
       <select id="request-origin" name="origin">
@@ -77,22 +84,30 @@
     <p>
       <label for="request-received-on">Date de réception</label>
       <input type="date" lang="fr" id="request-received-on" name="@DataSubjectRequestField.ReceivedOn"
-             value="@today" max="@today" />
+             value="@today" max="@today"
+             aria-describedby="request-received-on-refusal" />
+      <span class="refusal" id="request-received-on-refusal"></span>
     </p>
 
     <p>
       <label for="request-last-name">Nom</label>
-      <input type="text" id="request-last-name" name="@DataSubjectRequestField.LastName" autocomplete="off" />
+      <input type="text" id="request-last-name" name="@DataSubjectRequestField.LastName" autocomplete="off"
+             aria-describedby="request-last-name-refusal" />
+      <span class="refusal" id="request-last-name-refusal"></span>
     </p>
 
     <p>
       <label for="request-first-name">Prénom</label>
-      <input type="text" id="request-first-name" name="@DataSubjectRequestField.FirstName" autocomplete="off" />
+      <input type="text" id="request-first-name" name="@DataSubjectRequestField.FirstName" autocomplete="off"
+             aria-describedby="request-first-name-refusal" />
+      <span class="refusal" id="request-first-name-refusal"></span>
     </p>
 
     <p>
       <label for="request-email">Email</label>
-      <input type="text" inputmode="email" id="request-email" name="@DataSubjectRequestField.Email" autocomplete="off" />
+      <input type="text" inputmode="email" id="request-email" name="@DataSubjectRequestField.Email" autocomplete="off"
+             aria-describedby="request-email-refusal" />
+      <span class="refusal" id="request-email-refusal"></span>
     </p>
 
     <p class="check">
@@ -102,7 +117,9 @@
 
     <p>
       <label for="request-message">Message</label>
-      <textarea id="request-message" name="@DataSubjectRequestField.Message" rows="6"></textarea>
+      <textarea id="request-message" name="@DataSubjectRequestField.Message" rows="6"
+                aria-describedby="request-message-refusal"></textarea>
+      <span class="refusal" id="request-message-refusal"></span>
     </p>
 
     @*
@@ -120,18 +137,20 @@
     *@
     <p>
       <label for="request-right">Droits RGPD</label>
-      <select id="request-right" name="@DataSubjectRequestField.Right">
+      <select id="request-right" name="@DataSubjectRequestField.Right"
+              aria-describedby="request-right-refusal">
         <option value="">Sélectionner un droit</option>
         @foreach (var right in BoardModel.InvocableRights)
         {
           <option value="@right.Name">@right.FrenchLabel</option>
         }
       </select>
+      <span class="refusal" id="request-right-refusal"></span>
     </p>
 
     <div class="modal-actions">
       <button type="button" data-dismiss>Annuler</button>
-      <button type="button" class="primary">Créer</button>
+      <button type="button" class="primary" data-create>Créer</button>
     </div>
   </form>
 </dialog>

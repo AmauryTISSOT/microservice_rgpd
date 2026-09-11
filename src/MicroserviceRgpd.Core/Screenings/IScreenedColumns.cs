@@ -8,8 +8,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// <para>
 /// ⚠️ <b>Il existe parce que <see cref="ScreenedColumn"/> a son propre <c>DbSet</c>, et le dépôt
 /// générique est contraint aux agrégats racines.</b> L'emprunter aurait déclaré agrégat une entité
-/// qui naît et se modifie par sa racine — même raison que <c>IEvidenceLog</c> ou <c>IRetrievedData</c>,
-/// qui vivent hors du dépôt générique sans être des racines pour autant.
+/// qui naît et se modifie par sa racine.
 /// </para>
 /// <para>
 /// <b>Ce qu'il achète est un ordre de grandeur, jamais un goût.</b> L'écran d'arbitrage ouvre une

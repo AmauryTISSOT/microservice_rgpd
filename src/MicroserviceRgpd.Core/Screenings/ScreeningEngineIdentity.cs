@@ -19,9 +19,9 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// lire d'ici serait une traversée que le garde d'ADR-0003 refuse.
 /// </para>
 /// <para>
-/// ⚠️ <b>Ce n'est pas une signature.</b> Le mot est pris par <c>Casework</c>, qui le détient en
-/// propre ; ici il ne nommerait rien — ce contexte n'enregistre pas qui arbitre, et le moteur, lui,
-/// ne tranche jamais. Voir <see cref="Arbitration"/> et l'<c>ADR-0014</c>.
+/// ⚠️ <b>Ce n'est pas une signature.</b> Le mot ne nommerait rien ici — ce contexte n'enregistre
+/// pas qui arbitre, et le moteur, lui, ne tranche jamais. Voir <see cref="Arbitration"/> et
+/// l'<c>ADR-0014</c>.
 /// </para>
 /// </remarks>
 /// <param name="Name">Le nom sous lequel le moteur se déclare, tel qu'il arrive.</param>

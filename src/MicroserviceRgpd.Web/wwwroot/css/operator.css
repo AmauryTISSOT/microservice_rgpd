@@ -1210,6 +1210,23 @@ button.modal-close {
   margin-top: var(--space-lg);
 }
 
+/*
+  LE REFUS SOUS SON CHAMP — le rouge des refus, sur sa propre ligne. Vide, il ne prend aucune place :
+  le formulaire ne bouge qu'au moment où il y a quelque chose à lire.
+*/
+.modal-form .refusal {
+  display: block;
+  margin-top: var(--space-xxs);
+}
+
+.modal-form .refusal:empty {
+  display: none;
+}
+
+.modal-form [aria-invalid="true"] {
+  border-color: var(--signal-error);
+}
+
 /* La confirmation : un titre, une phrase, deux boutons — elle n'a pas besoin de la largeur d'un formulaire. */
 dialog.modal.confirmation {
   width: 28rem;

@@ -139,11 +139,11 @@ public sealed class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
   /// </summary>
   /// <remarks>
   /// <para>
-  /// ⚠️ <b>Elles ne sont pas <em>possédées</em>, contre le précédent de <c>Claim</c> et de
-  /// <c>Step</c></b> — le motif est écrit là où leur table se décide, voir
-  /// <see cref="ScreenedColumnConfiguration"/>. Conséquence à retenir ici : un rapport relu
-  /// <b>n'apporte pas ses colonnes</b> sans qu'on les demande, là où le sac d'un <c>Case</c> arrive
-  /// avec lui. C'est voulu — cinq mille lignes ne se chargent pas pour afficher un en-tête.
+  /// ⚠️ <b>Elles ne sont pas <em>possédées</em></b> — le motif est écrit là où leur table se
+  /// décide, voir <see cref="ScreenedColumnConfiguration"/>. Conséquence à retenir ici : un rapport
+  /// relu <b>n'apporte pas ses colonnes</b> sans qu'on les demande, là où une collection possédée
+  /// arriverait avec lui. C'est voulu — cinq mille lignes ne se chargent pas pour afficher un
+  /// en-tête.
   /// </para>
   /// <para>
   /// <b>La suppression du rapport emporte ses colonnes, et c'est la base qui le tient.</b> Supprimer

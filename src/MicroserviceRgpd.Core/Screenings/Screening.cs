@@ -11,10 +11,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// « Courant » est un <b>calcul</b> : le rapport le plus récent du déploiement est le courant, tous
 /// les autres sont archivés par le seul fait qu'un plus récent existe — voir
 /// <see cref="CurrentAmong"/>. Si <c>Archived</c> était un état, une transition ratée laisserait deux
-/// rapports courants et l'<c>Operator</c> arbitrerait le mauvais. Même mécanique que le refus d'un
-/// état « en retard » dans <c>Casework</c>, où le dépassement est un calcul pour que jamais un retard
-/// non détecté ne devienne un retard inexistant. <b>Archiver n'écrit donc rien</b> : ni drapeau, ni
-/// date, ni table à part.
+/// rapports courants et l'<c>Operator</c> arbitrerait le mauvais. <b>Archiver n'écrit donc
+/// rien</b> : ni drapeau, ni date, ni table à part.
 /// </para>
 /// <para>
 /// <b>L'avancement non plus n'est pas un état.</b> « Douze colonnes en attente » est un
@@ -23,8 +21,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </para>
 /// <para>
 /// <b>Il est détenu et vit plusieurs jours</b> : un relevé s'arbitre en plusieurs fois, colonne par
-/// colonne. Son grain est le <b>déploiement</b>, jamais le dossier ; il n'écrit rien au
-/// <c>EvidenceLog</c>, n'a aucune échéance et vit jusqu'à ce qu'un <c>Operator</c> le supprime.
+/// colonne. Son grain est le <b>déploiement</b>, jamais la demande ; il ne tient aucun journal de
+/// preuve, n'a aucune échéance et vit jusqu'à ce qu'un <c>Operator</c> le supprime.
 /// </para>
 /// <para>
 /// ⚠️ <b>Il est entier ou il n'existe pas.</b> Le relevé déclare le nombre de colonnes qu'il porte,
@@ -43,8 +41,8 @@ public sealed class Screening : IAggregateRoot
   public const int MaxDatabaseNameLength = 100;
 
   /// <summary>
-  /// Le plafond du dialecte déclaré. C'est une constante <b>propre à ce contexte</b> : lire celle de
-  /// <c>Casework</c> serait une traversée, pour l'économie d'un entier.
+  /// Le plafond du dialecte déclaré. C'est une constante <b>propre à ce contexte</b> : lire celle
+  /// d'un autre contexte serait une traversée, pour l'économie d'un entier.
   /// </summary>
   public const int MaxDialectLength = 64;
 

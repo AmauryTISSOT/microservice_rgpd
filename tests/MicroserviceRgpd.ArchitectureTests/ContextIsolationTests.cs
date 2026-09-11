@@ -7,8 +7,8 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// <para>
 /// L'énoncé à l'envers n'est pas une coquetterie. Une liste d'interdits ne protège que ce qu'on a
 /// pensé à y écrire : elle aurait laissé ouvertes en silence la traversée par laquelle l'instant du
-/// verdict se mettrait à connaître la durée de l'instruction, et les trois par lesquelles le noyau
-/// partagé — censé n'appartenir à personne — se mettrait à dépendre d'un contexte. Et un quatrième
+/// verdict se mettrait à connaître la demande enregistrée, et celles par lesquelles le noyau
+/// partagé — censé n'appartenir à personne — se mettrait à dépendre d'un contexte. Et un nouveau
 /// contexte serait né <b>non gardé</b>, jusqu'à ce que quelqu'un pense à allonger la liste. Ici il
 /// naît interdit partout, et c'est à lui d'écrire sa dérogation.
 /// </para>
@@ -27,15 +27,15 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// <para>
 /// ⚠️ Tant qu'un contexte n'a pas de code, ses règles ne trouvent rien à examiner : elles sont vertes
 /// par vacuité. C'est voulu — on pose le garde <b>avant</b> le contexte qu'il garde, pour que sa
-/// première ligne naisse déjà sous surveillance. C'était vrai de <c>Casework</c> en son temps, et de
-/// <c>Screening</c> jusqu'à <c>Core/Screenings/</c>, qui est le premier dossier qu'il porte, et de
-/// <c>Requests</c> jusqu'à <c>Core/Requests/</c>, où la demande est née.
+/// première ligne naisse déjà sous surveillance. C'était vrai de <c>Screening</c> jusqu'à
+/// <c>Core/Screenings/</c>, qui est le premier dossier qu'il porte, et de <c>Requests</c> jusqu'à
+/// <c>Core/Requests/</c>, où la demande est née.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le premier code de <c>Screening</c> a immédiatement montré une chose que la vacuité
 /// cachait</b> : l'inspecteur lisait <c>Ardalis.SharedKernel</c> — le paquet d'où vient le marqueur
 /// <c>IAggregateRoot</c> — comme le noyau partagé du dépôt. Les deux contextes qui portaient du code
-/// ont tous deux la traversée vers le noyau <b>permise</b>, si bien que le faux positif y restait
+/// avaient tous deux la traversée vers le noyau <b>permise</b>, si bien que le faux positif y restait
 /// couvert ; <c>Screening</c>, à qui elle est refusée, se dénonçait sur son premier agrégat. La borne
 /// vit dans <see cref="ContextInspector"/>, et deux témoins la tiennent des deux côtés.
 /// </para>
@@ -51,10 +51,6 @@ public class ContextIsolationTests
   /// <c>Requests</c> y est entré avec la demande : le droit qu'elle invoque est l'un des six, choisi
   /// par l'<c>Operator</c> et lu sur le même type.
   /// <para>
-  /// ⚠️ Tant que <c>Casework</c> n'est pas retiré, la liste compte provisoirement <b>quatre</b>
-  /// lignes ; son retrait emporte la sienne et la ramène à trois.
-  /// </para>
-  /// <para>
   /// La liste est écrite en dur, comme celle de <see cref="SharedKernelTests"/> et pour le même
   /// motif : y ajouter une ligne doit demander un geste délibéré, et ce geste est de niveau ADR.
   /// </para>
@@ -62,7 +58,6 @@ public class ContextIsolationTests
   private static readonly (string From, string To)[] Permitted =
   [
     (ContextInspector.Qualification, ContextInspector.SharedKernel),
-    (ContextInspector.Casework, ContextInspector.SharedKernel),
     (ContextInspector.Configuration, ContextInspector.SharedKernel),
     (ContextInspector.Requests, ContextInspector.SharedKernel),
   ];
@@ -111,12 +106,11 @@ public class ContextIsolationTests
   /// change de couleur.
   /// </summary>
   [Fact]
-  public void PermitsFourCrossingsAndNoOthers()
+  public void PermitsThreeCrossingsAndNoOthers()
   {
     Permitted.ShouldBe(
       [
         (ContextInspector.Qualification, ContextInspector.SharedKernel),
-        (ContextInspector.Casework, ContextInspector.SharedKernel),
         (ContextInspector.Configuration, ContextInspector.SharedKernel),
         (ContextInspector.Requests, ContextInspector.SharedKernel),
       ],
@@ -137,7 +131,6 @@ public class ContextIsolationTests
   /// </summary>
   [Theory]
   [InlineData(ContextInspector.Qualification)]
-  [InlineData(ContextInspector.Casework)]
   [InlineData(ContextInspector.Requests)]
   [InlineData(ContextInspector.Screening)]
   [InlineData(ContextInspector.Configuration)]
@@ -163,31 +156,6 @@ public class ContextIsolationTests
   {
     return (from, to) switch
     {
-      (ContextInspector.Casework, ContextInspector.Qualification) =>
-        "Une demande peut arriver déjà qualifiée : un Case s'instruit sans qu'aucune qualification " +
-        "n'ait eu lieu, et le second contexte se démontre sans GPU. Passez par le noyau partagé, ou " +
-        "par un qualificationId opaque.",
-
-      (ContextInspector.Qualification, ContextInspector.Casework) =>
-        "Qualification ne connaît que l'instant d'un verdict : elle ignore qu'un dossier existe, " +
-        "s'ouvre et se clôt. Un fournisseur amont qui connaît son aval n'est plus optionnel.",
-
-      (ContextInspector.Screening, ContextInspector.Casework) =>
-        "Screening ne confronte jamais le Manifest — c'est la clause " +
-        "« Aucune modification vers le Manifest ». " +
-        "Une détection qui sait ce qui est déjà déclaré est un pré-remplissage, et un Manifest " +
-        "pré-rempli par une machine se lit comme complet.",
-
-      (ContextInspector.Casework, ContextInspector.Screening) =>
-        "Casework n'affiche pas de suggestions à côté d'une déclaration : c'est le pré-remplissage " +
-        "par l'autre bout, et c'est la corrosion par voisinage que le troisième contexte existe " +
-        "pour empêcher. Le grain du Manifest est le système, jamais la colonne.",
-
-      (ContextInspector.Casework, ContextInspector.Configuration) =>
-        "Le Case n'appelle pas encore par droit : il suit les DeclaredSystem, et le Paramétrage " +
-        "n'est lu par aucune instruction. Le recâblage est une décision à venir — voir " +
-        "docs/adr/0016 — et la ligne qui l'ouvrira sera écrite dans la liste blanche, pas ici.",
-
       (ContextInspector.Requests, ContextInspector.Qualification) =>
         "Le droit invoqué d'une demande est choisi par l'Operator, jamais lu d'un verdict : une " +
         "demande s'enregistre sans qu'aucune qualification n'ait eu lieu. Passez par le noyau " +
@@ -208,8 +176,8 @@ public class ContextIsolationTests
         "colonne « courriel » ne relève pas d'un droit plutôt qu'un autre, elle relève de tous.",
 
       (ContextInspector.Configuration, _) or (_, ContextInspector.Configuration) =>
-        "Configuration ne connaît que le Paramétrage : un droit, une adresse. Il ne sait rien d'un " +
-        "dossier, d'un verdict ni d'un relevé de colonnes, et aucun d'eux ne le lit encore — voir " +
+        "Configuration ne connaît que le Paramétrage : un droit, une adresse. Il ne sait rien d'une " +
+        "demande, d'un verdict ni d'un relevé de colonnes, et aucun d'eux ne le lit encore — voir " +
         "docs/adr/0016.",
 
       _ =>

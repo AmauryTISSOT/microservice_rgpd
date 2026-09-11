@@ -132,8 +132,7 @@ public class NothingRunsInTheBackgroundTests
 
   /// <summary>
   /// Les mots qui trahiraient un état atteint plutôt qu'un fait déclaré. <c>Deadline</c> n'en est pas :
-  /// une échéance <b>calculée</b> est un fait du calendrier, et <c>StatutoryDeadline</c> ne se persiste
-  /// nulle part.
+  /// une échéance <b>calculée</b> est un fait du calendrier, qui ne se persiste nulle part.
   /// </summary>
   private static bool Suspicious(string name)
   {

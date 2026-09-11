@@ -27,9 +27,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </para>
 /// <para>
 /// <b>Elle n'est pas un agrégat.</b> Elle naît et se modifie par la racine — mais elle reçoit, elle,
-/// son propre <c>DbSet</c> : le précédent de <c>Claim</c> et <c>Step</c> est rompu délibérément,
-/// parce qu'un <c>Case</c> a quelques dizaines d'enfants là où un <see cref="Screening"/> en a cinq
-/// mille, et que l'écran n'ouvre qu'une table à la fois.
+/// son propre <c>DbSet</c>, délibérément, parce qu'un <see cref="Screening"/> en a cinq mille et
+/// que l'écran n'ouvre qu'une table à la fois.
 /// </para>
 /// </remarks>
 public sealed class ScreenedColumn
@@ -158,9 +157,9 @@ public sealed class ScreenedColumn
   /// qui les justifie.
   /// </summary>
   /// <remarks>
-  /// <b>Le motif est obligatoire dès que la ligne est signalée</b>, sur le modèle exact de
-  /// <c>Reservation</c>, dont le glossaire dit qu'« une réserve <b>sans</b> motif est une panne du
-  /// contrat, pas une réserve ». Sans lui, l'<c>Operator</c> arbitrerait sans rien savoir.
+  /// <b>Le motif est obligatoire dès que la ligne est signalée</b> : un signalement <b>sans</b>
+  /// motif est une panne du contrat, pas un signalement. Sans lui, l'<c>Operator</c> arbitrerait
+  /// sans rien savoir.
   /// </remarks>
   /// <param name="listed">La ligne du relevé.</param>
   /// <param name="category">Ce qui a été reconnu. Jamais <see cref="PersonalDataCategory.Unflagged"/>.</param>
@@ -234,11 +233,9 @@ public sealed class ScreenedColumn
   /// Porte l'issue qu'un humain vient de rendre, <b>datée</b>.
   /// </summary>
   /// <remarks>
-  /// <b>Un second arbitrage écrase le premier</b>, à l'inverse de <c>Reservation</c> dont « le
-  /// premier arbitrage est le bon » parce qu'un <c>EvidenceLog</c> en garde la trace. Ici il n'y a pas de
-  /// <c>EvidenceLog</c> : la trace <b>est</b> l'état courant, et se raviser doit rester possible sur une
-  /// surface qu'on reprend pendant trois jours. Le coût est déclaré — la date de l'arbitrage
-  /// remplacé est effacée.
+  /// <b>Un second arbitrage écrase le premier.</b> Il n'y a pas de journal de preuve ici : la trace
+  /// <b>est</b> l'état courant, et se raviser doit rester possible sur une surface qu'on reprend
+  /// pendant trois jours. Le coût est déclaré — la date de l'arbitrage remplacé est effacée.
   /// </remarks>
   /// <param name="ruling">Retenue, ou écartée. Jamais <see cref="ScreenedColumnState.Awaiting"/>.</param>
   /// <param name="renderedOn">L'instant où il a tranché.</param>

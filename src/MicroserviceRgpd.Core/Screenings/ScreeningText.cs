@@ -11,11 +11,11 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// a mis dans la main et n'en juge jamais la valeur.
 /// </para>
 /// <para>
-/// ⚠️ <b>C'est un doublon de source assumé, et il n'est pas factorisable.</b> <c>Casework</c> porte
-/// le même garde sous le nom <c>DeclaredText</c>. Le lire d'ici serait une traversée
-/// <c>Screening</c> → <c>Casework</c>, que le garde d'ADR-0003 refuse ; et <c>Screening</c> n'a
-/// « aucune intersection avec le reste du dépôt — pas même le noyau partagé ». Recopier quarante
-/// lignes est le prix, connu et payé, de la clause <c>Separate Ways</c>.
+/// ⚠️ <b>Il n'est pas factorisable.</b> Un garde commun vivrait dans un autre contexte, et le lire
+/// d'ici serait une traversée que le garde d'ADR-0003 refuse ; et <c>Screening</c> n'a « aucune
+/// intersection avec le reste du dépôt — pas même le noyau partagé ». Recopier quarante lignes le
+/// jour où un autre contexte en voudra autant est le prix, connu et payé, de la clause
+/// <c>Separate Ways</c>.
 /// </para>
 /// <para>
 /// <b>Elle lève, elle ne rend pas de verdict.</b> Ce qui arrive ici est censé être déclarable : le
