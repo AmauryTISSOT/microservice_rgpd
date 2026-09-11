@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text.RegularExpressions;
+using MicroserviceRgpd.FunctionalTests.Layout;
 using NSwag.Generation;
 
 namespace MicroserviceRgpd.FunctionalTests.Requests;
@@ -34,6 +36,53 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
     var response = await _surface.CreateAsync(RequestSurface.AValidRequest());
 
     response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+  }
+
+  /// <summary>
+  /// <b>Le 201 porte la ligne de la nouvelle demande</b>, en HTML, que le script insère dans le
+  /// tableau : ses libellés — dont la date limite de réponse calculée et le statut « En cours » —,
+  /// l'identifiant de la demande relue en base, et le badge sous le nom canonique du statut.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est la ligne même que le tableau rendra</b>, au caractère près : une seule vue partielle
+  /// rend les deux, et deux gabarits finiraient par diverger.
+  /// </remarks>
+  [Fact]
+  public async Task AnswersCreatedWithTheRowOfTheNewRequest()
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+    var fields = RequestSurface.AValidRequest();
+    fields["receivedOn"] = "2026-01-31";
+    fields["lastName"] = "Martin";
+    fields["firstName"] = "Jeanne";
+    fields["email"] = email;
+    fields["right"] = "Erasure";
+
+    var response = await _surface.CreateAsync(fields);
+    var body = await response.Content.ReadAsStringAsync();
+
+    response.StatusCode.ShouldBe(HttpStatusCode.Created, body);
+    response.Content.Headers.ContentType.ShouldNotBeNull().MediaType.ShouldBe("text/html");
+
+    var row = body.Trim();
+    Regex.Matches(row, @"<tr\b").Count.ShouldBe(1, "Le 201 ne porte pas une ligne, une seule.");
+
+    var cells = Regex.Matches(row, @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)
+      .Select(cell => LayoutSurface.TextIn(cell.Groups[1].Value))
+      .ToArray();
+
+    cells[..7].ShouldBe([email, "Martin", "Jeanne", "31/01/2026", "28/02/2026", "Non", "Droit à l'effacement"]);
+    cells[8..10].ShouldBe(["Opérateur", "En cours"]);
+    row.ShouldContain(@"data-status=""InProgress""");
+    row.ShouldContain(@"data-received-on=""2026-01-31""", customMessage: "La ligne ne porte pas sa date de réception ISO, qui la place.");
+
+    var stored = await _surface.RowOfAsync(fields["message"]);
+
+    stored["status"].ShouldBe("InProgress");
+    stored["response_deadline"].ShouldBe(new DateOnly(2026, 2, 28));
+    Regex.Match(row, @"data-request-id=""([^""]*)""").Groups[1].Value.ShouldBe(stored["id"]?.ToString());
+
+    row.ShouldBe(await _surface.BoardRowWithAsync(email), "La ligne du 201 n'est pas celle que le tableau rend.");
   }
 
   /// <summary>

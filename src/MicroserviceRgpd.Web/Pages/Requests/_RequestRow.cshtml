@@ -30,6 +30,9 @@
 
   LA LIGNE PORTE, EN `data-*`, CE QUE LA RECHERCHE PARCOURT : l'email, le nom et le prénom tels
   qu'enregistrés, vides s'ils sont absents — et non les libellés des cellules, dont le « — ».
+
+  ELLE PORTE AUSSI SA DATE DE RÉCEPTION AU FORMAT ISO, que le script compare pour placer la ligne
+  d'une demande qu'on vient de créer : jj/mm/aaaa, que la cellule affiche, ne se compare pas.
 *@
 @{
   (string Label, string Icon, string Action)[] actions =
@@ -42,7 +45,8 @@
 <tr data-request-id="@Model.Id" data-deletion-confirmation="@Model.DeletionConfirmation"
     data-email="@Model.Searchable.Email"
     data-last-name="@Model.Searchable.LastName"
-    data-first-name="@Model.Searchable.FirstName">
+    data-first-name="@Model.Searchable.FirstName"
+    data-received-on="@Model.ReceivedOnIso">
   <td>@Model.Email</td>
   <td>@Model.LastName</td>
   <td>@Model.FirstName</td>

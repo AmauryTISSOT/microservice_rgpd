@@ -57,6 +57,64 @@ public class RequestCreation(BrowserHarness harness)
   }
 
   /// <summary>
+  /// <b>La demande créée apparaît dans le tableau, sans rechargement</b> — avec sa date limite de
+  /// réponse et le badge « En cours » —, le toast « Demande créée » le dit ; et sur un tableau qui
+  /// était vide, « Aucune demande pour le moment » disparaît.
+  /// </summary>
+  [Fact]
+  public async Task InsertsTheRowOfTheNewRequestWithoutReloadingAndDropsTheEmptyState()
+  {
+    await using var context = await harness.NewContextAsync();
+    await harness.DeleteAllRequestsAsync();
+    var page = await OpenedAsync(context);
+    var none = page.GetByText("Aucune demande pour le moment", new() { Exact = true });
+    await Expect(none).ToBeVisibleAsync();
+    var email = UniqueEmail();
+
+    // Un marqueur posé sur la fenêtre : un rechargement l'effacerait.
+    await page.EvaluateAsync("() => { window.untouched = true; }");
+
+    await FillAValidEntryAsync(page, UniqueMessage(), email);
+    await Field(page, "Date de réception").FillAsync("2026-01-31");
+    await CreateAsync(page);
+
+    await Expect(Toast(page)).ToBeVisibleAsync();
+    await Expect(RowOf(page, email)).ToBeVisibleAsync();
+    await Expect(RowOf(page, email).GetByRole(AriaRole.Cell, new() { Name = "28/02/2026", Exact = true })).ToBeVisibleAsync();
+    await Expect(RowOf(page, email).GetByText("En cours", new() { Exact = true })).ToBeVisibleAsync();
+    await Expect(none).ToBeHiddenAsync();
+    (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("La création a rechargé la page.");
+  }
+
+  /// <summary>
+  /// <b>La ligne se place dans l'ordre par défaut</b> : la date de réception la plus récente d'abord,
+  /// puis la date de création la plus récente — une demande reçue le même jour qu'une autre passe
+  /// donc devant elle, puisqu'elle vient d'être créée.
+  /// </summary>
+  [Fact]
+  public async Task PlacesTheRowInTheDefaultOrder()
+  {
+    await using var context = await harness.NewContextAsync();
+    await harness.DeleteAllRequestsAsync();
+    var recorded = UniqueEmail();
+    await harness.RecordRequestAsync(email: recorded);
+    var page = await context.NewPageAsync();
+    await page.GotoAsync("/demandes");
+
+    var later = await CreateReceivedOnAsync(page, "2026-01-20");
+    var sameDay = await CreateReceivedOnAsync(page, "2026-01-15");
+    var earlier = await CreateReceivedOnAsync(page, "2026-01-01");
+
+    await Expect(page.GetByRole(AriaRole.Table).Locator("tbody tr")).ToHaveTextAsync(
+    [
+      new Regex(Regex.Escape(later)),
+      new Regex(Regex.Escape(sameDay)),
+      new Regex(Regex.Escape(recorded)),
+      new Regex(Regex.Escape(earlier)),
+    ]);
+  }
+
+  /// <summary>
   /// ⚠️ <b>« Créer » est désactivé pendant l'envoi</b> : un double clic ne part qu'une fois, et
   /// n'enregistre qu'une seule demande.
   /// </summary>
@@ -312,9 +370,28 @@ public class RequestCreation(BrowserHarness harness)
 
   private static string UniqueMessage() => $"Je souhaite accéder à mes données. {Guid.NewGuid()}";
 
-  private static async Task FillAValidEntryAsync(IPage page, string message)
+  private static string UniqueEmail() => $"{Guid.NewGuid():N}@example.org";
+
+  /// <summary>
+  /// Crée depuis la modale une demande reçue ce jour-là, et attend sa ligne ; rend son email unique.
+  /// </summary>
+  private static async Task<string> CreateReceivedOnAsync(IPage page, string receivedOn)
   {
-    await Field(page, "Email").FillAsync("jeanne.martin@example.org");
+    var email = UniqueEmail();
+
+    await OpenAsync(page);
+    await FillAValidEntryAsync(page, UniqueMessage(), email);
+    await Field(page, "Date de réception").FillAsync(receivedOn);
+    await CreateAsync(page);
+    await Expect(Dialog(page)).ToBeHiddenAsync();
+    await Expect(RowOf(page, email)).ToBeVisibleAsync();
+
+    return email;
+  }
+
+  private static async Task FillAValidEntryAsync(IPage page, string message, string email = "jeanne.martin@example.org")
+  {
+    await Field(page, "Email").FillAsync(email);
     await Field(page, "Message").FillAsync(message);
     await Field(page, "Droits RGPD").SelectOptionAsync("Access");
   }
@@ -352,6 +429,11 @@ public class RequestCreation(BrowserHarness harness)
   private static ILocator Field(IPage page, string label)
   {
     return Dialog(page).GetByLabel(label, new() { Exact = true });
+  }
+
+  private static ILocator RowOf(IPage page, string email)
+  {
+    return page.GetByRole(AriaRole.Row).Filter(new() { HasText = email });
   }
 
   private static ILocator Toast(IPage page)
