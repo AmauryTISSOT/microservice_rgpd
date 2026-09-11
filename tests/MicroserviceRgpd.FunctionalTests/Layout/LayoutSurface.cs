@@ -219,8 +219,8 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// sans qu'aucun état n'ait à être posé.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Les écrans de <c>/dossiers</c> n'y sont plus</b> : ils répondent encore jusqu'à leur
-  /// retrait, mais plus aucun point d'entrée n'y mène, et ils ne relèvent donc d'aucun.
+  /// ⚠️ <b>Les écrans de <c>/dossiers</c> n'y sont plus</b> : ils sont retirés, et leurs adresses
+  /// rendent un 404 — voir <c>NoCaseworkSurfaceRemains</c>.
   /// </remarks>
   internal async Task<IReadOnlyList<string>> ScreensAsync()
   {

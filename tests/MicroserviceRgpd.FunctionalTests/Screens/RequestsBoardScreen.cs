@@ -108,7 +108,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Plus rien ne mène à l'ancien tableau</b> : ni le panneau, ni les cartes de l'accueil. Les
-  /// écrans de <c>/dossiers</c> répondent encore jusqu'à leur retrait, mais plus rien n'y conduit.
+  /// écrans de <c>/dossiers</c> sont retirés et rendent un 404 : un lien vers eux mènerait au vide.
   /// </summary>
   [Fact]
   public async Task NothingLeadsToTheFormerQueueAnymore()

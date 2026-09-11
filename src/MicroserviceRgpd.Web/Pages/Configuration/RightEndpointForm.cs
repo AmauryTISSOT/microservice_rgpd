@@ -25,12 +25,6 @@ public sealed class RightEndpointForm
   /// Fait franchir la saisie à la frontière du domaine, ou <b>nomme à l'intégrateur</b> ce qui a été
   /// refusé. Les messages viennent des types du domaine eux-mêmes, jamais d'une seconde rédaction.
   /// </summary>
-  /// <remarks>
-  /// ⚠️ <b>Le geste est écrit ici, et non emprunté au <c>FormBoundary</c> de <c>Casework</c>.</b>
-  /// <c>Configuration</c> ne consomme que le noyau partagé : atteindre un type de <c>Casework</c> pour
-  /// deux lignes de <c>try</c>/<c>catch</c> ferait de cet écran un pont entre deux contextes, que la
-  /// garde d'architecture dénonce à raison.
-  /// </remarks>
   /// <param name="modelState">L'endroit où les refus se déposent, sous le nom du champ fautif.</param>
   /// <param name="prefix">Le préfixe de liaison du formulaire, tel que la page l'a déclaré.</param>
   /// <returns>Le droit et son adresse, ou <c>null</c> si l'un des deux a été refusé.</returns>

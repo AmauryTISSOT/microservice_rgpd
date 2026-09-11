@@ -5,7 +5,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screenings;
 
 /// <summary>
 /// <b>Aucune API ne détecte.</b> <c>Screening</c> ne déclare <b>aucune</b> route publique — pas même
-/// une qui ferait entrer un relevé, là où <c>Casework</c> en garde une pour faire entrer une demande.
+/// une qui ferait entrer un relevé.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,11 +17,10 @@ namespace MicroserviceRgpd.FunctionalTests.Screenings;
 /// n'ait été modifiée.
 /// </para>
 /// <para>
-/// ⚠️ <b>Le contexte est plus strict que <c>Casework</c>, et c'est délibéré.</b> Là-bas, une route
-/// fait <b>entrer</b> une demande, parce qu'une application tierce doit pouvoir en poster une. Ici
-/// personne n'a de raison de poster un relevé : il n'existe qu'un seul acteur, l'<c>Operator</c>,
-/// et il est déjà devant l'écran. La liste des endpoints de ce contexte est donc <b>vide</b>, écrite
-/// en toutes lettres pour qu'en ajouter un soit un geste visible dans ce fichier.
+/// ⚠️ <b>Pas même une route d'entrée, et c'est délibéré.</b> Personne n'a de raison de poster un
+/// relevé : il n'existe qu'un seul acteur, l'<c>Operator</c>, et il est déjà devant l'écran. La
+/// liste des endpoints de ce contexte est donc <b>vide</b>, écrite en toutes lettres pour qu'en
+/// ajouter un soit un geste visible dans ce fichier.
 /// </para>
 /// <para>
 /// La règle est gardée <b>deux fois</b> : par la liste des endpoints que l'application déclare, et

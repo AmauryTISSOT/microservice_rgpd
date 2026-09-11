@@ -69,6 +69,26 @@ internal static class ContextInspector
   }
 
   /// <summary>
+  /// Toutes les références vers <paramref name="to"/> portées par l'IL de
+  /// <paramref name="assemblyPath"/>, <b>d'où qu'elles partent</b> — d'un autre contexte, du même,
+  /// ou d'aucun. Vide vaut un assemblage qui ignore tout de ce contexte.
+  /// </summary>
+  internal static IReadOnlyList<CrossContextReference> ReferencesTo(string assemblyPath, string to)
+  {
+    using var module = ModuleDefinition.ReadModule(assemblyPath);
+    var assembly = Path.GetFileNameWithoutExtension(assemblyPath);
+
+    return
+    [
+      .. module.GetTypes()
+        .SelectMany(type => Reaches(type)
+          .Where(reached => BelongsTo(reached.Type, to))
+          .Select(reached => new CrossContextReference(assembly, FullNameOf(type), FullNameOf(reached.Type), reached.Site)))
+        .Distinct(),
+    ];
+  }
+
+  /// <summary>
   /// Les types du dépôt qui n'habitent <b>aucun</b> contexte et qui en atteignent <b>plusieurs</b>,
   /// avec la liste de ceux qu'ils touchent. Vide vaut respect de la règle.
   /// </summary>
