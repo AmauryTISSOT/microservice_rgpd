@@ -16,7 +16,8 @@ quels : « la `Qualification` », « le `Settings` ».
 - [Requests](./docs/contexts/requests/CONTEXT.md) — **l'arrivée d'une demande.** Enregistre une
   demande d'exercice de droits dès sa réception : par quel canal, quand, de qui, et quel droit la
   personne invoque. Son type est la `DataSubjectRequest` — à l'écran, une **demande**. Il ne connaît
-  à ce jour que ce `Gesture`-là : l'instruction, les délais et les statuts n'y existent pas.
+  à ce jour que ce `Gesture`-là. Une demande porte une date limite de réponse et un statut, mais
+  l'instruction n'y existe pas : rien ne fait encore changer le statut.
 - [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Détecte les colonnes qui
   portent vraisemblablement des données personnelles, dans le relevé des colonnes d'une base du
   client. Le relevé est collé par un `Operator`, ou produit par le service lui-même quand il
@@ -124,6 +125,11 @@ l'authentification. Un arbitrage de `Screening` est daté et ne se signe pas (AD
 précédent sans laisser de trace datée. Le `Settings` est un état, et c'est ce qui le tient hors de
 la matière de preuve.
 
+⚠️ **Tout acte de l'`Operator` n'est pas un `Gesture`.** Supprimer une demande est posé par
+l'`Operator`, mais ne laisse aucune trace et efface celle de l'enregistrement : c'est un retrait,
+pas un `Gesture`. Le statut d'une demande, lui, est un état qu'elle tient, non la trace d'un
+`Gesture`.
+
 _Avoid_ : action, opération, commande, traitement
 
 `commande` est prise par CQRS : `ArbitrateTableInBatchCommand` est le **message** qui transporte le
@@ -214,11 +220,11 @@ doit les couvrir.
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
-Vingt ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
+Vingt-deux ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
 écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006 et l'ADR-0008 portent en
 fin de fichier une suite datée qui nomme leurs points morts jusqu'à l'ADR-0016 ; l'ADR-0017, qui
 vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui ;
-l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même.
+l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme l'ADR-0021, qui vise l'ADR-0017.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -242,6 +248,8 @@ l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même.
 | [0018](./docs/adr/0018-la-doctrine-zero-javascript-est-levee-pour-toute-l-application.md) | La doctrine « zéro JavaScript » est levée pour toute l'application : JavaScript vanilla en modules ES, `<dialog>` natif, ni framework ni bundler, servi par le service, chargé seulement là où un écran en a besoin. Le serveur rend, le script anime. | 0005 : « la surface reste rendue par le serveur, sans JavaScript ». 0009 : « le service continue de ne servir aucun JavaScript », et le motif qui écartait la persistance du repli par `localStorage`. |
 | [0019](./docs/adr/0019-la-reception-exige-date-message-droit-et-identification.md) | Enregistrer une demande exige une date de réception, un message, un droit parmi les six, et un email ou un nom et un prénom. Le serveur fait foi ; la validation du navigateur est un confort. Renverse deux clauses de glossaire, « rien n'est obligatoire au dépôt » et le défaut `J+9`. | — |
 | [0020](./docs/adr/0020-playwright-dotnet-pour-les-tests-navigateur.md) | Playwright pour .NET, en C# et xUnit, pour les tests navigateur : le service sous Kestrel sur un port réel, PostgreSQL Testcontainers, Chromium seul, installé par la fixture sans `pwsh`. | — |
+| [0021](./docs/adr/0021-la-demande-tient-un-statut-et-une-date-limite-de-reponse.md) | La demande tient un statut (`RequestStatus`, né `InProgress`) et une date limite de réponse fixée à la réception, date de réception plus un mois. Le statut est un état, pas la trace d'un `Gesture` ; les signalements ne sont pas enregistrés. | 0017 : « l'instruction, les délais et les statuts n'y existent pas », pour les délais et les statuts. |
+| [0022](./docs/adr/0022-supprimer-une-demande-ne-laisse-aucune-trace.md) | Supprimer une demande la retire définitivement, quel que soit son statut, sans trace : ce n'est pas un `Gesture`. Une demande déjà partie se lit comme supprimée. | — |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se
