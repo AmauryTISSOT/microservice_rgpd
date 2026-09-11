@@ -2,7 +2,7 @@ namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
 /// <b>Rien ne traverse d'un contexte à l'autre, sauf ce qui est écrit ici.</b> La règle s'énonce par
-/// ce qu'elle <b>permet</b> — trois traversées, toutes vers le noyau partagé — et tout le reste
+/// ce qu'elle <b>permet</b> — quelques traversées, toutes vers le noyau partagé — et tout le reste
 /// est interdit par construction : voir <c>docs/adr/0003</c>.
 /// <para>
 /// L'énoncé à l'envers n'est pas une coquetterie. Une liste d'interdits ne protège que ce qu'on a
@@ -28,10 +28,8 @@ namespace MicroserviceRgpd.ArchitectureTests;
 /// ⚠️ Tant qu'un contexte n'a pas de code, ses règles ne trouvent rien à examiner : elles sont vertes
 /// par vacuité. C'est voulu — on pose le garde <b>avant</b> le contexte qu'il garde, pour que sa
 /// première ligne naisse déjà sous surveillance. C'était vrai de <c>Casework</c> en son temps, et de
-/// <c>Screening</c> jusqu'à <c>Core/Screenings/</c>, qui est le premier dossier qu'il porte. C'est
-/// vrai de <c>Requests</c> aujourd'hui : il n'a encore aucun type de production, aucune traversée
-/// ne lui est permise, et il n'entrera dans
-/// <see cref="FindsTheContextItClaimsToGuardSomewhereInProduction"/> qu'avec son premier dossier.
+/// <c>Screening</c> jusqu'à <c>Core/Screenings/</c>, qui est le premier dossier qu'il porte, et de
+/// <c>Requests</c> jusqu'à <c>Core/Requests/</c>, où la demande est née.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le premier code de <c>Screening</c> a immédiatement montré une chose que la vacuité
@@ -47,9 +45,15 @@ public class ContextIsolationTests
   /// <summary>
   /// Les <b>seules</b> traversées permises, et elles vont toutes vers le noyau partagé : la
   /// taxonomie des droits n'est le modèle d'aucun contexte — son auteur est le RGPD, articles 15
-  /// à 21 — et les trois qui parlent de droits s'y <i>conforment</i> sans la <i>posséder</i>.
-  /// <c>Configuration</c> est le troisième, depuis l'ADR-0016 : il associe à chacun des six droits
+  /// à 21 — et les contextes qui parlent de droits s'y <i>conforment</i> sans la <i>posséder</i>.
+  /// <c>Configuration</c> y est entré avec l'ADR-0016 : il associe à chacun des six droits
   /// l'adresse à laquelle le service l'exercera, et lit leur libellé et leur article sur le type.
+  /// <c>Requests</c> y est entré avec la demande : le droit qu'elle invoque est l'un des six, choisi
+  /// par l'<c>Operator</c> et lu sur le même type.
+  /// <para>
+  /// ⚠️ Tant que <c>Casework</c> n'est pas retiré, la liste compte provisoirement <b>quatre</b>
+  /// lignes ; son retrait emporte la sienne et la ramène à trois.
+  /// </para>
   /// <para>
   /// La liste est écrite en dur, comme celle de <see cref="SharedKernelTests"/> et pour le même
   /// motif : y ajouter une ligne doit demander un geste délibéré, et ce geste est de niveau ADR.
@@ -60,6 +64,7 @@ public class ContextIsolationTests
     (ContextInspector.Qualification, ContextInspector.SharedKernel),
     (ContextInspector.Casework, ContextInspector.SharedKernel),
     (ContextInspector.Configuration, ContextInspector.SharedKernel),
+    (ContextInspector.Requests, ContextInspector.SharedKernel),
   ];
 
   /// <summary>
@@ -106,13 +111,14 @@ public class ContextIsolationTests
   /// change de couleur.
   /// </summary>
   [Fact]
-  public void PermitsThreeCrossingsAndNoOthers()
+  public void PermitsFourCrossingsAndNoOthers()
   {
     Permitted.ShouldBe(
       [
         (ContextInspector.Qualification, ContextInspector.SharedKernel),
         (ContextInspector.Casework, ContextInspector.SharedKernel),
         (ContextInspector.Configuration, ContextInspector.SharedKernel),
+        (ContextInspector.Requests, ContextInspector.SharedKernel),
       ],
       "La liste blanche s'est élargie. Élargir une frontière est un geste de niveau ADR — " +
       "voir docs/adr/0003 — et non une ligne ajoutée en passant pour faire compiler.");
@@ -132,6 +138,7 @@ public class ContextIsolationTests
   [Theory]
   [InlineData(ContextInspector.Qualification)]
   [InlineData(ContextInspector.Casework)]
+  [InlineData(ContextInspector.Requests)]
   [InlineData(ContextInspector.Screening)]
   [InlineData(ContextInspector.Configuration)]
   [InlineData(ContextInspector.SharedKernel)]
@@ -189,10 +196,6 @@ public class ContextIsolationTests
       (ContextInspector.Qualification, ContextInspector.Requests) =>
         "Qualification ne connaît que l'instant d'un verdict : elle ignore qu'une demande est " +
         "enregistrée. Un fournisseur amont qui connaît son aval n'est plus optionnel.",
-
-      (ContextInspector.Requests, ContextInspector.SharedKernel) =>
-        "La liste blanche n'ouvre rien à Requests. Ouvrir sa traversée vers le noyau partagé est " +
-        "un geste de niveau ADR — voir docs/adr/0003 —, pas une ligne ajoutée pour faire compiler.",
 
       (ContextInspector.SharedKernel, _) =>
         "Le noyau partagé n'appartient à personne : son auteur est le RGPD. Un noyau qui dépend " +

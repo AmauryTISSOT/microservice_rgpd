@@ -4,8 +4,8 @@ using MicroserviceRgpd.ArchitectureTests.Fixtures.Screening;
 namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
-/// Ce que l'inspecteur voit vraiment. <see cref="ContextIsolationTests"/> ne trouve rien à examiner
-/// tant que <c>Requests</c> n'a pas de code : sans ces témoins, un inspecteur qui ne verrait
+/// Ce que l'inspecteur voit vraiment. <see cref="ContextIsolationTests"/> est vert tant que la
+/// production ne traverse rien d'interdit : sans ces témoins, un inspecteur qui ne verrait
 /// strictement rien afficherait exactement le même vert.
 /// <para>
 /// L'inspecteur est donc retourné contre <b>son propre assemblage</b>, où vivent trois témoins
