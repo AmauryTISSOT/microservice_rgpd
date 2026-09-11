@@ -1,11 +1,7 @@
-﻿using MicroserviceRgpd.Core.Casework;
-using MicroserviceRgpd.Core.Casework.EvidenceLog;
-using MicroserviceRgpd.Core.Qualifications.Audit;
+﻿using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
-using MicroserviceRgpd.Infrastructure.Casework.Adapters;
-using MicroserviceRgpd.Infrastructure.Data.Casework;
 using MicroserviceRgpd.Infrastructure.Data.Screenings;
 using MicroserviceRgpd.Infrastructure.Qualifications;
 using MicroserviceRgpd.Infrastructure.Screenings;
@@ -46,21 +42,6 @@ public static class InfrastructureServiceExtensions
     // agrégats racines, et l'emprunter aurait déclaré agrégat ce qui n'est que l'écrit d'un acte.
     services.AddScoped<IQualificationAuditTrail, QualificationAuditTrail>();
 
-    // L'EvidenceLog non plus : il est hors de l'agrégat par construction — il survit au Case de cinq
-    // ans — et le dépôt générique lui aurait rendu la mise à jour et la suppression ligne à ligne
-    // que sa définition ferme.
-    services.AddScoped<IEvidenceLog, EvidenceLog>();
-
-    // La seule suppression du dispositif vit dans son propre type, à part de l'ajout : l'adaptateur
-    // qui écrit la preuve ne sait toujours ni la relire ni l'effacer, et celui qui détruit un
-    // EvidenceLog échu ne sait rien écrire. ⚠️ Rien ne l'appelle qu'un clic d'Operator.
-    services.AddScoped<IExpiredEvidenceLogs, ExpiredEvidenceLogs>();
-
-    // Les pièces lues non plus : elles sont hors de l'agrégat, avec leur durée de vie propre — la
-    // remise les détruira sans réécrire le Case —, et le dépôt générique aurait fait d'un contenu
-    // personnel une racine que tout le service pourrait charger.
-    services.AddScoped<IRetrievedData, RetrievedDataStore>();
-
     // Les colonnes détectées non plus : elles ont leur propre DbSet sans être une racine, et l'écran
     // n'en ouvre qu'une table à la fois. Le dépôt générique, contraint aux racines, aurait obligé à
     // rematérialiser cinq mille lignes pour en montrer treize.
@@ -90,10 +71,6 @@ public static class InfrastructureServiceExtensions
     // lit aucun dépôt, ne consulte aucune horloge et n'écrit nulle part — ce qui sépare cet export
     // du pont interdit vers le Manifest est qu'il a un destinataire humain qui l'a demandé.
     services.AddSingleton<IScreeningExport, ScreeningExportService>();
-
-    // Les appels sortants vers les Adapter du client. Le secret absent arrête le démarrage : aucun
-    // mode « sans » ne survit à l'intégration.
-    services.AddAdapterCalls(config);
 
     logger.LogInformation("{Project} services registered", "Infrastructure");
 

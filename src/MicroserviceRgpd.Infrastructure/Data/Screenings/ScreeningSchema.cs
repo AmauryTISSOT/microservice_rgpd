@@ -5,8 +5,8 @@ namespace MicroserviceRgpd.Infrastructure.Data.Screenings;
 /// fois.
 /// </summary>
 /// <remarks>
-/// ⚠️ <b>C'est une constante <b>propre à ce contexte</b>, et non celle de <c>CaseworkSchema</c>.</b>
-/// Les deux valent 64 et diront toujours la même chose ; lire celle d'en face serait une traversée
+/// ⚠️ <b>C'est une constante <b>propre à ce contexte</b>, et non une constante partagée.</b> Qu'un
+/// autre contexte veuille la même, il l'écrira chez lui : lire celle d'un autre serait une traversée
 /// que le garde d'ADR-0003 refuse, pour l'économie d'un entier. La duplication est ici le prix
 /// déclaré du <c>Separate Ways</c> intégral.
 /// </remarks>

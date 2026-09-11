@@ -42,11 +42,6 @@ var web = builder.AddProject<Projects.MicroserviceRgpd_Web>("web")
   // propriété, ne jamais rallonger le temps de réponse du service. Elle est donc requise même moteur
   // éteint.
   .WithEnvironment("Qualification__LexiconDeadlineSeconds", RequiredSetting("Qualification:LexiconDeadlineSeconds"))
-  // Le secret partagé que le service présente à chaque Adapter du client. Sous Aspire, c'est ici —
-  // et seulement ici — qu'il se décide : l'AppHost le posera du même geste à l'application témoin,
-  // ce qui est le seul mécanisme qui empêche les deux moitiés de diverger. Absent, le service
-  // REFUSE DE DÉMARRER : aucun mode « sans » ne survit à l'intégration.
-  .WithEnvironment("Casework__AdapterSecret", RequiredSetting("Casework:AdapterSecret"))
   .WaitFor(cleanArchDb)
   .WaitFor(sidecar);
 

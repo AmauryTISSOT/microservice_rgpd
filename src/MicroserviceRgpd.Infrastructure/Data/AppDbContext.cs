@@ -1,8 +1,6 @@
-using MicroserviceRgpd.Core.Casework;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
-using MicroserviceRgpd.Infrastructure.Data.Casework;
 
 namespace MicroserviceRgpd.Infrastructure.Data;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
@@ -17,25 +15,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<QualificationAuditRow> QualificationAuditEntries => Set<QualificationAuditRow>();
 
   /// <summary>
-  /// Le <c>Manifest</c> : le catalogue déclaré du client, tenu <b>système par système</b>. Chacun est
-  /// un agrégat racine à lui seul — il se déclare, se relit et se révise seul, et porte sa propre
-  /// date de déclaration.
-  /// </summary>
-  public DbSet<DeclaredSystem> DeclaredSystems => Set<DeclaredSystem>();
-
-  /// <summary>
   /// Le <c>Settings</c> — le Paramétrage : la configuration applicative du service, <b>singleton</b>.
   /// La table ne porte qu'une ligne, sa clé est figée, et elle naît paresseusement au premier
   /// enregistrement d'une adresse.
   /// </summary>
   public DbSet<Settings> Settings => Set<Settings>();
-
-  /// <summary>
-  /// Les <c>Case</c> — <b>la racine, et la seule</b>. Il n'existe volontairement aucun <c>DbSet</c>
-  /// de <c>Claim</c> ni de <c>Step</c> : ils sont <em>possédés</em> par le dossier, ne s'atteignent
-  /// que par lui, et n'ont donc structurellement ni requête ni dépôt à eux.
-  /// </summary>
-  public DbSet<Case> Cases => Set<Case>();
 
   /// <summary>
   /// Les <c>Screening</c> — le rapport de détection, et l'agrégat racine de son contexte.
@@ -44,17 +28,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
   /// <summary>
   /// Les <c>ScreenedColumn</c> — <b>une entité fille avec son propre <c>DbSet</c></b>, ce qui rompt
-  /// délibérément le précédent de <c>Claim</c> et de <c>Step</c> juste au-dessus. Le motif est écrit
-  /// une fois, là où la table se décide : voir <c>ScreenedColumnConfiguration</c>.
+  /// délibérément le précédent des entités possédées, qui ne s'atteignent que par leur racine. Le
+  /// motif est écrit une fois, là où la table se décide : voir <c>ScreenedColumnConfiguration</c>.
   /// </summary>
   public DbSet<ScreenedColumn> ScreenedColumns => Set<ScreenedColumn>();
-
-  // ⚠️ Aucun DbSet de l'EvidenceLog, et c'est délibéré. Il en existe un pour la trace d'audit, qui n'a
-  // qu'un invariant d'écriture seule ; l'EvidenceLog, lui, promet qu'aucune opération de mise à jour ni
-  // de suppression ligne à ligne n'existe sur lui — et un DbSet public rendrait `Remove` et
-  // `Update` à quiconque tient ce contexte, c'est-à-dire à tout le service. EF Core connaît la
-  // table par sa configuration d'entité, qui suffit ; le seul chemin d'écriture est l'adaptateur
-  // du port `IEvidenceLog`, dont la seule méthode est un ajout.
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

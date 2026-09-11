@@ -1,9 +1,7 @@
-﻿using MicroserviceRgpd.Core.Casework.Adapters;
-using MicroserviceRgpd.Core.Qualifications;
+﻿using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
-using MicroserviceRgpd.Infrastructure.Casework.Adapters;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.FunctionalTests.Platform;
 using Microsoft.AspNetCore.TestHost;
@@ -43,14 +41,6 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   /// ecrit dans le vrai PostgreSQL, et c est ce qui donne du sens a « qualifier, ecrire, repondre ».
   /// </summary>
   public AuditTrailControl AuditTrail { get; } = new();
-
-  /// <summary>
-  /// L'<c>Adapter</c> du client, posé <b>sur le fil</b> et non sur le port du domaine. L'en-tête de
-  /// secret, le <c>system_id</c> en paramètre et le corps du sac <b>sont</b> le contrat : doubler le
-  /// port les aurait cachés au-dessus de la couture, et les tests n'auraient plus prouvé que le
-  /// comportement d'une doublure.
-  /// </summary>
-  public ABrocantoOnTheWire Adapter { get; } = new();
 
   /// <summary>
   /// Le scanner de base, substitué <b>sur le port du domaine</b>. C'est le seul point du contexte
@@ -189,12 +179,6 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
       // Le collecteur s'AJOUTE aux fournisseurs en place : rien n'est retiré, et ce que le service
       // journalise en test est exactement ce qu'il journalise ailleurs.
       services.AddSingleton<ILoggerProvider>(Logs);
-
-      // L Adapter du client est pose sur le FIL : le vrai HttpAdapterCalls reste en place, avec son
-      // en-tete de secret, son system_id en parametre et son corps de sac. C est le contrat qu on
-      // eprouve, pas une doublure de port.
-      services.AddHttpClient<IAdapterCalls, HttpAdapterCalls>()
-        .ConfigurePrimaryHttpMessageHandler(() => Adapter);
 
       // L adaptateur reel reste au bout de la chaine : la surveillance n intercepte que pour lui
       // dicter une panne, jamais pour se substituer a l ecriture.

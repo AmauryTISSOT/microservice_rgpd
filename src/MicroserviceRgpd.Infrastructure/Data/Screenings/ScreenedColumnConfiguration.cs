@@ -8,11 +8,11 @@ namespace MicroserviceRgpd.Infrastructure.Data.Screenings;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Elle a son propre <c>DbSet</c>, et le précédent de <c>Claim</c> et <c>Step</c> est rompu
-/// délibérément.</b> Ceux-là sont <em>possédés</em> par le dossier et ne s'atteignent que par lui ;
-/// mais un <c>Case</c> a quelques dizaines d'enfants là où un <c>Screening</c> en a cinq mille, et
-/// l'écran d'arbitrage n'ouvre qu'une table à la fois. C'est un <b>ordre de grandeur</b> qui rompt
-/// le précédent, jamais un goût — voir l'index par table, qui est la lecture que cette table sert.
+/// ⚠️ <b>Elle a son propre <c>DbSet</c>, et le précédent des entités possédées est rompu
+/// délibérément.</b> Celles-là ne s'atteignent que par leur racine ; mais un <c>Screening</c> a cinq
+/// mille enfants, et l'écran d'arbitrage n'ouvre qu'une table à la fois. C'est un <b>ordre de
+/// grandeur</b> qui rompt le précédent, jamais un goût — voir l'index par table, qui est la lecture
+/// que cette table sert.
 /// </para>
 /// <para>
 /// ⚠️ <b>Aucune colonne d'état d'arbitrage séparée de sa date.</b> Les deux colonnes de
@@ -213,10 +213,9 @@ public sealed class ScreenedColumnConfiguration : IEntityTypeConfiguration<Scree
   /// de l'arbitrage remplacé est effacée.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Aucune colonne ne porte qui a arbitré</b>, contre le <c>string?</c> de <c>Casework</c> :
-  /// ce contexte ne l'enregistre pas du tout — voir l'<c>ADR-0014</c>. La date est obligatoire dès
-  /// qu'un arbitrage existe : une date manquante n'est pas un champ vide, c'est un arbitrage qui
-  /// n'a pas eu lieu. Les deux colonnes sont nullables <b>ensemble</b> parce qu'<c>Awaiting</c> est
+  /// ⚠️ <b>Aucune colonne ne porte qui a arbitré</b> : ce contexte ne l'enregistre pas du tout —
+  /// voir l'<c>ADR-0014</c>. La date est obligatoire dès qu'un arbitrage existe : une date manquante
+  /// n'est pas un champ vide, c'est un arbitrage qui n'a pas eu lieu. Les deux colonnes sont nullables <b>ensemble</b> parce qu'<c>Awaiting</c> est
   /// l'absence des deux ; c'est la contrainte de contrôle de la table, et non la nullité d'une
   /// colonne prise seule, qui interdit le duo dépareillé.
   /// </para>
