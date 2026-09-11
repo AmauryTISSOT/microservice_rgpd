@@ -27,6 +27,9 @@
 
   LE STATUT EST UN BADGE, qui porte le nom canonique du statut : c'est ce nom que la feuille de style
   colore, et le libellé seul qui se lit.
+
+  LA LIGNE PORTE, EN `data-*`, CE QUE LA RECHERCHE PARCOURT : l'email, le nom et le prénom tels
+  qu'enregistrés, vides s'ils sont absents — et non les libellés des cellules, dont le « — ».
 *@
 @{
   (string Label, string Icon, string Action)[] actions =
@@ -36,7 +39,10 @@
     ("Voir la fiche de la demande", "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8zM6 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "view"),
   ];
 }
-<tr data-request-id="@Model.Id" data-deletion-confirmation="@Model.DeletionConfirmation">
+<tr data-request-id="@Model.Id" data-deletion-confirmation="@Model.DeletionConfirmation"
+    data-email="@Model.Searchable.Email"
+    data-last-name="@Model.Searchable.LastName"
+    data-first-name="@Model.Searchable.FirstName">
   <td>@Model.Email</td>
   <td>@Model.LastName</td>
   <td>@Model.FirstName</td>

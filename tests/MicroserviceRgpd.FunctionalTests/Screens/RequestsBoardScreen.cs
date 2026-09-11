@@ -10,8 +10,9 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Sous le bouton, le tableau des demandes enregistrées</b> : ces tests gardent qu'il est là,
-/// seul ; ce qu'il rend se garde dans <c>RequestConsultation</c>.
+/// <b>Sous le bouton, la recherche et le tableau des demandes enregistrées</b> : ces tests gardent
+/// que le tableau est là, seul ; ce qu'il rend, et la recherche, se gardent dans
+/// <c>RequestConsultation</c>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Le bouton ouvre une modale, que le serveur rend avec l'écran</b> : un <c>dialog</c>
@@ -37,6 +38,9 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>Le libellé du bouton, recopié à dessein.</summary>
   private const string CreateLabel = "Créer une demande";
+
+  /// <summary>Le nom accessible du ✕ de la recherche, recopié à dessein.</summary>
+  private const string ClearSearchLabel = "Effacer la recherche";
 
   /// <summary>Le titre de la modale de création, recopié à dessein.</summary>
   private const string DialogTitle = "Créer une nouvelle demande";
@@ -66,8 +70,9 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Le bouton « Créer une demande » vit dans le contenu de la page</b>, une fois, et pas dans le
-  /// header : l'ADR-0009 ne pose aucune action dans la barre du service.
+  /// <b>Hors des modales, le contenu porte deux boutons</b> : « Créer une demande », une fois, puis
+  /// le ✕ de la recherche — et aucun dans le header : l'ADR-0009 ne pose aucune action dans la barre
+  /// du service.
   /// </summary>
   [Fact]
   public async Task CarriesTheCreateButtonInTheContentAndNotInTheHeader()
@@ -75,27 +80,29 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
     var rendered = await _layout.ReadAsync(Board);
 
     ButtonsIn(OutsideTheTableAndTheDialogs(LayoutSurface.MainOf(rendered)))
-      .Select(button => LayoutSurface.TextIn(button.Contents))
-      .ShouldBe([CreateLabel], "Le contenu ne porte pas le bouton « Créer une demande », une fois.");
+      .Select(NameOf)
+      .ShouldBe([CreateLabel, ClearSearchLabel], "Le contenu ne porte pas « Créer une demande » puis le ✕ de la recherche.");
 
     LayoutSurface.TextIn(LayoutSurface.HeaderIn(rendered)).ShouldNotContain(
       CreateLabel, Case.Sensitive, "Le bouton de création s'est glissé dans le header.");
   }
 
   /// <summary>
-  /// ⚠️ <b>Le bouton de création est un simple bouton</b>, hors de tout formulaire, qui ne soumet rien
-  /// et ne mène nulle part : c'est le module qui ouvre la modale. Un bouton sans type, dans un
-  /// formulaire, enverrait ce formulaire au premier clic.
+  /// ⚠️ <b>Les boutons hors des modales sont de simples boutons</b>, hors de tout formulaire, qui ne
+  /// soumettent rien et ne mènent nulle part : c'est le module qui ouvre la modale et vide la
+  /// recherche. Un bouton sans type, dans un formulaire, enverrait ce formulaire au premier clic.
   /// </summary>
   [Fact]
-  public async Task KeepsTheCreateButtonASimpleButton()
+  public async Task KeepsTheButtonsOutsideTheDialogsSimpleButtons()
   {
     var main = LayoutSurface.MainOf(await _layout.ReadAsync(Board));
     var outside = OutsideTheDialogs(main);
-    var button = ButtonsIn(OutsideTheTableAndTheDialogs(main)).ShouldHaveSingleItem();
 
-    button.Attributes.ShouldContain(@"type=""button""", Case.Sensitive, "Le bouton de création n'est pas un simple bouton.");
-    button.Attributes.ShouldNotContain("formaction", Case.Insensitive, "Le bouton de création envoie quelque part.");
+    foreach (var button in ButtonsIn(OutsideTheTableAndTheDialogs(main)))
+    {
+      button.Attributes.ShouldContain(@"type=""button""", Case.Sensitive, $"« {NameOf(button)} » n'est pas un simple bouton.");
+      button.Attributes.ShouldNotContain("formaction", Case.Insensitive, $"« {NameOf(button)} » envoie quelque part.");
+    }
 
     outside.ShouldNotContain("<form", Case.Insensitive, "L'écran porte un formulaire hors de la modale.");
   }
@@ -238,9 +245,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
     var buttons = ButtonsIn(dialog);
 
     buttons
-      .Select(button => Regex.Match(button.Attributes, @"aria-label=""([^""]+)""") is { Success: true } label
-        ? label.Groups[1].Value
-        : LayoutSurface.TextIn(button.Contents))
+      .Select(NameOf)
       .ShouldBe(
         ["Fermer", "Qualification du droit par IA", "Annuler", "Créer"],
         "La modale ne porte pas la croix, la qualification par IA, « Annuler » et « Créer », dans cet ordre.");
@@ -322,6 +327,12 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   {
     return Regex.Replace(OutsideTheDialogs(main), @"<table\b.*?</table>", string.Empty, RegexOptions.Singleline);
   }
+
+  /// <summary>Le nom accessible d'un bouton : son <c>aria-label</c> s'il en porte un, son texte sinon.</summary>
+  private static string NameOf((string Attributes, string Contents) button) =>
+    Regex.Match(button.Attributes, @"aria-label=""([^""]+)""") is { Success: true } label
+      ? label.Groups[1].Value
+      : LayoutSurface.TextIn(button.Contents);
 
   private static IReadOnlyList<(string Attributes, string Contents)> ButtonsIn(string fragment)
   {

@@ -12,7 +12,7 @@
 
 @*
   LE TABLEAU DES DEMANDES RGPD : le nom de l'écran, le bouton qui enregistre une demande dès sa
-  réception, puis le tableau de toutes les demandes enregistrées.
+  réception, puis la recherche et le tableau de toutes les demandes enregistrées.
 
   ⚠️ LE BOUTON EST DANS LE CONTENU, PAS DANS LE HEADER : l'ADR-0009 ne pose aucune action dans la
   barre du service. C'est un simple bouton, hors de tout formulaire : c'est le module de l'écran qui
@@ -32,6 +32,24 @@
 <div class="screen-head">
   <h1>Tableau des demandes RGPD</h1>
   <button type="button" class="primary" id="create-request-open">Créer une demande</button>
+</div>
+
+@*
+  LA RECHERCHE, EN HAUT À GAUCHE DU TABLEAU. Elle filtre les lignes du DOM à chaque frappe, sans
+  revenir au serveur — c'est pourquoi elle n'est dans aucun formulaire : Entrée n'envoie rien.
+
+  LE CHAMP SE NOMME pour qui ne le voit pas ; son texte d'aide dit ce qu'il parcourt. Le ✕ est un
+  simple bouton qui vide la recherche ; il ne se montre que s'il y a une recherche à vider.
+*@
+<div class="board-search" role="search">
+  <input type="search" id="requests-search" aria-label="Rechercher une demande"
+         placeholder="Rechercher par email, nom ou prénom" autocomplete="off" spellcheck="false" />
+  <button type="button" class="board-search-clear" id="requests-search-clear" aria-label="Effacer la recherche">
+    <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" fill="none" />
+    </svg>
+  </button>
 </div>
 
 @*
@@ -79,6 +97,13 @@
 
   <p class="none" id="requests-none" hidden="@(Model.Rows.Count > 0)">Aucune demande pour le moment</p>
 </div>
+
+@*
+  ⚠️ L'ÉTAT VIDE DE LA RECHERCHE EST TOUJOURS RENDU, ET CACHÉ : aucune recherche n'est en cours au
+  chargement. Le script le montre quand la saisie écarte toutes les demandes — mais jamais sur un
+  tableau vide, qui dit déjà qu'il n'y a rien à trouver.
+*@
+<p class="none" id="requests-no-match" hidden>Aucune demande ne correspond à votre recherche</p>
 
 @*
   LA MODALE DE CRÉATION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Un `dialog` natif : le

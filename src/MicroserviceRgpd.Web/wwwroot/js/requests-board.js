@@ -1,7 +1,7 @@
-// LE TABLEAU DES DEMANDES RGPD : le bouton « Créer une demande » ouvre la modale que le serveur a
-// rendue, formulaire remis à zéro ; « Créer » juge la saisie avec les règles du service, puis
-// l'envoie au handler de la page ; et quatre modes de fermeture la referment — « Annuler », la
-// croix, Échap, un clic sur le fond.
+// LE TABLEAU DES DEMANDES RGPD : la recherche filtre les lignes à chaque frappe ; le bouton « Créer
+// une demande » ouvre la modale que le serveur a rendue, formulaire remis à zéro ; « Créer » juge la
+// saisie avec les règles du service, puis l'envoie au handler de la page ; et quatre modes de
+// fermeture la referment — « Annuler », la croix, Échap, un clic sur le fond.
 //
 // ⚠️ L'OPERATOR NE PERD JAMAIS UNE SAISIE PAR MÉGARDE. Les quatre modes passent tous par
 // `requestClose` : un formulaire non modifié s'y ferme directement, un formulaire modifié y ouvre la
@@ -9,6 +9,53 @@
 //
 // La poubelle de chaque ligne ouvre la confirmation de suppression, avec la phrase de sa ligne ;
 // « Supprimer définitivement » l'envoie au handler de la page, et la ligne s'en va sans rechargement.
+
+// LA RECHERCHE. Elle filtre les lignes que le serveur a rendues, sans revenir à lui : une demande
+// reste affichée si son email, son nom ou son prénom — ceux que la ligne porte en `data-*`, tels
+// qu'enregistrés — contient le texte saisi. Les états vides sont rendus par le serveur ; le module
+// ne fait que les montrer ou les cacher, et n'en écrit aucun mot.
+const search = document.getElementById("requests-search");
+const clearSearch = document.getElementById("requests-search-clear");
+const rows = document.getElementById("requests").tBodies[0].rows;
+const noMatch = document.getElementById("requests-no-match");
+
+// LA SAISIE ET LES VALEURS SE COMPARENT NORMALISÉES : rognées, en minuscules, et sans leurs accents
+// — décomposées, puis privées de leurs marques combinantes. « helene » trouve « Hélène », et
+// « Hélène » trouve « Helene ». ⚠️ Pas `\p{Diacritic}` : il retirerait aussi des caractères qu'un
+// email peut porter tels quels, comme `^` ou `` ` ``.
+function normalized(text) {
+  return text.trim().normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
+
+function matches(row, sought) {
+  const { email, lastName, firstName } = row.dataset;
+
+  return [email, lastName, firstName].some((value) => normalized(value ?? "").includes(sought));
+}
+
+// ⚠️ « AUCUNE DEMANDE NE CORRESPOND » NE SE MONTRE QUE SI LA RECHERCHE A ÉCARTÉ DES LIGNES : sur un
+// tableau vide, « Aucune demande pour le moment » dit déjà qu'il n'y a rien à trouver.
+function applySearch() {
+  const sought = normalized(search.value);
+  let shown = 0;
+
+  for (const row of rows) {
+    row.hidden = !matches(row, sought);
+    shown += row.hidden ? 0 : 1;
+  }
+
+  noMatch.hidden = rows.length === 0 || shown > 0;
+}
+
+// Le ✕ vide la recherche, et rend le focus au champ : une nouvelle recherche commence aussitôt.
+function emptySearch() {
+  search.value = "";
+  applySearch();
+  search.focus();
+}
+
+search.addEventListener("input", applySearch);
+clearSearch.addEventListener("click", emptySearch);
 
 const dialog = document.getElementById("create-request");
 const confirmation = document.getElementById("abandon-entry");

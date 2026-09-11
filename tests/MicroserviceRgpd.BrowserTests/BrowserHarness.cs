@@ -85,9 +85,9 @@ public sealed class BrowserHarness : IAsyncLifetime
 
   /// <summary>
   /// Enregistre une demande valide de cette personne <b>par le use case</b>, sans passer par la
-  /// modale ; rend son message unique, qui la retrouve en base.
+  /// modale ; rend son message unique, qui la retrouve en base. Ce qui n'est pas donné est absent.
   /// </summary>
-  public async Task<string> RecordRequestAsync(string lastName, string firstName, string email)
+  public async Task<string> RecordRequestAsync(string lastName = "", string firstName = "", string email = "")
   {
     using var scope = Service.Services.CreateScope();
     var message = $"Je souhaite accéder à mes données. {Guid.NewGuid()}";

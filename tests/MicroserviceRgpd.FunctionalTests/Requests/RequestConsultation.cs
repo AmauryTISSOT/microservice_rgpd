@@ -26,6 +26,12 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   /// <summary>Le message de l'état vide, recopié à dessein.</summary>
   private const string NoRequestYet = "Aucune demande pour le moment";
 
+  /// <summary>Le message de l'état vide de la recherche, recopié à dessein.</summary>
+  private const string NoMatch = "Aucune demande ne correspond à votre recherche";
+
+  /// <summary>Le texte d'aide de la recherche, recopié à dessein.</summary>
+  private const string SearchHint = "Rechercher par email, nom ou prénom";
+
   private readonly RequestSurface _surface = new(factory);
 
   private readonly LayoutSurface _layout = new(factory);
@@ -349,6 +355,73 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>La barre de recherche est en haut à gauche du tableau</b> : entre le bouton de création et le
+  /// tableau, un champ de recherche nommé pour qui ne le voit pas, dont le texte d'aide est
+  /// « Rechercher par email, nom ou prénom », suivi de son bouton ✕ — un simple bouton, qui se nomme
+  /// « Effacer la recherche ». Ni l'un ni l'autre n'est dans un formulaire : rien ne part au serveur.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheSearchBarAndItsClearButtonAboveTheTable()
+  {
+    var main = await BoardAsync();
+    var search = SearchBarIn(main);
+
+    main.IndexOf(search, StringComparison.Ordinal).ShouldBeGreaterThan(
+      main.IndexOf(@"id=""create-request-open""", StringComparison.Ordinal), "La recherche n'est pas sous le bouton de création.");
+    main.IndexOf(search, StringComparison.Ordinal).ShouldBeLessThan(
+      main.IndexOf("<table", StringComparison.Ordinal), "La recherche n'est pas au-dessus du tableau.");
+
+    var field = Regex.Matches(search, @"<input\b[^>]*>").ShouldHaveSingleItem().Value;
+    field.ShouldContain(@"type=""search""", Case.Sensitive, "Le champ de recherche n'en est pas un.");
+    field.ShouldContain(@$"placeholder=""{SearchHint}""", Case.Sensitive, "Le champ de recherche ne porte pas son texte d'aide.");
+    field.ShouldContain(@"aria-label=""Rechercher une demande""", Case.Sensitive, "Le champ de recherche ne se nomme pas.");
+
+    var clear = Regex.Matches(search, @"<button\b[^>]*>").ShouldHaveSingleItem().Value;
+    clear.ShouldContain(@"type=""button""", Case.Sensitive, "Le bouton ✕ n'est pas un simple bouton.");
+    clear.ShouldContain(@"aria-label=""Effacer la recherche""", Case.Sensitive, "Le bouton ✕ ne se nomme pas.");
+  }
+
+  /// <summary>
+  /// <b>L'état vide de la recherche est rendu, et caché</b> : c'est le script qui le montre quand la
+  /// saisie écarte toutes les lignes, avec les mots que le serveur lui a donnés.
+  /// </summary>
+  [Fact]
+  public async Task RendersTheEmptyStateOfTheSearchHidden()
+  {
+    await CreateAsync(new() { ["email"] = $"{Guid.NewGuid():N}@example.org" });
+
+    Regex.IsMatch(ParagraphSaying(await BoardAsync(), NoMatch), @"\bhidden\b")
+      .ShouldBeTrue($"« {NoMatch} » se lit avant toute recherche.");
+  }
+
+  /// <summary>
+  /// <b>Chaque ligne porte le texte que la recherche parcourt</b> — l'email, le nom et le prénom, tels
+  /// qu'enregistrés : c'est le script qui les normalise, comme il normalise la saisie.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Une valeur absente est vide, et non « — »</b> : le tiret est le libellé d'une cellule, pas
+  /// un texte que la personne a donné. Chercher « — » ne doit trouver aucune demande sans email.
+  /// </remarks>
+  [Fact]
+  public async Task CarriesTheSearchableTextOfEachRow()
+  {
+    var marker = Guid.NewGuid().ToString("N");
+    var byName = $"Hélène-{marker}";
+
+    await CreateAsync(new() { ["email"] = "", ["lastName"] = "Dupont", ["firstName"] = byName });
+
+    var row = Regex.Matches(TableIn(await BoardAsync()), @"<tr\b(?<attributes>[^>]*)>(?<cells>.*?)</tr>", RegexOptions.Singleline)
+      .Where(match => match.Groups["cells"].Value.Contains(marker, StringComparison.Ordinal))
+      .ShouldHaveSingleItem()
+      .Groups["attributes"].Value;
+
+    row.ShouldContain(@"data-email=""""", Case.Sensitive, "L'email absent n'est pas cherché vide.");
+    row.ShouldContain(@"data-last-name=""Dupont""", Case.Sensitive, "La ligne ne porte pas son nom à chercher.");
+    WebUtility.HtmlDecode(Regex.Match(row, @"data-first-name=""([^""]*)""").Groups[1].Value)
+      .ShouldBe(byName, "La ligne ne porte pas son prénom à chercher, tel qu'enregistré.");
+  }
+
+  /// <summary>
   /// Enregistre une demande valide, les valeurs de <paramref name="fields"/> posées par-dessus ; rend
   /// son message unique.
   /// </summary>
@@ -430,12 +503,21 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>L'élément qui porte le message de l'état vide, une fois : ses attributs.</summary>
-  private static string EmptyStateIn(string main)
-  {
-    var empty = Regex.Matches(main, @"<p\b(?<attributes>[^>]*)>(?<text>[^<]*)</p>")
-      .Where(paragraph => LayoutSurface.TextIn(paragraph.Groups["text"].Value) == NoRequestYet)
-      .ShouldHaveSingleItem($"L'écran ne porte pas « {NoRequestYet} », une fois.");
+  private static string EmptyStateIn(string main) => ParagraphSaying(main, NoRequestYet);
 
-    return empty.Groups["attributes"].Value;
+  /// <summary>Le paragraphe qui dit <paramref name="text"/>, une fois : ses attributs.</summary>
+  private static string ParagraphSaying(string main, string text)
+  {
+    var paragraph = Regex.Matches(main, @"<p\b(?<attributes>[^>]*)>(?<text>[^<]*)</p>")
+      .Where(paragraph => LayoutSurface.TextIn(paragraph.Groups["text"].Value) == text)
+      .ShouldHaveSingleItem($"L'écran ne porte pas « {text} », une fois.");
+
+    return paragraph.Groups["attributes"].Value;
   }
+
+  /// <summary>La barre de recherche, entière — balise ouvrante comprise —, une fois.</summary>
+  private static string SearchBarIn(string main) =>
+    Regex.Matches(main, @"<div\b[^>]*\brole=""search""[^>]*>.*?</div>", RegexOptions.Singleline)
+      .ShouldHaveSingleItem("L'écran ne porte pas une barre de recherche, une seule.")
+      .Value;
 }
