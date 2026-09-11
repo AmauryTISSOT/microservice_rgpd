@@ -614,6 +614,60 @@ table.queue th {
   letter-spacing: var(--type-eyebrow-tracking);
 }
 
+/*
+  LES ACTIONS D'UNE LIGNE — trois boutons en icônes, serrés côte à côte, sans filet : ils se lisent
+  comme des outils de la ligne, pas comme des gestes que l'écran attend. La cellule ne se coupe
+  jamais : trois icônes empilées se liraient comme trois lignes.
+
+  ⚠️ C'EST UNE EXTENSION DU DOCUMENT DE DESIGN, et elle est signalée comme telle : celui-ci ne
+  prévoit ni bouton en icône sans filet, ni infobulle, ni état de survol. Tout y reste pris dans
+  ses tokens — encre, filet, rayon, légende.
+*/
+.row-actions {
+  display: flex;
+  gap: var(--space-xxs);
+  white-space: nowrap;
+}
+
+button.row-action {
+  border-color: transparent;
+  color: var(--ink-muted);
+  display: inline-flex;
+  padding: var(--space-xxs);
+  position: relative;
+}
+
+button.row-action:hover,
+button.row-action:focus-visible {
+  color: var(--ink);
+}
+
+/*
+  L'INFOBULLE — le libellé de l'action, sous l'icône, au survol comme au focus du clavier : qui
+  navigue sans souris lit la même chose que qui survole. Elle s'aligne sur le bord droit du bouton,
+  pour ne pas déborder de la dernière colonne ; elle ne capte aucun clic.
+*/
+button.row-action .tooltip {
+  background: var(--ink-secondary);
+  border-radius: var(--radius-xs);
+  color: var(--surface);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+  padding: var(--space-xxs) var(--space-xs);
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-xxs));
+  visibility: hidden;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+button.row-action:hover .tooltip,
+button.row-action:focus-visible .tooltip {
+  visibility: visible;
+}
+
 .banner {
   display: grid;
   gap: var(--space-xxs) var(--space-md);
