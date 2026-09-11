@@ -71,9 +71,9 @@ public static class MiddlewareConfig
     // un hébergeur de polices pour afficher une page.
     app.UseStaticFiles();
 
-    // Les écrans de l'Operator. Ils vivent à côté de l'API sans la traverser : celle-ci fait entrer
-    // une demande, elle n'instruit jamais rien — le seul chemin vers un geste humain passe par un
-    // écran que le service écrit lui-même.
+    // Les écrans de l'Operator. Ils vivent à côté de l'API sans la traverser : celle-ci qualifie un
+    // texte, elle n'instruit jamais rien — le seul chemin vers un geste humain passe par un écran
+    // que le service écrit lui-même.
     app.MapRazorPages();
 
     // Run migrations in Development or when explicitly requested via environment variable

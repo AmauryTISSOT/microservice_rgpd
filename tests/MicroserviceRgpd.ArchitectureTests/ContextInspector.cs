@@ -52,6 +52,22 @@ internal static class ContextInspector
   /// </summary>
   internal static IReadOnlyList<CrossContextReference> Inspect(string assemblyPath, string from, string to)
   {
+    return ReferencesFrom(assemblyPath, type => BelongsTo(type, from), to);
+  }
+
+  /// <summary>
+  /// Toutes les références vers <paramref name="to"/> portées par l'IL de
+  /// <paramref name="assemblyPath"/>, <b>d'où qu'elles partent</b> — d'un autre contexte, du même,
+  /// ou d'aucun. Vide vaut un assemblage qui ignore tout de ce contexte.
+  /// </summary>
+  internal static IReadOnlyList<CrossContextReference> ReferencesTo(string assemblyPath, string to)
+  {
+    return ReferencesFrom(assemblyPath, _ => true, to);
+  }
+
+  private static IReadOnlyList<CrossContextReference> ReferencesFrom(
+    string assemblyPath, Func<TypeDefinition, bool> source, string to)
+  {
     using var module = ModuleDefinition.ReadModule(assemblyPath);
     var assembly = Path.GetFileNameWithoutExtension(assemblyPath);
 
@@ -60,7 +76,7 @@ internal static class ContextInspector
     return
     [
       .. module.GetTypes()
-        .Where(type => BelongsTo(type, from))
+        .Where(source)
         .SelectMany(type => Reaches(type)
           .Where(reached => BelongsTo(reached.Type, to))
           .Select(reached => new CrossContextReference(assembly, FullNameOf(type), FullNameOf(reached.Type), reached.Site)))

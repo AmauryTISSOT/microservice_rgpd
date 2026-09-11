@@ -64,6 +64,17 @@ public class ContextInspectorTests
   }
 
   /// <summary>
+  /// <b>Lu d'où qu'elle parte</b>, une référence portée par un type sans contexte se voit aussi —
+  /// ce que la matrice, qui ne lit que d'un contexte à un autre, ne regarde jamais.
+  /// </summary>
+  [Fact]
+  public void SeesAReferenceCarriedByATypeWithoutAContext()
+  {
+    ContextInspector.ReferencesTo(ThisAssembly, ContextInspector.Requests)
+      .ShouldContain(reference => reference.SourceType == typeof(Fixtures.Reporting.AnExportServiceWithoutAContext).FullName);
+  }
+
+  /// <summary>
   /// Un appel générique — <c>Select&lt;T, R&gt;</c> — se lit <b>sans faire tomber l'inspecteur</b>.
   /// C'est la panne qu'a produite la première ligne de <c>Casework</c> : la surcharge qui déballe
   /// une opérande se rappelait elle-même sans fin sur un <c>GenericInstanceMethod</c>, et le garde
