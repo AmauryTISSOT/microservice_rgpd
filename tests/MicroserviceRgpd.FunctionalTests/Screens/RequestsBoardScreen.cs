@@ -70,7 +70,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Hors des modales, le contenu porte deux boutons</b> : « Créer une demande », une fois, puis
+  /// <b>Autour du tableau, le contenu porte deux boutons</b> : « Créer une demande », une fois, puis
   /// le ✕ de la recherche — et aucun dans le header : l'ADR-0009 ne pose aucune action dans la barre
   /// du service.
   /// </summary>
@@ -88,12 +88,12 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>Les boutons hors des modales sont de simples boutons</b>, hors de tout formulaire, qui ne
+  /// ⚠️ <b>Les boutons autour du tableau sont de simples boutons</b>, hors de tout formulaire, qui ne
   /// soumettent rien et ne mènent nulle part : c'est le module qui ouvre la modale et vide la
   /// recherche. Un bouton sans type, dans un formulaire, enverrait ce formulaire au premier clic.
   /// </summary>
   [Fact]
-  public async Task KeepsTheButtonsOutsideTheDialogsSimpleButtons()
+  public async Task KeepsTheButtonsAroundTheTableSimpleButtons()
   {
     var main = LayoutSurface.MainOf(await _layout.ReadAsync(Board));
     var outside = OutsideTheDialogs(main);

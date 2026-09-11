@@ -233,8 +233,10 @@ public class RequestSearch(BrowserHarness harness)
     return page.GetByRole(AriaRole.Row).Filter(new() { HasText = text });
   }
 
+  /// <summary>Le message, lu dans le cadre du tableau : c'est là, à la place des lignes, qu'il se lit.</summary>
   private static ILocator NoMatchMessage(IPage page)
   {
-    return page.GetByText(NoMatch, new() { Exact = true });
+    return page.GetByRole(AriaRole.Region, new() { Name = "Liste des demandes", Exact = true })
+      .GetByText(NoMatch, new() { Exact = true });
   }
 }

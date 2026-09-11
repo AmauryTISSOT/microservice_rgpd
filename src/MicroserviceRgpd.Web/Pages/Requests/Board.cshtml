@@ -62,8 +62,13 @@
   ⚠️ L'ÉTAT VIDE EST TOUJOURS RENDU, ET CACHÉ DÈS QU'UNE DEMANDE EXISTE : le script le montrera
   quand la dernière ligne sera supprimée, sans revenir au serveur pour en connaître les mots.
 
+  ⚠️ L'ÉTAT VIDE DE LA RECHERCHE EST TOUJOURS RENDU, ET CACHÉ : aucune recherche n'est en cours au
+  chargement. Le script le montre quand la saisie écarte toutes les demandes — mais jamais sur un
+  tableau vide, qui dit déjà qu'il n'y a rien à trouver. Il se lit dans le cadre, sous les
+  en-têtes, là où les lignes se liraient.
+
   ⚠️ L'ÉCRAN TIENT DANS LA FENÊTRE, ET SEUL LE CADRE DU TABLEAU DÉFILE — dans les deux sens. Ce qui
-  est au-dessus de lui — le titre, le bouton, et demain la recherche et le tri — reste donc en vue
+  est au-dessus de lui — le titre, le bouton, la recherche, et demain le tri — reste donc en vue
   par construction, et l'en-tête des colonnes colle au haut du cadre. Sur un écran étroit, c'est
   le cadre qui défile de côté, jamais la page.
 
@@ -96,14 +101,8 @@
   </table>
 
   <p class="none" id="requests-none" hidden="@(Model.Rows.Count > 0)">Aucune demande pour le moment</p>
+  <p class="none" id="requests-no-match" hidden>Aucune demande ne correspond à votre recherche</p>
 </div>
-
-@*
-  ⚠️ L'ÉTAT VIDE DE LA RECHERCHE EST TOUJOURS RENDU, ET CACHÉ : aucune recherche n'est en cours au
-  chargement. Le script le montre quand la saisie écarte toutes les demandes — mais jamais sur un
-  tableau vide, qui dit déjà qu'il n'y a rien à trouver.
-*@
-<p class="none" id="requests-no-match" hidden>Aucune demande ne correspond à votre recherche</p>
 
 @*
   LA MODALE DE CRÉATION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Un `dialog` natif : le
