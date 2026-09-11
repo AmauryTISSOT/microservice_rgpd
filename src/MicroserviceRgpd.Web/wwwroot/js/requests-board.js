@@ -10,7 +10,7 @@ const dialog = document.getElementById("create-request");
 const opener = document.getElementById("create-request-open");
 const form = document.getElementById("create-request-form");
 const receivedOn = form.elements.namedItem("receivedOn");
-const create = form.querySelector("[data-create]");
+const createButton = form.querySelector("[data-create]");
 
 // Les dix messages, écrits par le serveur (DataSubjectRequestMessages) : le module n'en écrit aucun.
 const messages = JSON.parse(document.getElementById("create-request-messages").textContent);
@@ -74,25 +74,28 @@ const messageMaxLength = 10_000;
 // chiffres, que le serveur tiendrait pour mal formées : le navigateur aussi.
 const isoDate = /^\d{4}-\d{2}-\d{2}$/;
 
+const lastName = form.elements.namedItem("lastName");
+const firstName = form.elements.namedItem("firstName");
+const email = form.elements.namedItem("email");
+const message = form.elements.namedItem("message");
+const right = form.elements.namedItem("right");
+
 // Les champs qu'une règle juge, dans l'ordre du formulaire : c'est le premier en erreur qui prend le focus.
-const judged = ["receivedOn", "lastName", "firstName", "email", "message", "right"].map((name) =>
-  form.elements.namedItem(name),
-);
+const validatedFields = [receivedOn, lastName, firstName, email, message, right];
 
 // Toutes les raisons de refuser la saisie, au plus une par champ, sous le nom du champ.
 function refusalsOfTheEntry() {
   const refusals = {};
-  const [date, lastName, firstName, email, message, right] = judged;
 
   // ⚠️ UNE DATE COMMENCÉE MAIS INCOMPLÈTE A UNE VALEUR VIDE, comme une date absente : seul
   // `validity.badInput` les distingue, et l'Operator doit lire laquelle des deux il a sous les yeux.
-  if (date.validity.badInput) {
+  if (receivedOn.validity.badInput) {
     refusals.receivedOn = messages.receivedOnMalformed;
-  } else if (date.value === "") {
+  } else if (receivedOn.value === "") {
     refusals.receivedOn = messages.receivedOnMissing;
-  } else if (!isoDate.test(date.value)) {
+  } else if (!isoDate.test(receivedOn.value)) {
     refusals.receivedOn = messages.receivedOnMalformed;
-  } else if (date.value > todayInParis()) {
+  } else if (receivedOn.value > todayInParis()) {
     refusals.receivedOn = messages.receivedOnInTheFuture;
   }
 
@@ -142,7 +145,7 @@ function refusalsOfTheEntry() {
 
 // Le refus s'écrit dans la place que le serveur a rendue sous le champ, celle que désigne son
 // `aria-describedby` ; l'absence de refus la vide.
-function show(field, refusal) {
+function showRefusal(field, refusal) {
   document.getElementById(field.getAttribute("aria-describedby")).textContent = refusal ?? "";
 
   if (refusal) {
@@ -158,8 +161,8 @@ function show(field, refusal) {
 let inError = new Set();
 
 function forgetRefusals() {
-  for (const field of judged) {
-    show(field, undefined);
+  for (const field of validatedFields) {
+    showRefusal(field, undefined);
   }
 
   inError = new Set();
@@ -170,12 +173,12 @@ function forgetRefusals() {
 function attemptCreation() {
   const refusals = refusalsOfTheEntry();
 
-  for (const field of judged) {
-    show(field, refusals[field.name]);
+  for (const field of validatedFields) {
+    showRefusal(field, refusals[field.name]);
   }
 
-  inError = new Set(judged.filter((field) => refusals[field.name]));
-  judged.find((field) => inError.has(field))?.focus();
+  inError = new Set(validatedFields.filter((field) => refusals[field.name]));
+  validatedFields.find((field) => inError.has(field))?.focus();
 }
 
 // L'identification lie trois champs : un email saisi lève le refus du nom et du prénom. C'est donc
@@ -188,7 +191,7 @@ function revalidateTheFieldsInError() {
   const refusals = refusalsOfTheEntry();
 
   for (const field of inError) {
-    show(field, refusals[field.name]);
+    showRefusal(field, refusals[field.name]);
 
     if (!refusals[field.name]) {
       inError.delete(field);
@@ -210,7 +213,7 @@ function requestClose() {
 }
 
 opener.addEventListener("click", open);
-create.addEventListener("click", attemptCreation);
+createButton.addEventListener("click", attemptCreation);
 form.addEventListener("input", revalidateTheFieldsInError);
 
 for (const dismiss of dialog.querySelectorAll("[data-dismiss]")) {
