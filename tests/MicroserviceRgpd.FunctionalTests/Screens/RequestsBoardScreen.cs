@@ -20,7 +20,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// ce que le serveur rend. Sa place — en haut à droite du contenu, et non dans le header
 /// (ADR-0009) — se vérifie à l'œil ; ce qui est gardé ici est qu'il vit dans le <c>main</c> et
 /// nulle part ailleurs. La confirmation d'abandon d'une saisie est rendue de même, fermée, à côté
-/// de la modale.
+/// de la modale, et la confirmation de suppression d'une demande à côté d'elles.
 /// </para>
 /// <para>
 /// Le marquage de l'entrée courante et les libellés du panneau, eux, sont gardés pour tous les
@@ -43,6 +43,9 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>Le titre de la confirmation d'abandon, recopié à dessein.</summary>
   private const string ConfirmationTitle = "Abandonner la saisie ?";
+
+  /// <summary>Le titre de la confirmation de suppression, recopié à dessein.</summary>
+  private const string DeletionTitle = "Supprimer la demande";
 
   private readonly LayoutSurface _layout = new(factory);
 
@@ -119,19 +122,19 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Les deux modales sont rendues par le serveur</b>, une fois chacune, dans le contenu de
-  /// l'écran : la création, puis la confirmation d'abandon. Ce sont des <c>dialog</c> natifs,
-  /// <b>fermés au chargement</b> — l'<c>Operator</c> les ouvre, la page ne les ouvre jamais pour
-  /// lui —, dont le nom accessible est le titre.
+  /// <b>Les trois modales sont rendues par le serveur</b>, une fois chacune, dans le contenu de
+  /// l'écran : la création, la confirmation d'abandon, puis la confirmation de suppression. Ce sont
+  /// des <c>dialog</c> natifs, <b>fermés au chargement</b> — l'<c>Operator</c> les ouvre, la page ne
+  /// les ouvre jamais pour lui —, dont le nom accessible est le titre.
   /// </summary>
   [Fact]
-  public async Task RendersBothDialogsClosedAndNamedByTheirTitle()
+  public async Task RendersEveryDialogClosedAndNamedByItsTitle()
   {
     var dialogs = Dialogs.Matches(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
 
     dialogs.Select(NameOf).ShouldBe(
-      [DialogTitle, ConfirmationTitle],
-      "Le tableau doit porter la modale de création puis la confirmation d'abandon, une fois chacune.");
+      [DialogTitle, ConfirmationTitle, DeletionTitle],
+      "Le tableau doit porter la modale de création, la confirmation d'abandon puis celle de suppression, une fois chacune.");
 
     dialogs.ShouldNotContain(
       dialog => Regex.IsMatch(dialog.Groups["attributes"].Value, @"\bopen\b"), "Une modale est ouverte au chargement.");
@@ -176,6 +179,51 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
       .Where(button => Regex.IsMatch(button.Attributes, @"\bautofocus\b"))
       .Select(button => LayoutSurface.TextIn(button.Contents))
       .ShouldBe(["Continuer la saisie"], "« Continuer la saisie » n'a pas le focus par défaut, ou ne l'a pas seul.");
+  }
+
+  /// <summary>
+  /// <b>La confirmation de suppression porte « Annuler » puis « Supprimer définitivement »</b>, le
+  /// second au style du geste irréversible. C'est une modale d'alerte, décrite par la phrase que le
+  /// module y écrira — celle de la ligne dont la poubelle l'a ouverte —, et vide tant qu'aucune ne
+  /// l'a ouverte. Aucun des deux boutons ne soumet quoi que ce soit : c'est le module qui supprime.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>« Annuler » a le focus par défaut</b>, et lui seul : une touche Entrée réflexe ne supprime
+  /// rien.
+  /// </remarks>
+  [Fact]
+  public async Task RendersTheDeletionConfirmationWithCancelFocusedAndADestructiveDelete()
+  {
+    var deletion = DialogNamed(LayoutSurface.MainOf(await _layout.ReadAsync(Board)), DeletionTitle);
+    var attributes = deletion.Groups["attributes"].Value;
+
+    attributes.ShouldContain(@"role=""alertdialog""", Case.Sensitive, "La confirmation de suppression ne se présente pas comme une alerte.");
+
+    var describedBy = Regex.Match(attributes, @"aria-describedby=""([^""]+)""");
+    describedBy.Success.ShouldBeTrue("La confirmation de suppression ne se décrit pas.");
+
+    var description = Regex.Match(
+      deletion.Value, $@"<p\b[^>]*\bid=""{Regex.Escape(describedBy.Groups[1].Value)}""[^>]*>(.*?)</p>", RegexOptions.Singleline);
+    description.Success.ShouldBeTrue("La confirmation de suppression n'a pas de place pour sa phrase.");
+    LayoutSurface.TextIn(description.Groups[1].Value).ShouldBeEmpty("La phrase de confirmation est écrite avant qu'une ligne l'ait choisie.");
+
+    var buttons = ButtonsIn(deletion.Value);
+
+    buttons
+      .Select(button => LayoutSurface.TextIn(button.Contents))
+      .ShouldBe(["Annuler", "Supprimer définitivement"], "La confirmation ne porte pas « Annuler » puis « Supprimer définitivement ».");
+
+    buttons.ShouldAllBe(
+      button => button.Attributes.Contains(@"type=""button""", StringComparison.Ordinal),
+      "Un bouton de la confirmation de suppression soumet quelque chose.");
+
+    Regex.IsMatch(buttons[1].Attributes, @"class=""[^""]*\bdestructive\b")
+      .ShouldBeTrue("« Supprimer définitivement » ne porte pas le style du geste irréversible.");
+
+    buttons
+      .Where(button => Regex.IsMatch(button.Attributes, @"\bautofocus\b"))
+      .Select(button => LayoutSurface.TextIn(button.Contents))
+      .ShouldBe(["Annuler"], "« Annuler » n'a pas le focus par défaut, ou ne l'a pas seul.");
   }
 
   /// <summary>

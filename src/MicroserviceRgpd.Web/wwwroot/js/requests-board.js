@@ -6,6 +6,9 @@
 // ⚠️ L'OPERATOR NE PERD JAMAIS UNE SAISIE PAR MÉGARDE. Les quatre modes passent tous par
 // `requestClose` : un formulaire non modifié s'y ferme directement, un formulaire modifié y ouvre la
 // confirmation d'abandon. Aucun mode de fermeture ne doit pouvoir la contourner.
+//
+// La poubelle de chaque ligne ouvre la confirmation de suppression, avec la phrase de sa ligne ;
+// « Supprimer définitivement » l'envoie au handler de la page, et la ligne s'en va sans rechargement.
 
 const dialog = document.getElementById("create-request");
 const confirmation = document.getElementById("abandon-entry");
@@ -14,7 +17,7 @@ const form = document.getElementById("create-request-form");
 const receivedOn = form.elements.namedItem("receivedOn");
 const createButton = form.querySelector("[data-create]");
 const failure = document.getElementById("create-request-failure");
-const toast = document.getElementById("create-request-toast");
+const toast = document.getElementById("requests-toast");
 
 // Les dix messages, écrits par le serveur (DataSubjectRequestMessages) : le module n'en écrit aucun.
 const messages = JSON.parse(document.getElementById("create-request-messages").textContent);
@@ -286,21 +289,25 @@ async function refusalsFromTheServer(response) {
   }
 }
 
-// LA DEMANDE EST CRÉÉE : la modale se ferme — sans confirmation, rien n'est perdu —, et le toast le
-// dit quelques secondes. Ses mots sont ceux que la page a rendus. La prochaine ouverture repartira
-// des valeurs par défaut, comme toutes les ouvertures.
+// LE TOAST DIT QUELQUES SECONDES CE QUI VIENT D'AVOIR LIEU. Ses mots sont ceux que la page a rendus.
 const toastDuration = 5_000;
 let toastTimer;
 
-function closeOnCreation() {
-  confirmation.close();
-  dialog.close();
-
-  toast.textContent = toast.dataset.created;
+function say(words) {
+  toast.textContent = words;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     toast.textContent = "";
   }, toastDuration);
+}
+
+// LA DEMANDE EST CRÉÉE : la modale se ferme — sans confirmation, rien n'est perdu —, et le toast le
+// dit. La prochaine ouverture repartira des valeurs par défaut, comme toutes les ouvertures.
+function closeOnCreation() {
+  confirmation.close();
+  dialog.close();
+
+  say(toast.dataset.created);
 }
 
 // L'identification lie trois champs : un email saisi lève le refus du nom et du prénom. C'est donc
@@ -394,31 +401,132 @@ function reopenAndConfirm() {
 // LE FOND N'EST PAS UN ÉLÉMENT : un clic dessus arrive sur le `dialog` lui-même, hors de son cadre.
 // ⚠️ L'appui ET le relâchement doivent tomber sur le fond. Une sélection de texte commencée dans la
 // modale et relâchée dehors produit elle aussi un clic sur le `dialog` : elle ne doit rien fermer.
-let pressedOnTheBackdrop = false;
+function closeOnBackdropClick(modal, close) {
+  let pressedOnTheBackdrop = false;
 
-function isOnTheBackdrop(event) {
-  if (event.target !== dialog) {
-    return false;
+  function isOnTheBackdrop(event) {
+    if (event.target !== modal) {
+      return false;
+    }
+
+    const frame = modal.getBoundingClientRect();
+
+    return (
+      event.clientX < frame.left ||
+      event.clientX > frame.right ||
+      event.clientY < frame.top ||
+      event.clientY > frame.bottom
+    );
   }
 
-  const frame = dialog.getBoundingClientRect();
+  modal.addEventListener("pointerdown", (event) => {
+    pressedOnTheBackdrop = isOnTheBackdrop(event);
+  });
 
-  return (
-    event.clientX < frame.left ||
-    event.clientX > frame.right ||
-    event.clientY < frame.top ||
-    event.clientY > frame.bottom
-  );
+  modal.addEventListener("click", (event) => {
+    if (pressedOnTheBackdrop && isOnTheBackdrop(event)) {
+      close();
+    }
+
+    pressedOnTheBackdrop = false;
+  });
 }
 
-dialog.addEventListener("pointerdown", (event) => {
-  pressedOnTheBackdrop = isOnTheBackdrop(event);
-});
+closeOnBackdropClick(dialog, requestClose);
 
-dialog.addEventListener("click", (event) => {
-  if (pressedOnTheBackdrop && isOnTheBackdrop(event)) {
-    requestClose();
+// LA SUPPRESSION D'UNE DEMANDE. La poubelle d'une ligne ouvre la confirmation, où le module recopie
+// ce que la ligne porte : la phrase que le serveur a composée pour elle, et l'identifiant de sa
+// demande. Il n'en écrit aucun mot. « Annuler », Échap et un clic sur le fond la referment sans rien
+// envoyer ; Échap, le navigateur le fait seul.
+const deletion = document.getElementById("delete-request");
+const deletionForm = document.getElementById("delete-request-form");
+const deletionConsequence = document.getElementById("delete-request-consequence");
+const deletionFailure = document.getElementById("delete-request-failure");
+const deleteButton = deletion.querySelector("[data-delete-for-good]");
+const requests = document.getElementById("requests");
+const none = document.getElementById("requests-none");
+
+// La ligne dont la poubelle a ouvert la confirmation : c'est elle que la suppression retire.
+let rowToDelete = null;
+
+// Les lignes ne sont pas écoutées une à une : le tableau l'est, pour toutes à la fois.
+requests.addEventListener("click", (event) => {
+  const trash = event.target.closest('[data-action="delete"]');
+
+  if (trash) {
+    openDeletion(trash.closest("tr"));
   }
-
-  pressedOnTheBackdrop = false;
 });
+
+function openDeletion(row) {
+  rowToDelete = row;
+  deletionConsequence.textContent = row.dataset.deletionConfirmation;
+  deletionForm.elements.namedItem("id").value = row.dataset.requestId;
+  deletionFailure.hidden = true;
+
+  // « Annuler » prend le focus : `showModal` honore son `autofocus`.
+  deletion.showModal();
+}
+
+// ⚠️ PENDANT L'ENVOI, LA CONFIRMATION NE SE FERME PAS : la réponse doit trouver la ligne qu'elle
+// concerne, et l'échec son bandeau.
+let deleting = false;
+
+function closeDeletion() {
+  if (!deleting) {
+    deletion.close();
+  }
+}
+
+deletion.querySelector("[data-dismiss]").addEventListener("click", closeDeletion);
+closeOnBackdropClick(deletion, closeDeletion);
+
+deletion.addEventListener("cancel", (event) => {
+  if (deleting) {
+    event.preventDefault();
+  }
+});
+
+// L'ENVOI. Le formulaire part tel quel au handler qu'il déclare, jeton anti-rejeu compris.
+// « Supprimer définitivement » est désactivé pendant l'envoi : un double clic ne part qu'une fois.
+//
+// Deux issues. 204, ou 404 — la demande a déjà été supprimée ailleurs, et ce que voulait l'Operator
+// est acquis (ADR-0022) — : la ligne s'en va. Tout le reste — un jeton anti-rejeu refusé, une erreur
+// du serveur, une coupure réseau — : le bandeau, et la ligne reste, puisque rien n'a été supprimé.
+async function deleteForGood() {
+  deleting = true;
+  deleteButton.disabled = true;
+  deletionFailure.hidden = true;
+
+  try {
+    const response = await fetch(deletionForm.action, {
+      method: "POST",
+      body: new URLSearchParams(new FormData(deletionForm)),
+    });
+
+    if (response.status === 204 || response.status === 404) {
+      closeOnDeletion();
+      return;
+    }
+
+    deletionFailure.hidden = false;
+  } catch {
+    deletionFailure.hidden = false;
+  } finally {
+    deleting = false;
+    deleteButton.disabled = false;
+  }
+}
+
+// LA DEMANDE EST SUPPRIMÉE : la confirmation se ferme, la ligne s'en va sans rechargement, et le toast
+// le dit. La dernière ligne partie, l'état vide que le serveur a rendu reparaît.
+function closeOnDeletion() {
+  deletion.close();
+  rowToDelete.remove();
+  rowToDelete = null;
+  none.hidden = requests.tBodies[0].rows.length > 0;
+
+  say(toast.dataset.deleted);
+}
+
+deleteButton.addEventListener("click", deleteForGood);

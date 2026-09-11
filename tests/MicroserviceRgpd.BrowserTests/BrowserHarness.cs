@@ -77,23 +77,62 @@ public sealed class BrowserHarness : IAsyncLifetime
   /// </summary>
   public async Task RecordRequestsAsync(int count)
   {
-    using var scope = Service.Services.CreateScope();
-    var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-
     for (var i = 0; i < count; i++)
     {
-      var entry = new DataSubjectRequestEntry(
-        Origin: Origin.Email,
-        ReceivedOn: "2026-01-15",
-        LastName: "Martin",
-        FirstName: "Jeanne",
-        Email: $"{Guid.NewGuid():N}@example.org",
-        IdentityVerified: false,
-        Message: "Je souhaite accéder à mes données.",
-        Right: "Access");
-
-      (await mediator.Send(new RecordDataSubjectRequestCommand(entry))).IsSuccess.ShouldBeTrue();
+      await RecordRequestAsync("Martin", "Jeanne", $"{Guid.NewGuid():N}@example.org");
     }
+  }
+
+  /// <summary>
+  /// Enregistre une demande valide de cette personne <b>par le use case</b>, sans passer par la
+  /// modale ; rend son message unique, qui la retrouve en base.
+  /// </summary>
+  public async Task<string> RecordRequestAsync(string lastName, string firstName, string email)
+  {
+    using var scope = Service.Services.CreateScope();
+    var message = $"Je souhaite accéder à mes données. {Guid.NewGuid()}";
+
+    var entry = new DataSubjectRequestEntry(
+      Origin: Origin.Email,
+      ReceivedOn: "2026-01-15",
+      LastName: lastName,
+      FirstName: firstName,
+      Email: email,
+      IdentityVerified: false,
+      Message: message,
+      Right: "Access");
+
+    (await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new RecordDataSubjectRequestCommand(entry)))
+      .IsSuccess.ShouldBeTrue();
+
+    return message;
+  }
+
+  /// <summary>
+  /// Retire de la base la demande enregistrée sous ce message — <b>dans le dos de l'écran</b>, comme
+  /// le ferait un second onglet.
+  /// </summary>
+  public async Task DeleteRequestAsync(string message)
+  {
+    using var scope = Service.Services.CreateScope();
+
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .ExecuteSqlAsync($"DELETE FROM data_subject_requests WHERE message = {message}");
+  }
+
+  /// <summary>
+  /// Retire <b>toutes</b> les demandes enregistrées — pour qui doit arriver au tableau vide.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Ne vaut que parce que toute la collection s'exécute en série, et qu'aucun test n'y compte sur
+  /// une demande qu'il n'a pas enregistrée lui-même.
+  /// </remarks>
+  public async Task DeleteAllRequestsAsync()
+  {
+    using var scope = Service.Services.CreateScope();
+
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .ExecuteSqlAsync($"DELETE FROM data_subject_requests");
   }
 
   public async Task DisposeAsync()
