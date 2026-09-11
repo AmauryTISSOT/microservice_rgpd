@@ -22,6 +22,7 @@ tests/
   MicroserviceRgpd.UnitTests/         # Domaine, handlers et adaptateurs, isolés
   MicroserviceRgpd.IntegrationTests/  # Persistance sur un vrai PostgreSQL (Testcontainers)
   MicroserviceRgpd.FunctionalTests/   # Endpoints de bout en bout (WebApplicationFactory)
+  MicroserviceRgpd.BrowserTests/      # Parcours d'écrans dans Chromium (Playwright, vrai port)
   MicroserviceRgpd.AspireTests/       # Volontairement vide — voir le commentaire du .csproj
 ```
 
@@ -66,7 +67,7 @@ comme pour exécuter les tests fonctionnels.
 | Logs             | Serilog + sink OpenTelemetry                 |
 | Observabilité    | OpenTelemetry 1.17 via ServiceDefaults       |
 | Qualification    | Sidecar Python (FastAPI / uvicorn), lancé par Aspire |
-| Tests            | xUnit, NSubstitute, Shouldly, Testcontainers ; `pytest` côté sidecar |
+| Tests            | xUnit, NSubstitute, Shouldly, Testcontainers, Playwright ; `pytest` côté sidecar |
 
 ## Démarrer
 
@@ -132,7 +133,8 @@ docker run --rm --gpus=all --entrypoint nvidia-smi ollama/ollama:0.13.0 -L
 Sans ce prérequis, le container refuse de démarrer — c'est délibéré : le repli silencieux sur le
 processeur donnait une pile qui « marche » mais dont personne n'attend les réponses.
 
-Les tests d'intégration et fonctionnels utilisent Testcontainers : **Docker doit être démarré**.
+Les tests d'intégration, fonctionnels et navigateur utilisent Testcontainers : **Docker doit être démarré**.
+Les tests navigateur installent Chromium eux-mêmes au premier lancement.
 Voir [`docs/testing/testcontainers.md`](docs/testing/testcontainers.md). **Aucun test ne
 démarre Ollama, ni ne s'approche d'un GPU.**
 

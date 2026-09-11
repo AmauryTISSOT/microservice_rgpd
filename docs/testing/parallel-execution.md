@@ -1,8 +1,8 @@
 # Parallel Test Execution Configuration
 
-This workspace is configured to run all four test projects in parallel in Visual Studio Test Explorer.
+This workspace is configured to run all five test projects in parallel in Visual Studio Test Explorer.
 
-`tests/` holds a fifth directory, `MicroserviceRgpd.AspireTests`, which is **not** a test project:
+`tests/` holds a sixth directory, `MicroserviceRgpd.AspireTests`, which is **not** a test project:
 it carries `IsTestProject=false` and is deliberately empty. Its missing `xunit.runner.json` is not
 an oversight — read the comment in its `.csproj` before adding anything to it.
 
@@ -38,7 +38,7 @@ Visual Studio will automatically detect and use `.runsettings` in the solution r
 ## Verification
 
 After configuration, when you run all tests:
-- The four test projects (UnitTests, ArchitectureTests, IntegrationTests, FunctionalTests) will run in parallel
+- The five test projects (UnitTests, ArchitectureTests, IntegrationTests, FunctionalTests, BrowserTests) will run in parallel
 - Within each project, test collections will also run in parallel
 - You should see multiple tests running simultaneously in Test Explorer
 
