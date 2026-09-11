@@ -92,6 +92,20 @@
   --on-signal: #ffffff;
 
   /*
+    LE BLEU DU STATUT « EN COURS » — le bleu ciel de la palette décorative du document, promu au
+    rang sémantique comme « succès » et « attention » l'ont été, et sous la même réserve : il ne sert
+    jamais de couleur de texte (2,5:1 sur blanc). ⚠️ Ce n'est pas l'accent : le même bleu voudrait
+    alors dire à la fois « clique ici » et « la demande attend une réponse ».
+  */
+  --signal-pending: #62aef0;
+
+  /*
+    LA PART D'UNE TEINTE DE SIGNALEMENT DANS LE FOND D'UN BADGE : assez pour que la couleur se lise,
+    assez peu pour que l'encre posée dessus garde son contraste.
+  */
+  --signal-tint: 12%;
+
+  /*
     LE VOILE DERRIÈRE UNE MODALE : l'encre, très atténuée. Il assourdit l'écran sans le cacher, et
     c'est lui — non l'ombre — qui détache la modale de ce qu'elle recouvre. Le document n'en donne
     aucune valeur : celle-ci est une extension, signalée comme telle.
@@ -671,6 +685,48 @@ button.row-action .tooltip {
 button.row-action:hover .tooltip,
 button.row-action:focus-visible .tooltip {
   visibility: visible;
+}
+
+/*
+  LE STATUT D'UNE DEMANDE, EN BADGE — En cours en bleu, Terminée en vert, Annulée en gris. La couleur
+  est portée par une pastille, un filet et un fond teinté ; le libellé reste à l'encre, au rôle
+  d'étiquette, parce que les couleurs de signalement ne tiennent pas le seuil de contraste d'un
+  texte. Le rayon est celui que le document donne aux pastilles de statut, jamais la pilule.
+
+  Le badge porte le nom canonique du statut : c'est lui qui choisit la teinte, le libellé seul se
+  lit. Le fond est la teinte même, fondue dans la surface.
+*/
+.status {
+  align-items: center;
+  background: color-mix(in srgb, var(--status-tone) var(--signal-tint), var(--surface));
+  border: var(--hairline-width) solid var(--status-tone);
+  border-radius: var(--radius-sm);
+  color: var(--ink-secondary);
+  display: inline-flex;
+  font: var(--type-eyebrow);
+  gap: var(--space-xxs);
+  letter-spacing: var(--type-eyebrow-tracking);
+  padding: 0 var(--space-xs);
+}
+
+.status::before {
+  background: var(--status-tone);
+  border-radius: var(--radius-full);
+  content: "";
+  height: var(--space-xs);
+  width: var(--space-xs);
+}
+
+.status[data-status="InProgress"] {
+  --status-tone: var(--signal-pending);
+}
+
+.status[data-status="Completed"] {
+  --status-tone: var(--signal-success);
+}
+
+.status[data-status="Cancelled"] {
+  --status-tone: var(--ink-faint);
 }
 
 .banner {

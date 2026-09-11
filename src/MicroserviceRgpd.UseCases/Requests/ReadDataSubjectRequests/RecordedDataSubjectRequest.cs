@@ -15,20 +15,24 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 /// <param name="LastName">Le nom de la personne, ou <c>null</c>.</param>
 /// <param name="FirstName">Le prénom de la personne, ou <c>null</c>.</param>
 /// <param name="ReceivedOn">La date de réception, déclarée par l'<c>Operator</c>.</param>
+/// <param name="ResponseDeadline">La date limite de réponse, telle que la demande la tient : jamais recalculée à la lecture.</param>
 /// <param name="IdentityVerified">L'attestation que l'identité a été vérifiée.</param>
 /// <param name="Right">Le droit invoqué.</param>
 /// <param name="CreatedBy">Qui a enregistré la demande.</param>
 /// <param name="CreatedAt">L'instant d'enregistrement, en UTC.</param>
+/// <param name="Status">Où en est la demande.</param>
 public sealed record RecordedDataSubjectRequest(
   DataSubjectRequestId Id,
   EmailAddress? Email,
   LastName? LastName,
   FirstName? FirstName,
   DateOnly ReceivedOn,
+  DateOnly ResponseDeadline,
   bool IdentityVerified,
   DataSubjectRight Right,
   string CreatedBy,
-  DateTimeOffset CreatedAt)
+  DateTimeOffset CreatedAt,
+  RequestStatus Status)
 {
   /// <summary>Ce que le tableau rend d'une demande enregistrée.</summary>
   /// <exception cref="ArgumentNullException"><paramref name="request"/> est absente.</exception>
@@ -42,9 +46,11 @@ public sealed record RecordedDataSubjectRequest(
       request.LastName,
       request.FirstName,
       request.ReceivedOn,
+      request.ResponseDeadline,
       request.IdentityVerified,
       request.Right,
       request.CreatedBy,
-      request.CreatedAt);
+      request.CreatedAt,
+      request.Status);
   }
 }

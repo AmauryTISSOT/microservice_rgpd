@@ -32,8 +32,8 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Le tableau porte ses colonnes dans l'ordre</b> — Email, Nom, Prénom, Date de réception,
-  /// Identité vérifiée, Type de droit, Date de création, Créé par —, puis une colonne d'actions
-  /// <b>sans titre</b>.
+  /// Date limite de réponse, Identité vérifiée, Type de droit, Date de création, Créé par, Statut —,
+  /// puis une colonne d'actions <b>sans titre</b> : onze en tout.
   /// </summary>
   [Fact]
   public async Task CarriesItsColumnsInOrderThenAnUntitledActionsColumn()
@@ -44,7 +44,10 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
         @"<th\b[^>]*>(.*?)</th>", RegexOptions.Singleline)
       .Select(heading => LayoutSurface.TextIn(heading.Groups[1].Value))
       .ShouldBe(
-        ["Email", "Nom", "Prénom", "Date de réception", "Identité vérifiée", "Type de droit", "Date de création", "Créé par", ""],
+        [
+          "Email", "Nom", "Prénom", "Date de réception", "Date limite de réponse", "Identité vérifiée",
+          "Type de droit", "Date de création", "Créé par", "Statut", "",
+        ],
         "Le tableau ne porte pas ses colonnes dans l'ordre, suivies d'une colonne d'actions sans titre.");
   }
 
@@ -66,9 +69,10 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Une demande enregistrée se lit sur sa ligne</b>, chaque cellule sous le libellé que le
-  /// serveur lui donne : la date de réception en <c>jj/mm/aaaa</c>, « Oui », le droit avec une
-  /// majuscule initiale et sans article du RGPD, et « Opérateur ». La cellule d'actions se garde
-  /// dans <see cref="CarriesThreeActionsOnEachRowNamedForAScreenReader"/>.
+  /// serveur lui donne : les dates de réception et limite de réponse en <c>jj/mm/aaaa</c>, « Oui »,
+  /// le droit avec une majuscule initiale et sans article du RGPD, « Opérateur », et le statut
+  /// « En cours » d'une demande qui naît. La cellule d'actions se garde dans
+  /// <see cref="CarriesThreeActionsOnEachRowNamedForAScreenReader"/>.
   /// </summary>
   [Fact]
   public async Task RendersARecordedRequestWithTheLabelsOfTheServer()
@@ -88,8 +92,8 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     var row = await RowWithAsync(email);
 
-    row[..6].ShouldBe([email, "Martin", "Jeanne", "15/01/2026", "Oui", "Droit à l'effacement"]);
-    row[7].ShouldBe("Opérateur");
+    row[..7].ShouldBe([email, "Martin", "Jeanne", "15/01/2026", "15/02/2026", "Oui", "Droit à l'effacement"]);
+    row[8..10].ShouldBe(["Opérateur", "En cours"]);
   }
 
   /// <summary>
@@ -115,7 +119,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     foreach (var email in new[] { first, second })
     {
-      var actions = Regex.Matches(RowMarkupWith(main, email), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)[^1].Groups[1].Value;
+      var actions = CellsMarkupWith(main, email)[^1];
       var buttons = Regex.Matches(actions, @"<button\b([^>]*)>", RegexOptions.Singleline).Select(button => button.Groups[1].Value).ToArray();
 
       buttons
@@ -188,8 +192,8 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     var row = await RowWithAsync(email);
 
-    row[4].ShouldBe("Non");
-    row[5].ShouldBe(label);
+    row[5].ShouldBe("Non");
+    row[6].ShouldBe(label);
   }
 
   /// <summary>
@@ -228,7 +232,68 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       .ConvertTime(new DateTimeOffset(createdAt), TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris"))
       .ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
-    (await RowWithAsync(email))[6].ShouldBe(expected);
+    (await RowWithAsync(email))[7].ShouldBe(expected);
+  }
+
+  /// <summary>
+  /// <b>La date limite de réponse d'une demande reçue un 31 mars se lit le 30 avril</b> : un mois
+  /// plus tard, ramené au dernier jour du mois quand le 31 n'y existe pas (ADR-0021).
+  /// </summary>
+  [Fact]
+  public async Task RendersTheResponseDeadlineOfARequestReceivedOnMarch31AsApril30()
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+
+    await CreateAsync(new() { ["email"] = email, ["receivedOn"] = "2026-03-31" });
+
+    var row = await RowWithAsync(email);
+
+    row[3].ShouldBe("31/03/2026");
+    row[4].ShouldBe("30/04/2026");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La date limite se lit telle que la demande la tient</b>, jamais recalculée depuis la date
+  /// de réception à la lecture : posée en base à une valeur qu'aucun calcul ne donnerait, c'est
+  /// elle qui s'affiche.
+  /// </summary>
+  [Fact]
+  public async Task RendersTheResponseDeadlineAsHeldByTheRequestWithoutRecomputingIt()
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email, ["receivedOn"] = "2026-01-15" });
+
+    await _surface.SetResponseDeadlineAsync(id, new DateOnly(2026, 6, 3));
+
+    (await RowWithAsync(email))[4].ShouldBe("03/06/2026");
+  }
+
+  /// <summary>
+  /// <b>Le statut se lit en badge, sous son libellé</b> — « En cours » pour la demande qui naît,
+  /// « Terminée » ou « Annulée » pour une demande dont la base porte ce statut. Le badge porte le
+  /// nom du statut, que la feuille de style colore : sa couleur ne se garde pas ici (ADR-0005).
+  /// </summary>
+  [Theory]
+  [InlineData(null, "InProgress", "En cours")]
+  [InlineData("Completed", "Completed", "Terminée")]
+  [InlineData("Cancelled", "Cancelled", "Annulée")]
+  public async Task RendersTheStatusAsABadgeUnderItsLabel(string? stored, string status, string label)
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email });
+
+    if (stored is not null)
+    {
+      await _surface.SetStatusAsync(id, stored);
+    }
+
+    var cell = CellsMarkupWith(await BoardAsync(), email)[9];
+    var badge = Regex.Match(cell, @"<span\b(?<attributes>[^>]*)>(?<text>[^<]*)</span>");
+
+    badge.Success.ShouldBeTrue("Le statut n'est pas rendu en badge.");
+    badge.Groups["attributes"].Value.ShouldContain(@"class=""status""", Case.Sensitive, "Le statut n'est pas rendu en badge.");
+    badge.Groups["attributes"].Value.ShouldContain($@"data-status=""{status}""", Case.Sensitive, "Le badge ne porte pas le nom du statut.");
+    LayoutSurface.TextIn(badge.Groups["text"].Value).ShouldBe(label);
   }
 
   /// <summary>
@@ -346,6 +411,13 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       .Where(row => row.Value.Contains(marker, StringComparison.Ordinal))
       .ShouldHaveSingleItem($"Le tableau ne porte pas la ligne de « {marker} », une fois.")
       .Value;
+
+  /// <summary>Les cellules de la ligne qui porte <paramref name="marker"/>, chacune telle que le serveur la rend.</summary>
+  private static string[] CellsMarkupWith(string main, string marker) =>
+  [
+    .. Regex.Matches(RowMarkupWith(main, marker), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)
+      .Select(cell => cell.Groups[1].Value),
+  ];
 
   /// <summary>La valeur de l'attribut <paramref name="name"/>, décodée comme le navigateur la lit.</summary>
   private static string AttributeOf(string attributes, string name)

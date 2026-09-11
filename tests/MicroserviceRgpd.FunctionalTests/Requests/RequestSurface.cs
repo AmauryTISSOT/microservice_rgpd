@@ -187,6 +187,20 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
       .ExecuteSqlAsync($"DELETE FROM data_subject_requests");
   }
 
+  /// <summary>
+  /// Pose la date limite de réponse de la demande <b>à même la table</b> — pour qui doit prouver
+  /// qu'elle se lit telle qu'elle est tenue, sans être recalculée.
+  /// </summary>
+  internal async Task SetResponseDeadlineAsync(Guid id, DateOnly responseDeadline)
+  {
+    using var scope = factory.Services.CreateScope();
+
+    var updated = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .ExecuteSqlAsync($"UPDATE data_subject_requests SET response_deadline = {responseDeadline} WHERE id = {id}");
+
+    updated.ShouldBe(1, "La date limite n'a été posée sur aucune demande.");
+  }
+
   private async Task<int> CountAsync(FormattableString query)
   {
     using var scope = factory.Services.CreateScope();

@@ -11,9 +11,10 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>Tous les libellés sont rendus par le serveur</b> — tirets, dates, « Oui/Non », droit,
-/// auteur, jusqu'à la phrase qui confirme la suppression. Le script de l'écran anime les lignes ; il
-/// n'en écrit aucun mot. La ligne porte aussi l'identifiant de sa demande, que la suppression
-/// envoie.
+/// auteur, statut, jusqu'à la phrase qui confirme la suppression. Le script de l'écran anime les
+/// lignes ; il n'en écrit aucun mot. La ligne porte aussi l'identifiant de sa demande, que la
+/// suppression envoie, et le statut sous son <b>nom canonique</b>, que le badge porte pour que la
+/// feuille de style le colore.
 /// </remarks>
 public sealed record RequestRow(
   string Id,
@@ -22,10 +23,13 @@ public sealed record RequestRow(
   string LastName,
   string FirstName,
   string ReceivedOn,
+  string ResponseDeadline,
   string IdentityVerified,
   string Right,
   string CreatedAt,
-  string CreatedBy)
+  string CreatedBy,
+  string StatusLabel,
+  string StatusName)
 {
   /// <summary>Ce qu'affiche une cellule dont la valeur est absente : une absence, pas une cellule mal rendue.</summary>
   private const string Absent = "—";
@@ -44,12 +48,18 @@ public sealed record RequestRow(
       request.Email?.Value ?? Absent,
       request.LastName?.Value ?? Absent,
       request.FirstName?.Value ?? Absent,
-      request.ReceivedOn.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture),
+      Day(request.ReceivedOn),
+      Day(request.ResponseDeadline),
       request.IdentityVerified ? "Oui" : "Non",
       Capitalized(request.Right.FrenchLabel),
       ParisCalendar.InParis(request.CreatedAt).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture),
-      request.CreatedBy == DataSubjectRequest.OperatorAuthor ? "Opérateur" : request.CreatedBy);
+      request.CreatedBy == DataSubjectRequest.OperatorAuthor ? "Opérateur" : request.CreatedBy,
+      request.Status.FrenchLabel,
+      request.Status.Name);
   }
+
+  /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
+  private static string Day(DateOnly day) => day.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
   /// <summary>
   /// « La demande de {Prénom} {Nom} ({email}) sera définitivement supprimée. Cette action est
