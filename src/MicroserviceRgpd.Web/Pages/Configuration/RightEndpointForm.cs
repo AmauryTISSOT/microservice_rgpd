@@ -38,14 +38,7 @@ public sealed class RightEndpointForm
   {
     ArgumentNullException.ThrowIfNull(modelState);
 
-    // Les droits de l'écran sont clos — les six du périmètre, OutOfScope exclu : un nom qu'ils
-    // ignorent n'est pas une saisie humaine mais un formulaire forgé, refusé en le nommant.
-    var right = Designated;
-
-    if (right is null)
-    {
-      modelState.AddModelError($"{prefix}.{nameof(Right)}", $"« {Right} » n'est pas un droit du Paramétrage.");
-    }
+    var right = ReadRight(modelState, prefix);
 
     // Un champ laissé vide arrive `null` de la liaison : il entre comme vide, pour que ce soit la
     // règle du type — écrite en français — qui parle à qui a saisi.
@@ -66,6 +59,29 @@ public sealed class RightEndpointForm
     }
 
     return (right, endpoint.Value);
+  }
+
+  /// <summary>
+  /// Fait franchir <b>le seul droit</b> à la frontière du domaine — ce qu'un effacement envoie, sans
+  /// adresse —, ou nomme à l'intégrateur le droit refusé.
+  /// </summary>
+  /// <param name="modelState">L'endroit où le refus se dépose, sous le nom du champ du droit.</param>
+  /// <param name="prefix">Le préfixe de liaison du formulaire, tel que la page l'a déclaré.</param>
+  /// <returns>Le droit désigné, ou <c>null</c> s'il a été refusé.</returns>
+  public DataSubjectRight? ReadRight(ModelStateDictionary modelState, string prefix)
+  {
+    ArgumentNullException.ThrowIfNull(modelState);
+
+    // Les droits de l'écran sont clos — les six du périmètre, OutOfScope exclu : un nom qu'ils
+    // ignorent n'est pas une saisie humaine mais un formulaire forgé, refusé en le nommant.
+    var right = Designated;
+
+    if (right is null)
+    {
+      modelState.AddModelError($"{prefix}.{nameof(Right)}", $"« {Right} » n'est pas un droit du Paramétrage.");
+    }
+
+    return right;
   }
 
   /// <summary>

@@ -117,7 +117,31 @@ public sealed class Settings : IAggregateRoot
   /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
   /// <exception cref="ArgumentOutOfRangeException"><paramref name="right"/> est OutOfScope.</exception>
-  public void SetEndpoint(DataSubjectRight right, EndpointUrl endpoint)
+  public void SetEndpoint(DataSubjectRight right, EndpointUrl endpoint) => Assign(right, endpoint);
+
+  /// <summary>
+  /// Ramène <paramref name="right"/> à « <b>non configuré</b> » : son adresse est oubliée, et c'est
+  /// un état aussi normal que celui d'un service vierge. <b>Seul ce droit est touché</b> : les cinq
+  /// autres gardent leur adresse ou leur absence. Effacer un droit déjà « non configuré » ne change
+  /// rien.
+  /// </summary>
+  /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>
+  /// <exception cref="ArgumentOutOfRangeException"><paramref name="right"/> est OutOfScope.</exception>
+  public void ClearEndpoint(DataSubjectRight right) => Assign(right, null);
+
+  /// <summary>
+  /// La <b>projection des six droits et de leur état</b>, dans l'ordre du noyau partagé : chaque
+  /// droit avec l'adresse qui le configure, ou son absence. C'est ce que l'écran relit — le libellé
+  /// et l'article se lisant sur le droit lui-même.
+  /// </summary>
+  public IReadOnlyList<RightEndpoint> Rights =>
+    [.. ConfigurableRights.Select(right => new RightEndpoint(right, EndpointFor(right)))];
+
+  /// <summary>
+  /// Écrit l'adresse d'un droit — ou son absence — dans sa seule propriété. Poser et effacer passent
+  /// par ce même aiguillage, pour qu'aucun des deux ne puisse toucher un autre droit que le sien.
+  /// </summary>
+  private void Assign(DataSubjectRight right, EndpointUrl? endpoint)
   {
     ArgumentNullException.ThrowIfNull(right);
 
@@ -145,14 +169,6 @@ public sealed class Settings : IAggregateRoot
         throw NoEndpointFor(right);
     }
   }
-
-  /// <summary>
-  /// La <b>projection des six droits et de leur état</b>, dans l'ordre du noyau partagé : chaque
-  /// droit avec l'adresse qui le configure, ou son absence. C'est ce que l'écran relit — le libellé
-  /// et l'article se lisant sur le droit lui-même.
-  /// </summary>
-  public IReadOnlyList<RightEndpoint> Rights =>
-    [.. ConfigurableRights.Select(right => new RightEndpoint(right, EndpointFor(right)))];
 
   /// <summary>Le refus d'un droit hors des six, dit une seule fois pour la lecture et l'écriture.</summary>
   private static ArgumentOutOfRangeException NoEndpointFor(DataSubjectRight right) =>
