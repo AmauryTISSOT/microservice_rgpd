@@ -29,8 +29,19 @@ public sealed record RequestRow(
   string CreatedAt,
   string CreatedBy,
   string StatusLabel,
-  string StatusName)
+  string StatusName,
+  RequestRow.SearchableText Searchable)
 {
+  /// <summary>
+  /// Ce que la recherche parcourt sur la ligne : l'email, le nom et le prénom <b>tels
+  /// qu'enregistrés</b>, vides s'ils sont absents. Le script les normalise, comme il normalise la saisie.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ce ne sont pas les libellés des cellules</b> : le « — » d'une valeur absente n'est pas un
+  /// texte que la personne a donné, et une recherche ne doit pas le trouver.
+  /// </remarks>
+  public sealed record SearchableText(string Email, string LastName, string FirstName);
+
   /// <summary>Ce qu'affiche une cellule dont la valeur est absente : une absence, pas une cellule mal rendue.</summary>
   private const string Absent = "—";
 
@@ -55,7 +66,11 @@ public sealed record RequestRow(
       ParisCalendar.InParis(request.CreatedAt).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture),
       request.CreatedBy == DataSubjectRequest.OperatorAuthor ? "Opérateur" : request.CreatedBy,
       request.Status.FrenchLabel,
-      request.Status.Name);
+      request.Status.Name,
+      new SearchableText(
+        request.Email?.Value ?? string.Empty,
+        request.LastName?.Value ?? string.Empty,
+        request.FirstName?.Value ?? string.Empty));
   }
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
