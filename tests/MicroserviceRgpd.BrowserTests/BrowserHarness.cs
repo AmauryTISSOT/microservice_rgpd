@@ -1,4 +1,7 @@
-﻿using MicroserviceRgpd.Infrastructure.Data;
+﻿using Mediator;
+using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 
@@ -66,6 +69,31 @@ public sealed class BrowserHarness : IAsyncLifetime
     return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
       .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests WHERE message = {message}")
       .SingleAsync();
+  }
+
+  /// <summary>
+  /// Enregistre <paramref name="count"/> demandes valides <b>par le use case</b>, sans passer par la
+  /// modale : ce qu'un scénario demande ici est un tableau qui déborde, pas une saisie.
+  /// </summary>
+  public async Task RecordRequestsAsync(int count)
+  {
+    using var scope = Service.Services.CreateScope();
+    var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+    for (var i = 0; i < count; i++)
+    {
+      var entry = new DataSubjectRequestEntry(
+        Origin: Origin.Email,
+        ReceivedOn: "2026-01-15",
+        LastName: "Martin",
+        FirstName: "Jeanne",
+        Email: $"{Guid.NewGuid():N}@example.org",
+        IdentityVerified: false,
+        Message: "Je souhaite accéder à mes données.",
+        Right: "Access");
+
+      (await mediator.Send(new RecordDataSubjectRequestCommand(entry))).IsSuccess.ShouldBeTrue();
+    }
   }
 
   public async Task DisposeAsync()

@@ -439,6 +439,10 @@ h2 {
     milliers de lignes, et les marges normales du service y feraient déjà une table haute de cent
     écrans. Une carte en ajouterait encore.
 
+  ⚠️ LE CADRE DU TABLEAU DES DEMANDES (`.table-frame`) EST DE LA LISTE, ET SON TABLEAU N'EN EST PLUS :
+  c'est le cadre qui défile, c'est donc lui qui porte la carte — une carte dans une carte doublerait
+  filet et marges.
+
   ⚠️ LA PORTE DE L'ACCUEIL (`a.doorway`) EST DE LA LISTE, et elle y est plutôt que recopiée plus
   bas : elle reprend LA PEAU de la carte et n'en change que la NATURE — la carte entière est un
   lien. Deux jeux de déclarations auraient divergé au premier rayon retouché, et l'accueil aurait
@@ -453,7 +457,8 @@ a.doorway,
 .refusals,
 .right,
 .system,
-table.queue:not(.columns) {
+.table-frame,
+table.queue:not(.columns, .table-frame > table) {
   background: var(--surface);
   border: var(--hairline-width) solid var(--hairline);
   border-radius: var(--radius-lg);
@@ -823,6 +828,110 @@ fieldset label {
 */
 body.wide main {
   max-width: 86rem;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  L'ÉCRAN QUI TIENT DANS LA FENÊTRE — le tableau des demandes, et lui seul à ce jour. C'est la
+  seconde exception de mise en page, et elle va plus loin que la première : le contenu prend TOUTE
+  la largeur, et la page cesse de défiler — c'est le cadre du tableau qui défile, en bas de la
+  colonne, sur toute la hauteur que le reste lui laisse.
+
+  ⚠️ LE `min-height: 0` EST CE QUI FAIT TOUT TENIR. Un élément flex refuse par défaut de descendre
+  sous la hauteur de son contenu : sans lui, cent lignes allongeraient le layout, et la page
+  défilerait de nouveau à la place du cadre.
+
+  La hauteur dynamique suit la barre d'outils d'un navigateur mobile, qui va et vient ; la hauteur
+  statique la précède, pour le navigateur qui ne connaît pas la première.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+body.fill {
+  height: 100vh;
+  height: 100dvh;
+}
+
+body.fill .layout {
+  min-height: 0;
+}
+
+/*
+  Le panneau latéral ne défile plus avec la page, puisqu'elle ne défile plus : dans une fenêtre
+  basse, c'est lui qui défile, pour que ses dernières entrées restent atteignables.
+*/
+body.fill nav.sidepanel {
+  overflow-y: auto;
+}
+
+body.fill main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  max-width: none;
+  min-height: 0;
+}
+
+/*
+  LE CADRE DU TABLEAU : il porte la carte — voir la liste des cartes —, et c'est lui qui défile. Il
+  prend la hauteur que le titre et le bouton lui laissent, même quand le tableau est court : la
+  carte descend alors jusqu'en bas, et l'écran ne change pas de forme au fil des créations. Sa marge
+  intérieure est celle des cellules, pas celle de la carte : une marge au-dessus de l'en-tête
+  collant se refermerait au premier défilement, et l'en-tête sauterait.
+
+  ⚠️ IL NE DESCEND PAS SOUS 12 REM. Dans une fenêtre trop basse pour le titre, le bouton et quelques
+  lignes, c'est la page qui défile de nouveau, plutôt qu'un cadre réduit à rien.
+
+  `isolation` borne l'empilement de l'en-tête collant à la carte : il passe au-dessus des lignes,
+  jamais au-dessus du toast.
+*/
+.table-frame {
+  flex: 1 1 auto;
+  isolation: isolate;
+  margin-bottom: 0;
+  min-height: 12rem;
+  overflow: auto;
+  padding: 0;
+}
+
+/* Le focus du cadre se voit comme celui d'une porte : un contour d'accent, avec décalage. */
+.table-frame:focus-visible {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: var(--space-xxs);
+}
+
+/*
+  UNE DEMANDE, UNE LIGNE : aucune cellule ne passe à la ligne. Sur un écran étroit, les colonnes ne
+  se tassent pas jusqu'à l'illisible — le tableau s'élargit, et son cadre défile de côté.
+*/
+.table-frame th,
+.table-frame td {
+  white-space: nowrap;
+}
+
+.table-frame th:first-child,
+.table-frame td:first-child,
+.table-frame > .none {
+  padding-left: var(--space-lg);
+}
+
+.table-frame th:last-child,
+.table-frame td:last-child {
+  padding-right: var(--space-lg);
+}
+
+/*
+  L'EN-TÊTE DES COLONNES COLLE AU HAUT DU CADRE : les lignes défilent sous lui, sur son fond blanc,
+  et l'Operator lit toujours sous quelle colonne il est.
+*/
+.table-frame thead th {
+  background: var(--surface);
+  padding-top: var(--space-md);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table-frame > .none {
+  margin: var(--space-md) 0;
 }
 
 table.columns {
