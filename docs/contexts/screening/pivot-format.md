@@ -77,8 +77,8 @@ relevé à la main et colle le résultat obtient le même champ que le chemin co
 voulant que les deux chemins produisent le même objet.
 
 ⚠️ **`dialecte` n'est pas cosmétique.** Sans lui, « cette colonne n'a pas de commentaire » et
-« SQLite ne rend aucun commentaire » se lisent exactement pareil — l'`Omission silencieuse` déplacée
-d'un cran, dans le contexte qui existe pour ne pas l'avoir.
+« SQLite ne rend aucun commentaire » se lisent exactement pareil — une omission rendue invisible,
+déplacée d'un cran, dans le contexte qui existe pour la rendre relisible.
 
 ## Les lignes de colonne — les neuf champs
 

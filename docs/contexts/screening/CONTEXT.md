@@ -13,14 +13,13 @@ c'est à l'humain de trancher**. Elle ne conclut jamais ; elle rend des suspicio
 confirme, et elle ne couvre **que ce qu'elle a regardé**. C'est l'`Aide à la décision`, définie une
 fois pour tout le dépôt dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 
-Il ne partage **rien** avec les deux autres contextes — pas même `DataSubjectRight`. Il ne touche
-jamais au `Manifest` de [Casework](../casework/CONTEXT.md), et c'est une clause de ce glossaire, pas
-une conséquence de l'architecture. Voir [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
+Il ne partage **rien** avec les trois autres contextes — pas même `DataSubjectRight`. Voir
+[`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages,
 documentation d'API — sont en français.
 
-**On lance un `Screening`, et « scan » ne nomme pas ce geste-là.** Le geste central de ce contexte
+**On lance un `Screening`, et « scan » ne nomme pas ce `Gesture`-là.** Le `Gesture` central de ce contexte
 n'a toujours qu'un seul mot. `Scan` a cessé d'être un mot interdit, mais il en nomme un **autre**,
 plus petit et placé **avant** — voir `Scan`. La règle qui tient les deux séparés se teste : **une
 phrase employant « scan » qui reste vraie sur le chemin collé emploie le mot à tort.** Le motif du
@@ -106,16 +105,15 @@ vérifier, et donnerait l'illusion d'un contrôle qui n'a pas lieu.
 `ColumnListing` a la même forme quel qu'en soit le SGBD, et un champ qu'un SGBD ne sait pas produire
 y arrive vide — SQLite, par exemple, ne rend aucun commentaire. Sans le dialecte déclaré, « cette
 colonne n'a pas de commentaire » et « ce SGBD n'en rend jamais » se liraient pareil, ce qui est
-l'`Omission silencieuse` déplacée d'un cran ; avec lui, l'absence est **nommée**, et le `Screening`
+une omission rendue invisible, déplacée d'un cran ; avec lui, l'absence est **nommée**, et le `Screening`
 peut dire qu'il n'a pas regardé un signal qui n'existait pas plutôt que de laisser croire qu'il l'a
 regardé en vain.
 Sa forme exacte — les neuf champs, l'en-tête, la ligne de fin et les neuf cas de refus — vit dans
 [`pivot-format.md`](./pivot-format.md), parce qu'elle a deux producteurs — les requêtes par dialecte
 que l'`Operator` joue, et le scanner qui l'écrit en C# — pour un seul consommateur, et que des clés
 qui ne sont écrites nulle part en toutes lettres divergent.
-_Avoid_ : Schema, Catalog, Inventory, Dump, Export, Snapshot ⚠️ les cinq premiers sont
-sur la liste _Avoid_ de `Manifest`, qui garde la clause « déclaré, non découvert » : les reprendre
-ici ferait lire ce relevé comme un recensement du paysage du client, ce qu'il n'est pas.
+_Avoid_ : Schema, Catalog, Inventory, Dump, Export, Snapshot ⚠️ les cinq premiers feraient lire ce
+relevé comme un recensement du paysage du client, ce qu'il n'est pas.
 ⚠️ **`cartographie` a quitté cette liste, et le garde-fou qu'elle y tenait est remplacé par une
 phrase.** Le mot nomme désormais quelque chose dans ce contexte, mais **pas ceci** : une
 `Cartographie` est ce qu'un humain a arbitré, un `ColumnListing` est ce qu'une machine a relevé avant
@@ -123,10 +121,10 @@ que quiconque ait rien dit. Employer l'un pour l'autre ferait lire le relevé br
 humain achevé.
 
 **Scan** :
-Le geste par lequel le service **relève lui-même** un `ColumnListing` : se connecter à la base du
+Le `Gesture` par lequel le service **relève lui-même** un `ColumnListing` : se connecter à la base du
 client, lire son schéma, prélever quelques valeurs par colonne. Il s'arrête là. Ce qu'il produit est
 un `ColumnListing` et un `ColumnPreview` par colonne — rien de plus, et surtout pas un `Screening`.
-⚠️ **Il ne nomme pas le geste central, et une règle mécanique tient la frontière.** Lancer un
+⚠️ **Il ne nomme pas le `Gesture` central, et une règle mécanique tient la frontière.** Lancer un
 `Screening`, c'est faire **détecter** sur un `ColumnListing`, quelle que soit l'origine de celui-ci.
 Scanner, c'est **fabriquer** ce `ColumnListing`, et seulement sur le chemin connecté. D'où le test :
 **une phrase employant « scan » qui reste vraie sur le chemin collé emploie le mot à tort.** « Le
@@ -134,7 +132,7 @@ scan a mis quarante secondes » est faux quand on colle : le mot est bien employ
 `ref_2` » est vrai quand on colle : il fallait dire « le `Screening` a signalé `ref_2` ».
 ⚠️ **Le mot a été interdit pendant toute la première vie de ce contexte**, au motif qu'« un contexte
 qui a deux mots pour son geste central en aura trois dans un an ». Le motif n'a pas cessé d'être
-juste ; ce qui a changé, c'est qu'il y a désormais **deux gestes**, et que le second n'avait pas de
+juste ; ce qui a changé, c'est qu'il y a désormais **deux `Gesture`**, et que le second n'avait pas de
 nom. La réadmission ne tient qu'aussi longtemps que le test ci-dessus est appliqué.
 ⚠️ **Il n'existe pas sur le chemin collé**, et ce n'est pas une omission : là, l'`Operator` fait
 lui-même, hors du service et avec la requête qu'on lui fournit, ce que le scan ferait pour lui.
@@ -227,7 +225,7 @@ parce que ce sont deux choses différentes en base. Rendus en cellules blanches,
 l'absence que la raison nommée vient de chasser, un cran plus bas.
 Motif : c'est le geste du dialecte déclaré, appliqué un cran plus bas. Sans raison nommée, « cette
 colonne ne contenait rien » et « on n'a pas regardé cette colonne » se liraient pareil à l'écran, ce
-qui est l'`Omission silencieuse` réintroduite par une cellule vide. Et un aperçu et une raison posés
+qui est une omission rendue invisible par une cellule vide. Et un aperçu et une raison posés
 dans **deux champs** finiraient par se dissocier, comme finit toujours par se dissocier ce qu'un
 chemin d'écriture peut écrire séparément.
 ⚠️ **`aperçu` a été un mot interdit et ne l'est plus, tandis qu'`échantillon` le reste**, et le
@@ -417,7 +415,7 @@ table dans des schémas qui existent** est la base sans table.
 conformes sont filtrées **ligne à ligne par privilège** : un compte sans droit sur une table ne la
 voit pas, et le relevé rendu serait **silencieusement partiel** — sincère, entier de son point de
 vue, amputé de la moitié des tables du client, sans que rien nulle part ne sache qu'il manque
-quelque chose. C'est l'`Omission silencieuse` que la clause d'incomplétude ne pourrait même pas
+quelque chose. C'est une omission invisible, que la clause d'incomplétude ne pourrait même pas
 rattraper. Deux des neuf champs du pivot n'existent d'ailleurs que là : `col_description` et
 `obj_description` n'ont aucun équivalent conforme.
 ⚠️ **Le binaire s'écarte par une liste noire nommée type par type**, jamais par `typcategory = 'U'` :
@@ -477,8 +475,8 @@ assemblages de production et non pour ce seul contexte, et elle est écrite dans
 second lancement, celui en cours étant nommé. Fermer l'onglet n'arrête rien.
 ⚠️ **Il ne survit ni au processus, ni à l'abandon, et les deux se disent.** Le service redémarré, il
 n'existe plus : l'écran d'attente répond alors « ce scan n'existe plus », avec la relance sous la
-main, et jamais une redirection muette — ce serait l'`Omission silencieuse` déplacée sur l'écran
-d'attente. Reprendre là où il s'était arrêté est **impossible par construction** : la chaîne de
+main, et jamais une redirection muette — ce serait une omission rendue invisible, déplacée sur
+l'écran d'attente. Reprendre là où il s'était arrêté est **impossible par construction** : la chaîne de
 connexion n'a pas survécu au scan — voir `Rien de réel ne reste`. Un scan abandonné, lui, ne laisse
 **aucun objet** : ni `ColumnListing`, ni `Screening`, ni entrée d'historique, et le rapport courant
 ne recule pas.
@@ -539,15 +537,14 @@ Il porte la `ListingOrigin` du relevé qu'il a lu, **enregistrée avec lui** : c
 dise, des mois plus tard sur l'archive, si l'`Operator` l'avait collé ou si le service l'avait
 scanné.
 Il est **détenu** et vit plusieurs jours : un rapport de détection s'arbitre en plusieurs fois,
-colonne par colonne. Son grain est le **déploiement**, jamais le dossier ; il n'écrit rien au
-`EvidenceLog`, n'a aucune échéance et vit jusqu'à ce qu'un `Operator` le supprime.
+colonne par colonne. Son grain est le **déploiement**, jamais la demande ; il n'a aucune échéance
+et vit jusqu'à ce qu'un `Operator` le supprime.
 ⚠️ **Relancer ne fusionne pas.** Relancer un `Screening` en produit un neuf ; les arbitrages du
-précédent ne sont pas repris. C'est un écart assumé au précédent de `Reservation`, dont les réserves
-fusionnent précisément pour ne jamais détruire un arbitrage humain, et il coûte du travail humain
-réel — d'où la `ScreeningEngineIdentity`, qui dit au moins **pourquoi** le nouveau diffère.
+précédent ne sont pas repris. C'est un écart assumé, et il coûte du travail humain réel — d'où la
+`ScreeningEngineIdentity`, qui dit au moins **pourquoi** le nouveau diffère.
 _Avoid_ : Report, Audit, Assessment, Inventory, Analysis ⚠️ `Report` et `Audit`
 promettent un document figé là où l'objet est vivant et s'arbitre.
-⚠️ **`Scan` a quitté cette liste sans cesser d'être interdit ici.** Le mot nomme maintenant un geste
+⚠️ **`Scan` a quitté cette liste sans cesser d'être interdit ici.** Le mot nomme maintenant un `Gesture`
 propre — voir `Scan` —, mais il ne nomme **jamais** cet objet : un `Screening` n'est pas « un scan »,
 et « le scan a signalé `ref_2` » est fautif parce que la phrase resterait vraie sur le chemin collé,
 où aucun scan n'a eu lieu. C'est pour la même raison que cette entrée ne dit plus « un re-scan ne
@@ -575,12 +572,9 @@ compareraient comme s'ils étaient comparables. L'identité déclare donc ses r�
 pas qu'on a lu des valeurs chez elle : à ce grain, ce serait dire quelque chose de la **donnée**, ce
 qu'`Unflagged` interdit. Porté par l'identité, le même fait ne parle que du **moteur**, et il vaut
 pour le rapport entier.
-_Avoid_ : modèle, moteur, provenance, signature, version ⚠️ `signature` est à écarter **pour deux
-raisons cumulées**. Le mot est pris par `Casework`, qui le détient en propre — `Signatory`,
-`SignatoryKind`, `SignerVerification`, et les clauses d'`EvidenceLogEntry` qui distinguent le
-signataire humain du signataire « application, c'est-à-dire personne ». **Et** dans `Screening` il ne
-nomme plus rien : ce contexte n'enregistre aucun auteur, si bien que l'employer laisserait croire
-qu'il en garde un — ce qu'il vient précisément de cesser de faire, voir
+_Avoid_ : modèle, moteur, provenance, signature, version ⚠️ `signature` est à écarter parce que
+dans `Screening` il ne nomme rien : ce contexte n'enregistre aucun auteur, si bien que l'employer
+laisserait croire qu'il en garde un — ce qu'il a précisément cessé de faire, voir
 [ADR-0014](../../adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md).
 
 **IScreeningEngine** :
@@ -637,8 +631,8 @@ descende en base.
 ⚠️ **Il y en a une par colonne du relevé, sans exception** — y compris là où le service n'a rien vu.
 Ce n'est pas un détail de présentation : c'est le mécanisme entier de l'`Omission relue`. Une colonne
 absente du `Screening` serait une colonne que personne ne relit jamais.
-⚠️ **Le motif est obligatoire dès que la ligne est signalée**, sur le modèle exact de `Reservation`,
-dont le glossaire dit qu'« une réserve **sans** motif est une panne du contrat, pas une réserve ».
+⚠️ **Le motif est obligatoire dès que la ligne est signalée** : une ligne signalée **sans** motif
+est une panne, pas un signalement.
 « `adr_l1` → `ContactDetails`, degré bas, motif : préfixe `adr` reconnu » s'arbitre ;
 « `ContactDetails`, 0,72 » ne s'arbitre pas. C'est du texte qui meurt, lu tel quel et jamais
 analysé.
@@ -687,9 +681,8 @@ une règle **de plus**, versée au même sac que les règles de nom, et c'est l'
 `PersonalDataCategory` qui tranche, comme il l'a toujours fait. Un tel étage aurait été le seul
 endroit du contexte où une famille de règles l'emporte sur une autre — c'est-à-dire la comparaison de
 degrés que `RuleStrength` interdit, déplacée d'un cran.
-_Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et `Candidate` sont
-déjà refusés sur `Reservation` pour la raison qui vaut ici — ils promettent un rapprochement que le
-service ne fait pas et un score qu'il n'a pas ; `Finding` et `Hit` supposeraient qu'une ligne non
+_Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et
+`Candidate` promettent un rapprochement que le service ne fait pas et un score qu'il n'a pas ; `Finding` et `Hit` supposeraient qu'une ligne non
 signalée n'en est pas une, c'est-à-dire ré-introduiraient par le vocabulaire le filtre que
 l'`Omission relue` interdit.
 
@@ -894,11 +887,10 @@ l'inverse.
 ### L'arbitrage, et sa date
 
 **États d'une `ScreenedColumn`** — `Awaiting`, `Retained`, `SetAside`.
-`Awaiting` et `SetAside` sont repris mot pour mot de `ReservationState` : même geste, même sens, et
-un synonyme inventé ferait croire à une nuance qui n'existe pas. `Attached` ne transporte pas — rien
-n'est rattaché ici — et devient `Retained`.
+`Awaiting` attend un arbitrage ; `Retained` et `SetAside` en sont les deux issues. `Retained` et non
+`Attached` : rien n'est rattaché ici.
 ⚠️ **Une colonne `Unflagged` est arbitrable comme les autres.** L'`Operator` peut la passer en
-`Retained` de sa propre main, et c'est ce qui paye le fait de toutes les rendre : sans ce geste, les
+`Retained` de sa propre main, et c'est ce qui paye le fait de toutes les rendre : sans ce `Gesture`, les
 lignes non signalées seraient neuf cents lignes grises qu'on survole, et l'`Omission relue` serait
 décorative. Corollaire : un `Retained` posé sur une colonne `Unflagged` prouve qu'un **humain** l'a
 retenue, jamais que le service l'avait vue.
@@ -908,23 +900,20 @@ une issue ; `Rejected` et `Ignored` diraient qu'on a jeté la ligne, alors qu'el
 de détection.
 
 **La date vit à côté de l'état, et aucun chemin d'écriture ne peut poser l'un sans l'autre.**
-Quand l'arbitrage a été rendu vit sur la `ScreenedColumn` elle-même — il n'y a pas de `EvidenceLog` ici, le
-`Screening` n'en écrit aucune ligne et son grain est le déploiement. Il n'existe donc **ni `Retained`
-ni `SetAside` sans date** : `Awaiting` est par construction le seul état sans arbitrage, et une
-date manquante n'est pas un champ vide, c'est un état qui n'a pas eu lieu. Même mécanique que le
-régime de `ReceptionDate`, et pour la même raison — deux champs qu'un chemin d'écriture peut dissocier
-finissent par se dissocier.
+Quand l'arbitrage a été rendu vit sur la `ScreenedColumn` elle-même — il n'y a pas de journal à
+part, et le grain du `Screening` est le déploiement. Il n'existe donc **ni `Retained` ni `SetAside`
+sans date** : `Awaiting` est par construction le seul état sans arbitrage, et une date manquante
+n'est pas un champ vide, c'est un état qui n'a pas eu lieu. Deux champs qu'un chemin d'écriture
+peut dissocier finissent par se dissocier.
 ⚠️ **Qui a arbitré n'est enregistré nulle part, et c'est une décision** —
-[ADR-0014](../../adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md). `Casework` enregistre son
-signataire ; `Screening` ne l'enregistre plus du tout. Ce que la trace doit prouver est **qu'un
-humain a tranché**, et la date le prouve : la machine, elle, ne date aucun arbitrage parce qu'elle
-n'en rend aucun.
+[ADR-0014](../../adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md). Ce que la trace doit
+prouver est **qu'un humain a tranché**, et la date le prouve : la machine, elle, ne date aucun
+arbitrage parce qu'elle n'en rend aucun.
 
 **Un `Screening` n'a aucun état.** « Courant » est un **calcul** : le `Screening` le plus récent du
 déploiement est le courant, tous les autres sont archivés par le seul fait qu'un plus récent existe.
 Si `Archived` était un état, une transition ratée laisserait deux rapports de détection courants et
-l'`Operator` arbitrerait le mauvais — même mécanique que le refus d'un état « en retard » dans
-`Casework`, où le dépassement est un calcul pour que jamais un retard non détecté ne devienne un retard inexistant.
+l'`Operator` arbitrerait le mauvais.
 ⚠️ **Le scan asynchrone n'y change rien, et c'est un choix de placement.** Il introduit bien un
 transitoire — un scan court, puis n'existe plus —, mais ce transitoire vit dans un objet **distinct**,
 le `ScanProgress`, qui naît avant le `Screening` et meurt avant lui. Le porter sur le `Screening`
@@ -933,16 +922,16 @@ l'absence d'état protège l'unicité du rapport courant.
 L'avancement non plus n'est pas un état : « douze colonnes en attente » est un **compte** sur les
 `ScreenedColumn`, jamais un état de haut niveau rassurant.
 
-**Le geste de lot** — `ArbitrateInBatch` — existe pour qu'un rapport de détection de 5 000 colonnes
-reste tenable : un écran intenable rétablit l'`Omission silencieuse` par épuisement, sans qu'aucune
+**Le `Gesture` de lot** — `ArbitrateInBatch` — existe pour qu'un rapport de détection de 5 000
+colonnes reste tenable : un écran intenable défait l'`Omission relue` par épuisement, sans qu'aucune
 ligne de doctrine n'ait été modifiée. Il est **borné à la table ouverte**, et à ses seules colonnes `Unflagged` encore
 `Awaiting`.
-⚠️ **Aucun geste de lot ne porte sur une colonne signalée** : une suspicion ne s'écarte jamais sans
+⚠️ **Aucun `Gesture` de lot ne porte sur une colonne signalée** : une suspicion ne s'écarte jamais sans
 avoir été lue une par une. La règle vit à un seul endroit, sur la ligne —
 `ScreenedColumn.IsWithinReachOfABatchGesture` — et non dans la requête qui charge le lot, où elle
 serait invisible à qui lit le domaine. Une ligne **déjà tranchée** est hors de portée elle aussi : le
 lot liquide ce qui attend, il n'écrase pas d'un clic ce qu'un humain avait dit.
-⚠️ **Le retrait du nom saisi n'a pas rendu ce geste licite sur une signalée.** Signer 374 fois à la
+⚠️ **Le retrait du nom saisi n'a pas rendu ce `Gesture` licite sur une signalée.** Signer 374 fois à la
 main le rendait impraticable ; ce prix a disparu, et il ne reste qu'un bouton tentant. Le prix n'a
 jamais été le motif — le nom n'en était que l'exécuteur incident. Le motif est écrit au même endroit
 que la règle, sur `IsWithinReachOfABatchGesture`, pour que qui viendra proposer d'élargir le lot le
@@ -969,10 +958,10 @@ de lot alors qu'il n'y a que n arbitrages.
 Le `Screening` **lu à travers les arbitrages de l'`Operator`** : les mêmes lignes, chacune portant ce
 qu'un humain en a dit, avec sa date. C'est ce qui s'exporte, et c'est le seul artefact de
 ce contexte qui sorte jamais du service.
-⚠️ **Ce qui la sépare du `Screening` est le geste humain, jamais la sélection.** Un `Screening` est
+⚠️ **Ce qui la sépare du `Screening` est le `Gesture` humain, jamais la sélection.** Un `Screening` est
 ce que la machine a rendu ; une `Cartographie` est le même rapport une fois que l'humain a parlé. Ce
 que la distinction protège n'a jamais été l'identité de la personne : c'est que **la machine ne
-signe pas**, et la date d'un arbitrage suffit à prouver le geste. Elle porte
+signe pas**, et la date d'un arbitrage suffit à prouver le `Gesture`. Elle porte
 donc **toutes** les lignes — `Retained`, `SetAside` et `Awaiting` —, et un `SetAside` y est autant le
 résultat du travail humain qu'un `Retained`. Une cartographie qui ne porterait que les `Retained`
 serait le filtre que l'`Omission relue` interdit, déplacé du rapport vers l'export : elle se lirait
@@ -998,7 +987,7 @@ tranche chaque ligne et choisit d'envoyer le fichier ; ce qu'il en dit au destin
 Le service ne parle pas par-dessus son épaule dans un document qu'il n'expédie pas. Le prix est
 nommé, parce qu'il est réel et qu'il ne faut pas le redécouvrir : un fichier ainsi titré, listant des
 colonnes de données personnelles et ne disant rien d'autre, **peut se lire comme une liste
-complète** — exactement l'`Omission silencieuse`. Ce qui tient malgré tout : la clause reste sur
+complète** — et ce que le relevé ne portait pas y devient invisible. Ce qui tient malgré tout : la clause reste sur
 **tous** les écrans, et l'`Omission relue` est tenue dans le fichier lui-même, qui porte toutes les
 lignes.
 ⚠️ **Le JSON dit d'où il vient, le CSV non, et l'asymétrie est voulue.** Le JSON porte en tête ce qui
@@ -1015,10 +1004,10 @@ première se répare en repassant, la seconde ne se répare pas.
 service et où il n'avait donc rien à nommer. Il désigne aujourd'hui le troisième terme de la
 séquence — ce que la machine a relevé, ce que la machine a rendu, ce que l'humain en a fait — et les
 deux entrées d'origine gardent chacune la phrase qui empêche de le confondre avec elles.
-_Avoid_ : Inventory, Manifest, Registre, Catalogue, recensement ⚠️ `Manifest` et `Registre`
-appartiennent à d'autres artefacts — celui de `Casework` et celui que le déployeur tient au titre de
-l'art. 30 — et les emprunter ferait lire une cartographie comme une **déclaration**, ce qu'elle n'est
-jamais : voir `Aucune modification vers le Manifest`.
+_Avoid_ : Inventory, Manifest, Registre, Catalogue, recensement ⚠️ `Registre` appartient à un autre
+artefact — celui que le déployeur tient au titre de l'art. 30 —, et `Manifest` nommait un catalogue
+de systèmes déclarés à la main, retiré par l'ADR-0016. Les emprunter ferait lire une cartographie
+comme une **déclaration**, ce qu'elle n'est jamais.
 
 ### L'acteur
 
@@ -1026,7 +1015,7 @@ jamais : voir `Aucune modification vers le Manifest`.
 L'humain, côté client, qui colle un `ColumnListing`, lance un `Screening` et arbitre ses
 `ScreenedColumn`. **Seul** à produire une issue : le service signale, il ne retient ni n'écarte
 jamais. Rien ne se déclenche sans lui — aucun processus périodique, aucune API publique de détection.
-⚠️ **Homonyme assumé de l'`Operator` de `Casework`**, et rien de plus : même personne au bureau, même
+⚠️ **Homonyme assumé de l'`Operator` de `Requests`**, et rien de plus : même personne au bureau, même
 mot au glossaire, pouvoirs différents et **aucun type partagé**. Il n'entre pas au noyau partagé, qui
 vaut par sa petitesse et ne contient que `DataSubjectRight`. Factoriser un `Operator` commun serait la
 première fissure dans cette clause, pour une économie nulle.
@@ -1035,44 +1024,21 @@ _Avoid_ : User, Agent, Admin, DPO, gestionnaire
 ### Ce qui entre, ce qui reste, et ce que le contexte ne fait pas
 
 **Omission relue** :
-Le régime d'erreur de ce contexte, et il n'est ni celui de `Qualification` ni celui de `Casework`.
-L'erreur qui coûte ici est l'**omission**, comme dans `Casework` : une colonne portant des données
-personnelles que la détection n'a pas signalée ne produit pas une ligne fausse, elle produit une
-absence. Une ligne signalée à tort, elle, coûte peu — l'`Operator` l'écarte d'un geste, et c'est
-l'`Erreur relue`.
-Mais contrairement à `Casework`, cette omission est **relisible**, et elle ne l'est que par un
-mécanisme précis : le `Screening` porte une `ScreenedColumn` par colonne du `ColumnListing`, y
-compris `Unflagged`, et chacune est arbitrable. Le manque redevient alors une ligne **visible** —
-exactement le geste que `Qualification` a fait en nommant `OutOfScope` plutôt qu'en rendant un
-ensemble vide.
+Le régime d'erreur de ce contexte, et il n'est pas celui de `Qualification`. L'erreur qui coûte ici
+est l'**omission** : une colonne portant des données personnelles que la détection n'a pas signalée
+ne produit pas une ligne fausse, elle produit une absence. Une ligne signalée à tort, elle, coûte
+peu — l'`Operator` l'écarte d'un geste, et c'est l'`Erreur relue`.
+Cette omission est **relisible**, et elle ne l'est que par un mécanisme précis : le `Screening`
+porte une `ScreenedColumn` par colonne du `ColumnListing`, y compris `Unflagged`, et chacune est
+arbitrable. Le manque redevient alors une ligne **visible** — exactement le geste que
+`Qualification` a fait en nommant `OutOfScope` plutôt qu'en rendant un ensemble vide.
 ⚠️ **Corollaire non négociable : un `Screening` qui n'affiche que les colonnes signalées cesse d'être
 ce contexte.** Filtrer les `Unflagged` — dans l'API, dans l'écran, dans une pagination par défaut —
-rétablit l'`Omission silencieuse` sans qu'aucune ligne de doctrine n'ait été modifiée.
+rend l'omission de nouveau invisible, sans qu'aucune ligne de doctrine n'ait été modifiée.
 ⚠️ Ce que ce mécanisme **ne rattrape pas**, c'est ce qui n'était pas dans le `ColumnListing` : le CRM
 en SaaS, les tableurs partagés, les journaux, les exports du service commercial. Le `Screening` le dit
 à chaque rendu, et comme une propriété de la réponse, jamais comme une mention en pied de page.
 _Avoid_ : faux négatif, angle mort, oubli, erreur bénigne, erreur rattrapable
-
-**Aucune modification vers le Manifest** :
-Le `Screening` ne touche **jamais** au `Manifest`. Il produit une suggestion qu'un humain lit
-**pendant** qu'il déclare ses `DeclaredSystem` à la main : aucun pré-remplissage, aucun export, aucune
-confrontation, aucun bouton. C'est le décalque inverse et explicite du « déclaré, non découvert » que
-`Manifest` protège — ce qui est ici découvert le reste, et n'accède jamais au statut de déclaration.
-Le motif est écrit dans le glossaire de `Casework` : un `Manifest` pré-rempli par une machine **se
-lirait comme complet**, ce qui est l'`Omission silencieuse` sous sa forme la plus dangereuse. Et la
-tentation est réelle, parce que le pont a l'air utile : un `Operator` qui vient d'arbitrer quarante
-colonnes `Retained` va les ressaisir à la main.
-⚠️ **`export` a quitté cette liste, et le garde-fou qu'il y tenait est remplacé par une phrase.** Le
-mot nomme désormais quelque chose dans ce contexte — le fichier que l'`Operator` emporte, voir
-`Cartographie` — et le bouton le dit en toutes lettres. **Il ne nomme jamais un chemin vers le
-`Manifest`** : aucun pré-remplissage, aucune confrontation, aucun bouton. Ce qui distingue les deux
-se dit en une ligne : **l'export a un destinataire humain qui l'a demandé, le pont a un destinataire
-machine que personne n'a demandé.** Un `ScreeningExportService` est donc licite ; un
-`ScreeningExportService` qui **écrirait** quoi que ce soit du côté `Casework` ne l'est pas, et c'est
-sur cette écriture qu'une revue de code doit s'arrêter.
-_Avoid_ : pré-remplissage, prefill, import, synchronisation, rapprochement, réconciliation,
-alimentation ⚠️ cette liste n'est pas du style : elle est ce qui accroche une revue de code sur un
-`POST /manifest/prefill-from-screening`, qui autrement passerait pour un aimable raccourci.
 
 **Ce qui entre est borné** :
 Des données personnelles réelles **entrent** désormais dans ce contexte. Ce qui les tient n'est plus
@@ -1105,7 +1071,7 @@ est une date de naissance), les **coordonnées GPS seules** (50 à 70 %), et le 
 (indiscernables l'un de l'autre). Ils sont écrits ici pour la même raison qu'une liste _Avoid_ : sans
 la trace de leur refus, quelqu'un les ajoutera dans six mois en croyant réparer un oubli. Le prix
 d'une mauvaise règle n'est pas une ligne fausse de plus, c'est un `Operator` qui se met à survoler —
-et l'`Omission silencieuse` rétablie par épuisement, sans qu'aucune ligne de doctrine n'ait bougé.
+et l'`Omission relue` défaite par épuisement, sans qu'aucune ligne de doctrine n'ait bougé.
 ⚠️ **Un aperçu ne rend pas lisible ce que le schéma ne montrait pas.** Une colonne `jsonb` reste un
 **conteneur libre** même quand on a lu cinq de ses valeurs : la règle qui la signale ne dit pas ce
 qu'elle contient, elle dit que le schéma ne permet pas de le lire, et cinq valeurs n'y changent rien.
