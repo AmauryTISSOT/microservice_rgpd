@@ -12,10 +12,40 @@
   La consultation viendra avec son propre ticket.
 
   ⚠️ LE BOUTON EST DANS LE CONTENU, PAS DANS LE HEADER : l'ADR-0009 ne pose aucune action dans la
-  barre du service. Il est ENCORE INERTE — un simple bouton, hors de tout formulaire — : la modale
-  qu'il ouvrira arrive avec le ticket suivant.
+  barre du service. C'est un simple bouton, hors de tout formulaire : c'est le module de l'écran qui
+  ouvre la modale — et cet écran est le seul de la surface à charger un script.
 *@
+@section Scripts {
+  <script type="module" src="/js/requests-board.js"></script>
+}
+
 <div class="screen-head">
   <h1>Tableau des demandes RGPD</h1>
-  <button type="button" class="primary">Créer une demande</button>
+  <button type="button" class="primary" id="create-request-open">Créer une demande</button>
 </div>
+
+@*
+  LA MODALE DE CRÉATION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Un `dialog` natif : le
+  navigateur en tient le focus, le fond et la touche Échap, que le module n'a plus qu'à écouter.
+
+  ⚠️ ELLE N'EST ENCORE QU'UN SQUELETTE. Le formulaire arrive avec le ticket suivant, et « Créer »
+  n'envoie rien d'ici là. Tant qu'aucune saisie n'est possible, chacun des quatre gestes de
+  fermeture — « Annuler », la croix, Échap, un clic sur le fond — ferme directement : la
+  confirmation d'abandon viendra avec la saisie qui la rend nécessaire.
+*@
+<dialog class="modal" id="create-request" aria-labelledby="create-request-title">
+  <div class="modal-head">
+    <h2 id="create-request-title">Créer une nouvelle demande</h2>
+    <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" fill="none" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="modal-actions">
+    <button type="button" data-dismiss>Annuler</button>
+    <button type="button" class="primary">Créer</button>
+  </div>
+</dialog>

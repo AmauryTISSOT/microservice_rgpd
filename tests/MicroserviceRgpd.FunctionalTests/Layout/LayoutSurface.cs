@@ -45,6 +45,12 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal const string Font = "/fonts/inter-latin-variable.woff2";
 
   /// <summary>
+  /// Le module du tableau des demandes RGPD, servi par le service — <b>le seul script de la
+  /// surface</b>, que seul cet écran charge.
+  /// </summary>
+  internal const string BoardModule = "/js/requests-board.js";
+
+  /// <summary>
   /// <b>Les quatre points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
   /// l'ordre où l'on rencontre les écrans</b> : la configuration, la détection, la qualification,
   /// puis le tableau des demandes. Il n'y a pas de cinquième lien vers l'historique des rapports de
@@ -189,7 +195,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   private const string Qualification = "/qualification";
 
   /// <summary>Le tableau des demandes RGPD, et la racine de son point d'entrée.</summary>
-  private const string Board = "/demandes";
+  internal const string Board = "/demandes";
 
   private const string Parametrage = "/parametrage";
   private const string ScreeningDeposit = "/detection/depot";
@@ -278,6 +284,15 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
     ];
 
     return [.. fetched.Where(IsThirdParty)];
+  }
+
+  /// <summary>
+  /// Les attributs de <b>chaque balise <c>script</c></b> d'une page rendue, qu'elle charge un fichier
+  /// ou porte son code en ligne : un script en ligne s'exécute aussi bien qu'un script chargé.
+  /// </summary>
+  internal static IReadOnlyList<string> ScriptsIn(string rendered)
+  {
+    return [.. Regex.Matches(rendered, @"<script\b([^>]*)>", RegexOptions.IgnoreCase).Select(m => m.Groups[1].Value)];
   }
 
   /// <summary>

@@ -1133,3 +1133,58 @@ button.destructive {
   border-color: var(--signal-error);
   color: var(--signal-error);
 }
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA MODALE. Un `dialog` natif, rendu par le serveur : la carte modale du document — fond blanc,
+  coin large, marge intérieure — posée sur un fond qui assourdit l'écran sans le cacher.
+
+  ⚠️ L'OMBRE EST LA DOUCE, PAS L'ÉLEVÉE QUE LE DOCUMENT PRÉVOIT POUR LES MODALES. Le troisième
+  niveau n'est pas déclaré dans les tokens, faute d'en connaître plus que le dernier arrêt ; c'est le
+  fond assourdi, et non l'ombre, qui détache la modale de l'écran.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+dialog.modal {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-soft);
+  color: var(--ink);
+  max-width: calc(100vw - 2 * var(--space-md));
+  padding: var(--space-lg);
+  width: 36rem;
+}
+
+dialog.modal::backdrop {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Le titre à gauche, la croix en face : la croix ferme, elle ne se lit pas comme une action. */
+.modal-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+}
+
+.modal-head h2 {
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+  margin: 0;
+}
+
+button.modal-close {
+  border-color: transparent;
+  color: var(--ink-muted);
+  display: inline-flex;
+  padding: var(--space-xs);
+}
+
+/* Les actions en pied, à droite, l'action principale en dernier : là où l'œil finit sa lecture. */
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  justify-content: flex-end;
+  margin-top: var(--space-lg);
+}

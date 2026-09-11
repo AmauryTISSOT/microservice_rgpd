@@ -94,10 +94,10 @@ public class ScanWaitingScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// L'écran se rafraîchit tout seul, et <b>sans une ligne de JavaScript</b>.
+  /// L'écran se rafraîchit tout seul, par un <c>meta</c>.
   /// </summary>
   [Fact]
-  public async Task RefreshesItselfWithoutAnyScript()
+  public async Task RefreshesItself()
   {
     var surface = Slowed(steps: [ScanStep.CatalogueRead(12)]);
     var scanId = await surface.LaunchAsync();
@@ -107,7 +107,6 @@ public class ScanWaitingScreen(CustomWebApplicationFactory<Program> factory)
       var rendered = await surface.WaitingScreenAsync(scanId);
 
       rendered.ShouldContain("http-equiv=\"refresh\"");
-      rendered.ShouldNotContain("<script", Case.Insensitive);
     }
     finally
     {

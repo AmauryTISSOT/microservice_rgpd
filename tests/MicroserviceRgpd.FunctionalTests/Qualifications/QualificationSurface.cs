@@ -97,33 +97,6 @@ internal sealed class QualificationSurface(CustomWebApplicationFactory<Program> 
   }
 
   /// <summary>
-  /// La page <b>telle qu'elle est servie</b>, entités non résolues.
-  /// </summary>
-  /// <remarks>
-  /// ⚠️ C'est la seule forme sur laquelle un garde d'échappement veut dire quelque chose : décodée,
-  /// une balise correctement échappée par Razor devient indiscernable d'une balise vivante, et le
-  /// garde attraperait un texte hostile collé par l'<c>Operator</c> au lieu d'un script servi.
-  /// </remarks>
-  internal async Task<string> RawAsync(string address = Screen)
-  {
-    var response = await FetchAsync(address);
-
-    response.StatusCode.ShouldBe(HttpStatusCode.OK, $"L'écran {address} doit se rendre.");
-
-    return await response.Content.ReadAsStringAsync();
-  }
-
-  /// <summary>Le rendu brut d'un geste, entités non résolues.</summary>
-  internal async Task<string> QualifyAndReadRawAsync(string? text)
-  {
-    var qualified = await SubmitAsync(text);
-
-    qualified.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-    return await qualified.Content.ReadAsStringAsync();
-  }
-
-  /// <summary>
   /// Ce que <b>l'écran lui-même</b> rend, le layout partagé retiré : c'est lui qu'on éprouve, et le
   /// panneau qui l'entoure appartient au harnais du layout.
   /// </summary>

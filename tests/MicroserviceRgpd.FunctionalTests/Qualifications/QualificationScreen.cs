@@ -67,28 +67,6 @@ public class QualificationScreen
   }
 
   /// <summary>
-  /// <b>L'écran fonctionne sans une ligne de JavaScript</b>, comme tous les écrans de la surface :
-  /// ce que le service ne sert pas ne peut pas manquer.
-  /// </summary>
-  [Fact]
-  public async Task WorksWithoutASingleLineOfJavaScript()
-  {
-    // ⚠️ LE CORPS BRUT, JAMAIS DÉCODÉ. Décodé, une balise correctement échappée par Razor devient
-    // indiscernable d'une balise vivante : le garde attraperait alors un texte hostile collé par
-    // l'Operator, et laisserait passer un vrai script servi par l'écran.
-    foreach (var rendered in new[]
-    {
-      await _surface.RawAsync(),
-      await _surface.QualifyAndReadRawAsync("Supprimez mes données."),
-    })
-    {
-      rendered.ShouldNotContain("<script", Case.Insensitive);
-      rendered.ShouldNotContain("javascript:", Case.Insensitive);
-      Regex.IsMatch(rendered, @"\son[a-z]+\s*=").ShouldBeFalse("Aucun gestionnaire d'événement en attribut.");
-    }
-  }
-
-  /// <summary>
   /// <b>Le <c>POST</c> rend la page portant le verdict, et ne redirige pas.</b> Aucun
   /// <c>Location</c>, aucune adresse de relecture : la qualification n'est pas une ressource qu'on
   /// relit, c'est un acte dont on repart avec le résultat.

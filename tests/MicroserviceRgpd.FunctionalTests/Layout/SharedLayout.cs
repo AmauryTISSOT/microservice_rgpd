@@ -57,6 +57,63 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>Le module du tableau des demandes répond à sa route</b>, servi par le service comme un
+  /// script — un navigateur refuse d'exécuter un module servi sous un autre type.
+  /// </summary>
+  [Fact]
+  public async Task ServesTheBoardModuleItself()
+  {
+    var served = await _layout.FetchAsync(LayoutSurface.BoardModule);
+
+    served.StatusCode.ShouldBe(HttpStatusCode.OK, "Le module du tableau des demandes doit être servi par le service.");
+    served.Content.Headers.ContentType?.MediaType.ShouldBe("text/javascript");
+
+    var module = await served.Content.ReadAsStringAsync();
+    module.ShouldNotBeNullOrWhiteSpace("Un module vide n'ouvrirait aucune modale.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le tableau des demandes charge son module, et aucun autre écran ne charge le moindre
+  /// script</b> — ni fichier, ni code en ligne. La doctrine « zéro JavaScript » est levée pour toute
+  /// l'application, mais un script ne se pose que là où un écran en a besoin : les autres restent
+  /// tels qu'ils étaient.
+  /// </summary>
+  [Fact]
+  public async Task LoadsTheBoardModuleOnTheBoardAndNoScriptAnywhereElse()
+  {
+    foreach (var screen in await _layout.ScreensAsync())
+    {
+      var scripts = LayoutSurface.ScriptsIn(await _layout.ReadAsync(screen));
+
+      if (screen == LayoutSurface.Board)
+      {
+        var module = scripts.ShouldHaveSingleItem("Le tableau des demandes doit charger un script, et un seul.");
+
+        module.ShouldContain(@"type=""module""", Case.Sensitive, "Le script du tableau n'est pas chargé comme un module.");
+        module.ShouldContain($@"src=""{LayoutSurface.BoardModule}""", Case.Sensitive, "Le tableau ne charge pas son module.");
+      }
+      else
+      {
+        scripts.ShouldBeEmpty($"L'écran {screen} charge un script.");
+      }
+    }
+  }
+
+  /// <summary>
+  /// <b>Le module lui-même ne va rien chercher ailleurs.</b> Un <c>import</c> d'une adresse distante
+  /// rouvrirait la fuite en un seul endroit, invisible depuis les écrans.
+  /// </summary>
+  [Fact]
+  public async Task LoadsNothingFromAThirdPartyFromTheBoardModuleItself()
+  {
+    var module = await _layout.ReadAsync(LayoutSurface.BoardModule);
+
+    module.ShouldNotContain("http://");
+    module.ShouldNotContain("https://");
+    module.ShouldNotContain("//cdn");
+  }
+
+  /// <summary>
   /// <b>Chaque écran de la surface référence la feuille</b>, sans exception : elle est posée une
   /// fois dans le layout partagé, et c'est ce qui fait qu'un écran neuf l'aura sans que personne y
   /// pense.
@@ -77,7 +134,8 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// ⚠️ <b>Aucun écran ne fait chercher quoi que ce soit chez un tiers</b> : ni police, ni feuille,
-  /// ni script. Tout ce que la page demande au navigateur d'aller chercher vient du service.
+  /// ni script. Tout ce que la page demande au navigateur d'aller chercher vient du service — le
+  /// module du tableau des demandes compris, qui doit rester servi par l'application.
   /// </summary>
   [Fact]
   public async Task LoadsNothingFromAThirdPartyOnAnyScreen()

@@ -435,24 +435,6 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>Zéro JavaScript, sans exception</b> — <c>ADR-0005</c> et <c>ADR-0009</c>. Le repli des
-  /// fiches est celui du navigateur : le jour où il demanderait un script, c'est le repli qu'il
-  /// faudrait retirer, pas la règle.
-  /// </summary>
-  [Fact]
-  public async Task ServesNotOneLineOfJavaScriptToFoldItsCards()
-  {
-    var table = await DepositAndOpenAsync(
-      ScreeningSurface.Column("email", position: 1),
-      ScreeningSurface.Column("montant", position: 2));
-
-    table.ShouldNotContain("<script", Case.Insensitive);
-    table.ShouldNotContain(".js", Case.Insensitive);
-    table.ShouldNotContain("onclick", Case.Insensitive);
-    table.ShouldNotContain("ontoggle", Case.Insensitive);
-  }
-
-  /// <summary>
   /// ⚠️ <b>Une table dont tout a été signalé n'a pas de second temps, et n'en dit pas un mot de
   /// travers.</b> Un geste de lot laissé là aurait affirmé que « celles où rien n'a été vu ont
   /// toutes été relues » — c'est-à-dire qu'on a relu ce qui n'existe pas — deux lignes avant de
