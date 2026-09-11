@@ -287,10 +287,10 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// Les attributs de <b>chaque balise <c>script</c></b> d'une page rendue, qu'elle charge un fichier
+  /// Les attributs de <b>chaque balise <c>script</c></b> d'une page rendue, une entrée par balise, qu'elle charge un fichier
   /// ou porte son code en ligne : un script en ligne s'exécute aussi bien qu'un script chargé.
   /// </summary>
-  internal static IReadOnlyList<string> ScriptsIn(string rendered)
+  internal static IReadOnlyList<string> ScriptAttributesIn(string rendered)
   {
     return [.. Regex.Matches(rendered, @"<script\b([^>]*)>", RegexOptions.IgnoreCase).Select(m => m.Groups[1].Value)];
   }

@@ -83,7 +83,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      var scripts = LayoutSurface.ScriptsIn(await _layout.ReadAsync(screen));
+      var scripts = LayoutSurface.ScriptAttributesIn(await _layout.ReadAsync(screen));
 
       if (screen == LayoutSurface.Board)
       {

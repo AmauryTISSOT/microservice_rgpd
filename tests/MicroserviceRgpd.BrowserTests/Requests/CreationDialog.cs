@@ -3,7 +3,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// <summary>
 /// <b>La modale de création s'ouvre et se ferme</b>, dans un vrai navigateur : l'<c>Operator</c>
 /// clique « Créer une demande » sur le tableau des demandes, lit la modale « Créer une nouvelle
-/// demande », et la referme par l'un des quatre gestes qu'un navigateur offre — « Annuler », la
+/// demande », et la referme par l'un des quatre modes de fermeture qu'un navigateur offre — « Annuler », la
 /// croix, Échap, ou un clic sur le fond.
 /// </summary>
 /// <remarks>

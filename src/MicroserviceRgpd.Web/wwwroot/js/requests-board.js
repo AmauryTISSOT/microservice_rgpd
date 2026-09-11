@@ -1,9 +1,9 @@
 // LE TABLEAU DES DEMANDES RGPD : le bouton « Créer une demande » ouvre la modale que le serveur a
-// rendue, et quatre gestes la referment — « Annuler », la croix, Échap, un clic sur le fond.
+// rendue, et quatre modes de fermeture la referment — « Annuler », la croix, Échap, un clic sur le fond.
 //
 // ⚠️ TANT QU'AUCUNE SAISIE N'EST POSSIBLE, CHACUN DES QUATRE FERME DIRECTEMENT. Ils passent tous par
 // `requestClose`, et c'est là que la confirmation d'abandon se posera, avec la saisie qui la rend
-// nécessaire : aucun geste de fermeture ne doit pouvoir la contourner.
+// nécessaire : aucun mode de fermeture ne doit pouvoir la contourner.
 
 const dialog = document.getElementById("create-request");
 const opener = document.getElementById("create-request-open");
@@ -19,7 +19,7 @@ for (const dismiss of dialog.querySelectorAll("[data-dismiss]")) {
 }
 
 // Échap : le navigateur fermerait seul, sans passer par `requestClose`. Il est donc retenu, et la
-// fermeture repasse par le même chemin que les trois autres gestes.
+// fermeture repasse par le même chemin que les trois autres modes.
 dialog.addEventListener("cancel", (event) => {
   event.preventDefault();
   requestClose();

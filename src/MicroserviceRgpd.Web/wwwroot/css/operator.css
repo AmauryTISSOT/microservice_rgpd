@@ -92,6 +92,13 @@
   --on-signal: #ffffff;
 
   /*
+    LE VOILE DERRIÈRE UNE MODALE : l'encre, très atténuée. Il assourdit l'écran sans le cacher, et
+    c'est lui — non l'ombre — qui détache la modale de ce qu'elle recouvre. Le document n'en donne
+    aucune valeur : celle-ci est une extension, signalée comme telle.
+  */
+  --backdrop: rgba(0, 0, 0, 0.3);
+
+  /*
     Les onze rôles typographiques du document. Le crénage est porté par un token à part parce que
     la propriété `font` ne le transporte pas — et il doit être appliqué explicitement : la police
     substituée rend plus lâche que l'originale à crénage par défaut.
@@ -329,8 +336,8 @@ nav.header .version {
   ═══════════════════════════════════════════════════════════════════════════════════════════════
   LE REPLI, ET IL TIENT EN TROIS RÈGLES SANS UNE LIGNE DE SCRIPT.
 
-  La case à cocher porte l'état ; le hamburger n'est que son `label`. Le service continue donc de ne
-  servir AUCUN JavaScript — voir le commentaire de `_Layout.cshtml`.
+  La case à cocher porte l'état ; le hamburger n'est que son `label`. Le layout ne charge donc aucun
+  script pour replier le panneau — voir le commentaire de `_Layout.cshtml`.
 
   ⚠️ LE CHOIX NE SURVIT PAS À LA NAVIGATION : la case repart décochée à chaque écran, et le panneau
   s'y rouvre. C'est une décision explicite du demandeur, prise contre un cookie et contre un script.
@@ -1156,7 +1163,7 @@ dialog.modal {
 }
 
 dialog.modal::backdrop {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--backdrop);
 }
 
 /* Le titre à gauche, la croix en face : la croix ferme, elle ne se lit pas comme une action. */

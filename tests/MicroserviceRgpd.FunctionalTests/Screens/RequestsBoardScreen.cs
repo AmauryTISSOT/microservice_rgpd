@@ -121,10 +121,11 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   {
     var main = LayoutSurface.MainOf(await _layout.ReadAsync(Board));
 
-    var dialog = Regex.Matches(main, @"<dialog\b([^>]*)>(.*?)</dialog>", RegexOptions.Singleline)
-      .ShouldHaveSingleItem("Le tableau doit porter une modale de création, une seule.");
-    var attributes = dialog.Groups[1].Value;
-    var contents = dialog.Groups[2].Value;
+    Dialogs.Matches(main).ShouldHaveSingleItem("Le tableau doit porter une modale de création, une seule.");
+
+    var dialog = Dialogs.Match(main);
+    var attributes = dialog.Groups["attributes"].Value;
+    var contents = dialog.Groups["contents"].Value;
 
     Regex.IsMatch(attributes, @"\bopen\b").ShouldBeFalse("La modale est ouverte au chargement.");
 
@@ -178,10 +179,14 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
       "Un lien de l'accueil mène encore au tableau des dossiers.");
   }
 
+  /// <summary>Une modale entière, balise ouvrante comprise : ses attributs, puis ce qu'elle porte.</summary>
+  private static readonly Regex Dialogs =
+    new(@"<dialog\b(?<attributes>[^>]*)>(?<contents>.*?)</dialog>", RegexOptions.Singleline);
+
   /// <summary>La modale de création, entière — balise ouvrante comprise.</summary>
   private static string DialogIn(string main)
   {
-    var dialog = Regex.Match(main, @"<dialog\b.*?</dialog>", RegexOptions.Singleline);
+    var dialog = Dialogs.Match(main);
 
     dialog.Success.ShouldBeTrue("Le tableau ne porte pas de modale de création.");
 
@@ -191,7 +196,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   /// <summary>Le contenu de l'écran, la modale retirée : ce que l'Operator lit tant qu'il ne l'a pas ouverte.</summary>
   private static string OutsideTheDialog(string main)
   {
-    return Regex.Replace(main, @"<dialog\b.*?</dialog>", string.Empty, RegexOptions.Singleline);
+    return Dialogs.Replace(main, string.Empty);
   }
 
   private static IReadOnlyList<(string Attributes, string Contents)> ButtonsIn(string fragment)
