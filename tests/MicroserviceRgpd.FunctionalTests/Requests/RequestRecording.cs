@@ -1,7 +1,4 @@
 using System.Net;
-using System.Text.RegularExpressions;
-using MicroserviceRgpd.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using NSwag.Generation;
 
 namespace MicroserviceRgpd.FunctionalTests.Requests;
@@ -25,12 +22,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 [Collection(WebCollection.Name)]
 public class RequestRecording(CustomWebApplicationFactory<Program> factory)
 {
-  private const string Board = "/demandes";
-
-  private const string Create = "/demandes?handler=Create";
-
-  private readonly HttpClient _client = factory.CreateClient(
-    new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+  private readonly RequestSurface _surface = new(factory);
 
   /// <summary>
   /// <b>Une demande valide, envoyée avec le jeton anti-rejeu, est enregistrée</b> : le serveur répond
@@ -39,7 +31,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task AnswersCreatedToAValidRequest()
   {
-    var response = await CreateAsync(AValidRequest());
+    var response = await _surface.CreateAsync(RequestSurface.AValidRequest());
 
     response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
   }
@@ -51,12 +43,12 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task RecordsNothingWithoutTheAntiforgeryToken()
   {
-    var fields = AValidRequest();
+    var fields = RequestSurface.AValidRequest();
 
-    var response = await _client.PostAsync(Create, new FormUrlEncodedContent(fields));
+    var response = await _surface.CreateWithoutTokenAsync(fields);
 
     response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-    (await CountOfAsync(fields["message"])).ShouldBe(0);
+    (await _surface.CountOfAsync(fields["message"])).ShouldBe(0);
   }
 
   /// <summary>
@@ -80,7 +72,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
     {
       var before = DateTimeOffset.UtcNow + ahead;
 
-      var response = await CreateAsync(new Dictionary<string, string>
+      var response = await _surface.CreateAsync(new Dictionary<string, string>
       {
         ["origin"] = "Letter",
         ["receivedOn"] = "2026-01-15",
@@ -96,7 +88,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
 
       response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
 
-      var row = await RowOfAsync(message);
+      var row = await _surface.RowOfAsync(message);
 
       row["id"].ShouldBeOfType<Guid>().ShouldNotBe(Guid.Empty);
       row["origin"].ShouldBe("Letter");
@@ -131,16 +123,16 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   [InlineData("", "Jeanne", "jeanne.martin@example.org")]
   public async Task RecordsEachAcceptedIdentification(string lastName, string firstName, string email)
   {
-    var fields = AValidRequest();
+    var fields = RequestSurface.AValidRequest();
     fields["lastName"] = lastName;
     fields["firstName"] = firstName;
     fields["email"] = email;
 
-    var response = await CreateAsync(fields);
+    var response = await _surface.CreateAsync(fields);
 
     response.StatusCode.ShouldBe(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
 
-    var row = await RowOfAsync(fields["message"]);
+    var row = await _surface.RowOfAsync(fields["message"]);
 
     row["last_name"].ShouldBe(lastName.Length == 0 ? null : lastName);
     row["first_name"].ShouldBe(firstName.Length == 0 ? null : firstName);
@@ -160,93 +152,11 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
     var published = document.ToJson();
 
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : les assertions suivantes seraient vides.");
-    document.Paths.Keys.ShouldNotContain(path => path.StartsWith(Board, StringComparison.Ordinal));
+    document.Paths.Keys.ShouldNotContain(path => path.StartsWith(RequestSurface.Board, StringComparison.Ordinal));
 
     foreach (var word in new[] { "demandes", "DataSubjectRequest", "CreationForm", "receivedOn" })
     {
       published.ShouldNotContain(word, Case.Insensitive, $"Le document Swagger publie « {word} ».");
     }
-  }
-
-  /// <summary>Une saisie complète et valide, identifiée par son seul email.</summary>
-  private static Dictionary<string, string> AValidRequest() => new()
-  {
-    ["origin"] = "Email",
-    ["receivedOn"] = "2026-01-15",
-    ["lastName"] = "",
-    ["firstName"] = "",
-    ["email"] = "jeanne.martin@example.org",
-    ["identityVerified"] = "false",
-    ["message"] = $"Je souhaite accéder à mes données. {Guid.NewGuid()}",
-    ["right"] = "Access",
-  };
-
-  /// <summary>
-  /// Envoie la saisie au handler de création, avec le jeton que la page rend — et le cookie qui va
-  /// avec, que le client garde d'une requête à l'autre.
-  /// </summary>
-  private async Task<HttpResponseMessage> CreateAsync(IReadOnlyDictionary<string, string> fields)
-  {
-    return await _client.PostAsync(Create, new FormUrlEncodedContent(
-    [
-      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
-      .. fields,
-    ]));
-  }
-
-  /// <summary>
-  /// La ligne de la demande, relue <b>telle que la table la porte</b> — colonne par colonne, sous
-  /// leur nom SQL, sans passer par le modèle EF qui l'a écrite.
-  /// </summary>
-  private async Task<IReadOnlyDictionary<string, object?>> RowOfAsync(string message)
-  {
-    using var scope = factory.Services.CreateScope();
-    var connection = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.GetDbConnection();
-
-    await connection.OpenAsync();
-
-    await using var command = connection.CreateCommand();
-    command.CommandText = "SELECT * FROM data_subject_requests WHERE message = @message";
-
-    var parameter = command.CreateParameter();
-    parameter.ParameterName = "message";
-    parameter.Value = message;
-    command.Parameters.Add(parameter);
-
-    await using var reader = await command.ExecuteReaderAsync();
-
-    (await reader.ReadAsync()).ShouldBeTrue("Aucune ligne n'a été enregistrée pour cette demande.");
-
-    var row = Enumerable.Range(0, reader.FieldCount).ToDictionary(
-      reader.GetName,
-      column => reader.IsDBNull(column) ? null : reader.GetValue(column));
-
-    (await reader.ReadAsync()).ShouldBeFalse("La demande a été enregistrée plus d'une fois.");
-
-    return row;
-  }
-
-  private async Task<int> CountOfAsync(string message)
-  {
-    using var scope = factory.Services.CreateScope();
-
-    return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
-      .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM data_subject_requests WHERE message = {message}")
-      .SingleAsync();
-  }
-
-  private async Task<string> AntiforgeryTokenAsync()
-  {
-    var response = await _client.GetAsync(Board);
-
-    response.StatusCode.ShouldBe(HttpStatusCode.OK);
-
-    var token = Regex.Match(
-      await response.Content.ReadAsStringAsync(),
-      @"<input name=""__RequestVerificationToken""[^>]*value=""([^""]+)""");
-
-    token.Success.ShouldBeTrue("Le tableau des demandes ne porte aucun jeton anti-rejeu.");
-
-    return token.Groups[1].Value;
   }
 }
