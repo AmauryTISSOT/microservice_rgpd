@@ -138,12 +138,12 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La modale porte ses trois boutons</b> : la croix, qui se nomme « Fermer » pour qui ne la voit
-  /// pas, puis « Annuler » et « Créer ». Aucun ne soumet quoi que ce soit : le formulaire viendra avec
-  /// son propre ticket.
+  /// <b>La modale porte ses boutons</b> : la croix, qui se nomme « Fermer » pour qui ne la voit
+  /// pas, la qualification du droit par IA au fil du formulaire, puis « Annuler » et « Créer ».
+  /// Aucun ne soumet quoi que ce soit : c'est le module qui enverra la demande.
   /// </summary>
   [Fact]
-  public async Task RendersTheCrossTheCancelAndTheCreateButtonsInTheDialog()
+  public async Task RendersTheCrossTheAiQualificationTheCancelAndTheCreateButtonsInTheDialog()
   {
     var dialog = DialogIn(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
     var buttons = ButtonsIn(dialog);
@@ -152,7 +152,9 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
       .Select(button => Regex.Match(button.Attributes, @"aria-label=""([^""]+)""") is { Success: true } label
         ? label.Groups[1].Value
         : LayoutSurface.TextIn(button.Contents))
-      .ShouldBe(["Fermer", "Annuler", "Créer"], "La modale ne porte pas la croix, « Annuler » et « Créer », dans cet ordre.");
+      .ShouldBe(
+        ["Fermer", "Qualification du droit par IA", "Annuler", "Créer"],
+        "La modale ne porte pas la croix, la qualification par IA, « Annuler » et « Créer », dans cet ordre.");
 
     buttons.ShouldAllBe(
       button => button.Attributes.Contains(@"type=""button""", StringComparison.Ordinal),

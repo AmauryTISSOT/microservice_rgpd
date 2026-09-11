@@ -8,9 +8,9 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Tant qu'aucune saisie n'est possible, chacun des quatre ferme directement.</b> La
-/// confirmation d'abandon viendra avec son propre ticket, en même temps que la saisie qui la rend
-/// nécessaire.
+/// ⚠️ <b>Pour l'instant, chacun des quatre ferme directement, saisie comprise.</b> La confirmation
+/// d'abandon d'une saisie viendra avec son propre ticket. Le formulaire lui-même se vérifie dans
+/// <see cref="CreationForm"/>.
 /// </para>
 /// <para>
 /// Tout se lit par le rôle et le nom accessible, comme dans <c>SidepanelToTheBoard</c> ; les

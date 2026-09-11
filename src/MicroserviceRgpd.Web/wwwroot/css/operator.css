@@ -679,6 +679,8 @@ label {
 
 input[type="text"],
 input[type="url"],
+input[type="date"],
+select,
 textarea {
   background: var(--surface);
   border: var(--hairline-width) solid var(--hairline);
@@ -688,6 +690,17 @@ textarea {
   font: inherit;
   padding: var(--space-xs);
   width: 100%;
+}
+
+/* La case à cocher précède son libellé, sur la même ligne : c'est une attestation, pas un champ. */
+form p.check {
+  align-items: center;
+  display: flex;
+  gap: var(--space-xs);
+}
+
+form p.check label {
+  margin-bottom: 0;
 }
 
 fieldset {
@@ -1125,6 +1138,12 @@ button.primary:active {
   border-color: var(--accent-pressed);
 }
 
+/* L'ACTION INDISPONIBLE — visible, mais éteinte : elle se lit sans se proposer au clic. */
+button:disabled {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
 /*
   LE GESTE IRRÉVERSIBLE — filet et texte au rouge d'erreur, sur fond blanc.
 
@@ -1185,6 +1204,10 @@ button.modal-close {
   color: var(--ink-muted);
   display: inline-flex;
   padding: var(--space-xs);
+}
+
+.modal-form {
+  margin-top: var(--space-lg);
 }
 
 /* Les actions en pied, à droite, l'action principale en dernier : là où l'œil finit sa lecture. */
