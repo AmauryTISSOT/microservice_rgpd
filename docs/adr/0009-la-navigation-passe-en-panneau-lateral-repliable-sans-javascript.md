@@ -27,10 +27,10 @@ persistance ».
 ## Décision
 
 **1. Les trois points d'entrée quittent la barre horizontale pour un panneau latéral gauche**, haut
-de tout l'écran, large de 17,5 rem, ouvert par défaut. Il vit dans le layout : un écran neuf le porte
+de tout l'écran sous le header, large de 17,5 rem, ouvert par défaut. Il vit dans le layout : un écran neuf le porte
 sans que personne y pense.
 
-**2. Le layout garde une seconde région, le header**, mince, en haut de la colonne de contenu. Il
+**2. Le layout garde une seconde région, le header**, mince, en haut de l'écran sur toute sa largeur — le panneau se pose sous lui. Il
 porte le hamburger, le nom du service et la version, et il survit au repli. C'est ce qui distingue ce
 panneau d'un tiroir qui ne se rouvrirait plus : panneau replié, l'écran garde un chemin de retour à
 l'accueil et le moyen de redéployer la navigation.

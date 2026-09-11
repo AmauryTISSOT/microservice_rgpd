@@ -182,15 +182,22 @@ html {
 
 /*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
-  LE LAYOUT EN DEUX COLONNES : le panneau latéral à gauche, et à sa droite la colonne qui porte le
-  header puis le contenu. La boîte porte le nom que le glossaire consacre — `shell` et `coque` sont
-  en `_Avoid_` de l'entrée `Layout` (ADR-0007), et le dépôt ne prend pas un second mot pour le cadre
-  qu'il a déjà nommé.
+  LE HEADER EN PLEINE LARGEUR, PUIS SOUS LUI LE LAYOUT EN DEUX COLONNES : le panneau latéral à
+  gauche, et à sa droite la colonne qui porte le contenu. Le `body` empile les deux, et le layout
+  prend toute la hauteur restante — le panneau descend ainsi jusqu'en bas de l'écran. La boîte porte
+  le nom que le glossaire consacre — `shell` et `coque` sont en `_Avoid_` de l'entrée `Layout`
+  (ADR-0007), et le dépôt ne prend pas un second mot pour le cadre qu'il a déjà nommé.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 .layout {
   display: flex;
-  min-height: 100vh;
+  flex: 1 1 auto;
 }
 
 .column {
@@ -202,7 +209,7 @@ html {
 
 /*
   LE CONTENEUR A CHANGÉ D'ÉLÉMENT, PAS DE MESURE. Les deux largeurs quittent le `body` pour le
-  `main` — le header, lui, tient toute la largeur de la colonne —, et elles restent exactement
+  `main` — le header, lui, tient toute la largeur de l'écran —, et elles restent exactement
   celles d'avant : l'étroite par défaut, la large en exception nommée pour l'arbitrage colonne par
   colonne.
 */
@@ -367,7 +374,7 @@ nav.header .version {
   son anneau à elle n'aurait rien entouré de visible. C'est la contrepartie obligée d'un contrôle
   masqué : sans cette règle, tabuler jusqu'au repli ne se verrait nulle part.
 */
-.sidepanel-toggle:focus-visible ~ .layout .burger {
+.sidepanel-toggle:focus-visible ~ nav.header .burger {
   outline: var(--rule-width) solid var(--accent);
   outline-offset: var(--space-xxs);
 }

@@ -42,6 +42,51 @@
          aria-label="Replier le panneau latéral" />
 
   @*
+    LE HEADER, ET IL SURVIT AU REPLI. C'est ce qui distingue ce panneau d'un tiroir qui ne se
+    rouvrirait plus : replié, le panneau ne laisse rien derrière lui, et sans ce header l'écran
+    n'aurait plus ni chemin de retour, ni moyen de redéployer la navigation.
+
+    ⚠️ IL NE PORTE PAS LES QUATRE ENTRÉES, ET C'EST LE PRIX ASSUMÉ DE CETTE FORME. Panneau replié,
+    aucun des quatre écrans n'est à un clic : il faut d'abord rouvrir. La forme qui les aurait
+    remontés ici a été écartée en connaissance de cause — elle demandait de tenir deux mises en
+    page de navigation en parallèle, pour toujours.
+
+    ⚠️ IL EST HORS DU LAYOUT, AU-DESSUS DE LUI, et c'est ce qui lui fait tenir toute la largeur de
+    l'écran : le panneau latéral se pose SOUS le header, jamais à côté.
+  *@
+  <nav class="header" aria-label="Header du service">
+    @*
+      LE HAMBURGER EST LE `label` DE LA CASE, pas un bouton : c'est ce qui permet au repli de
+      n'exiger aucun script. Le tracé est écrit ici, en SVG inline, plutôt que chargé — le
+      service ne va chercher aucune ressource ailleurs, et c'est le seul dessin qu'il porte.
+    *@
+    <label class="burger" for="sidepanel-toggle">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+        <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" fill="none" />
+      </svg>
+    </label>
+
+    @*
+      LE NOM DU SERVICE EST LE CHEMIN DU RETOUR, et c'est ce qui donne l'accueil depuis n'importe
+      quel écran SANS UNE ENTRÉE DE PLUS : le texte inerte devient un lien plutôt qu'un lien de
+      plus. Il reste hors de la liste — il n'est pas un point d'entrée, et il ne se marque jamais
+      comme l'écran courant. Il vit dans le header et NON dans le panneau : le panneau
+      disparaît, et le chemin du retour ne doit pas disparaître avec lui.
+    *@
+    <a class="wordmark" href="@Navigation.Doorstep">@Navigation.ServiceName</a>
+
+    @*
+      LA VERSION DU PRODUIT, À L'EXTRÉMITÉ DROITE, ET C'EST L'EXCEPTION NOMMÉE À « AUCUN CHIFFRE
+      DANS LA NAVIGATION » — de même nature que les références d'articles RGPD sur l'accueil : un
+      chiffre qui n'est ni un compte ni une mesure. Elle se lit et s'ignore : texte nu, ni lien,
+      ni infobulle, ni ARIA. Elle n'est PAS une entrée du panneau — elle est hors de la liste. Sa
+      valeur n'est jamais écrite ici : ProductVersion la lit sur l'assemblage.
+    *@
+    <span class="version">@ProductVersion.Display</span>
+  </nav>
+
+  @*
     LA BOÎTE QUI RANGE LE PANNEAU LATÉRAL ET LA COLONNE CÔTE À CÔTE. Elle se nomme `layout` parce que le
     glossaire de système range `shell` en `_Avoid_` de l'entrée du même nom (ADR-0007) — le dépôt a
     déjà un mot pour le cadre partagé, et il n'en prend pas un second.
@@ -79,48 +124,6 @@
     </nav>
 
     <div class="column">
-      @*
-        LE HEADER, ET IL SURVIT AU REPLI. C'est ce qui distingue ce panneau d'un tiroir qui ne se
-        rouvrirait plus : replié, le panneau ne laisse rien derrière lui, et sans ce header l'écran
-        n'aurait plus ni chemin de retour, ni moyen de redéployer la navigation.
-
-        ⚠️ IL NE PORTE PAS LES QUATRE ENTRÉES, ET C'EST LE PRIX ASSUMÉ DE CETTE FORME. Panneau replié,
-        aucun des quatre écrans n'est à un clic : il faut d'abord rouvrir. La forme qui les aurait
-        remontés ici a été écartée en connaissance de cause — elle demandait de tenir deux mises en
-        page de navigation en parallèle, pour toujours.
-      *@
-      <nav class="header" aria-label="Header du service">
-        @*
-          LE HAMBURGER EST LE `label` DE LA CASE, pas un bouton : c'est ce qui permet au repli de
-          n'exiger aucun script. Le tracé est écrit ici, en SVG inline, plutôt que chargé — le
-          service ne va chercher aucune ressource ailleurs, et c'est le seul dessin qu'il porte.
-        *@
-        <label class="burger" for="sidepanel-toggle">
-          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
-            <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.6"
-                  stroke-linecap="round" fill="none" />
-          </svg>
-        </label>
-
-        @*
-          LE NOM DU SERVICE EST LE CHEMIN DU RETOUR, et c'est ce qui donne l'accueil depuis n'importe
-          quel écran SANS UNE ENTRÉE DE PLUS : le texte inerte devient un lien plutôt qu'un lien de
-          plus. Il reste hors de la liste — il n'est pas un point d'entrée, et il ne se marque jamais
-          comme l'écran courant. Il vit dans le header et NON dans le panneau : le panneau
-          disparaît, et le chemin du retour ne doit pas disparaître avec lui.
-        *@
-        <a class="wordmark" href="@Navigation.Doorstep">@Navigation.ServiceName</a>
-
-        @*
-          LA VERSION DU PRODUIT, À L'EXTRÉMITÉ DROITE, ET C'EST L'EXCEPTION NOMMÉE À « AUCUN CHIFFRE
-          DANS LA NAVIGATION » — de même nature que les références d'articles RGPD sur l'accueil : un
-          chiffre qui n'est ni un compte ni une mesure. Elle se lit et s'ignore : texte nu, ni lien,
-          ni infobulle, ni ARIA. Elle n'est PAS une entrée du panneau — elle est hors de la liste. Sa
-          valeur n'est jamais écrite ici : ProductVersion la lit sur l'assemblage.
-        *@
-        <span class="version">@ProductVersion.Display</span>
-      </nav>
-
       <main>
         @RenderBody()
       </main>
