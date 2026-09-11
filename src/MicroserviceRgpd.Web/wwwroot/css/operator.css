@@ -100,6 +100,13 @@
   --signal-pending: #62aef0;
 
   /*
+    L'ORANGE QUI SE LIT EN TEXTE — l'orange profond de la palette du document, là où « attention »
+    ne tient pas le seuil d'un texte (3,8:1 sur blanc). Il atteint 9,1:1 : c'est la couleur de la
+    date limite en échéance proche, la seule que l'on écrit en orange.
+  */
+  --signal-warning-ink: #793400;
+
+  /*
     LA PART D'UNE TEINTE DE SIGNALEMENT DANS LE FOND D'UN BADGE : assez pour que la couleur se lise,
     assez peu pour que l'encre posée dessus garde son contraste.
   */
@@ -807,6 +814,21 @@ button.row-action:focus-visible .tooltip {
 
 .status[data-status="Cancelled"] {
   --status-tone: var(--ink-faint);
+}
+
+/*
+  LA DATE LIMITE SIGNALÉE — en orange pour une échéance proche, en rouge et en gras pour un retard,
+  la mention écrite après la date : la couleur ne dit jamais seule ce qu'elle signale. ⚠️ SEULE LA
+  CELLULE se colore, jamais la ligne ; et c'est le serveur qui la signale, le script n'y touche pas
+  (ADR-0021).
+*/
+table.queue td[data-deadline-signal="DueSoon"] {
+  color: var(--signal-warning-ink);
+}
+
+table.queue td[data-deadline-signal="Overdue"] {
+  color: var(--signal-error);
+  font-weight: var(--weight-bold);
 }
 
 .banner {

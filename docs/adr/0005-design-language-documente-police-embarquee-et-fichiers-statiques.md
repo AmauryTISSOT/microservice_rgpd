@@ -115,7 +115,9 @@ du chrome, pas leur apparence.
     servir de couleur de texte** : mesurées sur blanc elles atteignent 3,0:1 et 3,8:1, sous le seuil
     WCAG AA de 4,5:1. Aucun token « information » n'est créé : il aurait valu la même couleur que
     l'accent, et le même bleu aurait voulu dire à la fois « clique ici » et « ceci est une
-    information ».
+    information ». Là où un orange doit se lire en texte — la date limite en échéance proche
+    (ADR-0021) —, c'est l'orange profond du document qui est promu, `--signal-warning-ink` : il
+    atteint 9,1:1 sur blanc.
   - **Le mode sombre**, absent du document, traité ci-dessus.
   - **Le geste destructeur.** Le document n'en prévoit aucun, parce qu'il décrit un site de vente où
     rien ne se détruit. Le domaine nomme déjà « le geste irréversible » et en porte trois. Le bouton

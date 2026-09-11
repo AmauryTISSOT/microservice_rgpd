@@ -17,7 +17,9 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// <para>
 /// ⚠️ <b>« Aujourd'hui » se lit sur l'horloge du service, à Paris</b> — voir <see cref="ParisCalendar"/>.
 /// C'est la valeur par défaut et la borne haute du champ de date au chargement ; le module les
-/// recalcule à chaque ouverture, pour une page restée ouverte au-delà de minuit.
+/// recalcule à chaque ouverture, pour une page restée ouverte au-delà de minuit. C'est aussi contre
+/// lui que la date limite de chaque ligne se signale — et ces signalements-là, le module ne les
+/// recalcule pas : une page ouverte au-delà de minuit garde ceux de la veille (ADR-0021).
 /// </para>
 /// <para>
 /// ⚠️ <b>La création est un handler de la page, pas une API.</b> Le script de la modale l'appelle
@@ -56,7 +58,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
 
     var recorded = await mediator.Send(new ReadDataSubjectRequestsQuery(), cancellationToken);
 
-    Rows = [.. recorded.Select(RequestRow.Of)];
+    Rows = [.. recorded.Select(request => RequestRow.Of(request, Today))];
   }
 
   /// <summary>
@@ -90,7 +92,8 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
         .ToDictionary(field => field.Key, field => field.Select(refusal => refusal.ErrorMessage).ToArray()));
     }
 
-    var row = Partial("_RequestRow", RequestRow.Of(recorded.Value));
+    // La ligne du 201 se signale comme celles du tableau : contre « aujourd'hui », relu ici (ADR-0021).
+    var row = Partial("_RequestRow", RequestRow.Of(recorded.Value, ParisCalendar.Today(clock)));
     row.StatusCode = StatusCodes.Status201Created;
 
     return row;

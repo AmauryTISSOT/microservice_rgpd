@@ -80,7 +80,8 @@ public class RequestCreation(BrowserHarness harness)
 
     await Expect(Toast(page)).ToBeVisibleAsync();
     await Expect(RowOf(page, email)).ToBeVisibleAsync();
-    await Expect(RowOf(page, email).GetByRole(AriaRole.Cell, new() { Name = "28/02/2026", Exact = true })).ToBeVisibleAsync();
+    // La date limite, antérieure à aujourd'hui, est signalée dans la ligne insérée comme dans le tableau.
+    await Expect(RowOf(page, email).GetByRole(AriaRole.Cell, new() { Name = "28/02/2026 En retard", Exact = true })).ToBeVisibleAsync();
     await Expect(RowOf(page, email).GetByText("En cours", new() { Exact = true })).ToBeVisibleAsync();
     await Expect(none).ToBeHiddenAsync();
     (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("La création a rechargé la page.");
