@@ -1,7 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Interfaces;
 using MicroserviceRgpd.Infrastructure;
 using MicroserviceRgpd.Infrastructure.Email;
-using MicroserviceRgpd.UseCases;
 
 namespace MicroserviceRgpd.Web.Composition;
 
@@ -10,7 +9,6 @@ public static class ServiceConfigs
   public static IServiceCollection AddServiceConfigs(this IServiceCollection services, Microsoft.Extensions.Logging.ILogger logger, WebApplicationBuilder builder)
   {
     services.AddInfrastructureServices(builder.Configuration, logger)
-            .AddUseCasesServices()
             .AddMediatorSourceGen(logger);
 
     if (builder.Environment.IsDevelopment())
