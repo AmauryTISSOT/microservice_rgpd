@@ -64,10 +64,11 @@ couture HTTP. Le navigateur ne vérifie que ce que seul un navigateur montre.
   entrer dans le dépôt un second langage de test, `npm`, un `package.json` et un `node_modules`
   — l'outillage même que l'ADR-0018 refuse au produit — et un second exécuteur à lancer à côté de
   `dotnet test`.
-- **Cypress.** Même objection, et un seul langage possible : JavaScript.
-- **Selenium WebDriver.** Il exige de tenir un pilote accordé à la version du navigateur, et
-  n'attend pas de lui-même qu'un élément soit prêt : chaque attente se code à la main, et chacune
-  oubliée devient un test instable.
+- **Cypress.** Même objection : ses tests s'écrivent en JavaScript ou en TypeScript, et tournent
+  sous Node.
+- **Selenium WebDriver.** Il n'attend pas de lui-même qu'un élément soit prêt, ni qu'une assertion
+  devienne vraie : chaque attente se code à la main, et chacune oubliée devient un test instable.
+  Playwright attend par défaut, à chaque action et à chaque `Expect`.
 - **Des tests unitaires du module**, dans un DOM simulé comme jsdom. Ce n'est pas un navigateur : le
   `<dialog>`, l'événement `cancel`, le focus, `validity.badInput` sur un champ de date y sont absents
   ou imités — c'est-à-dire tout ce qu'il faut vérifier. Et il aurait fallu `npm` pour les lancer.

@@ -290,7 +290,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     foreach (var screen in await _layout.ScreensAsync())
     {
-      // ⚠️ LE NOM DU SERVICE SE LIT DANS LE BANDEAU, ET C'EST LE POINT DE CE TEST DEPUIS LE PANNEAU :
+      // ⚠️ LE NOM DU SERVICE SE LIT DANS LE HEADER, ET C'EST LE POINT DE CE TEST DEPUIS LE PANNEAU :
       // le panneau latéral se replie, le header non. Un wordmark qui aurait suivi les entrées dans le
       // panneau aurait emporté le chemin du retour avec lui au premier repli.
       var bar = LayoutSurface.HeaderIn(await _layout.ReadAsync(screen));

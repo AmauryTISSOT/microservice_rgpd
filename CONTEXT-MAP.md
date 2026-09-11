@@ -217,8 +217,8 @@ doit les couvrir.
 Vingt ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
 écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006 et l'ADR-0008 portent en
 fin de fichier une suite datée qui nomme leurs points morts jusqu'à l'ADR-0016 ; l'ADR-0017, qui
-vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui. Les
-ADR-0018 à 0020 font de même.
+vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui ;
+l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |

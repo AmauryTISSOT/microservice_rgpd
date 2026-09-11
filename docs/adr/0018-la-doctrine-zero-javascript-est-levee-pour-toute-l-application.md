@@ -69,10 +69,10 @@ de plus, dans la forme qui suit.
 
 **Le serveur rend, le script anime.** La modale, ses champs, leurs valeurs par défaut, la
 confirmation et le bandeau d'échec sont rendus par le serveur ; le script les ouvre, les remet à
-zéro, les révèle ou les cache, et n'écrit aucun contenu. Les dix messages d'erreur lui sont fournis
-par la page, dans un îlot de données — un `<script type="application/json">`, qui ne s'exécute
-pas —, depuis `DataSubjectRequestMessages` : le script porte la logique des règles, jamais leurs
-mots.
+zéro, les révèle ou les cache, et n'écrit aucun mot de lui-même. Les dix messages d'erreur lui
+sont fournis par la page, dans un îlot de données — un `<script type="application/json">`, qui ne
+s'exécute pas —, depuis `DataSubjectRequestMessages` : le script porte la logique des règles,
+jamais leurs mots.
 
 **Le script n'a pas l'autorité.** Ce qu'il juge, le serveur le rejuge et fait foi : c'est
 l'ADR-0019. La validation du navigateur est un confort.
@@ -83,9 +83,9 @@ l'ADR-0019. La validation du navigateur est un confort.
 le service n'en a pas et n'en acquiert pas ; la surface reste rendue par le serveur, sans
 JavaScript. La seconde tombe. La première tient, et elle est même ce qui borne la levée : un module
 écrit à la main, servi tel quel, n'est ni un framework ni un pipeline. La surface reste rendue par
-le serveur — seulement plus sans JavaScript. Le commentaire de doctrine du layout, qui interdit les
-ressources tierces depuis l'ADR-0005, n'a pas eu à changer : il couvrait déjà ce que le service sert
-lui-même.
+le serveur — seulement plus sans JavaScript. La règle que le commentaire de doctrine du layout porte
+depuis l'ADR-0005 — aucune ressource tierce, celles que le service sert lui-même autorisées — n'a pas
+eu à changer : elle couvrait déjà le module.
 
 **ADR-0009.** La décision 3 disait que le service continuait de ne servir aucun JavaScript, et que
 la clause de l'ADR-0005 était tenue « sans exception, et non pas tenue à un script près ». La phrase
@@ -125,11 +125,8 @@ repli : le bouton qui ouvre la modale est un simple bouton, et aucun bouton du f
 soumet nativement. C'est un choix du PRD, qui range ce repli hors de son périmètre. Un navigateur
 qui refuse les scripts voit le tableau, et ne peut pas y enregistrer une demande.
 
-**Les règles de saisie sont écrites deux fois**, en C# dans le domaine et en JavaScript dans le
-module ; leurs textes, une seule. Le risque est la divergence de la logique. Il est tenu à trois
-endroits : les mêmes mesures des deux côtés — longueurs en unités UTF-16 (`.Length` et `.length`),
-même expression WHATWG pour l'email ; le serveur qui fait foi (ADR-0019) et dont les refus
-s'affichent sous les champs comme ceux du navigateur ; et des tests navigateur (ADR-0020).
+**La logique des règles de saisie vit désormais en deux langages**, C# et JavaScript, et peut
+diverger. Ce qui tient la divergence est écrit dans l'ADR-0019, qui décide de ces règles.
 
 **Tester le script exige un navigateur.** Les tests fonctionnels lisent le HTML rendu et n'exécutent
 aucun script : ils ne voient ni un focus, ni une modale ouverte, ni un toast. D'où un projet de tests
