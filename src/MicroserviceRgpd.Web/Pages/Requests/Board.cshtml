@@ -51,6 +51,10 @@
   appliquera en confort et que le serveur revalidera.
 
   ⚠️ LA DATE N'A PAS DE BORNE BASSE : un courrier peut être resté longtemps en attente.
+
+  LE FORMULAIRE DÉCLARE SON ENVOI — `POST /demandes?handler=Create` — ET PORTE LE JETON ANTI-REJEU,
+  que le tag helper pose en dernier champ, caché. Le script n'a qu'à envoyer le formulaire tel
+  quel ; aucun bouton ne le soumet nativement.
 *@
 <dialog class="modal" id="create-request" aria-labelledby="create-request-title">
   <div class="modal-head">
@@ -63,7 +67,7 @@
     </button>
   </div>
 
-  <form id="create-request-form" class="modal-form" novalidate>
+  <form id="create-request-form" class="modal-form" method="post" asp-page-handler="Create" novalidate>
     <p>
       <label for="request-origin">Origine</label>
       <select id="request-origin" name="origin">

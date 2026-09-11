@@ -1,4 +1,5 @@
 using MicroserviceRgpd.Core.Configuration;
+using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 
@@ -20,6 +21,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   /// enregistrement d'une adresse.
   /// </summary>
   public DbSet<Settings> Settings => Set<Settings>();
+
+  /// <summary>
+  /// Les <c>DataSubjectRequest</c> — les demandes enregistrées à leur réception, et l'agrégat racine
+  /// du contexte <c>Requests</c>.
+  /// </summary>
+  public DbSet<DataSubjectRequest> DataSubjectRequests => Set<DataSubjectRequest>();
 
   /// <summary>
   /// Les <c>Screening</c> — le rapport de détection, et l'agrégat racine de son contexte.
