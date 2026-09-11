@@ -20,8 +20,8 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// Ce que ces tests gardent n'est pas la mise en page : c'est que les six droits paraissent, que
 /// <see cref="Core.SharedKernel.DataSubjectRight.OutOfScope"/> ne paraît <b>jamais</b>, qu'un service
 /// vierge les dit tous « non configuré » sans qu'aucune ligne n'ait été semée, qu'un enregistrement
-/// ou un effacement ne touche <b>qu'un droit</b>, et que l'écran <b>énumère sans compter</b> — aucun agrégat, aucun
-/// ratio « 4/6 ».
+/// ou un effacement ne touche <b>qu'un droit</b>, et que l'écran <b>énumère sans compter</b> —
+/// aucun agrégat, aucun ratio « 4/6 ».
 /// </para>
 /// <para>
 /// ⚠️ <b>Chaque test part d'un service vierge.</b> Le Paramétrage est un singleton, et la base est

@@ -55,23 +55,11 @@ public class ParametrageModel(IMediator mediator) : PageModel
 
     if (fields is { } saving)
     {
-      var set = await mediator.Send(new SetRightEndpointCommand(saving.Right, saving.Endpoint), cancellationToken);
-
-      if (set.IsSuccess)
-      {
-        // Une redirection après l'écriture : recharger la page ne renvoie rien, et l'écran relit
-        // l'adresse telle qu'elle a été enregistrée plutôt que telle qu'elle a été saisie.
-        return RedirectToPage();
-      }
-
-      foreach (var refusal in set.ValidationErrors)
-      {
-        ModelState.AddModelError($"{FormPrefix}.{refusal.Identifier}", refusal.ErrorMessage);
-      }
+      return await WrittenAsync(
+        await mediator.Send(new SetRightEndpointCommand(saving.Right, saving.Endpoint), cancellationToken),
+        cancellationToken);
     }
 
-    // Le refus se rend sur la page même, sans redirection : une redirection l'aurait perdu en
-    // chemin, et l'intégrateur n'aurait jamais su pourquoi son adresse n'avait pas été retenue.
     return await RefusedAsync(cancellationToken);
   }
 
@@ -81,24 +69,40 @@ public class ParametrageModel(IMediator mediator) : PageModel
     // dans le champ voisin n'est pas lue.
     if (Form.ReadRight(ModelState, FormPrefix) is { } right)
     {
-      var cleared = await mediator.Send(new ClearRightEndpointCommand(right), cancellationToken);
-
-      if (cleared.IsSuccess)
-      {
-        // La même redirection qu'à l'enregistrement : recharger la page n'efface rien une seconde fois.
-        return RedirectToPage();
-      }
-
-      foreach (var refusal in cleared.ValidationErrors)
-      {
-        ModelState.AddModelError($"{FormPrefix}.{refusal.Identifier}", refusal.ErrorMessage);
-      }
+      return await WrittenAsync(
+        await mediator.Send(new ClearRightEndpointCommand(right), cancellationToken),
+        cancellationToken);
     }
 
     return await RefusedAsync(cancellationToken);
   }
 
-  /// <summary>Rend l'écran sur le refus d'un envoi, dit dans la section du droit envoyé.</summary>
+  /// <summary>
+  /// L'issue d'une écriture — enregistrement ou effacement : une redirection si elle a réussi, sinon
+  /// ses refus rendus dans la section du droit envoyé.
+  /// </summary>
+  private async Task<IActionResult> WrittenAsync(Result written, CancellationToken cancellationToken)
+  {
+    if (written.IsSuccess)
+    {
+      // Une redirection après l'écriture : recharger la page ne renvoie rien, et l'écran relit
+      // l'état tel qu'il a été enregistré plutôt que tel qu'il a été saisi.
+      return RedirectToPage();
+    }
+
+    foreach (var refusal in written.ValidationErrors)
+    {
+      ModelState.AddModelError($"{FormPrefix}.{refusal.Identifier}", refusal.ErrorMessage);
+    }
+
+    return await RefusedAsync(cancellationToken);
+  }
+
+  /// <summary>
+  /// Rend l'écran sur le refus d'un envoi, dit dans la section du droit envoyé. Le refus se rend sur
+  /// la page même, sans redirection : une redirection l'aurait perdu en chemin, et l'intégrateur
+  /// n'aurait jamais su pourquoi son envoi n'avait pas été retenu.
+  /// </summary>
   private async Task<IActionResult> RefusedAsync(CancellationToken cancellationToken)
   {
     Refused = Form.Designated;
