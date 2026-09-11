@@ -127,8 +127,8 @@ arbitrages individuels et jamais un état de lot.
 
 `Screening` et `Casework` emploient le mot au même sens ; il n'appartient donc à aucun des deux.
 `Configuration` ne l'emploie pas : poser l'adresse d'un droit est un réglage, qui remplace l'état
-précédent sans laisser de trace datée. Le `Settings` est un état, et c'est ce qui le tient hors de la
-matière de preuve.
+précédent sans laisser de trace datée. Le `Settings` est un état, et c'est ce qui le tient hors de
+la matière de preuve.
 
 _Avoid_ : action, opération, commande, traitement
 
@@ -213,8 +213,8 @@ doit les couvrir.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
 Seize ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
-écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006, visé trois fois, porte en
-fin de fichier une suite datée qui nomme ses points morts.
+écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006, visé quatre fois, et
+l'ADR-0008 portent en fin de fichier une suite datée qui nomme leurs points morts.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -233,7 +233,7 @@ fin de fichier une suite datée qui nomme ses points morts.
 | [0013](./docs/adr/0013-la-clause-d-incompletude-varie-avec-l-origine-du-releve.md) | La clause d'incomplétude varie avec l'origine du relevé : une clause, quatre parties, une seule qui varie — le périmètre lu. L'origine est une valeur fermée `Collé` / `Scanné`, enregistrée avec le rapport. | 0012 : la réserve qui rangeait le contenu de la clause parmi ce qu'il ne décide pas. |
 | [0014](./docs/adr/0014-le-screening-n-enregistre-pas-qui-a-arbitre.md) | `Screening` n'enregistre pas qui a arbitré : l'`Arbitration` devient `(State, RenderedOn)`. Ce que la trace doit prouver est qu'un humain a tranché, et la date le prouve. Asymétrie assumée avec `Casework`, qui enregistre qui a tranché. | — |
 | [0015](./docs/adr/0015-le-scan-survit-a-la-requete-qui-l-a-lance.md) | Un scan survit à la requête HTTP qui l'a lancé. Ce que le garde interdit est ce qui part tout seul, pas ce qui court plus longtemps qu'un échange. Amende `NothingRunsInTheBackgroundTests` sans élargir sa liste. | — |
-| [0016](./docs/adr/0016-le-manifest-cede-la-place-au-parametrage-un-droit-une-adresse.md) | Le `Manifest` cède la place au Paramétrage : un droit, une adresse. Nouveau contexte `Configuration`, troisième consommateur du noyau partagé ; `DeclaredSystem` reste, et la dette de recâblage de l'instruction est nommée. | 0008 : les noms « Configuration » / « Configuration du microservice RGPD », et « `Manifest` reste `Manifest` ». |
+| [0016](./docs/adr/0016-le-manifest-cede-la-place-au-parametrage-un-droit-une-adresse.md) | Le `Manifest` cède la place au Paramétrage : un droit, une adresse. Nouveau contexte `Configuration`, troisième consommateur du noyau partagé ; `DeclaredSystem` reste, et la dette de recâblage de l'instruction est nommée. | 0008 : les noms « Configuration » / « Configuration du microservice RGPD », et « `Manifest` reste `Manifest` ». 0006 : `Manifest` parmi les identifiants inchangés. |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se
@@ -252,9 +252,6 @@ espace de noms `Qualification` est un piège de résolution de noms en C# : le c
 départager le type et l'espace de noms à chaque usage, et il ne le fait pas partout de la même façon.
 Le dossier prend donc le pluriel là où le contexte a un type qui porte son nom. Le garde d'ADR-0003
 lit l'appartenance **par préfixe** pour que ce pluriel ne lui échappe pas. `Casework`,
-`Configuration` et `SharedKernel` restent au singulier : aucun type ne porte ces noms.
-
-⚠️ **Le préfixe attrape tout dossier qui commence par le nom d'un contexte.** Le point de montage de
-`Web`, hérité du gabarit sous le nom `Configurations/`, se lisait comme du `Configuration` : il
-s'appelle `Composition/` depuis l'ADR-0016. Un dossier nouveau ne commence par le nom d'un contexte
-que s'il en fait partie.
+`Configuration` et `SharedKernel` restent au singulier : aucun type ne porte ces noms. Le préfixe attrape aussi tout
+dossier qui commence par le nom d'un contexte : c'est pourquoi le point de montage de `Web` s'appelle
+`Composition/` et non `Configurations/` (ADR-0016).

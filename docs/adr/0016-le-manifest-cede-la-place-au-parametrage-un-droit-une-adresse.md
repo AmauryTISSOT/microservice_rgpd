@@ -2,8 +2,8 @@
 
 - **Statut** : accepté
 - **Date** : 2026-09-11
-- **Décidé par** : le PRD [#328](https://github.com/AmauryTISSOT/microservice_rgpd/issues/328), livré par
-  [#329](https://github.com/AmauryTISSOT/microservice_rgpd/issues/329) à
+- **Décidé par** : le PRD [#328](https://github.com/AmauryTISSOT/microservice_rgpd/issues/328),
+  livré par [#329](https://github.com/AmauryTISSOT/microservice_rgpd/issues/329) à
   [#333](https://github.com/AmauryTISSOT/microservice_rgpd/issues/333) et tracé par
   [#334](https://github.com/AmauryTISSOT/microservice_rgpd/issues/334)
 - **Supplante, sur deux points** :
@@ -12,10 +12,14 @@
   microservice RGPD » sur la carte et en titre), et sa clause « `Manifest` reste `Manifest`,
   `/manifest` reste `/manifest` ». Le reste de l'ADR-0008 tient, y compris le mécanisme des deux
   champs d'`EntryPoint`.
+- **Supplante, sur un point** :
+  [ADR-0006](./0006-trois-points-d-entree-renommes-en-francais-identifiants-inchanges.md) — `Manifest`
+  dans la liste des identifiants C# qui ne bougent pas. Il n'a pas été renommé : il a été supprimé.
+  Le motif de la clause, le contrat public et son `system_id`, reste entier.
 - **Écrit la dérogation qu'un quatrième contexte doit écrire**, selon
   l'[ADR-0003](./0003-troisieme-contexte-sans-intersection-et-garde-des-traversees.md) : la liste
-  blanche du garde gagne la traversée `Configuration → SharedKernel`. L'ADR-0003 n'est pas supplanté ;
-  il avait prévu ce geste.
+  blanche du garde gagne la traversée `Configuration → SharedKernel`. L'ADR-0003 n'est pas
+  supplanté ; il avait prévu ce geste.
 
 ## Contexte
 
@@ -120,7 +124,7 @@ de `VerifyManifestHandler`, dont le lien est mort. Le contrat HTTP lui-même (`s
 
 **Le mot `Manifest` quitte les glossaires, pas le code.** Le glossaire de `Casework` le retire, avec
 les entrées « Vérification du `Manifest` » et « Appel au faux secret », dont le code est parti en
-#333. Il survit dans plus de soixante-dix lignes de `src/` (`manifest` comme nom de
+#333. Il survit dans environ soixante-dix lignes de `src/` (`manifest` comme nom de
 paramètre des gestionnaires, `IAdapterDisagreements`, le journal « Désaccord Manifest/Adapter »,
 `IncompletenessClause.RelationToManifest`), dans le glossaire de `Screening` et dans la clause
 `Aucune modification vers le Manifest`. Partout, il se lit « l'ensemble des `DeclaredSystem` ». Les
@@ -129,9 +133,6 @@ renommer n'est pas fait ici.
 **La clause `Aucune modification vers le Manifest` garde son nom et son motif.** Ce qu'elle
 protège est désormais l'ensemble des `DeclaredSystem`. Rien ne va non plus de `Screening` vers
 `Configuration` : la matrice l'interdit, sans clause de glossaire.
-
-**L'ADR-0006 perd `Manifest` de sa liste d'identifiants inchangés**, par suppression et non par
-renommage. Son motif — le contrat public, `system_id` — reste entier.
 
 ## Ce que cet ADR n'ouvre pas
 

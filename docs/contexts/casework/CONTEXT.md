@@ -146,8 +146,8 @@ jamais des champs, la précision du contenu appartenant à l'application —, da
 `Manifest` (ADR-0016) ; la fabrique demeure, et l'instruction continue de lire le catalogue, mais
 une base neuve n'en a aucun. C'est la dette de recâblage : l'instruction appellera par droit, aux
 adresses du Paramétrage de [Configuration](../configuration/CONTEXT.md).
-_Avoid_ : System, Target, Datastore, source ⚠️ pour le catalogue : Manifest, Catalog, Schema, Inventory,
-Map, cartographie (prise par `Screening`)
+_Avoid_ : System, Target, Datastore, source ⚠️ pour le catalogue : Manifest, Catalog, Schema,
+Inventory, Map, cartographie (prise par `Screening`)
 
 `Manifest` a nommé le catalogue et l'écran qui le déclarait jusqu'à l'ADR-0016. Le mot survit dans
 le code, les commentaires et la clause `Aucune modification vers le Manifest` de `Screening` ; il y
@@ -517,9 +517,9 @@ _Avoid_ : Export, Package, Response, Bundle, Download, envoi
 La page que le service écrit lui-même dans chaque `Delivery`, seul texte du dossier dont il soit
 l'auteur. Elle range les `DeclaredSystem` du `Case` en **trois listes** : ceux dont une pièce est
 jointe ; ceux qui ont été interrogés **sans qu'aucun rattachement soit trouvé sous les `Designations`
-dont on dispose** ; ceux qui ne sont pas couverts, nommés un par un dans les mots du champ « contient »
-de leur `DeclaredSystem`. Elle se clôt en disant que cette liste est celle des systèmes **recensés**, et qu'elle
-ne garantit pas qu'il n'en existe pas d'autres.
+dont on dispose** ; ceux qui ne sont pas couverts, nommés un par un dans les mots du champ
+« contient » de leur `DeclaredSystem`. Elle se clôt en disant que cette liste est celle des systèmes
+**recensés**, et qu'elle ne garantit pas qu'il n'en existe pas d'autres.
 Une pièce **vide** n'est pas jointe à l'archive : elle est une réponse datée, la page la range parmi
 les systèmes interrogés sans rattachement, et joindre en plus un fichier de zéro octet ferait deux
 dires contradictoires dans le même envoi.
@@ -530,8 +530,8 @@ La troisième liste ne fusionne pas avec la première : une pièce vide n'est pa
 deuxième ne dit jamais « vous n'avez rien chez nous » — un `Locate` ne distingue pas « cherché, aucun
 rattachement » de « désignation insuffisante », et la seule phrase vraie porte ce doute avec elle,
 invitant la personne à fournir d'autres `Designation`.
-Le service l'écrit **sans ouvrir une seule pièce** : les `DeclaredSystem` et les `Step` du `Case` lui
-suffisent, l'enveloppe du transport distinguant à elle seule la pièce absente, la pièce vide et la
+Le service l'écrit **sans ouvrir une seule pièce** : les `DeclaredSystem` et les `Step` du `Case`
+lui suffisent, l'enveloppe du transport distinguant à elle seule la pièce absente, la pièce vide et la
 pièce pleine. L'incomplétude ne coûte donc rien à l'`Adapter`.
 Elle énumère les systèmes du travail dû **et** ceux dont une pièce est détenue : un `DeclaredSystem`
 recensé **après** l'ouverture du `Case` n'a aucun `Step`, et sa pièce partirait pourtant dans
@@ -623,8 +623,7 @@ signale : elle ne produit pas une ligne fausse, elle produit une **ligne manquan
 relecture ne peut lever — on ne valide pas l'absence de ce qu'on ne voit pas. Trois conséquences
 non négociables en découlent : le service ne présente **jamais** un recensement comme complet,
 l'incomplétude est visible par construction, et la déclaration des `DeclaredSystem` est un
-prérequis, pas une option. ⚠️ Depuis l'ADR-0016, aucun écran ne permet plus de la faire : le
-prérequis tient, et c'est la dette de recâblage qui le rend intenable en attendant.
+prérequis, pas une option. Aucun écran ne permet plus de la faire : voir `DeclaredSystem`.
 _Avoid_ : oubli, erreur de recensement, faux négatif, angle mort
 
 **Enregistré, jamais vérifié** :

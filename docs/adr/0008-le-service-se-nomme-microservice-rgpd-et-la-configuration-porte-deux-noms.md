@@ -128,8 +128,8 @@ le `Manifest` par le Paramétrage.
 - **Les deux noms « Configuration » et « Configuration du microservice RGPD »** quittent la
   surface. L'écran a un seul nom, « Paramétrage » : le panneau dit « Paramétrage » ; la carte de
   l'accueil, le `<h1>` et le titre d'onglet disent « Paramétrage du microservice RGPD ». Ce qui
-  tient est le mécanisme — forme courte là où le wordmark précède, forme pleine ailleurs, deux champs
-  d'`EntryPoint` —, appliqué à un mot qui n'est plus celui du tableau ci-dessus.
+  tient est le mécanisme — forme courte là où le wordmark précède, forme pleine ailleurs, deux
+  champs d'`EntryPoint` —, appliqué à un mot qui n'est plus celui du tableau ci-dessus.
 - **« `Manifest` reste `Manifest`, `/manifest` reste `/manifest` »**, dans « Ce que cet ADR n'ouvre
   pas ». Le type `Manifest` et l'écran à `/manifest` ont été supprimés ; `/manifest` rend 404.
 
@@ -140,5 +140,6 @@ Trois conséquences écrites ci-dessus changent d'objet :
 - **La clause d'incomplétude et le message d'appel refusé** (`Case.cshtml`) citent toujours
   « Configuration », une entrée que le panneau ne porte plus. L'ADR-0016 les nomme comme dette ; ils
   ne sont pas corrigés.
-- **Le garde du double nom** (`SharedLayout.CarriesTheFourNavigationLabelsWordForWordAndInOrder`) est
-  toujours le seul, et recopie désormais « Paramétrage ».
+- **Le garde du double nom**
+  (`SharedLayout.CarriesTheFourNavigationLabelsWordForWordAndInOrder`) est toujours le seul, et
+  recopie désormais « Paramétrage ».

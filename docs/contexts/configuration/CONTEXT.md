@@ -64,6 +64,7 @@ article viennent du type partagé (`FrenchLabel`, `Article`), jamais d'une secon
 
 `OutOfScope` est le **verdict** qu'aucun droit n'est exercé, pas un droit : il n'a pas d'adresse, et
 le demander au `Settings` est une programmation fautive, refusée comme telle.
+_Avoid_ : sept droits, tous les droits, les droits RGPD (sans nombre)
 
 **Non configuré** :
 L'état d'un droit sans `EndpointUrl`. C'est un état **valide et normal** — celui d'un service qu'on
