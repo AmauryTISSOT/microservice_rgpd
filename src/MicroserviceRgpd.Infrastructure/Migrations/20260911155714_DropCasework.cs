@@ -6,7 +6,24 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace MicroserviceRgpd.Infrastructure.Migrations
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// Retire les treize tables de <c>Casework</c> : les dossiers et tout ce qu'ils possédaient, le
+    /// catalogue des systèmes déclarés et l'<c>EvidenceLog</c>. Aucune autre table n'a de clé
+    /// étrangère vers elles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠️ <b>Leur contenu est détruit, sans recours, <c>EvidenceLog</c> compris</b> — la table même
+    /// qui promettait cinq ans de conservation et aucune suppression ligne à ligne. <b>C'est
+    /// assumé</b> : le service n'a jamais tourné qu'en POC local, et il n'y a aucune donnée à
+    /// préserver. Le Tableau des demandes repart d'une page blanche avec le contexte
+    /// <c>Requests</c>.
+    /// </para>
+    /// <para>
+    /// Les migrations qui les ont créées restent en place, ni supprimées ni renommées : elles sont
+    /// déjà appliquées, et c'est cette migration-ci qui défait leur œuvre.
+    /// </para>
+    /// </remarks>
     public partial class DropCasework : Migration
     {
         /// <inheritdoc />

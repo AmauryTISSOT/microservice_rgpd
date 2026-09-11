@@ -67,12 +67,21 @@ public class DropCaseworkTests : IAsyncLifetime
 
   public Task DisposeAsync() => _container.DisposeAsync().AsTask();
 
+  /// <summary>
+  /// Ce qui a disparu est <b>exactement</b> la liste : une table de <c>Casework</c> oubliée
+  /// resterait orpheline en base, et une table d'un autre contexte emportée au passage serait une
+  /// perte que rien d'autre ne signalerait.
+  /// </summary>
   [Fact]
-  public void DropsExactlyTheThirteenCaseworkTables()
+  public void DropsExactlyTheCaseworkTables()
   {
     _before.Except(_after).Order().ShouldBe(CaseworkTables);
   }
 
+  /// <summary>
+  /// Et elle ne fait rien d'autre : un retrait qui poserait une table au passage mêlerait deux
+  /// gestes qu'une revue ne lirait plus séparément.
+  /// </summary>
   [Fact]
   public void CreatesNoTable()
   {

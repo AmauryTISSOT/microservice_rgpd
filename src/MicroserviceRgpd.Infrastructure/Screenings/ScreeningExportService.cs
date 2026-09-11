@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.Infrastructure.Screenings;
 /// ⚠️ <b>Ce service est licite, et ce qui le sépare du pont interdit vers le <c>Manifest</c> n'est
 /// pas son nom.</b> <b>L'export a un destinataire humain qui l'a demandé ; le pont aurait un
 /// destinataire machine que personne n'a demandé.</b> Ce qui doit arrêter une revue de code est donc
-/// une <i>écriture</i> côté <c>Casework</c>, jamais le mot « export » : il n'y en a aucune ici, ce
+/// une <i>écriture</i> vers un autre contexte, jamais le mot « export » : il n'y en a aucune ici, ce
 /// rendu ne connaissant ni dépôt, ni horloge, ni file.
 /// </para>
 /// <para>
