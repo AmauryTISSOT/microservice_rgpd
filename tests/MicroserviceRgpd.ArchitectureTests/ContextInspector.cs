@@ -52,20 +52,7 @@ internal static class ContextInspector
   /// </summary>
   internal static IReadOnlyList<CrossContextReference> Inspect(string assemblyPath, string from, string to)
   {
-    using var module = ModuleDefinition.ReadModule(assemblyPath);
-    var assembly = Path.GetFileNameWithoutExtension(assemblyPath);
-
-    // Une même traversée se relève plusieurs fois — un ldsfld nomme à la fois le type qui déclare
-    // le champ et le type du champ. On la rapporte une fois : un rapport qui se répète se lit mal.
-    return
-    [
-      .. module.GetTypes()
-        .Where(type => BelongsTo(type, from))
-        .SelectMany(type => Reaches(type)
-          .Where(reached => BelongsTo(reached.Type, to))
-          .Select(reached => new CrossContextReference(assembly, FullNameOf(type), FullNameOf(reached.Type), reached.Site)))
-        .Distinct(),
-    ];
+    return ReferencesFrom(assemblyPath, type => BelongsTo(type, from), to);
   }
 
   /// <summary>
@@ -75,12 +62,21 @@ internal static class ContextInspector
   /// </summary>
   internal static IReadOnlyList<CrossContextReference> ReferencesTo(string assemblyPath, string to)
   {
+    return ReferencesFrom(assemblyPath, _ => true, to);
+  }
+
+  private static IReadOnlyList<CrossContextReference> ReferencesFrom(
+    string assemblyPath, Func<TypeDefinition, bool> source, string to)
+  {
     using var module = ModuleDefinition.ReadModule(assemblyPath);
     var assembly = Path.GetFileNameWithoutExtension(assemblyPath);
 
+    // Une même traversée se relève plusieurs fois — un ldsfld nomme à la fois le type qui déclare
+    // le champ et le type du champ. On la rapporte une fois : un rapport qui se répète se lit mal.
     return
     [
       .. module.GetTypes()
+        .Where(source)
         .SelectMany(type => Reaches(type)
           .Where(reached => BelongsTo(reached.Type, to))
           .Select(reached => new CrossContextReference(assembly, FullNameOf(type), FullNameOf(reached.Type), reached.Site)))

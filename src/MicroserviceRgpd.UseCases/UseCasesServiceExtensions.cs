@@ -17,9 +17,9 @@ public static class UseCasesServiceExtensions
 {
   public static IServiceCollection AddUseCasesServices(this IServiceCollection services)
   {
-    // L'appel d'un Adapter au titre d'un Case. Il vit ici plutôt qu'avec le client HTTP :
-    // l'Infrastructure n'a pas à apprendre qu'un dossier existe. Scoped, comme l'EvidenceLog dont
-    // il écrit la ligne.
+    // L'appel d'un Adapter au titre d'un Case. Il vit ici plutôt qu'avec le client HTTP : c'est un
+    // cas d'usage, et la couche qui le déclare est celle qui l'enregistre. Scoped, comme
+    // l'EvidenceLog dont il écrit la ligne.
     services.AddScoped<AdapterCallsForCase>();
 
     return services;

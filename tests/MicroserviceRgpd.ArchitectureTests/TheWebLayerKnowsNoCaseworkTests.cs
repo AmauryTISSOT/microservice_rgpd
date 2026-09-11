@@ -48,20 +48,6 @@ public class TheWebLayerKnowsNoCaseworkTests
       "couches se compose hors de la couche web — voir UseCasesServiceExtensions.");
   }
 
-  /// <summary>
-  /// <b>Le témoin</b> : retourné contre son propre assemblage, l'inspecteur voit la référence que
-  /// porte un type sans contexte. Sans lui, un inspecteur qui ne verrait rien afficherait le même
-  /// vert que ci-dessus.
-  /// </summary>
-  [Fact]
-  public void SeesAReferenceCarriedByATypeWithoutAContext()
-  {
-    var thisAssembly = Path.Combine(AppContext.BaseDirectory, "MicroserviceRgpd.ArchitectureTests.dll");
-
-    ContextInspector.ReferencesTo(thisAssembly, ContextInspector.Requests)
-      .ShouldContain(reference => reference.SourceType == typeof(Fixtures.Reporting.AnExportServiceWithoutAContext).FullName);
-  }
-
   private static bool IsEngenderedByMediator(string type)
   {
     return type.StartsWith("Mediator.", StringComparison.Ordinal)

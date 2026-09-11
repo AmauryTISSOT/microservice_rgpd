@@ -179,7 +179,7 @@ SHA
 
 ### Layout
 
-Le cadre fixe que les quatorze écrans de la surface portent tous, écrit une seule fois dans
+Le cadre fixe que les onze écrans de la surface portent tous, écrit une seule fois dans
 `_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
 latéral**, le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
 comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est
@@ -202,7 +202,7 @@ relève des deux. C'est ce qui autorise `SharedLayout` à porter les deux famill
 Le mot est **header**, pas « bandeau » : le dépôt emploie déjà « bandeau » pour le bandeau
 d'avertissement permanent d'un écran (`DepositScreen`, `CaseScreen`, `LocateHandlerTests`).
 
-⚠️ **Quatorze écrans, et non seize : les deux routes de la `Cartographie` n'en sont pas.**
+⚠️ **Onze écrans, et non treize : les deux routes de la `Cartographie` n'en sont pas.**
 `cartographie.json` et `cartographie.csv` sont des Razor Pages qui rendent un fichier, jamais une
 page — pas de layout, pas de panneau, pas de header. Aucun test de layout ne les couvre, et aucun ne
 doit les couvrir.

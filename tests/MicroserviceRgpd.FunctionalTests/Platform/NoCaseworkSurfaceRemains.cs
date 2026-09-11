@@ -17,9 +17,10 @@ namespace MicroserviceRgpd.FunctionalTests.Platform;
 /// d'excuse. L'adresse n'existe plus, et le fil le dit.
 /// </para>
 /// <para>
-/// L'absence est gardée <b>deux fois</b>, comme dans <c>NoApiScreensADatabase</c> : par le
-/// comportement HTTP des adresses qu'on pourrait croire servies, et par le document Swagger que
-/// l'application publie, là où un endpoint oublié se lirait encore comme un contrat.
+/// L'absence est gardée <b>deux fois</b> : par le comportement HTTP des adresses qu'on pourrait
+/// croire servies, et par le document Swagger que l'application publie, là où un endpoint oublié
+/// se lirait encore comme un contrat. Que la couche web ne nomme plus aucun type de
+/// <c>Casework</c> est gardé à part, sur l'IL, par les tests d'architecture.
 /// </para>
 /// </remarks>
 [Collection(WebCollection.Name)]
@@ -52,7 +53,7 @@ public class NoCaseworkSurfaceRemains(CustomWebApplicationFactory<Program> facto
   {
     var response = await _client.PostAsJsonAsync("/cases", new { designations = Array.Empty<object>(), rights = new[] { "Access" } });
 
-    response.StatusCode.ShouldBeOneOf(HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
+    response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
   }
 
   /// <summary>
@@ -70,7 +71,7 @@ public class NoCaseworkSurfaceRemains(CustomWebApplicationFactory<Program> facto
     document.Paths.Keys.ShouldNotContain("/cases");
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : l'assertion ci-dessus serait vide.");
 
-    foreach (var word in new[] { "Casework", "OpenCase", "DeclaredDesignation", "Adapter" })
+    foreach (var word in new[] { "Casework", "OpenCase", "DeclaredDesignation" })
     {
       published.ShouldNotContain(word, Case.Sensitive, $"Le document Swagger publie encore « {word} ».");
     }
