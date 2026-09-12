@@ -37,8 +37,8 @@ public sealed record RequestRow(
   /// <summary>
   /// Ce que le tri compare sur la ligne : la date de réception en ISO (<c>aaaa-mm-jj</c>), puis,
   /// pour départager deux demandes reçues le même jour, l'instant d'enregistrement en ISO, en UTC.
-  /// La date de réception est aussi la clé par laquelle le script place la ligne d'une demande qu'on
-  /// vient de créer.
+  /// Ce sont aussi les clés par lesquelles le script place la ligne d'une demande qu'on vient de
+  /// créer, dans le sens du tri sélectionné.
   /// </summary>
   /// <remarks>
   /// <para>

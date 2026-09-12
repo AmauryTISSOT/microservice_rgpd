@@ -26,6 +26,10 @@ public class RequestCreation(BrowserHarness harness)
 
   private const string Created = "Demande créée";
 
+  private const string Oldest = "Date de réception la plus ancienne";
+
+  private const string NoMatch = "Aucune demande ne correspond à votre recherche";
+
   private const string Failure = "La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer.";
 
   private static readonly Regex CreateHandler = new(@"/demandes\?handler=Create$");
@@ -87,9 +91,9 @@ public class RequestCreation(BrowserHarness harness)
   }
 
   /// <summary>
-  /// <b>La ligne se place dans l'ordre par défaut</b> : la date de réception la plus récente d'abord,
-  /// puis la date de création la plus récente — une demande reçue le même jour qu'une autre passe
-  /// donc devant elle, puisqu'elle vient d'être créée.
+  /// <b>Avec « la plus récente » — le tri par défaut —, la ligne se place à sa date de réception</b>,
+  /// puis à sa date de création : une demande reçue le même jour qu'une autre passe donc devant elle,
+  /// puisqu'elle vient d'être créée.
   /// </summary>
   [Fact]
   public async Task PlacesTheRowInTheDefaultOrder()
@@ -100,18 +104,76 @@ public class RequestCreation(BrowserHarness harness)
     await harness.RecordRequestAsync(email: recorded);
     var page = await context.NewPageAsync();
     await page.GotoAsync("/demandes");
+    await Expect(SortMenu(page)).ToHaveValueAsync("newest");
 
     var later = await CreateReceivedOnAsync(page, "2026-01-20");
     var sameDay = await CreateReceivedOnAsync(page, "2026-01-15");
     var earlier = await CreateReceivedOnAsync(page, "2026-01-01");
 
-    await Expect(page.GetByRole(AriaRole.Table).Locator("tbody tr")).ToHaveTextAsync(
-    [
-      new Regex(Regex.Escape(later)),
-      new Regex(Regex.Escape(sameDay)),
-      new Regex(Regex.Escape(recorded)),
-      new Regex(Regex.Escape(earlier)),
-    ]);
+    await ExpectOrderAsync(page, later, sameDay, recorded, earlier);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Avec « la plus ancienne » sélectionnée, la ligne se place dans cet ordre-là</b>, et non
+  /// dans l'ordre par défaut : la date de réception la plus ancienne d'abord, puis la date de
+  /// création la plus ancienne — une demande reçue le même jour qu'une autre passe donc derrière
+  /// elle, puisqu'elle vient d'être créée.
+  /// </summary>
+  [Fact]
+  public async Task PlacesTheRowInTheSelectedOrderWhenTheOldestComesFirst()
+  {
+    await using var context = await harness.NewContextAsync();
+    await harness.DeleteAllRequestsAsync();
+    var recorded = UniqueEmail();
+    await harness.RecordRequestAsync(email: recorded, receivedOn: "2026-01-15");
+    var page = await context.NewPageAsync();
+    await page.GotoAsync("/demandes");
+    await SortMenu(page).SelectOptionAsync(new SelectOptionValue { Label = Oldest });
+
+    var later = await CreateReceivedOnAsync(page, "2026-01-20");
+    var sameDay = await CreateReceivedOnAsync(page, "2026-01-15");
+    var earlier = await CreateReceivedOnAsync(page, "2026-01-01");
+
+    await ExpectOrderAsync(page, earlier, recorded, sameDay, later);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La recherche en cours s'applique à la nouvelle ligne</b> : celle qui ne lui correspond pas
+  /// entre cachée, et « Aucune demande ne correspond à votre recherche » reste affiché ; celle qui lui
+  /// correspond est visible, et chasse le message.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ La recherche vidée à la fin, <b>la ligne cachée reparaît, et à sa place</b> : c'est ce qui
+  /// distingue une ligne entrée cachée d'une ligne qui ne serait jamais entrée.
+  /// </remarks>
+  [Fact]
+  public async Task ShowsTheNewRowOnlyWhenItMatchesTheSearch()
+  {
+    await using var context = await harness.NewContextAsync();
+    await harness.DeleteAllRequestsAsync();
+    var page = await context.NewPageAsync();
+    await page.GotoAsync("/demandes");
+
+    var marker = Guid.NewGuid().ToString("N");
+    await Search(page).FillAsync(marker);
+
+    var stranger = UniqueEmail();
+    await CreateWithEmailAsync(page, stranger);
+
+    await Expect(Toast(page)).ToBeVisibleAsync();
+    await Expect(RowOf(page, stranger)).ToHaveCountAsync(0);
+    await Expect(NoMatchMessage(page)).ToBeVisibleAsync();
+
+    var sought = $"{marker}@example.org";
+    await CreateWithEmailAsync(page, sought);
+
+    await Expect(RowOf(page, sought)).ToBeVisibleAsync();
+    await Expect(NoMatchMessage(page)).ToBeHiddenAsync();
+    await Expect(RowOf(page, stranger)).ToHaveCountAsync(0);
+
+    await Search(page).FillAsync(string.Empty);
+
+    await ExpectOrderAsync(page, sought, stranger);
   }
 
   /// <summary>
@@ -389,6 +451,18 @@ public class RequestCreation(BrowserHarness harness)
     return email;
   }
 
+  /// <summary>
+  /// Crée depuis la modale une demande portant cet email, et n'attend que la fermeture de la modale :
+  /// la ligne peut entrer cachée, et une ligne cachée ne se distingue pas d'une ligne absente.
+  /// </summary>
+  private static async Task CreateWithEmailAsync(IPage page, string email)
+  {
+    await OpenAsync(page);
+    await FillAValidEntryAsync(page, UniqueMessage(), email);
+    await CreateAsync(page);
+    await Expect(Dialog(page)).ToBeHiddenAsync();
+  }
+
   private static async Task FillAValidEntryAsync(IPage page, string message, string email = "jeanne.martin@example.org")
   {
     await Field(page, "Email").FillAsync(email);
@@ -434,6 +508,46 @@ public class RequestCreation(BrowserHarness harness)
   private static ILocator RowOf(IPage page, string email)
   {
     return page.GetByRole(AriaRole.Row).Filter(new() { HasText = email });
+  }
+
+  /// <summary>
+  /// Attend que les lignes affichées du tableau se lisent dans cet ordre, chacune reconnue par son
+  /// email. Une ligne cachée ne s'y trouve pas.
+  /// </summary>
+  private static Task ExpectOrderAsync(IPage page, params string[] emails)
+  {
+    return Expect(Rows(page)).ToHaveTextAsync(
+      emails.Select(email => new Regex(Regex.Escape(email))).ToArray());
+  }
+
+  private static ILocator SortMenu(IPage page)
+  {
+    return page.GetByRole(AriaRole.Combobox, new() { Name = "Trier par", Exact = true });
+  }
+
+  private static ILocator Search(IPage page)
+  {
+    return page.GetByRole(AriaRole.Searchbox, new() { Name = "Rechercher une demande", Exact = true });
+  }
+
+  /// <summary>Le message, lu dans le cadre du tableau : c'est là, à la place des lignes, qu'il se lit.</summary>
+  private static ILocator NoMatchMessage(IPage page)
+  {
+    return Frame(page).GetByText(NoMatch, new() { Exact = true });
+  }
+
+  private static ILocator Frame(IPage page)
+  {
+    return page.GetByRole(AriaRole.Region, new() { Name = "Liste des demandes", Exact = true });
+  }
+
+  /// <summary>
+  /// Les lignes affichées du corps du tableau, dans l'ordre du tableau : le dernier groupe de lignes
+  /// est le corps, l'en-tête étant le premier.
+  /// </summary>
+  private static ILocator Rows(IPage page)
+  {
+    return Frame(page).GetByRole(AriaRole.Rowgroup).Last.GetByRole(AriaRole.Row);
   }
 
   private static ILocator Toast(IPage page)
