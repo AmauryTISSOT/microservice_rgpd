@@ -202,7 +202,7 @@ public class CreationFormScreen(CustomWebApplicationFactory<Program> factory)
 
     var island = Regex.Match(
       rendered,
-      @"<script\b(?=[^>]*\btype=""application/json"")(?=[^>]*\bid=""create-request-messages"")[^>]*>(.*?)</script>",
+      @"<script\b(?=[^>]*\btype=""application/json"")(?=[^>]*\bid=""request-messages"")[^>]*>(.*?)</script>",
       RegexOptions.Singleline);
     island.Success.ShouldBeTrue("La page ne fournit pas au script l'îlot de ses messages.");
 

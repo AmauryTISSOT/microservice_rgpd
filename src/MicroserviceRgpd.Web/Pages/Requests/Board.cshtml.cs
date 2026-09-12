@@ -71,7 +71,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   /// dans le tableau, ferme la modale et dit « Demande créée ». ⚠️ La ligne est rendue par la vue
   /// partielle <c>_RequestRow</c>, celle du tableau : le script n'en écrit aucun mot.
   /// </remarks>
-  public async Task<IActionResult> OnPostCreateAsync(CreationForm form, CancellationToken cancellationToken)
+  public async Task<IActionResult> OnPostCreateAsync(RequestForm form, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(form);
 

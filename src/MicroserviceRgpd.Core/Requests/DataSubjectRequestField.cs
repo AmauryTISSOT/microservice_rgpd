@@ -1,9 +1,9 @@
 namespace MicroserviceRgpd.Core.Requests;
 
 /// <summary>
-/// Les champs auxquels une erreur de <see cref="DataSubjectRequest.Receive"/> est rattachée. Ce
-/// sont les clés mêmes du corps envoyé par la page : une erreur rendue par le domaine se place sous
-/// son champ sans table de correspondance.
+/// <b>Les noms des champs du formulaire</b> — les clés mêmes du corps envoyé par la page. Une erreur
+/// rendue par le domaine s'y rattache, et se place sous son champ sans table de correspondance ;
+/// certains champs n'en portent jamais.
 /// </summary>
 public static class DataSubjectRequestField
 {
@@ -21,6 +21,9 @@ public static class DataSubjectRequestField
 
   /// <summary>L'email — qui porte aussi l'erreur d'identification.</summary>
   public const string Email = "email";
+
+  /// <summary>L'identité a-t-elle été vérifiée ? ⚠️ Aucun refus ne vise ce champ.</summary>
+  public const string IdentityVerified = "identityVerified";
 
   /// <summary>Le message.</summary>
   public const string Message = "message";

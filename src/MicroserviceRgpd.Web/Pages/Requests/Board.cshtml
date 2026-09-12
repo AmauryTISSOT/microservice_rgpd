@@ -25,7 +25,7 @@
     leurs mots, et les deux validations ne divergent pas sur le texte. Un `script` de type
     `application/json` ne s'exécute pas ; le navigateur le garde tel quel pour qui le lit.
   *@
-  <script type="application/json" id="create-request-messages">@Json.Serialize(DataSubjectRequestMessages.All)</script>
+  <script type="application/json" id="request-messages">@Json.Serialize(DataSubjectRequestMessages.All)</script>
   <script type="module" src="/js/requests-board.js"></script>
 }
 
@@ -151,9 +151,9 @@
   que le tag helper pose en dernier champ, caché. Le script l'envoie tel quel, par `fetch` ; aucun
   bouton ne le soumet nativement.
 *@
-<dialog class="modal" id="create-request" aria-labelledby="create-request-title">
+<dialog class="modal" id="request-dialog" aria-labelledby="request-dialog-title">
   <div class="modal-head">
-    <h2 id="create-request-title">Créer une nouvelle demande</h2>
+    <h2 id="request-dialog-title">Créer une nouvelle demande</h2>
     <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
@@ -162,10 +162,10 @@
     </button>
   </div>
 
-  <form id="create-request-form" class="modal-form" method="post" asp-page-handler="Create" novalidate>
+  <form id="request-form" class="modal-form" method="post" asp-page-handler="Create" novalidate>
     <p>
       <label for="request-origin">Origine</label>
-      <select id="request-origin" name="origin">
+      <select id="request-origin" name="@DataSubjectRequestField.Origin">
         @foreach (var origin in BoardModel.Origins)
         {
           <option value="@origin.Name" selected="@(origin == Origin.Email)">@origin.FrenchLabel</option>
@@ -203,7 +203,7 @@
     </p>
 
     <p class="check">
-      <input type="checkbox" id="request-identity-verified" name="identityVerified" value="true" />
+      <input type="checkbox" id="request-identity-verified" name="@DataSubjectRequestField.IdentityVerified" value="true" />
       <label for="request-identity-verified">Identité vérifiée</label>
     </p>
 
@@ -245,13 +245,13 @@
       anti-rejeu périmé, erreur du serveur, coupure réseau. Un refus de la saisie, lui, va sous ses
       champs. La modale reste ouverte et la saisie intacte : l'Operator réessaie sans rien ressaisir.
     *@
-    <p class="modal-failure" role="alert" id="create-request-failure" hidden>
+    <p class="modal-failure" role="alert" id="request-failure" hidden>
       La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer.
     </p>
 
     <div class="modal-actions">
       <button type="button" data-dismiss>Annuler</button>
-      <button type="button" class="primary" data-create>Créer</button>
+      <button type="button" class="primary" data-submit>Créer</button>
     </div>
   </form>
 </dialog>
