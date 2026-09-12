@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 namespace MicroserviceRgpd.FunctionalTests.Requests;
 
 /// <summary>
-/// Les handlers <c>POST /demandes?handler=Create</c> et <c>?handler=Delete</c>, <b>frappés
-/// directement</b> : avec le jeton anti-rejeu que la page rend et le cookie qui va avec — exactement
-/// ce que fait le navigateur —, et la table <c>data_subject_requests</c> relue telle qu'ils l'ont
-/// laissée.
+/// Les handlers de <c>/demandes</c> — <c>POST ?handler=Create</c>, <c>POST ?handler=Delete</c> et
+/// <c>GET ?handler=Values</c> —, <b>frappés directement</b> : avec le jeton anti-rejeu que la page
+/// rend et le cookie qui va avec — exactement ce que fait le navigateur —, et la table
+/// <c>data_subject_requests</c> relue telle qu'ils l'ont laissée.
 /// </summary>
 internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factory)
 {
@@ -18,6 +18,8 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
   internal const string Create = "/demandes?handler=Create";
 
   internal const string Delete = "/demandes?handler=Delete";
+
+  internal const string Values = "/demandes?handler=Values";
 
   private readonly HttpClient _client = factory.CreateClient(
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
@@ -73,6 +75,16 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
 
     return ((await RowOfAsync(request["message"]))["id"].ShouldBeOfType<Guid>(), request["message"]);
   }
+
+  /// <summary>Demande les valeurs saisies de la demande <paramref name="id"/>.</summary>
+  internal Task<HttpResponseMessage> ValuesOfAsync(Guid id) => ValuesOfAsync(id.ToString());
+
+  /// <summary>
+  /// Demande les valeurs saisies sous cet identifiant brut. ⚠️ <b>Aucun jeton anti-rejeu</b> : c'est
+  /// un GET, il ne change rien.
+  /// </summary>
+  internal async Task<HttpResponseMessage> ValuesOfAsync(string id) =>
+    await _client.GetAsync($"{Values}&id={Uri.EscapeDataString(id)}");
 
   /// <summary>Demande la suppression de la demande <paramref name="id"/>, jeton anti-rejeu compris.</summary>
   internal Task<HttpResponseMessage> DeleteAsync(Guid id) => DeleteAsync(id.ToString());

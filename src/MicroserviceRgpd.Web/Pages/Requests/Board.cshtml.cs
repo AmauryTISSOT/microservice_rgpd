@@ -2,6 +2,7 @@ using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.DeleteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestValues;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -62,6 +63,44 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   }
 
   /// <summary>
+  /// <b>Rend les huit valeurs saisies d'une demande</b> en JSON, sous les clés mêmes du formulaire,
+  /// et répond 200 — ou 404 quand la demande n'existe plus, ou 400 quand l'identifiant n'en est pas
+  /// un.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>200 même sur une demande close.</b> Lire n'est pas modifier : refuser la lecture ferait de
+  /// ce point de consultation le gardien d'une règle d'écriture.
+  /// </para>
+  /// <para>
+  /// Comme la création et la suppression, c'est un handler de la page, pas une API : aucune route
+  /// publique ne rend une demande, et le document Swagger n'en dit rien.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnGetValuesAsync(string? id, CancellationToken cancellationToken)
+  {
+    if (ReadId(id) is not { } dataSubjectRequest)
+    {
+      return BadRequest();
+    }
+
+    var read = await mediator.Send(new ReadDataSubjectRequestValuesQuery(dataSubjectRequest), cancellationToken);
+
+    if (read.Status is not ResultStatus.Ok)
+    {
+      return read.Status is ResultStatus.NotFound
+        ? NotFound()
+        : StatusCode(StatusCodes.Status500InternalServerError);
+    }
+
+    // ⚠️ Rien n'est gardé : la modale relit ces valeurs après chaque modification, et un cache de
+    // navigateur lui rendrait celles d'avant.
+    Response.Headers.CacheControl = "no-store";
+
+    return new JsonResult(RequestForm.Of(read.Value));
+  }
+
+  /// <summary>
   /// <b>Enregistre une demande</b> et répond 201, avec pour corps <b>la ligne de la nouvelle
   /// demande</b> — ou 400 <c>ValidationProblem</c>, les refus indexés par les clés du corps, sans rien
   /// avoir enregistré.
@@ -110,8 +149,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   /// </remarks>
   public async Task<IActionResult> OnPostDeleteAsync(string? id, CancellationToken cancellationToken)
   {
-    // L'écran ne poste que l'identifiant qu'il a rendu : un autre n'est pas une saisie, mais un envoi forgé.
-    if (!Guid.TryParse(id, out var guid) || !DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest))
+    if (ReadId(id) is not { } dataSubjectRequest)
     {
       return BadRequest();
     }
@@ -127,6 +165,20 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
       _ => StatusCode(StatusCodes.Status500InternalServerError),
     };
   }
+
+  /// <summary>
+  /// L'identifiant d'une demande, tel qu'un handler le reçoit — <b>ou rien, et c'est un 400</b>,
+  /// jamais un 404 : ce n'est pas une demande introuvable, que l'écran lirait comme une réussite
+  /// (ADR-0022).
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'écran ne nomme que les identifiants qu'il a rendus</b> : un autre n'est pas une saisie
+  /// de l'<c>Operator</c>, mais un envoi forgé.
+  /// </remarks>
+  private static DataSubjectRequestId? ReadId(string? id) =>
+    Guid.TryParse(id, out var guid) && DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest)
+      ? dataSubjectRequest
+      : null;
 
   private static ObjectResult ValidationProblem(IDictionary<string, string[]> errors) =>
     new(new ValidationProblemDetails(errors) { Status = StatusCodes.Status400BadRequest })
