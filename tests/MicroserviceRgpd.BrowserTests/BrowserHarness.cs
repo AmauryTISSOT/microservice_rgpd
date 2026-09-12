@@ -86,23 +86,34 @@ public sealed class BrowserHarness : IAsyncLifetime
   /// <summary>
   /// Enregistre une demande valide de cette personne <b>par le use case</b>, sans passer par la
   /// modale ; rend son message unique, qui la retrouve en base. Ce qui n'est pas donné est absent, et
-  /// la demande est reçue le 15/01/2026.
+  /// la demande est reçue le 15/01/2026, par email, d'une identité non vérifiée, au droit d'accès.
   /// </summary>
+  /// <remarks>
+  /// Les quatre derniers champs se donnent aussi, pour qui doit relire une demande dont <b>aucune</b>
+  /// valeur n'est celle par défaut de la modale : un pré-remplissage qui ne ferait rien se lirait
+  /// alors comme une réussite.
+  /// </remarks>
   public async Task<string> RecordRequestAsync(
-    string lastName = "", string firstName = "", string email = "", string receivedOn = "2026-01-15")
+    string lastName = "",
+    string firstName = "",
+    string email = "",
+    string receivedOn = "2026-01-15",
+    Origin? origin = null,
+    bool identityVerified = false,
+    string right = "Access")
   {
     using var scope = Service.Services.CreateScope();
     var message = $"Je souhaite accéder à mes données. {Guid.NewGuid()}";
 
     var entry = new DataSubjectRequestEntry(
-      Origin: Origin.Email,
+      Origin: origin ?? Origin.Email,
       ReceivedOn: receivedOn,
       LastName: lastName,
       FirstName: firstName,
       Email: email,
-      IdentityVerified: false,
+      IdentityVerified: identityVerified,
       Message: message,
-      Right: "Access");
+      Right: right);
 
     (await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new RecordDataSubjectRequestCommand(entry)))
       .IsSuccess.ShouldBeTrue();
