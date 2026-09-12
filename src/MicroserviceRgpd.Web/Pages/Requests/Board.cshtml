@@ -8,6 +8,16 @@
 
   // Le format ISO est celui du champ de date et du fil ; jj/mm/aaaa n'est que ce que le navigateur affiche.
   var today = Model.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+  // LES MOTS ET LES ROUTES DES DEUX GESTES, ÉCRITS ICI UNE SEULE FOIS. La modale les porte tous les
+  // deux en `data-*`, et rend ceux de la création : c'est son état au chargement.
+  var createTitle = "Créer une nouvelle demande";
+  var createSubmit = "Créer";
+  var createAction = Url.Page(null, "Create");
+  var modifyTitle = "Modifier la demande";
+  var modifySubmit = "Modifier";
+  var modifyAction = Url.Page(null, "Modify");
+  var valuesAction = Url.Page(null, "Values");
 }
 
 @*
@@ -100,7 +110,7 @@
   LE CADRE EST UNE RÉGION NOMMÉE, ET IL PREND LE FOCUS : sans souris, c'est lui que les flèches font
   défiler — une zone qui défile sans pouvoir être atteinte au clavier ne défile pour personne.
 *@
-<div class="table-frame" role="region" aria-label="Liste des demandes" tabindex="0">
+<div class="table-frame" id="requests-frame" role="region" aria-label="Liste des demandes" tabindex="0">
   <table class="queue" id="requests">
     <thead>
       <tr>
@@ -130,8 +140,19 @@
 </div>
 
 @*
-  LA MODALE DE CRÉATION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Un `dialog` natif : le
-  navigateur en tient le focus, le fond et la touche Échap, que le module n'a plus qu'à écouter.
+  LA MODALE, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Un `dialog` natif : le navigateur en
+  tient le focus, le fond et la touche Échap, que le module n'a plus qu'à écouter.
+
+  UNE SEULE MODALE SERT LES DEUX GESTES — créer une demande, en modifier une. ⚠️ LE SERVEUR REND
+  TOUS LES MOTS DES DEUX MODES EN `data-*` : les titres, les libellés du bouton primaire et les
+  actions du formulaire. Le module bascule `data-mode` et recopie ceux du mode choisi ; il n'écrit
+  aucun libellé, ne connaît aucune route.
+
+  CE QU'ELLE REND, C'EST LE MODE CRÉATION : son titre, son bouton, son formulaire vide. C'est son
+  état au chargement, et l'état par défaut que le module retrouve à chaque ouverture.
+
+  `data-values` EST LA ROUTE QUI REND LES VALEURS D'UNE DEMANDE, celle que le crayon d'une ligne
+  fait lire avant d'ouvrir le mode modification.
 
   LE FORMULAIRE SUIT L'ORDRE DE LECTURE D'UNE DEMANDE REÇUE : d'où elle vient, quand, de qui, ce
   qu'elle dit, quel droit elle invoque. Ce que le serveur rend ici est l'état par défaut du
@@ -151,9 +172,12 @@
   que le tag helper pose en dernier champ, caché. Le script l'envoie tel quel, par `fetch` ; aucun
   bouton ne le soumet nativement.
 *@
-<dialog class="modal" id="request-dialog" aria-labelledby="request-dialog-title">
+<dialog class="modal" id="request-dialog" aria-labelledby="request-dialog-title" data-mode="create"
+        data-create-title="@createTitle" data-create-submit="@createSubmit" data-create-action="@createAction"
+        data-modify-title="@modifyTitle" data-modify-submit="@modifySubmit" data-modify-action="@modifyAction"
+        data-values="@valuesAction">
   <div class="modal-head">
-    <h2 id="request-dialog-title">Créer une nouvelle demande</h2>
+    <h2 id="request-dialog-title">@createTitle</h2>
     <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
@@ -249,27 +273,38 @@
       La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer.
     </p>
 
+    @*
+      L'IDENTIFIANT DE LA DEMANDE MODIFIÉE, CACHÉ ET VIDE : la création n'en a pas, et ce n'est pas
+      une donnée saisie — il ne compte pas parmi les huit champs. Le module l'y pose à l'ouverture
+      d'une modification, et la remise à zéro l'efface.
+    *@
+    <input type="hidden" name="id" />
+
     <div class="modal-actions">
       <button type="button" data-dismiss>Annuler</button>
-      <button type="button" class="primary" data-submit>Créer</button>
+      <button type="button" class="primary" data-submit>@createSubmit</button>
     </div>
   </form>
 </dialog>
 
 @*
   LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée », « Demande
-  supprimée » ou l'échec d'une suppression — les mots que la page lui donne ici — quand une modale se
-  ferme sur une création ou sur une suppression, et l'efface quelques secondes plus tard. Il est hors
-  des modales, qui viennent de se fermer ; `role="status"` le fait lire sans voler le focus.
+  supprimée », l'échec d'une suppression ou celui d'un pré-remplissage — les mots que la page lui
+  donne ici — quand une modale se ferme sur une création ou sur une suppression, ou quand le crayon
+  d'une ligne n'a pas pu lire sa demande, et l'efface quelques secondes plus tard. Il est hors des
+  modales, qui viennent de se fermer ou ne se sont pas ouvertes ; `role="status"` le fait lire sans
+  voler le focus.
 *@
 <p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"
-   data-deletion-failed="La suppression a échoué, veuillez réessayer."></p>
+   data-deletion-failed="La suppression a échoué, veuillez réessayer."
+   data-load-failed="La demande n'a pas pu être chargée."></p>
 
 @*
   LA CONFIRMATION D'ABANDON, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Le module l'ouvre
-  par-dessus la modale de création quand l'Operator la ferme — par l'un des quatre modes — alors
-  que sa saisie diffère des valeurs par défaut. Elle est sœur de la modale, et non dedans : chacune
-  est un `dialog` entier.
+  par-dessus la modale quand l'Operator la ferme — par l'un des quatre modes — alors que sa saisie
+  diffère de celle qu'il a trouvée à l'ouverture : les valeurs par défaut en création, celles de la
+  demande en modification. Elle est sœur de la modale, et non dedans : chacune est un `dialog`
+  entier.
 
   ⚠️ « CONTINUER LA SAISIE » A LE FOCUS PAR DÉFAUT (`autofocus`, que `showModal` honore) : une touche
   Entrée réflexe ramène au formulaire intact, et ne détruit rien. C'est aussi l'action principale,

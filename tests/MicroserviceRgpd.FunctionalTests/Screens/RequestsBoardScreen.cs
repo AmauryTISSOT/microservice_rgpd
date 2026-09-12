@@ -148,6 +148,60 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>La modale porte les mots et les routes des deux gestes</b>, en <c>data-*</c> : les titres,
+  /// les libellés de son bouton primaire et les actions de son formulaire, pour la création comme
+  /// pour la modification — plus la route qui rend les valeurs d'une demande. Le module n'écrit
+  /// aucun libellé et ne connaît aucune route ; il bascule d'un mode à l'autre.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ce que la modale rend est le mode création</b> : son titre et son bouton sont ceux de ce
+  /// mode-là, et <c>data-mode</c> le dit. C'est son état au chargement.
+  /// </remarks>
+  [Fact]
+  public async Task HandsTheWordsAndTheRoutesOfBothGesturesToTheScript()
+  {
+    var dialog = DialogNamed(LayoutSurface.MainOf(await _layout.ReadAsync(Board)), DialogTitle);
+    var attributes = dialog.Groups["attributes"].Value;
+
+    DataOf(attributes, "mode").ShouldBe("create", "La modale ne s'ouvre pas sur le mode création.");
+
+    DataOf(attributes, "create-title").ShouldBe(DialogTitle);
+    DataOf(attributes, "create-submit").ShouldBe("Créer");
+    DataOf(attributes, "create-action").ShouldBe("/demandes?handler=Create");
+
+    DataOf(attributes, "modify-title").ShouldBe("Modifier la demande");
+    DataOf(attributes, "modify-submit").ShouldBe("Modifier");
+    DataOf(attributes, "modify-action").ShouldBe("/demandes?handler=Modify");
+
+    DataOf(attributes, "values").ShouldBe("/demandes?handler=Values");
+
+    // Les mots rendus sont ceux du mode création, et le formulaire y envoie.
+    NameOf(dialog).ShouldBe(DialogTitle, "Le titre rendu n'est pas celui de la création.");
+    LayoutSurface.TextIn(ButtonsIn(dialog.Value)[^1].Contents).ShouldBe("Créer");
+    Regex.Match(dialog.Value, @"<form\b[^>]*\baction=""([^""]+)""").Groups[1].Value
+      .ShouldBe("/demandes?handler=Create", "Le formulaire n'envoie pas à la création.");
+  }
+
+  /// <summary>
+  /// <b>La modale porte l'identifiant de la demande modifiée</b>, caché et vide : la création n'en a
+  /// pas, et ce n'est pas une donnée saisie. C'est le module qui l'y pose.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheModifiedRequestIdentifierHiddenAndEmpty()
+  {
+    var dialog = DialogNamed(LayoutSurface.MainOf(await _layout.ReadAsync(Board)), DialogTitle).Value;
+
+    var identifier = Regex.Matches(dialog, @"<input\b([^>]*)>")
+      .Select(input => input.Groups[1].Value)
+      .Where(attributes => Regex.IsMatch(attributes, @"\bname=""id"""))
+      .ShouldHaveSingleItem("La modale ne porte pas un et un seul champ « id ».");
+
+    identifier.ShouldContain(@"type=""hidden""", Case.Sensitive, "L'identifiant de la demande se lit.");
+    Regex.Match(identifier, @"\bvalue=""([^""]*)""").Groups[1].Value
+      .ShouldBeEmpty("L'identifiant de la demande est rempli avant qu'une ligne l'ait choisie.");
+  }
+
+  /// <summary>
   /// <b>La confirmation d'abandon dit ce qu'elle coûte</b> : une modale d'alerte, décrite par
   /// « Les informations saisies seront perdues. », qui porte « Abandonner » puis « Continuer la
   /// saisie ». Aucun des deux ne soumet quoi que ce soit.
@@ -273,6 +327,14 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
     addresses.ShouldNotContain(
       address => address.StartsWith("/dossiers", StringComparison.Ordinal),
       "Un lien de l'accueil mène encore au tableau des dossiers.");
+  }
+
+  /// <summary>La valeur d'un attribut <c>data-*</c>, ou <see langword="null"/> s'il est absent.</summary>
+  private static string? DataOf(string attributes, string name)
+  {
+    var match = Regex.Match(attributes, $@"(?:^|\s)data-{Regex.Escape(name)}=""([^""]*)""");
+
+    return match.Success ? match.Groups[1].Value : null;
   }
 
   /// <summary>Une modale entière, balise ouvrante comprise : ses attributs, puis ce qu'elle porte.</summary>

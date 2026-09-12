@@ -14,6 +14,11 @@
 // La poubelle de chaque ligne ouvre la confirmation de suppression, avec la phrase de sa ligne ;
 // « Supprimer définitivement » l'envoie au handler de la page, et la ligne s'en va sans rechargement —
 // sauf échec, que le toast dit.
+//
+// Le crayon d'une ligne ouvre la MÊME modale, pré-remplie des valeurs que le serveur rend pour sa
+// demande : une seule modale sert les deux gestes, et c'est `data-mode` qui dit lequel est en cours.
+// Les mots et les routes des deux modes viennent du serveur (Board.cshtml) ; le module n'en écrit
+// aucun. À la fermeture, le focus revient au bouton qui a ouvert la modale.
 
 // LA RECHERCHE. Elle filtre les lignes que le serveur a rendues, sans revenir à lui : une demande
 // reste affichée si son email, son nom ou son prénom — ceux que la ligne porte en `data-*`, tels
@@ -102,13 +107,40 @@ function applySort() {
 sort.addEventListener("change", applySort);
 
 const dialog = document.getElementById("request-dialog");
+const dialogTitle = document.getElementById("request-dialog-title");
 const confirmation = document.getElementById("abandon-entry");
 const opener = document.getElementById("create-request-open");
 const form = document.getElementById("request-form");
 const receivedOn = form.elements.namedItem("receivedOn");
+const identifier = form.elements.namedItem("id");
 const submitButton = form.querySelector("[data-submit]");
 const failure = document.getElementById("request-failure");
 const toast = document.getElementById("requests-toast");
+
+// LES DEUX GESTES QUE LA MODALE SERT, avec les mots et la route de chacun : ceux que le serveur a
+// rendus en `data-*` sur la modale. Le module bascule d'un mode à l'autre à l'ouverture ; il n'écrit
+// aucun libellé et ne connaît aucune route.
+const modes = {
+  create: {
+    title: dialog.dataset.createTitle,
+    submit: dialog.dataset.createSubmit,
+    action: dialog.dataset.createAction,
+  },
+  modify: {
+    title: dialog.dataset.modifyTitle,
+    submit: dialog.dataset.modifySubmit,
+    action: dialog.dataset.modifyAction,
+  },
+};
+
+// Le mode devient celui de la modale : le titre, le libellé du bouton primaire et l'action du
+// formulaire sont ceux du geste en cours, et `data-mode` dit lequel c'est.
+function applyMode(mode) {
+  dialog.dataset.mode = mode;
+  dialogTitle.textContent = modes[mode].title;
+  submitButton.textContent = modes[mode].submit;
+  form.action = modes[mode].action;
+}
 
 // Les dix messages, écrits par le serveur (DataSubjectRequestMessages) : le module n'en écrit aucun.
 const messages = JSON.parse(document.getElementById("request-messages").textContent);
@@ -149,6 +181,10 @@ function isModified() {
 // précédente. Les valeurs par défaut sont celles que le serveur a rendues, sauf « aujourd'hui », qui
 // est recalculé ici — une page restée ouverte au-delà de minuit ne doit ni proposer la veille, ni
 // interdire le jour même. Il devient la valeur par défaut du champ, et non seulement sa valeur.
+//
+// ⚠️ LA REMISE À ZÉRO SE FAIT À L'OUVERTURE, PAS À LA FERMETURE : une modale fermée par erreur doit
+// pouvoir être rouverte sur sa saisie — c'est ce que fait `reopenAndConfirm` — et n'a donc pas déjà
+// été vidée. L'identifiant caché s'efface ici avec le reste : une création n'en a pas.
 function resetToDefaults() {
   form.reset();
 
@@ -157,10 +193,10 @@ function resetToDefaults() {
   receivedOn.defaultValue = today;
   receivedOn.value = today;
 
+  identifier.value = "";
+
   forgetRefusals();
   failure.hidden = true;
-
-  valuesAtOpening = rawValues();
 }
 
 // LES RÈGLES SONT CELLES DU SERVICE (DataSubjectRequest.Receive), recopiées une à une pour que le
@@ -313,6 +349,10 @@ function showRefusals(refusals) {
 
 // « CRÉER » RESTE CLIQUABLE HORS ENVOI : chaque clic juge toute la saisie, affiche chaque refus sous
 // son champ et donne le focus au premier. Une saisie sans refus part au serveur.
+//
+// ⚠️ L'ENREGISTREMENT D'UNE MODIFICATION N'EST PAS ENCORE ÉCRIT : le formulaire part alors à l'action
+// du mode modification, qu'aucun handler ne sert encore — rien n'est enregistré, et le bandeau
+// d'échec le dit. C'est l'US suivante qui le branche.
 function attemptCreation() {
   refusedByTheServer = new Map();
   showRefusals(refusalsOfTheEntry());
@@ -454,14 +494,70 @@ function revalidateTheFieldsInError() {
   }
 }
 
-function open() {
+// Le premier champ du formulaire : celui qui prend le focus à l'ouverture.
+const firstField = form.elements.namedItem("origin");
+
+// LE BOUTON QUI A OUVERT LA MODALE — le crayon d'une ligne, ou « Créer une demande » : c'est à lui
+// que le focus revient à la fermeture, quelle qu'en soit la façon.
+let openedBy = null;
+
+const frame = document.getElementById("requests-frame");
+
+// L'OUVERTURE, LA MÊME POUR LES DEUX GESTES : le formulaire repart de zéro, le mode pose ses mots et
+// sa route, puis la modification seule y verse les valeurs de sa demande et son identifiant. L'état
+// de départ n'est relevé qu'ensuite : c'est à lui, et non aux valeurs par défaut, que « modifié » se
+// comparera — une correction ramenée à ce qu'elle était ne modifie rien.
+function open(mode, { values, id, from }) {
   resetToDefaults();
+  applyMode(mode);
+
+  if (values) {
+    fill(values);
+    identifier.value = id;
+  }
+
+  valuesAtOpening = rawValues();
+  openedBy = from;
+
   dialog.showModal();
 
   // `showModal` donnerait le focus à la croix, premier élément focalisable de la modale : il va au
-  // premier champ, pour que la saisie commence aussitôt.
-  form.elements[0].focus();
+  // premier champ, pour que la saisie — ou la correction — commence aussitôt.
+  firstField.focus();
 }
+
+// LES VALEURS ENREGISTRÉES ENTRENT DANS LES CHAMPS, chacune sous la clé du champ qu'elle remplit :
+// les noms mêmes du formulaire, des deux côtés (RequestForm). Un champ facultatif laissé vide
+// revient nul, et se lit vide.
+//
+// ⚠️ DES PROPRIÉTÉS, JAMAIS DES ATTRIBUTS. Écrire `value` ou `checked` en attribut ferait de la
+// demande chargée la valeur par défaut du formulaire : la remise à zéro la retrouverait, et la
+// modale de création ne s'ouvrirait plus jamais vide.
+function fill(values) {
+  for (const [name, value] of Object.entries(values)) {
+    const field = form.elements.namedItem(name);
+
+    if (!field) {
+      continue;
+    }
+
+    if (field.type === "checkbox") {
+      field.checked = value === true;
+    } else {
+      field.value = value ?? "";
+    }
+  }
+}
+
+// ⚠️ SI LA LIGNE A DISPARU entre-temps — supprimée depuis un autre onglet —, le focus va au cadre du
+// tableau, et non en haut de la page : sans souris, la navigation reprend là où elle en était.
+dialog.addEventListener("close", () => {
+  if (openedBy?.isConnected) {
+    openedBy.focus();
+  } else {
+    frame.focus();
+  }
+});
 
 function requestClose() {
   if (sending) {
@@ -475,7 +571,7 @@ function requestClose() {
   }
 }
 
-opener.addEventListener("click", open);
+opener.addEventListener("click", () => open("create", { from: opener }));
 submitButton.addEventListener("click", attemptCreation);
 form.addEventListener("input", revalidateTheFieldsInError);
 
@@ -573,12 +669,20 @@ const none = document.getElementById("requests-none");
 // La ligne dont la poubelle a ouvert la confirmation : c'est elle que la suppression retire.
 let rowToDelete = null;
 
-// Les lignes ne sont pas écoutées une à une : le tableau l'est, pour toutes à la fois.
+// Les lignes ne sont pas écoutées une à une : le tableau l'est, pour toutes à la fois — la poubelle
+// comme le crayon.
 requests.addEventListener("click", (event) => {
   const trash = event.target.closest('[data-action="delete"]');
 
   if (trash) {
     openDeletion(trash.closest("tr"));
+    return;
+  }
+
+  const pencil = event.target.closest('[data-action="edit"]');
+
+  if (pencil) {
+    openModification(pencil);
   }
 });
 
@@ -662,3 +766,97 @@ function removeTheDeletedRow() {
 }
 
 deleteButton.addEventListener("click", deleteForGood);
+
+// LA MODIFICATION D'UNE DEMANDE. Le crayon d'une ligne fait lire au serveur les huit valeurs de sa
+// demande, puis ouvre la modale en mode modification, pré-remplie : c'est la même modale, le même
+// formulaire et les mêmes règles qu'à la création. L'ouverture, l'abandon et le retour du focus sont
+// ici ; l'enregistrement viendra avec son US.
+//
+// ⚠️ LE CRAYON D'UNE DEMANDE CLOSE PORTE `aria-disabled`, JAMAIS `disabled` — pour que son infobulle
+// puisse dire pourquoi (voir _RequestRow.cshtml). Le module ne peut donc pas se fier à `disabled`
+// pour savoir si le geste est offert : c'est `aria-disabled` qu'il teste, et lui seul.
+const editAction = '[data-action="edit"]';
+
+function isOffered(pencil) {
+  return pencil.getAttribute("aria-disabled") !== "true";
+}
+
+// ⚠️ LE VERROU EST GLOBAL : pendant le chargement, TOUS les crayons du tableau sont éteints. Un
+// second clic sur une autre ligne ne peut donc pas lancer une seconde lecture, et « la modale s'ouvre
+// avec les valeurs de la mauvaise demande » devient structurellement impossible — il n'y a jamais
+// qu'une lecture en vol. Le verrou tombe à l'ouverture comme à l'échec.
+//
+// ⚠️ AUCUN TEXTE NE CHANGE : un libellé qui change sous le curseur déplace la mise en page, et fait
+// perdre au bouton son nom accessible en pleine action. Seuls `aria-busy` et `aria-disabled` bougent.
+//
+// ⚠️ UN CRAYON DÉJÀ ÉTEINT LE RESTE : le verrou ne rend `aria-disabled` qu'aux crayons à qui il l'a
+// posé. Une demande close ne redevient pas modifiable parce qu'un chargement s'est terminé.
+let pencilsDimmedByTheLoading = [];
+
+function lockThePencils() {
+  pencilsDimmedByTheLoading = [];
+
+  for (const pencil of requests.querySelectorAll(editAction)) {
+    pencil.setAttribute("aria-busy", "true");
+
+    if (isOffered(pencil)) {
+      pencil.setAttribute("aria-disabled", "true");
+      pencilsDimmedByTheLoading.push(pencil);
+    }
+  }
+
+  // ⚠️ « CRÉER UNE DEMANDE » EST VERROUILLÉ AUSSI : la modale est unique, et une création ouverte
+  // entre-temps serait écrasée par les valeurs qui arrivent. Lui n'a pas d'infobulle à montrer :
+  // `disabled` suffit.
+  opener.disabled = true;
+}
+
+function releaseThePencils() {
+  for (const pencil of requests.querySelectorAll(editAction)) {
+    pencil.removeAttribute("aria-busy");
+  }
+
+  for (const pencil of pencilsDimmedByTheLoading) {
+    pencil.removeAttribute("aria-disabled");
+  }
+
+  pencilsDimmedByTheLoading = [];
+  opener.disabled = false;
+}
+
+// LE CRAYON D'UNE LIGNE : les valeurs d'abord, la modale ensuite. Un pré-remplissage en échec
+// n'ouvre rien — le toast le dit, et la ligne reste à portée d'un second clic.
+async function openModification(pencil) {
+  if (!isOffered(pencil)) {
+    return;
+  }
+
+  const row = pencil.closest("tr");
+
+  lockThePencils();
+  const values = await readValues(row.dataset.requestId);
+  releaseThePencils();
+
+  if (!values) {
+    say(toast.dataset.loadFailed);
+    return;
+  }
+
+  open("modify", { values, id: row.dataset.requestId, from: pencil });
+}
+
+// Les huit valeurs d'une demande, ou rien du tout — 404 d'une demande supprimée ailleurs, erreur du
+// serveur, coupure réseau : toutes les issues sans valeurs se valent, et l'Operator lit la même
+// phrase. L'adresse est celle que la modale porte ; le module n'écrit aucune route.
+async function readValues(id) {
+  const address = new URL(dialog.dataset.values, document.baseURI);
+  address.searchParams.set("id", id);
+
+  try {
+    const response = await fetch(address, { headers: { Accept: "application/json" } });
+
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}
