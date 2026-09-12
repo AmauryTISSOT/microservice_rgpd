@@ -3,11 +3,15 @@ using MicroserviceRgpd.Core.Requests;
 namespace MicroserviceRgpd.Web.Pages.Requests;
 
 /// <summary>
-/// Ce que la modale de création envoie à <c>POST /demandes?handler=Create</c> — <b>des chaînes, et
-/// rien que des chaînes</b>, sous les clés mêmes du corps. Rien n'est trimé ni jugé ici : c'est
+/// <b>Les huit champs que l'<c>Operator</c> saisit</b> dans la modale — <b>des chaînes, et rien que
+/// des chaînes</b>, sous les clés mêmes du corps. Rien n'est trimé ni jugé ici : c'est
 /// <see cref="DataSubjectRequest.Receive"/> qui en décide.
 /// </summary>
-public sealed class CreationForm
+/// <remarks>
+/// ⚠️ <b>L'identifiant de la demande n'y entre pas</b> : ce n'est pas une donnée saisie. Un handler
+/// qui en a besoin le prend en paramètre, comme celui de la suppression.
+/// </remarks>
+public sealed class RequestForm
 {
   /// <summary>Le nom du canal d'arrivée — <c>Email</c> ou <c>Letter</c>.</summary>
   public string? Origin { get; set; }

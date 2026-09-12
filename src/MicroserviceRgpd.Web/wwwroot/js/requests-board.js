@@ -101,17 +101,17 @@ function applySort() {
 
 sort.addEventListener("change", applySort);
 
-const dialog = document.getElementById("create-request");
+const dialog = document.getElementById("request-dialog");
 const confirmation = document.getElementById("abandon-entry");
 const opener = document.getElementById("create-request-open");
-const form = document.getElementById("create-request-form");
+const form = document.getElementById("request-form");
 const receivedOn = form.elements.namedItem("receivedOn");
-const createButton = form.querySelector("[data-create]");
-const failure = document.getElementById("create-request-failure");
+const submitButton = form.querySelector("[data-submit]");
+const failure = document.getElementById("request-failure");
 const toast = document.getElementById("requests-toast");
 
 // Les dix messages, écrits par le serveur (DataSubjectRequestMessages) : le module n'en écrit aucun.
-const messages = JSON.parse(document.getElementById("create-request-messages").textContent);
+const messages = JSON.parse(document.getElementById("request-messages").textContent);
 
 // « AUJOURD'HUI » S'ENTEND À PARIS, comme côté serveur (ParisCalendar) : ni en UTC, ni au fuseau du
 // poste de l'Operator. Le format `en-CA` n'est qu'un moyen d'obtenir les trois parties en chiffres ;
@@ -337,7 +337,7 @@ let sending = false;
 
 async function send() {
   sending = true;
-  createButton.disabled = true;
+  submitButton.disabled = true;
   failure.hidden = true;
 
   const entry = new FormData(form);
@@ -367,7 +367,7 @@ async function send() {
     failure.hidden = false;
   } finally {
     sending = false;
-    createButton.disabled = false;
+    submitButton.disabled = false;
   }
 }
 
@@ -476,7 +476,7 @@ function requestClose() {
 }
 
 opener.addEventListener("click", open);
-createButton.addEventListener("click", attemptCreation);
+submitButton.addEventListener("click", attemptCreation);
 form.addEventListener("input", revalidateTheFieldsInError);
 
 // LA CONFIRMATION. « Continuer la saisie » ne referme qu'elle : le formulaire est là, intact.

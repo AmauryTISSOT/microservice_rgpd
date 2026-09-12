@@ -236,7 +236,7 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : les assertions suivantes seraient vides.");
     document.Paths.Keys.ShouldNotContain(path => path.StartsWith(RequestSurface.Board, StringComparison.Ordinal));
 
-    foreach (var word in new[] { "demandes", "DataSubjectRequest", "CreationForm", "receivedOn" })
+    foreach (var word in new[] { "demandes", "DataSubjectRequest", "RequestForm", "receivedOn" })
     {
       published.ShouldNotContain(word, Case.Insensitive, $"Le document Swagger publie « {word} ».");
     }
