@@ -1597,6 +1597,91 @@ dialog.modal.sheet > * {
   padding: var(--space-lg);
 }
 
+/*
+  ⚠️ LA FICHE S'EMPILE EN TROIS ZONES, ET SEULS SES BLOCS DÉFILENT : la tête et le pied restent en
+  vue, parce qu'ils portent les sorties. Un message de 10 000 caractères pousse alors la barre de
+  défilement des blocs, jamais la croix hors de l'écran.
+
+  ⚠️ LA DÉCLARATION VISE `[open]`, ET C'EST LA CONDITION DE SA SÛRETÉ : un `display` posé sur le
+  `dialog` lui-même l'emporterait sur le `display: none` que le navigateur donne à une surface
+  fermée, et la fiche ne se fermerait plus jamais. Et `min-height: 0` sur les blocs, sans quoi un
+  élément de colonne flexible refuse de rétrécir sous son contenu et déborde au lieu de défiler.
+*/
+dialog.modal.sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-body {
+  display: grid;
+  gap: var(--space-lg);
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/*
+  ⚠️ LES VALEURS SE COUPENT LÀ OÙ IL LE FAUT : un email d'une seule pièce n'offre aucune césure, et
+  la colonne des valeurs se réserverait sa largeur entière — la fiche déborderait par la droite
+  plutôt que de le replier. Ce que le tableau se permet sur toute la largeur d'un écran, une surface
+  de 30 rem ne se le permet pas.
+*/
+.sheet-body dd {
+  overflow-wrap: anywhere;
+}
+
+/*
+  LE TITRE D'UN BLOC EST L'INTITULÉ D'UN GROUPE DE VALEURS : il emprunte donc l'encre et la légende
+  des en-têtes de colonne du tableau, qui nomment exactement de la même façon — et non une taille de
+  titre, qui l'emporterait sur celui de la fiche.
+*/
+.sheet-body h3 {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  margin: 0;
+}
+
+/*
+  LE MESSAGE EST UN BLOC À PART, SOUS SON LIBELLÉ, et non un fait de la grille : dans deux colonnes
+  dont la première tient l'intitulé, 10 000 caractères dicteraient la hauteur de tout le bloc. Il
+  s'affiche TEL QU'ENREGISTRÉ, ses retours à la ligne conservés, et se coupe là où il le faut — un
+  mot sans espace ne le pousse pas hors de la fiche.
+*/
+.sheet-message {
+  margin-top: var(--space-md);
+}
+
+.sheet-message h4 {
+  font: var(--type-body-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--type-body-sm-tracking);
+  margin: 0 0 var(--space-xxs);
+}
+
+.sheet-message p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/*
+  LE SIGNALEMENT DE LA DATE LIMITE SE COLORE DANS LA FICHE AUSSI — la même orange, le même rouge en
+  gras : c'est le même signalement, et l'`Operator` le lit ici pendant qu'il lit le message.
+
+  ⚠️ IL NE COLORE QUE LA MENTION, quand la cellule de la ligne colore la date entière : là-bas la
+  colonne est étroite et la date se lit d'un bloc ; ici la valeur est déjà sous son libellé, et
+  teindre la date reviendrait à signaler deux fois.
+*/
+.sheet-body dd > [data-deadline-signal="DueSoon"] {
+  color: var(--signal-warning-ink);
+}
+
+.sheet-body dd > [data-deadline-signal="Overdue"] {
+  color: var(--signal-error);
+  font-weight: var(--weight-bold);
+}
+
 /* La sortie nommée, à droite : là où l'œil finit sa lecture, comme les actions d'une modale. */
 .sheet-foot {
   display: flex;

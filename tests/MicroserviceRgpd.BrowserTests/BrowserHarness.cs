@@ -136,6 +136,21 @@ public sealed class BrowserHarness : IAsyncLifetime
   }
 
   /// <summary>
+  /// Remplace le message de la demande enregistrée sous ce message <b>à même la table</b> — pour qui
+  /// doit lire un message que la modale n'écrirait pas, sur deux lignes par exemple.
+  /// </summary>
+  /// <remarks>⚠️ Le message est la clé qui retrouve la demande : après cet appel, c'est le nouveau.</remarks>
+  public async Task SetMessageAsync(string message, string replacement)
+  {
+    using var scope = Service.Services.CreateScope();
+
+    var updated = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .ExecuteSqlAsync($"UPDATE data_subject_requests SET message = {replacement} WHERE message = {message}");
+
+    updated.ShouldBe(1, "Le message n'a été posé sur aucune demande.");
+  }
+
+  /// <summary>
   /// Pose le statut de la demande enregistrée sous ce message <b>à même la table</b> — pour qui doit
   /// voir une demande close, qu'aucun <c>Gesture</c> ne sait encore produire.
   /// </summary>

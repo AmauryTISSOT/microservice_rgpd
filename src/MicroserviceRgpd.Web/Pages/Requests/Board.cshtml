@@ -384,9 +384,21 @@
   gestes restent sur la ligne, à un seul endroit. Les deux seuls boutons ferment.
 
   ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les cinq blocs titrés et les mots de chaque
-  valeur. ⚠️ SEULES LES VALEURS SONT VIDES : le titre — qui nomme la personne — et les cibles
-  `data-field` attendent que l'œil d'une ligne y verse ce que sa ligne porte. Le module ne compose
-  aucun libellé.
+  valeur. ⚠️ SEULES LES VALEURS SONT VIDES AU CHARGEMENT : le titre — qui nomme la personne — et les
+  cibles `data-field` attendent que l'œil d'une ligne y verse ce que sa ligne porte. Chaque cible se
+  nomme comme la cellule dont elle reçoit les nœuds ; le module ne compose aucun libellé, et n'écrit
+  que trois valeurs qu'aucune colonne ne montre — le titre, l'origine et le message.
+
+  ⚠️ AUCUNE CIBLE NE DISPARAÎT QUAND SA VALEUR MANQUE : la cellule porte alors « — », que la fiche
+  reçoit comme le reste. « Pas de prénom » doit se distinguer de « la fiche ne montre pas le
+  prénom », et la fiche garde la même forme d'une demande à l'autre.
+
+  ⚠️ L'IDENTIFIANT TECHNIQUE DE LA DEMANDE N'A AUCUNE CIBLE ICI, et n'en aura pas : aucune cellule ne
+  le porte, et il ne dit rien à l'`Operator`.
+
+  LES QUATRE FAITS D'UN BLOC EMPRUNTENT LA GRILLE DES FAITS NOMMÉS, `facts`, et n'inventent rien :
+  un intitulé, une valeur, chacun sur sa ligne. C'est aussi elle qui associe la valeur à son libellé
+  pour le lecteur d'écran.
 
   LES MOTS SONT CEUX DE L'ÉCRAN, et pas d'autres : « Origine » comme le formulaire de création,
   « Droit invoqué » comme le glossaire, « Date de création » et « Créé par » comme les colonnes du
@@ -397,8 +409,9 @@
   LE MESSAGE SORT DE LA LISTE DE DÉFINITIONS : c'est un bloc à part, sous son libellé. Dans la
   grille de la liste, 10 000 caractères dicteraient la hauteur de tout le bloc.
 
-  LE BLOC DU STATUT N'A QU'UNE VALEUR — le badge que l'US suivante y posera : son titre lui sert de
-  libellé, et un « Statut » de plus ne dirait rien que le titre ne dise déjà.
+  LE BLOC DU STATUT N'A QU'UNE VALEUR — le badge cloné depuis la cellule de la ligne, sous le même
+  nom canonique et le même mot : son titre lui sert de libellé, et un « Statut » de plus ne dirait
+  rien que le titre ne dise déjà.
 
   ⚠️ AUCUN ALLER-RETOUR RÉSEAU À L'OUVERTURE : tout ce que la fiche montre, la page l'a déjà sur la
   ligne. Pas d'état de chargement, pas d'état d'échec, rien à verrouiller.
@@ -420,7 +433,7 @@
   <div class="sheet-body">
     <section>
       <h3>La personne</h3>
-      <dl>
+      <dl class="facts">
         <dt>Nom</dt>
         <dd data-field="lastName"></dd>
         <dt>Prénom</dt>
@@ -434,7 +447,7 @@
 
     <section>
       <h3>La demande</h3>
-      <dl>
+      <dl class="facts">
         <dt>Droit invoqué</dt>
         <dd data-field="right"></dd>
         <dt>Origine</dt>
@@ -451,7 +464,7 @@
 
     <section>
       <h3>Le délai</h3>
-      <dl>
+      <dl class="facts">
         <dt>Date limite de réponse</dt>
         <dd data-field="responseDeadline"></dd>
       </dl>
@@ -464,7 +477,7 @@
 
     <section>
       <h3>L'enregistrement</h3>
-      <dl>
+      <dl class="facts">
         <dt>Date de création</dt>
         <dd data-field="createdAt"></dd>
         <dt>Créé par</dt>
