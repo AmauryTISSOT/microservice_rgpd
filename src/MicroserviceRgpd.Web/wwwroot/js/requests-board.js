@@ -1,7 +1,8 @@
-// LE TABLEAU DES DEMANDES RGPD : la recherche filtre les lignes à chaque frappe ; le bouton « Créer
-// une demande » ouvre la modale que le serveur a rendue, formulaire remis à zéro ; « Créer » juge la
-// saisie avec les règles du service, puis l'envoie au handler de la page ; et quatre modes de
-// fermeture la referment — « Annuler », la croix, Échap, un clic sur le fond.
+// LE TABLEAU DES DEMANDES RGPD : la recherche filtre les lignes à chaque frappe, le tri les
+// réordonne par date de réception ; le bouton « Créer une demande » ouvre la modale que le serveur a
+// rendue, formulaire remis à zéro ; « Créer » juge la saisie avec les règles du service, puis
+// l'envoie au handler de la page ; et quatre modes de fermeture la referment — « Annuler », la
+// croix, Échap, un clic sur le fond.
 //
 // ⚠️ L'OPERATOR NE PERD JAMAIS UNE SAISIE PAR MÉGARDE. Les quatre modes passent tous par
 // `requestClose` : un formulaire non modifié s'y ferme directement, un formulaire modifié y ouvre la
@@ -60,6 +61,40 @@ function emptySearch() {
 
 search.addEventListener("input", applySearch);
 clearButton.addEventListener("click", emptySearch);
+
+// LE TRI. Il réordonne les lignes que le serveur a rendues, sans revenir à lui, sur les clés que
+// chacune porte en `data-*` : la date de réception, puis l'instant d'enregistrement, qui départage
+// deux demandes reçues le même jour — dans le sens choisi, l'un comme l'autre. Les deux s'écrivent
+// en ISO, à largeur fixe : comparés comme des textes, ils se rangent comme des dates.
+//
+// ⚠️ LE TRI NE TOUCHE PAS À CE QUE LA RECHERCHE CACHE : il déplace les lignes, toutes, sans en
+// montrer ni en cacher aucune. Les résultats de la recherche en cours se lisent donc dans l'ordre
+// choisi, et une recherche vidée retrouve chaque ligne à sa place.
+//
+// Rien ne se trie au chargement : « la plus récente » est sélectionnée, et c'est l'ordre du serveur.
+const sort = document.getElementById("requests-sort");
+
+// Deux textes dans l'ordre croissant : négatif, nul ou positif, comme le veut `sort`.
+function ascending(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function byReceptionThenCreation(first, second) {
+  return (
+    ascending(first.dataset.receivedOn, second.dataset.receivedOn) ||
+    ascending(first.dataset.createdAt, second.dataset.createdAt)
+  );
+}
+
+function applySort() {
+  // Les valeurs des options sont celles que le serveur a rendues (Board.cshtml).
+  const direction = sort.value === "oldest" ? 1 : -1;
+  const sorted = [...rows].sort((first, second) => direction * byReceptionThenCreation(first, second));
+
+  tableBody.append(...sorted);
+}
+
+sort.addEventListener("change", applySort);
 
 const dialog = document.getElementById("create-request");
 const confirmation = document.getElementById("abandon-entry");

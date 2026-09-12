@@ -14,8 +14,8 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// auteur, statut, jusqu'à la phrase qui confirme la suppression. Le script de l'écran anime les
 /// lignes ; il n'en écrit aucun mot. La ligne porte aussi l'identifiant de sa demande, que la
 /// suppression envoie, le statut sous son <b>nom canonique</b>, que le badge porte pour que la
-/// feuille de style le colore, et la date de réception au <b>format ISO</b>, par laquelle le script
-/// place la ligne d'une demande qu'on vient de créer.
+/// feuille de style le colore, et ses <b>clés de tri</b>, par lesquelles le script ordonne les
+/// lignes et place celle d'une demande qu'on vient de créer.
 /// </remarks>
 public sealed record RequestRow(
   string Id,
@@ -23,7 +23,6 @@ public sealed record RequestRow(
   string Email,
   string LastName,
   string FirstName,
-  string ReceivedOnIso,
   string ReceivedOn,
   string ResponseDeadline,
   string IdentityVerified,
@@ -32,8 +31,29 @@ public sealed record RequestRow(
   string CreatedBy,
   string StatusLabel,
   string StatusName,
-  RequestRow.SearchableText Searchable)
+  RequestRow.SearchableText Searchable,
+  RequestRow.SortKeys Sort)
 {
+  /// <summary>
+  /// Ce que le tri compare sur la ligne : la date de réception en ISO (<c>aaaa-mm-jj</c>), puis,
+  /// pour départager deux demandes reçues le même jour, l'instant d'enregistrement en ISO, en UTC.
+  /// La date de réception est aussi la clé par laquelle le script place la ligne d'une demande qu'on
+  /// vient de créer.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le script les compare comme des textes</b> : l'ordre des textes n'est celui des dates que
+  /// si chacun s'écrit toujours à la même largeur. L'instant porte donc ses six décimales et son
+  /// <c>Z</c>, toujours — jamais un décalage, jamais des décimales en moins.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Six décimales, et non sept : c'est la microseconde que la table retient.</b> L'instant que
+  /// la demande tient en mémoire porte jusqu'au dixième de microseconde ; relu en base, il l'a
+  /// perdu. La ligne du 201 et celle du tableau doivent être la même, au caractère près.
+  /// </para>
+  /// </remarks>
+  public sealed record SortKeys(string ReceivedOn, string CreatedAt);
+
   /// <summary>
   /// Ce que la recherche parcourt sur la ligne : l'email, le nom et le prénom <b>tels
   /// qu'enregistrés</b>, vides s'ils sont absents. Le script les normalise, comme il normalise la saisie.
@@ -61,7 +81,6 @@ public sealed record RequestRow(
       request.Email?.Value ?? Absent,
       request.LastName?.Value ?? Absent,
       request.FirstName?.Value ?? Absent,
-      request.ReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
       Day(request.ReceivedOn),
       Day(request.ResponseDeadline),
       request.IdentityVerified ? "Oui" : "Non",
@@ -73,7 +92,10 @@ public sealed record RequestRow(
       new SearchableText(
         request.Email?.Value ?? string.Empty,
         request.LastName?.Value ?? string.Empty,
-        request.FirstName?.Value ?? string.Empty));
+        request.FirstName?.Value ?? string.Empty),
+      new SortKeys(
+        request.ReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        request.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'", CultureInfo.InvariantCulture)));
   }
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>

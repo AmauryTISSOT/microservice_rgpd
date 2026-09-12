@@ -608,6 +608,20 @@ table.queue:not(.columns) tbody tr:not([hidden]):not(:has(~ tr:not([hidden]))) t
 }
 
 /*
+  LES OUTILS DU TABLEAU, SUR UNE LIGNE AU-DESSUS DE LUI : la recherche en haut à gauche, le tri en
+  haut à droite, au bord droit du cadre. Sur un écran étroit, le tri passe sous la recherche plutôt
+  que de l'écraser.
+*/
+.board-tools {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  justify-content: space-between;
+  margin-top: var(--space-lg);
+}
+
+/*
   LA RECHERCHE DU TABLEAU, EN HAUT À GAUCHE : un champ de la largeur d'une adresse email, pas de
   celle du tableau. Le ✕ se pose dans le champ, à droite, et remplace celui du navigateur — deux
   croix diraient deux choses. Il ne se montre que s'il y a une recherche à vider.
@@ -615,7 +629,7 @@ table.queue:not(.columns) tbody tr:not([hidden]):not(:has(~ tr:not([hidden]))) t
 .board-search {
   align-items: center;
   display: flex;
-  margin-top: var(--space-lg);
+  flex: 1 1 16rem;
   max-width: 24rem;
   position: relative;
 }
@@ -640,6 +654,32 @@ button.board-search-clear {
 
 .board-search input:placeholder-shown + button.board-search-clear {
   visibility: hidden;
+}
+
+/*
+  LE TRI DU TABLEAU, EN HAUT À DROITE : son libellé à gauche du menu, sur la même ligne — un menu
+  large de sa plus longue option, pas de toute la place qu'on lui laisse.
+
+  ⚠️ SUR UN ÉCRAN ÉTROIT, IL NE DÉBORDE PAS : le menu passe sous son libellé, puis se rétrécit —
+  quitte à rogner son option —, plutôt que de faire défiler la page de côté.
+*/
+.board-sort {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs) var(--space-xs);
+  min-width: 0;
+}
+
+.board-sort label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.board-sort select {
+  max-width: 100%;
+  min-width: 0;
+  width: auto;
 }
 
 table.queue caption {

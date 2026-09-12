@@ -10,8 +10,8 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Sous le bouton, la recherche et le tableau des demandes enregistrées</b> : ces tests gardent
-/// que le tableau est là, seul ; ce qu'il rend, et la recherche, se gardent dans
+/// <b>Sous le bouton, la recherche, le tri et le tableau des demandes enregistrées</b> : ces tests
+/// gardent que le tableau est là, seul ; ce qu'il rend, la recherche et le tri se gardent dans
 /// <c>RequestConsultation</c>.
 /// </para>
 /// <para>
