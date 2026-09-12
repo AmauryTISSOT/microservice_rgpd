@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
+using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.FunctionalTests.Layout;
 
 namespace MicroserviceRgpd.FunctionalTests.Requests;
@@ -75,9 +76,10 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Une demande enregistrée se lit sur sa ligne</b>, chaque cellule sous le libellé que le
-  /// serveur lui donne : les dates de réception et limite de réponse en <c>jj/mm/aaaa</c>, « Oui »,
-  /// le droit avec une majuscule initiale et sans article du RGPD, « Opérateur », et le statut
-  /// « En cours » d'une demande qui naît. La cellule d'actions se garde dans
+  /// serveur lui donne : les dates de réception et limite de réponse en <c>jj/mm/aaaa</c> — la date
+  /// limite, antérieure à aujourd'hui, suivie de « En retard » —, « Oui », le droit avec une
+  /// majuscule initiale et sans article du RGPD, « Opérateur », et le statut « En cours » d'une
+  /// demande qui naît. La cellule d'actions se garde dans
   /// <see cref="CarriesThreeActionsOnEachRowNamedForAScreenReader"/>.
   /// </summary>
   [Fact]
@@ -98,7 +100,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     var row = await RowWithAsync(email);
 
-    row[..7].ShouldBe([email, "Martin", "Jeanne", "15/01/2026", "15/02/2026", "Oui", "Droit à l'effacement"]);
+    row[..7].ShouldBe([email, "Martin", "Jeanne", "15/01/2026", "15/02/2026 En retard", "Oui", "Droit à l'effacement"]);
     row[8..10].ShouldBe(["Opérateur", "En cours"]);
   }
 
@@ -255,7 +257,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
     var row = await RowWithAsync(email);
 
     row[3].ShouldBe("31/03/2026");
-    row[4].ShouldBe("30/04/2026");
+    row[4].ShouldBe("30/04/2026 En retard");
   }
 
   /// <summary>
@@ -271,7 +273,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
     await _surface.SetResponseDeadlineAsync(id, new DateOnly(2026, 6, 3));
 
-    (await RowWithAsync(email))[4].ShouldBe("03/06/2026");
+    (await RowWithAsync(email))[4].ShouldBe("03/06/2026 En retard");
   }
 
   /// <summary>
@@ -300,6 +302,111 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
     badge.Groups["attributes"].Value.ShouldContain(@"class=""status""", Case.Sensitive, "Le statut n'est pas rendu en badge.");
     badge.Groups["attributes"].Value.ShouldContain($@"data-status=""{status}""", Case.Sensitive, "Le badge ne porte pas le nom du statut.");
     LayoutSurface.TextIn(badge.Groups["text"].Value).ShouldBe(label);
+  }
+
+  /// <summary>
+  /// <b>La date limite d'une demande En cours est signalée par rapport à aujourd'hui</b> — « En
+  /// retard » la veille, « Échéance proche » le jour même et jusqu'à sept jours plus tard, rien au
+  /// huitième. Le signalement porte son nom, que la feuille de style colore, et sa mention se lit
+  /// après la date.
+  /// </summary>
+  /// <remarks>
+  /// L'horloge du service est <b>avancée</b> jusqu'au prochain 10 h UTC — le même jour à Paris, l'été
+  /// comme l'hiver, et loin de minuit —, et remise à l'heure réelle quoi qu'il arrive.
+  /// </remarks>
+  [Theory]
+  [InlineData(-1, "Overdue", "En retard")]
+  [InlineData(0, "DueSoon", "Échéance proche")]
+  [InlineData(7, "DueSoon", "Échéance proche")]
+  [InlineData(8, null, null)]
+  public async Task SignalsTheDeadlineOfARequestInProgressAgainstToday(int daysFromToday, string? signal, string? mention)
+  {
+    await AtTheNextAsync(TimeSpan.FromHours(10), async () =>
+    {
+      var deadline = ParisCalendar.Today(factory.Clock).AddDays(daysFromToday);
+      var email = $"{Guid.NewGuid():N}@example.org";
+      var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email });
+
+      await _surface.SetResponseDeadlineAsync(id, deadline);
+
+      var (attributes, text) = DeadlineCellWith(await BoardAsync(), email);
+      var day = deadline.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+      if (signal is null)
+      {
+        attributes.ShouldNotContain("data-deadline-signal", Case.Sensitive, "Une date limite lointaine est signalée.");
+        text.ShouldBe(day);
+      }
+      else
+      {
+        attributes.ShouldContain($@"data-deadline-signal=""{signal}""", Case.Sensitive, "La date limite ne porte pas son signalement.");
+        text.ShouldBe($"{day} {mention}");
+      }
+    });
+  }
+
+  /// <summary>
+  /// <b>Une demande Terminée ou Annulée n'est jamais signalée</b>, même au-delà de sa date limite :
+  /// seule une demande En cours attend encore une réponse.
+  /// </summary>
+  [Theory]
+  [InlineData("Completed")]
+  [InlineData("Cancelled")]
+  public async Task NeverSignalsARequestThatIsNoLongerInProgress(string status)
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email, ["receivedOn"] = "2026-01-15" });
+
+    await _surface.SetStatusAsync(id, status);
+
+    var (attributes, text) = DeadlineCellWith(await BoardAsync(), email);
+
+    attributes.ShouldNotContain("data-deadline-signal", Case.Sensitive, $"Une demande au statut {status} est signalée.");
+    text.ShouldBe("15/02/2026");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Seule la cellule de la date limite porte le signalement</b> : ni la ligne, ni aucune autre
+  /// cellule ne s'en colore.
+  /// </summary>
+  [Fact]
+  public async Task SignalsOnlyTheDeadlineCellNotTheRow()
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+
+    await CreateAsync(new() { ["email"] = email, ["receivedOn"] = "2026-01-15" });
+
+    var row = RowMarkupWith(await BoardAsync(), email);
+    var cells = Regex.Matches(row, @"<td\b[^>]*>").Select(cell => cell.Value).ToArray();
+
+    Regex.Match(row, @"<tr\b[^>]*>").Value.ShouldNotContain("deadline", Case.Sensitive, "La ligne entière porte le signalement.");
+    cells[4].ShouldContain(@"data-deadline-signal=""Overdue""", Case.Sensitive, "La date limite antérieure à aujourd'hui n'est pas signalée.");
+    cells.Where((_, index) => index != 4).ShouldAllBe(
+      cell => !cell.Contains("deadline", StringComparison.Ordinal),
+      "Une autre cellule que la date limite porte le signalement.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>« Aujourd'hui » est celui de Paris, pas celui de l'UTC.</b> À 23 h 30 UTC, il est déjà le
+  /// lendemain à Paris, l'été comme l'hiver : une date limite tombée le jour UTC est déjà En retard.
+  /// Lu en UTC, ce serait le jour même — « Échéance proche ».
+  /// </summary>
+  [Fact]
+  public async Task ReadsTodayInParisWhileItIsStillTheDayBeforeInUtc()
+  {
+    await AtTheNextAsync(new TimeSpan(23, 30, 0), async () =>
+    {
+      var todayInUtc = DateOnly.FromDateTime(factory.Clock.GetUtcNow().UtcDateTime);
+      ParisCalendar.Today(factory.Clock).ShouldBe(todayInUtc.AddDays(1), "Il n'est pas déjà le lendemain à Paris.");
+
+      var email = $"{Guid.NewGuid():N}@example.org";
+      var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email });
+
+      await _surface.SetResponseDeadlineAsync(id, todayInUtc);
+
+      DeadlineCellWith(await BoardAsync(), email).Attributes
+        .ShouldContain(@"data-deadline-signal=""Overdue""", Case.Sensitive, "« Aujourd'hui » n'est pas lu à Paris.");
+    });
   }
 
   /// <summary>
@@ -567,6 +674,42 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
     .. Regex.Matches(RowMarkupWith(main, marker), @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)
       .Select(cell => cell.Groups[1].Value),
   ];
+
+  /// <summary>
+  /// La cellule de la date limite de la ligne qui porte <paramref name="marker"/> : les attributs de sa
+  /// balise, et son texte.
+  /// </summary>
+  private static (string Attributes, string Text) DeadlineCellWith(string main, string marker)
+  {
+    var cell = Regex.Matches(RowMarkupWith(main, marker), @"<td\b(?<attributes>[^>]*)>(?<content>.*?)</td>", RegexOptions.Singleline)[4];
+
+    return (cell.Groups["attributes"].Value, LayoutSurface.TextIn(cell.Groups["content"].Value));
+  }
+
+  /// <summary>
+  /// Avance l'horloge du service jusqu'à la prochaine <paramref name="timeOfDayInUtc"/> UTC, y joue
+  /// <paramref name="act"/>, et la remet à l'heure réelle quoi qu'il arrive.
+  /// </summary>
+  private async Task AtTheNextAsync(TimeSpan timeOfDayInUtc, Func<Task> act)
+  {
+    var now = factory.Clock.GetUtcNow();
+    var next = new DateTimeOffset(now.UtcDateTime.Date + timeOfDayInUtc, TimeSpan.Zero);
+    if (next <= now)
+    {
+      next = next.AddDays(1);
+    }
+
+    factory.Clock.Advance(next - now);
+
+    try
+    {
+      await act();
+    }
+    finally
+    {
+      factory.Clock.Reset();
+    }
+  }
 
   /// <summary>La valeur de l'attribut <paramref name="name"/>, décodée comme le navigateur la lit.</summary>
   private static string AttributeOf(string attributes, string name)

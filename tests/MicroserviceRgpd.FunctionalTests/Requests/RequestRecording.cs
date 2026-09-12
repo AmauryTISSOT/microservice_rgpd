@@ -71,9 +71,11 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
       .Select(cell => LayoutSurface.TextIn(cell.Groups[1].Value))
       .ToArray();
 
-    cells[..7].ShouldBe([email, "Martin", "Jeanne", "31/01/2026", "28/02/2026", "Non", "Droit à l'effacement"]);
+    // La ligne du 201 est celle du tableau : la date limite, antérieure à aujourd'hui, y est signalée de même.
+    cells[..7].ShouldBe([email, "Martin", "Jeanne", "31/01/2026", "28/02/2026 En retard", "Non", "Droit à l'effacement"]);
     cells[8..10].ShouldBe(["Opérateur", "En cours"]);
     row.ShouldContain(@"data-status=""InProgress""");
+    row.ShouldContain(@"data-deadline-signal=""Overdue""", customMessage: "La ligne du 201 ne signale pas sa date limite.");
     row.ShouldContain(@"data-received-on=""2026-01-31""", customMessage: "La ligne ne porte pas sa date de réception ISO, qui la place.");
 
     var stored = await _surface.RowOfAsync(fields["message"]);

@@ -25,6 +25,11 @@
 
   Chaque icône est un seul tracé de 16 × 16, au trait de l'encre du bouton.
 
+  LA DATE LIMITE D'UNE DEMANDE EN COURS PEUT ÊTRE SIGNALÉE — « Échéance proche », « En retard » —,
+  par le serveur, contre « aujourd'hui » à Paris (ADR-0021). ⚠️ SEULE LA CELLULE PORTE LE
+  SIGNALEMENT, jamais la ligne : son nom canonique, que la feuille de style colore, et son libellé,
+  écrit après la date. Le script ne le recalcule pas.
+
   LE STATUT EST UN BADGE, qui porte le nom canonique du statut : c'est ce nom que la feuille de style
   colore, et le libellé seul qui se lit.
 
@@ -54,7 +59,14 @@
   <td>@Model.LastName</td>
   <td>@Model.FirstName</td>
   <td>@Model.ReceivedOn</td>
-  <td>@Model.ResponseDeadline</td>
+  @if (Model.DeadlineSignal is { } signal)
+  {
+    <td data-deadline-signal="@signal.Name">@Model.ResponseDeadline <span>@signal.Label</span></td>
+  }
+  else
+  {
+    <td>@Model.ResponseDeadline</td>
+  }
   <td>@Model.IdentityVerified</td>
   <td>@Model.Right</td>
   <td>@Model.CreatedAt</td>

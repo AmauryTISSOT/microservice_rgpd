@@ -11,11 +11,12 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>Tous les libellés sont rendus par le serveur</b> — tirets, dates, « Oui/Non », droit,
-/// auteur, statut, jusqu'à la phrase qui confirme la suppression. Le script de l'écran anime les
-/// lignes ; il n'en écrit aucun mot. La ligne porte aussi l'identifiant de sa demande, que la
-/// suppression envoie, le statut sous son <b>nom canonique</b>, que le badge porte pour que la
-/// feuille de style le colore, et ses <b>clés de tri</b>, par lesquelles le script ordonne les
-/// lignes et place celle d'une demande qu'on vient de créer.
+/// auteur, statut, signalement de la date limite, jusqu'à la phrase qui confirme la suppression. Le
+/// script de l'écran anime les lignes ; il n'en écrit aucun mot, et ne recalcule aucun signalement.
+/// La ligne porte aussi l'identifiant de sa demande, que la suppression envoie, le statut et le
+/// signalement sous leur <b>nom canonique</b>, que la feuille de style colore, et ses <b>clés de
+/// tri</b>, par lesquelles le script ordonne les lignes et place celle d'une demande qu'on vient de
+/// créer.
 /// </remarks>
 public sealed record RequestRow(
   string Id,
@@ -25,6 +26,7 @@ public sealed record RequestRow(
   string FirstName,
   string ReceivedOn,
   string ResponseDeadline,
+  RequestRow.Signal? DeadlineSignal,
   string IdentityVerified,
   string Right,
   string CreatedAt,
@@ -64,16 +66,26 @@ public sealed record RequestRow(
   /// </remarks>
   public sealed record SearchableText(string Email, string LastName, string FirstName);
 
+  /// <summary>
+  /// Le signalement de la date limite, s'il y en a un : son <b>nom canonique</b>, que la cellule
+  /// porte pour que la feuille de style la colore, et son libellé, qui se lit après la date.
+  /// </summary>
+  public sealed record Signal(string Name, string Label);
+
   /// <summary>Ce qu'affiche une cellule dont la valeur est absente : une absence, pas une cellule mal rendue.</summary>
   private const string Absent = "—";
 
   private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
-  /// <summary>La ligne d'une demande enregistrée.</summary>
+  /// <summary>La ligne d'une demande enregistrée, telle qu'elle se lit <paramref name="todayInParis"/>.</summary>
+  /// <param name="request">La demande.</param>
+  /// <param name="todayInParis">Aujourd'hui à Paris — voir <see cref="ParisCalendar"/>. C'est contre lui que la date limite se signale.</param>
   /// <exception cref="ArgumentNullException"><paramref name="request"/> est absente.</exception>
-  public static RequestRow Of(RecordedDataSubjectRequest request)
+  public static RequestRow Of(RecordedDataSubjectRequest request, DateOnly todayInParis)
   {
     ArgumentNullException.ThrowIfNull(request);
+
+    var signal = Core.Requests.DeadlineSignal.Of(request.Status, request.ResponseDeadline, todayInParis);
 
     return new RequestRow(
       request.Id.Value.ToString(),
@@ -83,6 +95,7 @@ public sealed record RequestRow(
       request.FirstName?.Value ?? Absent,
       Day(request.ReceivedOn),
       Day(request.ResponseDeadline),
+      signal is null ? null : new Signal(signal.Name, signal.FrenchLabel),
       request.IdentityVerified ? "Oui" : "Non",
       Capitalized(request.Right.FrenchLabel),
       ParisCalendar.InParis(request.CreatedAt).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture),

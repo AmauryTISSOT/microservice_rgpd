@@ -111,6 +111,20 @@ public sealed class BrowserHarness : IAsyncLifetime
   }
 
   /// <summary>
+  /// Pose la date limite de réponse de la demande enregistrée sous ce message <b>à même la table</b> —
+  /// pour qui doit la voir signalée sans attendre qu'elle approche.
+  /// </summary>
+  public async Task SetResponseDeadlineAsync(string message, DateOnly responseDeadline)
+  {
+    using var scope = Service.Services.CreateScope();
+
+    var updated = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .ExecuteSqlAsync($"UPDATE data_subject_requests SET response_deadline = {responseDeadline} WHERE message = {message}");
+
+    updated.ShouldBe(1, "La date limite n'a été posée sur aucune demande.");
+  }
+
+  /// <summary>
   /// Retire de la base la demande enregistrée sous ce message — <b>dans le dos de l'écran</b>, comme
   /// le ferait un second onglet.
   /// </summary>
