@@ -13,8 +13,9 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// ⚠️ <b>Tous les libellés sont rendus par le serveur</b> — tirets, dates, « Oui/Non », droit,
 /// auteur, statut, jusqu'à la phrase qui confirme la suppression. Le script de l'écran anime les
 /// lignes ; il n'en écrit aucun mot. La ligne porte aussi l'identifiant de sa demande, que la
-/// suppression envoie, et le statut sous son <b>nom canonique</b>, que le badge porte pour que la
-/// feuille de style le colore.
+/// suppression envoie, le statut sous son <b>nom canonique</b>, que le badge porte pour que la
+/// feuille de style le colore, et la date de réception au <b>format ISO</b>, par laquelle le script
+/// place la ligne d'une demande qu'on vient de créer.
 /// </remarks>
 public sealed record RequestRow(
   string Id,
@@ -22,6 +23,7 @@ public sealed record RequestRow(
   string Email,
   string LastName,
   string FirstName,
+  string ReceivedOnIso,
   string ReceivedOn,
   string ResponseDeadline,
   string IdentityVerified,
@@ -59,6 +61,7 @@ public sealed record RequestRow(
       request.Email?.Value ?? Absent,
       request.LastName?.Value ?? Absent,
       request.FirstName?.Value ?? Absent,
+      request.ReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
       Day(request.ReceivedOn),
       Day(request.ResponseDeadline),
       request.IdentityVerified ? "Oui" : "Non",

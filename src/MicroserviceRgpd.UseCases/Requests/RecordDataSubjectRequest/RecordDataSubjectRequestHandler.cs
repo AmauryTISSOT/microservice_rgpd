@@ -1,4 +1,5 @@
 using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
 namespace MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 
@@ -14,10 +15,10 @@ namespace MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 /// <param name="requests">Les demandes enregistrées.</param>
 /// <param name="clock">L'horloge du service, qui date le geste.</param>
 public sealed class RecordDataSubjectRequestHandler(IRepository<DataSubjectRequest> requests, TimeProvider clock)
-  : ICommandHandler<RecordDataSubjectRequestCommand, Result<DataSubjectRequestId>>
+  : ICommandHandler<RecordDataSubjectRequestCommand, Result<RecordedDataSubjectRequest>>
 {
   /// <inheritdoc />
-  public async ValueTask<Result<DataSubjectRequestId>> Handle(
+  public async ValueTask<Result<RecordedDataSubjectRequest>> Handle(
     RecordDataSubjectRequestCommand command,
     CancellationToken cancellationToken)
   {
@@ -28,11 +29,11 @@ public sealed class RecordDataSubjectRequestHandler(IRepository<DataSubjectReque
 
     if (!received.IsSuccess)
     {
-      return Result<DataSubjectRequestId>.Invalid(received.ValidationErrors);
+      return Result<RecordedDataSubjectRequest>.Invalid(received.ValidationErrors);
     }
 
     await requests.AddAsync(received.Value, cancellationToken);
 
-    return received.Value.Id;
+    return RecordedDataSubjectRequest.Of(received.Value);
   }
 }

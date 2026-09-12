@@ -60,12 +60,14 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   }
 
   /// <summary>
-  /// <b>Enregistre une demande</b> et répond 201 — ou 400 <c>ValidationProblem</c>, les refus indexés
-  /// par les clés du corps, sans rien avoir enregistré.
+  /// <b>Enregistre une demande</b> et répond 201, avec pour corps <b>la ligne de la nouvelle
+  /// demande</b> — ou 400 <c>ValidationProblem</c>, les refus indexés par les clés du corps, sans rien
+  /// avoir enregistré.
   /// </summary>
   /// <remarks>
-  /// Ni redirection ni page en retour : c'est le script qui appelle, et c'est lui qui ferme la modale
-  /// et dit « Demande créée ».
+  /// Ni redirection ni page en retour : c'est le script qui appelle, et c'est lui qui insère la ligne
+  /// dans le tableau, ferme la modale et dit « Demande créée ». ⚠️ La ligne est rendue par la vue
+  /// partielle <c>_RequestRow</c>, celle du tableau : le script n'en écrit aucun mot.
   /// </remarks>
   public async Task<IActionResult> OnPostCreateAsync(CreationForm form, CancellationToken cancellationToken)
   {
@@ -88,7 +90,10 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
         .ToDictionary(field => field.Key, field => field.Select(refusal => refusal.ErrorMessage).ToArray()));
     }
 
-    return StatusCode(StatusCodes.Status201Created);
+    var row = Partial("_RequestRow", RequestRow.Of(recorded.Value));
+    row.StatusCode = StatusCodes.Status201Created;
+
+    return row;
   }
 
   /// <summary>

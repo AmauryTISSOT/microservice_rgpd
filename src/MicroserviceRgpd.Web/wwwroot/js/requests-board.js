@@ -7,6 +7,8 @@
 // `requestClose` : un formulaire non modifié s'y ferme directement, un formulaire modifié y ouvre la
 // confirmation d'abandon. Aucun mode de fermeture ne doit pouvoir la contourner.
 //
+// La demande créée, le module insère dans le tableau la ligne que le serveur a rendue pour elle.
+//
 // La poubelle de chaque ligne ouvre la confirmation de suppression, avec la phrase de sa ligne ;
 // « Supprimer définitivement » l'envoie au handler de la page, et la ligne s'en va sans rechargement —
 // sauf échec, que le toast dit.
@@ -17,7 +19,8 @@
 // ne fait que les montrer ou les cacher, et n'en écrit aucun mot.
 const search = document.getElementById("requests-search");
 const clearButton = document.getElementById("requests-search-clear");
-const rows = document.getElementById("requests").tBodies[0].rows;
+const tableBody = document.getElementById("requests").tBodies[0];
+const rows = tableBody.rows;
 const noMatch = document.getElementById("requests-no-match");
 
 // LA SAISIE ET LES VALEURS SE COMPARENT NORMALISÉES : rognées, en minuscules, et sans leurs accents
@@ -286,9 +289,10 @@ function attemptCreation() {
 // redevient cliquable quelle que soit l'issue. La modale, elle, ne se ferme pas tant que l'envoi
 // court : la réponse doit trouver la saisie qu'elle concerne, pas une modale rouverte à zéro.
 //
-// Trois issues. 201 : la demande est enregistrée. 400 portant des refus de la saisie : ils vont sous
-// leurs champs, comme ceux du navigateur. Tout le reste — un 400 sans refus, qui est un jeton
-// anti-rejeu refusé, une erreur du serveur, une coupure réseau — : le bandeau, et la saisie reste là.
+// Trois issues. 201 : la demande est enregistrée, et le corps porte sa ligne. 400 portant des refus
+// de la saisie : ils vont sous leurs champs, comme ceux du navigateur. Tout le reste — un 400 sans
+// refus, qui est un jeton anti-rejeu refusé, une erreur du serveur, une coupure réseau — : le
+// bandeau, et la saisie reste là.
 let sending = false;
 
 async function send() {
@@ -301,8 +305,10 @@ async function send() {
   try {
     const response = await fetch(form.action, { method: "POST", body: new URLSearchParams(entry) });
 
+    // ⚠️ LA DEMANDE EST ENREGISTRÉE DÈS LE 201, que son corps se lise ou non : un corps perdu ne doit
+    // pas poser le bandeau, qui inviterait à réessayer — et à enregistrer la demande deux fois.
     if (response.status === 201) {
-      closeOnCreation();
+      closeOnCreation(await response.text().catch(() => ""));
       return;
     }
 
@@ -349,13 +355,40 @@ function say(words) {
   }, toastDuration);
 }
 
-// LA DEMANDE EST CRÉÉE : la modale se ferme — sans confirmation, rien n'est perdu —, et le toast le
-// dit. La prochaine ouverture repartira des valeurs par défaut, comme toutes les ouvertures.
-function closeOnCreation() {
+// LA DEMANDE EST CRÉÉE : sa ligne entre dans le tableau, la modale se ferme — sans confirmation, rien
+// n'est perdu —, et le toast le dit. La prochaine ouverture repartira des valeurs par défaut, comme
+// toutes les ouvertures.
+function closeOnCreation(rowHtml) {
+  insertRow(rowHtml);
   confirmation.close();
   dialog.close();
 
   say(toast.dataset.created);
+}
+
+// LA LIGNE DE LA NOUVELLE DEMANDE EST CELLE QUE LE SERVEUR A RENDUE, par la vue partielle du
+// tableau : le module l'insère telle quelle, sans en écrire un mot. L'état vide s'efface alors.
+//
+// ELLE PREND SA PLACE DANS L'ORDRE PAR DÉFAUT — la date de réception la plus récente d'abord, puis la
+// date de création la plus récente. Elle vient d'être créée : elle passe devant toutes celles reçues
+// le même jour, et se place donc devant la première reçue ce jour-là ou avant. Les dates ISO se
+// comparent comme des chaînes. ⚠️ Le tri choisi et la recherche en cours ne sont pas encore
+// consultés : c'est l'objet du ticket #393.
+function insertRow(rowHtml) {
+  const template = document.createElement("template");
+  template.innerHTML = rowHtml;
+
+  const row = template.content.querySelector("tr");
+
+  if (!row) {
+    return;
+  }
+
+  const receivedOn = row.dataset.receivedOn;
+  const next = [...rows].find((existing) => existing.dataset.receivedOn <= receivedOn);
+
+  tableBody.insertBefore(row, next ?? null);
+  none.hidden = true;
 }
 
 // L'identification lie trois champs : un email saisi lève le refus du nom et du prénom. C'est donc

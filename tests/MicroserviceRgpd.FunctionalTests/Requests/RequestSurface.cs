@@ -201,6 +201,26 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
     updated.ShouldBe(1, "La date limite n'a été posée sur aucune demande.");
   }
 
+  /// <summary>
+  /// La ligne du tableau qui porte <paramref name="marker"/>, une seule, <b>telle que le serveur la
+  /// rend</b> dans <c>GET /demandes</c> — de <c>&lt;tr</c> à <c>&lt;/tr&gt;</c>.
+  /// </summary>
+  internal async Task<string> BoardRowWithAsync(string marker)
+  {
+    var response = await _client.GetAsync(Board);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    var body = Regex.Match(await response.Content.ReadAsStringAsync(), @"<tbody\b[^>]*>(.*?)</tbody>", RegexOptions.Singleline);
+
+    body.Success.ShouldBeTrue("Le tableau ne porte aucun corps.");
+
+    return Regex.Matches(body.Groups[1].Value, @"<tr\b[^>]*>.*?</tr>", RegexOptions.Singleline)
+      .Where(row => row.Value.Contains(marker, StringComparison.Ordinal))
+      .ShouldHaveSingleItem($"Le tableau ne porte pas la ligne de « {marker} », une fois.")
+      .Value;
+  }
+
   private async Task<int> CountAsync(FormattableString query)
   {
     using var scope = factory.Services.CreateScope();

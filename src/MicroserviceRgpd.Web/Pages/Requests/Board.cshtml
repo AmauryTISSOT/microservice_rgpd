@@ -57,10 +57,14 @@
   récente, puis date de création la plus récente —, et tous leurs libellés : pas de chargement
   asynchrone, pas de pagination. Le serveur rend, le script anime (ADR-0018).
 
+  LA LIGNE D'UNE DEMANDE CRÉÉE VIENT AUSSI DU SERVEUR, rendue par la même vue partielle, dans la
+  réponse de la création : le script l'insère à sa place, sans recharger la page.
+
   LA DERNIÈRE COLONNE PORTE LES ACTIONS DE CHAQUE LIGNE, ET N'A PAS DE TITRE.
 
   ⚠️ L'ÉTAT VIDE EST TOUJOURS RENDU, ET CACHÉ DÈS QU'UNE DEMANDE EXISTE : le script le montrera
-  quand la dernière ligne sera supprimée, sans revenir au serveur pour en connaître les mots.
+  quand la dernière ligne sera supprimée, sans revenir au serveur pour en connaître les mots, et le
+  cachera quand une demande créée entrera dans le tableau.
 
   ⚠️ L'ÉTAT VIDE DE LA RECHERCHE EST TOUJOURS RENDU, ET CACHÉ : aucune recherche n'est en cours au
   chargement. Le script le montre quand la saisie écarte toutes les demandes — mais jamais sur un
