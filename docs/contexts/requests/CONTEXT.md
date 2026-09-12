@@ -39,6 +39,12 @@ Le seul `DataSubjectRight` que la demande exerce, choisi par l'`Operator` parmi 
 jamais.
 _Avoid_ : type de demande, catégorie, qualification
 
+**Fiche** :
+La lecture à l'écran d'une demande enregistrée, telle que le service la tient : une surface ancrée au
+bord droit du tableau, en lecture seule. Elle n'instruit rien et ne modifie rien — les gestes restent
+sur la ligne. Dans le code : `sheet`.
+_Avoid_ : détail, panneau (pris par la navigation, ADR-0009), popup, aperçu
+
 ### Le délai
 
 **Date limite de réponse** :

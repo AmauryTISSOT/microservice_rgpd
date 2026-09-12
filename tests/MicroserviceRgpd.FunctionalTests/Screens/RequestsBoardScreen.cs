@@ -21,7 +21,9 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// ce que le serveur rend. Sa place — en haut à droite du contenu, et non dans le header
 /// (ADR-0009) — se vérifie à l'œil ; ce qui est gardé ici est qu'il vit dans le <c>main</c> et
 /// nulle part ailleurs. La confirmation d'abandon d'une saisie est rendue de même, fermée, à côté
-/// de la modale, et la confirmation de suppression d'une demande à côté d'elles.
+/// de la modale, et la confirmation de suppression d'une demande à côté d'elles. La <b>fiche</b>
+/// d'une demande — la lecture à l'écran de ce que le service en tient, que l'œil d'une ligne ouvre —
+/// est la quatrième, rendue fermée comme les autres.
 /// </para>
 /// <para>
 /// Le marquage de l'entrée courante et les libellés du panneau, eux, sont gardés pour tous les
@@ -50,6 +52,26 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>Le titre de la confirmation de suppression, recopié à dessein.</summary>
   private const string DeletionTitle = "Supprimer la demande";
+
+  /// <summary>Le premier bloc de la fiche, à quoi elle se reconnaît, recopié à dessein.</summary>
+  private const string FirstSheetBlock = "La personne";
+
+  /// <summary>
+  /// <b>Tout ce que la fiche donne à lire au chargement</b> : ses cinq blocs titrés, les libellés de
+  /// chaque valeur dans l'ordre, et sa sortie nommée. Recopié à dessein.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ni titre, ni valeur</b> : le titre nomme la personne et chaque valeur est celle d'une
+  /// demande — l'œil d'une ligne les y verse. Ce qui se lit ici est donc <b>exactement</b> ce que le
+  /// serveur écrit, et rien de plus : un mot de trop le ferait échouer.
+  /// </remarks>
+  private const string SheetLabels =
+    "La personne Nom Prénom Email Identité vérifiée "
+    + "La demande Droit invoqué Origine Date de réception Message "
+    + "Le délai Date limite de réponse "
+    + "Le statut "
+    + "L'enregistrement Date de création Créé par "
+    + "Fermer";
 
   private readonly LayoutSurface _layout = new(factory);
 
@@ -129,22 +151,76 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Les trois modales sont rendues par le serveur</b>, une fois chacune, dans le contenu de
-  /// l'écran : la création, la confirmation d'abandon, puis la confirmation de suppression. Ce sont
-  /// des <c>dialog</c> natifs, <b>fermés au chargement</b> — l'<c>Operator</c> les ouvre, la page ne
-  /// les ouvre jamais pour lui —, dont le nom accessible est le titre.
+  /// <b>Les quatre modales sont rendues par le serveur</b>, une fois chacune, dans le contenu de
+  /// l'écran : la création, la confirmation d'abandon, la confirmation de suppression, puis la
+  /// fiche. Ce sont des <c>dialog</c> natifs, <b>fermés au chargement</b> — l'<c>Operator</c> les
+  /// ouvre, la page ne les ouvre jamais pour lui —, dont le nom accessible est le titre.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le titre de la fiche est vide tant qu'aucune ligne ne l'a choisie</b> : il nomme la
+  /// personne, et c'est une valeur, non un libellé — comme la phrase de la confirmation de
+  /// suppression. La fiche se nomme bien par ce titre-là ; elle attend seulement qu'on l'y écrive.
+  /// </remarks>
   [Fact]
   public async Task RendersEveryDialogClosedAndNamedByItsTitle()
   {
     var dialogs = Dialogs.Matches(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
 
     dialogs.Select(NameOf).ShouldBe(
-      [DialogTitle, ConfirmationTitle, DeletionTitle],
-      "Le tableau doit porter la modale de création, la confirmation d'abandon puis celle de suppression, une fois chacune.");
+      [DialogTitle, ConfirmationTitle, DeletionTitle, string.Empty],
+      "Le tableau doit porter la modale de création, les deux confirmations puis la fiche, une fois chacune.");
 
     dialogs.ShouldNotContain(
       dialog => Regex.IsMatch(dialog.Groups["attributes"].Value, @"\bopen\b"), "Une modale est ouverte au chargement.");
+  }
+
+  /// <summary>
+  /// <b>La fiche porte tous ses libellés, rendus par le serveur</b> : ses cinq blocs titrés dans
+  /// l'ordre — La personne, La demande, Le délai, Le statut, L'enregistrement —, les mots de chaque
+  /// valeur, et sa sortie nommée. <b>Et rien d'autre</b> : le titre et les valeurs sont vides tant
+  /// que l'œil d'une ligne n'y a rien versé.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Les mots sont ceux de l'écran</b> : « Origine » comme le formulaire de création, « Droit
+  /// invoqué » comme le glossaire, « Date de création » et « Créé par » comme les colonnes du
+  /// tableau. Un même champ ne porte pas deux noms selon l'endroit où il se lit.
+  /// </remarks>
+  [Fact]
+  public async Task RendersTheSheetWithItsFiveTitledBlocksAndAllTheirLabels()
+  {
+    var sheet = SheetIn(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
+
+    LayoutSurface.TextIn(sheet).ShouldBe(
+      SheetLabels, "La fiche ne donne pas à lire ses cinq blocs titrés et tous leurs libellés, dans l'ordre — et eux seuls.");
+
+    Regex.Matches(sheet, @"<h3\b[^>]*>(.*?)</h3>", RegexOptions.Singleline)
+      .Select(block => LayoutSurface.TextIn(block.Groups[1].Value))
+      .ShouldBe(
+        ["La personne", "La demande", "Le délai", "Le statut", "L'enregistrement"],
+        "La fiche ne porte pas ses cinq blocs titrés, dans l'ordre.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La fiche ne se lit que</b> : aucun geste ne s'y trouve — ni suppression, ni modification,
+  /// ni changement de statut —, et ses deux seuls boutons ferment, la croix de la tête et « Fermer »
+  /// du pied. Aucun formulaire, aucun champ, aucun lien : les gestes restent sur la ligne.
+  /// </summary>
+  [Fact]
+  public async Task LeavesTheSheetReadOnlyWithItsTwoWaysOut()
+  {
+    var sheet = SheetIn(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
+    var buttons = ButtonsIn(sheet);
+
+    buttons.Select(NameOf).ShouldBe(["Fermer", "Fermer"], "La fiche ne porte pas ses deux sorties, et elles seules.");
+
+    buttons.ShouldAllBe(
+      button => button.Attributes.Contains(@"type=""button""", StringComparison.Ordinal),
+      "Un bouton de la fiche soumet quelque chose.");
+
+    foreach (var element in new[] { "<form", "<input", "<select", "<textarea", "<a " })
+    {
+      sheet.ShouldNotContain(element, Case.Insensitive, $"La fiche porte un {element}> : elle ne se lit plus seulement.");
+    }
   }
 
   /// <summary>
@@ -345,6 +421,19 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   private static string DialogIn(string main)
   {
     return DialogNamed(main, DialogTitle).Value;
+  }
+
+  /// <summary>
+  /// <b>La fiche, entière</b> — balise ouvrante comprise. Elle ne se cherche pas par son nom
+  /// accessible : c'est le nom de la personne, vide tant qu'aucune ligne ne l'a choisie. On la
+  /// reconnaît au premier de ses cinq blocs.
+  /// </summary>
+  private static string SheetIn(string main)
+  {
+    return Dialogs.Matches(main)
+      .Where(dialog => Regex.IsMatch(dialog.Groups["contents"].Value, $@"<h3\b[^>]*>\s*{Regex.Escape(FirstSheetBlock)}\s*</h3>"))
+      .ShouldHaveSingleItem("Le tableau ne porte pas la fiche d'une demande, une fois.")
+      .Value;
   }
 
   /// <summary>La modale qui porte ce nom accessible, une seule.</summary>

@@ -374,3 +374,106 @@
     </div>
   </form>
 </dialog>
+
+@*
+  LA FICHE D'UNE DEMANDE, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT, quatrième `dialog` de
+  l'écran et frère des trois autres. C'est la lecture à l'écran d'une demande enregistrée, telle que
+  le service la tient : une surface ancrée au bord droit, pleine hauteur, en LECTURE SEULE.
+
+  ⚠️ AUCUN GESTE NE S'Y TROUVE — ni suppression, ni modification, ni changement de statut : les
+  gestes restent sur la ligne, à un seul endroit. Les deux seuls boutons ferment.
+
+  ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les cinq blocs titrés et les mots de chaque
+  valeur. ⚠️ SEULES LES VALEURS SONT VIDES : le titre — qui nomme la personne — et les cibles
+  `data-field` attendent que l'œil d'une ligne y verse ce que sa ligne porte. Le module ne compose
+  aucun libellé.
+
+  LES MOTS SONT CEUX DE L'ÉCRAN, et pas d'autres : « Origine » comme le formulaire de création,
+  « Droit invoqué » comme le glossaire, « Date de création » et « Créé par » comme les colonnes du
+  tableau. Un même champ ne porte pas deux noms selon l'endroit où il se lit.
+
+  LA PERSONNE VIENT EN PREMIER : le titre nomme la personne, le premier bloc la détaille.
+
+  LE MESSAGE SORT DE LA LISTE DE DÉFINITIONS : c'est un bloc à part, sous son libellé. Dans la
+  grille de la liste, 10 000 caractères dicteraient la hauteur de tout le bloc.
+
+  LE BLOC DU STATUT N'A QU'UNE VALEUR — le badge que l'US suivante y posera : son titre lui sert de
+  libellé, et un « Statut » de plus ne dirait rien que le titre ne dise déjà.
+
+  ⚠️ AUCUN ALLER-RETOUR RÉSEAU À L'OUVERTURE : tout ce que la fiche montre, la page l'a déjà sur la
+  ligne. Pas d'état de chargement, pas d'état d'échec, rien à verrouiller.
+
+  ⚠️ LES QUATRE FERMETURES — Échap, la croix, le fond, « Fermer » — FERMENT DIRECTEMENT, SANS
+  CONFIRMATION : contrairement à la modale de saisie, rien n'est en jeu.
+*@
+<dialog class="modal sheet" id="request-sheet" aria-labelledby="request-sheet-title">
+  <div class="modal-head">
+    <h2 id="request-sheet-title"></h2>
+    <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" fill="none" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="sheet-body">
+    <section>
+      <h3>La personne</h3>
+      <dl>
+        <dt>Nom</dt>
+        <dd data-field="lastName"></dd>
+        <dt>Prénom</dt>
+        <dd data-field="firstName"></dd>
+        <dt>Email</dt>
+        <dd data-field="email"></dd>
+        <dt>Identité vérifiée</dt>
+        <dd data-field="identityVerified"></dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>La demande</h3>
+      <dl>
+        <dt>Droit invoqué</dt>
+        <dd data-field="right"></dd>
+        <dt>Origine</dt>
+        <dd data-field="origin"></dd>
+        <dt>Date de réception</dt>
+        <dd data-field="receivedOn"></dd>
+      </dl>
+
+      <div class="sheet-message">
+        <h4>Message</h4>
+        <p data-field="message"></p>
+      </div>
+    </section>
+
+    <section>
+      <h3>Le délai</h3>
+      <dl>
+        <dt>Date limite de réponse</dt>
+        <dd data-field="responseDeadline"></dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Le statut</h3>
+      <p data-field="status"></p>
+    </section>
+
+    <section>
+      <h3>L'enregistrement</h3>
+      <dl>
+        <dt>Date de création</dt>
+        <dd data-field="createdAt"></dd>
+        <dt>Créé par</dt>
+        <dd data-field="createdBy"></dd>
+      </dl>
+    </section>
+  </div>
+
+  <div class="sheet-foot">
+    <button type="button" data-dismiss>Fermer</button>
+  </div>
+</dialog>

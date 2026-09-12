@@ -29,6 +29,11 @@
 // technique, ou une demande close pendant la correction —, et la saisie reste là, à réessayer. Seule
 // une demande qui n'existe plus fait exception : la modale se ferme, sa ligne part, et le toast le
 // dit — il n'y a rien à réessayer.
+//
+// L'œil d'une ligne ouvre la fiche de sa demande : la lecture à l'écran de ce que le service en
+// tient, sans aller-retour réseau — la page a déjà, sur la ligne, tout ce que la fiche montrera. Ses
+// quatre fermetures — Échap, la croix, le fond, « Fermer » — ferment directement : rien n'est en jeu
+// dans une lecture. ⚠️ La fiche s'ouvre encore VIDE : c'est l'US suivante qui y versera les valeurs.
 
 // LA RECHERCHE. Elle filtre les lignes que le serveur a rendues, sans revenir à lui : une demande
 // reste affichée si son email, son nom ou son prénom — ceux que la ligne porte en `data-*`, tels
@@ -670,15 +675,20 @@ function fill(values) {
   }
 }
 
-// ⚠️ SI LA LIGNE A DISPARU entre-temps — supprimée depuis un autre onglet —, le focus va au cadre du
-// tableau, et non en haut de la page : sans souris, la navigation reprend là où elle en était.
-dialog.addEventListener("close", () => {
-  if (openedBy?.isConnected) {
-    openedBy.focus();
+// LE FOCUS REVIENT AU BOUTON QUI A OUVERT LA SURFACE, quelle qu'elle soit et quelle que soit la façon
+// dont elle s'est fermée : sans souris, la navigation reprend là où elle en était.
+//
+// ⚠️ SI CE BOUTON A DISPARU entre-temps — sa ligne supprimée depuis un autre onglet —, le focus va au
+// cadre du tableau, et non en haut de la page.
+function giveTheFocusBackTo(opener) {
+  if (opener?.isConnected) {
+    opener.focus();
   } else {
     frame.focus();
   }
-});
+}
+
+dialog.addEventListener("close", () => giveTheFocusBackTo(openedBy));
 
 function requestClose() {
   if (sending) {
@@ -804,6 +814,13 @@ requests.addEventListener("click", (event) => {
 
   if (pencil) {
     openModification(pencil);
+    return;
+  }
+
+  const eye = event.target.closest('[data-action="view"]');
+
+  if (eye) {
+    openSheet(eye);
   }
 });
 
@@ -1003,3 +1020,38 @@ async function readValues(id) {
     return null;
   }
 }
+
+// LA FICHE D'UNE DEMANDE. L'œil d'une ligne ouvre la fiche que le serveur a rendue : la lecture à
+// l'écran de ce que le service tient de cette demande, ancrée au bord droit, en lecture seule.
+//
+// ⚠️ AUCUN ALLER-RETOUR RÉSEAU : tout ce que la fiche montre, la page l'a déjà sur la ligne. Il n'y
+// a donc ni état de chargement, ni état d'échec, ni verrou — l'ouverture est instantanée.
+//
+// ⚠️ LES QUATRE FERMETURES — Échap, la croix, le fond, « Fermer » — FERMENT DIRECTEMENT : rien n'est
+// en jeu dans une lecture, et la confirmation d'abandon n'a rien à y faire. Échap, le navigateur le
+// fait seul ; rien n'est retenu.
+const sheet = document.getElementById("request-sheet");
+
+// L'ŒIL QUI A OUVERT LA FICHE : c'est à lui que le focus revient à la fermeture, quelle qu'en soit
+// la façon. ⚠️ Il se retient à part de celui de la modale de saisie : les deux surfaces s'ouvrent
+// depuis des boutons différents, et chacune rend le focus au sien.
+let sheetOpenedBy = null;
+
+function openSheet(eye) {
+  sheetOpenedBy = eye;
+
+  sheet.showModal();
+}
+
+sheet.addEventListener("close", () => giveTheFocusBackTo(sheetOpenedBy));
+
+function closeSheet() {
+  sheet.close();
+}
+
+// La croix de la tête et « Fermer » du pied : deux sorties, la même fermeture.
+for (const dismiss of sheet.querySelectorAll("[data-dismiss]")) {
+  dismiss.addEventListener("click", closeSheet);
+}
+
+closeOnBackdropClick(sheet, closeSheet);
