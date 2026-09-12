@@ -289,13 +289,17 @@
 
 @*
   LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée », « Demande
-  supprimée », l'échec d'une suppression ou celui d'un pré-remplissage — les mots que la page lui
-  donne ici — quand une modale se ferme sur une création ou sur une suppression, ou quand le crayon
-  d'une ligne n'a pas pu lire sa demande, et l'efface quelques secondes plus tard. Il est hors des
-  modales, qui viennent de se fermer ou ne se sont pas ouvertes ; `role="status"` le fait lire sans
-  voler le focus.
+  modifiée », « Demande supprimée », l'échec d'une suppression ou celui d'un pré-remplissage — les
+  mots que la page lui donne ici — quand une modale se ferme sur une création, sur une modification
+  ou sur une suppression, ou quand le crayon d'une ligne n'a pas pu lire sa demande, et l'efface
+  quelques secondes plus tard. Il est hors des modales, qui viennent de se fermer ou ne se sont pas
+  ouvertes ; `role="status"` le fait lire sans voler le focus.
+
+  ⚠️ RIEN N'EST DIT D'UNE CORRECTION QUI NE CORRIGE RIEN : la modale se ferme en silence, et
+  « Demande modifiée » serait un mensonge — le serveur n'aurait rien tracé.
 *@
 <p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"
+   data-modified="Demande modifiée"
    data-deletion-failed="La suppression a échoué, veuillez réessayer."
    data-load-failed="La demande n'a pas pu être chargée."></p>
 
