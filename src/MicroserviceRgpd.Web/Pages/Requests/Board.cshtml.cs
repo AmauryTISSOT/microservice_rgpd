@@ -2,6 +2,7 @@ using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.DeleteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestValues;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -59,6 +60,39 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
     var recorded = await mediator.Send(new ReadDataSubjectRequestsQuery(), cancellationToken);
 
     Rows = [.. recorded.Select(request => RequestRow.Of(request, Today))];
+  }
+
+  /// <summary>
+  /// <b>Rend les huit valeurs saisies d'une demande</b> en JSON, sous les clés mêmes du formulaire,
+  /// et répond 200 — ou 404 quand la demande n'existe plus, ou 400 quand l'identifiant n'en est pas
+  /// un.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>200 même sur une demande close.</b> Lire n'est pas modifier : refuser la lecture ferait de
+  /// ce point de consultation le gardien d'une règle d'écriture.
+  /// </para>
+  /// <para>
+  /// Comme la création et la suppression, c'est un handler de la page, pas une API : aucune route
+  /// publique ne rend une demande, et le document Swagger n'en dit rien.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnGetValuesAsync(string? id, CancellationToken cancellationToken)
+  {
+    // L'écran ne demande que l'identifiant qu'il a rendu : un autre n'est pas une saisie, mais un envoi forgé.
+    if (!Guid.TryParse(id, out var guid) || !DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest))
+    {
+      return BadRequest();
+    }
+
+    var read = await mediator.Send(new ReadDataSubjectRequestValuesQuery(dataSubjectRequest), cancellationToken);
+
+    return read.Status switch
+    {
+      ResultStatus.Ok => new JsonResult(RequestForm.Of(read.Value)),
+      ResultStatus.NotFound => NotFound(),
+      _ => StatusCode(StatusCodes.Status500InternalServerError),
+    };
   }
 
   /// <summary>
