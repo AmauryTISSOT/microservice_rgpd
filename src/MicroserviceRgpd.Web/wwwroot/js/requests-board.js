@@ -8,7 +8,8 @@
 // `requestClose` : un formulaire non modifié s'y ferme directement, un formulaire modifié y ouvre la
 // confirmation d'abandon. Aucun mode de fermeture ne doit pouvoir la contourner.
 //
-// La demande créée, le module insère dans le tableau la ligne que le serveur a rendue pour elle.
+// La demande créée, le module insère dans le tableau la ligne que le serveur a rendue pour elle, à sa
+// place selon le tri sélectionné, et visible seulement si la recherche en cours la retient.
 //
 // La poubelle de chaque ligne ouvre la confirmation de suppression, avec la phrase de sa ligne ;
 // « Supprimer définitivement » l'envoie au handler de la page, et la ligne s'en va sans rechargement —
@@ -86,12 +87,16 @@ function byReceptionThenCreation(first, second) {
   );
 }
 
-function applySort() {
-  // Les valeurs des options sont celles que le serveur a rendues (Board.cshtml).
+// Deux lignes dans l'ordre du tri sélectionné : négatif si la première y précède la seconde.
+// Les valeurs des options sont celles que le serveur a rendues (Board.cshtml).
+function inTheSelectedOrder(first, second) {
   const direction = sort.value === "oldest" ? 1 : -1;
-  const sorted = [...rows].sort((first, second) => direction * byReceptionThenCreation(first, second));
 
-  tableBody.append(...sorted);
+  return direction * byReceptionThenCreation(first, second);
+}
+
+function applySort() {
+  tableBody.append(...[...rows].sort(inTheSelectedOrder));
 }
 
 sort.addEventListener("change", applySort);
@@ -404,11 +409,15 @@ function closeOnCreation(rowHtml) {
 // LA LIGNE DE LA NOUVELLE DEMANDE EST CELLE QUE LE SERVEUR A RENDUE, par la vue partielle du
 // tableau : le module l'insère telle quelle, sans en écrire un mot. L'état vide s'efface alors.
 //
-// ELLE PREND SA PLACE DANS L'ORDRE PAR DÉFAUT — la date de réception la plus récente d'abord, puis la
-// date de création la plus récente. Elle vient d'être créée : elle passe devant toutes celles reçues
-// le même jour, et se place donc devant la première reçue ce jour-là ou avant. Les dates ISO se
-// comparent comme des chaînes. ⚠️ Le tri choisi et la recherche en cours ne sont pas encore
-// consultés : c'est l'objet du ticket #393.
+// ELLE PREND SA PLACE SELON LE TRI SÉLECTIONNÉ, sur les mêmes clés que lui et dans le même sens :
+// elle entre devant la première ligne qu'elle précède, ou en queue si elle n'en précède aucune. Les
+// lignes du tableau sont déjà dans cet ordre — le serveur les a rendues dans l'ordre par défaut, et
+// chaque changement de tri les y remet —, la première trouvée est donc la bonne. Elle vient d'être
+// créée : de deux demandes reçues le même jour, elle est la plus récemment enregistrée, et le tri en
+// décide comme pour les autres.
+//
+// ⚠️ LA RECHERCHE EN COURS SE REJOUE ENSUITE : une ligne qui ne lui correspond pas entre cachée, et
+// « Aucune demande ne correspond » reste d'accord avec ce que le tableau montre.
 function insertRow(rowHtml) {
   const template = document.createElement("template");
   template.innerHTML = rowHtml;
@@ -419,11 +428,11 @@ function insertRow(rowHtml) {
     return;
   }
 
-  const receivedOn = row.dataset.receivedOn;
-  const next = [...rows].find((existing) => existing.dataset.receivedOn <= receivedOn);
+  const next = [...rows].find((existing) => inTheSelectedOrder(row, existing) < 0);
 
   tableBody.insertBefore(row, next ?? null);
   none.hidden = true;
+  applySearch();
 }
 
 // L'identification lie trois champs : un email saisi lève le refus du nom et du prénom. C'est donc
