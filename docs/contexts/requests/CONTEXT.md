@@ -1,9 +1,9 @@
 # Requests
 
 Ce contexte enregistre une **demande RGPD dès sa réception** : ce qui est arrivé, par quel canal,
-quand, de qui, et quel droit la personne invoque. Il ne connaît à ce jour que ce `Gesture`-là. Une
-demande porte une date limite de réponse et un statut, mais l'instruction n'y existe pas encore :
-aucun `Gesture` ne fait changer le statut.
+quand, de qui, et quel droit la personne invoque. L'`Operator` peut ensuite **modifier une demande**
+pour corriger une erreur de saisie. Une demande porte une date limite de réponse et un statut, mais
+l'instruction n'y existe pas encore : aucun `Gesture` ne fait changer le statut.
 
 Les identifiants du code sont en anglais (`DataSubjectRequest`, `Origin`) ; les textes destinés à
 l'humain sont en français (« demande », « Courrier »).
@@ -45,7 +45,9 @@ _Avoid_ : type de demande, catégorie, qualification
 Le jour avant lequel le responsable doit répondre : la date de réception plus un mois, ramenée au
 dernier jour du mois suivant quand ce jour n'y existe pas (31 janvier → 28 ou 29 février). Fixée
 quand la demande est enregistrée, et tenue par la demande : elle ne se recalcule pas d'elle-même.
-Elle part de la date de réception, jamais de l'instant d'enregistrement.
+Une modification la refait par la même règle, et elle ne change donc que si la date de réception a
+changé. Elle part de la
+date de réception, jamais de l'instant d'enregistrement.
 _Avoid_ : échéance légale, délai, date d'échéance, StatutoryDeadline
 
 **Échéance proche** :
@@ -90,8 +92,8 @@ _Avoid_ : authentifié, identifié, KYC
 ### Qui agit
 
 **Operator** :
-L'humain qui enregistre la demande. Tant que le service n'authentifie personne, il n'a pas de nom :
-chaque demande est créée par `operator`.
+L'humain qui enregistre la demande, et qui la corrige. Tant que le service n'authentifie personne,
+il n'a pas de nom : chaque demande est créée, et modifiée, par `operator`.
 _Avoid_ : utilisateur, agent, gestionnaire
 
 **Enregistrer une demande** :
@@ -99,6 +101,17 @@ Le `Gesture` par lequel l'`Operator` fait entrer une demande dans le service : i
 de l'instant où il est posé, distinct de la date de réception qu'il déclare. Voir la langue de
 système dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 _Avoid_ : ouvrir, déposer, créer un dossier
+
+**Modifier une demande** :
+Le `Gesture` par lequel un `Operator` corrige une erreur de *saisie* dans les données de la demande
+telle qu'elle a été enregistrée. Geste interne, sans effet juridique. Il laisse une empreinte
+— `ModifiedAt`, `ModifiedBy` — qui n'est affichée nulle part et s'écrase à chaque correction. Une
+modification qui ne change aucune valeur n'a pas eu lieu : elle ne laisse rien. Une demande close,
+Terminée ou Annulée, n'est plus modifiable. Corriger la date de réception recalcule la date limite
+de réponse. Voir [ADR-0023](../../adr/0023-modifier-une-demande-est-un-geste.md).
+_Avoid_ : rectification — le **droit de rectification** (art. 16) est le droit invoqué par la
+personne concernée pour faire corriger *ses* données chez le responsable de traitement. Il porte sur
+les données du sujet, jamais sur le dossier qui l'enregistre. Aussi : éditer, mettre à jour, amender
 
 **Supprimer une demande** :
 Le retrait définitif d'une demande par l'`Operator`, quel que soit son statut : elle disparaît du

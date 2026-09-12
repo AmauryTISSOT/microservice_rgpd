@@ -15,9 +15,10 @@ quels : « la `Qualification` », « le `Settings` ».
   que l'acte de l'avoir qualifié.
 - [Requests](./docs/contexts/requests/CONTEXT.md) — **l'arrivée d'une demande.** Enregistre une
   demande d'exercice de droits dès sa réception : par quel canal, quand, de qui, et quel droit la
-  personne invoque. Son type est la `DataSubjectRequest` — à l'écran, une **demande**. Il ne connaît
-  à ce jour que ce `Gesture`-là. Une demande porte une date limite de réponse et un statut, mais
-  l'instruction n'y existe pas : rien ne fait encore changer le statut.
+  personne invoque. Son type est la `DataSubjectRequest` — à l'écran, une **demande**. L'`Operator`
+  peut ensuite **modifier une demande** pour corriger une erreur de saisie. Une demande porte une
+  date limite de réponse et un statut, mais l'instruction n'y existe pas : rien ne fait encore
+  changer le statut.
 - [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Détecte les colonnes qui
   portent vraisemblablement des données personnelles, dans le relevé des colonnes d'une base du
   client. Le relevé est collé par un `Operator`, ou produit par le service lui-même quand il
@@ -120,10 +121,19 @@ arbitrages individuels et jamais un état de lot.
 `Screening` et `Requests` emploient le mot au même sens ; il n'appartient donc à aucun des deux.
 Enregistrer une demande est un `Gesture` : sa trace est datée de l'instant où il est posé —
 distinct de la date de réception qu'il déclare — et signée `operator`, en attendant
-l'authentification. Un arbitrage de `Screening` est daté et ne se signe pas (ADR-0014).
+l'authentification. **Modifier une demande** en est un second : sa trace est l'empreinte
+`ModifiedAt` / `ModifiedBy`, qu'aucun écran n'affiche, et une modification qui ne change aucune
+valeur n'a pas eu lieu — elle ne laisse rien (ADR-0023). Un arbitrage de `Screening` est daté et ne
+se signe pas (ADR-0014).
 `Configuration` n'emploie pas le mot : poser l'adresse d'un droit est un réglage, qui remplace l'état
 précédent sans laisser de trace datée. Le `Settings` est un état, et c'est ce qui le tient hors de
 la matière de preuve.
+
+⚠️ **L'empreinte de modification est une trace qui s'écrase, et c'est une exception assumée.** Un
+`Gesture` laisse *n* traces se tenant seules ; modifier une demande n'en laisse qu'une, la dernière,
+qui remplace la précédente. Elle dit qu'une demande a été corrigée et quand, jamais combien de fois
+ni quoi. Ce n'est pas un journal inachevé : l'ADR-0023 range l'historique des modifications parmi ce
+qu'il n'ouvre pas, et le motif y est écrit.
 
 ⚠️ **Tout acte de l'`Operator` n'est pas un `Gesture`.** Supprimer une demande est posé par
 l'`Operator`, mais ne laisse aucune trace et efface celle de l'enregistrement : c'est un retrait,
@@ -222,11 +232,12 @@ doit les couvrir.
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
-Vingt-deux ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
+Vingt-trois ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
 écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006 et l'ADR-0008 portent en
 fin de fichier une suite datée qui nomme leurs points morts jusqu'à l'ADR-0016 ; l'ADR-0017, qui
 vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui ;
-l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme l'ADR-0021, qui vise l'ADR-0017.
+l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme les ADR-0021 et 0023, qui visent
+l'ADR-0017.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -252,6 +263,7 @@ l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme l'ADR-0021, qui 
 | [0020](./docs/adr/0020-playwright-dotnet-pour-les-tests-navigateur.md) | Playwright pour .NET, en C# et xUnit, pour les tests navigateur : le service sous Kestrel sur un port réel, PostgreSQL Testcontainers, Chromium seul, installé par la fixture sans `pwsh`. | — |
 | [0021](./docs/adr/0021-la-demande-tient-un-statut-et-une-date-limite-de-reponse.md) | La demande tient un statut (`RequestStatus`, né `InProgress`) et une date limite de réponse fixée à la réception, date de réception plus un mois. Le statut est un état, pas la trace d'un `Gesture` ; les signalements ne sont pas enregistrés. | 0017 : « l'instruction, les délais et les statuts n'y existent pas », pour les délais et les statuts. |
 | [0022](./docs/adr/0022-supprimer-une-demande-ne-laisse-aucune-trace.md) | Supprimer une demande la retire définitivement, quel que soit son statut, sans trace : ce n'est pas un `Gesture`. Une demande déjà partie se lit comme supprimée. | — |
+| [0023](./docs/adr/0023-modifier-une-demande-est-un-geste.md) | Modifier une demande est un `Gesture` : il laisse une empreinte (`ModifiedAt`, `ModifiedBy`) non affichée, qui s'écrase au lieu de s'empiler. Une modification sans changement n'a pas eu lieu ; une demande close est refusée en `Conflict` avant toute validation ; la date limite est recalculée par la règle de l'ADR-0021 ; le dernier enregistrement l'emporte, sans verrou optimiste. | 0017 : « il ne connaît à ce jour qu'un `Gesture` ». Honore l'ADR-0021, sans le supplanter : « l'US qui l'ouvrira devra recalculer la date limite ». |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se
