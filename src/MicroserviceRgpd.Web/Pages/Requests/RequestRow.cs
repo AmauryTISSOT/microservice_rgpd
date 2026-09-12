@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// La ligne porte aussi l'identifiant de sa demande, que la suppression envoie, le statut et le
 /// signalement sous leur <b>nom canonique</b>, que la feuille de style colore, et ses <b>clés de
 /// tri</b>, par lesquelles le script ordonne les lignes et place celle d'une demande qu'on vient de
-/// créer.
+/// créer, et enfin le <b>nom replié</b> de la personne, ce qu'elle porte <b>pour la fiche</b>.
 ///
 /// Elle porte enfin ce que le <b>crayon</b> offre — <c>ModificationAllowed</c> — et ce que son
 /// infobulle dit — <c>ModificationTooltip</c> : son libellé quand la modification est permise, la
@@ -41,7 +41,8 @@ public sealed record RequestRow(
   bool ModificationAllowed,
   string ModificationTooltip,
   RequestRow.SearchableText Searchable,
-  RequestRow.SortKeys Sort)
+  RequestRow.SortKeys Sort,
+  RequestRow.Sheet ForSheet)
 {
   /// <summary>
   /// Ce que le tri compare sur la ligne : la date de réception en ISO (<c>aaaa-mm-jj</c>), puis,
@@ -72,6 +73,18 @@ public sealed record RequestRow(
   /// texte que la personne a donné, et une recherche ne doit pas le trouver.
   /// </remarks>
   public sealed record SearchableText(string Email, string LastName, string FirstName);
+
+  /// <summary>
+  /// Ce que la ligne porte <b>pour la fiche</b> : le <b>nom replié</b> de la personne — « Prénom
+  /// Nom », à défaut l'email seul —, celui que le titre de la fiche annonce.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Ce nom n'est jamais vide et n'est jamais « — »</b> : l'<c>Identification</c> d'une demande
+  /// garantit qu'il reste toujours l'email, ou le nom et le prénom. Il se replie par
+  /// <see cref="PersonOf"/>, la <b>seule</b> écriture de la règle — c'est elle aussi que la phrase de
+  /// suppression appelle, pour que les deux ne nomment jamais la même personne autrement.
+  /// </remarks>
+  public sealed record Sheet(string Person);
 
   /// <summary>
   /// Le signalement de la date limite, s'il y en a un : son <b>nom canonique</b>, que la cellule
@@ -131,7 +144,8 @@ public sealed record RequestRow(
         request.FirstName?.Value ?? string.Empty),
       new SortKeys(
         request.ReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        request.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'", CultureInfo.InvariantCulture)));
+        request.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'", CultureInfo.InvariantCulture)),
+      new Sheet(PersonOf(request)));
   }
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
@@ -149,18 +163,45 @@ public sealed record RequestRow(
   /// </remarks>
   private static string DeletionConfirmationOf(RecordedDataSubjectRequest request)
   {
-    var name = string.Join(' ', new[] { request.FirstName?.Value, request.LastName?.Value }.OfType<string>());
+    var person = PersonOf(request);
     var email = request.Email?.Value;
 
-    var whose = (name, email) switch
-    {
-      ("", _) => email,
-      (_, null) => name,
-      _ => $"{name} ({email})",
-    };
+    var whose = NameOf(request).Length == 0 || email is null ? person : $"{person} ({email})";
 
     return $"La demande de {whose} sera définitivement supprimée. Cette action est irréversible.";
   }
+
+  /// <summary>
+  /// Le <b>nom replié</b> de la personne : « Prénom Nom », celui des deux qui reste quand l'autre
+  /// manque, et à défaut l'email seul.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La règle est écrite ici, et nulle part ailleurs</b> : la phrase de suppression et le nom
+  /// que la ligne porte pour la fiche l'appellent tous deux. Écrite deux fois, elle finirait par
+  /// diverger — la suppression nommerait un jour la personne autrement que la fiche, sur le même
+  /// écran, pour la même demande.
+  ///
+  /// ⚠️ <b>Le résultat n'est jamais vide</b>, et n'est jamais « — » : l'<c>Identification</c> d'une
+  /// demande exige un email, ou un nom et un prénom — quand le nom manque, l'email est là. Le repli
+  /// final sur le vide est la branche que cette validation rend inatteignable.
+  /// </remarks>
+  private static string PersonOf(RecordedDataSubjectRequest request)
+  {
+    var name = NameOf(request);
+
+    return name.Length > 0 ? name : request.Email?.Value ?? string.Empty;
+  }
+
+  /// <summary>
+  /// « Prénom Nom », celui des deux qui reste quand l'autre manque, et le <b>vide</b> quand les deux
+  /// manquent — sans espace parasite dans aucun des trois cas.
+  /// </summary>
+  /// <remarks>
+  /// C'est l'absence de nom, et non une comparaison au texte de l'email, qui dit à la phrase de
+  /// suppression que le nom replié est déjà l'email.
+  /// </remarks>
+  private static string NameOf(RecordedDataSubjectRequest request) =>
+    string.Join(' ', new[] { request.FirstName?.Value, request.LastName?.Value }.OfType<string>());
 
   /// <summary>
   /// Le libellé du droit en tête de cellule : « droit d'accès » devient « Droit d'accès ». Le
