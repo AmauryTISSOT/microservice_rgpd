@@ -228,6 +228,38 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>Chaque ligne porte aussi l'origine et le message de sa demande</b> : les deux informations
+  /// qu'aucune colonne ne montre, et que la fiche lira là, sans aucun aller-retour réseau.
+  /// L'origine sous son <b>libellé français</b>, composé par le serveur — « Email », « Courrier » ;
+  /// le message <b>tel qu'enregistré</b>, retours à la ligne compris.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Aucun repli « — » n'est écrit pour le message</b> : il est obligatoire (ADR-0019), et une
+  /// demande sans message ne s'enregistre pas.
+  /// </remarks>
+  [Theory]
+  [InlineData("Email", "Email")]
+  [InlineData("Letter", "Courrier")]
+  public async Task CarriesTheFrenchOriginLabelAndTheMessageAsRecorded(string origin, string label)
+  {
+    var marker = Guid.NewGuid().ToString("N");
+    var message = $"Je souhaite accéder à mes données.\r\n\r\nMerci d'avance — {marker}.";
+    var email = $"jeanne.{marker}@example.org";
+
+    await _surface.RecordAsync(new Dictionary<string, string>
+    {
+      ["origin"] = origin,
+      ["message"] = message,
+      ["email"] = email,
+    });
+
+    var row = Regex.Match(RowMarkupWith(await BoardAsync(), email), @"<tr\b([^>]*)>").Groups[1].Value;
+
+    AttributeOf(row, "data-sheet-origin").ShouldBe(label);
+    AttributeOf(row, "data-sheet-message").ShouldBe(message);
+  }
+
+  /// <summary>
   /// <b>Une identité non vérifiée se lit « Non »</b>, et chaque droit sous son libellé, majuscule
   /// initiale comprise.
   /// </summary>
