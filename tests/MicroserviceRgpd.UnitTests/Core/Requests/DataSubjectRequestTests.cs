@@ -16,6 +16,12 @@ public class DataSubjectRequestTests
 
   private static readonly DateTimeOffset Now = new(2026, 9, 11, 8, 15, 0, TimeSpan.Zero);
 
+  /// <summary>L'instant d'une correction, postérieur à l'enregistrement : l'empreinte ne se confond pas avec lui.</summary>
+  private static readonly DateTimeOffset Later = new(2026, 9, 11, 17, 40, 0, TimeSpan.Zero);
+
+  /// <summary>L'instant d'une seconde correction, pour distinguer une empreinte gardée d'une empreinte refaite.</summary>
+  private static readonly DateTimeOffset MuchLater = new(2026, 9, 12, 9, 5, 0, TimeSpan.Zero);
+
   /// <summary>Une saisie complète et valide, que chaque test déforme sur un seul point.</summary>
   private static DataSubjectRequestEntry AValidEntry() => new(
     Origin: Origin.Email,
@@ -432,5 +438,220 @@ public class DataSubjectRequestTests
   {
     DataSubjectRequestMessages.All.Count.ShouldBe(10);
     DataSubjectRequestMessages.All.Values.Distinct().Count().ShouldBe(10);
+  }
+
+  // ─── Modifier une demande ───────────────────────────────────────────────────────────────────
+
+  /// <summary>
+  /// <b>Les huit champs prennent les nouvelles valeurs, et l'empreinte est posée.</b> Modifier est un
+  /// <c>Gesture</c> : il laisse une trace datée et signée, distincte de celle de l'enregistrement,
+  /// qui ne bouge pas.
+  /// </summary>
+  [Fact]
+  public void TakesTheEightNewValuesAndStampsTheModification()
+  {
+    var request = Receive(AValidEntry()).Value;
+
+    var result = request.Modify(
+      new DataSubjectRequestEntry(
+        Origin: Origin.Letter,
+        ReceivedOn: "2026-09-11",
+        LastName: "Durand",
+        FirstName: "Paul",
+        Email: "paul.durand@exemple.fr",
+        IdentityVerified: true,
+        Message: "Je souhaite faire effacer mes données.",
+        Right: "Erasure"),
+      Today,
+      Later);
+
+    result.IsSuccess.ShouldBeTrue();
+    request.Origin.ShouldBe(Origin.Letter);
+    request.ReceivedOn.ShouldBe(new DateOnly(2026, 9, 11));
+    request.LastName!.Value.Value.ShouldBe("Durand");
+    request.FirstName!.Value.Value.ShouldBe("Paul");
+    request.Email!.Value.Value.ShouldBe("paul.durand@exemple.fr");
+    request.IdentityVerified.ShouldBeTrue();
+    request.Message.Value.ShouldBe("Je souhaite faire effacer mes données.");
+    request.Right.ShouldBe(DataSubjectRight.Erasure);
+
+    request.ModifiedBy.ShouldBe("operator");
+    request.ModifiedAt.ShouldBe(Later);
+    request.ModifiedAt!.Value.Offset.ShouldBe(TimeSpan.Zero);
+    request.CreatedBy.ShouldBe("operator");
+    request.CreatedAt.ShouldBe(Now);
+  }
+
+  /// <summary>
+  /// <b>La date limite suit la date de réception corrigée</b> : la même règle qu'à la réception, et
+  /// ses trois bascules de fin de mois (ADR-0021). L'ADR-0021 avait annoncé cette conséquence sans la
+  /// traiter ; c'est ici qu'elle est honorée.
+  /// </summary>
+  [Theory]
+  [InlineData("2026-03-31", "2026-04-30")]
+  [InlineData("2027-01-31", "2027-02-28")]
+  [InlineData("2028-01-31", "2028-02-29")]
+  public void RecomputesTheResponseDeadlineFromTheCorrectedReceptionDate(string receivedOn, string responseDeadline)
+  {
+    var request = Receive(AValidEntry() with { ReceivedOn = "2026-03-10" }).Value;
+
+    request.ResponseDeadline.ShouldBe(new DateOnly(2026, 4, 10));
+
+    // Chaque correction se pose le jour même de la réception corrigée, pour que les dates encore à
+    // venir en 2026 restent admises.
+    var todayInParis = DateOnly.Parse(receivedOn, CultureInfo.InvariantCulture);
+
+    request.Modify(AValidEntry() with { ReceivedOn = receivedOn }, todayInParis, Later).IsSuccess.ShouldBeTrue();
+
+    request.ResponseDeadline.ShouldBe(DateOnly.Parse(responseDeadline, CultureInfo.InvariantCulture));
+  }
+
+  /// <summary>
+  /// <b>Une saisie fautive revient en refus groupé</b>, chacune rattachée à son champ et avec les mots
+  /// mêmes de la réception — l'<c>Operator</c> n'a pas deux vocabulaires de refus à apprendre — et la
+  /// demande n'est pas touchée.
+  /// </summary>
+  [Fact]
+  public void RefusesAnInvalidEntryWithTheWordsOfTheReceptionAndLeavesTheRequestUntouched()
+  {
+    var request = Receive(AValidEntry()).Value;
+
+    var result = request.Modify(
+      AValidEntry() with
+      {
+        ReceivedOn = "2026-09-12",
+        LastName = new string('a', 101),
+        Email = null,
+        FirstName = null,
+        Message = null,
+        Right = "OutOfScope",
+      },
+      Today,
+      Later);
+
+    result.Status.ShouldBe(ResultStatus.Invalid);
+    result.ValidationErrors.Select(error => (error.Identifier, error.ErrorMessage)).ShouldBe(
+      [
+        ("receivedOn", "La date de réception ne peut pas être dans le futur."),
+        ("lastName", "Le nom ne peut pas dépasser 100 caractères."),
+        ("email", "Renseignez un email, ou un nom et un prénom."),
+        ("firstName", "Renseignez un email, ou un nom et un prénom."),
+        ("message", "Le message est obligatoire."),
+        ("right", "Sélectionnez un droit RGPD."),
+      ],
+      ignoreOrder: true);
+
+    ShouldStillHoldTheValidEntry(request);
+    request.ModifiedBy.ShouldBeNull();
+    request.ModifiedAt.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Une demande close est inaltérable</b>, Terminée comme Annulée : le refus est un conflit, et
+  /// non un refus de saisie.
+  /// </summary>
+  [Theory]
+  [InlineData("Completed")]
+  [InlineData("Cancelled")]
+  public void RefusesToModifyAClosedRequest(string status)
+  {
+    var request = AClosedRequest(status);
+
+    var result = request.Modify(AValidEntry() with { LastName = "Durand" }, Today, Later);
+
+    result.Status.ShouldBe(ResultStatus.Conflict);
+    ShouldStillHoldTheValidEntry(request);
+    request.ModifiedBy.ShouldBeNull();
+    request.ModifiedAt.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le conflit passe avant la validation.</b> Lister des erreurs de saisie sous les champs d'un
+  /// formulaire qui ne pourra jamais enregistrer n'apprend rien à l'<c>Operator</c> : une saisie
+  /// fautive sur une demande close rend un conflit, jamais un refus de saisie.
+  /// </summary>
+  [Fact]
+  public void RefusesAClosedRequestBeforeEvenLookingAtTheEntry()
+  {
+    var request = AClosedRequest("Completed");
+
+    var result = request.Modify(AValidEntry() with { Message = null, Right = null }, Today, Later);
+
+    result.Status.ShouldBe(ResultStatus.Conflict);
+    result.ValidationErrors.ShouldBeEmpty();
+  }
+
+  /// <summary>
+  /// <b>Une modification qui ne change aucune valeur n'a pas eu lieu</b> : elle réussit et ne laisse
+  /// <b>aucune</b> empreinte. Les valeurs se comparent une fois rognées — deux espaces en fin de nom
+  /// ne sont pas un changement.
+  /// </summary>
+  [Fact]
+  public void LeavesNoStampWhenNothingChangesOnceTrimmed()
+  {
+    var request = Receive(AValidEntry()).Value;
+
+    var result = request.Modify(
+      AValidEntry() with
+      {
+        LastName = "  Dupont ",
+        FirstName = "\tJeanne\n",
+        Email = " jeanne.dupont@exemple.fr ",
+        Message = "  Je souhaite accéder à mes données.  ",
+        Right = " Access ",
+        ReceivedOn = " 2026-09-10 ",
+      },
+      Today,
+      Later);
+
+    result.IsSuccess.ShouldBeTrue();
+    request.ModifiedBy.ShouldBeNull();
+    request.ModifiedAt.ShouldBeNull();
+    request.ResponseDeadline.ShouldBe(new DateOnly(2026, 10, 10));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>L'empreinte d'un non-événement reste celle du dernier vrai changement</b> : elle ne se
+  /// rafraîchit pas, et ne s'efface pas non plus.
+  /// </summary>
+  [Fact]
+  public void KeepsThePreviousStampWhenAModificationChangesNothing()
+  {
+    var request = Receive(AValidEntry()).Value;
+    request.Modify(AValidEntry() with { LastName = "Durand" }, Today, Later).IsSuccess.ShouldBeTrue();
+
+    request.Modify(AValidEntry() with { LastName = "Durand" }, Today, MuchLater).IsSuccess.ShouldBeTrue();
+
+    request.ModifiedAt.ShouldBe(Later);
+  }
+
+  /// <summary>La saisie valide de départ, telle que la demande la tient encore après un refus.</summary>
+  private static void ShouldStillHoldTheValidEntry(DataSubjectRequest request)
+  {
+    request.Origin.ShouldBe(Origin.Email);
+    request.ReceivedOn.ShouldBe(new DateOnly(2026, 9, 10));
+    request.ResponseDeadline.ShouldBe(new DateOnly(2026, 10, 10));
+    request.LastName!.Value.Value.ShouldBe("Dupont");
+    request.FirstName!.Value.Value.ShouldBe("Jeanne");
+    request.Email!.Value.Value.ShouldBe("jeanne.dupont@exemple.fr");
+    request.IdentityVerified.ShouldBeFalse();
+    request.Message.Value.ShouldBe("Je souhaite accéder à mes données.");
+    request.Right.ShouldBe(DataSubjectRight.Access);
+  }
+
+  /// <summary>
+  /// Une demande close. ⚠️ <b>Le statut se pose par réflexion</b> parce qu'aucun <c>Gesture</c> ne sait
+  /// encore clore une demande : les tests qui ont besoin d'une demande close la fabriquent, ici comme
+  /// en base, par-dessus le domaine plutôt que par un chemin que le service n'offre pas.
+  /// </summary>
+  private static DataSubjectRequest AClosedRequest(string status)
+  {
+    var request = Receive(AValidEntry()).Value;
+
+    typeof(DataSubjectRequest)
+      .GetProperty(nameof(DataSubjectRequest.Status))!
+      .SetValue(request, RequestStatus.FromName(status));
+
+    return request;
   }
 }

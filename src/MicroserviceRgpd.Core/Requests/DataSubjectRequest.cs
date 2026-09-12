@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using MicroserviceRgpd.Core.SharedKernel;
 using Vogen;
@@ -15,6 +16,10 @@ namespace MicroserviceRgpd.Core.Requests;
 /// rattachée à son champ, pour que l'<c>Operator</c> corrige tout d'un coup.
 /// </para>
 /// <para>
+/// <b>Elle se corrige par <see cref="Modify"/></b>, tant qu'elle est En cours, sous les mêmes règles
+/// de saisie : une correction ne peut pas produire une demande que la réception aurait refusée.
+/// </para>
+/// <para>
 /// ⚠️ <b>La date de réception n'est pas l'instant d'enregistrement.</b> La première est déclarée par
 /// l'<c>Operator</c> — une demande transcrite d'un courrier a été reçue avant d'entrer dans le
 /// service —, le second est lu sur l'horloge.
@@ -28,30 +33,28 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// </summary>
   public const string OperatorAuthor = "operator";
 
-  private DataSubjectRequest(
-    Origin origin,
-    DateOnly receivedOn,
-    LastName? lastName,
-    FirstName? firstName,
-    EmailAddress? email,
-    bool identityVerified,
-    RequestMessage message,
-    DataSubjectRight right,
-    DateTimeOffset createdAt)
+  private DataSubjectRequest(ValidatedEntry entry, DateTimeOffset createdAt)
   {
     Id = DataSubjectRequestId.Next();
-    Origin = origin;
-    ReceivedOn = receivedOn;
-    ResponseDeadline = receivedOn.AddMonths(1);
-    LastName = lastName;
-    FirstName = firstName;
-    Email = email;
-    IdentityVerified = identityVerified;
-    Message = message;
-    Right = right;
+    Apply(entry);
     Status = RequestStatus.InProgress;
     CreatedBy = OperatorAuthor;
     CreatedAt = createdAt;
+  }
+
+  /// <summary>
+  /// Le constructeur qu'EF Core emprunte pour rematérialiser une ligne. Il ne rejoue aucun invariant.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il existe parce que le seul autre constructeur prend une saisie validée</b>, dont EF Core
+  /// ne sait pas alimenter les paramètres : il ne lie que ce qui porte le nom d'une propriété.
+  /// </remarks>
+  private DataSubjectRequest()
+  {
+    Origin = null!;
+    Right = null!;
+    Status = null!;
+    CreatedBy = null!;
   }
 
   /// <summary>L'identité engendrée à l'enregistrement.</summary>
@@ -67,7 +70,7 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// Le jour avant lequel le responsable doit répondre : <see cref="ReceivedOn"/> plus un mois,
   /// ramené au dernier jour du mois suivant quand ce jour n'y existe pas (ADR-0021). ⚠️ Fixée à la
   /// réception et enregistrée : elle ne se recalcule pas à la lecture, et ne part jamais de l'instant
-  /// d'enregistrement.
+  /// d'enregistrement. Seule une <see cref="Modify"/> qui change la date de réception la refait.
   /// </summary>
   public DateOnly ResponseDeadline { get; private set; }
 
@@ -126,6 +129,76 @@ public sealed class DataSubjectRequest : IAggregateRoot
     DateOnly todayInParis,
     DateTimeOffset recordedAt)
   {
+    var validated = Validate(entry, todayInParis);
+
+    if (!validated.IsSuccess)
+    {
+      return Result<DataSubjectRequest>.Invalid(validated.ValidationErrors);
+    }
+
+    return new DataSubjectRequest(validated.Value, recordedAt.ToUniversalTime());
+  }
+
+  /// <summary>
+  /// <b>Modifie une demande</b> — l'<c>Operator</c> corrige une erreur de saisie. C'est un
+  /// <c>Gesture</c> : il laisse une empreinte, <see cref="ModifiedBy"/> et <see cref="ModifiedAt"/>.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>L'ordre des refus n'est pas indifférent.</b> Une demande close est refusée <b>avant</b> toute
+  /// validation : lister des erreurs de saisie sous les champs d'un formulaire qui ne pourra jamais
+  /// enregistrer n'apprend rien à l'<c>Operator</c>.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une modification qui ne change aucune valeur n'a pas eu lieu</b> : elle ne touche aucune
+  /// propriété — pas même <see cref="ResponseDeadline"/> — et ne laisse aucune empreinte. Rien n'étant
+  /// touché, le suivi des modifications n'émet aucun <c>UPDATE</c>, et l'empreinte reste celle de la
+  /// modification précédente.
+  /// </para>
+  /// </remarks>
+  /// <param name="entry">Les valeurs brutes corrigées, ni trimées ni validées.</param>
+  /// <param name="todayInParis">Aujourd'hui à Paris — voir <see cref="ParisCalendar"/>. La date de réception ne le dépasse pas.</param>
+  /// <param name="modifiedAt">L'instant de la modification, lu sur l'horloge.</param>
+  public Result Modify(DataSubjectRequestEntry entry, DateOnly todayInParis, DateTimeOffset modifiedAt)
+  {
+    if (Status != RequestStatus.InProgress)
+    {
+      return Result.Conflict();
+    }
+
+    var validated = Validate(entry, todayInParis);
+
+    if (!validated.IsSuccess)
+    {
+      return Result.Invalid(validated.ValidationErrors);
+    }
+
+    var corrected = validated.Value;
+
+    if (corrected == CurrentEntry())
+    {
+      return Result.Success();
+    }
+
+    Apply(corrected);
+    ModifiedBy = OperatorAuthor;
+    ModifiedAt = modifiedAt.ToUniversalTime();
+
+    return Result.Success();
+  }
+
+  /// <summary>
+  /// La règle « réception plus un mois, ramené au dernier jour du mois quand ce jour n'y existe pas »
+  /// (ADR-0021), écrite <b>une seule fois</b> : la réception la pose, la modification la recalcule.
+  /// </summary>
+  private static DateOnly DeadlineFor(DateOnly receivedOn) => receivedOn.AddMonths(1);
+
+  /// <summary>
+  /// Les règles de saisie, partagées par la réception et la modification : <b>toutes</b> les raisons
+  /// de refuser à la fois, ou les huit valeurs converties.
+  /// </summary>
+  private static Result<ValidatedEntry> Validate(DataSubjectRequestEntry entry, DateOnly todayInParis)
+  {
     ArgumentNullException.ThrowIfNull(entry);
     ArgumentNullException.ThrowIfNull(entry.Origin);
 
@@ -141,10 +214,10 @@ public sealed class DataSubjectRequest : IAggregateRoot
 
     if (errors.Count > 0)
     {
-      return Result<DataSubjectRequest>.Invalid(errors);
+      return Result<ValidatedEntry>.Invalid(errors);
     }
 
-    return new DataSubjectRequest(
+    return new ValidatedEntry(
       entry.Origin,
       receivedOn!.Value,
       lastName,
@@ -152,9 +225,37 @@ public sealed class DataSubjectRequest : IAggregateRoot
       email,
       entry.IdentityVerified,
       message!.Value,
-      right!,
-      recordedAt.ToUniversalTime());
+      right!);
   }
+
+  /// <summary>
+  /// Pose les huit valeurs d'une saisie validée, et la date limite qui en découle. Écrit une seule
+  /// fois : la réception les pose à la naissance, la modification les repose.
+  /// </summary>
+  [MemberNotNull(nameof(Origin), nameof(Right))]
+  private void Apply(ValidatedEntry entry)
+  {
+    Origin = entry.Origin;
+    ReceivedOn = entry.ReceivedOn;
+    ResponseDeadline = DeadlineFor(entry.ReceivedOn);
+    LastName = entry.LastName;
+    FirstName = entry.FirstName;
+    Email = entry.Email;
+    IdentityVerified = entry.IdentityVerified;
+    Message = entry.Message;
+    Right = entry.Right;
+  }
+
+  /// <summary>Les valeurs courantes sous la forme d'une saisie validée, pour se comparer à une autre.</summary>
+  private ValidatedEntry CurrentEntry() => new(
+    Origin,
+    ReceivedOn,
+    LastName,
+    FirstName,
+    Email,
+    IdentityVerified,
+    Message,
+    Right);
 
   /// <summary>Obligatoire, au format ISO du fil, et jamais postérieure à aujourd'hui à Paris. Pas de borne basse.</summary>
   private static DateOnly? ReadReceivedOn(string? raw, DateOnly todayInParis, List<ValidationError> errors)
@@ -253,4 +354,20 @@ public sealed class DataSubjectRequest : IAggregateRoot
 
   private static ValidationError Error(string field, string message) =>
     new() { Identifier = field, ErrorMessage = message };
+
+  /// <summary>
+  /// Les huit valeurs d'une saisie <b>déjà converties</b>, une fois les règles passées. ⚠️ C'est un
+  /// artefact d'implémentation, et non un terme du domaine : il n'existe que pour que la réception et
+  /// la modification partagent leurs validateurs, et pour que « rien n'a changé » se lise en une
+  /// égalité structurelle plutôt qu'en huit comparaisons recopiées.
+  /// </summary>
+  private sealed record ValidatedEntry(
+    Origin Origin,
+    DateOnly ReceivedOn,
+    LastName? LastName,
+    FirstName? FirstName,
+    EmailAddress? Email,
+    bool IdentityVerified,
+    RequestMessage Message,
+    DataSubjectRight Right);
 }
