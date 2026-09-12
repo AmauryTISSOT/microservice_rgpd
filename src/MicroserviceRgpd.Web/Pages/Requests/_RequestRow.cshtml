@@ -32,6 +32,14 @@
 
   Chaque icône est un seul tracé de 16 × 16, au trait de l'encre du bouton.
 
+  CHAQUE CELLULE SE NOMME, par l'information de la demande qu'elle rend — `email`, `lastName`,
+  `firstName`, `receivedOn`, `responseDeadline`, `identityVerified`, `right`, `createdAt`,
+  `createdBy`, `status`. La fiche de la demande reprendra ces dix informations depuis la ligne, et
+  elle les lira PAR LEUR NOM, JAMAIS PAR LEUR INDEX : l'ordre des colonnes est un compromis de
+  largeur d'écran, pas un contrat — ajouter ou déplacer une colonne ne doit pas la casser en
+  silence. En camelCase anglais : un `data-*` est un identifiant. ⚠️ La cellule des actions ne se
+  nomme pas : elle ne rend aucune information.
+
   LA DATE LIMITE D'UNE DEMANDE EN COURS PEUT ÊTRE SIGNALÉE — « Échéance proche », « En retard » —,
   par le serveur, contre « aujourd'hui » à Paris (ADR-0021). ⚠️ SEULE LA CELLULE PORTE LE
   SIGNALEMENT, jamais la ligne : son nom canonique, que la feuille de style colore, et son libellé,
@@ -67,23 +75,23 @@
     data-received-on="@Model.Sort.ReceivedOn"
     data-created-at="@Model.Sort.CreatedAt"
     data-sheet-person="@Model.ForSheet.Person">
-  <td>@Model.Email</td>
-  <td>@Model.LastName</td>
-  <td>@Model.FirstName</td>
-  <td>@Model.ReceivedOn</td>
+  <td data-field="email">@Model.Email</td>
+  <td data-field="lastName">@Model.LastName</td>
+  <td data-field="firstName">@Model.FirstName</td>
+  <td data-field="receivedOn">@Model.ReceivedOn</td>
   @if (Model.DeadlineSignal is { } signal)
   {
-    <td data-deadline-signal="@signal.Name">@Model.ResponseDeadline <span>@signal.Label</span></td>
+    <td data-field="responseDeadline" data-deadline-signal="@signal.Name">@Model.ResponseDeadline <span>@signal.Label</span></td>
   }
   else
   {
-    <td>@Model.ResponseDeadline</td>
+    <td data-field="responseDeadline">@Model.ResponseDeadline</td>
   }
-  <td>@Model.IdentityVerified</td>
-  <td>@Model.Right</td>
-  <td>@Model.CreatedAt</td>
-  <td>@Model.CreatedBy</td>
-  <td><span class="status" data-status="@Model.StatusName">@Model.StatusLabel</span></td>
+  <td data-field="identityVerified">@Model.IdentityVerified</td>
+  <td data-field="right">@Model.Right</td>
+  <td data-field="createdAt">@Model.CreatedAt</td>
+  <td data-field="createdBy">@Model.CreatedBy</td>
+  <td data-field="status"><span class="status" data-status="@Model.StatusName">@Model.StatusLabel</span></td>
   <td>
     <div class="row-actions">
       @foreach (var (label, tooltip, icon, action, dimmed) in actions)

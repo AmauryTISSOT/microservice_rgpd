@@ -39,7 +39,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>Le tableau porte ses colonnes dans l'ordre</b> — Email, Nom, Prénom, Date de réception,
-  /// Date limite de réponse, Identité vérifiée, Type de droit, Date de création, Créé par, Statut —,
+  /// Date limite de réponse, Identité vérifiée, Droit invoqué, Date de création, Créé par, Statut —,
   /// puis une colonne d'actions <b>sans titre</b> : onze en tout.
   /// </summary>
   [Fact]
@@ -53,9 +53,45 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       .ShouldBe(
         [
           "Email", "Nom", "Prénom", "Date de réception", "Date limite de réponse", "Identité vérifiée",
-          "Type de droit", "Date de création", "Créé par", "Statut", "",
+          "Droit invoqué", "Date de création", "Créé par", "Statut", "",
         ],
         "Le tableau ne porte pas ses colonnes dans l'ordre, suivies d'une colonne d'actions sans titre.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>« Type de droit » ne se lit plus nulle part sur l'écran</b> : le glossaire dit « droit
+  /// invoqué », et son <i>Avoid</i> écarte les doublons. Deux mots pour le même champ, sur le même
+  /// écran, recréeraient celui que le glossaire existe pour empêcher.
+  /// </summary>
+  [Fact]
+  public async Task NeverSaysTypeDeDroitAnywhereOnTheScreen()
+  {
+    var page = await _layout.ReadAsync(RequestSurface.Board);
+
+    page.ShouldNotContain("Type de droit", Case.Insensitive, "L'écran dit encore « Type de droit ».");
+  }
+
+  /// <summary>
+  /// <b>Chaque cellule de la ligne se nomme</b>, par la propriété du view model qu'elle rend :
+  /// <c>email</c>, <c>lastName</c>, <c>firstName</c>, <c>receivedOn</c>, <c>responseDeadline</c>,
+  /// <c>identityVerified</c>, <c>right</c>, <c>createdAt</c>, <c>createdBy</c>, <c>status</c>. La
+  /// cellule d'actions, qui ne rend aucune propriété, ne se nomme pas.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La fiche lira les cellules par leur nom, jamais par leur index</b> : l'ordre des colonnes
+  /// est un compromis de largeur d'écran, pas un contrat. Ajouter ou déplacer une colonne ne doit
+  /// pas casser la fiche en silence. En camelCase anglais : un <c>data-*</c> est un identifiant.
+  /// </remarks>
+  [Fact]
+  public async Task NamesEachCellOfTheRowByItsField()
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+
+    await CreateAsync(new() { ["email"] = email });
+
+    RequestSurface.FieldNamesIn(RowMarkupWith(await BoardAsync(), email)).ShouldBe(
+      [.. RequestSurface.RowFields, RequestSurface.UnnamedActionsCell],
+      "Les cellules de la ligne ne se nomment pas, dans l'ordre.");
   }
 
   /// <summary>
