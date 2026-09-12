@@ -79,20 +79,25 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   /// </remarks>
   public async Task<IActionResult> OnGetValuesAsync(string? id, CancellationToken cancellationToken)
   {
-    // L'écran ne demande que l'identifiant qu'il a rendu : un autre n'est pas une saisie, mais un envoi forgé.
-    if (!Guid.TryParse(id, out var guid) || !DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest))
+    if (ReadId(id) is not { } dataSubjectRequest)
     {
       return BadRequest();
     }
 
     var read = await mediator.Send(new ReadDataSubjectRequestValuesQuery(dataSubjectRequest), cancellationToken);
 
-    return read.Status switch
+    if (read.Status is not ResultStatus.Ok)
     {
-      ResultStatus.Ok => new JsonResult(RequestForm.Of(read.Value)),
-      ResultStatus.NotFound => NotFound(),
-      _ => StatusCode(StatusCodes.Status500InternalServerError),
-    };
+      return read.Status is ResultStatus.NotFound
+        ? NotFound()
+        : StatusCode(StatusCodes.Status500InternalServerError);
+    }
+
+    // ⚠️ Rien n'est gardé : la modale relit ces valeurs après chaque modification, et un cache de
+    // navigateur lui rendrait celles d'avant.
+    Response.Headers.CacheControl = "no-store";
+
+    return new JsonResult(RequestForm.Of(read.Value));
   }
 
   /// <summary>
@@ -144,8 +149,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   /// </remarks>
   public async Task<IActionResult> OnPostDeleteAsync(string? id, CancellationToken cancellationToken)
   {
-    // L'écran ne poste que l'identifiant qu'il a rendu : un autre n'est pas une saisie, mais un envoi forgé.
-    if (!Guid.TryParse(id, out var guid) || !DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest))
+    if (ReadId(id) is not { } dataSubjectRequest)
     {
       return BadRequest();
     }
@@ -161,6 +165,20 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
       _ => StatusCode(StatusCodes.Status500InternalServerError),
     };
   }
+
+  /// <summary>
+  /// L'identifiant d'une demande, tel qu'un handler le reçoit — <b>ou rien, et c'est un 400</b>,
+  /// jamais un 404 : ce n'est pas une demande introuvable, que l'écran lirait comme une réussite
+  /// (ADR-0022).
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'écran ne nomme que les identifiants qu'il a rendus</b> : un autre n'est pas une saisie
+  /// de l'<c>Operator</c>, mais un envoi forgé.
+  /// </remarks>
+  private static DataSubjectRequestId? ReadId(string? id) =>
+    Guid.TryParse(id, out var guid) && DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest)
+      ? dataSubjectRequest
+      : null;
 
   private static ObjectResult ValidationProblem(IDictionary<string, string[]> errors) =>
     new(new ValidationProblemDetails(errors) { Status = StatusCodes.Status400BadRequest })

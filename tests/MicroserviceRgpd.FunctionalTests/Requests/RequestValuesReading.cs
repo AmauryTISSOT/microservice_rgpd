@@ -61,16 +61,35 @@ public class RequestValuesReading(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task AnswersNothingForTheOptionalFieldsLeftEmpty()
   {
+    // Identifiée par ses seuls nom et prénom : c'est l'email qui manque, là où la saisie de départ
+    // est identifiée par son seul email et laisse le nom et le prénom vides.
+    var fields = RequestSurface.AValidRequest();
+    fields["email"] = "";
+    fields["lastName"] = "Martin";
+    fields["firstName"] = "Jeanne";
+
+    var byNames = await ReadValuesOfAsync(await _surface.RecordAsync(fields));
+    var byEmail = await ReadValuesOfAsync(await _surface.RecordAsync());
+
+    byNames["email"].ValueKind.ShouldBe(JsonValueKind.Null);
+    byEmail["lastName"].ValueKind.ShouldBe(JsonValueKind.Null);
+    byEmail["firstName"].ValueKind.ShouldBe(JsonValueKind.Null);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Rien n'est gardé</b> : la modale relit ces valeurs après chaque modification, et un cache
+  /// de navigateur lui rendrait celles d'avant.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheValuesOutOfEveryCache()
+  {
     var (id, _) = await _surface.RecordAsync();
 
     var response = await _surface.ValuesOfAsync(id);
 
-    response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
-
-    var values = await ValuesOfAsync(response);
-
-    values["lastName"].ValueKind.ShouldBe(JsonValueKind.Null);
-    values["firstName"].ValueKind.ShouldBe(JsonValueKind.Null);
+    response.Headers.CacheControl
+      .ShouldNotBeNull("La réponse ne dit rien de sa mise en cache.")
+      .NoStore.ShouldBeTrue("Les valeurs d'une demande sont mises en cache.");
   }
 
   /// <summary>
@@ -134,6 +153,16 @@ public class RequestValuesReading(CustomWebApplicationFactory<Program> factory)
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : l'assertion suivante serait vide.");
     published.ShouldNotContain("handler=Values", Case.Insensitive, "Le document Swagger publie la lecture d'une demande.");
     published.ShouldNotContain("DataSubjectRequestValues", Case.Insensitive, "Le document Swagger publie la lecture d'une demande.");
+  }
+
+  /// <summary>Les valeurs de la demande enregistrée, la réponse ayant d'abord été reconnue 200.</summary>
+  private async Task<IReadOnlyDictionary<string, JsonElement>> ReadValuesOfAsync((Guid Id, string Message) recorded)
+  {
+    var response = await _surface.ValuesOfAsync(recorded.Id);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+
+    return await ValuesOfAsync(response);
   }
 
   /// <summary>Le corps de la réponse, champ par champ, sous les clés mêmes du formulaire.</summary>
