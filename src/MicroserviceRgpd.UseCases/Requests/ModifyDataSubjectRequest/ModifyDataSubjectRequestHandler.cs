@@ -1,11 +1,12 @@
 using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
 namespace MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 
 /// <summary>
-/// Confie la correction à <see cref="DataSubjectRequest.Modify"/> et enregistre ce qu'elle a touché —
-/// ou rend « introuvable », le refus d'une demande close, ou <b>toutes</b> les raisons de refuser la
-/// saisie, sans rien écrire.
+/// Confie la correction à <see cref="DataSubjectRequest.Modify"/>, enregistre ce qu'elle a touché et
+/// rend la demande telle que le tableau la lit — ou rend « introuvable », le refus d'une demande
+/// close, ou <b>toutes</b> les raisons de refuser la saisie, sans rien écrire.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,14 +20,21 @@ namespace MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 /// même pour une modification qui n'a rien changé — précisément ce que le domaine refuse de laisser
 /// exister.
 /// </para>
+/// <para>
+/// ⚠️ <b>La demande rendue est relue en mémoire, jamais en base</b> : l'agrégat que le suivi des
+/// modifications vient d'enregistrer porte déjà les nouvelles valeurs, et une correction qui n'a rien
+/// changé les porte tout autant.
+/// </para>
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
 /// <param name="clock">L'horloge du service, qui date le geste.</param>
 public sealed class ModifyDataSubjectRequestHandler(IRepository<DataSubjectRequest> requests, TimeProvider clock)
-  : ICommandHandler<ModifyDataSubjectRequestCommand, Result>
+  : ICommandHandler<ModifyDataSubjectRequestCommand, Result<RecordedDataSubjectRequest>>
 {
   /// <inheritdoc />
-  public async ValueTask<Result> Handle(ModifyDataSubjectRequestCommand command, CancellationToken cancellationToken)
+  public async ValueTask<Result<RecordedDataSubjectRequest>> Handle(
+    ModifyDataSubjectRequestCommand command,
+    CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(command);
 
@@ -34,7 +42,7 @@ public sealed class ModifyDataSubjectRequestHandler(IRepository<DataSubjectReque
 
     if (request is null)
     {
-      return Result.NotFound();
+      return Result<RecordedDataSubjectRequest>.NotFound();
     }
 
     var now = clock.GetUtcNow();
@@ -42,11 +50,14 @@ public sealed class ModifyDataSubjectRequestHandler(IRepository<DataSubjectReque
 
     if (!modified.IsSuccess)
     {
-      return modified;
+      // ⚠️ Un refus ne rejoue pas la projection : `Map` ne transporte que le statut et les raisons, et
+      // la demande n'est pas rendue ici. C'est ce qui garde le refus du domaine intact — `Invalid`
+      // reste `Invalid`, `Conflict` reste `Conflict` — sans le réécrire d'un statut à l'autre.
+      return modified.Map(_ => RecordedDataSubjectRequest.Of(request));
     }
 
     await requests.SaveChangesAsync(cancellationToken);
 
-    return modified;
+    return RecordedDataSubjectRequest.Of(request);
   }
 }

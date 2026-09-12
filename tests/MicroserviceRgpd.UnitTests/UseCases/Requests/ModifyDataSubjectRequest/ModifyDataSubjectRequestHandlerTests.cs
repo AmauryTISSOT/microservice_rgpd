@@ -1,13 +1,14 @@
 using Ardalis.Result;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
 namespace MicroserviceRgpd.UnitTests.UseCases.Requests.ModifyDataSubjectRequest;
 
 /// <summary>
 /// Ce que le use case de modification ajoute au domaine, et rien de plus : il retrouve la demande,
-/// lit l'horloge <b>une seule fois</b>, confie la correction à l'agrégat et propage son
-/// <c>Result</c> tel quel.
+/// lit l'horloge <b>une seule fois</b>, confie la correction à l'agrégat, rend la demande corrigée
+/// telle que le tableau la lit et propage son <c>Result</c> tel quel.
 /// </summary>
 /// <remarks>
 /// Les règles de la correction — les refus, leur ordre, l'empreinte — se vérifient sur l'agrégat, qui
@@ -59,6 +60,58 @@ public class ModifyDataSubjectRequestHandlerTests
   }
 
   /// <summary>
+  /// <b>Le succès rend la demande corrigée</b>, telle que le tableau la lit : l'écran en rend la ligne
+  /// sans relire la base.
+  /// </summary>
+  [Fact]
+  public async Task RendersTheCorrectedRequestAsTheTableReadsIt()
+  {
+    var request = ARequestInProgress();
+
+    var result = await HandleAsync(request, AValidEntry() with { ReceivedOn = "2026-08-31" });
+
+    result.Value.Id.ShouldBe(request.Id);
+    result.Value.ReceivedOn.ShouldBe(new DateOnly(2026, 8, 31));
+    result.Value.ResponseDeadline.ShouldBe(new DateOnly(2026, 9, 30));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une correction qui ne change rien rend la demande quand même</b> : le succès n'a qu'une
+  /// forme, et la ligne rendue reste correcte — elle n'a pas changé.
+  /// </summary>
+  [Fact]
+  public async Task RendersTheRequestEvenWhenNothingChanged()
+  {
+    var request = ARequestInProgress();
+
+    var result = await HandleAsync(request, AValidEntry());
+
+    result.IsSuccess.ShouldBeTrue();
+    result.Value.Id.ShouldBe(request.Id);
+    request.ModifiedAt.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Le refus d'une demande close traverse tel quel</b> — <c>Conflict</c>, et rien n'est
+  /// enregistré.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le conflit se vérifie ici comme l'<c>Invalid</c></b>, bien que ce soit l'agrégat qui le
+  /// décide : le use case rend désormais la demande, et la projection ne doit <b>pas</b> aplatir le
+  /// statut du refus en la traversant.
+  /// </remarks>
+  [Theory]
+  [InlineData("Completed")]
+  [InlineData("Cancelled")]
+  public async Task PropagatesTheConflictOfAClosedRequest(string status)
+  {
+    var result = await HandleAsync(AClosedRequest(status), AValidEntry() with { LastName = "Durand" });
+
+    result.Status.ShouldBe(ResultStatus.Conflict);
+    await _requests.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+  }
+
+  /// <summary>
   /// <b>Le refus du domaine traverse tel quel</b>, et rien n'est enregistré : c'est l'agrégat qui dit
   /// ce qu'un refus vaut, pas le use case.
   /// </summary>
@@ -93,7 +146,21 @@ public class ModifyDataSubjectRequestHandlerTests
   private static DataSubjectRequest ARequestInProgress() =>
     DataSubjectRequest.Receive(AValidEntry(), new DateOnly(2026, 9, 11), Now).Value;
 
-  private async Task<Result> HandleAsync(DataSubjectRequest request, DataSubjectRequestEntry entry)
+  /// <summary>Une demande close — le statut posé par réflexion : aucun geste ne le fait changer.</summary>
+  private static DataSubjectRequest AClosedRequest(string status)
+  {
+    var request = ARequestInProgress();
+
+    typeof(DataSubjectRequest)
+      .GetProperty(nameof(DataSubjectRequest.Status))!
+      .SetValue(request, RequestStatus.FromName(status));
+
+    return request;
+  }
+
+  private async Task<Result<RecordedDataSubjectRequest>> HandleAsync(
+    DataSubjectRequest request,
+    DataSubjectRequestEntry entry)
   {
     _requests.GetByIdAsync(request.Id, Arg.Any<CancellationToken>()).Returns(request);
 

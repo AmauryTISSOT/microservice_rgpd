@@ -1,6 +1,7 @@
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.DeleteDataSubjectRequest;
+using MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestValues;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
@@ -116,19 +117,14 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
 
     if (form.ToEntry() is not { } entry)
     {
-      return ValidationProblem(new Dictionary<string, string[]>
-      {
-        [DataSubjectRequestField.Origin] = [$"« {form.Origin} » n'est pas une origine."],
-      });
+      return ForgedOrigin(form);
     }
 
     var recorded = await mediator.Send(new RecordDataSubjectRequestCommand(entry), cancellationToken);
 
     if (!recorded.IsSuccess)
     {
-      return ValidationProblem(recorded.ValidationErrors
-        .GroupBy(refusal => refusal.Identifier)
-        .ToDictionary(field => field.Key, field => field.Select(refusal => refusal.ErrorMessage).ToArray()));
+      return ValidationProblem(recorded.ValidationErrors);
     }
 
     // La ligne du 201 se signale comme celles du tableau : contre « aujourd'hui », relu ici (ADR-0021).
@@ -136,6 +132,57 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
     row.StatusCode = StatusCodes.Status201Created;
 
     return row;
+  }
+
+  /// <summary>
+  /// <b>Enregistre une correction</b> et répond 200, avec pour corps <b>la ligne mise à jour</b> — ou
+  /// 400 <c>ValidationProblem</c>, les refus indexés par les clés du corps, ou 404 quand la demande
+  /// n'existe plus, ou 409 quand elle est close, sans rien avoir enregistré.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le succès n'a qu'une forme</b> : 200 et la ligne, <b>y compris quand la correction ne
+  /// change rien</b>. Un second code de succès ferait un second chemin dans le script, pour une ligne
+  /// qui reste correcte de toute façon — elle n'a pas changé.
+  /// </para>
+  /// <para>
+  /// La ligne est rendue par la vue partielle <c>_RequestRow</c>, celle du tableau et celle de la
+  /// création : un seul gabarit, aucune divergence d'affichage possible. Comme la création et la
+  /// suppression, c'est un handler de la page, appelé par le script avec le jeton anti-rejeu que la
+  /// page rend.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnPostModifyAsync(string? id, RequestForm form, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(form);
+
+    if (ReadId(id) is not { } dataSubjectRequest)
+    {
+      return BadRequest();
+    }
+
+    if (form.ToEntry() is not { } entry)
+    {
+      return ForgedOrigin(form);
+    }
+
+    var modified = await mediator.Send(
+      new ModifyDataSubjectRequestCommand(dataSubjectRequest, entry),
+      cancellationToken);
+
+    if (modified.Status is not ResultStatus.Ok)
+    {
+      return modified.Status switch
+      {
+        ResultStatus.Invalid => ValidationProblem(modified.ValidationErrors),
+        ResultStatus.NotFound => NotFound(),
+        ResultStatus.Conflict => StatusCode(StatusCodes.Status409Conflict),
+        _ => StatusCode(StatusCodes.Status500InternalServerError),
+      };
+    }
+
+    // La ligne du 200 se signale comme celles du tableau : contre « aujourd'hui », relu ici (ADR-0021).
+    return Partial("_RequestRow", RequestRow.Of(modified.Value, ParisCalendar.Today(clock)));
   }
 
   /// <summary>
@@ -179,6 +226,26 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
     Guid.TryParse(id, out var guid) && DataSubjectRequestId.TryFrom(guid, out var dataSubjectRequest)
       ? dataSubjectRequest
       : null;
+
+  /// <summary>
+  /// ⚠️ <b>Une origine hors des deux canaux n'est pas une saisie, c'est un envoi forgé</b> : le
+  /// formulaire ne propose que <c>Email</c> et <c>Letter</c>. Le domaine ne la voit donc jamais, et
+  /// c'est ici qu'elle se refuse — sous <c>origin</c>, comme les refus du domaine.
+  /// </summary>
+  private static ObjectResult ForgedOrigin(RequestForm form) =>
+    ValidationProblem(new Dictionary<string, string[]>
+    {
+      [DataSubjectRequestField.Origin] = [$"« {form.Origin} » n'est pas une origine."],
+    });
+
+  /// <summary>
+  /// Les refus du domaine, <b>regroupés par champ</b> : leurs identifiants sont déjà les noms des
+  /// champs du formulaire, il n'y a aucune table de correspondance à tenir.
+  /// </summary>
+  private static ObjectResult ValidationProblem(IEnumerable<ValidationError> refusals) =>
+    ValidationProblem(refusals
+      .GroupBy(refusal => refusal.Identifier)
+      .ToDictionary(field => field.Key, field => field.Select(refusal => refusal.ErrorMessage).ToArray()));
 
   private static ObjectResult ValidationProblem(IDictionary<string, string[]> errors) =>
     new(new ValidationProblemDetails(errors) { Status = StatusCodes.Status400BadRequest })
