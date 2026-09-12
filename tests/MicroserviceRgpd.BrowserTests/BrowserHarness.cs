@@ -125,6 +125,26 @@ public sealed class BrowserHarness : IAsyncLifetime
   }
 
   /// <summary>
+  /// Pose le statut de la demande enregistrée sous ce message <b>à même la table</b> — pour qui doit
+  /// voir une demande close, qu'aucun <c>Gesture</c> ne sait encore produire.
+  /// </summary>
+  /// <remarks>
+  /// La colonne tient le <b>nom canonique</b> du statut, et non son rang : c'est ce que la
+  /// configuration d'entité y écrit.
+  /// </remarks>
+  public async Task SetStatusAsync(string message, RequestStatus status)
+  {
+    ArgumentNullException.ThrowIfNull(status);
+
+    using var scope = Service.Services.CreateScope();
+
+    var updated = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+      .ExecuteSqlAsync($"UPDATE data_subject_requests SET status = {status.Name} WHERE message = {message}");
+
+    updated.ShouldBe(1, "Le statut n'a été posé sur aucune demande.");
+  }
+
+  /// <summary>
   /// Retire de la base la demande enregistrée sous ce message — <b>dans le dos de l'écran</b>, comme
   /// le ferait un second onglet.
   /// </summary>

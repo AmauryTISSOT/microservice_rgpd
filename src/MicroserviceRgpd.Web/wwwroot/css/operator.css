@@ -749,6 +749,24 @@ button.row-action:focus-visible {
 }
 
 /*
+  UNE ACTION ÉTEINTE — le crayon d'une demande close. ⚠️ Elle porte `aria-disabled`, jamais
+  `disabled` : un bouton réellement désactivé ne reçoit ni survol ni focus visible, et l'infobulle
+  qui dit pourquoi le geste n'est pas offert ne se lirait jamais. L'action reste donc atteignable, au
+  clavier comme à la souris.
+
+  ⚠️ ELLE S'ÉTEINT EN NE S'ALLUMANT PAS : son encre reste l'encre estompée du repos, et ne monte pas
+  à l'encre pleine au survol ni au focus. C'est l'encre que le dépôt donne déjà à l'action
+  indisponible, avec le même curseur. Et non `--ink-faint`, la plus pâle des quatre, qui ne tient pas
+  le seuil de contraste : un tracé qu'on ne distingue plus n'explique rien.
+*/
+button.row-action[aria-disabled="true"],
+button.row-action[aria-disabled="true"]:hover,
+button.row-action[aria-disabled="true"]:focus-visible {
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+/*
   L'INFOBULLE — le libellé de l'action, sous l'icône, au survol comme au focus du clavier : qui
   navigue sans souris lit la même chose que qui survole. Elle s'aligne sur le bord droit du bouton,
   pour ne pas déborder de la dernière colonne ; elle ne capte aucun clic.
