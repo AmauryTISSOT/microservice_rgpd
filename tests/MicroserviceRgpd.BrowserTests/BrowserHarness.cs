@@ -49,9 +49,13 @@ public sealed class BrowserHarness : IAsyncLifetime
   /// Un contexte de navigation neuf, dont les adresses relatives partent du service : un test écrit
   /// <c>GotoAsync("/")</c> et arrive à l'accueil.
   /// </summary>
-  public Task<IBrowserContext> NewContextAsync()
+  /// <param name="reducedMotion">
+  /// Le réglage système du mouvement, pour qui doit lire l'écran sous un système qui demande que rien
+  /// ne bouge. Sans lui, le contexte n'exprime aucune préférence — comme un poste ordinaire.
+  /// </param>
+  public Task<IBrowserContext> NewContextAsync(ReducedMotion? reducedMotion = null)
   {
-    return Browser.NewContextAsync(new() { BaseURL = Address.ToString() });
+    return Browser.NewContextAsync(new() { BaseURL = Address.ToString(), ReducedMotion = reducedMotion });
   }
 
   /// <summary>
