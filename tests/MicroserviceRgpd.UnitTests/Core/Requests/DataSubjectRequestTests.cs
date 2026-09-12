@@ -82,6 +82,21 @@ public class DataSubjectRequestTests
     Receive(AValidEntry()).Value.Status.ShouldBe(RequestStatus.InProgress);
   }
 
+  /// <summary>
+  /// <b>Une demande reçue ne porte aucune empreinte de modification</b> : <c>ModifiedBy</c> et
+  /// <c>ModifiedAt</c> sont nuls tant qu'aucune modification effective n'a eu lieu. ⚠️ Le nul est la
+  /// vérité, pas un trou à combler — une empreinte posée à la réception dirait qu'on a corrigé une
+  /// demande qui vient de naître.
+  /// </summary>
+  [Fact]
+  public void CarriesNoModificationStampWhenReceived()
+  {
+    var request = Receive(AValidEntry()).Value;
+
+    request.ModifiedBy.ShouldBeNull();
+    request.ModifiedAt.ShouldBeNull();
+  }
+
   // ─── Date limite de réponse ────────────────────────────────────────────────────────────────
 
   /// <summary>

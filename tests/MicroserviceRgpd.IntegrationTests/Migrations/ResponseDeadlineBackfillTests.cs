@@ -20,7 +20,7 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// </remarks>
 public class ResponseDeadlineBackfillTests : IAsyncLifetime
 {
-  private const string TheResponseDeadlineAddition = "20260911191853_AddDataSubjectRequestResponseDeadline";
+  internal const string TheResponseDeadlineAddition = "20260911191853_AddDataSubjectRequestResponseDeadline";
 
   private static readonly Guid AnEndOfJanuary = new("88888888-8888-8888-8888-888888888888");
   private static readonly Guid AnEndOfMarch = new("99999999-9999-9999-9999-999999999999");
