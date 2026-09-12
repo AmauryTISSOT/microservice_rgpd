@@ -1037,10 +1037,46 @@ const sheet = document.getElementById("request-sheet");
 // depuis des boutons différents, et chacune rend le focus au sien.
 let sheetOpenedBy = null;
 
+// LE TITRE DE LA FICHE : il nomme la personne, et jamais l'identifiant technique de la demande.
+const sheetTitle = document.getElementById("request-sheet-title");
+
 function openSheet(eye) {
   sheetOpenedBy = eye;
 
+  fillSheet(eye.closest("tr"));
   sheet.showModal();
+}
+
+// CE QUE LA FICHE PORTE, EN UNE PASSE UNIQUE : pour chaque cellule nommée de la ligne, le module
+// CLONE SES NŒUDS ENFANTS dans la cible de même nom. Le badge du statut et le signalement de la date
+// limite empruntent alors le chemin du texte, sans aucun cas particulier — et la règle « le script
+// n'écrit aucun mot » devient littérale : il ne fait que déplacer des nœuds rendus par le serveur.
+// Le « — » d'une valeur absente en fait partie : il vient de la cellule, comme le reste.
+//
+// ⚠️ LES CELLULES SE LISENT PAR LEUR NOM, JAMAIS PAR LEUR INDEX : l'ordre des colonnes est un
+// compromis de largeur d'écran, pas un contrat — ajouter ou déplacer une colonne ne casse pas la
+// fiche en silence. Une cellule sans cible dans la fiche n'est pas une erreur : la fiche montre ce
+// qu'elle montre.
+//
+// TROIS VALEURS NE VIENNENT D'AUCUNE CELLULE, parce qu'aucune colonne ne les montre : le titre — le
+// nom replié de la personne —, l'origine et le message, que la ligne porte en `data-sheet-*`. Ce
+// sont les trois seules affectations explicites, et le libellé français de l'origine y arrive déjà
+// écrit par le serveur. ⚠️ `textContent`, jamais `innerHTML` : le message est un texte que la
+// personne a écrit, et il s'affiche tel qu'il est enregistré.
+//
+// ⚠️ CES TROIS CIBLES-LÀ NE SE GARDENT PAS, quand la boucle se garde : une cellule qui n'intéresse
+// pas la fiche est une possibilité, une fiche qui aurait perdu son titre, son origine ou son
+// message est un gabarit cassé — et il vaut mieux qu'il se voie.
+function fillSheet(row) {
+  for (const cell of row.querySelectorAll("td[data-field]")) {
+    const clone = cell.cloneNode(true);
+
+    sheet.querySelector(`[data-field="${cell.dataset.field}"]`)?.replaceChildren(...clone.childNodes);
+  }
+
+  sheetTitle.textContent = row.dataset.sheetPerson;
+  sheet.querySelector('[data-field="origin"]').textContent = row.dataset.sheetOrigin;
+  sheet.querySelector('[data-field="message"]').textContent = row.dataset.sheetMessage;
 }
 
 sheet.addEventListener("close", () => giveTheFocusBackTo(sheetOpenedBy));

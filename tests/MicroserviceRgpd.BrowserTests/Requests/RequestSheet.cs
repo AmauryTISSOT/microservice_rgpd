@@ -1,3 +1,6 @@
+using System.Globalization;
+using MicroserviceRgpd.Core.Requests;
+
 namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
@@ -12,14 +15,20 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// vient : la navigation au clavier reprend là où elle s'était arrêtée.
 /// </para>
 /// <para>
-/// ⚠️ <b>Ce que la fiche porte ne se juge pas ici</b> : les valeurs des cinq blocs sont vides tant
-/// que la story suivante ne les y verse pas. Les libellés que le serveur rend se gardent dans
-/// <c>RequestsBoardScreen</c>.
+/// <b>Et elle porte ce que la ligne dit de la demande</b> : les douze informations, dans leurs cinq
+/// blocs — le message et l'origine compris, qu'aucune colonne ne montre. Les libellés que le serveur
+/// rend, et eux seuls, se gardent dans <c>RequestsBoardScreen</c> ; ici, ce que l'œil d'une ligne y
+/// verse.
 /// </para>
 /// <para>
-/// La fiche ne se cherche pas par son nom accessible — c'est le nom de la personne, que rien n'y
-/// écrit encore —, mais par le premier de ses cinq blocs. Chaque demande se retrouve par son email
-/// unique, la base étant partagée par toute la collection.
+/// ⚠️ <b>Chaque valeur se lit avec son libellé</b> : les scénarios apparient les intitulés et les
+/// valeurs de la fiche, dans l'ordre — c'est l'appariement même qu'un lecteur d'écran annonce. Le
+/// message et le statut sortent de la liste de définitions et se lisent chacun sous son titre.
+/// </para>
+/// <para>
+/// La fiche ne se cherche pas par son nom accessible — c'est le nom de la personne, qui change d'une
+/// demande à l'autre —, mais par le premier de ses cinq blocs. Chaque demande se retrouve par son
+/// email unique, la base étant partagée par toute la collection.
 /// </para>
 /// </remarks>
 [Collection(BrowserCollection.Name)]
@@ -33,6 +42,12 @@ public class RequestSheet(BrowserHarness harness)
 
   /// <summary>Le titre de la confirmation d'abandon : celle qui ne doit jamais se montrer ici.</summary>
   private const string ConfirmationTitle = "Abandonner la saisie ?";
+
+  /// <summary>L'orange profond du signalement, recopié à dessein — comme dans <c>DeadlineSignals</c>.</summary>
+  private const string Orange = "rgb(121, 52, 0)";
+
+  /// <summary>Le rouge du signalement, recopié à dessein.</summary>
+  private const string Red = "rgb(179, 38, 30)";
 
   /// <summary>Les quatre modes de fermeture de la fiche.</summary>
   public static TheoryData<string> ClosingModes { get; } = ["Fermer", "la croix", "Échap", "le fond"];
@@ -158,6 +173,355 @@ public class RequestSheet(BrowserHarness harness)
     await Expect(Sheet(page)).ToBeHiddenAsync();
   }
 
+  /// <summary>
+  /// <b>La fiche porte les douze informations d'une demande, dans leurs cinq blocs et dans
+  /// l'ordre</b> — chacune sous son libellé, aucune valeur écrite par le script.
+  /// </summary>
+  /// <remarks>
+  /// La demande est enregistrée avec <b>aucune</b> valeur par défaut de la modale : une origine, un
+  /// droit, une identité vérifiée et un nom qui se distinguent tous du pré-remplissage. La date de
+  /// création est l'instant de l'enregistrement, qu'aucun scénario ne connaît d'avance : elle se
+  /// relit sur la cellule de la ligne, celle-là même dont la fiche la tient. La date limite, elle,
+  /// tombe un mois après une réception fixée dans le passé : elle porte donc « En retard », et c'est
+  /// bien la date limite qui est sous les yeux de l'<c>Operator</c> pendant qu'il lit le message.
+  /// </remarks>
+  [Fact]
+  public async Task CarriesTheTwelveInformationsInTheirFiveBlocks()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    var message = await harness.RecordRequestAsync(
+      lastName: "Dupont",
+      firstName: "Jean",
+      email: email,
+      receivedOn: "2026-01-15",
+      origin: Origin.Letter,
+      identityVerified: true,
+      right: "Erasure");
+
+    var row = await OpenedRowOfAsync(page, email);
+    await OpenTheSheetAsync(row);
+
+    var createdAt = await row.Locator("td[data-field='createdAt']").TextContentAsync();
+    (await FactsOfAsync(page)).ShouldBe(
+    [
+      "Nom : Dupont",
+      "Prénom : Jean",
+      $"Email : {email}",
+      "Identité vérifiée : Oui",
+      "Droit invoqué : Droit à l'effacement",
+      "Origine : Courrier",
+      "Date de réception : 15/01/2026",
+      "Date limite de réponse : 15/02/2026 En retard",
+      $"Date de création : {createdAt}",
+      "Créé par : Opérateur",
+    ]);
+
+    await Expect(MessageOf(page)).ToHaveTextAsync(message);
+    await Expect(StatusOf(page)).ToHaveTextAsync("En cours");
+  }
+
+  /// <summary>
+  /// <b>Le titre de la fiche nomme la personne</b> — « Prénom Nom » —, et c'est lui qui la nomme
+  /// pour qui ne la voit pas.
+  /// </summary>
+  [Fact]
+  public async Task NamesThePersonInItsTitle()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+
+    await OpenTheSheetAsync(await ARecordedRowAsync(page));
+
+    await Expect(TitleOf(page)).ToHaveTextAsync("Jeanne Martin");
+    await Expect(Sheet(page)).ToHaveAccessibleNameAsync("Jeanne Martin");
+  }
+
+  /// <summary>
+  /// <b>Quand le nom et le prénom manquent, le titre porte l'email seul</b> — et les deux cellules
+  /// de la fiche portent « — » : leurs lignes ne disparaissent pas.
+  /// </summary>
+  [Fact]
+  public async Task NamesThePersonByTheirEmailAloneWhenTheNameIsMissing()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    await harness.RecordRequestAsync(email: email);
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
+
+    await Expect(TitleOf(page)).ToHaveTextAsync(email);
+    (await FactsOfAsync(page)).Take(3).ShouldBe(["Nom : —", "Prénom : —", $"Email : {email}"]);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La fiche ne montre jamais l'identifiant technique de la demande</b> : il ne dit rien à
+  /// l'<c>Operator</c>, et la ligne le porte pour la seule suppression.
+  /// </summary>
+  [Fact]
+  public async Task NeverShowsTheTechnicalIdentifierOfTheRequest()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var row = await ARecordedRowAsync(page);
+    await OpenTheSheetAsync(row);
+
+    var id = await row.GetAttributeAsync("data-request-id");
+    id.ShouldNotBeNullOrWhiteSpace();
+    (await Sheet(page).InnerHTMLAsync())
+      .ShouldNotContain(id, Case.Insensitive, "La fiche montre l'identifiant technique de la demande.");
+  }
+
+  /// <summary>
+  /// <b>Le message s'affiche tel qu'enregistré, ses retours à la ligne conservés</b> : c'est un
+  /// texte que la personne a écrit, et la fiche le rend tel quel.
+  /// </summary>
+  [Fact]
+  public async Task ShowsTheMessageAsRecordedWithItsLineBreaks()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    var message = await harness.RecordRequestAsync(email: email);
+    var overTwoLines = $"{message}\nEt une seconde ligne.";
+
+    await harness.SetMessageAsync(message, overTwoLines);
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
+
+    (await MessageOf(page).TextContentAsync()).ShouldBe(overTwoLines);
+    await Expect(MessageOf(page)).ToHaveCSSAsync("white-space", "pre-wrap");
+  }
+
+  /// <summary>
+  /// <b>Le statut s'affiche sous le même badge et le même mot que sur la ligne</b> : le nom canonique
+  /// que la feuille de style colore vient de la cellule, cloné, et le script n'en écrit aucun mot.
+  /// </summary>
+  [Theory]
+  [InlineData("InProgress", "En cours")]
+  [InlineData("Completed", "Terminée")]
+  [InlineData("Cancelled", "Annulée")]
+  public async Task ShowsTheSameStatusBadgeAsTheRow(string name, string label)
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    var message = await harness.RecordRequestAsync(email: email);
+
+    await harness.SetStatusAsync(message, RequestStatus.FromName(name));
+
+    var row = await OpenedRowOfAsync(page, email);
+    await OpenTheSheetAsync(row);
+
+    await Expect(StatusOf(page)).ToHaveTextAsync(label);
+    await Expect(StatusOf(page)).ToHaveAttributeAsync("data-status", name);
+    await Expect(StatusOf(page)).ToHaveCSSAsync(
+      "background-color",
+      await BackgroundOfTheBadgeOfAsync(row));
+  }
+
+  /// <summary>
+  /// <b>L'origine s'affiche sous son libellé français</b> — « Email » ou « Courrier » —, celui que le
+  /// serveur a écrit sur la ligne : aucune colonne ne la montre, et le script ne dérive jamais un
+  /// libellé d'un nom canonique.
+  /// </summary>
+  [Theory]
+  [InlineData("Email", "Email")]
+  [InlineData("Letter", "Courrier")]
+  public async Task ShowsTheOriginUnderItsFrenchLabel(string name, string label)
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    await harness.RecordRequestAsync(email: email, origin: Origin.FromName(name));
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
+
+    (await FactsOfAsync(page)).ShouldContain($"Origine : {label}");
+  }
+
+  /// <summary>
+  /// <b>La date limite d'une demande En cours porte son signalement</b> — « En retard », « Échéance
+  /// proche » —, sous les yeux de l'<c>Operator</c> pendant qu'il lit le message.
+  /// </summary>
+  /// <remarks>
+  /// La date limite est posée à trois jours d'aujourd'hui à Paris, de part ou d'autre : assez loin
+  /// des bornes pour qu'un minuit franchi pendant le test n'en change pas le signalement.
+  /// </remarks>
+  [Theory]
+  [InlineData(3, "Échéance proche", Orange)]
+  [InlineData(-3, "En retard", Red)]
+  public async Task ShowsTheSignalOfTheDeadline(int daysFromToday, string mention, string colour)
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    var message = await harness.RecordRequestAsync(email: email);
+    var deadline = ParisCalendar.Today(TimeProvider.System).AddDays(daysFromToday);
+
+    await harness.SetResponseDeadlineAsync(message, deadline);
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
+
+    (await FactsOfAsync(page))
+      .ShouldContain($"Date limite de réponse : {deadline.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} {mention}");
+    await Expect(Sheet(page).GetByText(mention, new() { Exact = true })).ToHaveCSSAsync("color", colour);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une demande close n'affiche aucun signalement</b>, quelle que soit sa date limite : plus
+  /// rien n'est dû.
+  /// </summary>
+  [Theory]
+  [InlineData("Completed")]
+  [InlineData("Cancelled")]
+  public async Task ShowsNoSignalOnAClosedRequestHoweverLateItIs(string status)
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    var message = await harness.RecordRequestAsync(email: email);
+    var deadline = ParisCalendar.Today(TimeProvider.System).AddDays(-30);
+
+    await harness.SetResponseDeadlineAsync(message, deadline);
+    await harness.SetStatusAsync(message, RequestStatus.FromName(status));
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
+
+    (await FactsOfAsync(page))
+      .ShouldContain($"Date limite de réponse : {deadline.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}");
+  }
+
+  /// <summary>
+  /// <b>La fiche garde la même forme d'une demande à l'autre</b> : les dix intitulés de ses listes
+  /// sont les mêmes, dans le même ordre, que la demande porte toutes ses valeurs ou presque aucune.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheSameShapeFromOneRequestToTheNext()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var bare = UniqueEmail();
+    await harness.RecordRequestAsync(email: bare);
+
+    await OpenTheSheetAsync(await ARecordedRowAsync(page));
+    var shapeOfTheNamed = await LabelsOfAsync(page);
+    await CloseByAsync(page, "Échap");
+    await Expect(Sheet(page)).ToBeHiddenAsync();
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, bare));
+
+    (await LabelsOfAsync(page)).ShouldBe(shapeOfTheNamed);
+  }
+
+  /// <summary>
+  /// <b>L'œil d'une demande qu'on vient de créer ouvre sa fiche, message et origine compris</b>, sans
+  /// recharger la page : la ligne insérée porte ce que la fiche lui demande, comme celles du
+  /// chargement.
+  /// </summary>
+  [Fact]
+  public async Task CarriesWhatTheRowOfAJustCreatedRequestSays()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    await page.GotoAsync("/demandes");
+    var email = UniqueEmail();
+    var message = $"Je souhaite accéder à mes données. {Guid.NewGuid()}";
+
+    await CreateFromTheDialogAsync(page, email, message);
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
+
+    await Expect(TitleOf(page)).ToHaveTextAsync(email);
+    await Expect(MessageOf(page)).ToHaveTextAsync(message);
+    (await FactsOfAsync(page)).ShouldContain("Origine : Courrier");
+    (await FactsOfAsync(page)).ShouldContain($"Email : {email}");
+  }
+
+  /// <summary>Crée une demande depuis la modale, reçue par courrier, et attend sa ligne.</summary>
+  private static async Task CreateFromTheDialogAsync(IPage page, string email, string message)
+  {
+    await page.GetByRole(AriaRole.Button, new() { Name = "Créer une demande", Exact = true }).ClickAsync();
+
+    var dialog = page.GetByRole(AriaRole.Dialog, new() { Name = "Créer une nouvelle demande", Exact = true });
+    await dialog.GetByLabel("Origine", new() { Exact = true }).SelectOptionAsync("Letter");
+    await dialog.GetByLabel("Email", new() { Exact = true }).FillAsync(email);
+    await dialog.GetByLabel("Message", new() { Exact = true }).FillAsync(message);
+    await dialog.GetByLabel("Droits RGPD", new() { Exact = true }).SelectOptionAsync("Access");
+    await dialog.GetByRole(AriaRole.Button, new() { Name = "Créer", Exact = true }).ClickAsync();
+
+    await Expect(dialog).ToBeHiddenAsync();
+  }
+
+  /// <summary>
+  /// Les valeurs de la fiche <b>appariées à leurs intitulés</b>, dans l'ordre : « intitulé : valeur ».
+  /// C'est l'appariement qu'un lecteur d'écran annonce, et c'est lui que les scénarios jugent.
+  /// </summary>
+  private static async Task<IReadOnlyList<string>> FactsOfAsync(IPage page)
+  {
+    var labels = await LabelsOfAsync(page);
+    var values = await Sheet(page).GetByRole(AriaRole.Definition).AllTextContentsAsync();
+
+    values.Count.ShouldBe(labels.Count, "Un intitulé de la fiche est resté sans valeur, ou l'inverse.");
+
+    return labels.Zip(values, (label, value) => $"{label} : {value}").ToList();
+  }
+
+  /// <summary>Les intitulés des listes de la fiche, dans l'ordre : sa forme, indépendante de ce qu'elle porte.</summary>
+  private static async Task<IReadOnlyList<string>> LabelsOfAsync(IPage page)
+  {
+    return await Sheet(page).GetByRole(AriaRole.Term).AllTextContentsAsync();
+  }
+
+  /// <summary>Le titre de la fiche : le nom de la personne, et le nom accessible de la surface.</summary>
+  private static ILocator TitleOf(IPage page)
+  {
+    return Sheet(page).GetByRole(AriaRole.Heading).First;
+  }
+
+  /// <summary>Le message, sous son libellé, hors de la liste de définitions.</summary>
+  private static ILocator MessageOf(IPage page)
+  {
+    return Sheet(page).Locator("[data-field='message']");
+  }
+
+  /// <summary>Le badge du statut, cloné depuis la cellule de la ligne.</summary>
+  private static ILocator StatusOf(IPage page)
+  {
+    return Sheet(page).Locator("[data-field='status'] .status");
+  }
+
+  /// <summary>La teinte du badge de la ligne — celle que la fiche doit porter, puisque c'est le même badge.</summary>
+  private static async Task<string> BackgroundOfTheBadgeOfAsync(ILocator row)
+  {
+    return await row.Locator("td[data-field='status'] .status")
+      .EvaluateAsync<string>("badge => getComputedStyle(badge).backgroundColor");
+  }
+
+  private static string UniqueEmail() => $"{Guid.NewGuid():N}@example.org";
+
+  /// <summary>
+  /// La ligne de la demande qui porte cet email, <b>sur le tableau déjà ouvert</b> : c'est elle que
+  /// le scénario de la demande qu'on vient de créer demande, et rien ne doit recharger la page.
+  /// </summary>
+  private static async Task<ILocator> RowOfAsync(IPage page, string email)
+  {
+    var row = page.GetByRole(AriaRole.Row).Filter(new() { HasText = email });
+    await Expect(row).ToHaveCountAsync(1);
+
+    return row;
+  }
+
+  /// <summary>Ouvre le tableau, et rend la ligne de la demande qui porte cet email.</summary>
+  private static async Task<ILocator> OpenedRowOfAsync(IPage page, string email)
+  {
+    await page.GotoAsync("/demandes");
+
+    return await RowOfAsync(page, email);
+  }
+
   /// <summary>Ouvre la fiche de cette ligne, et attend qu'elle soit là.</summary>
   private static async Task OpenTheSheetAsync(ILocator row)
   {
@@ -228,14 +592,10 @@ public class RequestSheet(BrowserHarness harness)
   /// </summary>
   private async Task<ILocator> ARecordedRowAsync(IPage page)
   {
-    var email = $"{Guid.NewGuid():N}@example.org";
+    var email = UniqueEmail();
 
     await harness.RecordRequestAsync(lastName: "Martin", firstName: "Jeanne", email: email);
-    await page.GotoAsync("/demandes");
 
-    var row = page.GetByRole(AriaRole.Row).Filter(new() { HasText = email });
-    await Expect(row).ToHaveCountAsync(1);
-
-    return row;
+    return await OpenedRowOfAsync(page, email);
   }
 }

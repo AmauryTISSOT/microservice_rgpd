@@ -14,8 +14,8 @@
 
   L'ŒIL OUVRE LA FICHE DE LA DEMANDE, la lecture à l'écran de ce que le service en tient : un simple
   bouton, hors de tout formulaire, que le module reconnaît à son `data-action`, comme la poubelle et
-  le crayon. Rien ne part au réseau. ⚠️ LA FICHE S'OUVRE ENCORE VIDE : c'est l'US suivante qui y
-  versera ce que la ligne porte.
+  le crayon. Rien ne part au réseau : la fiche se remplit de ce que cette ligne porte déjà — les
+  nœuds de ses cellules, clonés, puis l'origine et le message lus sur ses `data-sheet-*`.
 
   LE CRAYON D'UNE DEMANDE CLOSE EST ÉTEINT, ET DIT POURQUOI. ⚠️ Il porte `aria-disabled`, JAMAIS
   `disabled` : l'infobulle se montre au survol et au focus visible, que le navigateur refuse tous
@@ -35,8 +35,8 @@
 
   CHAQUE CELLULE SE NOMME, par l'information de la demande qu'elle rend — `email`, `lastName`,
   `firstName`, `receivedOn`, `responseDeadline`, `identityVerified`, `right`, `createdAt`,
-  `createdBy`, `status`. La fiche de la demande reprendra ces dix informations depuis la ligne, et
-  elle les lira PAR LEUR NOM, JAMAIS PAR LEUR INDEX : l'ordre des colonnes est un compromis de
+  `createdBy`, `status`. La fiche de la demande reprend ces dix informations depuis la ligne, et
+  elle les lit PAR LEUR NOM, JAMAIS PAR LEUR INDEX : l'ordre des colonnes est un compromis de
   largeur d'écran, pas un contrat — ajouter ou déplacer une colonne ne doit pas la casser en
   silence. En camelCase anglais : un `data-*` est un identifiant. ⚠️ La cellule des actions ne se
   nomme pas : elle ne rend aucune information.
@@ -45,6 +45,10 @@
   par le serveur, contre « aujourd'hui » à Paris (ADR-0021). ⚠️ SEULE LA CELLULE PORTE LE
   SIGNALEMENT, jamais la ligne : son nom canonique, que la feuille de style colore, et son libellé,
   écrit après la date. Le script ne le recalcule pas.
+
+  ⚠️ LA MENTION PORTE LE NOM CANONIQUE ELLE AUSSI, et ce n'est pas une redite : la cellule colore la
+  date entière ici, où la colonne est étroite ; la fiche, qui n'en reçoit que LES NŒUDS ENFANTS,
+  n'aurait plus de quoi la signaler. Le nom est donc écrit là où il se lit de part et d'autre.
 
   LE STATUT EST UN BADGE, qui porte le nom canonique du statut : c'est ce nom que la feuille de style
   colore, et le libellé seul qui se lit.
@@ -89,7 +93,7 @@
   <td data-field="receivedOn">@Model.ReceivedOn</td>
   @if (Model.DeadlineSignal is { } signal)
   {
-    <td data-field="responseDeadline" data-deadline-signal="@signal.Name">@Model.ResponseDeadline <span>@signal.Label</span></td>
+    <td data-field="responseDeadline" data-deadline-signal="@signal.Name">@Model.ResponseDeadline <span data-deadline-signal="@signal.Name">@signal.Label</span></td>
   }
   else
   {
