@@ -12,9 +12,10 @@
   accessible le dit déjà, un lecteur d'écran ne doit pas l'entendre deux fois. Seul le crayon d'une
   demande close y dit autre chose que son nom : la raison de son extinction.
 
-  ⚠️ L'ŒIL EST INERTE, en attendant son US : un simple bouton, hors de tout formulaire, qu'aucun
-  script n'écoute. Il n'est pas désactivé — un bouton éteint ne se survole pas, et son infobulle ne
-  se lirait jamais.
+  L'ŒIL OUVRE LA FICHE DE LA DEMANDE, la lecture à l'écran de ce que le service en tient : un simple
+  bouton, hors de tout formulaire, que le module reconnaît à son `data-action`, comme la poubelle et
+  le crayon. Rien ne part au réseau. ⚠️ LA FICHE S'OUVRE ENCORE VIDE : c'est l'US suivante qui y
+  versera ce que la ligne porte.
 
   LE CRAYON D'UNE DEMANDE CLOSE EST ÉTEINT, ET DIT POURQUOI. ⚠️ Il porte `aria-disabled`, JAMAIS
   `disabled` : l'infobulle se montre au survol et au focus visible, que le navigateur refuse tous

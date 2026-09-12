@@ -2,14 +2,13 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
 /// <b>Les trois actions de chaque ligne</b>, dans un vrai navigateur : la poubelle, le crayon et
-/// l'œil montrent leur infobulle au survol ; l'œil, inerte en attendant son US, ne fait rien au clic.
+/// l'œil montrent leur infobulle au survol.
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Ce que fait le crayon ne se juge plus ici</b> : cette classe dit ce que la <i>ligne</i>
-/// offre, et l'ouverture de la modale appartient au scénario de la modale — voir
-/// <see cref="ModificationDialog"/>. Le fait sur l'œil reste, pour garder trace que cette
-/// inertie-là est délibérée et non un oubli.
+/// ⚠️ <b>Ce que font le crayon et l'œil ne se juge pas ici</b> : cette classe dit ce que la
+/// <i>ligne</i> offre, et l'ouverture d'une surface appartient au scénario de cette surface — voir
+/// <see cref="ModificationDialog"/> pour la modale, <see cref="RequestSheet"/> pour la fiche.
 /// </para>
 /// <para>
 /// Chaque test enregistre sa propre demande <b>par la modale de création</b>, reconnaissable à son
@@ -44,35 +43,6 @@ public class RowActions(BrowserHarness harness)
     await row.GetByRole(AriaRole.Button, new() { Name = action, Exact = true }).HoverAsync();
 
     await Expect(tooltip).ToBeVisibleAsync();
-  }
-
-  /// <summary>
-  /// ⚠️ <b>L'œil est inerte</b> : un clic ne change rien à la page — ni navigation, ni rechargement,
-  /// ni nouvel onglet, ni fenêtre ouverte.
-  /// </summary>
-  [Fact]
-  public async Task DoesNothingOnAClick()
-  {
-    const string action = "Voir la fiche de la demande";
-
-    await using var context = await harness.NewContextAsync();
-    var page = await context.NewPageAsync();
-    var row = await RowOfANewRequestAsync(page);
-
-    var address = page.Url;
-    var newPages = 0;
-    context.Page += (_, _) => newPages++;
-
-    // Un marqueur posé sur la fenêtre : un rechargement, même vers la même adresse, l'effacerait.
-    await page.EvaluateAsync("() => { window.untouched = true; }");
-
-    await row.GetByRole(AriaRole.Button, new() { Name = action, Exact = true }).ClickAsync();
-
-    page.Url.ShouldBe(address, "Le clic a mené ailleurs.");
-    (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("Le clic a rechargé la page.");
-    await Expect(page.GetByRole(AriaRole.Dialog)).ToHaveCountAsync(0);
-    await Expect(page.GetByRole(AriaRole.Alertdialog)).ToHaveCountAsync(0);
-    newPages.ShouldBe(0, "Le clic a ouvert un onglet.");
   }
 
   /// <summary>

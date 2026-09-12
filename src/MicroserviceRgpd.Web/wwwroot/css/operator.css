@@ -1572,6 +1572,37 @@ dialog.modal.confirmation {
   width: 28rem;
 }
 
+/*
+  LA FICHE D'UNE DEMANDE : la même famille que la modale — le fond, l'ombre, la tête et la croix sont
+  déjà stylés —, et rien de plus qu'une VARIANTE D'ANCRAGE. Elle quitte le centre de l'écran pour le
+  bord droit, qu'elle occupe sur toute la hauteur.
+
+  ⚠️ LA MARGE INTÉRIEURE PASSE DE LA BOÎTE À SES TROIS ZONES — la tête, les blocs, le pied : sur une
+  surface pleine hauteur, c'est chaque zone qui respire, et non le cadre.
+
+  ⚠️ LE FILET NE RESTE QUE SUR LE BORD GAUCHE, le seul qui fasse face à l'écran : les trois autres
+  affleurent la fenêtre, et le coin large d'une carte posée au centre n'a plus de sens ici.
+*/
+dialog.modal.sheet {
+  border-radius: 0;
+  border-width: 0 0 0 var(--hairline-width);
+  height: 100%;
+  margin: 0 0 0 auto;
+  max-height: 100%;
+  padding: 0;
+  width: 30rem;
+}
+
+dialog.modal.sheet > * {
+  padding: var(--space-lg);
+}
+
+/* La sortie nommée, à droite : là où l'œil finit sa lecture, comme les actions d'une modale. */
+.sheet-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Les actions en pied, à droite, l'action principale en dernier : là où l'œil finit sa lecture. */
 .modal-actions {
   display: flex;
