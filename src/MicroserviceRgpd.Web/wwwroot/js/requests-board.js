@@ -19,6 +19,11 @@
 // demande : une seule modale sert les deux gestes, et c'est `data-mode` qui dit lequel est en cours.
 // Les mots et les routes des deux modes viennent du serveur (Board.cshtml) ; le module n'en écrit
 // aucun. À la fermeture, le focus revient au bouton qui a ouvert la modale.
+//
+// La correction enregistrée, l'ancienne ligne s'en va et la nouvelle passe par la MÊME insertion que
+// la création : elle reprend sa place selon le tri en cours, et la recherche se rejoue sur elle. Le
+// replacement, la disparition hors recherche, la nouvelle date limite et son signalement n'ont donc
+// aucun code à eux.
 
 // LA RECHERCHE. Elle filtre les lignes que le serveur a rendues, sans revenir à lui : une demande
 // reste affichée si son email, son nom ou son prénom — ceux que la ligne porte en `data-*`, tels
@@ -118,20 +123,42 @@ const failure = document.getElementById("request-failure");
 const toast = document.getElementById("requests-toast");
 
 // LES DEUX GESTES QUE LA MODALE SERT, avec les mots et la route de chacun : ceux que le serveur a
-// rendus en `data-*` sur la modale. Le module bascule d'un mode à l'autre à l'ouverture ; il n'écrit
-// aucun libellé et ne connaît aucune route.
+// rendus en `data-*` sur la modale et sur le toast. Le module bascule d'un mode à l'autre à
+// l'ouverture ; il n'écrit aucun libellé et ne connaît aucune route.
+//
+// `saved` est le code du succès de ce geste-là — 201 pour une création, 200 pour une modification —,
+// `said` le mot du toast quand il a eu lieu, et `place` ce que sa ligne devient dans le tableau :
+// une création s'insère, une modification remplace. `worthSending` dit enfin si la saisie vaut d'être
+// envoyée : toujours pour une création, seulement si elle corrige quelque chose pour une
+// modification. Tout le reste de l'envoi leur est commun.
+//
+// ⚠️ TOUT CE QUI DÉPEND DU GESTE EST ICI, et nulle part ailleurs : un troisième geste s'ajouterait à
+// cette table, sans qu'aucun `if` sur le mode soit à retrouver dans le module.
 const modes = {
   create: {
     title: dialog.dataset.createTitle,
     submit: dialog.dataset.createSubmit,
     action: dialog.dataset.createAction,
+    saved: 201,
+    said: toast.dataset.created,
+    place: insertRow,
+    worthSending: () => true,
   },
   modify: {
     title: dialog.dataset.modifyTitle,
     submit: dialog.dataset.modifySubmit,
     action: dialog.dataset.modifyAction,
+    saved: 200,
+    said: toast.dataset.modified,
+    place: replaceTheModifiedRow,
+    worthSending: isCorrected,
   },
 };
+
+// Le geste en cours, celui que la dernière ouverture a posé.
+function currentMode() {
+  return modes[dialog.dataset.mode];
+}
 
 // Le mode devient celui de la modale : le titre, le libellé du bouton primaire et l'action du
 // formulaire sont ceux du geste en cours, et `data-mode` dit lequel c'est.
@@ -177,6 +204,29 @@ function isModified() {
   return rawValues() !== valuesAtOpening;
 }
 
+// ⚠️ DEUX COMPARAISONS VOISINES, ET DÉLIBÉRÉMENT DIFFÉRENTES. `isModified`, au-dessus, porte sur les
+// valeurs BRUTES, et décide de la confirmation d'abandon : aucune frappe ne doit disparaître sans que
+// l'Operator l'ait confirmé, fût-elle de deux espaces. `isCorrected`, ici, porte sur les valeurs
+// ROGNÉES, et décide de l'envoi d'une correction : le domaine rogne avant d'enregistrer, et deux
+// espaces ajoutés en fin de nom ne changeraient donc rien pour lui. Une saisie peut ainsi être
+// modifiée sans être corrigée — jamais l'inverse.
+//
+// ⚠️ C'EST LE ROGNAGE DE .NET, celui du domaine (voir `dotnetWhiteSpace`), et non celui du `trim` de
+// JavaScript : sans lui, deux espaces d'une sorte que l'un rogne et l'autre garde feraient partir
+// l'envoi, ne laisseraient rien au serveur, et le toast dirait « Demande modifiée » pour rien.
+//
+// ⚠️ CÔTÉ SCRIPT, C'EST UN CONFORT — s'épargner un aller-retour et un toast mensonger. La règle, elle,
+// est au domaine, qui ne trace rien non plus d'une correction qui ne corrige rien.
+let trimmedValuesAtOpening = "";
+
+function trimmedValues() {
+  return JSON.stringify([...new FormData(form)].map(([name, value]) => [name, withoutBorderingSpaces(value)]));
+}
+
+function isCorrected() {
+  return trimmedValues() !== trimmedValuesAtOpening;
+}
+
 // LE FORMULAIRE REPART DE ZÉRO À CHAQUE OUVERTURE : l'Operator n'hérite jamais d'une saisie
 // précédente. Les valeurs par défaut sont celles que le serveur a rendues, sauf « aujourd'hui », qui
 // est recalculé ici — une page restée ouverte au-delà de minuit ne doit ni proposer la veille, ni
@@ -208,8 +258,12 @@ function resetToDefaults() {
 const dotnetWhiteSpace = "[\\t\\n\\v\\f\\r \\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]";
 const bordersOfWhiteSpace = new RegExp(`^${dotnetWhiteSpace}+|${dotnetWhiteSpace}+$`, "g");
 
+function withoutBorderingSpaces(value) {
+  return value.replace(bordersOfWhiteSpace, "");
+}
+
 function trimmed(field) {
-  return field.value.replace(bordersOfWhiteSpace, "");
+  return withoutBorderingSpaces(field.value);
 }
 
 // La regex WHATWG de `<input type=email>`, la même que celle d'EmailAddress côté serveur.
@@ -347,13 +401,19 @@ function showRefusals(refusals) {
   validatedFields.find((field) => inError.has(field))?.focus();
 }
 
-// « CRÉER » RESTE CLIQUABLE HORS ENVOI : chaque clic juge toute la saisie, affiche chaque refus sous
-// son champ et donne le focus au premier. Une saisie sans refus part au serveur.
+// LE BOUTON PRIMAIRE RESTE CLIQUABLE HORS ENVOI, dans les deux modes : chaque clic juge toute la
+// saisie, affiche chaque refus sous son champ et donne le focus au premier — les mêmes règles et les
+// mêmes mots pour une correction que pour une création. Une saisie sans refus part au serveur.
 //
-// ⚠️ L'ENREGISTREMENT D'UNE MODIFICATION N'EST PAS ENCORE ÉCRIT : le formulaire part alors à l'action
-// du mode modification, qu'aucun handler ne sert encore — rien n'est enregistré, et le bandeau
-// d'échec le dit. C'est l'US suivante qui le branche.
-function attemptCreation() {
+// ⚠️ UNE CORRECTION QUI NE CORRIGE RIEN NE PART PAS : la modale se ferme, sans requête ni toast. Le
+// test vient d'abord — une saisie inchangée est celle qui a été enregistrée, elle n'a rien à se voir
+// reprocher —, et c'est le geste en cours qui le porte : voir `worthSending`.
+function attemptSave() {
+  if (!currentMode().worthSending()) {
+    dialog.close();
+    return;
+  }
+
   refusedByTheServer = new Map();
   showRefusals(refusalsOfTheEntry());
 
@@ -362,20 +422,24 @@ function attemptCreation() {
   }
 }
 
-// L'ENVOI. Le formulaire part tel quel au handler qu'il déclare, jeton anti-rejeu compris — la date
-// au format ISO du champ, le droit sous son nom canonique : ce que le handler lit.
+// L'ENVOI, LE MÊME POUR LES DEUX GESTES. Le formulaire part tel quel au handler qu'il déclare, jeton
+// anti-rejeu compris — la date au format ISO du champ, le droit sous son nom canonique, et
+// l'identifiant caché quand c'est une correction : ce que le handler lit.
 //
-// ⚠️ « CRÉER » EST DÉSACTIVÉ PENDANT L'ENVOI : un double clic n'enregistre jamais deux demandes. Il
-// redevient cliquable quelle que soit l'issue. La modale, elle, ne se ferme pas tant que l'envoi
+// ⚠️ LE BOUTON PRIMAIRE EST DÉSACTIVÉ PENDANT L'ENVOI : un double clic n'enregistre jamais deux fois.
+// Il redevient cliquable quelle que soit l'issue. La modale, elle, ne se ferme pas tant que l'envoi
 // court : la réponse doit trouver la saisie qu'elle concerne, pas une modale rouverte à zéro.
 //
-// Trois issues. 201 : la demande est enregistrée, et le corps porte sa ligne. 400 portant des refus
-// de la saisie : ils vont sous leurs champs, comme ceux du navigateur. Tout le reste — un 400 sans
-// refus, qui est un jeton anti-rejeu refusé, une erreur du serveur, une coupure réseau — : le
-// bandeau, et la saisie reste là.
+// Trois issues. Le code de succès du geste — 201 à la création, 200 à la modification — : c'est
+// enregistré, et le corps porte la ligne. 400 portant des refus de la saisie : ils vont sous leurs
+// champs, comme ceux du navigateur. Tout le reste — un 400 sans refus, qui est un jeton anti-rejeu
+// refusé, un 404, un 409, une erreur du serveur, une coupure réseau — : le bandeau, et la saisie
+// reste là.
 let sending = false;
 
 async function send() {
+  const mode = currentMode();
+
   sending = true;
   submitButton.disabled = true;
   failure.hidden = true;
@@ -385,10 +449,10 @@ async function send() {
   try {
     const response = await fetch(form.action, { method: "POST", body: new URLSearchParams(entry) });
 
-    // ⚠️ LA DEMANDE EST ENREGISTRÉE DÈS LE 201, que son corps se lise ou non : un corps perdu ne doit
+    // ⚠️ C'EST ENREGISTRÉ DÈS LE CODE DE SUCCÈS, que le corps se lise ou non : un corps perdu ne doit
     // pas poser le bandeau, qui inviterait à réessayer — et à enregistrer la demande deux fois.
-    if (response.status === 201) {
-      closeOnCreation(await response.text().catch(() => ""));
+    if (response.status === mode.saved) {
+      closeOnSaving(mode, await response.text().catch(() => ""));
       return;
     }
 
@@ -435,39 +499,51 @@ function say(words) {
   }, toastDuration);
 }
 
-// LA DEMANDE EST CRÉÉE : sa ligne entre dans le tableau, la modale se ferme — sans confirmation, rien
-// n'est perdu —, et le toast le dit. La prochaine ouverture repartira des valeurs par défaut, comme
-// toutes les ouvertures.
-function closeOnCreation(rowHtml) {
-  insertRow(rowHtml);
+// LE GESTE EST ENREGISTRÉ : sa ligne prend sa place dans le tableau, la modale se ferme — sans
+// confirmation, rien n'est perdu —, et le toast dit le mot de ce geste-là. La prochaine ouverture
+// repartira des valeurs par défaut, comme toutes les ouvertures.
+//
+// ⚠️ UN CORPS ILLISIBLE NE TOUCHE PAS AU TABLEAU : le geste a eu lieu — le toast le dit —, mais sans
+// ligne à mettre, mieux vaut laisser celle qui est là que retirer l'ancienne sans la remplacer.
+function closeOnSaving(mode, rowHtml) {
+  const row = rowRenderedBy(rowHtml);
+
+  if (row) {
+    mode.place(row);
+  }
+
   confirmation.close();
   dialog.close();
 
-  say(toast.dataset.created);
+  say(mode.said);
 }
 
-// LA LIGNE DE LA NOUVELLE DEMANDE EST CELLE QUE LE SERVEUR A RENDUE, par la vue partielle du
-// tableau : le module l'insère telle quelle, sans en écrire un mot. L'état vide s'efface alors.
+// La ligne que le serveur a rendue, telle quelle — ou rien, si le corps n'en portait pas.
+function rowRenderedBy(rowHtml) {
+  const template = document.createElement("template");
+  template.innerHTML = rowHtml;
+
+  return template.content.querySelector("tr");
+}
+
+// LA LIGNE DE LA DEMANDE EST CELLE QUE LE SERVEUR A RENDUE, par la vue partielle du tableau : le
+// module l'insère telle quelle, sans en écrire un mot. L'état vide s'efface alors.
 //
 // ELLE PREND SA PLACE SELON LE TRI SÉLECTIONNÉ, sur les mêmes clés que lui et dans le même sens :
 // elle entre devant la première ligne qu'elle précède, ou en queue si elle n'en précède aucune. Les
 // lignes du tableau sont déjà dans cet ordre — le serveur les a rendues dans l'ordre par défaut, et
-// chaque changement de tri les y remet —, la première trouvée est donc la bonne. Elle vient d'être
-// créée : de deux demandes reçues le même jour, elle est la plus récemment enregistrée, et le tri en
-// décide comme pour les autres.
+// chaque changement de tri les y remet —, la première trouvée est donc la bonne. De deux demandes
+// reçues le même jour, c'est l'instant d'enregistrement que le serveur a rendu sur la ligne qui
+// départage, et le tri en décide comme pour les autres : une demande créée à l'instant est la plus
+// récemment enregistrée, et une demande corrigée garde le sien — la corriger ne la rajeunit pas.
 //
 // ⚠️ LA RECHERCHE EN COURS SE REJOUE ENSUITE : une ligne qui ne lui correspond pas entre cachée, et
 // « Aucune demande ne correspond » reste d'accord avec ce que le tableau montre.
-function insertRow(rowHtml) {
-  const template = document.createElement("template");
-  template.innerHTML = rowHtml;
-
-  const row = template.content.querySelector("tr");
-
-  if (!row) {
-    return;
-  }
-
+//
+// ⚠️ C'EST AUSSI PAR ICI QUE PASSE UNE LIGNE CORRIGÉE, l'ancienne retirée : son replacement au tri,
+// sa disparition hors recherche, sa nouvelle date limite et le signalement de celle-ci n'ont donc
+// aucun code à eux — ils découlent de cette insertion-là, et de la ligne que le serveur a rendue.
+function insertRow(row) {
   const next = [...rows].find((existing) => inTheSelectedOrder(row, existing) < 0);
 
   tableBody.insertBefore(row, next ?? null);
@@ -507,7 +583,7 @@ const frame = document.getElementById("requests-frame");
 // sa route, puis la modification seule y verse les valeurs de sa demande et son identifiant. L'état
 // de départ n'est relevé qu'ensuite : c'est à lui, et non aux valeurs par défaut, que « modifié » se
 // comparera — une correction ramenée à ce qu'elle était ne modifie rien.
-function open(mode, { values, id, from }) {
+function open(mode, { values, id, from, row }) {
   resetToDefaults();
   applyMode(mode);
 
@@ -517,7 +593,9 @@ function open(mode, { values, id, from }) {
   }
 
   valuesAtOpening = rawValues();
+  trimmedValuesAtOpening = trimmedValues();
   openedBy = from;
+  rowBeingModified = row ?? null;
 
   dialog.showModal();
 
@@ -572,7 +650,7 @@ function requestClose() {
 }
 
 opener.addEventListener("click", () => open("create", { from: opener }));
-submitButton.addEventListener("click", attemptCreation);
+submitButton.addEventListener("click", attemptSave);
 form.addEventListener("input", revalidateTheFieldsInError);
 
 // LA CONFIRMATION. « Continuer la saisie » ne referme qu'elle : le formulaire est là, intact.
@@ -769,8 +847,8 @@ deleteButton.addEventListener("click", deleteForGood);
 
 // LA MODIFICATION D'UNE DEMANDE. Le crayon d'une ligne fait lire au serveur les huit valeurs de sa
 // demande, puis ouvre la modale en mode modification, pré-remplie : c'est la même modale, le même
-// formulaire et les mêmes règles qu'à la création. L'ouverture, l'abandon et le retour du focus sont
-// ici ; l'enregistrement viendra avec son US.
+// formulaire, les mêmes règles et le même envoi qu'à la création. Seule diffère la place que prend la
+// ligne au retour : une correction remplace la sienne, là où une création n'en avait aucune.
 //
 // ⚠️ LE CRAYON D'UNE DEMANDE CLOSE PORTE `aria-disabled`, JAMAIS `disabled` — pour que son infobulle
 // puisse dire pourquoi (voir _RequestRow.cshtml). Le module ne peut donc pas se fier à `disabled`
@@ -842,7 +920,25 @@ async function openModification(pencil) {
     return;
   }
 
-  open("modify", { values, id: row.dataset.requestId, from: pencil });
+  open("modify", { values, id: row.dataset.requestId, from: pencil, row });
+}
+
+// LA LIGNE QUE LA MODALE CORRIGE : c'est elle que la correction enregistrée retire du tableau.
+let rowBeingModified = null;
+
+// LA LIGNE CORRIGÉE REMPLACE LA SIENNE, SANS RECHARGEMENT : l'ancienne s'en va, et la nouvelle passe
+// par l'insertion de la création. ⚠️ DANS CET ORDRE : une ancienne encore là serait une ligne de plus
+// à qui se comparer au tri, et la nouvelle pourrait se ranger du mauvais côté d'elle-même.
+//
+// ⚠️ LE FOCUS SUIT LA LIGNE : le crayon qui a ouvert la modale part avec l'ancienne, et c'est celui
+// de la nouvelle qui prend sa place. Sans cela, toute correction enregistrée renverrait le focus au
+// cadre du tableau — le recours prévu pour une ligne disparue —, et l'Operator perdrait sa place à
+// chaque fois qu'il corrige.
+function replaceTheModifiedRow(row) {
+  rowBeingModified?.remove();
+  insertRow(row);
+
+  openedBy = row.querySelector(editAction) ?? openedBy;
 }
 
 // Les huit valeurs d'une demande, ou rien du tout — 404 d'une demande supprimée ailleurs, erreur du

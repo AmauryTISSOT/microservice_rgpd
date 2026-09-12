@@ -18,7 +18,8 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// </para>
 /// <para>
 /// ⚠️ <b>Rien ne s'enregistre ici</b> : cette classe garde l'ouverture, l'abandon et le retour du
-/// focus. L'enregistrement d'une modification viendra avec son US.
+/// focus. L'enregistrement d'une correction et ses effets sur le tableau se gardent dans
+/// <see cref="RequestModification"/>.
 /// </para>
 /// <para>
 /// Les demandes se créent <b>par le use case</b>, et leur statut se pose <b>à même la table</b> :
