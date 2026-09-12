@@ -102,6 +102,19 @@ public sealed class DataSubjectRequest : IAggregateRoot
   public DateTimeOffset CreatedAt { get; private set; }
 
   /// <summary>
+  /// Qui a modifié la demande en dernier — <see cref="OperatorAuthor"/> —, ou <c>null</c> tant
+  /// qu'aucune modification effective n'a eu lieu.
+  /// </summary>
+  public string? ModifiedBy { get; private set; }
+
+  /// <summary>
+  /// L'instant de la dernière modification, en UTC, ou <c>null</c> tant qu'aucune modification
+  /// effective n'a eu lieu. ⚠️ <b>Cette empreinte s'écrase</b> : elle dit la dernière modification,
+  /// pas l'histoire des modifications.
+  /// </summary>
+  public DateTimeOffset? ModifiedAt { get; private set; }
+
+  /// <summary>
   /// <b>Reçoit une demande</b> à partir des valeurs brutes saisies par l'<c>Operator</c>, ou rend
   /// <b>toutes</b> les raisons de la refuser, chacune rattachée à un <see cref="DataSubjectRequestField"/>.
   /// </summary>

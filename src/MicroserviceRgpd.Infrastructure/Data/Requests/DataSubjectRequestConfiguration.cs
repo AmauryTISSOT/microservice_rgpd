@@ -89,5 +89,11 @@ public sealed class DataSubjectRequestConfiguration : IEntityTypeConfiguration<D
     builder.Property(request => request.CreatedBy).HasColumnName("created_by").IsRequired();
 
     builder.Property(request => request.CreatedAt).HasColumnName("created_at").IsRequired();
+
+    // ⚠️ L'empreinte de modification est nullable des deux côtés : le nul dit « jamais modifiée »,
+    // et c'est la vérité de toute demande qui n'a connu que sa réception.
+    builder.Property(request => request.ModifiedBy).HasColumnName("modified_by");
+
+    builder.Property(request => request.ModifiedAt).HasColumnName("modified_at");
   }
 }
