@@ -6,7 +6,8 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// <b>L'<c>Operator</c> supprime une demande depuis la poubelle de sa ligne</b>, dans un vrai
 /// navigateur : la confirmation s'ouvre avec la phrase de la ligne ; « Annuler », Échap et un clic
 /// en dehors la ferment sans rien supprimer ; « Supprimer définitivement » la ferme, retire la ligne
-/// sans rechargement, et le toast « Demande supprimée » le dit.
+/// sans rechargement, et le toast « Demande supprimée » le dit. Un échec la ferme aussi, mais la
+/// ligne reste, et le toast dit « La suppression a échoué, veuillez réessayer. ».
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,7 +26,7 @@ public class RequestDeletion(BrowserHarness harness)
 
   private const string Deleted = "Demande supprimée";
 
-  private const string Failure = "La demande n'a pas pu être supprimée. Vous pouvez réessayer.";
+  private const string Failure = "La suppression a échoué, veuillez réessayer.";
 
   private static readonly Regex DeleteHandler = new(@"/demandes\?handler=Delete$");
 
@@ -180,13 +181,13 @@ public class RequestDeletion(BrowserHarness harness)
   public static TheoryData<string> Failures { get; } = ["une erreur serveur", "une coupure réseau", "un jeton anti-rejeu périmé"];
 
   /// <summary>
-  /// <b>Un échec pose un bandeau dans la confirmation</b>, qui reste ouverte ; la ligne reste en
-  /// place, et rien n'est supprimé. Le jeton périmé n'est pas simulé : le cookie qui le porte est
-  /// effacé, et c'est le vrai service qui refuse.
+  /// <b>Un échec ferme la confirmation, et le toast le dit</b> ; la ligne reste en place, et rien
+  /// n'est supprimé. Le jeton périmé n'est pas simulé : le cookie qui le porte est effacé, et c'est
+  /// le vrai service qui refuse.
   /// </summary>
   [Theory]
   [MemberData(nameof(Failures))]
-  public async Task ShowsTheBannerAndKeepsTheRowOnAFailure(string failure)
+  public async Task ShowsTheFailureToastAndKeepsTheRowOnAFailure(string failure)
   {
     await using var context = await harness.NewContextAsync();
     var email = UniqueEmail();
@@ -209,36 +210,37 @@ public class RequestDeletion(BrowserHarness harness)
     await TrashOf(page, email).ClickAsync();
     await ConfirmationButton(page, "Supprimer définitivement").ClickAsync();
 
-    await Expect(Banner(page)).ToBeVisibleAsync();
-    await Expect(Confirmation(page)).ToBeVisibleAsync();
-    await Expect(Toast(page)).ToBeHiddenAsync();
+    await Expect(Confirmation(page)).ToBeHiddenAsync();
+    await Expect(Toast(page, Failure)).ToBeVisibleAsync();
     await Expect(RowOf(page, email)).ToHaveCountAsync(1);
-    await Expect(ConfirmationButton(page, "Supprimer définitivement")).ToBeEnabledAsync();
     (await harness.CountOfRequestsAsync(message)).ShouldBe(1);
   }
 
   /// <summary>
-  /// <b>Après un échec, la confirmation rouverte ne montre plus le bandeau</b> : il parlait d'un
-  /// envoi qui n'est plus le sien.
+  /// <b>Après un échec, l'<c>Operator</c> réessaie depuis la même poubelle</b> : la confirmation
+  /// rouverte envoie de nouveau, et cette fois la ligne s'en va.
   /// </summary>
   [Fact]
-  public async Task ReopensWithoutTheBannerAfterAFailure()
+  public async Task DeletesOnARetryAfterAFailure()
   {
     await using var context = await harness.NewContextAsync();
     var email = UniqueEmail();
-    await harness.RecordRequestAsync("Martin", "Jeanne", email);
+    var message = await harness.RecordRequestAsync("Martin", "Jeanne", email);
     var page = await OnTheBoardAsync(context);
     await page.RouteAsync(DeleteHandler, route => route.FulfillAsync(new() { Status = 500 }));
 
     await TrashOf(page, email).ClickAsync();
     await ConfirmationButton(page, "Supprimer définitivement").ClickAsync();
-    await Expect(Banner(page)).ToBeVisibleAsync();
-    await ConfirmationButton(page, "Annuler").ClickAsync();
+    await Expect(Toast(page, Failure)).ToBeVisibleAsync();
+    await page.UnrouteAsync(DeleteHandler);
 
     await TrashOf(page, email).ClickAsync();
+    await ConfirmationButton(page, "Supprimer définitivement").ClickAsync();
 
-    await Expect(Confirmation(page)).ToBeVisibleAsync();
-    await Expect(Banner(page)).ToBeHiddenAsync();
+    await Expect(Confirmation(page)).ToBeHiddenAsync();
+    await Expect(RowOf(page, email)).ToHaveCountAsync(0);
+    await Expect(Toast(page)).ToBeVisibleAsync();
+    (await harness.CountOfRequestsAsync(message)).ShouldBe(0);
   }
 
   /// <summary>
@@ -286,13 +288,8 @@ public class RequestDeletion(BrowserHarness harness)
     return Confirmation(page).GetByRole(AriaRole.Button, new() { Name = name, Exact = true });
   }
 
-  private static ILocator Toast(IPage page)
+  private static ILocator Toast(IPage page, string words = Deleted)
   {
-    return page.GetByRole(AriaRole.Status).And(page.GetByText(Deleted, new() { Exact = true }));
-  }
-
-  private static ILocator Banner(IPage page)
-  {
-    return Confirmation(page).GetByRole(AriaRole.Alert).And(page.GetByText(Failure, new() { Exact = true }));
+    return page.GetByRole(AriaRole.Status).And(page.GetByText(words, new() { Exact = true }));
   }
 }
