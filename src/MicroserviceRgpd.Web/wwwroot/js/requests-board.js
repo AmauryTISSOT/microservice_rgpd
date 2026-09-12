@@ -24,6 +24,11 @@
 // la création : elle reprend sa place selon le tri en cours, et la recherche se rejoue sur elle. Le
 // replacement, la disparition hors recherche, la nouvelle date limite et son signalement n'ont donc
 // aucun code à eux.
+//
+// ⚠️ UN ENREGISTREMENT QUI ÉCHOUE NE PERD JAMAIS LA SAISIE : le bandeau de la modale dit l'échec —
+// technique, ou une demande close pendant la correction —, et la saisie reste là, à réessayer. Seule
+// une demande qui n'existe plus fait exception : la modale se ferme, sa ligne part, et le toast le
+// dit — il n'y a rien à réessayer.
 
 // LA RECHERCHE. Elle filtre les lignes que le serveur a rendues, sans revenir à lui : une demande
 // reste affichée si son email, son nom ou son prénom — ceux que la ligne porte en `data-*`, tels
@@ -132,6 +137,10 @@ const toast = document.getElementById("requests-toast");
 // envoyée : toujours pour une création, seulement si elle corrige quelque chose pour une
 // modification. Tout le reste de l'envoi leur est commun.
 //
+// `vanished` est ce que le geste fait d'un 404 — la demande n'existe plus. Une correction en désigne
+// une, et la sienne peut avoir été supprimée depuis un autre onglet ; une création n'en désigne
+// aucune, et un 404 n'y est qu'un échec de plus, avec son bandeau.
+//
 // ⚠️ TOUT CE QUI DÉPEND DU GESTE EST ICI, et nulle part ailleurs : un troisième geste s'ajouterait à
 // cette table, sans qu'aucun `if` sur le mode soit à retrouver dans le module.
 const modes = {
@@ -143,6 +152,7 @@ const modes = {
     said: toast.dataset.created,
     place: insertRow,
     worthSending: () => true,
+    vanished: null,
   },
   modify: {
     title: dialog.dataset.modifyTitle,
@@ -152,6 +162,7 @@ const modes = {
     said: toast.dataset.modified,
     place: replaceTheModifiedRow,
     worthSending: isCorrected,
+    vanished: dropTheVanishedRequest,
   },
 };
 
@@ -430,11 +441,20 @@ function attemptSave() {
 // Il redevient cliquable quelle que soit l'issue. La modale, elle, ne se ferme pas tant que l'envoi
 // court : la réponse doit trouver la saisie qu'elle concerne, pas une modale rouverte à zéro.
 //
-// Trois issues. Le code de succès du geste — 201 à la création, 200 à la modification — : c'est
-// enregistré, et le corps porte la ligne. 400 portant des refus de la saisie : ils vont sous leurs
-// champs, comme ceux du navigateur. Tout le reste — un 400 sans refus, qui est un jeton anti-rejeu
-// refusé, un 404, un 409, une erreur du serveur, une coupure réseau — : le bandeau, et la saisie
+// Quatre issues. Le code de succès du geste — 201 à la création, 200 à la modification — : c'est
+// enregistré, et le corps porte la ligne. 404 sur une correction : la demande n'existe plus, et le
+// geste dit ce qu'il en fait (voir `vanished`). 400 portant des refus de la saisie : ils vont sous
+// leurs champs, comme ceux du navigateur. Tout le reste — un 400 sans refus, qui est un jeton
+// anti-rejeu refusé, un 409, une erreur du serveur, une coupure réseau — : le bandeau, et la saisie
 // reste là.
+//
+// ⚠️ UN 409 NE REDESSINE PAS LA LIGNE : la demande a été close pendant la correction, mais le code
+// ne dit pas lequel des deux statuts elle a pris — la cellule Statut afficherait « En cours » à côté
+// d'un crayon éteint. L'incohérence se résout au prochain chargement.
+//
+// ⚠️ IL PORTE EN REVANCHE SA PROPRE PHRASE : « réessayez » serait un mensonge sur une demande close,
+// qu'aucun second essai ne rouvrira. Le 409 est donc le seul échec à ne pas prendre celle de
+// l'échec technique.
 let sending = false;
 
 async function send() {
@@ -456,6 +476,11 @@ async function send() {
       return;
     }
 
+    if (response.status === 404 && mode.vanished) {
+      mode.vanished();
+      return;
+    }
+
     const refusals = response.status === 400 ? await refusalsFromTheServer(response) : {};
     const refused = validatedFields.filter((field) => refusals[field.name]);
 
@@ -465,14 +490,21 @@ async function send() {
       );
       showRefusals(refusals);
     } else {
-      failure.hidden = false;
+      showFailure(response.status === 409 ? failure.dataset.closed : failure.dataset.technical);
     }
   } catch {
-    failure.hidden = false;
+    showFailure(failure.dataset.technical);
   } finally {
     sending = false;
     submitButton.disabled = false;
   }
+}
+
+// LE BANDEAU DIT LAQUELLE DES DEUX PHRASES, et se montre. Les mots viennent du gabarit serveur, comme
+// tous les autres ; le module choisit, il ne rédige pas.
+function showFailure(words) {
+  failure.textContent = words;
+  failure.hidden = false;
 }
 
 // Les refus d'un `ValidationProblem`, un par champ, sous les clés mêmes du corps. Une réponse qui
@@ -548,6 +580,17 @@ function insertRow(row) {
 
   tableBody.insertBefore(row, next ?? null);
   none.hidden = true;
+  applySearch();
+}
+
+// UNE LIGNE S'EN VA SANS RECHARGEMENT — supprimée par l'Operator, ou disparue de la base pendant
+// qu'il la corrigeait. La dernière partie, l'état vide que le serveur a rendu reparaît.
+//
+// ⚠️ LA RECHERCHE EN COURS SE REJOUE : la seule ligne trouvée partie, c'est à elle de dire que plus
+// rien ne correspond — et de se taire sur un tableau devenu vide.
+function removeRow(row) {
+  row?.remove();
+  none.hidden = rows.length > 0;
   applySearch();
 }
 
@@ -810,7 +853,7 @@ async function deleteForGood() {
   deletion.close();
 
   if (deleted) {
-    removeTheDeletedRow();
+    removeRow(rowToDelete);
     say(toast.dataset.deleted);
   } else {
     say(toast.dataset.deletionFailed);
@@ -831,16 +874,6 @@ async function sendDeletion() {
   } catch {
     return false;
   }
-}
-
-// LA LIGNE S'EN VA SANS RECHARGEMENT. La dernière partie, l'état vide que le serveur a rendu reparaît.
-//
-// ⚠️ LA RECHERCHE EN COURS SE REJOUE : la seule ligne trouvée partie, c'est à elle de dire que plus
-// rien ne correspond — et de se taire sur un tableau devenu vide.
-function removeTheDeletedRow() {
-  rowToDelete.remove();
-  none.hidden = requests.tBodies[0].rows.length > 0;
-  applySearch();
 }
 
 deleteButton.addEventListener("click", deleteForGood);
@@ -939,6 +972,20 @@ function replaceTheModifiedRow(row) {
   insertRow(row);
 
   openedBy = row.querySelector(editAction) ?? openedBy;
+}
+
+// LA DEMANDE N'EXISTE PLUS : elle a été supprimée depuis un autre onglet pendant que l'Operator la
+// corrigeait. Il n'y a rien à réessayer — aucune correction ne la rattrapera —, donc pas de bandeau :
+// la modale se ferme, sa ligne part du tableau, et le toast dit ce qui lui est arrivé.
+//
+// ⚠️ LE FOCUS PART AU CADRE DU TABLEAU, et c'est voulu : le crayon qui avait ouvert la modale s'en
+// est allé avec sa ligne, et la fermeture le constate (voir l'écouteur `close`).
+function dropTheVanishedRequest() {
+  removeRow(rowBeingModified);
+  confirmation.close();
+  dialog.close();
+
+  say(toast.dataset.vanished);
 }
 
 // Les huit valeurs d'une demande, ou rien du tout — 404 d'une demande supprimée ailleurs, erreur du

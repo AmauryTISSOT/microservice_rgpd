@@ -16,6 +16,11 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// toast, et des espaces ajoutés en fin de champ comptent pour rien — le domaine les rognerait.
 /// </para>
 /// <para>
+/// <b>Les échecs de l'enregistrement se gardent ici aussi</b> : le bandeau d'un échec technique et
+/// d'une demande close, la ligne d'une demande supprimée ailleurs qui s'en va, et l'inertie du bouton
+/// comme de la modale pendant l'envoi. Dans tous les cas, la saisie reste là où elle peut resservir.
+/// </para>
+/// <para>
 /// L'ouverture de la modale, son abandon et le retour du focus se gardent dans
 /// <see cref="ModificationDialog"/> ; ce que le serveur enregistre, dans <c>RequestModifying</c>.
 /// </para>
@@ -35,6 +40,19 @@ public class RequestModification(BrowserHarness harness)
 
   /// <summary>Ce que le toast dit d'une correction enregistrée, recopié à dessein.</summary>
   private const string Modified = "Demande modifiée";
+
+  /// <summary>Ce que le toast dit d'une demande qui n'existe plus, recopié à dessein.</summary>
+  private const string Vanished = "La demande a été supprimée entre-temps.";
+
+  /// <summary>Ce que le bandeau de la modale dit d'un échec technique, recopié à dessein.</summary>
+  private const string Failure = "La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer.";
+
+  /// <summary>
+  /// Ce que le bandeau dit d'une demande close pendant la correction, recopié à dessein. ⚠️ Il
+  /// n'invite pas à réessayer : aucun second essai ne rouvrira une demande close.
+  /// </summary>
+  private const string ClosedFailure =
+    "Cette demande a été close pendant votre correction : elle n'est plus modifiable, et votre correction n'a pas été enregistrée.";
 
   /// <summary>Le nom de la demande enregistrée, celui que la recherche des scénarios parcourt.</summary>
   private const string RecordedLastName = "Martin";
@@ -300,6 +318,194 @@ public class RequestModification(BrowserHarness harness)
     await Expect(PencilOf(RowOf(page, request.Email))).ToBeFocusedAsync();
   }
 
+  /// <summary>Les échecs de l'enregistrement qui ne sont pas un refus de la saisie.</summary>
+  public static TheoryData<string> Failures { get; } = ["une erreur serveur", "une coupure réseau", "un jeton anti-rejeu périmé"];
+
+  /// <summary>
+  /// <b>Un échec technique pose le bandeau et conserve la saisie</b> : la modale reste ouverte, telle
+  /// que l'<c>Operator</c> l'a remplie, et rien n'est enregistré. Le bandeau distingue « le serveur
+  /// n'a pas voulu » de « j'ai mal saisi », qui va sous ses champs.
+  /// </summary>
+  /// <remarks>
+  /// Le jeton périmé n'est pas simulé : le cookie qui le porte est effacé, et c'est le vrai service
+  /// qui refuse.
+  /// </remarks>
+  [Theory]
+  [MemberData(nameof(Failures))]
+  public async Task ShowsTheBannerAndKeepsTheEntryOnATechnicalFailure(string failure)
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var request = await ARecordedRequestAsync(page);
+    await OpenTheModificationAsync(request);
+
+    switch (failure)
+    {
+      case "une erreur serveur":
+        await page.RouteAsync(ModifyHandler, route => route.FulfillAsync(new() { Status = 500 }));
+        break;
+      case "une coupure réseau":
+        await page.RouteAsync(ModifyHandler, route => route.AbortAsync("internetdisconnected"));
+        break;
+      default:
+        await context.ClearCookiesAsync();
+        break;
+    }
+
+    var corrected = $"Je souhaite effacer mes données. {Guid.NewGuid()}";
+    await Field(page, "Nom").FillAsync("Martinez");
+    await Field(page, "Message").FillAsync(corrected);
+    await ModifyAsync(page);
+
+    await Expect(Banner(page)).ToBeVisibleAsync();
+    await Expect(Dialog(page)).ToBeVisibleAsync();
+    await ExpectNothingSaidAsync(page);
+    await Expect(ModifyButton(page)).ToBeEnabledAsync();
+
+    await Expect(Field(page, "Nom")).ToHaveValueAsync("Martinez");
+    await Expect(Field(page, "Message")).ToHaveValueAsync(corrected);
+    await Expect(Field(page, "Email")).ToHaveValueAsync(request.Email);
+
+    (await harness.CountOfRequestsAsync(corrected)).ShouldBe(0);
+    (await harness.CountOfRequestsAsync(request.Message)).ShouldBe(1);
+  }
+
+  /// <summary>
+  /// <b>Après un échec, l'<c>Operator</c> réessaie sans rien ressaisir</b> : la même saisie repart, le
+  /// bandeau s'en va, et la correction est enregistrée.
+  /// </summary>
+  [Fact]
+  public async Task SavesOnRetryAfterAFailure()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var request = await ARecordedRequestAsync(page);
+    await OpenTheModificationAsync(request);
+
+    await page.RouteAsync(ModifyHandler, route => route.AbortAsync("internetdisconnected"));
+
+    var corrected = $"Je souhaite effacer mes données. {Guid.NewGuid()}";
+    await Field(page, "Message").FillAsync(corrected);
+    await ModifyAsync(page);
+    await Expect(Banner(page)).ToBeVisibleAsync();
+
+    await page.UnrouteAsync(ModifyHandler);
+    await ModifyAsync(page);
+
+    await Expect(Banner(page)).ToBeHiddenAsync();
+    await Expect(Dialog(page)).ToBeHiddenAsync();
+    await Expect(Toast(page)).ToBeVisibleAsync();
+    (await harness.CountOfRequestsAsync(corrected)).ShouldBe(1);
+  }
+
+  /// <summary>
+  /// <b>Une demande close pendant la correction pose le bandeau, et rien d'autre</b> : la ligne n'est
+  /// pas redessinée. ⚠️ Le 409 dit « close », <b>pas lequel des deux statuts</b> — la cellule Statut
+  /// afficherait « En cours » à côté d'un crayon éteint. L'incohérence se résout au prochain
+  /// chargement, et la cellule garde donc ce qu'elle affichait.
+  /// <para>
+  /// ⚠️ <b>Le bandeau porte ses propres mots</b>, et non ceux de l'échec technique : l'<c>Operator</c>
+  /// apprend que la demande a été close, au lieu d'être invité à un second essai qu'aucune correction
+  /// ne fera passer.
+  /// </para>
+  /// </summary>
+  /// <remarks>
+  /// Le statut se pose <b>dans le dos de l'écran</b>, la modale déjà ouverte : c'est le vrai service
+  /// qui refuse, et non une réponse simulée.
+  /// </remarks>
+  [Fact]
+  public async Task ShowsTheBannerAndLeavesTheRowAloneWhenTheRequestWasClosed()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var request = await ARecordedRequestAsync(page);
+    await OpenTheModificationAsync(request);
+
+    await harness.SetStatusAsync(request.Message, RequestStatus.Completed);
+
+    var corrected = $"Je souhaite effacer mes données. {Guid.NewGuid()}";
+    await Field(page, "Message").FillAsync(corrected);
+    await ModifyAsync(page);
+
+    await Expect(ClosedBanner(page)).ToBeVisibleAsync();
+    await Expect(Banner(page)).ToBeHiddenAsync();
+    await Expect(Dialog(page)).ToBeVisibleAsync();
+    await ExpectNothingSaidAsync(page);
+    await Expect(Field(page, "Message")).ToHaveValueAsync(corrected);
+
+    await Expect(RowOf(page, request.Email)).ToHaveCountAsync(1);
+    await Expect(StatusOf(RowOf(page, request.Email))).ToHaveTextAsync("En cours");
+    (await harness.CountOfRequestsAsync(corrected)).ShouldBe(0);
+  }
+
+  /// <summary>
+  /// <b>Une demande supprimée depuis un autre onglet l'annonce, et sa ligne part du tableau</b> : il
+  /// n'y a rien à réessayer, la modale se ferme, et le toast dit ce qui lui est arrivé. Le focus va au
+  /// cadre du tableau : le crayon qui avait ouvert la modale est parti avec sa ligne.
+  /// </summary>
+  [Fact]
+  public async Task RemovesTheRowWhenTheRequestWasDeletedElsewhere()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var request = await ARecordedRequestAsync(page);
+    await OpenTheModificationAsync(request);
+
+    await harness.DeleteRequestAsync(request.Message);
+
+    await Field(page, "Message").FillAsync($"Je souhaite effacer mes données. {Guid.NewGuid()}");
+    await ModifyAsync(page);
+
+    await Expect(Dialog(page)).ToBeHiddenAsync();
+    await Expect(VanishedToast(page)).ToBeVisibleAsync();
+    await Expect(RowOf(page, request.Email)).ToHaveCountAsync(0);
+    await Expect(Frame(page)).ToBeFocusedAsync();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Pendant l'envoi, « Modifier » est inerte et la modale ne se ferme pas</b> — ni par
+  /// « Annuler », ni par la croix, ni par Échap, ni par un clic sur le fond : la réponse qui arrive
+  /// trouve la saisie qu'elle concerne, et une correction ne s'enregistre jamais deux fois.
+  /// </summary>
+  [Fact]
+  public async Task StaysOpenAndInertWhileSending()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var request = await ARecordedRequestAsync(page);
+    await OpenTheModificationAsync(request);
+
+    var sent = 0;
+    var release = new TaskCompletionSource();
+    await page.RouteAsync(ModifyHandler, async route =>
+    {
+      Interlocked.Increment(ref sent);
+      await release.Task;
+      await route.ContinueAsync();
+    });
+
+    var corrected = $"Je souhaite effacer mes données. {Guid.NewGuid()}";
+    await Field(page, "Message").FillAsync(corrected);
+    await ModifyButton(page).DblClickAsync();
+
+    await Expect(ModifyButton(page)).ToBeDisabledAsync();
+
+    await page.Keyboard.PressAsync("Escape");
+    await Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Annuler", Exact = true }).ClickAsync();
+    await Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Fermer", Exact = true }).ClickAsync();
+    await page.Mouse.ClickAsync(5, 5);
+
+    await Expect(Dialog(page)).ToBeVisibleAsync();
+    await Expect(Confirmation(page)).ToBeHiddenAsync();
+
+    release.SetResult();
+
+    await Expect(Dialog(page)).ToBeHiddenAsync();
+    await Expect(Toast(page)).ToBeVisibleAsync();
+    sent.ShouldBe(1);
+    (await harness.CountOfRequestsAsync(corrected)).ShouldBe(1);
+  }
+
   /// <summary>
   /// ⚠️ <b>Le toast ne dit rien du tout</b> — et pas seulement : rien de cette correction-là. Un toast
   /// vide est le seul qui prouve qu'aucun mot n'a été dit.
@@ -349,7 +555,25 @@ public class RequestModification(BrowserHarness harness)
 
   private static Task ModifyAsync(IPage page)
   {
-    return Dialog(page).GetByRole(AriaRole.Button, new() { Name = SubmitLabel, Exact = true }).ClickAsync();
+    return ModifyButton(page).ClickAsync();
+  }
+
+  /// <summary>Le bouton primaire de la modale en mode modification.</summary>
+  private static ILocator ModifyButton(IPage page)
+  {
+    return Dialog(page).GetByRole(AriaRole.Button, new() { Name = SubmitLabel, Exact = true });
+  }
+
+  /// <summary>Le bandeau d'échec de la modale, qui n'est là que si l'enregistrement a échoué.</summary>
+  private static ILocator Banner(IPage page)
+  {
+    return Dialog(page).GetByRole(AriaRole.Alert).And(page.GetByText(Failure, new() { Exact = true }));
+  }
+
+  /// <summary>Le même bandeau, portant cette fois les mots d'une demande close pendant la correction.</summary>
+  private static ILocator ClosedBanner(IPage page)
+  {
+    return Dialog(page).GetByRole(AriaRole.Alert).And(page.GetByText(ClosedFailure, new() { Exact = true }));
   }
 
   private static string Iso(DateOnly day) => day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -383,6 +607,12 @@ public class RequestModification(BrowserHarness harness)
   private static ILocator DeadlineOf(ILocator row)
   {
     return CellOf(row, 4);
+  }
+
+  /// <summary>La cellule du statut, dixième de la ligne.</summary>
+  private static ILocator StatusOf(ILocator row)
+  {
+    return CellOf(row, 9);
   }
 
   /// <summary>
@@ -428,6 +658,11 @@ public class RequestModification(BrowserHarness harness)
   private static ILocator Toast(IPage page)
   {
     return page.GetByRole(AriaRole.Status).And(page.GetByText(Modified, new() { Exact = true }));
+  }
+
+  private static ILocator VanishedToast(IPage page)
+  {
+    return page.GetByRole(AriaRole.Status).And(page.GetByText(Vanished, new() { Exact = true }));
   }
 
   /// <summary>

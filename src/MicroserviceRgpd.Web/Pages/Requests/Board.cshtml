@@ -268,10 +268,16 @@
       LE BANDEAU D'ÉCHEC, CACHÉ TANT QU'UN ENVOI N'A PAS ÉCHOUÉ AUTREMENT QUE PAR UN REFUS — jeton
       anti-rejeu périmé, erreur du serveur, coupure réseau. Un refus de la saisie, lui, va sous ses
       champs. La modale reste ouverte et la saisie intacte : l'Operator réessaie sans rien ressaisir.
+
+      ⚠️ DEUX ÉCHECS, DEUX PHRASES, et le bandeau est vide tant qu'aucune n'est choisie : le module y
+      écrit celle que la réponse appelle. Un échec technique invite à réessayer ; une demande close
+      pendant la correction, non — aucun second essai ne la rattrapera, et promettre le contraire
+      ferait cliquer l'Operator jusqu'à ce qu'il devine. C'est ce que la story 30 lui doit : apprendre
+      que la demande a été close, plutôt que croire sa correction passée.
     *@
-    <p class="modal-failure" role="alert" id="request-failure" hidden>
-      La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer.
-    </p>
+    <p class="modal-failure" role="alert" id="request-failure" hidden
+       data-technical="La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer."
+       data-closed="Cette demande a été close pendant votre correction : elle n'est plus modifiable, et votre correction n'a pas été enregistrée."></p>
 
     @*
       L'IDENTIFIANT DE LA DEMANDE MODIFIÉE, CACHÉ ET VIDE : la création n'en a pas, et ce n'est pas
@@ -289,11 +295,14 @@
 
 @*
   LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée », « Demande
-  modifiée », « Demande supprimée », l'échec d'une suppression ou celui d'un pré-remplissage — les
-  mots que la page lui donne ici — quand une modale se ferme sur une création, sur une modification
-  ou sur une suppression, ou quand le crayon d'une ligne n'a pas pu lire sa demande, et l'efface
-  quelques secondes plus tard. Il est hors des modales, qui viennent de se fermer ou ne se sont pas
-  ouvertes ; `role="status"` le fait lire sans voler le focus.
+  modifiée », « Demande supprimée », l'échec d'une suppression, celui d'un pré-remplissage, ou la
+  disparition d'une demande corrigée — les mots que la page lui donne ici — quand une modale se ferme
+  sur une création, sur une modification ou sur une suppression, ou quand le crayon d'une ligne n'a
+  pas pu lire sa demande, et l'efface quelques secondes plus tard. Il est hors des modales, qui
+  viennent de se fermer ou ne se sont pas ouvertes ; `role="status"` le fait lire sans voler le focus.
+
+  ⚠️ UNE DEMANDE SUPPRIMÉE DEPUIS UN AUTRE ONGLET NE SE DIT PAS DANS LE BANDEAU DE LA MODALE, mais
+  ici : la modale se ferme — il n'y a rien à réessayer —, et son bandeau s'en irait avec elle.
 
   ⚠️ RIEN N'EST DIT D'UNE CORRECTION QUI NE CORRIGE RIEN : la modale se ferme en silence, et
   « Demande modifiée » serait un mensonge — le serveur n'aurait rien tracé.
@@ -301,7 +310,8 @@
 <p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"
    data-modified="Demande modifiée"
    data-deletion-failed="La suppression a échoué, veuillez réessayer."
-   data-load-failed="La demande n'a pas pu être chargée."></p>
+   data-load-failed="La demande n'a pas pu être chargée."
+   data-vanished="La demande a été supprimée entre-temps."></p>
 
 @*
   LA CONFIRMATION D'ABANDON, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT. Le module l'ouvre
