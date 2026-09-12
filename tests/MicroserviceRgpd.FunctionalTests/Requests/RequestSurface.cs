@@ -6,16 +6,18 @@ using Microsoft.EntityFrameworkCore;
 namespace MicroserviceRgpd.FunctionalTests.Requests;
 
 /// <summary>
-/// Les handlers de <c>/demandes</c> — <c>POST ?handler=Create</c>, <c>POST ?handler=Delete</c> et
-/// <c>GET ?handler=Values</c> —, <b>frappés directement</b> : avec le jeton anti-rejeu que la page
-/// rend et le cookie qui va avec — exactement ce que fait le navigateur —, et la table
-/// <c>data_subject_requests</c> relue telle qu'ils l'ont laissée.
+/// Les handlers de <c>/demandes</c> — <c>POST ?handler=Create</c>, <c>POST ?handler=Modify</c>,
+/// <c>POST ?handler=Delete</c> et <c>GET ?handler=Values</c> —, <b>frappés directement</b> : avec le
+/// jeton anti-rejeu que la page rend et le cookie qui va avec — exactement ce que fait le
+/// navigateur —, et la table <c>data_subject_requests</c> relue telle qu'ils l'ont laissée.
 /// </summary>
 internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factory)
 {
   internal const string Board = "/demandes";
 
   internal const string Create = "/demandes?handler=Create";
+
+  internal const string Modify = "/demandes?handler=Modify";
 
   internal const string Delete = "/demandes?handler=Delete";
 
@@ -54,6 +56,39 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
   internal async Task<HttpResponseMessage> CreateWithoutTokenAsync(IReadOnlyDictionary<string, string> fields)
   {
     return await _client.PostAsync(Create, new FormUrlEncodedContent(fields));
+  }
+
+  /// <summary>
+  /// Envoie la correction au handler de modification, jeton anti-rejeu compris. L'identifiant de la
+  /// demande va <b>en paramètre du handler</b>, comme pour la suppression : ce n'est pas une saisie.
+  /// </summary>
+  internal Task<HttpResponseMessage> ModifyAsync(Guid id, IReadOnlyDictionary<string, string> fields) =>
+    ModifyAsync(id.ToString(), fields);
+
+  /// <summary>Envoie la correction sous cet identifiant brut, jeton anti-rejeu compris.</summary>
+  internal async Task<HttpResponseMessage> ModifyAsync(string id, IReadOnlyDictionary<string, string> fields)
+  {
+    return await _client.PostAsync(Modify, new FormUrlEncodedContent(
+    [
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
+      new("id", id),
+      .. fields,
+    ]));
+  }
+
+  /// <summary>
+  /// Envoie la correction <b>sans</b> jeton anti-rejeu — ce que ferait une page tierce qui ferait
+  /// poster le navigateur de l'<c>Operator</c>.
+  /// </summary>
+  internal async Task<HttpResponseMessage> ModifyWithoutTokenAsync(
+    Guid id,
+    IReadOnlyDictionary<string, string> fields)
+  {
+    return await _client.PostAsync(Modify, new FormUrlEncodedContent(
+    [
+      new("id", id.ToString()),
+      .. fields,
+    ]));
   }
 
   /// <summary>
