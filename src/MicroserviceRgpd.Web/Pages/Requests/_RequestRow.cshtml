@@ -54,7 +54,12 @@
 
   ET CE QUE LA LIGNE PORTE POUR LA FICHE : le nom replié de la personne — « Prénom Nom », à défaut
   son email seul —, que le titre de la fiche annoncera. Jamais vide, jamais « — » : le serveur le
-  replie par la seule règle qui l'écrit, celle que la phrase de suppression appelle déjà.
+  replie par la seule règle qui l'écrit, celle que la phrase de suppression appelle déjà. Puis
+  L'ORIGINE ET LE MESSAGE, les deux informations qu'aucune colonne ne montre et que la fiche lira là,
+  sans aucun aller-retour réseau. L'origine sous SON LIBELLÉ FRANÇAIS — « Email », « Courrier » —,
+  rendu par le serveur : le script ne dérive jamais un libellé d'un nom canonique. Le message tel
+  qu'enregistré, retours à la ligne compris. ⚠️ AUCUN REPLI « — » POUR LE MESSAGE : il est
+  obligatoire (ADR-0019), une demande sans message ne s'enregistre pas.
 
   ET CE QUE LE TRI COMPARE : la date de réception en ISO, et l'instant d'enregistrement en ISO UTC,
   qui départage deux demandes reçues le même jour — et non les libellés `jj/mm/aaaa`, qui ne se
@@ -75,7 +80,9 @@
     data-first-name="@Model.Searchable.FirstName"
     data-received-on="@Model.Sort.ReceivedOn"
     data-created-at="@Model.Sort.CreatedAt"
-    data-sheet-person="@Model.ForSheet.Person">
+    data-sheet-person="@Model.ForSheet.Person"
+    data-sheet-origin="@Model.ForSheet.Origin"
+    data-sheet-message="@Model.ForSheet.Message">
   <td data-field="email">@Model.Email</td>
   <td data-field="lastName">@Model.LastName</td>
   <td data-field="firstName">@Model.FirstName</td>

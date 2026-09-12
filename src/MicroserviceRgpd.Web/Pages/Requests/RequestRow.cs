@@ -16,7 +16,9 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// La ligne porte aussi l'identifiant de sa demande, que la suppression envoie, le statut et le
 /// signalement sous leur <b>nom canonique</b>, que la feuille de style colore, et ses <b>clés de
 /// tri</b>, par lesquelles le script ordonne les lignes et place celle d'une demande qu'on vient de
-/// créer, et enfin le <b>nom replié</b> de la personne, ce qu'elle porte <b>pour la fiche</b>.
+/// créer, et enfin ce qu'elle porte <b>pour la fiche</b> : le <b>nom replié</b> de la personne,
+/// l'<b>origine</b> sous son libellé français et le <b>message</b> de la demande — les deux
+/// dernières, qu'aucune colonne ne montre.
 ///
 /// ⚠️ <b>Chaque cellule se nomme</b> en <c>data-field</c>, par l'information rendue ici —
 /// <c>email</c>, <c>lastName</c>, <c>firstName</c>, <c>receivedOn</c>, <c>responseDeadline</c>,
@@ -84,16 +86,24 @@ public sealed record RequestRow(
   public sealed record SearchableText(string Email, string LastName, string FirstName);
 
   /// <summary>
-  /// Ce que la ligne porte <b>pour la fiche</b> : le <b>nom replié</b> de la personne — « Prénom
-  /// Nom », à défaut l'email seul —, celui que le titre de la fiche annonce.
+  /// Ce que la ligne porte <b>pour la fiche</b>, et qu'aucune cellule ne montre : le <b>nom
+  /// replié</b> de la personne — « Prénom Nom », à défaut l'email seul —, celui que le titre de la
+  /// fiche annonce, puis l'<b>origine</b> sous son libellé français et le <b>message</b> de la
+  /// demande. La fiche les lit là, sans aucun aller-retour réseau.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Ce nom n'est jamais vide et n'est jamais « — »</b> : l'<c>Identification</c> d'une demande
-  /// garantit qu'il reste toujours l'email, ou le nom et le prénom. Il se replie par
+  /// ⚠️ <b>Le nom replié n'est jamais vide et n'est jamais « — »</b> : l'<c>Identification</c> d'une
+  /// demande garantit qu'il reste toujours l'email, ou le nom et le prénom. Il se replie par
   /// <see cref="PersonOf"/>, la <b>seule</b> écriture de la règle — c'est elle aussi que la phrase de
   /// suppression appelle, pour que les deux ne nomment jamais la même personne autrement.
+  ///
+  /// ⚠️ <b>L'origine est le libellé de l'<c>Origin</c>, rendu par le serveur</b> — « Email »,
+  /// « Courrier » : le script ne dérive jamais un libellé d'un nom canonique.
+  ///
+  /// ⚠️ <b>Le message n'a pas de repli</b> : il est obligatoire (ADR-0019), et aucune demande sans
+  /// message ne s'enregistre. Un « — » n'y aurait aucun cas.
   /// </remarks>
-  public sealed record Sheet(string Person);
+  public sealed record Sheet(string Person, string Origin, string Message);
 
   /// <summary>
   /// Le signalement de la date limite, s'il y en a un : son <b>nom canonique</b>, que la cellule
@@ -154,7 +164,7 @@ public sealed record RequestRow(
       new SortKeys(
         request.ReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         request.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'", CultureInfo.InvariantCulture)),
-      new Sheet(PersonOf(request)));
+      new Sheet(PersonOf(request), request.Origin.FrenchLabel, request.Message.Value));
   }
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
