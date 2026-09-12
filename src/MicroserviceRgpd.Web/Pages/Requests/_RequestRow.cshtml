@@ -43,6 +43,10 @@
   LA LIGNE PORTE, EN `data-*`, CE QUE LA RECHERCHE PARCOURT : l'email, le nom et le prénom tels
   qu'enregistrés, vides s'ils sont absents — et non les libellés des cellules, dont le « — ».
 
+  ET CE QUE LA LIGNE PORTE POUR LA FICHE : le nom replié de la personne — « Prénom Nom », à défaut
+  son email seul —, que le titre de la fiche annoncera. Jamais vide, jamais « — » : le serveur le
+  replie par la seule règle qui l'écrit, celle que la phrase de suppression appelle déjà.
+
   ET CE QUE LE TRI COMPARE : la date de réception en ISO, et l'instant d'enregistrement en ISO UTC,
   qui départage deux demandes reçues le même jour — et non les libellés `jj/mm/aaaa`, qui ne se
   trient pas. Ce sont aussi les clés que le script compare pour placer la ligne d'une demande qu'on
@@ -61,7 +65,8 @@
     data-last-name="@Model.Searchable.LastName"
     data-first-name="@Model.Searchable.FirstName"
     data-received-on="@Model.Sort.ReceivedOn"
-    data-created-at="@Model.Sort.CreatedAt">
+    data-created-at="@Model.Sort.CreatedAt"
+    data-sheet-person="@Model.ForSheet.Person">
   <td>@Model.Email</td>
   <td>@Model.LastName</td>
   <td>@Model.FirstName</td>

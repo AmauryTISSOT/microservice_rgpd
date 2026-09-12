@@ -150,20 +150,23 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Chaque ligne porte l'identifiant de sa demande et la phrase de sa suppression</b>, composée
-  /// par le serveur : le prénom et le nom s'ils sont là, l'email entre parenthèses quand un nom
-  /// l'accompagne, et sans parenthèses quand il est seul. Le module la recopie dans la confirmation.
+  /// <b>Chaque ligne porte l'identifiant de sa demande, la phrase de sa suppression et le nom replié
+  /// de la personne</b>, composés par le serveur. La phrase dit le prénom et le nom s'ils sont là,
+  /// l'email entre parenthèses quand un nom l'accompagne, et sans parenthèses quand il est seul ; le
+  /// module la recopie dans la confirmation. Le nom replié — celui que la fiche portera en titre —
+  /// est « Prénom Nom », à défaut l'email seul : <b>jamais vide, jamais « — »</b>.
   /// </summary>
   /// <remarks>
   /// <c>{m}</c> est remplacé par une valeur unique, qui fait retrouver la ligne.
   /// </remarks>
   [Theory]
-  [InlineData("Martin", "Jeanne", "jeanne.{m}@example.org", "Jeanne Martin (jeanne.{m}@example.org)")]
-  [InlineData("", "", "jeanne.{m}@example.org", "jeanne.{m}@example.org")]
-  [InlineData("Martin-{m}", "Jeanne", "", "Jeanne Martin-{m}")]
-  [InlineData("Martin", "", "jeanne.{m}@example.org", "Martin (jeanne.{m}@example.org)")]
-  public async Task CarriesTheIdAndTheDeletionSentenceComposedByTheServer(
-    string lastName, string firstName, string email, string whose)
+  [InlineData("Martin", "Jeanne", "jeanne.{m}@example.org", "Jeanne Martin (jeanne.{m}@example.org)", "Jeanne Martin")]
+  [InlineData("", "", "jeanne.{m}@example.org", "jeanne.{m}@example.org", "jeanne.{m}@example.org")]
+  [InlineData("Martin-{m}", "Jeanne", "", "Jeanne Martin-{m}", "Jeanne Martin-{m}")]
+  [InlineData("Martin", "", "jeanne.{m}@example.org", "Martin (jeanne.{m}@example.org)", "Martin")]
+  [InlineData("", "Jeanne", "jeanne.{m}@example.org", "Jeanne (jeanne.{m}@example.org)", "Jeanne")]
+  public async Task CarriesTheIdTheDeletionSentenceAndTheFoldedPersonNameComposedByTheServer(
+    string lastName, string firstName, string email, string whose, string person)
   {
     var marker = Guid.NewGuid().ToString("N");
     string Marked(string value) => value.Replace("{m}", marker, StringComparison.Ordinal);
@@ -180,6 +183,12 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
     AttributeOf(row, "data-request-id").ShouldBe(id.ToString());
     AttributeOf(row, "data-deletion-confirmation").ShouldBe(
       $"La demande de {Marked(whose)} sera définitivement supprimée. Cette action est irréversible.");
+
+    var carried = AttributeOf(row, "data-sheet-person");
+
+    carried.ShouldBe(Marked(person));
+    carried.ShouldNotBeNullOrWhiteSpace("Le nom replié de la personne est vide.");
+    carried.ShouldNotBe("—", "Le nom replié de la personne est une absence.");
   }
 
   /// <summary>
