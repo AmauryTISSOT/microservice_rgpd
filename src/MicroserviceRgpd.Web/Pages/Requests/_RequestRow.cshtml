@@ -6,14 +6,21 @@
   insérera à sa place. Une seule vue partielle : deux gabarits de ligne finiraient par diverger.
 
   LA DERNIÈRE CELLULE PORTE LES TROIS ACTIONS DE LA LIGNE, EN ICÔNES : la poubelle, le crayon,
-  l'œil. Chacune est nommée par son `aria-label` pour qui ne la voit pas, et montre le même libellé
-  dans une infobulle au survol et au focus — un élément de la page, que le CSS montre, et non un
-  `title`, que chaque navigateur rend à sa façon et à son délai. L'infobulle est `aria-hidden` : le
-  nom accessible le dit déjà, un lecteur d'écran ne doit pas l'entendre deux fois.
+  l'œil. Chacune est nommée par son `aria-label` pour qui ne la voit pas, et montre son libellé dans
+  une infobulle au survol et au focus — un élément de la page, que le CSS montre, et non un `title`,
+  que chaque navigateur rend à sa façon et à son délai. L'infobulle est `aria-hidden` : le nom
+  accessible le dit déjà, un lecteur d'écran ne doit pas l'entendre deux fois. Seul le crayon d'une
+  demande close y dit autre chose que son nom : la raison de son extinction.
 
-  ⚠️ LE CRAYON ET L'ŒIL SONT INERTES, en attendant leurs US : de simples boutons, hors de tout
-  formulaire, qu'aucun script n'écoute. Ils ne sont pas désactivés — un bouton éteint ne se survole
-  pas, et son infobulle ne se lirait jamais.
+  ⚠️ L'ŒIL EST INERTE, en attendant son US : un simple bouton, hors de tout formulaire, qu'aucun
+  script n'écoute. Il n'est pas désactivé — un bouton éteint ne se survole pas, et son infobulle ne
+  se lirait jamais.
+
+  LE CRAYON D'UNE DEMANDE CLOSE EST ÉTEINT, ET DIT POURQUOI. ⚠️ Il porte `aria-disabled`, JAMAIS
+  `disabled` : l'infobulle se montre au survol et au focus visible, que le navigateur refuse tous
+  deux à un bouton réellement désactivé — l'explication exigée ne s'afficherait alors jamais. Le
+  view model dit si le geste est offert et ce que l'infobulle en dit ; le gabarit ne teste aucun
+  statut.
 
   LA POUBELLE OUVRE LA CONFIRMATION DE SUPPRESSION, que le module remplit avec ce que la ligne porte
   en `data-*` : l'identifiant de la demande, et la phrase que le serveur a composée pour elle. Le
@@ -42,11 +49,11 @@
   vient de créer, dans le sens du tri sélectionné : les mêmes clés, lues des deux côtés.
 *@
 @{
-  (string Label, string Icon, string Action)[] actions =
+  (string Label, string Tooltip, string Icon, string Action, bool Dimmed)[] actions =
   [
-    ("Supprimer la demande", "M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5", "delete"),
-    ("Modifier la demande", "M10.5 2.5l3 3L5.5 13.5H2.5v-3zM9 4l3 3", "edit"),
-    ("Voir la fiche de la demande", "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8zM6 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "view"),
+    ("Supprimer la demande", "Supprimer la demande", "M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5", "delete", false),
+    ("Modifier la demande", Model.ModificationTooltip, "M10.5 2.5l3 3L5.5 13.5H2.5v-3zM9 4l3 3", "edit", !Model.ModificationAllowed),
+    ("Voir la fiche de la demande", "Voir la fiche de la demande", "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8zM6 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "view", false),
   ];
 }
 <tr data-request-id="@Model.Id" data-deletion-confirmation="@Model.DeletionConfirmation"
@@ -74,14 +81,15 @@
   <td><span class="status" data-status="@Model.StatusName">@Model.StatusLabel</span></td>
   <td>
     <div class="row-actions">
-      @foreach (var (label, icon, action) in actions)
+      @foreach (var (label, tooltip, icon, action, dimmed) in actions)
       {
-        <button type="button" class="row-action" aria-label="@label" data-action="@action">
+        <button type="button" class="row-action" aria-label="@label" data-action="@action"
+                aria-disabled="@(dimmed ? "true" : null)">
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="@icon" stroke="currentColor" stroke-width="1.4"
                   stroke-linecap="round" stroke-linejoin="round" fill="none" />
           </svg>
-          <span class="tooltip" aria-hidden="true">@label</span>
+          <span class="tooltip" aria-hidden="true">@tooltip</span>
         </button>
       }
     </div>

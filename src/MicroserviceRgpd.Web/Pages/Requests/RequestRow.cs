@@ -17,6 +17,11 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// signalement sous leur <b>nom canonique</b>, que la feuille de style colore, et ses <b>clés de
 /// tri</b>, par lesquelles le script ordonne les lignes et place celle d'une demande qu'on vient de
 /// créer.
+///
+/// Elle porte enfin ce que le <b>crayon</b> offre — <c>ModificationAllowed</c> — et ce que son
+/// infobulle dit — <c>ModificationTooltip</c> : son libellé quand la modification est permise, la
+/// raison de son extinction quand la demande est close. Les deux se calculent ici, à partir du
+/// statut ; le gabarit ne teste rien.
 /// </remarks>
 public sealed record RequestRow(
   string Id,
@@ -33,6 +38,8 @@ public sealed record RequestRow(
   string CreatedBy,
   string StatusLabel,
   string StatusName,
+  bool ModificationAllowed,
+  string ModificationTooltip,
   RequestRow.SearchableText Searchable,
   RequestRow.SortKeys Sort)
 {
@@ -75,6 +82,19 @@ public sealed record RequestRow(
   /// <summary>Ce qu'affiche une cellule dont la valeur est absente : une absence, pas une cellule mal rendue.</summary>
   private const string Absent = "—";
 
+  /// <summary>
+  /// Ce que dit l'infobulle du crayon quand la modification est offerte. ⚠️ <b>C'est le libellé
+  /// accessible du bouton</b>, que le gabarit écrit de son côté : les deux se lisent ensemble, et
+  /// doivent rester le même mot.
+  /// </summary>
+  private const string ModificationOffered = "Modifier la demande";
+
+  /// <summary>
+  /// Ce que dit l'infobulle du crayon d'une demande close — Terminée ou Annulée. Le bouton est
+  /// éteint ; l'<c>Operator</c> doit lire <b>pourquoi</b>, et non croire à une panne.
+  /// </summary>
+  private const string ModificationRefused = "Une demande close ne peut plus être modifiée";
+
   private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
   /// <summary>La ligne d'une demande enregistrée, telle qu'elle se lit <paramref name="todayInParis"/>.</summary>
@@ -86,6 +106,7 @@ public sealed record RequestRow(
     ArgumentNullException.ThrowIfNull(request);
 
     var signal = Core.Requests.DeadlineSignal.Of(request.Status, request.ResponseDeadline, todayInParis);
+    var modificationAllowed = request.Status == RequestStatus.InProgress;
 
     return new RequestRow(
       request.Id.Value.ToString(),
@@ -102,6 +123,8 @@ public sealed record RequestRow(
       request.CreatedBy == DataSubjectRequest.OperatorAuthor ? "Opérateur" : request.CreatedBy,
       request.Status.FrenchLabel,
       request.Status.Name,
+      modificationAllowed,
+      modificationAllowed ? ModificationOffered : ModificationRefused,
       new SearchableText(
         request.Email?.Value ?? string.Empty,
         request.LastName?.Value ?? string.Empty,

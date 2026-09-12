@@ -2,10 +2,15 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
 /// <b>Les trois actions de chaque ligne</b>, dans un vrai navigateur : la poubelle, le crayon et
-/// l'œil montrent leur infobulle au survol ; le crayon et l'œil, inertes en attendant leurs US, ne
-/// font rien au clic.
+/// l'œil montrent leur infobulle au survol ; l'œil, inerte en attendant son US, ne fait rien au clic.
 /// </summary>
 /// <remarks>
+/// <para>
+/// ⚠️ <b>Ce que fait le crayon ne se juge plus ici</b> : cette classe dit ce que la <i>ligne</i>
+/// offre, et l'ouverture de la modale appartient au scénario de la modale — voir
+/// <see cref="ModificationDialog"/>. Le fait sur l'œil reste, pour garder trace que cette
+/// inertie-là est délibérée et non un oubli.
+/// </para>
 /// <para>
 /// Chaque test enregistre sa propre demande <b>par la modale de création</b>, reconnaissable à son
 /// email unique, puis recharge le tableau : la base est partagée par toute la collection.
@@ -42,14 +47,14 @@ public class RowActions(BrowserHarness harness)
   }
 
   /// <summary>
-  /// ⚠️ <b>Le crayon et l'œil sont inertes</b> : un clic ne change rien à la page — ni navigation, ni
-  /// rechargement, ni nouvel onglet, ni fenêtre ouverte.
+  /// ⚠️ <b>L'œil est inerte</b> : un clic ne change rien à la page — ni navigation, ni rechargement,
+  /// ni nouvel onglet, ni fenêtre ouverte.
   /// </summary>
-  [Theory]
-  [InlineData("Modifier la demande")]
-  [InlineData("Voir la fiche de la demande")]
-  public async Task DoesNothingOnAClick(string action)
+  [Fact]
+  public async Task DoesNothingOnAClick()
   {
+    const string action = "Voir la fiche de la demande";
+
     await using var context = await harness.NewContextAsync();
     var page = await context.NewPageAsync();
     var row = await RowOfANewRequestAsync(page);
