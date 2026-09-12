@@ -11,6 +11,18 @@
 /// <param name="instant">L'instant que cette horloge rendra, toujours le même.</param>
 internal sealed class AClockStuckAt(DateTimeOffset instant) : TimeProvider
 {
+  /// <summary>
+  /// Le nombre de lectures depuis sa naissance. C'est lui, et lui seul, qui distingue deux lectures
+  /// d'un même instant d'une seule — un acte qui doit dater deux choses du même instant ne lit
+  /// l'horloge qu'une fois, et un instant figé ne le dirait pas.
+  /// </summary>
+  public int Readings { get; private set; }
+
   /// <inheritdoc />
-  public override DateTimeOffset GetUtcNow() => instant;
+  public override DateTimeOffset GetUtcNow()
+  {
+    Readings++;
+
+    return instant;
+  }
 }
