@@ -41,7 +41,8 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>Le 201 porte la ligne de la nouvelle demande</b>, en HTML, que le script insère dans le
   /// tableau : ses libellés — dont la date limite de réponse calculée et le statut « En cours » —,
-  /// l'identifiant de la demande relue en base, et le badge sous le nom canonique du statut.
+  /// l'identifiant de la demande relue en base, le badge sous le nom canonique du statut, et le nom
+  /// de chacune de ses cellules.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>C'est la ligne même que le tableau rendra</b>, au caractère près : une seule vue partielle
@@ -70,6 +71,11 @@ public class RequestRecording(CustomWebApplicationFactory<Program> factory)
     var cells = Regex.Matches(row, @"<td\b[^>]*>(.*?)</td>", RegexOptions.Singleline)
       .Select(cell => LayoutSurface.TextIn(cell.Groups[1].Value))
       .ToArray();
+
+    // La ligne du 201 se nomme comme celles du chargement : la fiche les lira toutes par leur nom.
+    RequestSurface.FieldNamesIn(row).ShouldBe(
+      [.. RequestSurface.RowFields, RequestSurface.UnnamedActionsCell],
+      "Les cellules de la ligne du 201 ne se nomment pas, dans l'ordre.");
 
     // La ligne du 201 est celle du tableau : la date limite, antérieure à aujourd'hui, y est signalée de même.
     cells[..7].ShouldBe([email, "Martin", "Jeanne", "31/01/2026", "28/02/2026 En retard", "Non", "Droit à l'effacement"]);

@@ -23,6 +23,23 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
 
   internal const string Values = "/demandes?handler=Values";
 
+  /// <summary>
+  /// <b>Les dix informations d'une demande, dans l'ordre où la ligne les rend</b>, chacune sous le
+  /// nom que sa cellule porte en <c>data-field</c> — la propriété du view model de la ligne. La
+  /// fiche les lira par ces noms, jamais par leur index.
+  /// </summary>
+  internal static readonly string[] RowFields =
+  [
+    "email", "lastName", "firstName", "receivedOn", "responseDeadline", "identityVerified",
+    "right", "createdAt", "createdBy", "status",
+  ];
+
+  /// <summary>
+  /// Ce que porte la cellule des actions : rien. Elle ne rend aucune information de la demande, et
+  /// ne se nomme donc pas.
+  /// </summary>
+  internal const string UnnamedActionsCell = "";
+
   private readonly HttpClient _client = factory.CreateClient(
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
@@ -38,6 +55,16 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
     ["message"] = $"Je souhaite accéder à mes données. {Guid.NewGuid()}",
     ["right"] = "Access",
   };
+
+  /// <summary>
+  /// Le nom de chaque cellule de <paramref name="row"/>, dans l'ordre où la ligne les rend — vide
+  /// pour une cellule qui ne se nomme pas.
+  /// </summary>
+  internal static string[] FieldNamesIn(string row) =>
+  [
+    .. Regex.Matches(row, @"<td\b(?<attributes>[^>]*)>", RegexOptions.Singleline)
+      .Select(cell => Regex.Match(cell.Groups["attributes"].Value, @"data-field=""([^""]*)""").Groups[1].Value),
+  ];
 
   /// <summary>Envoie la saisie au handler de création, jeton anti-rejeu compris.</summary>
   internal async Task<HttpResponseMessage> CreateAsync(IReadOnlyDictionary<string, string> fields)

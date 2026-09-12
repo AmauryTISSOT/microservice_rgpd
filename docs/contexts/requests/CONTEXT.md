@@ -37,7 +37,7 @@ _Avoid_ : messages, commentaire, note, texte libre
 Le seul `DataSubjectRight` que la demande exerce, choisi par l'`Operator` parmi les six droits.
 `OutOfScope` n'en est pas un : c'est un verdict de `Qualification`, et une demande ne l'invoque
 jamais.
-_Avoid_ : type de demande, catégorie, qualification
+_Avoid_ : type de droit, type de demande, catégorie, qualification
 
 ### Le délai
 

@@ -18,6 +18,15 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// tri</b>, par lesquelles le script ordonne les lignes et place celle d'une demande qu'on vient de
 /// créer, et enfin le <b>nom replié</b> de la personne, ce qu'elle porte <b>pour la fiche</b>.
 ///
+/// ⚠️ <b>Chaque cellule se nomme</b> en <c>data-field</c>, par l'information rendue ici —
+/// <c>email</c>, <c>lastName</c>, <c>firstName</c>, <c>receivedOn</c>, <c>responseDeadline</c>,
+/// <c>identityVerified</c>, <c>right</c>, <c>createdAt</c>, <c>createdBy</c>, <c>status</c>. La
+/// fiche de la demande les lit sur la ligne, <b>par leur nom, jamais par leur index</b> : l'ordre
+/// des colonnes est un compromis de largeur d'écran, pas un contrat. Ce sont les <b>dix
+/// informations</b> d'une demande, et non les propriétés une à une : la cellule du statut se nomme
+/// <c>status</c>, quand la ligne en tient le libellé et le nom canonique ; celle de la date limite,
+/// <c>responseDeadline</c>, quand elle en tient aussi le signalement.
+///
 /// Elle porte enfin ce que le <b>crayon</b> offre — <c>ModificationAllowed</c> — et ce que son
 /// infobulle dit — <c>ModificationTooltip</c> : son libellé quand la modification est permise, la
 /// raison de son extinction quand la demande est close. Les deux se calculent ici, à partir du
