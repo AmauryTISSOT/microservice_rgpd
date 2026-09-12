@@ -527,6 +527,16 @@ public class RequestSheet(BrowserHarness harness)
   {
     await EyeOf(row).ClickAsync();
     await Expect(Sheet(row.Page)).ToBeVisibleAsync();
+    await WaitForTheSheetToSettleAsync(row.Page);
+  }
+
+  /// <summary>
+  /// Attend que la fiche soit <b>arrivée</b> : le glissement de l'ouverture dure 150 ms, et une
+  /// mesure prise en chemin ne dit rien de la place que la fiche prend.
+  /// </summary>
+  private static async Task WaitForTheSheetToSettleAsync(IPage page)
+  {
+    await Sheet(page).EvaluateAsync("sheet => Promise.all(sheet.getAnimations().map(slide => slide.finished))");
   }
 
   /// <summary>

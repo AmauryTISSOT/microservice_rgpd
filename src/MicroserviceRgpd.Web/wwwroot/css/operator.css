@@ -1582,6 +1582,12 @@ dialog.modal.confirmation {
 
   ⚠️ LE FILET NE RESTE QUE SUR LE BORD GAUCHE, le seul qui fasse face à l'écran : les trois autres
   affleurent la fenêtre, et le coin large d'une carte posée au centre n'a plus de sens ici.
+
+  ⚠️ AU REPOS, LA FICHE EST HORS DU BORD DROIT — c'est de là qu'elle glisse, et c'est là qu'elle
+  repart. Le déplacement est la SEULE chose qui bouge ; la transition le tient sur 150 ms, le temps
+  de voir d'où la fiche vient, pas celui de l'attendre. Le passage en modale, lui, est un saut
+  d'affichage — `display` et le calque supérieur changent d'un coup —, et la transition ne les tient
+  que déclarés discrets : sans eux, la fiche disparaîtrait avant d'avoir glissé en sens inverse.
 */
 dialog.modal.sheet {
   border-radius: 0;
@@ -1590,7 +1596,32 @@ dialog.modal.sheet {
   margin: 0 0 0 auto;
   max-height: 100%;
   padding: 0;
+  transition:
+    translate 150ms ease-out,
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete;
+  translate: 100%;
   width: 30rem;
+}
+
+/*
+  SOUS 600 PX, LA FICHE PREND TOUTE LA LARGEUR : à 30 rem de fiche sur un écran de téléphone, il ne
+  reste du tableau qu'une bande inutilisable, et du message une colonne trop étroite pour se lire.
+  Le seuil est le « Mobile ≤ 600px » du design language du service, écrit en rem — 37.5 rem —, et
+  non une invention.
+
+  ⚠️ LA LARGEUR MAXIMALE DE LA MODALE TOMBE AVEC : elle réserve une gouttière de chaque côté, ce qui
+  a du sens pour une carte posée au centre et laisserait ici une bande vide au bord gauche.
+
+  ⚠️ LE FILET DU BORD GAUCHE TOMBE AUSSI : il ne fait plus face à rien, et la largeur d'une boîte
+  s'entendant hors bordure, il pousserait la fiche d'un pixel hors de l'écran.
+*/
+@media (max-width: 37.5rem) {
+  dialog.modal.sheet {
+    border-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
 }
 
 dialog.modal.sheet > * {
@@ -1606,10 +1637,31 @@ dialog.modal.sheet > * {
   `dialog` lui-même l'emporterait sur le `display: none` que le navigateur donne à une surface
   fermée, et la fiche ne se fermerait plus jamais. Et `min-height: 0` sur les blocs, sans quoi un
   élément de colonne flexible refuse de rétrécir sous son contenu et déborde au lieu de défiler.
+
+  ⚠️ C'EST ICI QUE LA FICHE ARRIVE À SA PLACE, et `@starting-style` dit d'où : une surface qui vient
+  d'être posée n'a pas d'état précédent, et sans lui rien ne glisserait à l'ouverture.
 */
 dialog.modal.sheet[open] {
   display: flex;
   flex-direction: column;
+  translate: 0;
+}
+
+@starting-style {
+  dialog.modal.sheet[open] {
+    translate: 100%;
+  }
+}
+
+/*
+  ⚠️ SOUS UN SYSTÈME QUI DEMANDE QUE RIEN NE BOUGE, LE GLISSEMENT EST ANNULÉ — ET IL L'EST ICI, À CE
+  SEUL ENDROIT : la fiche est là d'emblée, à sa place, et elle n'est pas plus lente à venir. La
+  déclaration coupe la transition entière, saut d'affichage compris : il n'y a plus rien à tenir.
+*/
+@media (prefers-reduced-motion: reduce) {
+  dialog.modal.sheet {
+    transition: none;
+  }
 }
 
 .sheet-body {
@@ -1659,9 +1711,16 @@ dialog.modal.sheet[open] {
   margin: 0 0 var(--space-xxs);
 }
 
+/*
+  ⚠️ LE MESSAGE DÉFILE DANS SA PROPRE ZONE, BORNÉE À 40 VH : le budget à répartir est celui de la
+  fenêtre, et le message n'en prend pas plus des deux cinquièmes. Sans cette borne, 10 000 caractères
+  repousseraient le statut et l'enregistrement à des écrans de défilement du message.
+*/
 .sheet-message p {
   margin: 0;
+  max-height: 40vh;
   overflow-wrap: anywhere;
+  overflow-y: auto;
   white-space: pre-wrap;
 }
 
