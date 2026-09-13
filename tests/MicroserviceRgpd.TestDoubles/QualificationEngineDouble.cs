@@ -7,9 +7,16 @@ namespace MicroserviceRgpd.TestDoubles;
 /// dicte, ou un silence, et le texte qu il a recu.
 /// </summary>
 /// <remarks>
+/// <para>
+/// ⚠️ <b>Une seule definition, pour les tests fonctionnels comme pour les tests navigateur</b> :
+/// recopiee, elle finirait par dire deux choses differentes du meme port, et l ecran eprouve dans
+/// Chromium ne serait plus servi par le moteur qu eprouvent les tests fonctionnels.
+/// </para>
+/// <para>
 /// La doublure se pose sur le port, jamais sur des reponses HTTP enregistrees : un enregistrement
 /// pourrit en silence et rend indiscernable une regression de code d une montee de moteur. Elle
 /// tient indifferemment l un ou l autre role — c est precisement ce que « le meme port » veut dire.
+/// </para>
 /// </remarks>
 /// <param name="confidence">
 /// La confiance que ce moteur declare par defaut. Absente pour le lexique : le lexique n a aucun avis

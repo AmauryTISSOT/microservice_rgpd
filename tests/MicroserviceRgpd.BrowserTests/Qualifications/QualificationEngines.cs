@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Core.SharedKernel;
 
@@ -46,12 +46,13 @@ public class QualificationEngines
 
     await QualifyAsync(page, "Bonjour, je vous écris au sujet de mon compte.");
 
-    await Expect(Verdict(page)).ToContainTextAsync("droit à l'effacement");
-    await Expect(Verdict(page)).ToContainTextAsync("La doublure du harnais réclame l'effacement.");
+    await Expect(Screen(page)).ToContainTextAsync("droit à l'effacement");
+    await Expect(Screen(page)).ToContainTextAsync("La doublure du harnais réclame l'effacement.");
     _harness.Verdict.ReceivedText.ShouldNotBeNull().Value.ShouldBe("Bonjour, je vous écris au sujet de mon compte.");
     _harness.Lexicon.CallCount.ShouldBe(1);
   }
 
+  /// <summary><b>Plusieurs droits dictés paraissent tous</b>, dans l'ordre de la taxonomie.</summary>
   [Fact]
   public async Task RendersEveryRightWhenTheDoublesDictateSeveral()
   {
@@ -61,9 +62,10 @@ public class QualificationEngines
 
     await QualifyAsync(page, "Une copie, puis l'effacement.");
 
-    await Expect(Verdict(page)).ToContainTextAsync("droit d'accès, droit à l'effacement");
+    await Expect(Screen(page)).ToContainTextAsync("droit d'accès, droit à l'effacement");
   }
 
+  /// <summary><b><c>OutOfScope</c> dicté paraît comme un verdict nommé.</b></summary>
   [Fact]
   public async Task RendersOutOfScopeWhenTheDoublesRecogniseNoRight()
   {
@@ -74,7 +76,7 @@ public class QualificationEngines
 
     await QualifyAsync(page, "Quelles sont vos heures d'ouverture ?");
 
-    await Expect(Verdict(page)).ToContainTextAsync("aucun droit reconnu");
+    await Expect(Screen(page)).ToContainTextAsync("aucun droit reconnu");
   }
 
   /// <summary><b>Deux avis qui divergent donnent le signal de relecture « contestée ».</b></summary>
@@ -88,7 +90,7 @@ public class QualificationEngines
 
     await QualifyAsync(page, "Supprimez, ou montrez-moi, je ne sais plus.");
 
-    await Expect(Verdict(page)).ToContainTextAsync("Contestée");
+    await Expect(Screen(page)).ToContainTextAsync("Contestée");
   }
 
   /// <summary><b>Le moteur de verdict muet laisse le service non entier</b>, sans le bloquer.</summary>
@@ -102,10 +104,11 @@ public class QualificationEngines
 
     await QualifyAsync(page, "Supprimez toutes mes données.");
 
-    await Expect(Verdict(page)).ToContainTextAsync("Service non entier");
-    await Expect(Verdict(page)).ToContainTextAsync("droit à l'effacement");
+    await Expect(Screen(page)).ToContainTextAsync("Service non entier");
+    await Expect(Screen(page)).ToContainTextAsync("droit à l'effacement");
   }
 
+  /// <summary><b>Les deux doublures muettes ne laissent rien à qualifier</b>, et l'écran le dit.</summary>
   [Fact]
   public async Task SaysNothingCouldBeQualifiedWhenBothDoublesFallSilent()
   {
@@ -132,17 +135,23 @@ public class QualificationEngines
   public async Task KeepsTheScreenWaitingWhileTheDoublesAreSlow()
   {
     Dictate(DataSubjectRight.Erasure);
-    var delay = TimeSpan.FromSeconds(2);
-    _harness.Verdict.Delay = delay;
+    _harness.Verdict.Delay = SlowAnswer;
     await using var context = await _harness.NewContextAsync();
     var page = await context.NewPageAsync();
+    await EnterAsync(page, "Supprimez toutes mes données.");
+
+    // Le chronomètre part au clic, et pas avant : le chargement de l'écran et la saisie ne comptent
+    // pas dans l'attente.
     var waited = Stopwatch.StartNew();
+    await Submit(page).ClickAsync();
 
-    await QualifyAsync(page, "Supprimez toutes mes données.");
-
-    await Expect(Verdict(page)).ToContainTextAsync("droit à l'effacement", new() { Timeout = 10_000 });
-    waited.Elapsed.ShouldBeGreaterThanOrEqualTo(delay);
+    await Expect(Screen(page)).ToContainTextAsync("droit à l'effacement", new() { Timeout = 10_000 });
+    _harness.Verdict.Started.IsCompleted.ShouldBeTrue();
+    waited.Elapsed.ShouldBeGreaterThanOrEqualTo(SlowAnswer);
   }
+
+  /// <summary>Ce que la doublure lente fait durer : assez pour se mesurer, assez peu pour la suite.</summary>
+  private static readonly TimeSpan SlowAnswer = TimeSpan.FromSeconds(2);
 
   /// <summary>Les deux doublures s'accordent sur ces droits.</summary>
   private void Dictate(params DataSubjectRight[] rights)
@@ -153,14 +162,28 @@ public class QualificationEngines
 
   private static async Task QualifyAsync(IPage page, string text)
   {
-    await page.GotoAsync("/qualification");
-    await page.GetByLabel("Le texte de la demande").FillAsync(text);
-    await page.GetByRole(AriaRole.Button, new() { Name = "Qualifier", Exact = true }).ClickAsync();
+    await EnterAsync(page, text);
+    await Submit(page).ClickAsync();
   }
 
-  /// <summary>La carte du verdict, sous son titre.</summary>
-  private static ILocator Verdict(IPage page)
+  private static async Task EnterAsync(IPage page, string text)
   {
-    return page.Locator("div").Filter(new() { Has = page.GetByRole(AriaRole.Heading, new() { Name = "Le verdict", Exact = true }) }).Last;
+    await page.GotoAsync("/qualification");
+    await page.GetByLabel("Le texte de la demande").FillAsync(text);
+  }
+
+  private static ILocator Submit(IPage page)
+  {
+    return page.GetByRole(AriaRole.Button, new() { Name = "Qualifier", Exact = true });
+  }
+
+  /// <summary>
+  /// L'écran, lu par son rôle : la carte du verdict ne porte ni rôle ni nom accessible, et la lire
+  /// par la forme du DOM irait contre la règle de ce projet. Les textes attendus ne paraissent nulle
+  /// part ailleurs à l'écran que dans le verdict et le dépliant, tous deux tirés des doublures.
+  /// </summary>
+  private static ILocator Screen(IPage page)
+  {
+    return page.GetByRole(AriaRole.Main);
   }
 }

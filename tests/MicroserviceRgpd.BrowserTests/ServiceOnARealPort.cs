@@ -30,8 +30,13 @@ internal sealed class ServiceOnARealPort : WebApplicationFactory<Program>
 {
   private readonly string _connectionString;
 
-  /// <summary>Le moteur dont l'avis fait verdict, substitué.</summary>
-  public QualificationEngineDouble Verdict { get; } = new(DeclaredConfidence.High);
+  /// <summary>
+  /// Le moteur dont l'avis fait verdict, substitué — avec la confiance et la justification par défaut
+  /// de <c>CustomWebApplicationFactory</c> : un même scénario rend le même écran dans les deux suites.
+  /// </summary>
+  public QualificationEngineDouble Verdict { get; } = new(
+    DeclaredConfidence.High,
+    "Le texte demande la suppression des donnees.");
 
   /// <summary>Le moteur lexical, substitué lui aussi : ni confiance, ni justification.</summary>
   public QualificationEngineDouble Lexicon { get; } = new();
