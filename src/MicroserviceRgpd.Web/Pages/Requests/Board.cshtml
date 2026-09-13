@@ -18,6 +18,11 @@
   var modifySubmit = "Modifier";
   var modifyAction = Url.Page(null, "Modify");
   var valuesAction = Url.Page(null, "Values");
+
+  // ⚠️ LA ROUTE DE LA QUALIFICATION EST CELLE D'UN AUTRE ÉCRAN, ET SEULE LA VUE LA CONNAÎT : le
+  // page model du tableau appartient à Requests, et n'envoie aucune commande de Qualification
+  // (ADR-0024). Le module appelle ce handler par HTTP, comme le ferait n'importe quel écran.
+  var proposeAction = Url.Page("/Qualifications/Qualify", "Propose");
 }
 
 @*
@@ -239,11 +244,26 @@
     </p>
 
     @*
-      LA QUALIFICATION DU DROIT PAR IA SE VOIT, MAIS NE SE DÉCLENCHE PAS : elle viendra avec son
-      propre ticket. Le bouton est désactivé, et son infobulle le dit.
+      LA QUALIFICATION DU DROIT PAR IA PROPOSE LE DROIT, ELLE NE LE CHOISIT PAS (ADR-0024). Le bouton
+      envoie le Message — et lui seul — au handler `Propose` de l'écran de qualification, dont il
+      porte l'adresse ; le droit proposé entre dans le select, et seul l'enregistrement le choisit.
+
+      ⚠️ SES MOTS SONT ICI, DANS LE VOCABULAIRE DE REQUESTS : le refus d'un Message vide en `data-*`,
+      la mention « À relire » dans la note. Le module choisit, il ne rédige pas (ADR-0018).
+
+      L'ICÔNE DE CHARGEMENT EST DANS LE BOUTON, CACHÉE TANT QU'IL N'EST PAS `aria-busy` : le libellé
+      reste lisible pendant l'attente, et c'est `aria-busy` qui la dit aux technologies d'assistance —
+      l'image, elle, ne dit rien. Elle ne tourne que si le système ne demande pas que rien ne bouge.
     *@
     <p>
-      <button type="button" disabled title="Bientôt disponible">Qualification du droit par IA</button>
+      <button type="button" class="proposal" data-propose="@proposeAction"
+              data-message-missing="Le message est vide : il n'y a rien à qualifier.">
+        <svg class="spinner" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-opacity="0.25" fill="none" />
+          <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+        </svg>
+        Qualification du droit par IA
+      </button>
     </p>
 
     @*
@@ -262,6 +282,18 @@
         }
       </select>
       <span class="refusal" id="request-right-refusal"></span>
+    </p>
+
+    @*
+      LA NOTE DE LA PROPOSITION, CACHÉE TANT QU'AUCUNE QUALIFICATION N'A RÉPONDU. Elle porte la
+      justification du moteur, que le module y verse telle quelle, et « À relire », qu'il ne fait que
+      montrer quand la proposition n'est pas corroborée ou que le service n'était pas entier.
+      `role="note"` la dit accessoire au select ; `aria-live` la fait lire à son arrivée, sans voler
+      le focus. ⚠️ Pas `role="status"` : c'est celui du toast, seul statut de l'écran.
+    *@
+    <p class="proposal-note" id="request-proposal-note" role="note" aria-live="polite" hidden>
+      <strong data-to-review hidden>À relire</strong>
+      <span data-justification></span>
     </p>
 
     @*

@@ -263,6 +263,7 @@ function resetToDefaults() {
 
   forgetRefusals();
   failure.hidden = true;
+  proposalNote.hidden = true;
 }
 
 // LES RÈGLES SONT CELLES DU SERVICE (DataSubjectRequest.Receive), recopiées une à une pour que le
@@ -523,6 +524,83 @@ async function refusalsFromTheServer(response) {
     return {};
   }
 }
+
+// LA QUALIFICATION DU DROIT PAR IA. Le bouton envoie le Message — et lui seul, avec le jeton
+// anti-rejeu — au handler `Propose` de l'écran de qualification, dont la modale porte l'adresse : le
+// module ne connaît aucune route (ADR-0024). La qualification PROPOSE le droit ; seul
+// l'enregistrement le choisit.
+//
+// ⚠️ UN MESSAGE VIDE NE PART PAS : le refus va sous le champ Message, comme les autres refus de la
+// modale, et le select reste tel qu'il est. Les mots sont ceux que la vue a rendus.
+//
+// ⚠️ L'ATTENTE PEUT DÉPASSER DEUX MINUTES, ET AUCUN DÉLAI N'EST IMPOSÉ ICI : la limite est celle du
+// serveur. Pendant ce temps, seul le bouton est désactivé et `aria-busy` — l'icône le montre —, et
+// le reste de la modale, « Enregistrer » compris, reste utilisable. Toute fin le rend.
+const proposer = form.querySelector("[data-propose]");
+const antiforgery = form.elements.namedItem("__RequestVerificationToken");
+const proposalNote = document.getElementById("request-proposal-note");
+const toReview = proposalNote.querySelector("[data-to-review]");
+const justificationOfTheNote = proposalNote.querySelector("[data-justification]");
+
+// ⚠️ LE REFUS TIENT TANT QUE LE MESSAGE GARDE LA VALEUR REFUSÉE, comme un refus du serveur, et cède
+// dès qu'elle change : les règles de la saisie, rejouées à la frappe, ne disent pas les mêmes mots.
+function refuseAnEmptyMessage() {
+  const refusal = proposer.dataset.messageMissing;
+
+  refusedByTheServer.set(message, { value: message.value, refusal });
+  inError.add(message);
+  showRefusal(message, refusal);
+  message.focus();
+}
+
+async function propose() {
+  if (trimmed(message) === "") {
+    refuseAnEmptyMessage();
+    return;
+  }
+
+  proposer.disabled = true;
+  proposer.setAttribute("aria-busy", "true");
+
+  try {
+    const response = await fetch(proposer.dataset.propose, {
+      method: "POST",
+      body: new URLSearchParams({ Text: message.value, [antiforgery.name]: antiforgery.value }),
+    });
+
+    if (response.ok) {
+      showTheProposal(await response.json());
+    }
+  } catch {
+    // ⚠️ UN ÉCHEC NE DIT ENCORE RIEN — ni un 400, qui peut être un jeton anti-rejeu périmé et non un
+    // Message refusé, ni un 503, ni une coupure : leur bandeau vient avec son propre ticket.
+  } finally {
+    proposer.disabled = false;
+    proposer.removeAttribute("aria-busy");
+  }
+}
+
+// UN DROIT UNIQUE PROPOSÉ ENTRE DANS LE SELECT, même si un autre y était déjà : c'est une valeur
+// changée comme une autre, que la confirmation d'abandon protège. `OutOfScope` n'y est pas une
+// option, et n'y entre donc jamais.
+//
+// LA NOTE DIT LA JUSTIFICATION, quand il y en a une, et « À relire » quand la proposition n'est pas
+// corroborée ou que le service n'était pas entier : un verdict sans contrôle ne se lit jamais comme
+// un verdict contrôlé. ⚠️ `textContent` : la justification est un texte du moteur, pas du HTML.
+function showTheProposal({ rights, reviewSignal, degraded, justification }) {
+  const offered = [...right.options].map((option) => option.value);
+
+  if (rights.length === 1 && offered.includes(rights[0].name)) {
+    right.value = rights[0].name;
+    revalidateTheFieldsInError();
+  }
+
+  justificationOfTheNote.textContent = justification ?? "";
+  toReview.hidden = reviewSignal === "Corroborated" && !degraded;
+  proposalNote.hidden = !justification && toReview.hidden;
+}
+
+proposer.addEventListener("click", propose);
 
 // LE TOAST DIT QUELQUES SECONDES CE QUI VIENT D'AVOIR LIEU. Ses mots sont ceux que la page a rendus.
 const toastDuration = 5_000;

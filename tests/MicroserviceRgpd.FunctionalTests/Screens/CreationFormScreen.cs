@@ -158,18 +158,20 @@ public class CreationFormScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La qualification du droit par IA se voit, mais ne se déclenche pas</b> : le bouton est
-  /// désactivé, et son infobulle dit « Bientôt disponible ».
+  /// <b>La qualification du droit par IA est offerte</b> : le bouton est actif, sans infobulle, et
+  /// porte l'adresse du handler <c>Propose</c> de l'écran de qualification — que la vue rend, et
+  /// dont le page model du tableau ne sait rien.
   /// </summary>
   [Fact]
-  public async Task ShowsTheAiQualificationDisabledWithItsTooltip()
+  public async Task OffersTheAiQualificationWithTheAddressOfTheProposal()
   {
     var button = ControlNamed(await DialogAsync(), AiQualification);
 
     button.Tag.ShouldBe("button");
     AttributeOf(button, "type").ShouldBe("button");
-    Regex.IsMatch(button.Attributes, @"\bdisabled\b").ShouldBeTrue("Le bouton de qualification par IA n'est pas désactivé.");
-    AttributeOf(button, "title").ShouldBe("Bientôt disponible");
+    Regex.IsMatch(button.Attributes, @"\bdisabled\b").ShouldBeFalse("Le bouton de qualification par IA est désactivé.");
+    AttributeOf(button, "title").ShouldBeNull("Le bouton de qualification par IA porte une infobulle.");
+    AttributeOf(button, "data-propose").ShouldBe("/qualification?handler=Propose");
   }
 
   /// <summary>

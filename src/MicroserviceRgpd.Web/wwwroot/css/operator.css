@@ -1567,6 +1567,47 @@ button.modal-close {
   border-color: var(--signal-error);
 }
 
+/*
+  LE BOUTON DE LA QUALIFICATION PORTE SON ICÔNE DE CHARGEMENT DEVANT SON LIBELLÉ, et seulement
+  pendant l'attente : ailleurs, elle ne prend aucune place.
+*/
+button.proposal {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-xs);
+}
+
+button.proposal .spinner {
+  display: none;
+}
+
+button.proposal[aria-busy="true"] .spinner {
+  display: block;
+}
+
+/*
+  ⚠️ L'ICÔNE NE TOURNE QUE SI LE SYSTÈME L'ACCEPTE : l'animation n'est déclarée que sous
+  `no-preference`. Sous `reduce`, l'icône est là, immobile — l'attente se lit toujours.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  button.proposal .spinner {
+    animation: proposal-spin 900ms linear infinite;
+  }
+}
+
+@keyframes proposal-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* La note de la proposition, sous le select : l'encre discrète d'une aide, « À relire » en gras. */
+.proposal-note {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+}
+
 /* La confirmation : un titre, une phrase, deux boutons — elle n'a pas besoin de la largeur d'un formulaire. */
 dialog.modal.confirmation {
   width: 28rem;
