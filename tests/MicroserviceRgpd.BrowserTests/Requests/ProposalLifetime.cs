@@ -290,6 +290,31 @@ public class ProposalLifetime
   }
 
   /// <summary>
+  /// <b>Une nouvelle qualification remplace la note même quand elle échoue</b> — coupure réseau ou
+  /// réponse illisible : la note de la précédente ne reste pas sous les yeux.
+  /// </summary>
+  [Theory]
+  [InlineData("une coupure réseau")]
+  [InlineData("une réponse illisible")]
+  public async Task ReplacesTheNoteEvenWhenTheNextQualificationFails(string failure)
+  {
+    await using var context = await _harness.NewContextAsync();
+    var (dialog, _) = await OpenAsync(context, "modify");
+    var page = dialog.Page;
+
+    await QualifyButton(dialog).ClickAsync();
+    await Expect(Note(dialog)).ToContainTextAsync(Justification);
+
+    await page.RouteAsync(ProposeHandler, route => failure == "une coupure réseau"
+      ? route.AbortAsync()
+      : route.FulfillAsync(new() { Status = 200, ContentType = "application/json", Body = "{" }));
+    await QualifyButton(dialog).ClickAsync();
+
+    await Expect(Note(dialog)).ToBeHiddenAsync();
+    await Expect(QualifyButton(dialog)).ToBeEnabledAsync();
+  }
+
+  /// <summary>
   /// Retient la réponse du handler <c>Propose</c> jusqu'à ce que le test la libère. La libération
   /// attend que la requête ait fini — répondue, ou abandonnée par la page — et que la page ait eu le
   /// temps de s'en saisir : ce qu'une réponse tardive ferait est alors fait.

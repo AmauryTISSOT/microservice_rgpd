@@ -585,7 +585,8 @@ async function propose() {
       return;
     }
 
-    // Une nouvelle qualification remplace la note de la précédente, quelle qu'en soit l'issue.
+    // Une nouvelle qualification remplace la note de la précédente, quelle qu'en soit l'issue — un
+    // échec aussi (voir `catch`).
     hideTheNote();
 
     if (proposal) {
@@ -593,8 +594,12 @@ async function propose() {
     }
   } catch {
     // ⚠️ UN ÉCHEC NE DIT ENCORE RIEN — ni un 400, qui peut être un jeton anti-rejeu périmé et non un
-    // Message refusé, ni un 503, ni une coupure : leur bandeau vient avec son propre ticket. Une
-    // qualification abandonnée échoue aussi par ici, et n'a rien à dire.
+    // Message refusé, ni un 503, ni une coupure : leur bandeau vient avec son propre ticket. Il
+    // remplace pourtant la note, comme toute issue. Une qualification abandonnée échoue aussi par
+    // ici, et n'a rien à toucher.
+    if (qualification === current) {
+      hideTheNote();
+    }
   } finally {
     if (qualification === current) {
       qualification = null;
