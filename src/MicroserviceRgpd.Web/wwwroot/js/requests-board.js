@@ -263,7 +263,6 @@ function resetToDefaults() {
 
   forgetRefusals();
   failure.hidden = true;
-  proposalNote.hidden = true;
 }
 
 // LES RÈGLES SONT CELLES DU SERVICE (DataSubjectRequest.Receive), recopiées une à une pour que le
@@ -561,12 +560,23 @@ function refuseAnEmptyMessage() {
   message.focus();
 }
 
+// LA QUALIFICATION EN COURS, s'il y en a une : c'est elle, et elle seule, que la réponse peut toucher.
+//
+// ⚠️ ELLE VIT ET MEURT AVEC LA MODALE. Une fermeture effective — abandon confirmé, enregistrement
+// réussi, fermeture sans changement, quel qu'en soit le geste — l'abandonne (voir `forgetTheProposal`),
+// et une réponse arrivée après ne trouve plus la sienne : elle ne touche ni la modale fermée, ni celle
+// qu'on a rouverte depuis. Ouvrir la confirmation d'abandon, revenir à la saisie ou voir « Enregistrer »
+// refusé ne ferment rien : la qualification continue.
+let qualification = null;
+
 async function propose() {
   if (trimmed(message) === "") {
     refuseAnEmptyMessage();
     return;
   }
 
+  const current = new AbortController();
+  qualification = current;
   proposer.disabled = true;
   proposer.setAttribute("aria-busy", "true");
   forgetAQualificationFailure();
@@ -575,24 +585,64 @@ async function propose() {
     const response = await fetch(proposer.dataset.propose, {
       method: "POST",
       body: new URLSearchParams({ Text: message.value, [antiforgery.name]: antiforgery.value }),
+      signal: current.signal,
     });
+
+    const proposal = response.ok ? await response.json() : null;
+
+    if (qualification !== current) {
+      return;
+    }
+
+    // Une nouvelle qualification remplace la note de la précédente, quelle qu'en soit l'issue — un
+    // échec aussi (voir `catch`).
+    hideTheNote();
 
     // DEUX ÉCHECS, DEUX PHRASES : 503, aucun moteur n'a répondu ; tout le reste — une erreur du
     // serveur, un 400 qui n'est qu'un jeton anti-rejeu périmé, le Message vide ayant été refusé plus
     // haut, un corps illisible — est une panne comme une autre.
-    if (response.ok) {
-      showTheProposal(await response.json());
+    if (proposal) {
+      showTheProposal(proposal);
     } else {
       showFailure(
         response.status === 503 ? failure.dataset.qualificationUnavailable : failure.dataset.qualificationFailed,
       );
     }
   } catch {
-    showFailure(failure.dataset.qualificationFailed);
+    // ⚠️ UNE QUALIFICATION ABANDONNÉE ÉCHOUE AUSSI PAR ICI, et n'a rien à dire : seule la qualification
+    // en cours remplace la note et pose le bandeau.
+    if (qualification === current) {
+      hideTheNote();
+      showFailure(failure.dataset.qualificationFailed);
+    }
   } finally {
-    proposer.disabled = false;
-    proposer.removeAttribute("aria-busy");
+    if (qualification === current) {
+      qualification = null;
+      giveTheProposerBack();
+    }
   }
+}
+
+function giveTheProposerBack() {
+  proposer.disabled = false;
+  proposer.removeAttribute("aria-busy");
+}
+
+function hideTheNote() {
+  proposalNote.hidden = true;
+  verdictOfTheNote.textContent = "";
+  justificationOfTheNote.textContent = "";
+  toReview.hidden = true;
+}
+
+// LA MODALE SE FERME VRAIMENT : la qualification en cours est abandonnée, le bouton rendu, la note et
+// les échecs de la qualification effacés — la prochaine ouverture n'hérite d'aucune proposition.
+function forgetTheProposal() {
+  qualification?.abort();
+  qualification = null;
+  giveTheProposerBack();
+  hideTheNote();
+  forgetAQualificationFailure();
 }
 
 // UN DROIT UNIQUE PROPOSÉ ENTRE DANS LE SELECT, même si un autre y était déjà : c'est une valeur
@@ -805,7 +855,17 @@ function giveTheFocusBackTo(opener) {
   }
 }
 
-dialog.addEventListener("close", () => giveTheFocusBackTo(openedBy));
+// ⚠️ TOUTE FERMETURE EST EFFECTIVE, SAUF CELLE QU'ÉCHAP IMPOSE SUR UNE SAISIE MODIFIÉE : la modale y est
+// rouverte aussitôt, sous la confirmation (voir `reopenAndConfirm`), et la qualification continue.
+let reopening = false;
+
+dialog.addEventListener("close", () => {
+  if (!reopening) {
+    forgetTheProposal();
+  }
+
+  giveTheFocusBackTo(openedBy);
+});
 
 function requestClose() {
   if (sending) {
@@ -854,11 +914,13 @@ dialog.addEventListener("cancel", (event) => {
   if (event.cancelable) {
     requestClose();
   } else if (isModified()) {
+    reopening = true;
     dialog.addEventListener("close", reopenAndConfirm, { once: true });
   }
 });
 
 function reopenAndConfirm() {
+  reopening = false;
   dialog.showModal();
 
   // Pendant l'envoi, aucune fermeture n'est demandée : la modale revient seule, et la réponse suivra.

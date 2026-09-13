@@ -22,8 +22,8 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// de la modale dit qu'elle n'a rien rendu, et rien n'est relancé sans l'<c>Operator</c>.
 /// </para>
 /// <para>
-/// ⚠️ <b>La vie de la note à la fermeture de la modale</b> n'est pas gardée ici : elle vient avec son
-/// propre ticket.
+/// ⚠️ <b>La vie de la proposition à la fermeture de la modale</b> n'est pas gardée ici, mais par
+/// <see cref="ProposalLifetime"/>.
 /// </para>
 /// <para>
 /// Tout se lit par le rôle et le nom accessible ; les phrases sont recopiées à dessein.
