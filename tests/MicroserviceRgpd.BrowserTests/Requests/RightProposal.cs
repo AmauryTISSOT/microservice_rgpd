@@ -17,8 +17,9 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// observer, se retient par l'interception de route de Playwright.
 /// </para>
 /// <para>
-/// ⚠️ <b>Plusieurs droits, <c>OutOfScope</c>, les échecs et la vie de la note à la fermeture de la
-/// modale</b> ne sont pas gardés ici : ils viennent avec leur propre ticket.
+/// ⚠️ <b>Plusieurs droits, <c>OutOfScope</c> et les échecs</b> ne sont pas gardés ici : ils viennent
+/// avec leur propre ticket. La vie de la proposition à la fermeture de la modale est gardée par
+/// <see cref="ProposalLifetime"/>.
 /// </para>
 /// <para>
 /// Tout se lit par le rôle et le nom accessible ; les phrases sont recopiées à dessein.
