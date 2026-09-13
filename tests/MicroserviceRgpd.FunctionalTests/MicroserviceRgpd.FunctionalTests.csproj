@@ -44,6 +44,7 @@
     <ProjectReference Include="..\..\src\MicroserviceRgpd.Infrastructure\MicroserviceRgpd.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\MicroserviceRgpd.UseCases\MicroserviceRgpd.UseCases.csproj" />
     <ProjectReference Include="..\..\src\MicroserviceRgpd.Web\MicroserviceRgpd.Web.csproj" />
+    <ProjectReference Include="..\MicroserviceRgpd.TestDoubles\MicroserviceRgpd.TestDoubles.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Les DOUBLURES partagées par plusieurs projets de test, et rien d'autre : ni test, ni fixture.
+    Une doublure recopiée d'un projet à l'autre finirait par dire deux choses différentes du même
+    port — et un test navigateur éprouverait alors un autre moteur que le test fonctionnel.
+
+    Ce n'est pas un projet de test : il ne compte pas parmi les cinq.
+  -->
+
+  <PropertyGroup>
+    <!-- TargetFramework, ImplicitUsings et Nullable viennent de Directory.Build.props -->
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MicroserviceRgpd.Core\MicroserviceRgpd.Core.csproj" />
+  </ItemGroup>
+
+</Project>

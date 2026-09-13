@@ -30,6 +30,7 @@
     <Project Path="tests/MicroserviceRgpd.IntegrationTests/MicroserviceRgpd.IntegrationTests.csproj">
       <BuildDependency Project="src/MicroserviceRgpd.Infrastructure/MicroserviceRgpd.Infrastructure.csproj" />
     </Project>
+    <Project Path="tests/MicroserviceRgpd.TestDoubles/MicroserviceRgpd.TestDoubles.csproj" />
     <Project Path="tests/MicroserviceRgpd.UnitTests/MicroserviceRgpd.UnitTests.csproj" />
   </Folder>
 </Solution>

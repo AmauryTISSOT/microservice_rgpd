@@ -1,6 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Qualifications;
 
-namespace MicroserviceRgpd.FunctionalTests;
+namespace MicroserviceRgpd.TestDoubles;
 
 /// <summary>
 /// Un moteur de qualification reduit a ce dont un test de contrat a besoin : un avis qu on lui

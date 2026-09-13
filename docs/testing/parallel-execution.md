@@ -6,6 +6,9 @@ This workspace is configured to run all five test projects in parallel in Visual
 it carries `IsTestProject=false` and is deliberately empty. Its missing `xunit.runner.json` is not
 an oversight — read the comment in its `.csproj` before adding anything to it.
 
+`MicroserviceRgpd.TestDoubles` is not a test project either: it carries `IsTestProject=false` and
+only holds the doubles shared by several test projects.
+
 ## Configuration Files
 
 ### `.runsettings` (Solution Root)

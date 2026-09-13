@@ -23,6 +23,7 @@ tests/
   MicroserviceRgpd.IntegrationTests/  # Persistance sur un vrai PostgreSQL (Testcontainers)
   MicroserviceRgpd.FunctionalTests/   # Endpoints de bout en bout (WebApplicationFactory)
   MicroserviceRgpd.BrowserTests/      # Parcours d'écrans dans Chromium (Playwright, vrai port)
+  MicroserviceRgpd.TestDoubles/       # Doublures partagées par les tests fonctionnels et navigateur
   MicroserviceRgpd.AspireTests/       # Volontairement vide — voir le commentaire du .csproj
 ```
 
