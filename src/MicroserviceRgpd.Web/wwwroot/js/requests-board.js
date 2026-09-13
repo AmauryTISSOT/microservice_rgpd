@@ -536,11 +536,19 @@ async function refusalsFromTheServer(response) {
 // ⚠️ L'ATTENTE PEUT DÉPASSER DEUX MINUTES, ET AUCUN DÉLAI N'EST IMPOSÉ ICI : la limite est celle du
 // serveur. Pendant ce temps, seul le bouton est désactivé et `aria-busy` — l'icône le montre —, et
 // le reste de la modale, « Enregistrer » compris, reste utilisable. Toute fin le rend.
+//
+// ⚠️ UN ÉCHEC NE RELANCE RIEN : le bandeau de la modale le dit, le select reste tel qu'il est, et le
+// bouton rendu laisse l'Operator relancer ou choisir seul.
 const proposer = form.querySelector("[data-propose]");
 const antiforgery = form.elements.namedItem("__RequestVerificationToken");
 const proposalNote = document.getElementById("request-proposal-note");
 const toReview = proposalNote.querySelector("[data-to-review]");
+const verdictOfTheNote = proposalNote.querySelector("[data-verdict]");
 const justificationOfTheNote = proposalNote.querySelector("[data-justification]");
+
+// LES LIBELLÉS DE PLUSIEURS DROITS SE LIENT À LA FRANÇAISE — « a, b et c » —, dans la langue de la
+// page : c'est le navigateur qui écrit la conjonction, pas le module.
+const rightsList = new Intl.ListFormat(document.documentElement.lang, { type: "conjunction" });
 
 // ⚠️ LE REFUS TIENT TANT QUE LE MESSAGE GARDE LA VALEUR REFUSÉE, comme un refus du serveur, et cède
 // dès qu'elle change : les règles de la saisie, rejouées à la frappe, ne disent pas les mêmes mots.
@@ -561,6 +569,7 @@ async function propose() {
 
   proposer.disabled = true;
   proposer.setAttribute("aria-busy", "true");
+  forgetAQualificationFailure();
 
   try {
     const response = await fetch(proposer.dataset.propose, {
@@ -568,12 +577,18 @@ async function propose() {
       body: new URLSearchParams({ Text: message.value, [antiforgery.name]: antiforgery.value }),
     });
 
+    // DEUX ÉCHECS, DEUX PHRASES : 503, aucun moteur n'a répondu ; tout le reste — une erreur du
+    // serveur, un 400 qui n'est qu'un jeton anti-rejeu périmé, le Message vide ayant été refusé plus
+    // haut, un corps illisible — est une panne comme une autre.
     if (response.ok) {
       showTheProposal(await response.json());
+    } else {
+      showFailure(
+        response.status === 503 ? failure.dataset.qualificationUnavailable : failure.dataset.qualificationFailed,
+      );
     }
   } catch {
-    // ⚠️ UN ÉCHEC NE DIT ENCORE RIEN — ni un 400, qui peut être un jeton anti-rejeu périmé et non un
-    // Message refusé, ni un 503, ni une coupure : leur bandeau vient avec son propre ticket.
+    showFailure(failure.dataset.qualificationFailed);
   } finally {
     proposer.disabled = false;
     proposer.removeAttribute("aria-busy");
@@ -581,23 +596,47 @@ async function propose() {
 }
 
 // UN DROIT UNIQUE PROPOSÉ ENTRE DANS LE SELECT, même si un autre y était déjà : c'est une valeur
-// changée comme une autre, que la confirmation d'abandon protège. `OutOfScope` n'y est pas une
-// option, et n'y entre donc jamais.
+// changée comme une autre, que la confirmation d'abandon protège.
+//
+// ⚠️ SANS DROIT UNIQUE, LE SELECT RESTE TEL QU'IL EST, et la note dit pourquoi : plusieurs droits,
+// que la phrase du serveur liste sous leurs libellés, ou `OutOfScope` — un verdict, qu'une demande
+// n'invoque pas et que le select n'offre pas —, dont la phrase dit le Message hors périmètre. Chaque
+// proposition récrit la phrase de la précédente. Le nom canonique est celui de la taxonomie
+// (data-subject-rights.wire.json), pas un mot de l'écran.
+const outOfScope = "OutOfScope";
+
 //
 // LA NOTE DIT LA JUSTIFICATION, quand il y en a une, et « À relire » quand la proposition n'est pas
 // corroborée ou que le service n'était pas entier : un verdict sans contrôle ne se lit jamais comme
 // un verdict contrôlé. ⚠️ `textContent` : la justification est un texte du moteur, pas du HTML.
 function showTheProposal({ rights, reviewSignal, degraded, justification }) {
   const offered = [...right.options].map((option) => option.value);
+  let verdict = "";
 
-  if (rights.length === 1 && offered.includes(rights[0].name)) {
+  if (rights.length > 1) {
+    const labels = rightsList.format(rights.map(({ label }) => label));
+    verdict = proposalNote.dataset.severalRights.replace("{rights}", () => labels);
+  } else if (rights[0].name === outOfScope) {
+    verdict = proposalNote.dataset.outOfScope;
+  } else if (offered.includes(rights[0].name)) {
     right.value = rights[0].name;
     revalidateTheFieldsInError();
   }
 
+  verdictOfTheNote.textContent = verdict;
   justificationOfTheNote.textContent = justification ?? "";
   toReview.hidden = reviewSignal === "Corroborated" && !degraded;
-  proposalNote.hidden = !justification && toReview.hidden;
+  proposalNote.hidden = !verdict && !justification && toReview.hidden;
+}
+
+// ⚠️ UNE QUALIFICATION NE LÈVE QUE SES PROPRES ÉCHECS : le bandeau est partagé avec l'enregistrement,
+// et une demande close pendant la correction doit rester dite, qu'on qualifie ou non.
+function forgetAQualificationFailure() {
+  const { qualificationUnavailable, qualificationFailed } = failure.dataset;
+
+  if ([qualificationUnavailable, qualificationFailed].includes(failure.textContent)) {
+    failure.hidden = true;
+  }
 }
 
 proposer.addEventListener("click", propose);

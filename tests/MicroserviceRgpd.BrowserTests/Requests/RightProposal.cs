@@ -17,8 +17,13 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// observer, se retient par l'interception de route de Playwright.
 /// </para>
 /// <para>
-/// ⚠️ <b>Plusieurs droits, <c>OutOfScope</c>, les échecs et la vie de la note à la fermeture de la
-/// modale</b> ne sont pas gardés ici : ils viennent avec leur propre ticket.
+/// Quand la qualification ne propose pas un droit unique — plusieurs droits, <c>OutOfScope</c> — ou
+/// qu'elle échoue, le select reste tel qu'il est : la note dit ce qu'elle a rendu, le bandeau d'échec
+/// de la modale dit qu'elle n'a rien rendu, et rien n'est relancé sans l'<c>Operator</c>.
+/// </para>
+/// <para>
+/// ⚠️ <b>La vie de la note à la fermeture de la modale</b> n'est pas gardée ici : elle vient avec son
+/// propre ticket.
 /// </para>
 /// <para>
 /// Tout se lit par le rôle et le nom accessible ; les phrases sont recopiées à dessein.
@@ -40,6 +45,24 @@ public class RightProposal
   private const string ToReview = "À relire";
 
   private const string Justification = "La personne demande la suppression de ses données.";
+
+  /// <summary>La phrase de plusieurs droits proposés, leurs libellés en place, recopiée à dessein.</summary>
+  private const string SeveralRights =
+    "La qualification propose plusieurs droits : droit d'accès, droit à l'effacement et droit à la portabilité. " +
+    "Choisissez celui que la personne invoque.";
+
+  /// <summary>La phrase d'un Message hors périmètre, recopiée à dessein.</summary>
+  private const string OutOfScope =
+    "La qualification ne propose aucun droit : le message est hors périmètre.";
+
+  /// <summary>L'échec d'une qualification sans moteur pour répondre, recopié à dessein.</summary>
+  private const string QualificationUnavailable =
+    "La qualification n'a pas pu proposer de droit : aucun moteur n'a répondu. " +
+    "Vous pouvez la relancer, ou choisir le droit vous-même.";
+
+  /// <summary>L'échec de toute autre nature — erreur du serveur, coupure réseau —, recopié à dessein.</summary>
+  private const string QualificationFailed =
+    "La qualification a échoué. Vous pouvez la relancer, ou choisir le droit vous-même.";
 
   /// <summary>L'appel au handler <c>Propose</c>, celui que le bouton déclenche.</summary>
   private static readonly Regex ProposeHandler = new(@"/qualification\?handler=Propose$");
@@ -314,6 +337,154 @@ public class RightProposal
   }
 
   /// <summary>
+  /// <b>Plusieurs droits proposés ne choisissent rien</b> : le select reste tel qu'il est, et la note
+  /// les liste sous leurs libellés français, dans l'ordre de la taxonomie — quel que soit celui dans
+  /// lequel les moteurs les ont rendus. <b><c>OutOfScope</c> ne choisit rien non plus</b>, et la note dit
+  /// que le Message est hors périmètre. Dans les deux cas, la note porte la justification et « À
+  /// relire » comme pour un droit unique.
+  /// </summary>
+  [Theory]
+  [InlineData("plusieurs droits", false)]
+  [InlineData("plusieurs droits", true)]
+  [InlineData("hors périmètre", false)]
+  [InlineData("hors périmètre", true)]
+  public async Task LeavesTheChoiceAloneWhenNoSingleRightIsProposed(string verdict, bool degraded)
+  {
+    var expected = verdict == "plusieurs droits" ? SeveralRights : OutOfScope;
+
+    if (verdict == "plusieurs droits")
+    {
+      Dictate(DataSubjectRight.Portability, DataSubjectRight.Access, DataSubjectRight.Erasure);
+    }
+    else
+    {
+      _harness.Verdict.Qualification = Qualification.OutOfScope;
+      _harness.Lexicon.Qualification = Qualification.OutOfScope;
+    }
+
+    _harness.Verdict.Justification = Justification;
+
+    if (degraded)
+    {
+      _harness.Lexicon.Silence = new HttpRequestException("La doublure du lexique se tait.");
+    }
+
+    await using var context = await _harness.NewContextAsync();
+    var dialog = await OpenAsync(context, "modify");
+    await Expect(Field(dialog, "Droits RGPD")).ToHaveValueAsync("Erasure");
+
+    var page = dialog.Page;
+    var answered = page.WaitForResponseAsync(ProposeHandler);
+    await QualifyButton(dialog).ClickAsync();
+    await answered;
+
+    var note = Note(dialog);
+    await Expect(note).ToContainTextAsync(expected);
+    await Expect(note).ToContainTextAsync(Justification);
+    await Expect(Field(dialog, "Droits RGPD")).ToHaveValueAsync("Erasure");
+
+    var mention = note.GetByText(ToReview, new() { Exact = true });
+
+    if (degraded)
+    {
+      await Expect(mention).ToBeVisibleAsync();
+    }
+    else
+    {
+      await Expect(mention).ToBeHiddenAsync();
+    }
+  }
+
+  /// <summary>
+  /// <b>Une nouvelle proposition remplace la phrase de la précédente</b> : un droit unique proposé
+  /// après plusieurs ne laisse pas la liste des droits dans la note.
+  /// </summary>
+  [Fact]
+  public async Task ForgetsTheSentenceOfThePreviousProposal()
+  {
+    Dictate(DataSubjectRight.Portability, DataSubjectRight.Access, DataSubjectRight.Erasure);
+    await using var context = await _harness.NewContextAsync();
+    var dialog = await OpenAsync(context, "create");
+
+    await Field(dialog, "Message").FillAsync("Supprimez mes données.");
+    await QualifyButton(dialog).ClickAsync();
+    await Expect(Note(dialog)).ToContainTextAsync(SeveralRights);
+
+    Dictate(DataSubjectRight.Erasure);
+    await QualifyButton(dialog).ClickAsync();
+
+    await Expect(Field(dialog, "Droits RGPD")).ToHaveValueAsync("Erasure");
+    await Expect(Note(dialog)).Not.ToContainTextAsync(SeveralRights);
+  }
+
+  /// <summary>
+  /// <b>Une qualification qui échoue le dit dans le bandeau d'échec de la modale</b> — sa phrase selon
+  /// l'échec : aucun moteur n'a répondu (503), ou toute autre panne, du serveur (500) comme du réseau.
+  /// Le select reste tel qu'il est, et le bouton se réactive pour que l'<c>Operator</c> relance ou
+  /// choisisse seul.
+  /// </summary>
+  [Theory]
+  [InlineData("moteurs muets")]
+  [InlineData("le serveur a échoué")]
+  [InlineData("le réseau est coupé")]
+  public async Task SaysThatTheQualificationFailedInTheBanner(string failure)
+  {
+    SilenceTheEngines();
+    await using var context = await _harness.NewContextAsync();
+    var dialog = await OpenAsync(context, "modify");
+    var page = dialog.Page;
+
+    switch (failure)
+    {
+      case "le serveur a échoué":
+        await page.RouteAsync(ProposeHandler, route => route.FulfillAsync(new() { Status = 500 }));
+        break;
+      case "le réseau est coupé":
+        await page.RouteAsync(ProposeHandler, route => route.AbortAsync("internetdisconnected"));
+        break;
+    }
+
+    await QualifyButton(dialog).ClickAsync();
+
+    await Expect(Banner(dialog)).ToHaveTextAsync(failure == "moteurs muets" ? QualificationUnavailable : QualificationFailed);
+    await Expect(Field(dialog, "Droits RGPD")).ToHaveValueAsync("Erasure");
+    await Expect(QualifyButton(dialog)).ToBeEnabledAsync();
+  }
+
+  /// <summary>
+  /// <b>Rien n'est relancé sans l'<c>Operator</c></b> : après un échec, une seule qualification est
+  /// partie. Relancée à la main, elle propose, et le bandeau de l'échec précédent s'en va.
+  /// </summary>
+  [Fact]
+  public async Task RelaunchesOnlyByHand()
+  {
+    SilenceTheEngines();
+    await using var context = await _harness.NewContextAsync();
+    var dialog = await OpenAsync(context, "create");
+    var page = dialog.Page;
+    var sent = 0;
+    page.Request += (_, request) => sent += ProposeHandler.IsMatch(request.Url) ? 1 : 0;
+
+    await Field(dialog, "Message").FillAsync("Supprimez mes données.");
+    await QualifyButton(dialog).ClickAsync();
+    await Expect(Banner(dialog)).ToHaveTextAsync(QualificationUnavailable);
+
+    // Le temps qu'une relance automatique aurait eu pour partir.
+    await page.WaitForTimeoutAsync(1_000);
+    sent.ShouldBe(1, "La qualification a été relancée sans l'Operator.");
+    _harness.Verdict.CallCount.ShouldBe(1);
+
+    _harness.Verdict.Silence = null;
+    _harness.Lexicon.Silence = null;
+    Dictate(DataSubjectRight.Erasure);
+    await QualifyButton(dialog).ClickAsync();
+
+    await Expect(Field(dialog, "Droits RGPD")).ToHaveValueAsync("Erasure");
+    await Expect(Banner(dialog)).ToBeHiddenAsync();
+    sent.ShouldBe(2);
+  }
+
+  /// <summary>
   /// <b>Aucune note avant une qualification</b> : il n'y a encore rien à relire ni à justifier.
   /// </summary>
   [Fact]
@@ -323,6 +494,13 @@ public class RightProposal
     var dialog = await OpenAsync(context, "create");
 
     await Expect(Note(dialog)).ToBeHiddenAsync();
+  }
+
+  /// <summary>Les deux doublures se taisent : aucun moteur ne rend d'avis, et le handler répond 503.</summary>
+  private void SilenceTheEngines()
+  {
+    _harness.Verdict.Silence = new HttpRequestException("La doublure de verdict se tait.");
+    _harness.Lexicon.Silence = new HttpRequestException("La doublure du lexique se tait.");
   }
 
   /// <summary>Les deux doublures s'accordent sur ces droits.</summary>
@@ -415,5 +593,11 @@ public class RightProposal
   private static ILocator Note(ILocator dialog)
   {
     return dialog.GetByRole(AriaRole.Note);
+  }
+
+  /// <summary>Le bandeau d'échec de la modale : son alerte.</summary>
+  private static ILocator Banner(ILocator dialog)
+  {
+    return dialog.GetByRole(AriaRole.Alert);
   }
 }
