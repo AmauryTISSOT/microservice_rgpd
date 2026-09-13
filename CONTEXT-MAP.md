@@ -15,7 +15,8 @@ quels : « la `Qualification` », « le `Settings` ».
   que l'acte de l'avoir qualifié.
 - [Requests](./docs/contexts/requests/CONTEXT.md) — **l'arrivée d'une demande.** Enregistre une
   demande d'exercice de droits dès sa réception : par quel canal, quand, de qui, et quel droit la
-  personne invoque. Son type est la `DataSubjectRequest` — à l'écran, une **demande**. L'`Operator`
+  personne invoque — un droit qu'une qualification peut proposer, mais que seul l'`Operator`
+  choisit. Son type est la `DataSubjectRequest` — à l'écran, une **demande**. L'`Operator`
   peut ensuite **modifier une demande** pour corriger une erreur de saisie. Une demande porte une
   date limite de réponse et un statut, mais l'instruction n'y existe pas : rien ne fait encore
   changer le statut.
@@ -57,10 +58,20 @@ type : l'identité de mot n'est pas une identité de modèle.
 relève de tous. Sa propre taxonomie, `PersonalDataCategory`, lui appartient en propre et n'a pas le
 RGPD pour auteur.
 
-**`Requests` et `Qualification` : aucune relation déclarée.** Le droit invoqué d'une demande est
-choisi par l'`Operator`, jamais lu d'un verdict : une demande s'enregistre sans qu'aucune
-qualification n'ait eu lieu, et n'en référence aucune. La matrice interdit les deux sens ; le jour
-où une relation s'ouvrira, elle demandera son propre ADR.
+**`Requests` → `Qualification` : _Open Host_, à l'écran seulement (ADR-0024).** `Qualification`
+est en amont. La modale de création et de modification d'une demande appelle, par HTTP depuis le
+navigateur, un handler de la surface de `Qualification` — `/qualification?handler=Propose` —, qui
+rejoue la qualification sur le seul Message et rend une projection d'écran. `Core` et `UseCases` de
+`Requests` ignorent `Qualification`, et le page model du tableau n'envoie aucune commande de
+`Qualification`. Le droit invoqué d'une demande peut être **proposé** par une qualification ; seul
+l'enregistrement par l'`Operator` le **choisit**. Une demande s'enregistre sans qu'aucune
+qualification n'ait eu lieu, et n'en référence aucune : la qualification est posée sans référence
+appelante.
+
+⚠️ **« Sans trace » s'entend dans `Requests`.** Supprimer une demande ne laisse rien dans
+`Requests` (ADR-0022), mais un Message qualifié depuis la modale reste dans la `Trace d'audit` de
+`Qualification`, intégral et en clair, sans lien retrouvable vers la demande. C'est assumé : la
+trace relève de la redevabilité de `Qualification`.
 
 **`Screening` : `Separate Ways` intégral.** C'est le seul contexte sans aucune intersection avec les
 autres : pas de noyau partagé, pas de fournisseur amont, pas même un identifiant opaque.
@@ -72,16 +83,20 @@ aucun droit. Le jour où une demande sera exercée à l'adresse de son droit, un
 **`Separate Ways` pour tout le reste.** `QualificationOpinion`, `LexiconOpinion`, `ReviewSignal`,
 `DeclaredConfidence` et `Mode dégradé` ne valent qu'à l'instant du verdict et ne sortent pas de
 `Qualification`. Il n'y a donc aucune couche anticorruption : rien ne traverse qui demanderait à être
-traduit.
+traduit. La projection que la modale d'une demande lit — droits proposés, `ReviewSignal`,
+`degraded`, justification — est la langue publiée de l'hôte : aucun type de `Requests` ne la porte,
+et l'écran la dit dans le vocabulaire de `Requests` (ADR-0024).
 
 **Deux gardes de compilation**, tous deux dans `tests/MicroserviceRgpd.ArchitectureTests/`, tous deux
 lus au niveau de l'IL :
 
 - Rien ne traverse d'un contexte à l'autre sauf trois lignes, toutes vers le noyau partagé :
   `Qualification`, `Requests` et `Configuration`. En particulier, aucune dépendance entre `Requests`
-  et `Qualification`, dans un sens comme dans l'autre — l'absence de relation rendue vérifiable ; un
-  test de signatures seules afficherait vert sur un gestionnaire qui appelle le moteur dans un corps
-  de méthode, c'est-à-dire sur la fuite même que l'on craint.
+  et `Qualification`, dans un sens comme dans l'autre — l'absence de relation *dans le code* rendue
+  vérifiable ; un test de signatures seules afficherait vert sur un gestionnaire qui appelle le
+  moteur dans un corps de méthode, c'est-à-dire sur la fuite même que l'on craint. La relation à
+  l'écran de l'ADR-0024 ne passe par aucun type : ni le garde ni sa liste blanche ne changent pour
+  elle, et une relation qui passerait un jour par un type le ferait échouer.
 - Aucun type hors contexte n'en atteint plusieurs, sauf trois fichiers nommés — dont
   l'`AppDbContext`, qui porte les tables de `Requests`, `Screening` et `Configuration`.
 
@@ -232,12 +247,12 @@ doit les couvrir.
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
-Vingt-trois ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
+Vingt-quatre ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
 écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006 et l'ADR-0008 portent en
 fin de fichier une suite datée qui nomme leurs points morts jusqu'à l'ADR-0016 ; l'ADR-0017, qui
 vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui ;
-l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme les ADR-0021 et 0023, qui visent
-l'ADR-0017.
+l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme les ADR-0021, 0023 et 0024, qui visent
+l'ADR-0017. Une réserve suit la même règle : celle de l'ADR-0024 sur l'ADR-0022 est écrite chez lui.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -264,6 +279,7 @@ l'ADR-0017.
 | [0021](./docs/adr/0021-la-demande-tient-un-statut-et-une-date-limite-de-reponse.md) | La demande tient un statut (`RequestStatus`, né `InProgress`) et une date limite de réponse fixée à la réception, date de réception plus un mois. Le statut est un état, pas la trace d'un `Gesture` ; les signalements ne sont pas enregistrés. | 0017 : « l'instruction, les délais et les statuts n'y existent pas », pour les délais et les statuts. |
 | [0022](./docs/adr/0022-supprimer-une-demande-ne-laisse-aucune-trace.md) | Supprimer une demande la retire définitivement, quel que soit son statut, sans trace : ce n'est pas un `Gesture`. Une demande déjà partie se lit comme supprimée. | — |
 | [0023](./docs/adr/0023-modifier-une-demande-est-un-geste.md) | Modifier une demande est un `Gesture` : il laisse une empreinte (`ModifiedAt`, `ModifiedBy`) non affichée, qui s'écrase au lieu de s'empiler. Une modification sans changement n'a pas eu lieu ; une demande close est refusée en `Conflict` avant toute validation ; la date limite est recalculée par la règle de l'ADR-0021 ; le dernier enregistrement l'emporte, sans verrou optimiste. | 0017 : « il ne connaît à ce jour qu'un `Gesture` ». Honore l'ADR-0021, sans le supplanter : « l'US qui l'ouvrira devra recalculer la date limite ». |
+| [0024](./docs/adr/0024-la-modale-d-une-demande-propose-le-droit-par-la-qualification.md) | La modale d'une demande propose le droit par la qualification : `Qualification` en amont, en _Open Host_ à l'écran, appelée par HTTP ; `Core` et `UseCases` de `Requests` l'ignorent, et la liste blanche ne change pas. La qualification propose, l'`Operator` choisit ; la demande ne référence aucune qualification. | 0017 : « aucune relation n'est déclarée entre `Requests` et `Qualification` », et cette relation — bouton « Qualification du droit par IA » compris — parmi ce qu'il n'ouvrait pas. Réserve sur l'ADR-0022, sans le supplanter : le Message qualifié reste dans la trace d'audit de `Qualification` après la suppression de la demande. |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se

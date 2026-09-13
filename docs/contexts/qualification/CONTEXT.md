@@ -2,7 +2,7 @@
 
 Ce contexte ne connaît que **l'instant du verdict**. Il reçoit d'une application tierce un texte libre en français et le qualifie au regard des droits que le RGPD ouvre aux personnes concernées. Un humain valide ou corrige le verdict — c'est l'`Aide à la décision`, définie une fois pour tout le dépôt dans [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 
-L'enregistrement d'une demande à sa réception appartient à [Requests](../requests/CONTEXT.md), avec lequel ce contexte n'entretient aucune relation : le droit invoqué d'une demande est choisi par l'`Operator`, jamais lu d'un verdict. Les deux ne partagent que `DataSubjectRight`, par le noyau partagé. [Screening](../screening/CONTEXT.md) et [Configuration](../configuration/CONTEXT.md) ne communiquent avec celui-ci en aucune façon.
+L'enregistrement d'une demande à sa réception appartient à [Requests](../requests/CONTEXT.md), dont ce contexte est l'amont, à l'écran seulement : la modale d'une demande appelle la surface de qualification pour **proposer** le droit invoqué, que seul l'enregistrement par l'`Operator` **choisit** ; la demande ne référence aucune qualification. Dans le code, les deux ne partagent que `DataSubjectRight`, par le noyau partagé — voir l'[ADR-0024](../../adr/0024-la-modale-d-une-demande-propose-le-droit-par-la-qualification.md). [Screening](../screening/CONTEXT.md) et [Configuration](../configuration/CONTEXT.md) ne communiquent avec celui-ci en aucune façon.
 
 Les identifiants du code sont en anglais ; les textes destinés à l'humain — libellés, messages, documentation d'API — sont en français.
 
@@ -99,5 +99,5 @@ _Avoid_ : erreur bénigne, faux positif, erreur rattrapable
 ⚠️ Ce régime ne vaut **que dans ce contexte**. Celui de `Screening` est l'`Omission relue`, où l'erreur qui coûte est la ligne manquante — et il commande l'inverse : ne jamais affirmer qu'on a tout couvert.
 
 **Trace d'audit** :
-Le seul écrit que ce contexte conserve d'une qualification : l'acte de l'avoir qualifiée, et rien de plus. Il n'y a ici aucune entité de demande — la demande enregistrée est la matière de `Requests`, qui ne référence aucune qualification.
+Le seul écrit que ce contexte conserve d'une qualification : l'acte de l'avoir qualifiée, et rien de plus. Il n'y a ici aucune entité de demande — la demande enregistrée est la matière de `Requests`, qui ne référence aucune qualification. ⚠️ Un Message qualifié depuis la modale d'une demande y reste, intégral et en clair, quand la demande est supprimée : sans lien retrouvable vers elle, et c'est assumé (ADR-0024).
 _Avoid_ : historique, dossier, demande, log
