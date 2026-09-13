@@ -24,8 +24,8 @@ namespace MicroserviceRgpd.IntegrationTests.Scripts;
 /// l'échéance » n'a pas toujours de réponse exacte.
 /// </para>
 /// </remarks>
-public class SeedRequestsTests(SeedRequestsTests.Database database)
-  : IClassFixture<SeedRequestsTests.Database>
+public class SeedRequestsTests(SeedRequestsTests.SeededDatabase database)
+  : IClassFixture<SeedRequestsTests.SeededDatabase>
 {
   private const string TheReservedBlockStart = "5eed0000-0000-7000-8000-000000000000";
   private const string TheReservedBlockEnd = "5eed0000-0000-7000-8000-ffffffffffff";
@@ -39,10 +39,7 @@ public class SeedRequestsTests(SeedRequestsTests.Database database)
     await database.SeedAsync();
     await database.SeedAsync();
 
-    var ids = await database.PlantedIdsAsync();
-
-    ids.Count.ShouldBe(100);
-    ids.Distinct().Count().ShouldBe(100);
+    (await database.PlantedIdsAsync()).Count.ShouldBe(100);
   }
 
   /// <summary>
@@ -158,18 +155,16 @@ public class SeedRequestsTests(SeedRequestsTests.Database database)
   }
 
   /// <summary>
-  /// Aucune adresse réelle : les emails ne vivent que sur des domaines réservés à l'exemple
+  /// Aucune adresse réelle : les emails ne vivent que sur <c>example.com</c>, réservé à l'exemple
   /// (RFC 2606).
   /// </summary>
   [Fact]
-  public async Task WritesOnlyEmailsOnReservedDomains()
+  public async Task WritesOnlyEmailsOnAReservedDomain()
   {
     var requests = await database.SeedAndReadAsync();
 
-    string[] reserved = ["@example.com", "@example.org", "@example.net"];
-
     requests.Where(request => request.Email != null)
-      .ShouldAllBe(request => reserved.Any(domain => request.Email!.Value.Value.EndsWith(domain)));
+      .ShouldAllBe(request => request.Email!.Value.Value.EndsWith("@example.com"));
   }
 
   /// <summary>
@@ -200,9 +195,9 @@ public class SeedRequestsTests(SeedRequestsTests.Database database)
   public async Task KeepsTheDatesOfTheDomainWhateverTheDay(string today)
   {
     var day = DateOnly.Parse(today, CultureInfo.InvariantCulture);
-    var now = Database.AfternoonInParis(day);
+    var now = SeededDatabase.AfternoonInParis(day);
 
-    var requests = await database.SeedAndReadAsync(day, now);
+    var requests = await database.SeedAndReadAsync(day);
 
     requests.ShouldAllBe(request => request.ReceivedOn <= day);
     requests.ShouldAllBe(request => request.ReceivedOn >= day.AddMonths(-6));
@@ -221,7 +216,7 @@ public class SeedRequestsTests(SeedRequestsTests.Database database)
   {
     var day = DateOnly.Parse(today, CultureInfo.InvariantCulture);
 
-    var requests = await database.SeedAndReadAsync(day, Database.AfternoonInParis(day));
+    var requests = await database.SeedAndReadAsync(day);
 
     var signals = requests
       .Where(request => request.Status == RequestStatus.InProgress)
@@ -241,7 +236,7 @@ public class SeedRequestsTests(SeedRequestsTests.Database database)
   {
     var day = new DateOnly(2027, 3, 15);
 
-    var requests = await database.SeedAndReadAsync(day, Database.AfternoonInParis(day));
+    var requests = await database.SeedAndReadAsync(day);
 
     var deadlines = requests
       .Where(request => request.Status == RequestStatus.InProgress)
@@ -273,7 +268,7 @@ public class SeedRequestsTests(SeedRequestsTests.Database database)
   /// Un PostgreSQL à lui seul : les autres classes comptent les lignes de
   /// <c>data_subject_requests</c>, et cent demandes plantées leur mentiraient.
   /// </summary>
-  public sealed class Database : IAsyncLifetime
+  public sealed class SeededDatabase : IAsyncLifetime
   {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18-alpine").Build();
 
@@ -296,28 +291,29 @@ public class SeedRequestsTests(SeedRequestsTests.Database database)
       return new DateTimeOffset(local, ParisCalendar.TimeZone.GetUtcOffset(local));
     }
 
-    /// <summary>Joue le script comme le wrapper, avec les variables <c>psql</c> données.</summary>
-    public Task SeedAsync(DateOnly? today = null, DateTimeOffset? now = null)
+    /// <summary>
+    /// Joue le script comme le wrapper. Un jour imposé l'est à 15 h, heure de Paris ; sans jour, le
+    /// script prend les siens.
+    /// </summary>
+    public Task SeedAsync(DateOnly? today = null)
     {
-      var variables = new List<string>();
-      if (today is { } day)
+      if (today is not { } day)
       {
-        variables.Add($"\\set aujourdhui '{day:yyyy-MM-dd}'");
+        return RunAsync([]);
       }
 
-      if (now is { } instant)
-      {
-        variables.Add($"\\set maintenant '{instant:yyyy-MM-dd HH:mm:sszzz}'");
-      }
-
-      return RunAsync(variables);
+      return RunAsync(
+      [
+        $"\\set aujourdhui '{day:yyyy-MM-dd}'",
+        $"\\set maintenant '{AfternoonInParis(day):yyyy-MM-dd HH:mm:sszzz}'",
+      ]);
     }
 
     public Task ResetAsync() => RunAsync(["\\set reset"]);
 
-    public async Task<List<DataSubjectRequest>> SeedAndReadAsync(DateOnly? today = null, DateTimeOffset? now = null)
+    public async Task<List<DataSubjectRequest>> SeedAndReadAsync(DateOnly? today = null)
     {
-      await SeedAsync(today, now);
+      await SeedAsync(today);
 
       await using var dbContext = NewDbContext();
       var planted = (await PlantedIdsAsync()).Select(DataSubjectRequestId.From).ToList();

@@ -29,11 +29,19 @@ variables=()
 case "${1:-}" in
   "") ;;
   --reset) variables+=(-v reset=1) ;;
-  -h|--help) sed -n '3,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  # L'aide est l'en-tête du fichier : les commentaires qui suivent le shebang, jusqu'au premier blanc.
+  -h|--help) sed -n '3,/^$/{/^#/s/^# \{0,1\}//p}' "${BASH_SOURCE[0]}"; exit 0 ;;
   *) echec "Option inconnue : $1. Voir « $0 --help »." ;;
 esac
 
 command -v docker >/dev/null 2>&1 || echec "docker est absent du PATH."
+
+# Le nom du conteneur ne dit rien de la machine : un démon distant pourrait en porter un du même nom.
+# Seul le socket local est accepté, qu'il vienne de DOCKER_HOST ou du contexte Docker courant.
+hote_docker="${DOCKER_HOST:-$(docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || true)}"
+if [[ -n "$hote_docker" && "$hote_docker" != unix://* && "$hote_docker" != npipe://* ]]; then
+  echec "Docker vise un démon distant ($hote_docker) : ce script ne plante que dans la base locale."
+fi
 
 # Un conteneur arrêté répond « false », un conteneur absent ne répond pas : les deux se corrigent
 # de la même façon, en démarrant la pile.

@@ -20,6 +20,12 @@ src/MicroserviceRgpd.Infrastructure/Screenings/Lexicons/*.tsv text eol=lf
 # Les relevés servis à l'`Operator`.
 releves/*.sql text eol=lf
 
+# Les données de démonstration du Tableau des demandes : leurs messages tiennent sur
+# plusieurs lignes, et un CRLF y entrerait en base. Le wrapper, lui, ne se lance pas
+# sous bash avec des CRLF.
+scripts/seed-requests.sql text eol=lf
+scripts/*.sh text eol=lf
+
 # Les pivots du corpus — instrument de mesure gelé, clause de l'ADR-0012 — et les
 # captures rejouées contre l'ingestion. Déjà couverts par `corpus/.gitattributes`,
 # `corpus/schemas/.gitattributes` et `exploration/.gitattributes` ; répétés ici pour

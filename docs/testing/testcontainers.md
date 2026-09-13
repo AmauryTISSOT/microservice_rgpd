@@ -40,6 +40,10 @@ Ce projet a **un seul rôle** : la persistance de la trace d'audit. Ce qui le sa
 suppression est une conséquence du contrat public — sans `GET`, la trace est inatteignable depuis
 l'endpoint, donc aucun test fonctionnel ne peut la voir.
 
+⚠️ **`SeedRequestsTests` monte son propre container**, comme les tests de reprise de migration : il
+y rejoue `scripts/seed-requests.sql`, et les cent demandes plantées fausseraient les classes qui
+comptent les lignes de `data_subject_requests` dans le container partagé.
+
 ### `FunctionalTests`
 
 `CustomWebApplicationFactory` monte son propre container, pose la chaîne de connexion dans
