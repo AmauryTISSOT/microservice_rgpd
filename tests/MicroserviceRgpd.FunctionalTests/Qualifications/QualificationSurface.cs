@@ -28,6 +28,15 @@ internal sealed class QualificationSurface(CustomWebApplicationFactory<Program> 
   /// <summary>L'écran, et le seul chemin par lequel un humain qualifie un texte.</summary>
   internal const string Screen = "/qualification";
 
+  /// <summary>
+  /// Le handler par lequel un autre écran fait proposer un droit, et reçoit une projection plutôt
+  /// qu'une page.
+  /// </summary>
+  internal const string Propose = "/qualification?handler=Propose";
+
+  /// <summary>Le tableau des demandes, dont la modale appellera <see cref="Propose"/>.</summary>
+  private const string Board = "/demandes";
+
   private readonly HttpClient _client = factory.CreateClient(
     new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
@@ -151,14 +160,47 @@ internal sealed class QualificationSurface(CustomWebApplicationFactory<Program> 
     return identifier.Value;
   }
 
-  private async Task<string> AntiforgeryTokenAsync()
+  /// <summary>
+  /// Fait proposer un droit pour <paramref name="text"/> par le handler <c>Propose</c>, avec le
+  /// jeton anti-rejeu <b>que rend le tableau des demandes</b> — l'écran qui l'appellera, et non
+  /// celui qui le porte : le jeton vaut pour toute l'application.
+  /// </summary>
+  /// <param name="text">Le texte envoyé, ou <c>null</c> pour poster sans le champ.</param>
+  /// <param name="cancellationToken">Le départ de l'appelant, pour éprouver l'annulation.</param>
+  internal async Task<HttpResponseMessage> ProposeAsync(
+    string? text,
+    CancellationToken cancellationToken = default)
   {
-    var rendered = await ReadAsync();
+    var fields = new List<KeyValuePair<string, string>>
+    {
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync(Board)),
+    };
+
+    if (text is not null)
+    {
+      fields.Add(new KeyValuePair<string, string>("Text", text));
+    }
+
+    return await _client.PostAsync(Propose, new FormUrlEncodedContent(fields), cancellationToken);
+  }
+
+  /// <summary>
+  /// Fait proposer un droit <b>sans</b> jeton anti-rejeu — ce que ferait une page tierce qui ferait
+  /// poster le navigateur de l'<c>Operator</c>.
+  /// </summary>
+  internal async Task<HttpResponseMessage> ProposeWithoutTokenAsync(string text)
+  {
+    return await _client.PostAsync(Propose, new FormUrlEncodedContent([new("Text", text)]));
+  }
+
+  private async Task<string> AntiforgeryTokenAsync(string address = Screen)
+  {
+    var rendered = await ReadAsync(address);
 
     var token = Regex.Match(
       rendered, @"<input name=""__RequestVerificationToken""[^>]*value=""([^""]+)""");
 
-    token.Success.ShouldBeTrue($"Le formulaire de {Screen} ne porte aucun jeton anti-rejeu.");
+    token.Success.ShouldBeTrue($"Le formulaire de {address} ne porte aucun jeton anti-rejeu.");
 
     return token.Groups[1].Value;
   }

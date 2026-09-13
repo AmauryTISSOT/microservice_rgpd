@@ -131,6 +131,69 @@ public class QualifyModel(IMediator mediator, ILogger<QualifyModel> logger) : Pa
       return Page();
     }
 
+    if (await QualifyAsync(text, cancellationToken) is not { } qualified)
+    {
+      // Il ne reste rien à qualifier, et l'Operator lit une phrase française plutôt qu'une page
+      // d'erreur nue.
+      CouldNotQualify = true;
+
+      // ⚠️ LE STATUT DIT LA MÊME CHOSE QUE LA PHRASE, et c'est le même code que celui de
+      // `POST /qualifications` sur la même panne : un 200 aurait annoncé aux caches et à la
+      // supervision une page rendue normalement, là où le service est indisponible.
+      return new PageResult { StatusCode = StatusCodes.Status503ServiceUnavailable };
+    }
+
+    RenderedVerdict = Verdict.Of(qualified);
+    RenderedPremises = Premises.Of(qualified);
+
+    return Page();
+  }
+
+  /// <summary>
+  /// <b>Qualifie un texte pour le compte d'un autre écran</b>, et répond 200 avec une
+  /// <see cref="Proposal"/> — ou 400 quand le texte est refusé, 503 quand aucun moteur n'a rendu
+  /// d'avis. Toute autre panne, dont une trace d'audit qui ne s'écrit pas, sort en 500.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>Le même geste que <see cref="OnPostAsync"/></b>, par le même mediator et le même jeton
+  /// d'annulation : un écran qui part interrompt les moteurs, et aucune trace ne s'écrit pour une
+  /// qualification abandonnée avant leur réponse.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Aucun message ne sort d'ici</b> — ni le refus du domaine, ni celui d'un moteur, ni une
+  /// phrase de l'écran. L'écran appelant dit ses refus et ses échecs dans son propre vocabulaire ;
+  /// ce handler ne lui donne que des codes et une projection.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Pas de 504 distinct</b>, pour la raison même qui en prive l'écran de qualification :
+  /// l'<c>Operator</c> relance dans les deux cas.
+  /// </para>
+  /// <para>
+  /// Comme les handlers du tableau des demandes, c'est un handler de la page, pas une API : aucune
+  /// route publique ne le porte, et le document Swagger n'en dit rien.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnPostProposeAsync(CancellationToken cancellationToken)
+  {
+    if (!RightsRequestText.TryFrom(Text ?? string.Empty, out var text))
+    {
+      return BadRequest();
+    }
+
+    return await QualifyAsync(text, cancellationToken) is { } qualified
+      ? new JsonResult(Proposal.Of(qualified))
+      : StatusCode(StatusCodes.Status503ServiceUnavailable);
+  }
+
+  /// <summary>
+  /// Le geste commun aux deux handlers : la qualification rendue, ou <c>null</c> quand <b>aucun
+  /// moteur n'a rendu d'avis</b>. Toute autre panne remonte telle quelle.
+  /// </summary>
+  private async Task<QualificationOutcome?> QualifyAsync(
+    RightsRequestText text,
+    CancellationToken cancellationToken)
+  {
     // ⚠️ AUCUNE RÉFÉRENCE APPELANTE. Voir le prix consigné plus haut : ce champ est celui de
     // l'appelant, et l'écran n'en est pas un.
     Result<QualificationOutcome> qualified;
@@ -142,20 +205,14 @@ public class QualifyModel(IMediator mediator, ILogger<QualifyModel> logger) : Pa
     catch (QualificationEngineFailure doubleFailure)
     {
       // ⚠️ LES DEUX MOTEURS SE SONT TUS, ET C'EST LE SEUL CAS QUI PASSE ICI : un moteur seul muet a
-      // déjà été absorbé par le repli, et rend un verdict marqué « service non entier ». Il ne reste
-      // rien à qualifier, et l'Operator lit une phrase française plutôt qu'une page d'erreur nue.
+      // déjà été absorbé par le repli, et rend un verdict marqué « service non entier ».
       //
       // ⚠️ LE MESSAGE DU MOTEUR NE FRANCHIT PAS CETTE FRONTIÈRE, exactement comme à l'endpoint : il
       // nomme le moteur qui s'est tu, ce qui est de l'exploitation et vit dans les traces. Il est
       // journalisé ici pour ne pas disparaître avec l'exception rattrapée.
       logger.LogError(doubleFailure, "Aucun moteur n'a rendu d'avis : l'écran ne peut rien qualifier.");
 
-      CouldNotQualify = true;
-
-      // ⚠️ LE STATUT DIT LA MÊME CHOSE QUE LA PHRASE, et c'est le même code que celui de
-      // `POST /qualifications` sur la même panne : un 200 aurait annoncé aux caches et à la
-      // supervision une page rendue normalement, là où le service est indisponible.
-      return new PageResult { StatusCode = StatusCodes.Status503ServiceUnavailable };
+      return null;
     }
 
     if (qualified.Status != ResultStatus.Ok)
@@ -167,9 +224,6 @@ public class QualifyModel(IMediator mediator, ILogger<QualifyModel> logger) : Pa
         $"La qualification a rendu un statut que l'écran ne sait pas traduire : {qualified.Status}.");
     }
 
-    RenderedVerdict = Verdict.Of(qualified.Value);
-    RenderedPremises = Premises.Of(qualified.Value);
-
-    return Page();
+    return qualified.Value;
   }
 }
