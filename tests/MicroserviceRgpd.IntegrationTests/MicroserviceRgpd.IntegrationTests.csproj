@@ -29,6 +29,11 @@
     <None Update="xunit.runner.json">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <!-- Le script de données de démonstration est joué tel quel par ses tests : c est le seul
+         garde-fou qui le tienne en phase avec les migrations. -->
+    <None Include="..\..\scripts\seed-requests.sql" Link="Scripts\seed-requests.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
