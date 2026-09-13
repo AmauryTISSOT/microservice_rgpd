@@ -74,8 +74,10 @@ les avoir, et le lancement de Chromium y échoue. La fixture ne les installe pas
 les droits root : il faut alors les poser une fois, par le gestionnaire de paquets du système.
 
 Les tests lisent l'écran **comme l'`Operator` le lit** — par le rôle et le nom accessible d'un lien,
-d'un titre, d'un bouton —, jamais par une classe CSS ni par la forme du DOM. Rien n'y est substitué
-tant qu'aucun parcours n'approche un moteur.
+d'un titre, d'un bouton —, jamais par une classe CSS ni par la forme du DOM. Seuls les deux moteurs
+de qualification y sont substitués, par la même `QualificationEngineDouble` que les tests
+fonctionnels : le harnais les expose en `Verdict` et `Lexicon`, et un test les remet à zéro avant de
+leur dicter un avis.
 
 ### `AspireTests`
 
@@ -86,7 +88,8 @@ l'`AppHost`, ni `Aspire.Hosting.Testing`.
 
 ## Aucun test n'appelle Ollama
 
-La frontière est posée sur **`IQualificationEngine`**, doublé dans `UnitTests` et `FunctionalTests`.
+La frontière est posée sur **`IQualificationEngine`**, doublé dans `UnitTests`, `FunctionalTests` et
+`BrowserTests` — ces deux derniers par la même doublure, qui vit dans `MicroserviceRgpd.TestDoubles`.
 Pas sur le fil HTTP, pas sur des réponses enregistrées, pas sur un vrai sidecar marqué et exclu :
 les enregistrements pourrissent en silence et rendent indiscernable une régression de code d'une
 montée de version de modèle.

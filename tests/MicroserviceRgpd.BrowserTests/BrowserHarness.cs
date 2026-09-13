@@ -59,6 +59,19 @@ public sealed class BrowserHarness : IAsyncLifetime
   }
 
   /// <summary>
+  /// Le moteur dont l'avis fait verdict, tel que le service le consulte : ce qu'un test lui dicte,
+  /// l'écran le rend.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ La doublure est partagée par toute la collection : un test qui la configure la remet à zéro
+  /// d'abord, sans quoi il hériterait de l'avis du précédent.
+  /// </remarks>
+  public QualificationEngineDouble Verdict => Service.Verdict;
+
+  /// <summary>Le moteur lexical, tel que le service le consulte. Même mise en garde que <see cref="Verdict"/>.</summary>
+  public QualificationEngineDouble Lexicon => Service.Lexicon;
+
+  /// <summary>
   /// Le nombre de demandes enregistrées sous ce message, relu dans la base du service : ce qu'un
   /// scénario a laissé derrière lui, et non ce que l'écran en dit.
   /// </summary>
