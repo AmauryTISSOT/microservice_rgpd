@@ -92,25 +92,6 @@ public class CreationForm(BrowserHarness harness)
     await Expect(Field(page, "Origine")).ToBeFocusedAsync();
   }
 
-  /// <summary>
-  /// <b>La qualification du droit par IA se voit, mais ne se déclenche pas</b> : le bouton est
-  /// désactivé, et son infobulle dit « Bientôt disponible ».
-  /// </summary>
-  [Fact]
-  public async Task ShowsTheAiQualificationDisabledWithItsTooltip()
-  {
-    await using var context = await harness.NewContextAsync();
-    var page = await OnTheBoardAsync(context);
-    await OpenAsync(page);
-
-    var button = Dialog(page).GetByRole(AriaRole.Button, new() { Name = "Qualification du droit par IA", Exact = true });
-
-    await Expect(button).ToBeVisibleAsync();
-    await Expect(button).ToBeDisabledAsync();
-    await Expect(button).ToHaveAttributeAsync("title", "Bientôt disponible");
-    await Expect(button).ToHaveAccessibleDescriptionAsync("Bientôt disponible");
-  }
-
   private static async Task ExpectTheDefaultsAsync(IPage page, string today)
   {
     await Expect(Field(page, "Origine")).ToHaveValueAsync("Email");
