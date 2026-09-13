@@ -249,7 +249,8 @@
       porte l'adresse ; le droit proposé entre dans le select, et seul l'enregistrement le choisit.
 
       ⚠️ SES MOTS SONT ICI, DANS LE VOCABULAIRE DE REQUESTS : le refus d'un Message vide en `data-*`,
-      la mention « À relire » dans la note. Le module choisit, il ne rédige pas (ADR-0018).
+      la mention « À relire » et les phrases d'une proposition sans droit unique dans la note, celles
+      de ses échecs sur le bandeau. Le module choisit, il ne rédige pas (ADR-0018).
 
       L'ICÔNE DE CHARGEMENT EST DANS LE BOUTON, CACHÉE TANT QU'IL N'EST PAS `aria-busy` : le libellé
       reste lisible pendant l'attente, et c'est `aria-busy` qui la dit aux technologies d'assistance —
@@ -290,9 +291,17 @@
       montrer quand la proposition n'est pas corroborée ou que le service n'était pas entier.
       `role="note"` la dit accessoire au select ; `aria-live` la fait lire à son arrivée, sans voler
       le focus. ⚠️ Pas `role="status"` : c'est celui du toast, seul statut de l'écran.
+
+      QUAND AUCUN DROIT UNIQUE N'EST PROPOSÉ, LA NOTE LE DIT, et le select reste tel qu'il est : plusieurs
+      droits, dont la phrase porte la place de leurs libellés — `{rights}`, que le module remplit des
+      libellés rendus par la qualification, liés à la française par le navigateur —, ou un Message
+      hors périmètre.
     *@
-    <p class="proposal-note" id="request-proposal-note" role="note" aria-live="polite" hidden>
+    <p class="proposal-note" id="request-proposal-note" role="note" aria-live="polite" hidden
+       data-several-rights="La qualification propose plusieurs droits : {rights}. Choisissez celui que la personne invoque."
+       data-out-of-scope="La qualification ne propose aucun droit : le message est hors périmètre.">
       <strong data-to-review hidden>À relire</strong>
+      <span data-verdict></span>
       <span data-justification></span>
     </p>
 
@@ -306,10 +315,16 @@
       pendant la correction, non — aucun second essai ne la rattrapera, et promettre le contraire
       ferait cliquer l'Operator jusqu'à ce qu'il devine. C'est ce que la story 30 lui doit : apprendre
       que la demande a été close, plutôt que croire sa correction passée.
+
+      ⚠️ LA QUALIFICATION DU DROIT PAR IA Y DIT AUSSI SES ÉCHECS, avec deux phrases à elle : aucun
+      moteur n'a répondu (503), ou toute autre panne — du serveur comme du réseau. Rien n'est relancé
+      pour l'Operator ; les deux phrases lui laissent le choix de relancer ou de choisir seul.
     *@
     <p class="modal-failure" role="alert" id="request-failure" hidden
        data-technical="La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer."
-       data-closed="Cette demande a été close pendant votre correction : elle n'est plus modifiable, et votre correction n'a pas été enregistrée."></p>
+       data-closed="Cette demande a été close pendant votre correction : elle n'est plus modifiable, et votre correction n'a pas été enregistrée."
+       data-qualification-unavailable="La qualification n'a pas pu proposer de droit : aucun moteur n'a répondu. Vous pouvez la relancer, ou choisir le droit vous-même."
+       data-qualification-failed="La qualification a échoué. Vous pouvez la relancer, ou choisir le droit vous-même."></p>
 
     @*
       L'IDENTIFIANT DE LA DEMANDE MODIFIÉE, CACHÉ ET VIDE : la création n'en a pas, et ce n'est pas

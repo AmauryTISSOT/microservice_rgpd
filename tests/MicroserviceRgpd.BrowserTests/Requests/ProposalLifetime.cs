@@ -105,6 +105,7 @@ public class ProposalLifetime
     var expected = mode == "create" ? string.Empty : "Erasure";
     await Expect(Field(reopened, "Droits RGPD")).ToHaveValueAsync(expected);
     await Expect(Note(reopened)).ToBeHiddenAsync();
+    await Expect(reopened.GetByRole(AriaRole.Alert)).ToBeHiddenAsync();
     await Expect(QualifyButton(reopened)).ToBeEnabledAsync();
     await Expect(QualifyButton(reopened)).Not.ToHaveAttributeAsync("aria-busy", new Regex("."));
     await Expect(Rows(page, email)).ToHaveCountAsync(closing == "l'abandon confirmé" ? 0 : 1);
