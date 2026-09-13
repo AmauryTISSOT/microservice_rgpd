@@ -35,9 +35,10 @@ _Avoid_ : messages, commentaire, note, texte libre
 
 **Droit invoqué** :
 Le seul `DataSubjectRight` que la demande exerce, choisi par l'`Operator` parmi les six droits.
-`OutOfScope` n'en est pas un : c'est un verdict de `Qualification`, et une demande ne l'invoque
-jamais.
-_Avoid_ : type de droit, type de demande, catégorie, qualification
+Une `Qualification` peut le **proposer** ; seul l'enregistrement par l'`Operator` le **choisit**,
+et la demande ne référence aucune qualification. `OutOfScope` n'en est pas un : c'est un verdict
+de `Qualification`, et une demande ne l'invoque jamais.
+_Avoid_ : type de droit, type de demande, catégorie
 
 **Fiche** :
 La lecture à l'écran d'une demande enregistrée, telle que le service la tient : une surface ancrée au
@@ -122,7 +123,9 @@ les données du sujet, jamais sur le dossier qui l'enregistre. Aussi : éditer, 
 **Supprimer une demande** :
 Le retrait définitif d'une demande par l'`Operator`, quel que soit son statut : elle disparaît du
 service sans laisser de trace, pas même celle de son enregistrement. Ce n'est **pas** un `Gesture` :
-un `Gesture` laisse une trace datée, la suppression efface celle qui existait.
+un `Gesture` laisse une trace datée, la suppression efface celle qui existait. « Sans trace »
+s'entend dans `Requests` : un Message qualifié depuis la modale reste dans la trace d'audit de
+`Qualification`, sans lien vers la demande (ADR-0024).
 _Avoid_ : annuler, effacer, archiver, clôturer
 
 ⚠️ **« Effacer » est pris par le droit à l'effacement** (art. 17), que la demande peut invoquer.
