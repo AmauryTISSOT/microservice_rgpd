@@ -18,6 +18,7 @@ src/
   MicroserviceRgpd.AspireHost/      # Orchestration locale des dépendances
   MicroserviceRgpd.ServiceDefaults/ # OpenTelemetry, health checks, résilience HTTP, service discovery
   sidecar/                          # Sidecar Python : les moteurs de qualification et leur suite pytest
+  mock-host/                        # Mock local du système hôte : une route par droit du Paramétrage (voir son README)
 tests/
   MicroserviceRgpd.UnitTests/         # Domaine, handlers et adaptateurs, isolés
   MicroserviceRgpd.IntegrationTests/  # Persistance sur un vrai PostgreSQL (Testcontainers)

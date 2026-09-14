@@ -5,7 +5,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 // qui empêche les deux moitiés de diverger, celui-là même qui tient déjà l'écart des deux échéances.
 // Hors Aspire, chaque processus lit sa propre configuration ; la divergence y est possible mais
 // inoffensive, et aucun garde d'accord n'est ajouté pour elle.
-var llmIsOn = LlmIsOn();
+var llmIsOn = FlagIsOn("Llm:Enabled");
 
 // Add PostgreSQL container
 var postgres = builder.AddPostgres("postgres")
@@ -100,6 +100,25 @@ if (llmIsOn)
   web.WithEnvironment("Qualification__Llm__DeadlineSeconds", RequiredSetting("Llm:CallerDeadlineSeconds"));
 }
 
+// Le mock du système hôte, pour que les adresses collées dans `/parametrage` soient joignables. Le
+// service ne les appelle pas (ADR-0016) : aucune référence ne le relie au mock, qui n'est qu'une
+// cible pour la démonstration. Éteint par défaut, et alors la pile est exactement celle d'avant lui.
+// Le port est fixe, et c'est tout son intérêt : une URL saisie dans le Paramétrage reste valable
+// d'un lancement à l'autre, là où un port attribué par Aspire la rendrait caduque au suivant.
+// Le certificat de développement est écarté : Aspire le poserait d'office sur uvicorn, et
+// `http://localhost:5199` rendrait alors une réponse vide. L'API est encore marquée expérimentale ;
+// le mock n'étant que local, le risque qu'elle bouge est assumé.
+if (FlagIsOn("MockHost:Enabled"))
+{
+#pragma warning disable ASPIRECERTIFICATES001
+  builder.AddUvicornApp("mock-host", "../mock-host", "mock_host.app:app")
+    .WithUv()
+    .WithoutHttpsCertificate()
+    .WithEndpoint("http", endpoint => endpoint.Port = 5199)
+    .WithHttpHealthCheck("/health");
+#pragma warning restore ASPIRECERTIFICATES001
+}
+
 builder
   .Build()
   .Run();
@@ -113,14 +132,14 @@ string RequiredSetting(string key) =>
   ?? throw new InvalidOperationException(
     $"Le réglage « {key} » est absent de la configuration de l'AppHost : le moteur LLM ne se configure pas tout seul.");
 
-// Le drapeau est le **seul** réglage du moteur à disposer d'un repli, et ce repli est le choix sûr :
-// une pile qui ne dit rien démarre sans serveur de modèles, donc sans GPU et sans téléchargement.
-// Une valeur qui n'est ni « true » ni « false » arrête le démarrage plutôt que d'éteindre : lue
-// comme un « non », elle ferait passer une coquille pour une décision — même traitement que lui
-// réservent déjà le service .NET et le sidecar.
-bool LlmIsOn()
+// Un drapeau est le **seul** réglage de sa section à disposer d'un repli, et ce repli est le choix
+// sûr : une pile qui ne dit rien démarre sans serveur de modèles — donc sans GPU et sans
+// téléchargement — et sans mock. Une valeur qui n'est ni « true » ni « false » arrête le démarrage
+// plutôt que d'éteindre : lue comme un « non », elle ferait passer une coquille pour une décision —
+// même traitement que réservent déjà au drapeau LLM le service .NET et le sidecar.
+bool FlagIsOn(string key)
 {
-  var raw = builder.Configuration["Llm:Enabled"];
+  var raw = builder.Configuration[key];
 
   if (string.IsNullOrEmpty(raw))
   {
@@ -130,7 +149,7 @@ bool LlmIsOn()
   if (!bool.TryParse(raw, out var enabled))
   {
     throw new InvalidOperationException(
-      $"Le réglage « Llm:Enabled » de l'AppHost vaut « {raw} », qui n'est ni « true » ni « false ».");
+      $"Le réglage « {key} » de l'AppHost vaut « {raw} », qui n'est ni « true » ni « false ».");
   }
 
   return enabled;
