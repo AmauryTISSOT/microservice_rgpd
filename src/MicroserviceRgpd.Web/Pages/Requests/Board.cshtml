@@ -18,6 +18,7 @@
   var modifySubmit = "Modifier";
   var modifyAction = Url.Page(null, "Modify");
   var valuesAction = Url.Page(null, "Values");
+  var executionAction = Url.Page(null, "Execution");
 
   // ⚠️ LA ROUTE DE LA QUALIFICATION EST CELLE D'UN AUTRE ÉCRAN, ET SEULE LA VUE LA CONNAÎT : le
   // page model du tableau appartient à Requests, et n'envoie aucune commande de Qualification
@@ -342,10 +343,11 @@
 
 @*
   LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée », « Demande
-  modifiée », « Demande supprimée », l'échec d'une suppression, celui d'un pré-remplissage, ou la
-  disparition d'une demande corrigée — les mots que la page lui donne ici — quand une modale se ferme
-  sur une création, sur une modification ou sur une suppression, ou quand le crayon d'une ligne n'a
-  pas pu lire sa demande, et l'efface quelques secondes plus tard. Il est hors des modales, qui
+  modifiée », « Demande supprimée », « Demande exécutée », l'échec d'une suppression, celui d'un
+  pré-remplissage, ou la disparition d'une demande corrigée — les mots que la page lui donne ici —
+  quand une modale se ferme sur une création, sur une modification, sur une suppression ou sur une
+  exécution, ou quand le crayon ou l'exécution d'une ligne n'a pas pu lire sa demande, et l'efface
+  quelques secondes plus tard. Il est hors des modales, qui
   viennent de se fermer ou ne se sont pas ouvertes ; `role="status"` le fait lire sans voler le focus.
 
   ⚠️ UNE DEMANDE SUPPRIMÉE DEPUIS UN AUTRE ONGLET NE SE DIT PAS DANS LE BANDEAU DE LA MODALE, mais
@@ -355,7 +357,7 @@
   « Demande modifiée » serait un mensonge — le serveur n'aurait rien tracé.
 *@
 <p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"
-   data-modified="Demande modifiée"
+   data-modified="Demande modifiée" data-executed="@ExecutionConfirmation.Executed"
    data-deletion-failed="La suppression a échoué, veuillez réessayer."
    data-load-failed="La demande n'a pas pu être chargée."
    data-vanished="La demande a été supprimée entre-temps."></p>
@@ -536,4 +538,72 @@
   <div class="sheet-foot">
     <button type="button" data-dismiss>Fermer</button>
   </div>
+</dialog>
+
+@*
+  LA CONFIRMATION D'EXÉCUTION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT, cinquième `dialog` de
+  l'écran. L'avion en papier actif d'une ligne l'ouvre, une fois le récapitulatif relu sur le serveur
+  (`data-summary`) : ce qui partirait au système hôte, et où (ADR-0026).
+
+  ⚠️ TOUS SES MOTS SONT ICI, écrits une fois dans ExecutionConfirmation : le titre, les libellés,
+  l'avertissement, les boutons. Seules les valeurs sont vides au chargement ; le module y verse celles
+  du récapitulatif, déjà en libellés — « — » compris —, par `textContent`.
+
+  ⚠️ UNE DEMANDE DEVENUE NON EXÉCUTABLE DEPUIS LE CHARGEMENT LE DIT DÈS L'OUVERTURE : le bandeau porte
+  le motif que le serveur a rendu, et « Exécuter » est éteint. Le bandeau est vide et caché sinon.
+
+  ⚠️ « ANNULER » A LE FOCUS PAR DÉFAUT (`autofocus`, que `showModal` honore) : une touche Entrée
+  réflexe n'exécute rien. « Exécuter » vient en dernier.
+
+  PENDANT L'APPEL, « EXÉCUTER » PORTE `aria-busy` ET SON ICÔNE DE CHARGEMENT, et rien ne ferme la
+  modale — ni « Annuler », ni la croix, ni Échap : la fermer n'annulerait pas l'appel, qui va à son
+  terme côté serveur.
+
+  LE FORMULAIRE DÉCLARE SON ENVOI — `POST /demandes?handler=Execute` — ET PORTE LE JETON ANTI-REJEU,
+  que le tag helper pose. Le script l'envoie par `fetch` ; aucun bouton ne le soumet nativement.
+*@
+<dialog class="modal confirmation" id="execute-request" role="alertdialog"
+        aria-labelledby="execute-request-title" aria-describedby="execute-request-warning"
+        data-summary="@executionAction">
+  <div class="modal-head">
+    <h2 id="execute-request-title">@ExecutionConfirmation.Title</h2>
+    <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" fill="none" />
+      </svg>
+    </button>
+  </div>
+
+  <dl class="facts">
+    <dt>@ExecutionConfirmation.RightLabel</dt>
+    <dd data-summary-field="right"></dd>
+    <dt>@ExecutionConfirmation.FirstNameLabel</dt>
+    <dd data-summary-field="firstName"></dd>
+    <dt>@ExecutionConfirmation.LastNameLabel</dt>
+    <dd data-summary-field="lastName"></dd>
+    <dt>@ExecutionConfirmation.EmailLabel</dt>
+    <dd data-summary-field="email"></dd>
+    <dt>@ExecutionConfirmation.EndpointLabel</dt>
+    <dd data-summary-field="endpoint"></dd>
+  </dl>
+
+  <p id="execute-request-warning">@ExecutionConfirmation.Warning</p>
+
+  <p class="modal-failure" role="alert" data-blocked hidden></p>
+
+  <form id="execute-request-form" method="post" asp-page-handler="Execute">
+    <input type="hidden" name="id" />
+
+    <div class="modal-actions">
+      <button type="button" data-dismiss autofocus>@ExecutionConfirmation.Cancel</button>
+      <button type="button" class="primary execution" data-execute>
+        <svg class="spinner" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-opacity="0.25" fill="none" />
+          <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+        </svg>
+        @ExecutionConfirmation.Confirm
+      </button>
+    </div>
+  </form>
 </dialog>

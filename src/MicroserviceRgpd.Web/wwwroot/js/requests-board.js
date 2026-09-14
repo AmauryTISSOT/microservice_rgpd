@@ -34,6 +34,10 @@
 // tient, sans aller-retour réseau — la page a déjà, sur la ligne, tout ce que la fiche montrera. Ses
 // quatre fermetures — Échap, la croix, le fond, « Fermer » — ferment directement : rien n'est en jeu
 // dans une lecture. ⚠️ La fiche s'ouvre encore VIDE : c'est l'US suivante qui y versera les valeurs.
+//
+// L'avion en papier actif d'une ligne ouvre la confirmation d'exécution, remplie du récapitulatif que
+// le serveur relit à l'instant ; « Exécuter » appelle le système hôte par le handler de la page, et un
+// succès remet la ligne, Terminée, à sa place sans rechargement.
 
 // LA RECHERCHE. Elle filtre les lignes que le serveur a rendues, sans revenir à lui : une demande
 // reste affichée si son email, son nom ou son prénom — ceux que la ligne porte en `data-*`, tels
@@ -1000,6 +1004,13 @@ requests.addEventListener("click", (event) => {
 
   if (eye) {
     openSheet(eye);
+    return;
+  }
+
+  const plane = event.target.closest('[data-action="execute"]');
+
+  if (plane) {
+    openExecution(plane);
   }
 });
 
@@ -1081,11 +1092,12 @@ deleteButton.addEventListener("click", deleteForGood);
 //
 // ⚠️ LE CRAYON D'UNE DEMANDE CLOSE PORTE `aria-disabled`, JAMAIS `disabled` — pour que son infobulle
 // puisse dire pourquoi (voir _RequestRow.cshtml). Le module ne peut donc pas se fier à `disabled`
-// pour savoir si le geste est offert : c'est `aria-disabled` qu'il teste, et lui seul.
+// pour savoir si le geste est offert : c'est `aria-disabled` qu'il teste, et lui seul. Il en va de
+// même de l'avion en papier de l'exécution.
 const editAction = '[data-action="edit"]';
 
-function isOffered(pencil) {
-  return pencil.getAttribute("aria-disabled") !== "true";
+function isOffered(action) {
+  return action.getAttribute("aria-disabled") !== "true";
 }
 
 // ⚠️ LE VERROU EST GLOBAL : pendant le chargement, TOUS les crayons du tableau sont éteints. Un
@@ -1141,7 +1153,7 @@ async function openModification(pencil) {
   const row = pencil.closest("tr");
 
   lockThePencils();
-  const values = await readValues(row.dataset.requestId);
+  const values = await readJsonOf(dialog.dataset.values, row.dataset.requestId);
   releaseThePencils();
 
   if (!values) {
@@ -1184,11 +1196,12 @@ function dropTheVanishedRequest() {
   say(toast.dataset.vanished);
 }
 
-// Les huit valeurs d'une demande, ou rien du tout — 404 d'une demande supprimée ailleurs, erreur du
-// serveur, coupure réseau : toutes les issues sans valeurs se valent, et l'Operator lit la même
-// phrase. L'adresse est celle que la modale porte ; le module n'écrit aucune route.
-async function readValues(id) {
-  const address = new URL(dialog.dataset.values, document.baseURI);
+// Ce que le serveur rend d'une demande à l'adresse `route` — ses huit valeurs, ou le récapitulatif de
+// son exécution —, ou rien du tout : 404 d'une demande supprimée ailleurs, erreur du serveur, coupure
+// réseau, toutes les issues sans réponse se valent, et l'Operator lit la même phrase. L'adresse est
+// celle que la surface porte ; le module n'écrit aucune route.
+async function readJsonOf(route, id) {
+  const address = new URL(route, document.baseURI);
   address.searchParams.set("id", id);
 
   try {
@@ -1270,3 +1283,156 @@ for (const dismiss of sheet.querySelectorAll("[data-dismiss]")) {
 }
 
 closeOnBackdropClick(sheet, closeSheet);
+
+// L'EXÉCUTION D'UNE DEMANDE. L'avion en papier actif d'une ligne fait relire au serveur le
+// récapitulatif de son exécution — ce qui partirait au système hôte, et où —, puis ouvre la
+// confirmation qu'il remplit. ⚠️ Relu à chaque ouverture : la page a pu être chargée avant qu'un autre
+// onglet clôture la demande ou change l'adresse de son droit (ADR-0026).
+//
+// Le récapitulatif arrive DÉJÀ EN LIBELLÉS : le module verse chaque valeur dans la cible de même nom,
+// par `textContent`, et recopie le motif de blocage tel quel. Il n'écrit aucun mot.
+//
+// ⚠️ AUCUN `AbortController` : fermer l'onglet n'arrête pas l'appel, qui va à son terme côté serveur,
+// et rien à l'écran ne doit laisser croire qu'on peut l'interrompre.
+const execution = document.getElementById("execute-request");
+const executionForm = document.getElementById("execute-request-form");
+const executeButton = execution.querySelector("[data-execute]");
+const executionBlocked = execution.querySelector("[data-blocked]");
+
+// L'avion en papier qui a ouvert la confirmation, et la ligne qu'elle exécute.
+let executionOpenedBy = null;
+let rowToExecute = null;
+
+// ⚠️ UNE SEULE LECTURE EN VOL : un second clic pendant qu'un récapitulatif arrive ne lance rien, et la
+// confirmation ne peut pas s'ouvrir sur la mauvaise demande.
+let readingTheSummary = false;
+
+async function openExecution(plane) {
+  if (!isOffered(plane) || readingTheSummary) {
+    return;
+  }
+
+  const row = plane.closest("tr");
+
+  readingTheSummary = true;
+  const summary = await readJsonOf(execution.dataset.summary, row.dataset.requestId);
+  readingTheSummary = false;
+
+  if (!summary) {
+    say(toast.dataset.loadFailed);
+    return;
+  }
+
+  fillExecution(summary);
+  executionForm.elements.namedItem("id").value = row.dataset.requestId;
+  executionOpenedBy = plane;
+  rowToExecute = row;
+
+  // « Annuler » prend le focus : `showModal` honore son `autofocus`.
+  execution.showModal();
+}
+
+// UNE DEMANDE DEVENUE NON EXÉCUTABLE LE DIT DÈS L'OUVERTURE : le bandeau porte le motif, et « Exécuter »
+// est éteint. `disabled` suffit ici — le motif se lit dans le bandeau, pas dans une infobulle.
+function fillExecution(summary) {
+  for (const target of execution.querySelectorAll("[data-summary-field]")) {
+    target.textContent = summary[target.dataset.summaryField];
+  }
+
+  executionBlocked.textContent = summary.block ?? "";
+  executionBlocked.hidden = !summary.block;
+  executeButton.disabled = Boolean(summary.block);
+}
+
+// ⚠️ PENDANT L'APPEL, RIEN NE FERME LA CONFIRMATION — ni « Annuler », ni la croix, ni le fond, ni Échap :
+// la fermer n'annulerait pas l'exécution, et la réponse doit trouver la ligne qu'elle concerne.
+let executing = false;
+
+function closeExecution() {
+  if (!executing) {
+    execution.close();
+  }
+}
+
+for (const dismiss of execution.querySelectorAll("[data-dismiss]")) {
+  dismiss.addEventListener("click", closeExecution);
+}
+
+closeOnBackdropClick(execution, closeExecution);
+
+execution.addEventListener("cancel", (event) => {
+  if (executing) {
+    event.preventDefault();
+  }
+});
+
+// ⚠️ CHROMIUM NE REND PAS TOUJOURS ÉCHAP ANNULABLE (voir la modale de saisie) : une fermeture qu'il
+// impose pendant l'appel est aussitôt défaite, et la confirmation revient telle quelle.
+execution.addEventListener("close", () => {
+  if (executing) {
+    execution.showModal();
+    return;
+  }
+
+  giveTheFocusBackTo(executionOpenedBy);
+});
+
+// L'ENVOI. Le formulaire part tel quel au handler qu'il déclare, jeton anti-rejeu compris. « Exécuter »
+// porte `aria-busy` et son icône le temps de l'appel ; un second clic ne part pas.
+//
+// Sur 200, le corps est la ligne de la demande passée à Terminée : elle remplace la sienne, la
+// confirmation se ferme, et le toast dit « Demande exécutée ». ⚠️ Les refus et les échecs se diront
+// dans le bandeau — ticket suivant — : ici, « Exécuter » redevient seulement utilisable.
+async function execute() {
+  if (executing || executeButton.disabled) {
+    return;
+  }
+
+  executing = true;
+  executeButton.setAttribute("aria-busy", "true");
+
+  let rowHtml = null;
+
+  try {
+    const response = await fetch(executionForm.action, {
+      method: "POST",
+      body: new URLSearchParams(new FormData(executionForm)),
+    });
+
+    if (response.status === 200) {
+      rowHtml = await response.text().catch(() => "");
+    }
+  } catch {
+    rowHtml = null;
+  }
+
+  executing = false;
+  executeButton.removeAttribute("aria-busy");
+
+  if (rowHtml !== null) {
+    closeOnExecution(rowHtml);
+  }
+}
+
+// LA LIGNE EXÉCUTÉE REMPLACE LA SIENNE, À SA PLACE : ni la date de réception ni l'instant
+// d'enregistrement n'ont changé, le tri n'a rien à revoir. La recherche se rejoue, comme après toute
+// ligne entrée dans le tableau.
+//
+// ⚠️ LE FOCUS SUIT LA LIGNE : l'avion en papier qui a ouvert la confirmation part avec l'ancienne, et
+// c'est celui de la nouvelle — éteint, mais focalisable — qui le reçoit.
+function closeOnExecution(rowHtml) {
+  const row = rowRenderedBy(rowHtml);
+
+  if (row && rowToExecute?.isConnected) {
+    rowToExecute.replaceWith(row);
+    executionOpenedBy = row.querySelector('[data-action="execute"]');
+    applySearch();
+  }
+
+  execution.close();
+  rowToExecute = null;
+
+  say(toast.dataset.executed);
+}
+
+executeButton.addEventListener("click", execute);
