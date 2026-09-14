@@ -26,9 +26,10 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// auto-évaluation — et un motif en prose française. Aucun chemin ne porte un nombre.
 /// </para>
 /// <para>
-/// <b>Il est asynchrone bien que le moteur retenu soit local et déterministe.</b> C'est le prix de
-/// la réversibilité : une signature synchrone obligerait un futur moteur servi à bloquer sur son
-/// propre transport, et cette dette-là se paierait dans <c>Core</c>.
+/// <b>Il est asynchrone, bien que le moteur lexique soit local et déterministe.</b> C'était le prix
+/// de la réversibilité, et A2 l'a encaissé (ADR-0025) : une signature synchrone aurait obligé le
+/// moteur servi par Ollama à bloquer sur son propre transport, et cette dette-là se serait payée
+/// dans <c>Core</c>.
 /// </para>
 /// <para>
 /// ⚠️ <b>Il reçoit les aperçus <i>à côté</i> du relevé, jamais dedans, et ils ne ressortent pas.</b>

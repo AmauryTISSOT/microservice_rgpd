@@ -60,6 +60,9 @@
     <!-- Les adaptateurs HTTP du sidecar vivent dans Infrastructure et se testent unitairement,
          avec un HttpMessageHandler double : aucun test .NET n'appelle Ollama. -->
     <ProjectReference Include="..\..\src\MicroserviceRgpd.Infrastructure\MicroserviceRgpd.Infrastructure.csproj" />
+    <!-- Le double d'Ollama, partagé avec le test fonctionnel d'A2 : les deux éprouvent le même
+         encodeur figé. -->
+    <ProjectReference Include="..\MicroserviceRgpd.TestDoubles\MicroserviceRgpd.TestDoubles.csproj" />
   </ItemGroup>
 
 </Project>

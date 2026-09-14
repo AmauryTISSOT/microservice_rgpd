@@ -95,6 +95,31 @@ public class PersonalDataCategoryTests
   public void GivesUnflaggedNoPrototype()
   {
     PersonalDataCategory.Unflagged.PrototypeName.ShouldBeNull();
+    PersonalDataCategory.Unflagged.PrototypeFrenchText.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// La traduction française du texte de chaque prototype, écrite <b>une seule fois</b>, sur la
+  /// valeur : c'est elle que le motif d'A2 cite, parce que l'<c>Operator</c> ne lit jamais d'anglais.
+  /// </summary>
+  [Theory]
+  [InlineData("Identity", "le prénom, le nom ou la date de naissance d'une personne")]
+  [InlineData("ContactDetails", "l'adresse électronique ou le numéro de téléphone d'une personne")]
+  [InlineData("LocationData", "l'adresse du domicile, le code postal ou les coordonnées géographiques d'une personne")]
+  [InlineData("NationalIdentifier", "un numéro d'identité nationale, de sécurité sociale, de passeport ou d'identification fiscale")]
+  [InlineData("FinancialData", "le compte bancaire, le numéro de carte ou le salaire d'une personne")]
+  [InlineData("AuthenticationSecret", "le mot de passe, le secret ou le jeton d'authentification d'un compte utilisateur")]
+  [InlineData("OnlineIdentifier", "l'adresse IP, l'identifiant d'appareil ou le cookie d'un visiteur")]
+  [InlineData("DemographicData", "la nationalité, la religion, la situation matrimoniale ou le niveau d'études d'une personne")]
+  [InlineData("ProfessionalLife", "l'employeur, l'intitulé de poste, le matricule ou la date d'embauche d'un salarié")]
+  [InlineData("BehaviouralData", "la dernière connexion, l'historique de navigation ou les termes recherchés par un utilisateur")]
+  [InlineData("HealthData", "le diagnostic, le traitement, le groupe sanguin ou une mesure clinique d'un patient")]
+  [InlineData("RelatedPerson", "une référence au conjoint, au parent, à l'enfant ou au contact d'urgence d'une personne")]
+  [InlineData("FreeTextAboutPerson", "une biographie ou une note en texte libre rédigée au sujet d'une personne")]
+  [InlineData("PersonReference", "un identifiant qui désigne la ligne d'une personne, comme une clé étrangère vers une table d'utilisateurs ou de clients")]
+  public void CarriesTheFrenchTextOfEachPrototypeAsAttachedData(string name, string frenchText)
+  {
+    PersonalDataCategory.FromName(name).PrototypeFrenchText.ShouldBe(frenchText);
   }
 
   /// <summary>

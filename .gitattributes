@@ -32,3 +32,10 @@ scripts/*.sh text eol=lf
 # que la racine porte le contrat en entier.
 corpus/schemas/pivots/*.jsonl text eol=lf
 exploration/releves-authentiques/captures/*.txt text eol=lf
+
+# L'artefact figé du modèle A2 : ses empreintes sont opposables (#463), et `EmbeddedA2ArtefactTests`
+# les vérifie sur la ressource embarquée. Les `.npz` sont binaires ; le manifest et le README ne
+# doivent pas recevoir de CRLF.
+src/MicroserviceRgpd.Infrastructure/Screenings/Embeddings/Artefact/*.npz binary
+src/MicroserviceRgpd.Infrastructure/Screenings/Embeddings/Artefact/*.json text eol=lf
+src/MicroserviceRgpd.Infrastructure/Screenings/Embeddings/Artefact/*.md text eol=lf

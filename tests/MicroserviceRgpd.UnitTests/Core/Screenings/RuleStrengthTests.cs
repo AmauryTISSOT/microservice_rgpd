@@ -13,10 +13,10 @@ namespace MicroserviceRgpd.UnitTests.Core.Screenings;
 public class RuleStrengthTests
 {
   [Fact]
-  public void ListsExactlyTheFiveFamiliesOfRules()
+  public void ListsTheFiveFamiliesOfRulesAndTheProximityToAPrototype()
   {
     RuleStrength.List.Select(strength => strength.Name).ShouldBe(
-      ["ExactName", "CheckedValueForm", "Morphological", "ValueForm", "TypeHeuristic"],
+      ["ExactName", "CheckedValueForm", "Morphological", "ValueForm", "TypeHeuristic", "PrototypeProximity"],
       ignoreOrder: true);
   }
 
@@ -25,12 +25,17 @@ public class RuleStrengthTests
   /// usage qu'on en fasse jamais : départager les règles <b>retenues</b> d'une même catégorie. Les
   /// deux membres de forme s'y insèrent par la <b>clé de contrôle</b> — une clé qui se vérifie deux
   /// fois parle plus directement qu'un affixe, une forme sans clé moins.
+  /// <para>
+  /// ⚠️ <b><c>PrototypeProximity</c> au dernier rang n'est pas une comparaison entre moteurs.</b> Il
+  /// n'est produit que par A2, les cinq autres que par le lexique, et un seul moteur est actif par
+  /// déploiement : aucun rapport ne les met jamais côte à côte.
+  /// </para>
   /// </summary>
   [Fact]
   public void OrdersTheDegreesByHowDirectlyTheirRuleSpeaks()
   {
     RuleStrength.List.OrderBy(strength => strength.Value).Select(strength => strength.Name).ShouldBe(
-      ["ExactName", "CheckedValueForm", "Morphological", "ValueForm", "TypeHeuristic"]);
+      ["ExactName", "CheckedValueForm", "Morphological", "ValueForm", "TypeHeuristic", "PrototypeProximity"]);
   }
 
   /// <summary>
@@ -44,6 +49,7 @@ public class RuleStrengthTests
   [InlineData("Morphological")]
   [InlineData("ValueForm")]
   [InlineData("TypeHeuristic")]
+  [InlineData("PrototypeProximity")]
   public void ReadsBackFromItsNameRatherThanFromItsOrdinal(string name)
   {
     RuleStrength.FromName(name).Name.ShouldBe(name);
@@ -55,6 +61,7 @@ public class RuleStrengthTests
   [InlineData("Morphological", "rapprochement morphologique")]
   [InlineData("ValueForm", "forme des valeurs")]
   [InlineData("TypeHeuristic", "heuristique de type")]
+  [InlineData("PrototypeProximity", "proximité d'un prototype")]
   public void CarriesTheFrenchLabelOfEachDegree(string name, string frenchLabel)
   {
     RuleStrength.FromName(name).FrenchLabel.ShouldBe(frenchLabel);
@@ -69,6 +76,7 @@ public class RuleStrengthTests
   [InlineData("ExactName")]
   [InlineData("Morphological")]
   [InlineData("TypeHeuristic")]
+  [InlineData("PrototypeProximity")]
   public void CarriesNoThresholdOnTheDegreesThatReadNoValue(string name)
   {
     RuleStrength.FromName(name).Threshold.ShouldBeNull();
@@ -95,7 +103,18 @@ public class RuleStrengthTests
   public void NamesTheRuleThatProducedEachDegree()
   {
     RuleStrength.List.ShouldAllBe(strength => strength.Rule.Length > 0);
-    RuleStrength.List.Select(strength => strength.Rule).Distinct().Count().ShouldBe(5);
+    RuleStrength.List.Select(strength => strength.Rule).Distinct().Count().ShouldBe(6);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le degré d'A2 nomme le mécanisme, jamais le score qui l'a décidé.</b> Toute ligne signalée
+  /// par A2 le porte, qu'elle soit juste au-dessus du seuil ou très au-dessus : un score non calibré
+  /// décliné en paliers serait le score à la ligne que ce type existe pour empêcher.
+  /// </summary>
+  [Fact]
+  public void NamesTheProximityToAPrototypeAsTheRuleOfA2()
+  {
+    RuleStrength.PrototypeProximity.Rule.ShouldBe("le nom de la table et de la colonne est proche d'un prototype");
   }
 
   /// <summary>

@@ -15,6 +15,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Le jeu figé du contrôle d'équivalence d'A2 : ce n'est pas une fixture de test mais la matière
+         du double d'Ollama, qui la sert à la place d'un encodeur. Produit par a2_equivalence.py. -->
+    <EmbeddedResource Include="Ollama\a2-equivalence.json" LogicalName="a2-equivalence.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\MicroserviceRgpd.Core\MicroserviceRgpd.Core.csproj" />
   </ItemGroup>
 

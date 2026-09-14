@@ -53,12 +53,13 @@ public static class InfrastructureServiceExtensions
 
     services.AddQualificationEngines(config);
 
-    // Le moteur de détection, lui, ne se configure pas : ADR-0004 l'a mis en C# ici même, sans
-    // sidecar, sans adresse et sans échéance. Il démarre avec le service.
-    services.AddScreeningEngine();
+    // Le moteur de détection : le lexique par défaut, démarré avec le service ; A2 si le drapeau
+    // Screening:Embeddings:Enabled l'allume, et Ollama entre alors dans la pile. Un seul des deux,
+    // choisi ici une fois pour toutes (ADR-0025).
+    services.AddScreeningEngine(config);
 
     // Le port par lequel le service ira lire une base tierce, et le seul dialecte dont il a le
-    // pilote aujourd'hui. Il ne se configure pas davantage : la chaîne de connexion arrive par
+    // pilote aujourd'hui. Il ne se configure pas : la chaîne de connexion arrive par
     // l'écran, à l'appel, et ne se pose nulle part.
     services.AddDatabaseScanner();
 
