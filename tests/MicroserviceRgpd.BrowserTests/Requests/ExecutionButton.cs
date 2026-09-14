@@ -6,8 +6,8 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
 /// <b>Le bouton « Exécuter la demande », dans un vrai navigateur</b> : actif sur une demande qui
-/// s'exécute, éteint sinon, où son infobulle dit le premier motif de blocage (ADR-0026). Son clic
-/// n'ouvre encore rien.
+/// s'exécute, éteint sinon, où son infobulle dit le premier motif de blocage (ADR-0026). Éteint, son
+/// clic n'ouvre rien ; actif, il ouvre la confirmation — voir <see cref="RequestExecution"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -95,19 +95,17 @@ public class ExecutionButton(BrowserHarness harness) : IAsyncLifetime
   }
 
   /// <summary>
-  /// <b>Le clic n'ouvre rien</b>, que le bouton soit actif ou éteint : aucune modale, et la page ne
-  /// quitte pas le tableau. ⚠️ Le clic sur le bouton éteint est forcé : Playwright tient un
-  /// <c>aria-disabled</c> pour inatteignable, là où le navigateur délivre le clic.
+  /// <b>Le clic sur le bouton éteint n'ouvre rien</b> : aucune modale, aucun appel, et la page ne
+  /// quitte pas le tableau. ⚠️ Le clic est forcé : Playwright tient un <c>aria-disabled</c> pour
+  /// inatteignable, là où le navigateur délivre le clic.
   /// </summary>
-  [Theory]
-  [InlineData(true)]
-  [InlineData(false)]
-  public async Task OpensNothingOnClick(bool executable)
+  [Fact]
+  public async Task OpensNothingOnClickWhenDimmed()
   {
     await harness.ConfigureEndpointAsync(DataSubjectRight.Access);
     await using var context = await harness.NewContextAsync();
     var page = await context.NewPageAsync();
-    var row = await RowOfARequestAsync(page, identityVerified: executable);
+    var row = await RowOfARequestAsync(page, identityVerified: false);
 
     var requested = 0;
     page.Request += (_, request) =>
@@ -118,7 +116,7 @@ public class ExecutionButton(BrowserHarness harness) : IAsyncLifetime
       }
     };
 
-    await ExecutionOf(row).ClickAsync(new() { Force = !executable });
+    await ExecutionOf(row).ClickAsync(new() { Force = true });
 
     await Expect(page.Locator("dialog[open]")).ToHaveCountAsync(0);
     await Expect(page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex("/demandes$"));

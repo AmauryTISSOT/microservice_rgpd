@@ -25,6 +25,8 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
 
   internal const string Execute = "/demandes?handler=Execute";
 
+  internal const string Execution = "/demandes?handler=Execution";
+
   /// <summary>
   /// <b>Les dix informations d'une demande, dans l'ordre où la ligne les rend</b>, chacune sous le
   /// nom que sa cellule porte en <c>data-field</c> — la propriété du view model de la ligne. La
@@ -309,6 +311,16 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
       new("id", id),
     ]));
   }
+
+  /// <summary>Demande le récapitulatif de l'exécution de la demande <paramref name="id"/>.</summary>
+  internal Task<HttpResponseMessage> ExecutionOfAsync(Guid id) => ExecutionOfAsync(id.ToString());
+
+  /// <summary>
+  /// Demande le récapitulatif de l'exécution sous cet identifiant brut. ⚠️ <b>Aucun jeton
+  /// anti-rejeu</b> : c'est un GET, il ne change rien.
+  /// </summary>
+  internal async Task<HttpResponseMessage> ExecutionOfAsync(string id) =>
+    await _client.GetAsync($"{Execution}&id={Uri.EscapeDataString(id)}");
 
   /// <summary>Demande l'exécution de la demande <paramref name="id"/> <b>sans</b> jeton anti-rejeu.</summary>
   internal async Task<HttpResponseMessage> ExecuteWithoutTokenAsync(Guid id)

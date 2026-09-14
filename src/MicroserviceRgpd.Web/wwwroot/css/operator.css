@@ -1568,20 +1568,23 @@ button.modal-close {
 }
 
 /*
-  LE BOUTON DE LA QUALIFICATION PORTE SON ICÔNE DE CHARGEMENT DEVANT SON LIBELLÉ, et seulement
-  pendant l'attente : ailleurs, elle ne prend aucune place.
+  LE BOUTON DE LA QUALIFICATION ET « EXÉCUTER » PORTENT LEUR ICÔNE DE CHARGEMENT DEVANT LEUR LIBELLÉ,
+  et seulement pendant l'attente : ailleurs, elle ne prend aucune place.
 */
-button.proposal {
+button.proposal,
+button.execution {
   align-items: center;
   display: inline-flex;
   gap: var(--space-xs);
 }
 
-button.proposal .spinner {
+button.proposal .spinner,
+button.execution .spinner {
   display: none;
 }
 
-button.proposal[aria-busy="true"] .spinner {
+button.proposal[aria-busy="true"] .spinner,
+button.execution[aria-busy="true"] .spinner {
   display: block;
 }
 
@@ -1590,7 +1593,8 @@ button.proposal[aria-busy="true"] .spinner {
   `no-preference`. Sous `reduce`, l'icône est là, immobile — l'attente se lit toujours.
 */
 @media (prefers-reduced-motion: no-preference) {
-  button.proposal .spinner {
+  button.proposal .spinner,
+  button.execution .spinner {
     animation: proposal-spin 900ms linear infinite;
   }
 }

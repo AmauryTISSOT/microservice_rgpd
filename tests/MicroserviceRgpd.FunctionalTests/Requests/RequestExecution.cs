@@ -384,6 +384,134 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : les assertions suivantes seraient vides.");
     published.ShouldNotContain("handler=Execute", Case.Insensitive, "Le document Swagger publie l'exécution d'une demande.");
     published.ShouldNotContain("ExecuteDataSubjectRequest", Case.Insensitive, "Le document Swagger publie l'exécution d'une demande.");
+    published.ShouldNotContain("handler=Execution", Case.Insensitive, "Le document Swagger publie le récapitulatif d'une exécution.");
+    published.ShouldNotContain("ExecutionSummary", Case.Insensitive, "Le document Swagger publie le récapitulatif d'une exécution.");
+  }
+
+  /// <summary>
+  /// <b>Le récapitulatif dit ce que le système hôte recevra et à quelle adresse</b> — le droit avec son
+  /// article, le prénom, le nom, l'email et l'adresse appelée, query string comprise —, relu sur le
+  /// serveur, en JSON. Une demande exécutable n'a pas de motif de blocage, et le système hôte n'est pas
+  /// appelé.
+  /// </summary>
+  [Fact]
+  public async Task AnswersTheSummaryOfWhatTheHostSystemWillReceiveAndWhere()
+  {
+    var address = _host.AddressOf("/rights/erasure?tenant=brocanto");
+    await ConfigureAsync(DataSubjectRight.Erasure, address);
+    var email = $"{Guid.NewGuid():N}@example.org";
+
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string>
+    {
+      ["email"] = email,
+      ["lastName"] = "Martin",
+      ["firstName"] = "Jeanne",
+      ["identityVerified"] = "true",
+      ["right"] = nameof(DataSubjectRight.Erasure),
+    });
+
+    var summary = await SummaryOfAsync(id);
+
+    summary.Keys.ShouldBe(["right", "firstName", "lastName", "email", "endpoint", "block"], ignoreOrder: true);
+    summary["right"].GetString().ShouldBe("Droit à l'effacement (art. 17)");
+    summary["firstName"].GetString().ShouldBe("Jeanne");
+    summary["lastName"].GetString().ShouldBe("Martin");
+    summary["email"].GetString().ShouldBe(email);
+    summary["endpoint"].GetString().ShouldBe(address);
+    summary["block"].ValueKind.ShouldBe(JsonValueKind.Null, "Une demande exécutable porte un motif de blocage.");
+    _host.Received.ShouldBeEmpty("Lire le récapitulatif a appelé le système hôte.");
+  }
+
+  /// <summary>
+  /// <b>Une valeur absente se dit « — »</b>, écrit par le serveur : un prénom, un nom, ou l'adresse
+  /// d'un droit « non configuré ».
+  /// </summary>
+  [Fact]
+  public async Task AnswersADashForEveryMissingValue()
+  {
+    var (id, _) = await AnExecutableRequestAsync();
+
+    var summary = await SummaryOfAsync(id);
+
+    summary["firstName"].GetString().ShouldBe("—");
+    summary["lastName"].GetString().ShouldBe("—");
+    summary["endpoint"].GetString().ShouldBe("—");
+  }
+
+  /// <summary>
+  /// <b>Une demande devenue non exécutable le dit dès le récapitulatif</b>, avec le premier motif de
+  /// blocage, relu à l'instant sur la demande et le Paramétrage.
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(ExecutionBlock.Closed))]
+  [InlineData(nameof(ExecutionBlock.NoEndpoint))]
+  public async Task AnswersTheBlockOfARequestThatNoLongerExecutes(string blockName)
+  {
+    var block = ExecutionBlock.FromName(blockName);
+
+    if (block != ExecutionBlock.NoEndpoint)
+    {
+      await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    }
+
+    var (id, _) = await AnExecutableRequestAsync();
+
+    if (block == ExecutionBlock.Closed)
+    {
+      await _surface.SetStatusAsync(id, nameof(RequestStatus.Completed));
+    }
+
+    (await SummaryOfAsync(id))["block"].GetString().ShouldBe(block.FrenchLabelFor(DataSubjectRight.Access));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Rien n'est gardé</b> : le récapitulatif se relit à chaque ouverture de la modale, et un cache
+  /// de navigateur rendrait une adresse ou des données périmées.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheSummaryOutOfEveryCache()
+  {
+    var (id, _) = await AnExecutableRequestAsync();
+
+    var response = await _surface.ExecutionOfAsync(id);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+    response.Headers.CacheControl
+      .ShouldNotBeNull("La réponse ne dit rien de sa mise en cache.")
+      .NoStore.ShouldBeTrue("Le récapitulatif d'une exécution est mis en cache.");
+  }
+
+  /// <summary><b>Le récapitulatif d'une demande disparue rend 404.</b></summary>
+  [Fact]
+  public async Task AnswersNotFoundForTheSummaryOfARequestThatDoesNotExist()
+  {
+    var (id, _) = await AnExecutableRequestAsync();
+    (await _surface.DeleteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+    (await _surface.ExecutionOfAsync(id)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+  }
+
+  /// <summary><b>Le récapitulatif sous un identifiant qui n'en est pas un rend 400</b>, et non 404.</summary>
+  [Theory]
+  [InlineData("")]
+  [InlineData("pas-un-guid")]
+  [InlineData("00000000-0000-0000-0000-000000000000")]
+  public async Task RefusesTheSummaryOfAnIdThatIsNotOne(string id)
+  {
+    (await _surface.ExecutionOfAsync(id)).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+  }
+
+  /// <summary>Le récapitulatif de la demande, champ par champ, la réponse ayant d'abord été reconnue 200 JSON.</summary>
+  private async Task<IReadOnlyDictionary<string, JsonElement>> SummaryOfAsync(Guid id)
+  {
+    var response = await _surface.ExecutionOfAsync(id);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+    response.Content.Headers.ContentType?.MediaType.ShouldBe("application/json");
+
+    using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+    return body.RootElement.EnumerateObject().ToDictionary(field => field.Name, field => field.Value.Clone());
   }
 
   /// <summary>Une demande En cours, à l'identité vérifiée, avec un email, qui invoque le droit d'accès.</summary>

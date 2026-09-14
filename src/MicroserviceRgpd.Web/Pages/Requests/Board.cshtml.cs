@@ -3,6 +3,7 @@ using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.DeleteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExecution;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestValues;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
@@ -103,6 +104,42 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
     Response.Headers.CacheControl = "no-store";
 
     return new JsonResult(RequestForm.Of(read.Value));
+  }
+
+  /// <summary>
+  /// <b>Rend le récapitulatif de l'exécution d'une demande</b> en JSON — le droit avec son article, le
+  /// prénom, le nom, l'email, l'adresse appelée et le motif de blocage — et répond 200, ou 404 quand
+  /// la demande n'existe plus, ou 400 quand l'identifiant n'en est pas un.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Relu à chaque ouverture de la modale, jamais gardé</b> : l'<c>Operator</c> confirme l'adresse
+  /// et les données de l'instant, pas celles du chargement de la page (ADR-0026).
+  /// </para>
+  /// <para>
+  /// Lire n'est pas exécuter : rien ne part au système hôte. Comme les autres handlers de la page, ce
+  /// n'est pas une API — rien dans Swagger.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnGetExecutionAsync(string? id, CancellationToken cancellationToken)
+  {
+    if (ReadId(id) is not { } dataSubjectRequest)
+    {
+      return BadRequest();
+    }
+
+    var read = await mediator.Send(new ReadDataSubjectRequestExecutionQuery(dataSubjectRequest), cancellationToken);
+
+    if (read.Status is not ResultStatus.Ok)
+    {
+      return read.Status is ResultStatus.NotFound
+        ? NotFound()
+        : StatusCode(StatusCodes.Status500InternalServerError);
+    }
+
+    Response.Headers.CacheControl = "no-store";
+
+    return new JsonResult(ExecutionConfirmation.Of(read.Value));
   }
 
   /// <summary>

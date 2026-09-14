@@ -240,6 +240,6 @@ public sealed record RequestRow(
   /// Le libellé du droit en tête de cellule : « droit d'accès » devient « Droit d'accès ». Le
   /// libellé du noyau partagé se lit dans une phrase, et sans son article du RGPD.
   /// </summary>
-  private static string Capitalized(string label) =>
+  internal static string Capitalized(string label) =>
     string.Concat(char.ToUpper(label[0], French).ToString(), label[1..]);
 }

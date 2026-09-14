@@ -53,6 +53,8 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   /// <summary>Le titre de la confirmation de suppression, recopié à dessein.</summary>
   private const string DeletionTitle = "Supprimer la demande";
 
+  private const string ExecutionTitle = "Exécuter la demande";
+
   /// <summary>Le premier bloc de la fiche, à quoi elle se reconnaît, recopié à dessein.</summary>
   private const string FirstSheetBlock = "La personne";
 
@@ -151,9 +153,9 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Les quatre modales sont rendues par le serveur</b>, une fois chacune, dans le contenu de
-  /// l'écran : la création, la confirmation d'abandon, la confirmation de suppression, puis la
-  /// fiche. Ce sont des <c>dialog</c> natifs, <b>fermés au chargement</b> — l'<c>Operator</c> les
+  /// <b>Les cinq modales sont rendues par le serveur</b>, une fois chacune, dans le contenu de
+  /// l'écran : la création, la confirmation d'abandon, la confirmation de suppression, la fiche, puis
+  /// la confirmation d'exécution. Ce sont des <c>dialog</c> natifs, <b>fermés au chargement</b> — l'<c>Operator</c> les
   /// ouvre, la page ne les ouvre jamais pour lui —, dont le nom accessible est le titre.
   /// </summary>
   /// <remarks>
@@ -167,8 +169,8 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
     var dialogs = Dialogs.Matches(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
 
     dialogs.Select(NameOf).ShouldBe(
-      [DialogTitle, ConfirmationTitle, DeletionTitle, string.Empty],
-      "Le tableau doit porter la modale de création, les deux confirmations puis la fiche, une fois chacune.");
+      [DialogTitle, ConfirmationTitle, DeletionTitle, string.Empty, ExecutionTitle],
+      "Le tableau doit porter la modale de création, les deux confirmations, la fiche puis la confirmation d'exécution, une fois chacune.");
 
     dialogs.ShouldNotContain(
       dialog => Regex.IsMatch(dialog.Groups["attributes"].Value, @"\bopen\b"), "Une modale est ouverte au chargement.");
