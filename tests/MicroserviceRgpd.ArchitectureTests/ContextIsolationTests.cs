@@ -2,8 +2,8 @@ namespace MicroserviceRgpd.ArchitectureTests;
 
 /// <summary>
 /// <b>Rien ne traverse d'un contexte à l'autre, sauf ce qui est écrit ici.</b> La règle s'énonce par
-/// ce qu'elle <b>permet</b> — quelques traversées, toutes vers le noyau partagé — et tout le reste
-/// est interdit par construction : voir <c>docs/adr/0003</c>.
+/// ce qu'elle <b>permet</b> — quelques traversées, presque toutes vers le noyau partagé — et tout le
+/// reste est interdit par construction : voir <c>docs/adr/0003</c>.
 /// <para>
 /// L'énoncé à l'envers n'est pas une coquetterie. Une liste d'interdits ne protège que ce qu'on a
 /// pensé à y écrire : elle aurait laissé ouvertes en silence la traversée par laquelle l'instant du
@@ -43,13 +43,20 @@ namespace MicroserviceRgpd.ArchitectureTests;
 public class ContextIsolationTests
 {
   /// <summary>
-  /// Les <b>seules</b> traversées permises, et elles vont toutes vers le noyau partagé : la
+  /// Les <b>seules</b> traversées permises, et toutes sauf une vont vers le noyau partagé : la
   /// taxonomie des droits n'est le modèle d'aucun contexte — son auteur est le RGPD, articles 15
   /// à 21 — et les contextes qui parlent de droits s'y <i>conforment</i> sans la <i>posséder</i>.
   /// <c>Configuration</c> y est entré avec l'ADR-0016 : il associe à chacun des six droits
   /// l'adresse à laquelle le service l'exercera, et lit leur libellé et leur article sur le type.
   /// <c>Requests</c> y est entré avec la demande : le droit qu'elle invoque est l'un des six, choisi
   /// par l'<c>Operator</c> et lu sur le même type.
+  /// <para>
+  /// ⚠️ <b>Une seule traversée ne va pas vers le noyau partagé</b> : <c>Requests → Configuration</c>,
+  /// ouverte par l'ADR-0026. <c>Configuration</c> est fournisseur amont, <c>Requests</c> conformiste en
+  /// aval : pour dire si une demande s'exécute, puis pour l'exécuter, il lit le <c>Settings</c> et
+  /// l'<c>EndpointUrl</c> de son droit tels qu'ils sont publiés, sans les traduire. Le sens inverse
+  /// reste interdit : <c>Configuration</c> ignore qu'on le lit.
+  /// </para>
   /// <para>
   /// La liste est écrite en dur, comme celle de <see cref="SharedKernelTests"/> et pour le même
   /// motif : y ajouter une ligne doit demander un geste délibéré, et ce geste est de niveau ADR.
@@ -60,6 +67,7 @@ public class ContextIsolationTests
     (ContextInspector.Qualification, ContextInspector.SharedKernel),
     (ContextInspector.Configuration, ContextInspector.SharedKernel),
     (ContextInspector.Requests, ContextInspector.SharedKernel),
+    (ContextInspector.Requests, ContextInspector.Configuration),
   ];
 
   /// <summary>
@@ -106,13 +114,14 @@ public class ContextIsolationTests
   /// change de couleur.
   /// </summary>
   [Fact]
-  public void PermitsThreeCrossingsAndNoOthers()
+  public void PermitsFourCrossingsAndNoOthers()
   {
     Permitted.ShouldBe(
       [
         (ContextInspector.Qualification, ContextInspector.SharedKernel),
         (ContextInspector.Configuration, ContextInspector.SharedKernel),
         (ContextInspector.Requests, ContextInspector.SharedKernel),
+        (ContextInspector.Requests, ContextInspector.Configuration),
       ],
       "La liste blanche s'est élargie. Élargir une frontière est un geste de niveau ADR — " +
       "voir docs/adr/0003 — et non une ligne ajoutée en passant pour faire compiler.");
@@ -175,10 +184,15 @@ public class ContextIsolationTests
         "même le noyau partagé. Il ne rattache jamais une colonne à un DataSubjectRight : une " +
         "colonne « courriel » ne relève pas d'un droit plutôt qu'un autre, elle relève de tous.",
 
+      (ContextInspector.Configuration, ContextInspector.Requests) =>
+        "Configuration est fournisseur amont de Requests, qui s'y conforme : il ignore qu'on le lit. " +
+        "Un Paramétrage qui connaîtrait les demandes ne serait plus un droit, une adresse — voir " +
+        "docs/adr/0026.",
+
       (ContextInspector.Configuration, _) or (_, ContextInspector.Configuration) =>
         "Configuration ne connaît que le Paramétrage : un droit, une adresse. Il ne sait rien d'une " +
-        "demande, d'un verdict ni d'un relevé de colonnes, et aucun d'eux ne le lit encore — voir " +
-        "docs/adr/0016.",
+        "demande, d'un verdict ni d'un relevé de colonnes, et seul Requests le lit — voir " +
+        "docs/adr/0016 et docs/adr/0026.",
 
       _ =>
         "Separate Ways : rien ne traverse cette frontière. Il n'y a pas de couche anticorruption, " +

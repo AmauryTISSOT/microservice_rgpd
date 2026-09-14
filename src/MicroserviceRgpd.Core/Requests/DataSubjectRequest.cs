@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.SharedKernel;
 using Vogen;
 
@@ -185,6 +186,36 @@ public sealed class DataSubjectRequest : IAggregateRoot
     ModifiedAt = modifiedAt.ToUniversalTime();
 
     return Result.Success();
+  }
+
+  /// <summary>
+  /// <b>Dit si la demande s'exécute</b> face à l'adresse que le Paramétrage associe à son droit :
+  /// <c>null</c> quand elle est exécutable, sinon le <b>premier</b> <see cref="ExecutionBlock"/> —
+  /// demande close, identité non vérifiée, email manquant, aucune adresse (ADR-0026).
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>L'adresse est lue telle que <c>Configuration</c> la publie</b>, sans traduction :
+  /// <c>Requests</c> s'y conforme. Seule sa présence compte ici.
+  /// </remarks>
+  /// <param name="endpoint">L'adresse du droit invoqué, ou <c>null</c> s'il est « non configuré ».</param>
+  public ExecutionBlock? ExecutionBlockFacing(EndpointUrl? endpoint)
+  {
+    if (Status != RequestStatus.InProgress)
+    {
+      return ExecutionBlock.Closed;
+    }
+
+    if (!IdentityVerified)
+    {
+      return ExecutionBlock.IdentityNotVerified;
+    }
+
+    if (Email is null)
+    {
+      return ExecutionBlock.EmailMissing;
+    }
+
+    return endpoint is null ? ExecutionBlock.NoEndpoint : null;
   }
 
   /// <summary>

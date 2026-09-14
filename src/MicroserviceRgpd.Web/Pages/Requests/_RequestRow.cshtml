@@ -5,12 +5,18 @@
   chargement ; la création la rendra pour la demande qu'elle vient d'enregistrer, que le script
   insérera à sa place. Une seule vue partielle : deux gabarits de ligne finiraient par diverger.
 
-  LA DERNIÈRE CELLULE PORTE LES TROIS ACTIONS DE LA LIGNE, EN ICÔNES : la poubelle, le crayon,
-  l'œil. Chacune est nommée par son `aria-label` pour qui ne la voit pas, et montre son libellé dans
-  une infobulle au survol et au focus — un élément de la page, que le CSS montre, et non un `title`,
-  que chaque navigateur rend à sa façon et à son délai. L'infobulle est `aria-hidden` : le nom
-  accessible le dit déjà, un lecteur d'écran ne doit pas l'entendre deux fois. Seul le crayon d'une
-  demande close y dit autre chose que son nom : la raison de son extinction.
+  LA DERNIÈRE CELLULE PORTE LES QUATRE ACTIONS DE LA LIGNE, EN ICÔNES : la poubelle, le crayon,
+  l'œil, l'avion en papier. Chacune est nommée par son `aria-label` pour qui ne la voit pas, et
+  montre son libellé dans une infobulle au survol et au focus — un élément de la page, que le CSS
+  montre, et non un `title`, que chaque navigateur rend à sa façon et à son délai. L'infobulle est
+  `aria-hidden` : le nom accessible le dit déjà, un lecteur d'écran ne doit pas l'entendre deux
+  fois. Seuls le crayon d'une demande close et l'avion en papier d'une demande qui ne s'exécute pas
+  y disent autre chose que leur nom : la raison de leur extinction.
+
+  L'AVION EN PAPIER EXÉCUTE LA DEMANDE (ADR-0026). Il est offert quand la demande s'exécute — En
+  cours, identité vérifiée, avec un email, et un droit qui a une adresse dans le Paramétrage —,
+  sinon éteint comme le crayon, par `aria-disabled`, et son infobulle dit le premier motif de
+  blocage, rendu par le serveur. ⚠️ Son clic n'ouvre encore rien : le module ne le reconnaît pas.
 
   L'ŒIL OUVRE LA FICHE DE LA DEMANDE, la lecture à l'écran de ce que le service en tient : un simple
   bouton, hors de tout formulaire, que le module reconnaît à son `data-action`, comme la poubelle et
@@ -76,6 +82,7 @@
     ("Supprimer la demande", "Supprimer la demande", "M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5", "delete", false),
     ("Modifier la demande", Model.ModificationTooltip, "M10.5 2.5l3 3L5.5 13.5H2.5v-3zM9 4l3 3", "edit", !Model.ModificationAllowed),
     ("Voir la fiche de la demande", "Voir la fiche de la demande", "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8zM6 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "view", false),
+    (RequestRow.ExecutionOffered, Model.ExecutionTooltip, "M14.5 1.5L7 9M14.5 1.5l-4.5 13-3-5.5-5.5-3z", "execute", !Model.ExecutionAllowed),
   ];
 }
 <tr data-request-id="@Model.Id" data-deletion-confirmation="@Model.DeletionConfirmation"

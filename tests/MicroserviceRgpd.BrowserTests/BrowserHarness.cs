@@ -1,6 +1,9 @@
 ﻿using Mediator;
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
@@ -212,6 +215,33 @@ public sealed class BrowserHarness : IAsyncLifetime
 
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
       .ExecuteSqlAsync($"DELETE FROM data_subject_requests");
+  }
+
+  /// <summary>
+  /// Pose une adresse au droit <paramref name="right"/> <b>par le use case du Paramétrage</b> — pour
+  /// qui doit voir une demande exécutable.
+  /// </summary>
+  public async Task ConfigureEndpointAsync(DataSubjectRight right, string endpoint = "https://brocanto.example.fr/rgpd")
+  {
+    using var scope = Service.Services.CreateScope();
+
+    (await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new SetRightEndpointCommand(right, EndpointUrl.From(endpoint))))
+      .IsSuccess.ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// Retire la ligne du Paramétrage : le service revient à son état d'installation, chaque droit
+  /// « non configuré ».
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Le Paramétrage est un singleton partagé par toute la collection : qui en pose une adresse la
+  /// retire en sortant.
+  /// </remarks>
+  public async Task ForgetEveryEndpointAsync()
+  {
+    using var scope = Service.Services.CreateScope();
+
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Set<Settings>().ExecuteDeleteAsync();
   }
 
   public async Task DisposeAsync()

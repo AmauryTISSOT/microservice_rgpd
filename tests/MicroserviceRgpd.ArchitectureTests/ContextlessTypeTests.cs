@@ -40,7 +40,7 @@ public class ContextlessTypeTests
   /// <summary>
   /// Les <b>seules</b> dérogations, et chacune est bornée aux contextes qu'elle touche aujourd'hui.
   /// <para>
-  /// La liste est écrite en dur, comme celle de <see cref="ContextIsolationTests.PermitsThreeCrossingsAndNoOthers"/>
+  /// La liste est écrite en dur, comme celle de <see cref="ContextIsolationTests.PermitsFourCrossingsAndNoOthers"/>
   /// et pour le même motif : y ajouter une ligne doit demander un geste délibéré, et ce geste est de
   /// niveau ADR.
   /// </para>

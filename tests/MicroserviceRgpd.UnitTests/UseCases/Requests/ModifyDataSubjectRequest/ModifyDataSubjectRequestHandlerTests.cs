@@ -1,5 +1,7 @@
 using Ardalis.Result;
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
@@ -20,7 +22,31 @@ public class ModifyDataSubjectRequestHandlerTests
 
   private readonly IRepository<DataSubjectRequest> _requests = Substitute.For<IRepository<DataSubjectRequest>>();
 
+  private readonly IReadRepository<Settings> _settings = Substitute.For<IReadRepository<Settings>>();
+
   private readonly AClockStuckAt _clock = new(Now);
+
+  public ModifyDataSubjectRequestHandlerTests()
+  {
+    _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([]);
+  }
+
+  /// <summary>
+  /// <b>La demande corrigée dit si elle s'exécute</b>, face au Paramétrage : attester l'identité
+  /// d'une demande dont le droit a une adresse rallume l'exécution sur la ligne rendue.
+  /// </summary>
+  [Fact]
+  public async Task RendersTheCorrectedRequestWithItsExecutionBlockFacingTheSettings()
+  {
+    var settings = Settings.Unconfigured();
+    settings.SetEndpoint(DataSubjectRight.Access, EndpointUrl.From("https://brocanto.example.fr/rgpd/acces"));
+    _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([settings]);
+
+    var request = ARequestInProgress();
+
+    (await HandleAsync(request, AValidEntry())).Value.ExecutionBlock.ShouldBe(ExecutionBlock.IdentityNotVerified);
+    (await HandleAsync(request, AValidEntry() with { IdentityVerified = true })).Value.ExecutionBlock.ShouldBeNull();
+  }
 
   private static DataSubjectRequestEntry AValidEntry() => new(
     Origin: Origin.Email,
@@ -169,5 +195,5 @@ public class ModifyDataSubjectRequestHandlerTests
       CancellationToken.None);
   }
 
-  private ModifyDataSubjectRequestHandler Handler() => new(_requests, _clock);
+  private ModifyDataSubjectRequestHandler Handler() => new(_requests, _settings, _clock);
 }
