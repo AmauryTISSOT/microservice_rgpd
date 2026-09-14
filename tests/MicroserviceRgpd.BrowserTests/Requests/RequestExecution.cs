@@ -3,6 +3,7 @@ using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.TestDoubles.HostSystem;
+using MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExecution;
 using MicroserviceRgpd.Web.Pages.Requests;
 
@@ -196,6 +197,104 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
       .ToBeVisibleAsync();
     (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("L'exécution a rechargé la page.");
     _host.Received.ShouldHaveSingleItem();
+  }
+
+  /// <summary>
+  /// <b>Sur un échec, la confirmation reste ouverte et le bandeau dit pourquoi</b> — le <c>detail</c> du
+  /// 502 —, la demande reste En cours, « Exécuter » n'est plus occupé. ⚠️ <b>Une nouvelle tentative réussie
+  /// suit le chemin du succès</b> : la confirmation se ferme, le toast dit « Demande exécutée », la ligne passe à
+  /// Terminée.
+  /// </summary>
+  [Fact]
+  public async Task SaysTheFailureAndSucceedsOnANewAttempt()
+  {
+    await harness.ConfigureEndpointAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    _host.Answer(503);
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var row = await RowOfAnExecutableRequestAsync(page, UniqueEmail());
+    await page.EvaluateAsync("() => { window.untouched = true; }");
+    await ExecutionOf(row).ClickAsync();
+
+    var confirm = Button(page, ExecutionConfirmation.Confirm);
+    await confirm.ClickAsync();
+
+    await Expect(Confirmation(page).GetByRole(AriaRole.Alert)).ToHaveTextAsync(ExecutionFailure.NonSuccessResponse(503));
+    await Expect(Confirmation(page)).ToBeVisibleAsync();
+    await Expect(confirm).Not.ToHaveAttributeAsync("aria-busy", "true");
+    await Expect(confirm.Locator(".spinner")).ToBeHiddenAsync();
+    await Expect(confirm).ToBeEnabledAsync();
+    await Expect(Status(row)).ToHaveTextAsync(RequestStatus.InProgress.FrenchLabel);
+
+    _host.Answer(200);
+    await confirm.ClickAsync();
+
+    await Expect(Confirmation(page)).ToBeHiddenAsync();
+    await Expect(page.GetByRole(AriaRole.Status).And(page.GetByText(ExecutionConfirmation.Executed, new() { Exact = true })))
+      .ToBeVisibleAsync();
+    await Expect(Status(row)).ToHaveTextAsync(RequestStatus.Completed.FrenchLabel);
+    (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("L'exécution a rechargé la page.");
+    _host.Received.Count.ShouldBe(2, "L'échec puis la nouvelle tentative n'ont pas appelé le système hôte deux fois.");
+  }
+
+  /// <summary>
+  /// <b>Après un échec, « Annuler », la croix et Échap ferment de nouveau la confirmation</b>, et la
+  /// demande reste En cours.
+  /// </summary>
+  [Theory]
+  [MemberData(nameof(ClosingModes))]
+  public async Task ClosesAgainAfterAFailure(string mode)
+  {
+    await harness.ConfigureEndpointAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    _host.Answer(503);
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var row = await RowOfAnExecutableRequestAsync(page, UniqueEmail());
+    await ExecutionOf(row).ClickAsync();
+    await Button(page, ExecutionConfirmation.Confirm).ClickAsync();
+    await Expect(Confirmation(page).GetByRole(AriaRole.Alert)).ToBeVisibleAsync();
+
+    await CloseByAsync(page, mode);
+
+    await Expect(Confirmation(page)).ToBeHiddenAsync();
+    await Expect(Status(row)).ToHaveTextAsync(RequestStatus.InProgress.FrenchLabel);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le serveur oppose un motif de blocage à ce que la confirmation offrait</b> : l'adresse retirée
+  /// entre l'ouverture et le clic, la confirmation reste ouverte, le bandeau donne le motif, « Exécuter »
+  /// s'éteint, et la ligne se met à jour sans rechargement — son exécution éteinte, la demande En cours.
+  /// </summary>
+  [Fact]
+  public async Task SaysTheBlockAtConfirmationAndUpdatesTheRowWhenTheSettingsChanged()
+  {
+    await harness.ConfigureEndpointAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var row = await RowOfAnExecutableRequestAsync(page, UniqueEmail());
+    await page.EvaluateAsync("() => { window.untouched = true; }");
+    await ExecutionOf(row).ClickAsync();
+
+    var confirm = Button(page, ExecutionConfirmation.Confirm);
+    await Expect(confirm).ToBeEnabledAsync();
+    await harness.ForgetEveryEndpointAsync();
+
+    await confirm.ClickAsync();
+
+    var block = ExecutionBlock.NoEndpoint.FrenchLabelFor(DataSubjectRight.Access);
+
+    await Expect(Confirmation(page).GetByRole(AriaRole.Alert)).ToHaveTextAsync(block);
+    await Expect(Confirmation(page)).ToBeVisibleAsync();
+    await Expect(confirm).Not.ToHaveAttributeAsync("aria-busy", "true");
+    await Expect(confirm).ToBeDisabledAsync();
+    await Expect(ExecutionOf(row)).ToHaveAttributeAsync("aria-disabled", "true");
+    await Expect(Status(row)).ToHaveTextAsync(RequestStatus.InProgress.FrenchLabel);
+    (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("Le blocage a rechargé la page.");
+    _host.Received.ShouldBeEmpty("Le blocage a appelé le système hôte.");
+
+    await CloseByAsync(page, "Annuler");
+
+    await Expect(Confirmation(page)).ToBeHiddenAsync();
   }
 
   private static Task CloseByAsync(IPage page, string mode)

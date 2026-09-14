@@ -552,6 +552,11 @@
   ⚠️ UNE DEMANDE DEVENUE NON EXÉCUTABLE DEPUIS LE CHARGEMENT LE DIT DÈS L'OUVERTURE : le bandeau porte
   le motif que le serveur a rendu, et « Exécuter » est éteint. Le bandeau est vide et caché sinon.
 
+  ⚠️ LE MÊME BANDEAU DIT CE QUI ARRÊTE LA CONFIRMATION — un motif de blocage (409, 422) ou un échec
+  (502) —, avec le `detail` que le serveur a rendu ; la modale reste ouverte. « Exécuter » reste offert
+  pour une nouvelle tentative quand le serveur la dit utile (`retryable`), et s'éteint sinon. Seule
+  une réponse illisible prend sa phrase ici (`data-unanswered`).
+
   ⚠️ « ANNULER » A LE FOCUS PAR DÉFAUT (`autofocus`, que `showModal` honore) : une touche Entrée
   réflexe n'exécute rien. « Exécuter » vient en dernier.
 
@@ -590,7 +595,8 @@
 
   <p id="execute-request-warning">@ExecutionConfirmation.Warning</p>
 
-  <p class="modal-failure" role="alert" data-blocked hidden></p>
+  <p class="modal-failure" role="alert" data-blocked hidden
+     data-unanswered="@ExecutionConfirmation.Unanswered"></p>
 
   <form id="execute-request-form" method="post" asp-page-handler="Execute">
     <input type="hidden" name="id" />
