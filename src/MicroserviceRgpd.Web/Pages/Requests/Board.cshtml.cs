@@ -258,7 +258,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
         executed.Value),
       ResultStatus.Conflict or ResultStatus.Invalid => await ExecutionProblemAsync(
         executed.Status is ResultStatus.Conflict ? StatusCodes.Status409Conflict : StatusCodes.Status422UnprocessableEntity,
-        executed.Value.Refusal?.FrenchLabelFor(executed.Value.Request.Right),
+        executed.Value.Block?.FrenchLabelFor(executed.Value.Request.Right),
         executed.Value),
       ResultStatus.NotFound => NotFound(),
       _ => StatusCode(StatusCodes.Status500InternalServerError),

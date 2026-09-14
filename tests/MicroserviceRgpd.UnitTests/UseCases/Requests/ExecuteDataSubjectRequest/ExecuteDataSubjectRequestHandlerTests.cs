@@ -76,7 +76,7 @@ public class ExecuteDataSubjectRequestHandlerTests
     result.Value.Request.Id.ShouldBe(request.Id);
     result.Value.Request.Status.ShouldBe(RequestStatus.Completed);
     result.Value.Request.ExecutionBlock.ShouldBe(ExecutionBlock.Closed);
-    result.Value.Refusal.ShouldBeNull();
+    result.Value.Block.ShouldBeNull();
     result.Value.Call.ShouldNotBeNull().Outcome.ShouldBe(ExecutionOutcome.Succeeded);
   }
 
@@ -132,7 +132,7 @@ public class ExecuteDataSubjectRequestHandlerTests
 
     result.Status.ShouldBe(ResultStatus.Conflict);
     result.Errors.ShouldBe([ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access)]);
-    result.Value.Refusal.ShouldBe(ExecutionBlock.Closed);
+    result.Value.Block.ShouldBe(ExecutionBlock.Closed);
     result.Value.Request.Id.ShouldBe(request.Id);
     result.Value.Call.ShouldBeNull();
     await NothingWasCalledNorWrittenAsync();
@@ -163,7 +163,7 @@ public class ExecuteDataSubjectRequestHandlerTests
 
     result.Status.ShouldBe(ResultStatus.Invalid);
     result.ValidationErrors.Select(error => error.ErrorMessage).ShouldBe([block.FrenchLabelFor(DataSubjectRight.Access)]);
-    result.Value.Refusal.ShouldBe(block);
+    result.Value.Block.ShouldBe(block);
     result.Value.Request.Id.ShouldBe(request.Id);
     request.Status.ShouldBe(RequestStatus.InProgress);
     await NothingWasCalledNorWrittenAsync();

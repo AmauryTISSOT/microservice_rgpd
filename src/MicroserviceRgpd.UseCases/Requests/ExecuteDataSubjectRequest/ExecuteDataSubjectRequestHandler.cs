@@ -60,7 +60,7 @@ public sealed class ExecuteDataSubjectRequestHandler(
 
     if (request.ExecutionBlockFacing(endpoint) is { } block)
     {
-      return new RefusedExecution(
+      return new BlockedExecution(
         new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), block, null),
         block.FrenchLabelFor(request.Right));
     }
@@ -88,10 +88,10 @@ public sealed class ExecuteDataSubjectRequestHandler(
   /// valeur</b>, et que l'écran a besoin de la ligne à jour avec le refus. Seul le constructeur
   /// protégé de <c>Result&lt;T&gt;</c> pose les deux ensemble.
   /// </remarks>
-  private sealed class RefusedExecution : Result<DataSubjectRequestExecution>
+  private sealed class BlockedExecution : Result<DataSubjectRequestExecution>
   {
-    public RefusedExecution(DataSubjectRequestExecution execution, string reason)
-      : base(execution.Refusal == ExecutionBlock.Closed ? ResultStatus.Conflict : ResultStatus.Invalid)
+    public BlockedExecution(DataSubjectRequestExecution execution, string reason)
+      : base(execution.Block == ExecutionBlock.Closed ? ResultStatus.Conflict : ResultStatus.Invalid)
     {
       Value = execution;
 
