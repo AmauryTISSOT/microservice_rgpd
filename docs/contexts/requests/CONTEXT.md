@@ -2,8 +2,9 @@
 
 Ce contexte enregistre une **demande RGPD dès sa réception** : ce qui est arrivé, par quel canal,
 quand, de qui, et quel droit la personne invoque. L'`Operator` peut ensuite **modifier une demande**
-pour corriger une erreur de saisie. Une demande porte une date limite de réponse et un statut, mais
-l'instruction n'y existe pas encore : aucun `Gesture` ne fait changer le statut.
+pour corriger une erreur de saisie, puis **exécuter la demande** : le système hôte applique le droit
+invoqué, et la demande passe à Terminée. Une demande porte une date limite de réponse et un statut ;
+l'exécution est le seul `Gesture` qui fait changer le statut.
 
 Les identifiants du code sont en anglais (`DataSubjectRequest`, `Origin`) ; les textes destinés à
 l'humain sont en français (« demande », « Courrier »).
@@ -79,6 +80,15 @@ Où en est la demande : **En cours**, **Terminée** ou **Annulée**. Une demande
 un état tenu par la demande, et non la trace d'un `Gesture`.
 _Avoid_ : état, étape, phase, avancement
 
+**Terminée** :
+Le statut d'une demande dont le droit invoqué a été appliqué par le système hôte. Une demande
+Terminée est close : elle ne se modifie plus et ne s'exécute plus.
+_Avoid_ : exécutée, traitée, répondue, fermée
+
+**Demande close** :
+Une demande Terminée ou Annulée.
+_Avoid_ : archivée, clôturée
+
 **Annulée** :
 Le statut d'une demande que le responsable n'instruira pas, et qu'il conserve. Ne se confond pas
 avec la suppression : une demande annulée reste dans le service.
@@ -92,15 +102,16 @@ deux suffit ; un nom seul ou un prénom seul, sans email, ne suffit pas.
 _Avoid_ : identité (réservé à `Identité vérifiée`), coordonnées, contact
 
 **Identité vérifiée** :
-L'attestation, par l'`Operator`, qu'il a vérifié l'identité de la personne. Déclarative et
-facultative : rien n'en dépend.
+L'attestation, par l'`Operator`, qu'il a vérifié l'identité de la personne. Déclarative, facultative
+à la réception, et exigée pour exécuter la demande.
 _Avoid_ : authentifié, identifié, KYC
 
 ### Qui agit
 
 **Operator** :
-L'humain qui enregistre la demande, et qui la corrige. Tant que le service n'authentifie personne,
-il n'a pas de nom : chaque demande est créée, et modifiée, par `operator`.
+L'humain qui enregistre la demande, qui la corrige et qui l'exécute. Tant que le service
+n'authentifie personne, il n'a pas de nom : chaque demande est créée, modifiée et exécutée par
+`operator`.
 _Avoid_ : utilisateur, agent, gestionnaire
 
 **Enregistrer une demande** :
@@ -131,3 +142,42 @@ _Avoid_ : annuler, effacer, archiver, clôturer
 ⚠️ **« Effacer » est pris par le droit à l'effacement** (art. 17), que la demande peut invoquer.
 Supprimer une demande qui invoque l'effacement n'exerce pas ce droit : cela retire la demande
 elle-même.
+
+⚠️ **« Sans trace » s'entend des données de la demande.** Le journal d'exécution survit à la
+suppression : ses lignes gardent l'identifiant de la demande, qui ne mène alors plus à personne.
+
+### L'exécution
+
+**Exécuter une demande** :
+Le `Gesture` par lequel l'`Operator` fait appliquer le droit invoqué par le système hôte, à l'adresse
+que le Paramétrage associe à ce droit. Il n'est offert que sur une demande En cours, dont l'identité
+est vérifiée, qui porte un email, et dont le droit a une adresse. Quand le système hôte confirme
+avoir appliqué le droit, la demande passe à Terminée ; sinon son statut ne change pas, et
+l'`Operator` peut recommencer. Ses traces sont les tentatives du journal d'exécution, pas une
+empreinte sur la demande.
+_Avoid_ : exercer (c'est la personne concernée qui exerce son droit), traiter (réservé au sens du
+RGPD), transmettre, envoyer, clôturer
+
+**Motif de blocage** :
+La raison pour laquelle une demande ne peut pas être exécutée, la première dans cet ordre : demande
+close, identité non vérifiée, email manquant, aucune adresse configurée pour le droit.
+_Avoid_ : erreur, refus, prérequis
+
+**Système hôte** :
+L'application du responsable qui applique réellement les droits sur les données de la personne. Le
+service lui demande d'appliquer un droit ; il ne voit jamais ces données lui-même.
+_Avoid_ : backend, application cliente, SI, système tiers
+
+**Tentative d'exécution** :
+Un appel au système hôte pour une demande, et son résultat : **Succès**, **Réponse non 2xx**,
+**Délai dépassé**, **Erreur réseau**, ou **Succès non enregistré** quand le système hôte a appliqué
+le droit mais que la demande n'a pas pu passer à Terminée. Datée, signée `operator`, elle ne porte
+aucune donnée personnelle. Une exécution refusée pour un motif de blocage n'appelle rien et n'est pas
+une tentative.
+_Avoid_ : essai, appel (seul), log
+
+**Journal d'exécution** :
+L'ensemble des tentatives d'exécution, une ligne par tentative, qui s'empilent sans jamais
+s'écraser. Il prouve qu'un droit a été demandé au système hôte, et survit à la suppression de la
+demande.
+_Avoid_ : historique, audit, trace d'audit (prise par `Qualification`), logs

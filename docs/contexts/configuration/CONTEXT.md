@@ -2,17 +2,17 @@
 
 Ce contexte ne connaît que **ce qui vaut pour toutes les demandes à la fois** : le réglage du
 service, sans date et sans demande. Il tient le `Settings` — à l'écran, le **Paramétrage** — qui
-associe à chacun des six droits RGPD l'adresse à laquelle le service l'exercera. **Un droit, une
-adresse.**
+associe à chacun des six droits RGPD l'adresse à laquelle le service le fera appliquer. **Un droit,
+une adresse.**
 
 Il **configure, il n'appelle pas.** Enregistrer une adresse est une écriture locale : aucune
-requête ne part, ni à la saisie, ni plus tard. Le déclenchement de l'appel est une décision à venir,
-et l'ADR-0016 la nomme comme telle.
+requête ne part à la saisie. C'est [Requests](../requests/CONTEXT.md) qui appelle, quand l'`Operator`
+exécute une demande.
 
 Il est un **consommateur du noyau partagé**, aux côtés de
 [Qualification](../qualification/CONTEXT.md) et de [Requests](../requests/CONTEXT.md) :
-`DataSubjectRight` est la seule chose qu'il partage. Il ne touche à rien d'autre, et rien d'autre ne
-le lit encore. [Screening](../screening/CONTEXT.md) ne communique avec lui en aucune façon. Voir
+`DataSubjectRight` est la seule chose qu'il partage. Il est **fournisseur amont** de `Requests`, qui
+lit l'adresse d'un droit pour exécuter une demande ; il ignore tout de cette lecture. [Screening](../screening/CONTEXT.md) ne communique avec lui en aucune façon. Voir
 [`CONTEXT-MAP.md`](../../../CONTEXT-MAP.md).
 
 Les identifiants du code sont en anglais (`Configuration`, `Settings`, `EndpointUrl`) ; les textes
@@ -37,7 +37,7 @@ comme une seule chose. `Manifest` nommait le modèle que celui-ci remplace — u
 systèmes — et le reprendre ferait croire que le modèle a survécu sous un autre grain.
 
 **EndpointUrl** :
-L'adresse à laquelle le service exercera un droit. Impossible à construire invalide : **absolue**,
+L'adresse à laquelle le service fera appliquer un droit. Impossible à construire invalide : **absolue**,
 en `http` ou `https`, au plus 2 048 caractères, sans **userinfo**. Une adresse relative n'a pas
 d'hôte ; une adresse qui porte `user:pw@` porterait un secret, que ce contexte ne détient pas. Le
 `http` est admis au même titre que le `https` : exiger le chiffrement relève du déploiement.

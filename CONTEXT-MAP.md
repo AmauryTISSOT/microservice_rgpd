@@ -17,9 +17,9 @@ quels : « la `Qualification` », « le `Settings` ».
   demande d'exercice de droits dès sa réception : par quel canal, quand, de qui, et quel droit la
   personne invoque — un droit qu'une qualification peut proposer, mais que seul l'`Operator`
   choisit. Son type est la `DataSubjectRequest` — à l'écran, une **demande**. L'`Operator`
-  peut ensuite **modifier une demande** pour corriger une erreur de saisie. Une demande porte une
-  date limite de réponse et un statut, mais l'instruction n'y existe pas : rien ne fait encore
-  changer le statut.
+  peut ensuite **modifier une demande** pour corriger une erreur de saisie, puis l'**exécuter** :
+  le système hôte applique le droit invoqué, à l'adresse du Paramétrage, et la demande passe à
+  Terminée. Chaque tentative laisse une ligne dans le **journal d'exécution**.
 - [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Détecte les colonnes qui
   portent vraisemblablement des données personnelles, dans le relevé des colonnes d'une base du
   client. Le relevé est collé par un `Operator`, ou produit par le service lui-même quand il
@@ -76,9 +76,15 @@ trace relève de la redevabilité de `Qualification`.
 **`Screening` : `Separate Ways` intégral.** C'est le seul contexte sans aucune intersection avec les
 autres : pas de noyau partagé, pas de fournisseur amont, pas même un identifiant opaque.
 
-**`Configuration` : `Separate Ways`.** Rien ne lit encore le Paramétrage : le service n'exerce
-aucun droit. Le jour où une demande sera exercée à l'adresse de son droit, une traversée
-`Requests → Configuration` s'ouvrira, et elle demandera son propre ADR.
+**`Requests → Configuration` : _Customer/Supplier_, `Requests` conformiste (ADR-0026).**
+`Configuration` est en amont. Pour exécuter une demande, `Requests` lit l'adresse du droit invoqué
+dans le `Settings`, telle que `Configuration` la publie, sans la traduire. `Configuration` ignore
+cette lecture. C'est la seule traversée entre deux contextes qui passe par un type, et elle est
+écrite dans la liste blanche.
+
+⚠️ **Le journal d'exécution survit à la suppression d'une demande** (ADR-0026) : « sans trace »
+s'entend aussi des données de la demande, et non de la preuve qu'un droit a été demandé au système
+hôte.
 
 **`Separate Ways` pour tout le reste.** `QualificationOpinion`, `LexiconOpinion`, `ReviewSignal`,
 `DeclaredConfidence` et `Mode dégradé` ne valent qu'à l'instant du verdict et ne sortent pas de
@@ -90,8 +96,8 @@ et l'écran la dit dans le vocabulaire de `Requests` (ADR-0024).
 **Deux gardes de compilation**, tous deux dans `tests/MicroserviceRgpd.ArchitectureTests/`, tous deux
 lus au niveau de l'IL :
 
-- Rien ne traverse d'un contexte à l'autre sauf trois lignes, toutes vers le noyau partagé :
-  `Qualification`, `Requests` et `Configuration`. En particulier, aucune dépendance entre `Requests`
+- Rien ne traverse d'un contexte à l'autre sauf quatre lignes : trois vers le noyau partagé —
+  `Qualification`, `Requests` et `Configuration` — et `Requests → Configuration` (ADR-0026). En particulier, aucune dépendance entre `Requests`
   et `Qualification`, dans un sens comme dans l'autre — l'absence de relation *dans le code* rendue
   vérifiable ; un test de signatures seules afficherait vert sur un gestionnaire qui appelle le
   moteur dans un corps de méthode, c'est-à-dire sur la fuite même que l'on craint. La relation à
@@ -138,8 +144,9 @@ Enregistrer une demande est un `Gesture` : sa trace est datée de l'instant où 
 distinct de la date de réception qu'il déclare — et signée `operator`, en attendant
 l'authentification. **Modifier une demande** en est un second : sa trace est l'empreinte
 `ModifiedAt` / `ModifiedBy`, qu'aucun écran n'affiche, et une modification qui ne change aucune
-valeur n'a pas eu lieu — elle ne laisse rien (ADR-0023). Un arbitrage de `Screening` est daté et ne
-se signe pas (ADR-0014).
+valeur n'a pas eu lieu — elle ne laisse rien (ADR-0023). **Exécuter une demande** en est un
+troisième, fidèle à la définition : chaque tentative laisse une ligne du journal d'exécution, datée,
+signée, qui s'empile (ADR-0026). Un arbitrage de `Screening` est daté et ne se signe pas (ADR-0014).
 `Configuration` n'emploie pas le mot : poser l'adresse d'un droit est un réglage, qui remplace l'état
 précédent sans laisser de trace datée. Le `Settings` est un état, et c'est ce qui le tient hors de
 la matière de preuve.
@@ -247,13 +254,14 @@ doit les couvrir.
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
-Vingt-cinq ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
+Vingt-six ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
 écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006 et l'ADR-0008 portent en
 fin de fichier une suite datée qui nomme leurs points morts jusqu'à l'ADR-0016 ; l'ADR-0017, qui
 vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui ;
 l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme les ADR-0021, 0023 et 0024, qui visent
-l'ADR-0017, et l'ADR-0025, qui vise l'ADR-0004. Une réserve suit la même règle : celle de l'ADR-0024
-sur l'ADR-0022 est écrite chez lui.
+l'ADR-0017, l'ADR-0025, qui vise l'ADR-0004, et l'ADR-0026, qui vise les ADR-0003, 0016, 0017 et
+0021. Une réserve suit la même règle : celles des ADR-0024 et 0026 sur l'ADR-0022 sont écrites chez
+eux.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -282,6 +290,7 @@ sur l'ADR-0022 est écrite chez lui.
 | [0023](./docs/adr/0023-modifier-une-demande-est-un-geste.md) | Modifier une demande est un `Gesture` : il laisse une empreinte (`ModifiedAt`, `ModifiedBy`) non affichée, qui s'écrase au lieu de s'empiler. Une modification sans changement n'a pas eu lieu ; une demande close est refusée en `Conflict` avant toute validation ; la date limite est recalculée par la règle de l'ADR-0021 ; le dernier enregistrement l'emporte, sans verrou optimiste. | 0017 : « il ne connaît à ce jour qu'un `Gesture` ». Honore l'ADR-0021, sans le supplanter : « l'US qui l'ouvrira devra recalculer la date limite ». |
 | [0024](./docs/adr/0024-la-modale-d-une-demande-propose-le-droit-par-la-qualification.md) | La modale d'une demande propose le droit par la qualification : `Qualification` en amont, en _Open Host_ à l'écran, appelée par HTTP ; `Core` et `UseCases` de `Requests` l'ignorent, et la liste blanche ne change pas. La qualification propose, l'`Operator` choisit ; la demande ne référence aucune qualification. | 0017 : « aucune relation n'est déclarée entre `Requests` et `Qualification` », et cette relation — bouton « Qualification du droit par IA » compris — parmi ce qu'il n'ouvrait pas. Réserve sur l'ADR-0022, sans le supplanter : le Message qualifié reste dans la trace d'audit de `Qualification` après la suppression de la demande. |
 | [0025](./docs/adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md) | La détection passe à A2, un modèle à plongements `bge-m3` servi par Ollama ; le lexique reste le moteur des déploiements sans Ollama. Deux moteurs derrière `IScreeningEngine`, un seul actif, choisi au démarrage par `Screening:Embeddings:Enabled`, sans repli à l'exécution. A2 ne lit que le nom de la table et de la colonne ; son score n'est jamais exposé. La taxonomie `PersonalDataCategory` est remplacée — les art. 9 hors santé et 10 n'ont plus de valeur —, et les `Screening` existants sont supprimés. Garde « pas de second sidecar ». | 0004 : « le montage retenu est **règles + lexique FR+EN** » (clause 1) et « le cas mixte (« règles plus un petit modèle de similarité ») est forclos » (clause 3). Garde « il n'y a pas de second sidecar Python ». |
+| [0026](./docs/adr/0026-executer-une-demande-requests-lit-le-parametrage-et-appelle-le-systeme-hote.md) | Exécuter une demande est un `Gesture` : `Requests` lit l'adresse du droit dans le Paramétrage (_Customer/Supplier_, conformiste) et fait un `POST` JSON synchrone au système hôte — cinq clés, tout 2xx vaut application, délai `HostSystem:TimeoutSeconds`, aucune relance, `requestId` clé d'idempotence. Une demande En cours, à l'identité vérifiée, avec un email et une adresse configurée, passe à Terminée. Chaque tentative laisse une ligne d'un journal d'exécution sans donnée personnelle, qui survit à la suppression. | 0016 : « le déclenchement de l'appel » parmi ce qu'il n'ouvrait pas. 0003 et 0017 : la liste blanche, qui gagne `Requests → Configuration`. 0021 : « terminer » parmi ce qu'il n'ouvrait pas. Réserve sur l'ADR-0022 : le journal d'exécution survit à la suppression. |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se
