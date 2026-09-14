@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Configuration;
@@ -202,6 +203,91 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   }
 
   /// <summary>
+  /// <b>Un système hôte qui répond autre chose qu'un 2xx rend 502</b> : le <c>ProblemDetails</c> dit le
+  /// code et que la demande reste En cours, porte la ligne inchangée, et le journal retient la
+  /// tentative avec son statut.
+  /// </summary>
+  [Theory]
+  [InlineData(400)]
+  [InlineData(404)]
+  [InlineData(500)]
+  [InlineData(503)]
+  public async Task AnswersBadGatewayAndLeavesTheRequestInProgressOnANon2xx(int statusCode)
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    _host.Answer(statusCode);
+    var (id, message) = await AnExecutableRequestAsync();
+
+    var response = await _surface.ExecuteAsync(id);
+
+    await ShouldBeAProblemAsync(
+      response, HttpStatusCode.BadGateway, id, $"Le système hôte a répondu {statusCode}. La demande reste En cours.");
+    _host.Received.ShouldHaveSingleItem("Le système hôte a été rappelé : une nouvelle tentative est partie.");
+    await ShouldStayInProgressWithOneAttemptAsync(id, message, "NonSuccessResponse", statusCode);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une redirection n'est pas suivie</b> : elle compte comme une réponse non 2xx, et l'hôte vers
+  /// lequel elle renvoie ne reçoit rien — les données ne partent pas vers une adresse que le
+  /// Paramétrage ne nomme pas.
+  /// </summary>
+  [Fact]
+  public async Task DoesNotFollowARedirectAndCountsItAsANon2xx()
+  {
+    await using var elsewhere = await HostSystemDouble.StartAsync();
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    _host.RedirectTo(elsewhere.AddressOf("/rights/access"));
+    var (id, message) = await AnExecutableRequestAsync();
+
+    var response = await _surface.ExecuteAsync(id);
+
+    await ShouldBeAProblemAsync(
+      response, HttpStatusCode.BadGateway, id, "Le système hôte a répondu 302. La demande reste En cours.");
+    elsewhere.Received.ShouldBeEmpty("La redirection a été suivie.");
+    _host.Received.ShouldHaveSingleItem();
+    await ShouldStayInProgressWithOneAttemptAsync(id, message, "NonSuccessResponse", 302);
+  }
+
+  /// <summary>
+  /// <b>Un système hôte qui ne répond pas dans le délai rend 502</b>, qui dit ce délai — réduit en test
+  /// par <c>HostSystem:TimeoutSeconds</c> —, et le journal retient un délai dépassé, sans statut.
+  /// </summary>
+  [Fact]
+  public async Task AnswersBadGatewayAndLeavesTheRequestInProgressWhenTheHostDoesNotAnswerInTime()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    _host.Delay(TimeSpan.FromSeconds(CustomWebApplicationFactory<Program>.HostSystemTimeoutSeconds + 3));
+    var (id, message) = await AnExecutableRequestAsync();
+
+    var response = await _surface.ExecuteAsync(id);
+
+    await ShouldBeAProblemAsync(
+      response,
+      HttpStatusCode.BadGateway,
+      id,
+      $"Le système hôte n'a pas répondu dans les {CustomWebApplicationFactory<Program>.HostSystemTimeoutSeconds} secondes. La demande reste En cours.");
+    _host.Received.ShouldHaveSingleItem("Le système hôte a été rappelé : une nouvelle tentative est partie.");
+    await ShouldStayInProgressWithOneAttemptAsync(id, message, "TimedOut", null);
+  }
+
+  /// <summary>
+  /// <b>Un système hôte injoignable rend 502</b> — une adresse sur un port fermé —, et le journal
+  /// retient une erreur réseau, sans statut.
+  /// </summary>
+  [Fact]
+  public async Task AnswersBadGatewayAndLeavesTheRequestInProgressWhenTheHostIsUnreachable()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, $"http://127.0.0.1:{AClosedPort()}/rights/access");
+    var (id, message) = await AnExecutableRequestAsync();
+
+    var response = await _surface.ExecuteAsync(id);
+
+    await ShouldBeAProblemAsync(
+      response, HttpStatusCode.BadGateway, id, "Le système hôte est injoignable. La demande reste En cours.");
+    await ShouldStayInProgressWithOneAttemptAsync(id, message, "NetworkError", null);
+  }
+
+  /// <summary>
   /// <b>Une demande close rend 409</b>, sans appel ni ligne de journal : le <c>ProblemDetails</c> dit
   /// « Demande close » et porte la ligne à jour.
   /// </summary>
@@ -214,7 +300,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     var response = await _surface.ExecuteAsync(id);
 
-    await ShouldBeARefusalAsync(response, HttpStatusCode.Conflict, id, ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access));
+    await ShouldBeAProblemAsync(response, HttpStatusCode.Conflict, id, ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access));
     _host.Received.ShouldBeEmpty("Une demande close a été envoyée au système hôte.");
     (await AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
   }
@@ -246,7 +332,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     var response = await _surface.ExecuteAsync(id);
 
-    await ShouldBeARefusalAsync(response, HttpStatusCode.UnprocessableEntity, id, block.FrenchLabelFor(DataSubjectRight.Access));
+    await ShouldBeAProblemAsync(response, HttpStatusCode.UnprocessableEntity, id, block.FrenchLabelFor(DataSubjectRight.Access));
     _host.Received.ShouldBeEmpty("Une demande bloquée a été envoyée au système hôte.");
     (await AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
   }
@@ -309,10 +395,10 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     });
 
   /// <summary>
-  /// Un refus d'exécution : le code, un <c>ProblemDetails</c> dont <c>detail</c> est le motif, et la
+  /// Un refus ou un échec d'exécution : le code, un <c>ProblemDetails</c> dont <c>detail</c> est le texte, et la
   /// ligne à jour de la demande sous <c>row</c> — celle même que le tableau rend.
   /// </summary>
-  private async Task ShouldBeARefusalAsync(HttpResponseMessage response, HttpStatusCode status, Guid id, string reason)
+  private async Task ShouldBeAProblemAsync(HttpResponseMessage response, HttpStatusCode status, Guid id, string reason)
   {
     var body = await response.Content.ReadAsStringAsync();
 
@@ -328,6 +414,33 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     Regex.Match(row, @"data-request-id=""([^""]*)""").Groups[1].Value.ShouldBe(id.ToString());
     row.ShouldBe(await _surface.BoardRowWithAsync(id.ToString()), "La ligne du refus n'est pas celle que le tableau rend.");
+  }
+
+  /// <summary>
+  /// La demande est toujours En cours, et le journal porte <b>une</b> tentative, au résultat et au statut
+  /// HTTP attendus.
+  /// </summary>
+  private async Task ShouldStayInProgressWithOneAttemptAsync(Guid id, string message, string outcome, int? httpStatus)
+  {
+    (await _surface.RowOfAsync(message))["status"].ShouldBe("InProgress", "La demande a changé de statut.");
+
+    var attempt = (await AttemptsOfAsync(id)).ShouldHaveSingleItem("L'échec n'a pas laissé une ligne de journal, une seule.");
+
+    attempt["outcome"].ShouldBe(outcome);
+    attempt["http_status"].ShouldBe(httpStatus);
+  }
+
+  /// <summary>
+  /// Un port sur lequel personne n'écoute : l'OS en attribue un libre, et l'écoute se referme aussitôt.
+  /// </summary>
+  private static int AClosedPort()
+  {
+    var listener = new TcpListener(IPAddress.Loopback, 0);
+    listener.Start();
+    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+    listener.Stop();
+
+    return port;
   }
 
   /// <summary>La balise d'ouverture et le contenu du bouton d'action <paramref name="action"/> de la ligne.</summary>

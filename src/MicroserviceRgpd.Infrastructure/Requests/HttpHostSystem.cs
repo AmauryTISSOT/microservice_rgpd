@@ -53,7 +53,7 @@ public sealed class HttpHostSystem(IHttpClientFactory clients, TimeProvider cloc
     catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
     {
       // Le délai du client se dit par une annulation que personne n'a demandée.
-      return HostSystemCall.TimedOut(startedAt, clock.GetElapsedTime(started));
+      return HostSystemCall.TimedOut(startedAt, clock.GetElapsedTime(started), client.Timeout);
     }
     catch (HttpRequestException)
     {

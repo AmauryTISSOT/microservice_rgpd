@@ -2,7 +2,10 @@ using Ardalis.Result;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
 using MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute.ExceptionExtensions;
 
 namespace MicroserviceRgpd.UnitTests.UseCases.Requests.ExecuteDataSubjectRequest;
 
@@ -29,11 +32,22 @@ public class ExecuteDataSubjectRequestHandlerTests
 
   private readonly IHostSystem _hostSystem = Substitute.For<IHostSystem>();
 
+  /// <summary>Le journal d'exécution tel que la seconde transaction le voit, dans sa portée neuve.</summary>
+  private readonly IRepository<ExecutionAttempt> _recovery = Substitute.For<IRepository<ExecutionAttempt>>();
+
+  private readonly IServiceScopeFactory _scopes = Substitute.For<IServiceScopeFactory>();
+
+  private readonly RecordedLogs _logs = new();
+
   public ExecuteDataSubjectRequestHandlerTests()
   {
     var settings = Settings.Unconfigured();
     settings.SetEndpoint(DataSubjectRight.Access, Endpoint);
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([settings]);
+
+    var scope = Substitute.For<IServiceScope>();
+    scope.ServiceProvider.GetService(typeof(IRepository<ExecutionAttempt>)).Returns(_recovery);
+    _scopes.CreateScope().Returns(scope);
 
     HostAnswers(204);
   }
@@ -78,6 +92,7 @@ public class ExecuteDataSubjectRequestHandlerTests
     result.Value.Request.ExecutionBlock.ShouldBe(ExecutionBlock.Closed);
     result.Value.Block.ShouldBeNull();
     result.Value.Call.ShouldNotBeNull().Outcome.ShouldBe(ExecutionOutcome.Succeeded);
+    result.Value.Outcome.ShouldBe(ExecutionOutcome.Succeeded);
   }
 
   /// <summary>
@@ -135,6 +150,7 @@ public class ExecuteDataSubjectRequestHandlerTests
     result.Value.Block.ShouldBe(ExecutionBlock.Closed);
     result.Value.Request.Id.ShouldBe(request.Id);
     result.Value.Call.ShouldBeNull();
+    result.Value.Outcome.ShouldBeNull();
     await NothingWasCalledNorWrittenAsync();
   }
 
@@ -183,27 +199,84 @@ public class ExecuteDataSubjectRequestHandlerTests
   }
 
   /// <summary>
-  /// <b>Sur un appel qui n'aboutit pas, la demande reste En cours</b>, et la tentative s'écrit seule.
+  /// <b>Sur un appel qui n'aboutit pas, la demande reste En cours</b>, la tentative s'écrit seule, et
+  /// l'échec est rendu typé : son résultat, et le texte que l'<c>Operator</c> lira.
   /// </summary>
-  [Fact]
-  public async Task LeavesTheRequestInProgressAndLogsTheAttemptAloneWhenTheHostDoesNotApply()
+  [Theory]
+  [MemberData(nameof(FailedCalls))]
+  public async Task LeavesTheRequestInProgressAddsTheAttemptAloneAndRendersTheFailure(
+    string outcomeName,
+    int? httpStatus,
+    string message)
   {
-    HostAnswers(503);
+    var outcome = ExecutionOutcome.FromName(outcomeName);
+    _hostSystem.ApplyAsync(Endpoint, null!, default).ReturnsForAnyArgs(FailedCall(outcome, httpStatus));
     var request = AnExecutableRequest();
 
     var result = await HandleAsync(request);
 
+    result.Status.ShouldBe(ResultStatus.Error);
+    result.Errors.ShouldBe([message]);
     request.Status.ShouldBe(RequestStatus.InProgress);
     result.Value.Request.Status.ShouldBe(RequestStatus.InProgress);
-    result.Value.Call.ShouldNotBeNull().Outcome.ShouldBe(ExecutionOutcome.NonSuccessResponse);
+    result.Value.Outcome.ShouldBe(outcome);
+    result.Value.Call.ShouldNotBeNull().Outcome.ShouldBe(outcome);
     await _attempts.Received(1).AddAsync(
-      Arg.Is<ExecutionAttempt>(attempt => attempt.Outcome == ExecutionOutcome.NonSuccessResponse && attempt.HttpStatus == 503),
+      Arg.Is<ExecutionAttempt>(attempt => attempt.Outcome == outcome && attempt.HttpStatus == httpStatus),
       Arg.Any<CancellationToken>());
+    _scopes.ReceivedCalls().ShouldBeEmpty();
+  }
+
+  public static TheoryData<string, int?, string> FailedCalls() => new()
+  {
+    { nameof(ExecutionOutcome.NonSuccessResponse), 503, "Le système hôte a répondu 503. La demande reste En cours." },
+    { nameof(ExecutionOutcome.NonSuccessResponse), 302, "Le système hôte a répondu 302. La demande reste En cours." },
+    { nameof(ExecutionOutcome.TimedOut), null, "Le système hôte n'a pas répondu dans les 30 secondes. La demande reste En cours." },
+    { nameof(ExecutionOutcome.NetworkError), null, "Le système hôte est injoignable. La demande reste En cours." },
+  };
+
+  /// <summary>
+  /// ⚠️ <b>Succès non enregistré</b> : le système hôte a répondu 2xx, mais la transaction qui portait
+  /// le passage à Terminée a échoué. Une seconde transaction, dans une portée neuve, écrit la tentative
+  /// <c>SucceededButNotRecorded</c> ; l'échec est journalisé en erreur, et rendu.
+  /// </summary>
+  [Fact]
+  public async Task AddsASucceededButNotRecordedAttemptInASecondTransactionWhenCompletingFails()
+  {
+    var failure = new InvalidOperationException("La base a refusé l'écriture.");
+    _attempts.AddAsync(Arg.Is<ExecutionAttempt>(attempt => attempt.Outcome == ExecutionOutcome.Succeeded), Arg.Any<CancellationToken>())
+      .ThrowsAsync(failure);
+    var request = AnExecutableRequest();
+
+    var result = await HandleAsync(request);
+
+    await _recovery.Received(1).AddAsync(
+      Arg.Is<ExecutionAttempt>(attempt =>
+        attempt.DataSubjectRequestId == request.Id
+        && attempt.Outcome == ExecutionOutcome.SucceededButNotRecorded
+        && attempt.HttpStatus == 204),
+      Arg.Is<CancellationToken>(token => !token.CanBeCanceled));
+
+    result.Status.ShouldBe(ResultStatus.Error);
+    result.Errors.ShouldBe(["Le système hôte a appliqué le droit, mais la demande n'a pas pu passer à Terminée."]);
+    result.Value.Outcome.ShouldBe(ExecutionOutcome.SucceededButNotRecorded);
+
+    // ⚠️ La ligne rendue est celle d'avant : la demande n'est pas Terminée en base.
+    result.Value.Request.Status.ShouldBe(RequestStatus.InProgress);
+
+    var logged = _logs.Written.ShouldHaveSingleItem();
+    logged.Level.ShouldBe(LogLevel.Error);
+    logged.Rendered.ShouldContain(request.Id.Value.ToString());
   }
 
   private void HostAnswers(int statusCode) =>
     _hostSystem.ApplyAsync(Endpoint, null!, default)
       .ReturnsForAnyArgs(HostSystemCall.Answered(statusCode, Now, TimeSpan.FromMilliseconds(120)));
+
+  private static HostSystemCall FailedCall(ExecutionOutcome outcome, int? httpStatus) =>
+    outcome == ExecutionOutcome.TimedOut ? HostSystemCall.TimedOut(Now, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30))
+    : outcome == ExecutionOutcome.NetworkError ? HostSystemCall.Unreachable(Now, TimeSpan.FromMilliseconds(3))
+    : HostSystemCall.Answered(httpStatus!.Value, Now, TimeSpan.FromMilliseconds(120));
 
   private async Task NothingWasCalledNorWrittenAsync()
   {
@@ -235,5 +308,6 @@ public class ExecuteDataSubjectRequestHandlerTests
     return await Handler().Handle(new ExecuteDataSubjectRequestCommand(request.Id), CancellationToken.None);
   }
 
-  private ExecuteDataSubjectRequestHandler Handler() => new(_requests, _attempts, _settings, _hostSystem);
+  private ExecuteDataSubjectRequestHandler Handler() =>
+    new(_requests, _attempts, _settings, _hostSystem, _scopes, new LoggerFactory([_logs]).CreateLogger<ExecuteDataSubjectRequestHandler>());
 }

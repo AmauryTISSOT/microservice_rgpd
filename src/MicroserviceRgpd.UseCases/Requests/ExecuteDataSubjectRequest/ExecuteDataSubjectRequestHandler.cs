@@ -1,6 +1,8 @@
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 
@@ -27,6 +29,18 @@ namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 /// vraiment passé.
 /// </para>
 /// <para>
+/// ⚠️ <b>Un appel qui n'aboutit pas est un échec rendu, pas une exception</b> : la tentative s'écrit
+/// seule, la demande reste En cours, et le résultat est une <c>Error</c> qui porte la demande, le
+/// résultat typé et le texte que l'<c>Operator</c> lira.
+/// </para>
+/// <para>
+/// ⚠️ <b>Succès non enregistré.</b> Si la transaction qui porte le passage à Terminée échoue après un
+/// 2xx, le contexte partagé garde les modifications refusées : une <b>seconde transaction</b>, ouverte
+/// dans une portée neuve, écrit la tentative <see cref="ExecutionOutcome.SucceededButNotRecorded"/>,
+/// et l'échec est journalisé en erreur. La demande rendue est celle d'avant l'appel — celle que la base
+/// porte encore.
+/// </para>
+/// <para>
 /// Aucune nouvelle tentative : un appel, une tentative écrite.
 /// </para>
 /// </remarks>
@@ -34,11 +48,15 @@ namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 /// <param name="attempts">Le journal d'exécution.</param>
 /// <param name="settings">Le Paramétrage, en lecture seule.</param>
 /// <param name="hostSystem">Le système hôte.</param>
+/// <param name="scopes">De quoi ouvrir la portée de la seconde transaction, après un succès non enregistré.</param>
+/// <param name="logger">Les logs applicatifs, où un succès non enregistré s'écrit en erreur.</param>
 public sealed class ExecuteDataSubjectRequestHandler(
   IRepository<DataSubjectRequest> requests,
   IRepository<ExecutionAttempt> attempts,
   IReadRepository<Settings> settings,
-  IHostSystem hostSystem)
+  IHostSystem hostSystem,
+  IServiceScopeFactory scopes,
+  ILogger<ExecuteDataSubjectRequestHandler> logger)
   : ICommandHandler<ExecuteDataSubjectRequestCommand, Result<DataSubjectRequestExecution>>
 {
   /// <inheritdoc />
@@ -61,22 +79,82 @@ public sealed class ExecuteDataSubjectRequestHandler(
     if (request.ExecutionBlockFacing(endpoint) is { } block)
     {
       return new BlockedExecution(
-        new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), block, null),
+        new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), block, null, null),
         block.FrenchLabelFor(request.Right));
     }
 
     // Exécutable implique une adresse : le dernier motif est son absence.
     var called = endpoint!.Value;
+
+    // La demande telle que la base la porte avant l'appel : celle que rend tout échec.
+    var unchanged = RecordedDataSubjectRequest.Of(request, current);
+
     var call = await hostSystem.ApplyAsync(called, ExecutionBody.Of(request), CancellationToken.None);
 
-    if (call.Outcome == ExecutionOutcome.Succeeded)
+    if (call.Outcome != ExecutionOutcome.Succeeded)
     {
-      request.Complete();
+      await attempts.AddAsync(ExecutionAttempt.Of(request, called, call), CancellationToken.None);
+
+      return new FailedExecution(new DataSubjectRequestExecution(unchanged, null, call, call.Outcome), FailureOf(call));
     }
 
-    await attempts.AddAsync(ExecutionAttempt.Of(request, called, call), CancellationToken.None);
+    request.Complete();
 
-    return new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), null, call);
+    try
+    {
+      await attempts.AddAsync(ExecutionAttempt.Of(request, called, call), CancellationToken.None);
+    }
+    catch (Exception notRecorded)
+    {
+      // Rattrapage large assumé : quelle que soit la raison du refus, le droit est appliqué, et le
+      // journal d'exécution doit le dire. L'annulation n'est pas à craindre : aucun jeton annulable n'est passé.
+      logger.LogError(
+        notRecorded,
+        "Le système hôte a appliqué le droit {Right} pour la demande {DataSubjectRequestId} (HTTP {HttpStatus}), mais la demande n'a pas pu passer à Terminée.",
+        request.Right.Name,
+        request.Id.Value,
+        call.StatusCode);
+
+      await using var scope = scopes.CreateAsyncScope();
+
+      // ⚠️ Si cette seconde écriture échoue aussi, l'exception remonte : l'erreur est déjà dans les
+      // logs, et aucune troisième tentative d'écrire n'est faite.
+
+      await scope.ServiceProvider.GetRequiredService<IRepository<ExecutionAttempt>>()
+        .AddAsync(ExecutionAttempt.SucceededButNotRecorded(request, called, call), CancellationToken.None);
+
+      return new FailedExecution(
+        new DataSubjectRequestExecution(unchanged, null, call, ExecutionOutcome.SucceededButNotRecorded),
+        SucceededButNotRecordedMessage);
+    }
+
+    return new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), null, call, call.Outcome);
+  }
+
+  /// <summary>Ce que l'<c>Operator</c> lit quand le droit est appliqué sans que la demande soit passée à Terminée.</summary>
+  private const string SucceededButNotRecordedMessage =
+    "Le système hôte a appliqué le droit, mais la demande n'a pas pu passer à Terminée.";
+
+  /// <summary>Ce que l'<c>Operator</c> lit d'un appel qui n'a pas abouti.</summary>
+  private static string FailureOf(HostSystemCall call) =>
+    call.Outcome == ExecutionOutcome.TimedOut
+      ? $"Le système hôte n'a pas répondu dans les {(int)call.Timeout!.Value.TotalSeconds} secondes. La demande reste En cours."
+      : call.Outcome == ExecutionOutcome.NetworkError
+        ? "Le système hôte est injoignable. La demande reste En cours."
+        : $"Le système hôte a répondu {call.StatusCode}. La demande reste En cours.";
+
+  /// <summary>
+  /// Un échec <b>qui rend la demande</b> : <c>Error</c>, le texte destiné à l'<c>Operator</c> pour seule
+  /// erreur — pour la même raison que <see cref="BlockedExecution"/>.
+  /// </summary>
+  private sealed class FailedExecution : Result<DataSubjectRequestExecution>
+  {
+    public FailedExecution(DataSubjectRequestExecution execution, string message)
+      : base(ResultStatus.Error)
+    {
+      Value = execution;
+      Errors = [message];
+    }
   }
 
   /// <summary>

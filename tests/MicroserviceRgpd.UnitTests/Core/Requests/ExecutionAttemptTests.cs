@@ -55,10 +55,42 @@ public class ExecutionAttemptTests
     var attempt = ExecutionAttempt.Of(
       ARequest(),
       EndpointUrl.From("https://brocanto.example.fr/rgpd"),
-      HostSystemCall.TimedOut(StartedAt, TimeSpan.FromSeconds(30)));
+      HostSystemCall.TimedOut(StartedAt, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)));
 
     attempt.Outcome.ShouldBe(ExecutionOutcome.TimedOut);
     attempt.HttpStatus.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Un succès non enregistré garde tout de l'appel</b> — son 2xx, son début, sa durée — sauf son
+  /// résultat : le droit est appliqué, et le service ne l'a pas enregistré.
+  /// </summary>
+  [Fact]
+  public void RecordsASuccessThatCouldNotBeRecordedWithTheCallItFollows()
+  {
+    var request = ARequest();
+    var call = HostSystemCall.Answered(202, StartedAt, TimeSpan.FromMilliseconds(420));
+
+    var attempt = ExecutionAttempt.SucceededButNotRecorded(
+      request, EndpointUrl.From("https://brocanto.example.fr/rgpd/effacement?token=secret"), call);
+
+    attempt.DataSubjectRequestId.ShouldBe(request.Id);
+    attempt.Right.ShouldBe(DataSubjectRight.Erasure);
+    attempt.CalledUrl.ShouldBe("https://brocanto.example.fr/rgpd/effacement");
+    attempt.StartedAt.ShouldBe(StartedAt);
+    attempt.Duration.ShouldBe(TimeSpan.FromMilliseconds(420));
+    attempt.Outcome.ShouldBe(ExecutionOutcome.SucceededButNotRecorded);
+    attempt.HttpStatus.ShouldBe(202);
+  }
+
+  /// <summary>⚠️ <b>Seul un appel réussi peut ne pas avoir été enregistré.</b></summary>
+  [Fact]
+  public void RefusesToRecordAFailedCallAsASuccessThatCouldNotBeRecorded()
+  {
+    Should.Throw<ArgumentException>(() => ExecutionAttempt.SucceededButNotRecorded(
+      ARequest(),
+      EndpointUrl.From("https://brocanto.example.fr/rgpd"),
+      HostSystemCall.Answered(503, StartedAt, TimeSpan.Zero)));
   }
 
   /// <summary>

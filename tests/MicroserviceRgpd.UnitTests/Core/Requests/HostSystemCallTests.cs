@@ -40,13 +40,25 @@ public class HostSystemCallTests
     call.StatusCode.ShouldBe(statusCode);
   }
 
+  /// <summary>
+  /// <b>Un délai dépassé porte le délai qui a couru</b> — l'<c>Operator</c> lit « dans les 30 secondes »
+  /// —, et aucun statut.
+  /// </summary>
   [Fact]
-  public void CarriesNoStatusCodeWhenTheHostDidNotAnswerInTime()
+  public void CarriesTheTimeoutAndNoStatusCodeWhenTheHostDidNotAnswerInTime()
   {
-    var call = HostSystemCall.TimedOut(StartedAt, Duration);
+    var call = HostSystemCall.TimedOut(StartedAt, Duration, TimeSpan.FromSeconds(30));
 
     call.Outcome.ShouldBe(ExecutionOutcome.TimedOut);
     call.StatusCode.ShouldBeNull();
+    call.Timeout.ShouldBe(TimeSpan.FromSeconds(30));
+  }
+
+  [Fact]
+  public void CarriesNoTimeoutWhenTheHostAnsweredOrWasUnreachable()
+  {
+    HostSystemCall.Answered(503, StartedAt, Duration).Timeout.ShouldBeNull();
+    HostSystemCall.Unreachable(StartedAt, Duration).Timeout.ShouldBeNull();
   }
 
   [Fact]
@@ -72,6 +84,6 @@ public class HostSystemCallTests
   [Fact]
   public void RefusesANegativeDuration()
   {
-    Should.Throw<ArgumentOutOfRangeException>(() => HostSystemCall.TimedOut(StartedAt, TimeSpan.FromTicks(-1)));
+    Should.Throw<ArgumentOutOfRangeException>(() => HostSystemCall.TimedOut(StartedAt, TimeSpan.FromTicks(-1), TimeSpan.FromSeconds(30)));
   }
 }
