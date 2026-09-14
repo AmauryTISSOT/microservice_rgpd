@@ -1,12 +1,16 @@
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.DeleteDataSubjectRequest;
+using MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestValues;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace MicroserviceRgpd.Web.Pages.Requests;
 
@@ -29,7 +33,7 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// une demande, et le document Swagger n'en dit rien.
 /// </para>
 /// </remarks>
-public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
+public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine views) : PageModel
 {
   /// <summary>
   /// Les droits qu'une personne peut invoquer, dans l'ordre des articles. ⚠️ Jamais
@@ -214,6 +218,54 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
   }
 
   /// <summary>
+  /// <b>Exécute une demande</b> — le système hôte applique le droit invoqué — et répond 200, avec pour
+  /// corps <b>la ligne de la demande passée à Terminée</b> (ADR-0026).
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// Refusée avant l'appel, sans appel ni tentative : <b>409</b> pour une demande close, <b>422</b> pour
+  /// tout autre motif de blocage. Les deux portent un <c>ProblemDetails</c> dont <c>detail</c> est le
+  /// motif, et dont <c>row</c> est la ligne à jour, rendue par <c>_RequestRow</c> — l'écran la remet
+  /// dans le tableau sans recharger. <b>404</b> pour une demande disparue, <b>400</b> pour un
+  /// identifiant illisible.
+  /// </para>
+  /// <para>
+  /// Un appel parti qui n'aboutit pas — réponse non 2xx, délai dépassé, erreur réseau — répond
+  /// <b>502</b>, avec le résultat de la tentative pour <c>detail</c> et la ligne inchangée.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>L'annulation de la requête n'arrête pas l'appel</b> : le use case ne la propage pas au
+  /// système hôte. Comme la création, la modification et la suppression, c'est un handler de la page,
+  /// appelé avec le jeton anti-rejeu : aucune route publique, rien dans Swagger.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnPostExecuteAsync(string? id, CancellationToken cancellationToken)
+  {
+    if (ReadId(id) is not { } dataSubjectRequest)
+    {
+      return BadRequest();
+    }
+
+    var executed = await mediator.Send(new ExecuteDataSubjectRequestCommand(dataSubjectRequest), cancellationToken);
+
+    return executed.Status switch
+    {
+      ResultStatus.Ok when executed.Value.Call?.Outcome == ExecutionOutcome.Succeeded =>
+        Partial("_RequestRow", RowOf(executed.Value)),
+      ResultStatus.Ok => await ExecutionProblemAsync(
+        StatusCodes.Status502BadGateway,
+        executed.Value.Call?.Outcome.FrenchLabel,
+        executed.Value),
+      ResultStatus.Conflict or ResultStatus.Invalid => await ExecutionProblemAsync(
+        executed.Status is ResultStatus.Conflict ? StatusCodes.Status409Conflict : StatusCodes.Status422UnprocessableEntity,
+        executed.Value.Block?.FrenchLabelFor(executed.Value.Request.Right),
+        executed.Value),
+      ResultStatus.NotFound => NotFound(),
+      _ => StatusCode(StatusCodes.Status500InternalServerError),
+    };
+  }
+
+  /// <summary>
   /// L'identifiant d'une demande, tel qu'un handler le reçoit — <b>ou rien, et c'est un 400</b>,
   /// jamais un 404 : ce n'est pas une demande introuvable, que l'écran lirait comme une réussite
   /// (ADR-0022).
@@ -246,6 +298,53 @@ public class BoardModel(TimeProvider clock, IMediator mediator) : PageModel
     ValidationProblem(refusals
       .GroupBy(refusal => refusal.Identifier)
       .ToDictionary(field => field.Key, field => field.Select(refusal => refusal.ErrorMessage).ToArray()));
+
+  /// <summary>La ligne de la demande exécutée, signalée contre « aujourd'hui », relu ici (ADR-0021).</summary>
+  private RequestRow RowOf(DataSubjectRequestExecution execution) =>
+    RequestRow.Of(execution.Request, ParisCalendar.Today(clock));
+
+  /// <summary>
+  /// Un <c>ProblemDetails</c> d'exécution : <paramref name="detail"/> pour <c>detail</c>, et la ligne à
+  /// jour sous <c>row</c>, en HTML.
+  /// </summary>
+  private async Task<ObjectResult> ExecutionProblemAsync(int status, string? detail, DataSubjectRequestExecution execution) =>
+    new(new Microsoft.AspNetCore.Mvc.ProblemDetails
+    {
+      Status = status,
+      Detail = detail,
+      Extensions = { ["row"] = await RenderedRowAsync(RowOf(execution)) },
+    })
+    {
+      StatusCode = status,
+    };
+
+  /// <summary>
+  /// La ligne rendue par <c>_RequestRow</c>, <b>en texte</b> — la même vue partielle que celle du
+  /// tableau, pour qu'un refus rende la ligne au caractère près.
+  /// </summary>
+  private async Task<string> RenderedRowAsync(RequestRow row)
+  {
+    var found = views.FindView(PageContext, "_RequestRow", isMainPage: false);
+
+    if (!found.Success)
+    {
+      throw new InvalidOperationException("La vue partielle _RequestRow est introuvable.");
+    }
+
+    await using var writer = new StringWriter();
+
+    var context = new ViewContext(
+      PageContext,
+      found.View,
+      new ViewDataDictionary<RequestRow>(ViewData, row),
+      TempData,
+      writer,
+      new HtmlHelperOptions());
+
+    await found.View.RenderAsync(context);
+
+    return writer.ToString();
+  }
 
   private static ObjectResult ValidationProblem(IDictionary<string, string[]> errors) =>
     new(new ValidationProblemDetails(errors) { Status = StatusCodes.Status400BadRequest })

@@ -21,6 +21,10 @@ namespace MicroserviceRgpd.Core.Requests;
 /// de saisie : une correction ne peut pas produire une demande que la réception aurait refusée.
 /// </para>
 /// <para>
+/// <b>Elle se termine par <see cref="Complete"/></b>, quand le système hôte a appliqué le droit
+/// invoqué (ADR-0026).
+/// </para>
+/// <para>
 /// ⚠️ <b>La date de réception n'est pas l'instant d'enregistrement.</b> La première est déclarée par
 /// l'<c>Operator</c> — une demande transcrite d'un courrier a été reçue avant d'entrer dans le
 /// service —, le second est lu sur l'horloge.
@@ -95,7 +99,8 @@ public sealed class DataSubjectRequest : IAggregateRoot
 
   /// <summary>
   /// Où en est la demande — un état qu'elle tient, pas la trace d'un <c>Gesture</c>. Elle naît
-  /// <see cref="RequestStatus.InProgress"/>, et rien ne la fait encore changer.
+  /// <see cref="RequestStatus.InProgress"/>, et passe à <see cref="RequestStatus.Completed"/> par
+  /// <see cref="Complete"/>.
   /// </summary>
   public RequestStatus Status { get; private set; }
 
@@ -184,6 +189,31 @@ public sealed class DataSubjectRequest : IAggregateRoot
     Apply(corrected);
     ModifiedBy = OperatorAuthor;
     ModifiedAt = modifiedAt.ToUniversalTime();
+
+    return Result.Success();
+  }
+
+  /// <summary>
+  /// <b>Passe la demande à Terminée</b> : le système hôte a appliqué le droit invoqué (ADR-0026).
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Une demande close est refusée en conflit, avant tout le reste</b> : une Annulée ne devient
+  /// pas Terminée, et une Terminée ne l'est pas deux fois.
+  /// </para>
+  /// <para>
+  /// Le passage est un état, pas une trace : il ne pose aucune empreinte. La trace de l'exécution est
+  /// l'<see cref="ExecutionAttempt"/>, écrite à côté.
+  /// </para>
+  /// </remarks>
+  public Result Complete()
+  {
+    if (Status != RequestStatus.InProgress)
+    {
+      return Result.Conflict();
+    }
+
+    Status = RequestStatus.Completed;
 
     return Result.Success();
   }

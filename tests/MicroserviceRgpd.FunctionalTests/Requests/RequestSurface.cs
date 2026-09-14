@@ -23,6 +23,8 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
 
   internal const string Values = "/demandes?handler=Values";
 
+  internal const string Execute = "/demandes?handler=Execute";
+
   /// <summary>
   /// <b>Les dix informations d'une demande, dans l'ordre où la ligne les rend</b>, chacune sous le
   /// nom que sa cellule porte en <c>data-field</c> — la propriété du view model de la ligne. La
@@ -168,8 +170,8 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
   }
 
   /// <summary>
-  /// Pose le statut de la demande <b>en base</b>, sous le nom de la valeur : aucun geste ne le fait
-  /// encore changer.
+  /// Pose le statut de la demande <b>en base</b>, sous le nom de la valeur : sans passer par
+  /// l'exécution, ni par une annulation qu'aucun geste n'offre.
   /// </summary>
   internal async Task SetStatusAsync(Guid id, string status)
   {
@@ -293,6 +295,25 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
       .Where(row => row.Value.Contains(marker, StringComparison.Ordinal))
       .ShouldHaveSingleItem($"Le tableau ne porte pas la ligne de « {marker} », une fois.")
       .Value;
+  }
+
+  /// <summary>Demande l'exécution de la demande <paramref name="id"/>, jeton anti-rejeu compris.</summary>
+  internal Task<HttpResponseMessage> ExecuteAsync(Guid id) => ExecuteAsync(id.ToString());
+
+  /// <summary>Demande l'exécution sous cet identifiant brut, jeton anti-rejeu compris.</summary>
+  internal async Task<HttpResponseMessage> ExecuteAsync(string id)
+  {
+    return await _client.PostAsync(Execute, new FormUrlEncodedContent(
+    [
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
+      new("id", id),
+    ]));
+  }
+
+  /// <summary>Demande l'exécution de la demande <paramref name="id"/> <b>sans</b> jeton anti-rejeu.</summary>
+  internal async Task<HttpResponseMessage> ExecuteWithoutTokenAsync(Guid id)
+  {
+    return await _client.PostAsync(Execute, new FormUrlEncodedContent([new("id", id.ToString())]));
   }
 
   private async Task<int> CountAsync(FormattableString query)

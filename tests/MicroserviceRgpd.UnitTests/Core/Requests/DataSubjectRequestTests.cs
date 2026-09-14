@@ -625,6 +625,58 @@ public class DataSubjectRequestTests
     request.ModifiedAt.ShouldBe(Later);
   }
 
+  /// <summary>
+  /// <b>Une demande En cours passe à Terminée</b> : le système hôte a appliqué le droit invoqué
+  /// (ADR-0026). Le passage est un état, pas une trace : aucune empreinte n'est posée.
+  /// </summary>
+  [Fact]
+  public void CompletesARequestInProgress()
+  {
+    var request = Receive(AValidEntry()).Value;
+
+    var result = request.Complete();
+
+    result.IsSuccess.ShouldBeTrue();
+    request.Status.ShouldBe(RequestStatus.Completed);
+    ShouldStillHoldTheValidEntry(request);
+    request.ModifiedBy.ShouldBeNull();
+    request.ModifiedAt.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Une demande close ne se termine pas</b>, Terminée comme Annulée : le refus est un conflit, et
+  /// le statut ne bouge pas — une Annulée ne devient pas Terminée.
+  /// </summary>
+  [Theory]
+  [InlineData("Completed")]
+  [InlineData("Cancelled")]
+  public void RefusesToCompleteAClosedRequest(string status)
+  {
+    var request = AClosedRequest(status);
+
+    var result = request.Complete();
+
+    result.Status.ShouldBe(ResultStatus.Conflict);
+    request.Status.ShouldBe(RequestStatus.FromName(status));
+  }
+
+  /// <summary>
+  /// <b>Une demande Terminée ne s'exécute plus</b> : le motif est « Demande close », quoi qu'en dise
+  /// le Paramétrage.
+  /// </summary>
+  [Fact]
+  public void IsNoLongerExecutableOnceCompleted()
+  {
+    var request = Receive(AValidEntry() with { IdentityVerified = true }).Value;
+    var endpoint = MicroserviceRgpd.Core.Configuration.EndpointUrl.From("https://brocanto.example.fr/rgpd");
+
+    request.ExecutionBlockFacing(endpoint).ShouldBeNull();
+
+    request.Complete();
+
+    request.ExecutionBlockFacing(endpoint).ShouldBe(ExecutionBlock.Closed);
+  }
+
   /// <summary>La saisie valide de départ, telle que la demande la tient encore après un refus.</summary>
   private static void ShouldStillHoldTheValidEntry(DataSubjectRequest request)
   {
