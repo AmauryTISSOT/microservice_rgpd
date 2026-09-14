@@ -112,6 +112,15 @@ L'AppHost est l'**unique vérité** de ce drapeau : il le propage au service .NE
 ne peuvent donc pas diverger. Le container Ollama entre alors dans la pile, et le modèle est tiré au
 premier démarrage puis conservé dans un volume nommé ; comptez plusieurs gigaoctets.
 
+**La détection par le modèle A2 est elle aussi éteinte par défaut** : c'est alors le lexique qui
+détecte. Pour l'allumer, passer `Screening:Embeddings:Enabled` à `"true"` dans le même
+[`appsettings.json`](src/MicroserviceRgpd.AspireHost/appsettings.json) de l'AppHost. Ce drapeau est
+**indépendant** de `Llm:Enabled` : allumé seul, il fait entrer le container Ollama dans la pile
+**sans exiger de GPU**, et n'y tire que l'encodeur `bge-m3` — le tag nommé par le manifest de
+l'artefact embarqué, qui ne se règle pas. Le service attend que l'encodeur soit tiré avant de
+démarrer. Les deux drapeaux allumés partagent un seul container, qui tire alors les deux modèles et
+réclame le GPU pour le moteur LLM.
+
 **L'API seule tourne elle aussi sans LLM par défaut.** Lancé à la main contre un sidecar local, le
 service .NET ne lit plus l'AppHost : le drapeau qui compte est alors `Qualification:Llm:Enabled` dans
 [`src/MicroserviceRgpd.Web/appsettings.json`](src/MicroserviceRgpd.Web/appsettings.json), éteint lui

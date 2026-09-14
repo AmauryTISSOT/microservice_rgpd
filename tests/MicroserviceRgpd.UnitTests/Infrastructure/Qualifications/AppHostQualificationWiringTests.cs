@@ -1,4 +1,5 @@
 using MicroserviceRgpd.Infrastructure.Qualifications;
+using MicroserviceRgpd.Infrastructure.Screenings;
 
 namespace MicroserviceRgpd.UnitTests.Infrastructure.Qualifications;
 
@@ -55,6 +56,23 @@ public class AppHostQualificationWiringTests
   }
 
   /// <summary>
+  /// Le drapeau de détection, et les deux réglages qu'A2 allumé exige : renommé d'un seul côté, le
+  /// drapeau retomberait sur « éteint » pendant qu'Ollama tirerait l'encodeur pour rien, et une
+  /// adresse ou une échéance manquante arrêterait le démarrage du service.
+  /// </summary>
+  [Theory]
+  [InlineData(ScreeningEngineServiceExtensions.EmbeddingsEnabledKey)]
+  [InlineData(ScreeningEngineServiceExtensions.OllamaBaseAddressKey)]
+  [InlineData(ScreeningEngineServiceExtensions.EmbeddingsDeadlineKey)]
+  public void PostsTheDetectionSettingsUnderTheKeysTheServiceReadsThem(string key)
+  {
+    ReadAppHost().ShouldContain(
+      EnvironmentVariable(key),
+      customMessage: $"{AppHostFile} ne pose plus « {key} » sous le nom que le service lit. " +
+      "Le service commande : reportez ce nom dans l'AppHost.");
+  }
+
+  /// <summary>
   /// Le nom d'une clé de configuration tel qu'une variable d'environnement l'écrit : le séparateur
   /// de section devient un double tiret bas, seule forme que les deux-points ne franchissent pas.
   /// </summary>
@@ -73,7 +91,7 @@ public class AppHostQualificationWiringTests
   /// La racine se déduit du chemin de compilation de ce fichier, non du répertoire de sortie : le
   /// test reste juste quel que soit l'endroit d'où <c>dotnet test</c> est lancé.
   /// </summary>
-  private static string RepositoryRoot([CallerFilePath] string thisFile = "")
+  internal static string RepositoryRoot([CallerFilePath] string thisFile = "")
   {
     var directory = new DirectoryInfo(Path.GetDirectoryName(thisFile)!);
 

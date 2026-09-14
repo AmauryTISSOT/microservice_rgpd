@@ -9,6 +9,9 @@
     doublé avec NSubstitute dans UnitTests et FunctionalTests.
 
     Ni référence à l'AppHost, ni Aspire.Hosting.Testing : les rétablir rouvrirait le piège.
+    La seule exception est OllamaWiring.cs, compilé par lien dans UnitTests : il ne dépend d'aucun
+    type d'Aspire et ne construit aucun hôte. Le jour où il en réclamerait un, c'est la décision
+    qui sort du fichier vers un endroit sans Aspire, jamais la référence qui revient.
     Une vérification d'orchestration complète, si elle voit le jour, sera un dispositif manuel
     séparé et une décision à part.
   -->

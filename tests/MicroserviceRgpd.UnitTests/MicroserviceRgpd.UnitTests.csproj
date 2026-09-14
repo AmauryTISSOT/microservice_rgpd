@@ -49,6 +49,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Ce que les drapeaux de l'AppHost font naître côté Ollama, compilé ici par lien plutôt que
+         par référence : référencer l'AppHost tirerait Aspire dans les tests, et aucun hôte ne doit
+         y être construit. Le fichier ne dépend donc d'aucun type d'Aspire. -->
+    <Compile Include="..\..\src\MicroserviceRgpd.AspireHost\OllamaWiring.cs" Link="AspireHost\OllamaWiring.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="xunit.runner.json">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
