@@ -10,7 +10,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
 /// <b>L'<c>Operator</c> exécute une demande depuis l'avion en papier de sa ligne</b>, dans un vrai
-/// navigateur : la confirmation récapitule ce qui partira et où, « Annuler », la croix et Échap la
+/// navigateur : la confirmation récapitule ce que le système hôte recevra et à quelle adresse, « Annuler », la croix et Échap la
 /// ferment sans appel, l'appel la bloque, et un succès la ferme, met la ligne à Terminée sans
 /// rechargement et dit « Demande exécutée » (ADR-0026).
 /// </summary>
@@ -46,11 +46,12 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
   }
 
   /// <summary>
-  /// <b>La confirmation récapitule ce qui partira et où</b> : son titre, les valeurs du récapitulatif
-  /// sous leurs libellés, l'avertissement — et « Exécuter » offert, sans bandeau.
+  /// <b>La confirmation récapitule ce que le système hôte recevra et à quelle adresse</b> : son titre,
+  /// les valeurs du récapitulatif sous leurs libellés, l'avertissement — et « Exécuter » offert, sans
+  /// bandeau.
   /// </summary>
   [Fact]
-  public async Task SummarizesWhatWillBeSentAndWhere()
+  public async Task SummarizesWhatTheHostSystemWillReceiveAndWhere()
   {
     var address = _host.AddressOf("/rights/access?tenant=brocanto");
     await harness.ConfigureEndpointAsync(DataSubjectRight.Access, address);

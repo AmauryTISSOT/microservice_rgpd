@@ -18,7 +18,7 @@
   var modifySubmit = "Modifier";
   var modifyAction = Url.Page(null, "Modify");
   var valuesAction = Url.Page(null, "Values");
-  var executionAction = Url.Page(null, "Execution");
+  var summaryAction = Url.Page(null, "Execution");
 
   // ⚠️ LA ROUTE DE LA QUALIFICATION EST CELLE D'UN AUTRE ÉCRAN, ET SEULE LA VUE LA CONNAÎT : le
   // page model du tableau appartient à Requests, et n'envoie aucune commande de Qualification
@@ -543,7 +543,7 @@
 @*
   LA CONFIRMATION D'EXÉCUTION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT, cinquième `dialog` de
   l'écran. L'avion en papier actif d'une ligne l'ouvre, une fois le récapitulatif relu sur le serveur
-  (`data-summary`) : ce qui partirait au système hôte, et où (ADR-0026).
+  (`data-summary`) : ce que le système hôte recevrait, et à quelle adresse (ADR-0026).
 
   ⚠️ TOUS SES MOTS SONT ICI, écrits une fois dans ExecutionConfirmation : le titre, les libellés,
   l'avertissement, les boutons. Seules les valeurs sont vides au chargement ; le module y verse celles
@@ -564,7 +564,7 @@
 *@
 <dialog class="modal confirmation" id="execute-request" role="alertdialog"
         aria-labelledby="execute-request-title" aria-describedby="execute-request-warning"
-        data-summary="@executionAction">
+        data-summary="@summaryAction">
   <div class="modal-head">
     <h2 id="execute-request-title">@ExecutionConfirmation.Title</h2>
     <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>

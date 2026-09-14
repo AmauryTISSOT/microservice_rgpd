@@ -298,15 +298,18 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : les assertions suivantes seraient vides.");
     published.ShouldNotContain("handler=Execute", Case.Insensitive, "Le document Swagger publie l'exécution d'une demande.");
     published.ShouldNotContain("ExecuteDataSubjectRequest", Case.Insensitive, "Le document Swagger publie l'exécution d'une demande.");
+    published.ShouldNotContain("handler=Execution", Case.Insensitive, "Le document Swagger publie le récapitulatif d'une exécution.");
+    published.ShouldNotContain("ExecutionSummary", Case.Insensitive, "Le document Swagger publie le récapitulatif d'une exécution.");
   }
 
   /// <summary>
-  /// <b>Le récapitulatif dit ce qui va partir et où</b> — le droit avec son article, le prénom, le nom,
-  /// l'email et l'adresse appelée, query string comprise —, relu sur le serveur, en JSON. Une demande
-  /// exécutable n'a pas de motif de blocage, et rien ne part au système hôte.
+  /// <b>Le récapitulatif dit ce que le système hôte recevra et à quelle adresse</b> — le droit avec son
+  /// article, le prénom, le nom, l'email et l'adresse appelée, query string comprise —, relu sur le
+  /// serveur, en JSON. Une demande exécutable n'a pas de motif de blocage, et le système hôte n'est pas
+  /// appelé.
   /// </summary>
   [Fact]
-  public async Task AnswersTheSummaryOfWhatWillBeSentAndWhere()
+  public async Task AnswersTheSummaryOfWhatTheHostSystemWillReceiveAndWhere()
   {
     var address = _host.AddressOf("/rights/erasure?tenant=brocanto");
     await ConfigureAsync(DataSubjectRight.Erasure, address);

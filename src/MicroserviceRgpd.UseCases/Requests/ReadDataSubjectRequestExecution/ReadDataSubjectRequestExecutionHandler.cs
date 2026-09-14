@@ -9,7 +9,7 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExecution;
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>Relu, jamais repris de la page</b> : depuis son chargement, un autre onglet a pu clore la
-/// demande, ou changer l'adresse de son droit. L'<c>Operator</c> confirme ce qui partirait maintenant.
+/// demande, ou changer l'adresse de son droit. L'<c>Operator</c> confirme ce que le système hôte recevrait maintenant.
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
 /// <param name="settings">Le Paramétrage, en lecture seule.</param>

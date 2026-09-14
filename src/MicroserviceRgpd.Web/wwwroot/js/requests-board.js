@@ -1285,7 +1285,7 @@ for (const dismiss of sheet.querySelectorAll("[data-dismiss]")) {
 closeOnBackdropClick(sheet, closeSheet);
 
 // L'EXÉCUTION D'UNE DEMANDE. L'avion en papier actif d'une ligne fait relire au serveur le
-// récapitulatif de son exécution — ce qui partirait au système hôte, et où —, puis ouvre la
+// récapitulatif de son exécution — ce que le système hôte recevrait, et à quelle adresse —, puis ouvre la
 // confirmation qu'il remplit. ⚠️ Relu à chaque ouverture : la page a pu être chargée avant qu'un autre
 // onglet clôture la demande ou change l'adresse de son droit (ADR-0026).
 //
@@ -1403,7 +1403,7 @@ async function execute() {
       rowHtml = await response.text().catch(() => "");
     }
   } catch {
-    rowHtml = null;
+    // Les échecs se diront dans le bandeau — ticket suivant.
   }
 
   executing = false;
