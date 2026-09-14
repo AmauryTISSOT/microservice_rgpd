@@ -560,10 +560,19 @@ et aucune réponse publique ne la porte. Décalque exact de `QualificationEngine
 comprise.
 ⚠️ **Elle se découpe en autant de morceaux qu'il y a de choses capables de bouger seules**, et c'est
 tout son usage : l'humain qui compare deux rapports a besoin de savoir **lequel** a changé. Le moteur
-retenu en porte trois — ses règles de nom, ses règles de forme, le gel de ses lexiques —, là où il
-n'en portait que deux.
-⚠️ **C'est aussi elle qui dit qu'un rapport n'a pas eu de valeurs à lire, et c'est le seul endroit où
-ce fait est écrit.** Le même moteur, dans la même version, rend deux choses différentes selon que
+lexique en porte trois — ses règles de nom, ses règles de forme, le gel de ses lexiques —, là où il
+n'en portait que deux. Le moteur A2 en porte deux : il se nomme `a2-bge-m3-logreg`, et sa version
+s'écrit `modele-<empreinte courte du manifest>+encodeur-<digest court>` — **l'artefact de modèle**
+et **l'encodeur** qu'Ollama a servi, qui peuvent changer l'un sans l'autre.
+⚠️ **Elle dit aussi quel des deux moteurs a produit le rapport**, et le bandeau du rapport de
+détection la montre pour cela : deux moteurs existent, un seul est actif par déploiement, et un
+rapport relu trois jours plus tard doit dire lequel l'a rendu.
+⚠️ **Chez A2, un relevé collé et un relevé scanné sont comparables sans réserve.** A2 ne lit que le
+nom de la table et celui de la colonne : pour les mêmes noms, les deux chemins rendent le même
+rapport, et l'identité n'a rien à déclarer d'inactif. La réserve qui suit ne vaut que pour le
+lexique.
+⚠️ **Chez le lexique, c'est aussi elle qui dit qu'un rapport n'a pas eu de valeurs à lire, et c'est
+le seul endroit où ce fait est écrit.** Le même moteur, dans la même version, rend deux choses différentes selon que
 l'aperçu lui a été donné ou non : une colonne `ref_3` dont les valeurs sont des IBAN est signalée sur
 le chemin connecté et `Unflagged` sur le chemin collé. Sans mention, les deux rapports se
 compareraient comme s'ils étaient comparables. L'identité déclare donc ses règles de forme
@@ -581,13 +590,25 @@ laisserait croire qu'il en garde un — ce qu'il a précisément cessé de faire
 Le port par lequel le domaine fait détecter les données personnelles d'un `ColumnListing`. Il ne
 nomme aucun moteur : le domaine ignore s'il parle à des règles locales, à un modèle servi, ou à un
 troisième moteur pas encore écrit.
+⚠️ **Il a deux implémentations, et une seule est active par déploiement**
+([ADR-0025](../../adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md)).
+Le moteur **A2** — plongements `bge-m3` servis par Ollama, régression logistique, prototypes — et le
+moteur **lexique** — règles de nom, règles de forme, lexiques gelés. Le câblage lit au démarrage le
+drapeau `Screening:Embeddings:Enabled` et enregistre **l'un ou l'autre** : allumé, A2 ; absent ou
+éteint, le lexique. Toute autre valeur arrête le démarrage.
+⚠️ **Aucun composant ne choisit entre les deux à l'exécution, et c'est ce qui rend les rapports
+comparables.** A2 allumé et Ollama injoignable, trop lent ou servant un autre encodeur, le port
+**échoue** — famille « moteur de détection indisponible », sans aucun texte d'Ollama — et aucun
+`Screening` n'est produit ; le lexique ne détecte jamais à sa place. Un repli à l'exécution ferait
+changer de moteur un rapport dans le dos de l'`Operator`, et deux rapports d'une même pile ne se
+compareraient plus. Le repli existe, mais il est **de déploiement** : l'exploitant qui ne sert pas
+Ollama éteint le drapeau, et toute sa pile détecte au lexique.
 ⚠️ **C'est la couture de réversibilité d'[ADR-0004](../../adr/0004-moteur-de-depistage-en-csharp-sans-second-sidecar.md),
-et non une couture de test.** Le banc a désigné un dictionnaire, l'ADR en a tiré que le moteur vit
-en C# dans `Infrastructure` ; ce port est ce qui rend cette décision réversible — un moteur qui
-reviendrait en Python serait une implémentation de plus, et `Core` ne bougerait pas. C'est aussi
-pourquoi il est **asynchrone** alors que le moteur retenu est local et déterministe : une signature
-synchrone obligerait un futur moteur servi à bloquer sur son propre transport, et cette dette-là se
-paierait dans `Core`.
+et non une couture de test — et l'ADR-0025 en est le premier usage réel.** Le banc de l'ADR-0004 a
+désigné un dictionnaire ; ce port est ce qui rendait cette décision réversible, et A2 est entré
+comme une implémentation de plus, sans que `Core` bouge. C'est aussi pourquoi il est
+**asynchrone** : une signature synchrone aurait obligé le moteur servi à bloquer sur son propre
+transport, et cette dette-là se serait payée dans `Core`.
 ⚠️ **Il rend une ligne par colonne, ou il échoue.** Un rapport de détection partiel n'existe pas :
 c'est la même clause que « il est entier ou il n'existe pas », vue du moteur.
 ⚠️ **Il reçoit les aperçus à côté du relevé, jamais dedans, et ils ne ressortent pas.** Le
@@ -661,8 +682,12 @@ distingue « rien vu » de « vu et écarté ».
 — le quitus que tout ce contexte refuse de délivrer, et qu'`Unflagged` refuse déjà à sa propre
 échelle. Le motif dit ce qui **a** parlé ; c'est l'aperçu, affiché à côté et périssable, qui laisse
 l'`Operator` juger le reste. La seule exception est celle qui existe déjà, et elle est de nature
-opposée : le motif nomme les catégories qu'un **autre déclenchement** a portées et que l'ordre
-d'arbitrage a écartées.
+opposée : chez le moteur lexique, le motif nomme les catégories qu'un **autre déclenchement** a
+portées et que son ordre interne a écartées.
+⚠️ **Chez A2, le motif cite le nom et le prototype, jamais un chiffre.** Il nomme `table.colonne`,
+la traduction française du texte du prototype dont le nom est proche, puis le libellé de la
+catégorie — et c'est ce qui s'arbitre. Le score qui a décidé du signalement n'y figure pas, ni
+ailleurs — voir `RuleStrength`.
 ⚠️ **Deux familles de règles écrivent dans le même motif, dans un ordre fixe : le nom d'abord, la
 forme ensuite.** Il n'y a qu'un motif par ligne, et les phrases s'y suivent. L'ordre n'est pas
 esthétique : le motif est **borné**, et un motif trop long est coupé — en le disant, mais coupé. Ce
@@ -676,9 +701,11 @@ sont des identifiants techniques **reste signalée** : cinq valeurs ne disent ri
 de lignes qu'on n'a pas lues, et les laisser éteindre un signalement reviendrait à délivrer un
 certificat d'innocuité sur cinq lignes. C'est `Unflagged` vu depuis l'autre bout — celle-là refuse
 d'affirmer l'innocuité d'une colonne, celle-ci refuse de la déduire d'un aperçu.
+⚠️ **Ces deux clauses sont celles du moteur lexique** : A2 ne lit aucune valeur, et n'a donc ni règle
+de forme, ni motif en deux familles.
 ⚠️ **Il n'existe aucun étage qui arbitre « le nom » contre « les valeurs ».** Une règle de forme est
-une règle **de plus**, versée au même sac que les règles de nom, et c'est l'ordre d'arbitrage de
-`PersonalDataCategory` qui tranche, comme il l'a toujours fait. Un tel étage aurait été le seul
+une règle **de plus**, versée au même sac que les règles de nom, et c'est l'ordre interne du moteur
+lexique qui tranche, comme il l'a toujours fait. Un tel étage aurait été le seul
 endroit du contexte où une famille de règles l'emporte sur une autre — c'est-à-dire la comparaison de
 degrés que `RuleStrength` interdit, déplacée d'un cran.
 _Avoid_ : Finding, Hit, Detection, Match, Candidate, Suspect, alerte ⚠️ `Match` et
@@ -696,25 +723,42 @@ son auteur n'est pas le RGPD.
 ⚠️ Le mot **catégorie** est sur la liste _Avoid_ de `DataSubjectRight` et le reste : le nom complet
 est porté ici précisément pour que cette interdiction n'ait pas d'exception à gérer.
 
-**Treize valeurs**, chacune portant son **nom canonique anglais** et son **libellé français attaché**
-— décalque exact de `DataSubjectRight`, une seule source de vérité et aucune table de correspondance
-parallèle. Le motif, lui, reste en prose française : il est écrit pour l'humain qui arbitre.
+**Quinze valeurs** — les quatorze prototypes du moteur A2, plus `Unflagged` —, chacune portant son
+**nom canonique anglais** et son **libellé français attaché** — décalque exact de
+`DataSubjectRight`, une seule source de vérité et aucune table de correspondance parallèle. Le motif,
+lui, reste en prose française : il est écrit pour l'humain qui arbitre.
 
-| Valeur | Libellé | Origine |
+| Valeur | Libellé | Prototype d'A2 |
 |---|---|---|
-| `CriminalOffenceData` | données relatives aux infractions | RGPD art. 10 |
-| `HealthData` | données concernant la santé | RGPD art. 9 |
-| `SpecialCategoryData` | autre catégorie particulière | RGPD art. 9 |
-| `AuthenticationSecret` | secret d'authentification | doctrinal |
-| `NationalIdentifier` | identifiant national | CNIL, registre simplifié |
-| `FinancialData` | données économiques et financières | CNIL, registre simplifié |
-| `LocationData` | données de localisation | CNIL, registre simplifié |
-| `ConnectionData` | données de connexion | CNIL, registre simplifié |
-| `Identity` | état civil et identité | CNIL, registre simplifié |
-| `ContactDetails` | coordonnées | CNIL, registre simplifié |
-| `ProfessionalLife` | vie professionnelle | CNIL, ancien modèle |
-| `PersonalDataUncategorised` | donnée personnelle sans catégorie | repli |
-| `Unflagged` | rien signalé | repli |
+| `Identity` | état civil et identité | `identity` |
+| `ContactDetails` | coordonnées | `contact` |
+| `LocationData` | données de localisation | `location` |
+| `NationalIdentifier` | identifiant national | `government_id` |
+| `FinancialData` | données économiques et financières | `financial` |
+| `AuthenticationSecret` | secret d'authentification | `authentication` |
+| `OnlineIdentifier` | identifiant en ligne | `online_identifier` |
+| `DemographicData` | données démographiques | `demographic` |
+| `ProfessionalLife` | vie professionnelle | `professional` |
+| `BehaviouralData` | données de comportement | `behavioural` |
+| `HealthData` | données concernant la santé | `health` |
+| `RelatedPerson` | personne liée | `relation` |
+| `FreeTextAboutPerson` | texte libre sur une personne | `free_text` |
+| `PersonReference` | référence à une personne | `person_link` |
+| `Unflagged` | rien signalé | — |
+
+⚠️ **La taxonomie a été remplacée, pas étendue**
+([ADR-0025](../../adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md)).
+Elle comptait treize valeurs, dont quatre sont **retirées** : `CriminalOffenceData`,
+`SpecialCategoryData`, `ConnectionData` et `PersonalDataUncategorised`. Les `Screening` qui les
+portaient ont été supprimés par la migration, aucun n'a été converti. Ce tableau suit les prototypes
+du modèle mesuré, et non plus la nomenclature de la CNIL, parce qu'un moteur à prototypes ne peut
+rendre que ce qu'il a de prototypes.
+⚠️ **La correspondance entre prototype et valeur est écrite une seule fois**, et un nom de prototype
+inconnu arrête le démarrage. Le moteur **lexique**, lui, est ramené à cette taxonomie par une
+correspondance appliquée au chargement, sans réécrire ses lexiques gelés : `ConnectionData` →
+`OnlineIdentifier` ; `SpecialCategoryData` et `CriminalOffenceData` → `DemographicData` ;
+`PersonalDataUncategorised`, dont la règle du conteneur libre → `FreeTextAboutPerson` ; les autres
+gardent leur nom.
 
 ⚠️ **La sensibilité est une valeur, pas une seconde dimension.** La CNIL coche ses neuf items
 sensibles dans un **bloc parallèle** à ses six catégories ordinaires, et on pourrait croire qu'il
@@ -722,61 +766,63 @@ faut l'imiter — une colonne serait alors une catégorie **plus** un drapeau. C
 **grain** : une fiche de registre décrit un traitement entier, où « identité **et** santé » coexistent
 forcément. Notre grain est **la colonne**, et à ce grain la coexistence s'effondre : `confession` est
 une conviction religieuse, elle n'est pas *aussi* de l'état civil. Un drapeau qui vaudrait vrai
-exactement quand la catégorie est déjà l'une des trois valeurs de droit est un champ redondant — et
+exactement quand la catégorie est déjà une valeur de droit est un champ redondant — et
 deux champs qu'un chemin d'écriture peut dissocier finissent par se dissocier. « Montre-moi les
 colonnes sensibles » est donc un **calcul** sur la catégorie, comme « courant » est un calcul sur le
 `Screening`.
 
-⚠️ **L'art. 9 tient en deux valeurs, et l'énumération n'y porte pas l'item : le motif le porte.**
-Ni une valeur unique, ni les huit du règlement. La santé se détache parce qu'elle cumule trois
-raisons — c'est le seul des huit items fréquent dans un schéma réel, le seul dont le texte singularise
-le régime (art. 9 § 2 h et i, § 3), et la première question d'un DPO. Les sept autres tiennent dans
-`SpecialCategoryData`, et le motif nomme lequel : « `confession` → catégorie particulière (art. 9),
-motif : convictions religieuses » dit à l'humain exactement ce que sept valeurs lui auraient dit,
-sans que la taxonomie porte six engagements qui ne se déclenchent jamais. Le cas qui tranche est la
-**biométrie** : le [considérant 51](https://eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:32016R0679)
-ne la range à l'art. 9 que « aux fins d'identifier une personne de manière unique » — une **finalité**
-qu'aucun lecteur de schéma ne connaît. Une valeur `Biometrics` affirmerait donc toujours plus que le
-service ne peut savoir ; un motif peut dire que le régime dépend d'une finalité illisible ici.
+⚠️ **L'art. 9 ne tient plus qu'en une valeur, la santé — et c'est la régression principale de la
+bascule.** `HealthData` reste, pour les raisons qui l'avaient détachée : c'est le seul des huit items
+fréquent dans un schéma réel, le seul dont le texte singularise le régime (art. 9 § 2 h et i, § 3),
+et la première question d'un DPO. Les sept autres tenaient dans `SpecialCategoryData`, dont le motif
+nommait l'item ; **cette valeur est retirée**. `DemographicData` couvre désormais religion et
+nationalité **sans mention d'art. 9** : `confession` est signalée, mais comme donnée démographique, et
+le régime juridique que la valeur disait n'est plus dit par personne — c'est à l'`Operator` de le
+reconnaître. ⚠️ **Ne pas croire que l'outil signale encore les catégories particulières hors santé
+comme telles.** Le modèle mesuré n'a pas de prototype pour elles, et en recalculer sortirait de
+l'artefact mesuré : c'est assumé par l'ADR-0025, pas oublié. La **biométrie** reste sans valeur,
+pour le motif qui l'avait déjà écartée : le
+[considérant 51](https://eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:32016R0679) ne la
+range à l'art. 9 que « aux fins d'identifier une personne de manière unique » — une **finalité**
+qu'aucun lecteur de schéma ne connaît.
 
-⚠️ **L'art. 10 ne se replie pas dans l'art. 9**, alors même qu'il ne se déclenchera presque jamais.
-Articles distincts, régimes distincts ; la CNIL maintient la distinction jusque dans un commentaire de
-cellule de tableur — « font **également** l'objet de règles particulières », donc à côté et non
-dedans. Les fusionner pour économiser une valeur serait une **erreur de droit** dans l'outil dont
-c'est le métier de ne pas en commettre. Sa rareté n'est pas un argument contre son existence : c'est
-un fait que la clause d'incomplétude a charge de dire.
+⚠️ **L'art. 10 n'a plus de valeur.** `CriminalOffenceData` est retirée, et le lexique ramène ses
+déclenchements à `DemographicData`. Le glossaire tenait que replier l'art. 10 dans l'art. 9 serait
+une **erreur de droit** dans l'outil dont c'est le métier de ne pas en commettre ; la bascule ne les
+fusionne pas entre eux, elle les **perd** tous deux dans une valeur ordinaire. La phrase est écrite
+ici pour que personne ne lise `DemographicData` comme un régime particulier. Rétablir une valeur pour
+l'art. 10 ou pour l'art. 9 hors santé demande un ADR — et, pour A2, un artefact nouveau.
 
-**L'exclusivité est un invariant, et l'arbitrage est l'ordre de ce tableau, figé.** Une
-`ScreenedColumn` porte **une** valeur. Quand plusieurs règles déclenchent — `arret_maladie` est santé
-*et* vie professionnelle, `email_pro` est coordonnées *et* vie professionnelle — c'est l'ordre
-ci-dessus qui tranche, du plus au moins coûteux à omettre. ⚠️ **Jamais la `RuleStrength`** :
-comparer deux degrés pour désigner un gagnant serait un score qui produit une issue, ce que l'`Aide
-à la décision` interdit. Le motif, lui, peut dire ce qui a été écarté — « la règle *vie
-professionnelle* a aussi déclenché ». Les moteurs **héritent** cet ordre ; aucun ne le redécide.
-⚠️ **Et les familles de règles l'héritent aussi, sans la moindre exception.** Une règle qui lit les
-**valeurs** ne l'emporte pas sur une règle qui lit le **nom**, ni l'inverse : une colonne `numero`
-que son nom rapproche d'`Identity` et dont les valeurs portent une clé d'IBAN rend `FinancialData`,
-uniquement parce que `FinancialData` est plus haut au tableau. L'ordre décrit la **gravité de la
-catégorie**, jamais la qualité de la règle qui l'a atteinte. Donner la préséance à une famille
-rouvrirait, sous un autre nom, le classement des règles entre elles que la phrase précédente
-interdit.
+**L'exclusivité est un invariant ; l'ordre d'arbitrage n'est plus une propriété de la taxonomie.** Une
+`ScreenedColumn` porte **une** valeur. Ce tableau n'est **pas ordonné** : il suit les prototypes, et
+aucun rang n'y dit une gravité. ⚠️ **L'ordre a quitté la taxonomie parce qu'un moteur ne le lisait
+plus.** A2 ne rend jamais plusieurs déclenchements — il rend le prototype le plus proche —, et
+imposer un ordre à un moteur qui n'en a pas l'usage en ferait une doctrine décorative, qu'un futur
+moteur hériterait sans raison. Le moteur **lexique**, qui voit plusieurs règles déclencher —
+`arret_maladie` est santé *et* vie professionnelle —, garde un ordre **interne** pour départager ses
+propres déclenchements, et son motif peut dire ce qui a été écarté.
+⚠️ **Jamais la `RuleStrength`**, chez aucun moteur : comparer deux degrés pour désigner un gagnant
+serait un score qui produit une issue, ce que l'`Aide à la décision` interdit. Et chez le lexique, une
+règle qui lit les **valeurs** ne l'emporte pas sur une règle qui lit le **nom**, ni l'inverse : son
+ordre interne décrit la catégorie, jamais la qualité de la règle qui l'a atteinte.
 
-**Sa gouvernance a deux étages, parce que ses valeurs n'ont pas toutes le même auteur.**
+**Sa gouvernance a un seul étage de droit, et il s'est réduit.**
 `DataSubjectRight` peut écrire qu'ajouter une valeur est une rupture de niveau ADR : il y a six droits
 parce que le RGPD en ouvre six, et la clause emprunte sa solennité au règlement. **Cette taxonomie-ci
 n'a pas cet appui** — le RGPD n'énumère nulle part les catégories *ordinaires*, l'art. 30 impose
 l'exercice sans fournir le vocabulaire, et **toute** nomenclature ordinaire est donc doctrinale, celle
-de la CNIL comprise. Se donner la même gravité sans le même fondement serait une posture.
-- Les **trois valeurs de droit** — `CriminalOffenceData`, `HealthData`, `SpecialCategoryData` — sont
-  fermées par le texte et ne bougent que s'il bouge.
-- Les **valeurs ordinaires** sont un découpage de travail, révisable et sans autorité empruntée. En
-  ajouter une n'est pas un ADR : c'est une PR dont le corps répond à trois questions — quelles
-  colonnes réelles, dans quel schéma réel, ne trouvaient pas de valeur ; pourquoi
-  `PersonalDataUncategorised` ne suffisait pas ; et où la valeur entre dans l'ordre d'arbitrage.
+de la CNIL comme celle des prototypes d'A2. Se donner la même gravité sans le même fondement serait
+une posture.
+- La **seule valeur de droit** qui reste, `HealthData`, est fermée par le texte et ne bouge que s'il
+  bouge.
+- Les **valeurs ordinaires** sont un découpage de travail, sans autorité empruntée. Mais depuis
+  l'ADR-0025 elles sont **attachées aux prototypes d'un modèle mesuré** : en ajouter une n'est plus
+  une PR de vocabulaire, c'est un prototype de plus, donc un artefact de modèle nouveau.
 - ⚠️ **Retirer ou renommer une valeur reste un ADR**, et pour une raison qui n'est pas la même que
   chez `DataSubjectRight` : il n'y a pas d'appelant à casser ici, mais il y a des **arbitrages humains
-  signés et datés** qui vivent plusieurs jours, et qu'une relance ne reprend pas. Ce geste-là ne périme
-  pas un contrat, il périme du travail humain.
+  datés** qui vivent plusieurs jours, et qu'une relance ne reprend pas. Ce geste-là ne périme pas un
+  contrat, il périme du travail humain — l'ADR-0025 l'a payé en supprimant tous les `Screening`
+  existants.
 
 _Avoid_ : DataCategory, catégorie, Label, Class, Tag, Type ⚠️ le raccourci `DataCategory` viendrait
 frotter contre la liste de `DataSubjectRight` pour économiser huit caractères.
@@ -805,54 +851,75 @@ lire pareil. Ce qui distingue les deux rapports, lui, s'écrit à l'échelle du 
 C'est `Enregistré, jamais vérifié` appliqué au seul endroit de ce contexte où il serait tentant de l'oublier,
 parce qu'une machine qui déclare une colonne inoffensive est très exactement le témoignage qu'elle
 n'a pas les moyens de porter.
-⚠️ **Elle n'est pas le repli `PersonalDataUncategorised`**, et les confondre coûterait cher : celle-ci
-dit « rien vu », celui-là dit « vu, personnel, mais aucune valeur ne va ». La règle qui les départage
-est mécanique et se teste : **motif présent ⇔ ce n'est pas `Unflagged`.**
+⚠️ **Chez A2, c'est un score sous le seuil, et elle ne dit rien de plus.** Pas « presque signalée »,
+pas « loin de tout prototype » : le score n'est ni exposé ni retenu, et une colonne juste sous le
+seuil se lit exactement comme une colonne très en dessous. Elle ne porte ni catégorie, ni degré, ni
+motif.
+⚠️ **La règle qui la sépare de toute autre valeur est mécanique et se teste : motif présent ⇔ ce
+n'est pas `Unflagged`.** Elle départageait autrefois « rien vu » du repli
+`PersonalDataUncategorised`, qui disait « vu, personnel, mais aucune valeur ne va » ; ce repli est
+retiré, et la règle, elle, tient telle quelle.
 _Avoid_ : None, Unknown, Safe, Clean, NonPersonal, Negative, RAS ⚠️ tous affirment l'innocuité de la
 colonne ; `None` et `Unknown` la feraient de surcroît lire comme une absence de valeur, alors qu'elle
 en est une.
 
-**PersonalDataUncategorised** :
-Le repli : la valeur rendue quand la détection a reconnu une colonne comme **personnelle** sans
-qu'aucune autre valeur ne lui aille. Elle est signalée, donc elle porte un **motif**, et c'est ce
-motif qui la sépare d'`Unflagged`.
-⚠️ **C'est un verdict, pas un aveu d'ignorance** — même geste que `DataSubjectRight.OutOfScope`, dont
+**PersonalDataUncategorised** — ⚠️ **retirée** :
+Le repli qui était rendu quand la détection reconnaissait une colonne comme **personnelle** sans
+qu'aucune autre valeur ne lui aille. **Elle n'existe plus**
+([ADR-0025](../../adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md)),
+et l'entrée est gardée pour que son motif et ce qu'on a perdu avec elle restent lisibles.
+⚠️ **Motif du retrait : aucun des deux moteurs ne la produisait plus honnêtement.** A2 rend toujours
+le prototype le plus proche d'une colonne signalée — il n'a pas d'issue « vu, mais rien ne va », et
+lui en fabriquer une supposerait un second seuil que le modèle mesuré n'a pas. Le lexique, lui, ne
+l'atteignait presque jamais — 0,65 % des signalées contre 17,3 % chez l'annotateur, F2 0,010 — et son
+seul chemin, la règle du **conteneur libre**, trouve place dans `FreeTextAboutPerson`, où le
+lexique la ramène.
+⚠️ **Ce qu'on perd : le taux de repli comme instrument de mesure de la taxonomie.** Un taux qui
+montait disait qu'il manquait une valeur ; ce signal n'existe plus, et une valeur manquante se lit
+désormais comme une colonne rangée dans le prototype le plus proche. Le paragraphe qui suit dit ce
+que la valeur était, pour qui voudrait la rétablir.
+⚠️ **C'était un verdict, pas un aveu d'ignorance** — même geste que `DataSubjectRight.OutOfScope`, dont
 le glossaire dit « ce n'est ni "inconnu", ni "non classé" : c'est un verdict », et même formulation
 que le seul repli formel de tout le corpus des outils, le `GENERIC_ID` de Google : « *may be*
 personally identifying but do not belong to a well-defined category ».
-⚠️ **Sans elle, le moteur n'a que deux issues et les deux mentent** : déguiser un doute en catégorie,
-ou retomber sur `Unflagged` et affirmer « rien vu » alors que quelque chose a été vu. Le premier
-mensonge est bruyant, le second est silencieux, et c'est le second qui coûte ici.
-⚠️ **Le taux de repli est l'instrument de mesure de la taxonomie**, et il n'est pas un défaut à
-minimiser : un taux qui monte est le signal qu'il manque une valeur. C'est ce que le banc compte, au
-même titre que ce qu'il détecte.
-⚠️ **Aucune règle de forme n'y mène.** Une règle qui lit les valeurs sait d'avance quelle catégorie
-elle vise — une clé d'IBAN vise `FinancialData`, et rien d'autre. Il n'existe pas de « forme reconnue
-sans catégorie qui lui aille » : une forme qu'aucune catégorie n'attend est une forme qu'on n'a pas
-écrite. Le seul chemin vers ce repli reste la règle du **conteneur libre**, qui ne dit pas qu'une
-forme a été reconnue, mais que le schéma ne permet pas de lire.
-⚠️ **Il n'y a pas de second repli.** Une valeur « non personnelle » a été explicitement écartée : elle
-porterait sur la donnée un verdict d'innocuité que le service n'a pas les moyens de rendre : cinq
-valeurs lues ne fondent rien sur le reste d'une colonne, et sur le chemin collé il n'en a lu aucune. `Unflagged` occupe cette place et dit la bonne chose, un constat sur la
-détection et non sur la donnée. Voir la liste _Avoid_ d'`Unflagged`, où `NonPersonal` figure
-nommément.
-_Avoid_ : Other, Misc, Unclassified, Unknown, Generic, NonPersonal, divers, fourre-tout ⚠️ `Other` et
-`Misc` en feraient une poubelle qu'on cesse de lire, alors que c'est la valeur qu'il faut lire en
-premier ; `Unknown` en referait l'aveu d'ignorance qu'elle n'est pas.
+⚠️ **Le mensonge qu'elle évitait revient, et il est le moins coûteux des deux.** Sans elle, un moteur
+n'a que deux issues : déguiser un doute en catégorie, ou retomber sur `Unflagged` et affirmer « rien
+vu » alors que quelque chose a été vu. A2 prend la première — il range une colonne signalée dans le
+prototype le plus proche, même lointain. Ce mensonge-là est **bruyant** : la ligne est signalée, son
+motif cite le prototype, et l'`Operator` qui la lit peut dire non. Le silencieux, celui qui coûte ici,
+reste interdit.
+⚠️ **Aucune valeur « non personnelle » ne l'a remplacée**, et le refus d'origine tient : elle
+porterait sur la donnée un verdict d'innocuité que le service n'a pas les moyens de rendre.
+`Unflagged` occupe cette place et dit la bonne chose, un constat sur la détection et non sur la
+donnée. Voir la liste _Avoid_ d'`Unflagged`, où `NonPersonal` figure nommément.
+_Avoid_ : Other, Misc, Unclassified, Unknown, Generic, NonPersonal, divers, fourre-tout ⚠️ ces mots
+restent interdits pour nommer une valeur qui la rétablirait : `Other` et `Misc` en feraient une
+poubelle qu'on cesse de lire ; `Unknown` en referait l'aveu d'ignorance qu'elle n'était pas.
 
 **RuleStrength** :
-Le degré de doute d'une `ScreenedColumn`, **dérivé de la règle qui a déclenché**. Externe et
-déterministe : il ne doit rien à l'auto-évaluation d'un moteur. Il a **cinq** membres, et l'ordre
-ci-dessous est celui dans lequel une règle parle le plus directement — le seul usage qu'on en fasse
-jamais.
+Le degré de doute d'une `ScreenedColumn`, **dérivé du mécanisme qui a déclenché**. Externe et
+déterministe : il ne doit rien à l'auto-évaluation d'un moteur. Il a **six** membres, et l'ordre
+ci-dessous est un ordre de lecture — celui dans lequel une règle parle le plus directement, chez le
+moteur qui la porte —, le seul usage qu'on en fasse jamais.
 
-| Membre | Ce qui a déclenché |
-|---|---|
-| `ExactName` | le nom entier de la colonne figure au lexique |
-| `CheckedValueForm` | les valeurs lues portent une **clé de contrôle** qui se vérifie |
-| `Morphological` | une racine ou un affixe rapproche le nom d'une entrée du lexique |
-| `ValueForm` | les valeurs lues ont une **forme** reconnue, sans clé de contrôle |
-| `TypeHeuristic` | ni le nom ni ses valeurs n'ont parlé : le **type déclaré** de la colonne a parlé |
+| Membre | Ce qui a déclenché | Moteur |
+|---|---|---|
+| `ExactName` | le nom entier de la colonne figure au lexique | lexique |
+| `CheckedValueForm` | les valeurs lues portent une **clé de contrôle** qui se vérifie | lexique |
+| `Morphological` | une racine ou un affixe rapproche le nom d'une entrée du lexique | lexique |
+| `ValueForm` | les valeurs lues ont une **forme** reconnue, sans clé de contrôle | lexique |
+| `TypeHeuristic` | ni le nom ni ses valeurs n'ont parlé : le **type déclaré** de la colonne a parlé | lexique |
+| `PrototypeProximity` | le nom de la table et de la colonne est proche d'un prototype | A2 |
+
+⚠️ **`PrototypeProximity` n'est produit que par A2, et les cinq autres que par le lexique.** Un
+rapport ne mêle donc jamais les deux familles — un seul moteur est actif par déploiement —, et
+**l'ordre des membres n'est jamais une comparaison entre moteurs** : `PrototypeProximity` au dernier
+rang ne dit pas qu'A2 parle moins directement que le type déclaré. Il dit **quel mécanisme** a
+parlé, sans graduer la preuve.
+⚠️ **Il est externe et déterministe au même titre que les autres, malgré le modèle.** A2 calcule un
+score, mais le degré ne le lit pas : toute ligne signalée par A2 porte `PrototypeProximity`, qu'elle
+soit juste au-dessus du seuil ou très au-dessus. Le score n'est pas calibré (ECE 0,159) ; le décliner
+en paliers en ferait le score à la ligne que ce type existe pour empêcher.
 
 ⚠️ **Les deux membres de forme ne se distinguent pas par le nombre de valeurs, mais par la clé**, et
 c'est un résultat mesuré, pas une intuition. Un test de **forme** ne se multiplie pas sur cinq
@@ -1051,8 +1118,14 @@ une promesse générale, mais des bornes qui se vérifient une par une.
   d'étoile, jamais une table entière.
 - Les **types binaires sont exclus** du prélèvement, et l'exclusion est **nommée** sur la ligne.
 - Les **textes longs sont tronqués par le SGBD**, avant de traverser le réseau.
-- Ce que le moteur fait de ces valeurs est borné aussi : il y cherche des **formes écrites d'avance**,
-  jamais des mots. Aucun lexique ne s'applique aux valeurs.
+- Ce que le moteur lexique fait de ces valeurs est borné aussi : il y cherche des **formes écrites
+  d'avance**, jamais des mots. Aucun lexique ne s'applique aux valeurs.
+- **Le moteur A2 ne lit que le nom de la table et le nom de la colonne** — ni type, ni commentaire,
+  ni contrainte, ni aperçu —, mis en texte au gabarit de son manifest et envoyé à l'encodeur servi
+  par Ollama, dans la pile. Les aperçus restent affichés à côté des lignes, pour l'`Operator`, et
+  n'influencent jamais sa détection. Rien de ce qui entre ne quitte donc la pile, et aucune valeur lue
+  n'atteint un modèle
+  ([ADR-0025](../../adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md)).
 ⚠️ **Corollaire contre-intuitif, et il faut toujours le dire : ce n'est donc pas un NER.** Sa
 prémisse d'origine — « `dt_naiss` n'est pas de la prose » — ne tient plus : une valeur de colonne
 `commentaire`, elle, **est** de la prose. Le corollaire reste vrai pour une autre raison, et c'est
