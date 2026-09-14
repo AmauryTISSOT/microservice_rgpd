@@ -139,8 +139,8 @@ if (ollamaWiring.Exists)
 }
 
 // Le mock du système hôte, pour que les adresses collées dans `/parametrage` soient joignables. Le
-// service ne les appelle pas (ADR-0016) : aucune référence ne le relie au mock, qui n'est qu'une
-// cible pour la démonstration. Éteint par défaut, et alors la pile est exactement celle d'avant lui.
+// service les appelle quand une demande est exécutée (ADR-0026), mais aucune référence ne le relie
+// au mock, qui n'est qu'une cible pour la démonstration. Éteint par défaut, et alors la pile est exactement celle d'avant lui.
 // Le port est fixe, et c'est tout son intérêt : une URL saisie dans le Paramétrage reste valable
 // d'un lancement à l'autre, là où un port attribué par Aspire la rendrait caduque au suivant.
 // Le certificat de développement est écarté : Aspire le poserait d'office sur uvicorn, et
