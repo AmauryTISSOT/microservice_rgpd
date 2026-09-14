@@ -721,9 +721,9 @@ table.queue th {
 }
 
 /*
-  LES ACTIONS D'UNE LIGNE — trois boutons en icônes, serrés côte à côte, sans filet : ils se lisent
+  LES ACTIONS D'UNE LIGNE — quatre boutons en icônes, serrés côte à côte, sans filet : ils se lisent
   comme des outils de la ligne, pas comme des gestes que l'écran attend. La cellule ne se coupe
-  jamais : trois icônes empilées se liraient comme trois lignes.
+  jamais : quatre icônes empilées se liraient comme quatre lignes.
 
   ⚠️ C'EST UNE EXTENSION DU DOCUMENT DE DESIGN, et elle est signalée comme telle : celui-ci ne
   prévoit ni bouton en icône sans filet, ni infobulle, ni état de survol. Tout y reste pris dans

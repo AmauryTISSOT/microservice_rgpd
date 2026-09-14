@@ -1,5 +1,7 @@
 using Ardalis.Specification;
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
 namespace MicroserviceRgpd.UnitTests.UseCases.Requests.ReadDataSubjectRequests;
@@ -20,6 +22,8 @@ public class ReadDataSubjectRequestsHandlerTests
 
   private readonly IReadRepository<DataSubjectRequest> _requests =
     Substitute.For<IReadRepository<DataSubjectRequest>>();
+
+  private readonly IReadRepository<Settings> _settings = Substitute.For<IReadRepository<Settings>>();
 
   /// <summary>Les deux canaux, avec le libellé que chacun porte.</summary>
   public static TheoryData<Origin, string> TheOrigins => new()
@@ -56,20 +60,75 @@ public class ReadDataSubjectRequestsHandlerTests
     read.Message.Value.ShouldBe(Message);
   }
 
+  /// <summary>
+  /// <b>Chaque demande porte son motif de blocage</b>, calculé par l'agrégat face à l'adresse de
+  /// <i>son</i> droit : deux demandes vérifiées, avec un email, l'une au droit configuré et l'autre
+  /// non.
+  /// </summary>
+  [Fact]
+  public async Task CarriesForEachRequestTheBlockFacingTheEndpointOfItsRight()
+  {
+    var settings = Settings.Unconfigured();
+    settings.SetEndpoint(DataSubjectRight.Access, EndpointUrl.From("https://brocanto.example.fr/rgpd/acces"));
+
+    var read = await ReadAllAsync(
+      settings,
+      ARequestFrom(Origin.Email, identityVerified: true, right: "Access"),
+      ARequestFrom(Origin.Email, identityVerified: true, right: "Erasure"),
+      ARequestFrom(Origin.Email, identityVerified: false, right: "Access"));
+
+    read.Select(request => request.ExecutionBlock).ShouldBe(
+      [null, ExecutionBlock.NoEndpoint, ExecutionBlock.IdentityNotVerified]);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le Paramétrage est lu une seule fois</b>, quel que soit le nombre de lignes : une lecture
+  /// par demande ferait autant d'allers-retours en base que le tableau porte de lignes.
+  /// </summary>
+  [Fact]
+  public async Task ReadsTheSettingsOnlyOnce()
+  {
+    await ReadAllAsync(null, ARequestFrom(Origin.Email), ARequestFrom(Origin.Letter), ARequestFrom(Origin.Email));
+
+    await _settings.Received(1).ListAsync(Arg.Any<CancellationToken>());
+  }
+
+  /// <summary>
+  /// <b>Un Paramétrage jamais enregistré est vierge</b>, pas absent : chaque droit y est « non
+  /// configuré ».
+  /// </summary>
+  [Fact]
+  public async Task ReadsAServiceWithoutSettingsAsUnconfigured()
+  {
+    var read = await ReadAllAsync(null, ARequestFrom(Origin.Email, identityVerified: true));
+
+    read.ShouldHaveSingleItem().ExecutionBlock.ShouldBe(ExecutionBlock.NoEndpoint);
+  }
+
   /// <summary>Ce que la lecture rend de la demande nommée, elle seule étant enregistrée.</summary>
-  private async Task<RecordedDataSubjectRequest> ReadAsync(DataSubjectRequest request)
+  private async Task<RecordedDataSubjectRequest> ReadAsync(DataSubjectRequest request) =>
+    (await ReadAllAsync(null, request)).ShouldHaveSingleItem();
+
+  /// <summary>Ce que la lecture rend de ces demandes, sous ce Paramétrage — ou sans aucun enregistré.</summary>
+  private async Task<IReadOnlyList<RecordedDataSubjectRequest>> ReadAllAsync(
+    Settings? settings,
+    params DataSubjectRequest[] requests)
   {
     _requests
       .ListAsync(Arg.Any<ISpecification<DataSubjectRequest>>(), Arg.Any<CancellationToken>())
-      .Returns([request]);
+      .Returns([.. requests]);
 
-    var read = await new ReadDataSubjectRequestsHandler(_requests)
+    _settings.ListAsync(Arg.Any<CancellationToken>()).Returns(settings is null ? [] : [settings]);
+
+    return await new ReadDataSubjectRequestsHandler(_requests, _settings)
       .Handle(new ReadDataSubjectRequestsQuery(), CancellationToken.None);
-
-    return read.ShouldHaveSingleItem();
   }
 
-  private static DataSubjectRequest ARequestFrom(Origin origin, string message = "Je souhaite accéder à mes données.") =>
+  private static DataSubjectRequest ARequestFrom(
+    Origin origin,
+    string message = "Je souhaite accéder à mes données.",
+    bool identityVerified = false,
+    string right = "Access") =>
     DataSubjectRequest.Receive(
       new DataSubjectRequestEntry(
         Origin: origin,
@@ -77,9 +136,9 @@ public class ReadDataSubjectRequestsHandlerTests
         LastName: "Dupont",
         FirstName: "Jeanne",
         Email: "jeanne.dupont@exemple.fr",
-        IdentityVerified: false,
+        IdentityVerified: identityVerified,
         Message: message,
-        Right: "Access"),
+        Right: right),
       new DateOnly(2026, 9, 11),
       Now).Value;
 }

@@ -33,6 +33,10 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// infobulle dit — <c>ModificationTooltip</c> : son libellé quand la modification est permise, la
 /// raison de son extinction quand la demande est close. Les deux se calculent ici, à partir du
 /// statut ; le gabarit ne teste rien.
+///
+/// De même pour l'<b>exécution</b> : <c>ExecutionAllowed</c> et <c>ExecutionTooltip</c> — son libellé
+/// quand la demande s'exécute, sinon le premier motif de blocage, que la lecture a déjà calculé face
+/// au Paramétrage (ADR-0026).
 /// </remarks>
 public sealed record RequestRow(
   string Id,
@@ -51,6 +55,8 @@ public sealed record RequestRow(
   string StatusName,
   bool ModificationAllowed,
   string ModificationTooltip,
+  bool ExecutionAllowed,
+  string ExecutionTooltip,
   RequestRow.SearchableText Searchable,
   RequestRow.SortKeys Sort,
   RequestRow.Sheet ForSheet)
@@ -127,6 +133,12 @@ public sealed record RequestRow(
   /// </summary>
   private const string ModificationRefused = "Une demande close ne peut plus être modifiée";
 
+  /// <summary>
+  /// Ce que dit l'infobulle de l'exécution quand elle est offerte, et le libellé accessible du bouton.
+  /// ⚠️ Éteint, le bouton garde ce nom : seule son infobulle dit le motif de blocage.
+  /// </summary>
+  public const string ExecutionOffered = "Exécuter la demande";
+
   private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
   /// <summary>La ligne d'une demande enregistrée, telle qu'elle se lit <paramref name="todayInParis"/>.</summary>
@@ -157,6 +169,8 @@ public sealed record RequestRow(
       request.Status.Name,
       modificationAllowed,
       modificationAllowed ? ModificationOffered : ModificationRefused,
+      request.ExecutionBlock is null,
+      request.ExecutionBlock?.FrenchLabelFor(request.Right) ?? ExecutionOffered,
       new SearchableText(
         request.Email?.Value ?? string.Empty,
         request.LastName?.Value ?? string.Empty,

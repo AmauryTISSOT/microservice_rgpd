@@ -1,7 +1,7 @@
 namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
-/// <b>Les trois actions de chaque ligne</b>, dans un vrai navigateur : la poubelle, le crayon et
+/// <b>Les actions de chaque ligne</b>, dans un vrai navigateur : la poubelle, le crayon et
 /// l'œil montrent leur infobulle au survol.
 /// </summary>
 /// <remarks>
@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// </para>
 /// <para>
 /// Les boutons se trouvent par leur rôle et leur nom accessible ; l'infobulle, par le texte qu'elle
-/// montre. Ce que le serveur rend — les trois boutons et leurs libellés — se garde dans
+/// montre. Ce que le serveur rend — les boutons et leurs libellés — se garde dans
 /// <c>RequestConsultation</c>.
 /// </para>
 /// </remarks>

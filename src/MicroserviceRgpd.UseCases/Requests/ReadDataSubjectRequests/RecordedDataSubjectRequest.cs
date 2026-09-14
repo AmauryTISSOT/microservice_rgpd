@@ -1,3 +1,4 @@
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 
@@ -25,6 +26,10 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 /// <param name="CreatedBy">Qui a enregistré la demande.</param>
 /// <param name="CreatedAt">L'instant d'enregistrement, en UTC.</param>
 /// <param name="Status">Où en est la demande.</param>
+/// <param name="ExecutionBlock">
+/// Le premier motif de blocage de l'exécution, ou <c>null</c> quand la demande s'exécute — calculé par
+/// la demande face à l'adresse que le Paramétrage associe à son droit (ADR-0026).
+/// </param>
 public sealed record RecordedDataSubjectRequest(
   DataSubjectRequestId Id,
   Origin Origin,
@@ -38,13 +43,15 @@ public sealed record RecordedDataSubjectRequest(
   DataSubjectRight Right,
   string CreatedBy,
   DateTimeOffset CreatedAt,
-  RequestStatus Status)
+  RequestStatus Status,
+  ExecutionBlock? ExecutionBlock)
 {
-  /// <summary>Ce que la lecture rend d'une demande enregistrée.</summary>
-  /// <exception cref="ArgumentNullException"><paramref name="request"/> est absente.</exception>
-  internal static RecordedDataSubjectRequest Of(DataSubjectRequest request)
+  /// <summary>Ce que la lecture rend d'une demande enregistrée, sous le Paramétrage <paramref name="settings"/>.</summary>
+  /// <exception cref="ArgumentNullException"><paramref name="request"/> ou <paramref name="settings"/> est absent.</exception>
+  internal static RecordedDataSubjectRequest Of(DataSubjectRequest request, Settings settings)
   {
     ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(settings);
 
     return new RecordedDataSubjectRequest(
       request.Id,
@@ -59,6 +66,7 @@ public sealed record RecordedDataSubjectRequest(
       request.Right,
       request.CreatedBy,
       request.CreatedAt,
-      request.Status);
+      request.Status,
+      request.ExecutionBlockFacing(settings.EndpointFor(request.Right)));
   }
 }

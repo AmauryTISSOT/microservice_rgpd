@@ -1,3 +1,4 @@
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
@@ -11,10 +12,18 @@ namespace MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 /// ⚠️ <b>L'horloge est lue une seule fois.</b> « Aujourd'hui à Paris », qui borne la date de
 /// réception, et l'instant d'enregistrement se tirent du même instant : lus séparément, une demande
 /// posée à minuit pile pourrait être jugée sur un jour et datée du suivant.
+/// <para>
+/// La demande rendue dit si elle s'exécute, face au Paramétrage lu après l'enregistrement : la ligne
+/// du tableau offre ou éteint son exécution comme au chargement (ADR-0026).
+/// </para>
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
+/// <param name="settings">Le Paramétrage, en lecture seule.</param>
 /// <param name="clock">L'horloge du service, qui date le geste.</param>
-public sealed class RecordDataSubjectRequestHandler(IRepository<DataSubjectRequest> requests, TimeProvider clock)
+public sealed class RecordDataSubjectRequestHandler(
+  IRepository<DataSubjectRequest> requests,
+  IReadRepository<Settings> settings,
+  TimeProvider clock)
   : ICommandHandler<RecordDataSubjectRequestCommand, Result<RecordedDataSubjectRequest>>
 {
   /// <inheritdoc />
@@ -34,6 +43,6 @@ public sealed class RecordDataSubjectRequestHandler(IRepository<DataSubjectReque
 
     await requests.AddAsync(received.Value, cancellationToken);
 
-    return RecordedDataSubjectRequest.Of(received.Value);
+    return RecordedDataSubjectRequest.Of(received.Value, await ServiceSettings.ReadAsync(settings, cancellationToken));
   }
 }

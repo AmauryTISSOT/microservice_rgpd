@@ -1,3 +1,4 @@
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
@@ -25,10 +26,18 @@ namespace MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 /// modifications vient d'enregistrer porte déjà les nouvelles valeurs, et une correction qui n'a rien
 /// changé les porte tout autant.
 /// </para>
+/// <para>
+/// La demande rendue dit si elle s'exécute, face au Paramétrage lu avec la demande : une
+/// correction qui ajoute l'email ou atteste l'identité rallume l'exécution sur la ligne (ADR-0026).
+/// </para>
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
+/// <param name="settings">Le Paramétrage, en lecture seule.</param>
 /// <param name="clock">L'horloge du service, qui date le geste.</param>
-public sealed class ModifyDataSubjectRequestHandler(IRepository<DataSubjectRequest> requests, TimeProvider clock)
+public sealed class ModifyDataSubjectRequestHandler(
+  IRepository<DataSubjectRequest> requests,
+  IReadRepository<Settings> settings,
+  TimeProvider clock)
   : ICommandHandler<ModifyDataSubjectRequestCommand, Result<RecordedDataSubjectRequest>>
 {
   /// <inheritdoc />
@@ -45,6 +54,7 @@ public sealed class ModifyDataSubjectRequestHandler(IRepository<DataSubjectReque
       return Result<RecordedDataSubjectRequest>.NotFound();
     }
 
+    var current = await ServiceSettings.ReadAsync(settings, cancellationToken);
     var now = clock.GetUtcNow();
     var modified = request.Modify(command.Entry, ParisCalendar.DateOf(now), now);
 
@@ -53,11 +63,11 @@ public sealed class ModifyDataSubjectRequestHandler(IRepository<DataSubjectReque
       // ⚠️ Un refus ne rejoue pas la projection : `Map` ne transporte que le statut et les raisons, et
       // la demande n'est pas rendue ici. C'est ce qui garde le refus du domaine intact — `Invalid`
       // reste `Invalid`, `Conflict` reste `Conflict` — sans le réécrire d'un statut à l'autre.
-      return modified.Map(_ => RecordedDataSubjectRequest.Of(request));
+      return modified.Map(_ => RecordedDataSubjectRequest.Of(request, current));
     }
 
     await requests.SaveChangesAsync(cancellationToken);
 
-    return RecordedDataSubjectRequest.Of(request);
+    return RecordedDataSubjectRequest.Of(request, current);
   }
 }
