@@ -41,7 +41,7 @@ namespace MicroserviceRgpd.Infrastructure.Screenings;
 /// doctrine n'ait bougé.
 /// </para>
 /// <para>
-/// ⚠️ <b>Aucune règle de forme ne mène à <see cref="PersonalDataCategory.PersonalDataUncategorised"/>.</b>
+/// ⚠️ <b>Aucune règle de forme ne mène à <see cref="PersonalDataCategory.FreeTextAboutPerson"/>.</b>
 /// Une règle qui lit les valeurs sait d'avance quelle catégorie elle vise — une clé d'IBAN vise
 /// <see cref="PersonalDataCategory.FinancialData"/>, et rien d'autre.
 /// </para>
@@ -50,7 +50,7 @@ internal static partial class ValueFormRules
 {
   /// <summary>
   /// Les six règles, <b>dans l'ordre où elles s'énoncent</b>. L'ordre ne tranche rien : c'est celui
-  /// de <see cref="PersonalDataCategory"/> qui arbitre, comme il l'a toujours fait.
+  /// du lexique, <see cref="LexiconTaxonomy"/>, qui départage.
   /// </summary>
   internal static IReadOnlyList<ValueFormRule> All { get; } =
   [
@@ -82,7 +82,7 @@ internal static partial class ValueFormRules
       "ont la forme d'un numéro de téléphone français",
       IsFrenchTelephoneNumber),
     new(
-      PersonalDataCategory.ConnectionData,
+      PersonalDataCategory.OnlineIdentifier,
       RuleStrength.ValueForm,
       "ont la forme d'une adresse IP",
       IsIpAddress),

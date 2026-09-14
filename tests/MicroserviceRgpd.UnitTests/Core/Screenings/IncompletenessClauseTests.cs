@@ -82,11 +82,11 @@ public class IncompletenessClauseTests
   {
     var beyondReach = IncompletenessClause.For(AScreening.Of(AScreening.AFlaggedColumn())).BeyondReach;
 
-    beyondReach.Categories.Select(entry => entry.Category).ShouldBe(
+    beyondReach.Categories.Select(entry => entry.FrenchName).ShouldBe(
       [
-        PersonalDataCategory.HealthData,
-        PersonalDataCategory.SpecialCategoryData,
-        PersonalDataCategory.CriminalOffenceData,
+        PersonalDataCategory.HealthData.FrenchLabel,
+        "autre catégorie particulière",
+        "données relatives aux infractions",
       ],
       ignoreOrder: true);
 
@@ -94,18 +94,15 @@ public class IncompletenessClauseTests
   }
 
   /// <summary>
-  /// Les trois hors de portée sont exactement les trois valeurs fermées par le texte : ce sont celles
-  /// que la taxonomie garde au titre de ce qu'elles <i>sont</i>, et dont il faut donc dire qu'on ne
-  /// sait pas les voir.
+  /// ⚠️ <b>La partie ne parle plus de la taxonomie.</b> Deux des trois catégories n'y ont plus de
+  /// valeur : écrire « trois catégories de la taxonomie » affirmerait une liste qui n'existe pas.
   /// </summary>
   [Fact]
-  public void ReachesBeyondExactlyTheValuesTheTaxonomyKeepsOnStatutoryGrounds()
+  public void NamesTheCategoriesBeyondReachWithoutClaimingTheTaxonomyCarriesThem()
   {
     var beyondReach = IncompletenessClause.For(AScreening.Of(AScreening.AFlaggedColumn())).BeyondReach;
 
-    beyondReach.Categories.Select(entry => entry.Category).ShouldBe(
-      PersonalDataCategory.List.Where(category => category.IsClosedByStatute),
-      ignoreOrder: true);
+    beyondReach.Statement.ShouldNotContain("taxonomie", Case.Insensitive);
   }
 
   /// <summary>
@@ -343,16 +340,16 @@ public class IncompletenessClauseTests
   {
     var reasons = IncompletenessClause
       .For(AScreening.OfListing(ListingOrigin.Scanned, AScreening.AFlaggedColumn()))
-      .BeyondReach.Categories.ToDictionary(entry => entry.Category, entry => entry.Reason);
+      .BeyondReach.Categories.ToDictionary(entry => entry.FrenchName, entry => entry.Reason);
 
     // Aucun des trois ne peut plus fonder sa limite sur le seul schéma : le service en a lu, des
     // valeurs, et un motif qui l'ignore ment.
     reasons.Values.ShouldAllBe(reason => !reason.Contains("détection de schéma", StringComparison.Ordinal));
     reasons.Values.ShouldAllBe(reason => !reason.Contains("lecteur de schéma", StringComparison.Ordinal));
 
-    reasons[PersonalDataCategory.HealthData].ShouldContain("forme", Case.Insensitive);
-    reasons[PersonalDataCategory.SpecialCategoryData].ShouldContain("finalité", Case.Insensitive);
-    reasons[PersonalDataCategory.CriminalOffenceData].ShouldContain("responsable", Case.Insensitive);
+    reasons[PersonalDataCategory.HealthData.FrenchLabel].ShouldContain("forme", Case.Insensitive);
+    reasons["autre catégorie particulière"].ShouldContain("finalité", Case.Insensitive);
+    reasons["données relatives aux infractions"].ShouldContain("responsable", Case.Insensitive);
   }
 
   /// <summary>

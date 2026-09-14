@@ -163,14 +163,6 @@ public sealed class Screening : IAggregateRoot
   /// <summary>Combien de colonnes la détection a signalées. Le complément est ce qu'elle n'a pas vu, jamais ce qui est inoffensif.</summary>
   public int FlaggedCount => _columns.Count(column => column.IsFlagged);
 
-  /// <summary>
-  /// Combien de colonnes sont tombées sur le repli. <b>C'est l'instrument de mesure de la
-  /// taxonomie</b>, et ce n'est pas un défaut à minimiser : un taux qui monte est le signal qu'il
-  /// manque une valeur.
-  /// </summary>
-  public int UncategorisedCount =>
-    _columns.Count(column => column.Category == PersonalDataCategory.PersonalDataUncategorised);
-
   /// <summary>Combien de colonnes ce relevé porte réellement.</summary>
   public int ColumnCount => _columns.Count;
 

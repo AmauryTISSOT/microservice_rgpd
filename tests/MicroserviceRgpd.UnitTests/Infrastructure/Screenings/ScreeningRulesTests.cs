@@ -6,7 +6,7 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
 /// <summary>
 /// Les cinq règles du montage gelé, une par une, sur des colonnes que le pivot témoin ne porte pas :
 /// le conteneur libre, l'héritage par la table, la collision FR/EN, et le double déclenchement que
-/// l'ordre d'arbitrage tranche.
+/// l'ordre interne du lexique tranche.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -93,7 +93,7 @@ public class ScreeningRulesTests
       dataType: "text",
       tableComment: "Journal de connexion"));
 
-    byComment.Category.ShouldBe(PersonalDataCategory.ConnectionData);
+    byComment.Category.ShouldBe(PersonalDataCategory.OnlineIdentifier);
     byComment.Reason.ShouldBe("héritage : mot « connexion » du commentaire de table");
   }
 
@@ -137,25 +137,26 @@ public class ScreeningRulesTests
   /// <summary>
   /// Règle 5 — le <b>conteneur libre</b>. C'est la seule règle qui lise le type, transférée
   /// nommément par #132, et elle ne dit pas ce que la colonne est : elle dit que le schéma ne permet
-  /// pas de le lire. D'où le repli, qui est un verdict, et un motif — donc pas <c>Unflagged</c>.
+  /// pas de le lire. Elle range la colonne sous <c>FreeTextAboutPerson</c>, avec un motif — donc
+  /// pas <c>Unflagged</c>.
   /// </summary>
   [Fact]
-  public async Task FallsBackOnTheUncategorisedVerdictForAFreeContainer()
+  public async Task FilesAFreeContainerUnderFreeTextAboutAPerson()
   {
     var line = await Screen(APivot.Column("donnees", table: "divers", dataType: "json"));
 
-    line.Category.ShouldBe(PersonalDataCategory.PersonalDataUncategorised);
+    line.Category.ShouldBe(PersonalDataCategory.FreeTextAboutPerson);
     line.Strength.ShouldBe(RuleStrength.TypeHeuristic);
     line.Reason.ShouldBe("conteneur libre : le contenu n'est pas lisible depuis le schéma");
   }
 
   /// <summary>
-  /// Quand plusieurs valeurs déclenchent, c'est l'<b>ordre d'arbitrage</b> de la taxonomie qui
-  /// tranche — du plus au moins coûteux à omettre — et jamais le degré. Le motif, lui, <b>dit ce qui
-  /// a été écarté</b> : c'est cela qui s'arbitre.
+  /// Quand plusieurs valeurs déclenchent, c'est l'<b>ordre interne du lexique</b> qui tranche — du
+  /// plus au moins coûteux à omettre — et jamais le degré. Le motif, lui, <b>dit ce qui a été
+  /// écarté</b> : c'est cela qui s'arbitre.
   /// </summary>
   [Fact]
-  public async Task SettlesSeveralTriggersByTheArbitrationOrderAndNamesWhatItSetAside()
+  public async Task SettlesSeveralTriggersByTheLexiconOrderAndNamesWhatItSetAside()
   {
     var line = await Screen(APivot.Column("sante_salaire", table: "dossiers", dataType: "json"));
 
@@ -163,17 +164,89 @@ public class ScreeningRulesTests
     line.Strength.ShouldBe(RuleStrength.ExactName);
     line.Reason.ShouldBe(
       "jeton « sante » du nom de colonne, entrée du lexique "
-      + "(a aussi déclenché : FinancialData, PersonalDataUncategorised)");
+      + "(a aussi déclenché : FinancialData, FreeTextAboutPerson)");
+  }
+
+  /// <summary>
+  /// <c>maladie_employeur</c> est santé <i>et</i> vie professionnelle. C'est la santé qui l'emporte,
+  /// parce que c'est elle qui coûte le plus cher à omettre — jamais parce qu'une règle aurait été
+  /// « plus sûre » qu'une autre.
+  /// </summary>
+  [Fact]
+  public async Task SettlesTheHealthAndProfessionalCollisionOnHealth()
+  {
+    var line = await Screen(APivot.Column("maladie_employeur", table: "divers"));
+
+    line.Category.ShouldBe(PersonalDataCategory.HealthData);
+    line.Reason.ShouldBe(
+      "jeton « maladie » du nom de colonne, entrée du lexique (a aussi déclenché : ProfessionalLife)");
+  }
+
+  /// <summary><c>email_employeur</c> est coordonnées <i>et</i> vie professionnelle : les coordonnées l'emportent.</summary>
+  [Fact]
+  public async Task SettlesTheContactAndProfessionalCollisionOnContactDetails()
+  {
+    var line = await Screen(APivot.Column("email_employeur", table: "divers"));
+
+    line.Category.ShouldBe(PersonalDataCategory.ContactDetails);
+    line.Reason.ShouldBe(
+      "jeton « email » du nom de colonne, entrée du lexique (a aussi déclenché : ProfessionalLife)");
+  }
+
+  /// <summary>L'ordre dans lequel les jetons se présentent ne change rien : le départage est celui du lexique.</summary>
+  [Fact]
+  public async Task SettlesTheSameWayWhateverOrderTheTokensCameIn()
+  {
+    var forwards = await Screen(APivot.Column("employeur_nom_email", table: "divers"));
+    var backwards = await Screen(APivot.Column("email_nom_employeur", table: "divers"));
+
+    forwards.Category.ShouldBe(PersonalDataCategory.Identity);
+    backwards.Category.ShouldBe(forwards.Category);
+    backwards.Reason.ShouldBe(forwards.Reason);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Les deux valeurs d'art. 9 et 10 retirées se rangent après la santé.</b> Relues à travers la
+  /// correspondance, elles tombent toutes deux sur <c>DemographicData</c> ; la santé, seul item de
+  /// l'art. 9 que la taxonomie nomme encore, garde la tête — et le motif ne nomme la catégorie
+  /// écartée qu'une fois, même quand deux entrées d'avant y ont conduit.
+  /// </summary>
+  [Fact]
+  public async Task RanksTheMergedDemographicDataAfterHealthAndNamesItOnce()
+  {
+    var line = await Screen(APivot.Column("casier_religion_maladie", table: "divers"));
+
+    line.Category.ShouldBe(PersonalDataCategory.HealthData);
+    line.Reason.ShouldBe(
+      "jeton « maladie » du nom de colonne, entrée du lexique (a aussi déclenché : DemographicData)");
+  }
+
+  /// <summary>
+  /// Les valeurs retirées du lexique gelé se lisent <b>à travers la correspondance</b> : le fichier
+  /// n'est pas réécrit, et la ligne ne porte jamais que la taxonomie des prototypes.
+  /// </summary>
+  [Theory]
+  [InlineData("casier", "DemographicData")]
+  [InlineData("religion", "DemographicData")]
+  [InlineData("cookie", "OnlineIdentifier")]
+  [InlineData("confidentiel", "FreeTextAboutPerson")]
+  public async Task ReadsTheRetiredValuesOfTheFrozenLexiconThroughTheCorrespondence(string name, string expected)
+  {
+    var line = await Screen(APivot.Column(name, table: "divers", dataType: "varchar(60)"));
+
+    line.Category.Name.ShouldBe(expected);
+    line.Strength.ShouldBe(RuleStrength.ExactName);
   }
 
   /// <summary>
   /// La <b>collision FR/EN</b> du montage : <c>conviction</c> vaut « catégorie particulière » en
-  /// français et « infractions » en anglais, <c>coord</c> vaut « coordonnées » en français et
-  /// « localisation » en anglais. Dans l'union, les deux entrées déclenchent, et c'est l'ordre
-  /// d'arbitrage qui tranche — ce n'est pas un défaut du lexique à corriger.
+  /// français et « infractions » en anglais — deux valeurs que la correspondance ramène toutes deux
+  /// à <c>DemographicData</c> —, <c>coord</c> vaut « coordonnées » en français et « localisation » en
+  /// anglais. Dans l'union, les deux entrées déclenchent, et c'est l'ordre du lexique qui tranche —
+  /// ce n'est pas un défaut du lexique à corriger.
   /// </summary>
   [Theory]
-  [InlineData("conviction", "CriminalOffenceData")]
+  [InlineData("conviction", "DemographicData")]
   [InlineData("coord", "LocationData")]
   public async Task SettlesTheFrenchEnglishCollisionsByTheSameOrder(string name, string expected)
   {
@@ -497,11 +570,11 @@ public class ScreeningRulesTests
   }
 
   [Fact]
-  public async Task FlagsTheConnectionDataOfAColumnWhoseValuesAllLookLikeAnIpAddress()
+  public async Task FlagsTheOnlineIdentifierOfAColumnWhoseValuesAllLookLikeAnIpAddress()
   {
     var line = await ScreenPreviewed(AMuteColumn, "192.168.1.14", "2001:db8::8a2e:370:7334");
 
-    line.Category.ShouldBe(PersonalDataCategory.ConnectionData);
+    line.Category.ShouldBe(PersonalDataCategory.OnlineIdentifier);
     line.Strength.ShouldBe(RuleStrength.ValueForm);
     line.Reason.ShouldBe("toutes les valeurs lues ont la forme d'une adresse IP");
   }
@@ -669,7 +742,7 @@ public class ScreeningRulesTests
       "{\"a\":4}",
       "{\"a\":5}");
 
-    line.Category.ShouldBe(PersonalDataCategory.PersonalDataUncategorised);
+    line.Category.ShouldBe(PersonalDataCategory.FreeTextAboutPerson);
     line.Strength.ShouldBe(RuleStrength.TypeHeuristic);
     line.Reason.ShouldBe("conteneur libre : le contenu n'est pas lisible depuis le schéma");
   }
@@ -677,15 +750,15 @@ public class ScreeningRulesTests
   /// <summary>
   /// ⚠️ <b>Une adresse IPv4 n'est jamais un SIREN.</b> Privée de ses points elle fait neuf chiffres,
   /// très exactement la longueur d'un SIREN, et une sur dix passerait Luhn — la colonne se
-  /// signalerait alors en <c>ProfessionalLife</c>, qui l'emporte à l'arbitrage sur
-  /// <c>ConnectionData</c>. Un SIREN ne s'écrit pas avec des points, et la règle ne les lit pas.
+  /// signalerait alors <i>aussi</i> en <c>ProfessionalLife</c>, et le motif porterait un SIREN qui
+  /// n'existe pas. Un SIREN ne s'écrit pas avec des points, et la règle ne les lit pas.
   /// </summary>
   [Fact]
   public async Task NeverReadsAnIpv4AddressAsASiren()
   {
     var line = await ScreenPreviewed(AMuteColumn, "212.27.48.10", "195.154.140.1");
 
-    line.Category.ShouldBe(PersonalDataCategory.ConnectionData);
+    line.Category.ShouldBe(PersonalDataCategory.OnlineIdentifier);
     line.Strength.ShouldBe(RuleStrength.ValueForm);
     line.Reason.ShouldBe("toutes les valeurs lues ont la forme d'une adresse IP");
   }

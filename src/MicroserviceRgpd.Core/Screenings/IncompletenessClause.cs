@@ -41,7 +41,7 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </para>
 /// <para>
 /// ⚠️ <b>Elle ne prend pas le conteneur libre.</b> Une colonne <c>json</c>/<c>jsonb</c> devient une
-/// <see cref="ScreenedColumn"/> <see cref="PersonalDataCategory.PersonalDataUncategorised"/> portant
+/// <see cref="ScreenedColumn"/> <see cref="PersonalDataCategory.FreeTextAboutPerson"/> portant
 /// le motif « conteneur libre : le contenu n'est pas lisible depuis le schéma ». Le partage est celui
 /// de l'arbitrage : <b>une ligne se retient, une clause ne s'arbitre pas</b> — et une incomplétude
 /// reléguée ici serait la seule que l'<c>Omission relue</c> ne relirait pas, faute de bouton.
@@ -90,11 +90,12 @@ public sealed class IncompletenessClause
   /// principe. Le générique — « certaines catégories ne sont pas atteignables » — est la phrase qu'on
   /// survole, et elle perd ce qui coûte.
   /// <para>
-  /// ⚠️ <b>C'est le seul endroit du produit où se dit la seconde moitié de ce que la taxonomie
-  /// affirme.</b> Les trois valeurs sont gardées au titre de ce qu'elles <i>sont</i> — la vérité
-  /// étant « cette catégorie existe et je ne sais pas la voir » ; sans cette partie, la taxonomie
-  /// affiche treize valeurs dont trois hors d'atteinte <b>sans le dire</b>, ce qui est la confusion
-  /// qu'<c>Unflagged</c> a été nommée pour éviter, un étage plus haut.
+  /// ⚠️ <b>Elles sont nommées par un libellé, jamais par une valeur de la taxonomie.</b> Deux des
+  /// trois — les autres catégories particulières de l'art. 9 et les infractions de l'art. 10 — n'y
+  /// figurent plus depuis le passage aux prototypes, et c'est précisément pourquoi elles doivent se
+  /// dire ici : une catégorie qu'aucune valeur ne porte et qu'aucune phrase ne nomme disparaîtrait
+  /// du produit <b>sans le dire</b>, ce qui est la confusion qu'<c>Unflagged</c> a été nommée pour
+  /// éviter, un étage plus haut.
   /// </para>
   /// <para>
   /// ⚠️ <b>Elle dit une limite de méthode, jamais un résultat de corpus.</b> Que des applications
@@ -481,17 +482,17 @@ public sealed record CategoriesBeyondReach(IReadOnlyList<CategoryBeyondReach> Ca
   internal static CategoriesBeyondReach Constant { get; } = new(
   [
     new CategoryBeyondReach(
-      PersonalDataCategory.HealthData,
+      PersonalDataCategory.HealthData.FrenchLabel,
       "Aucune forme ne dit « donnée de santé ». Un IBAN porte une clé de contrôle, un courriel une "
       + "arobase ; un diagnostic est de la prose, et ce service reconnaît des formes, jamais des "
       + "entités nommées en contexte."),
     new CategoryBeyondReach(
-      PersonalDataCategory.SpecialCategoryData,
+      "autre catégorie particulière",
       "La biométrie ne relève de l'art. 9 qu'« aux fins d'identifier une personne de manière "
       + "unique » : c'est une finalité, et une finalité ne se déclare nulle part dans une base — ni "
       + "dans un nom, ni dans un type, ni dans une valeur."),
     new CategoryBeyondReach(
-      PersonalDataCategory.CriminalOffenceData,
+      "données relatives aux infractions",
       "L'art. 10 réserve ces traitements aux autorités publiques : c'est une qualité du responsable "
       + "du traitement, et rien dans une base ne l'annonce — la donnée d'une condamnation ressemble "
       + "à n'importe quel texte."),
@@ -499,19 +500,23 @@ public sealed record CategoriesBeyondReach(IReadOnlyList<CategoryBeyondReach> Ca
 
   /// <summary>Ce qui ouvre la partie, et qui dit sur quel registre elle parle.</summary>
   public string Statement { get; } =
-    "Trois catégories de la taxonomie restent hors de portée de ce rapport de détection. Elles y "
-    + "figurent au "
-    + "titre de ce qu'elles sont : la limite est celle de la méthode, jamais celle de votre base.";
+    "Trois catégories de données restent hors de portée de ce rapport de détection. Elles sont "
+    + "nommées au titre de ce qu'elles sont : la limite est celle de la méthode, jamais celle de "
+    + "votre base.";
 
-  /// <summary>Cette liste est-elle fermée ? <b>Oui</b> : elle énumère des valeurs d'une taxonomie qui l'est.</summary>
+  /// <summary>Cette liste est-elle fermée ? <b>Oui</b> : elle nomme trois catégories, et seulement elles.</summary>
   public bool IsClosed => true;
 }
 
 /// <summary>
-/// Une catégorie hors de portée, et <b>pourquoi</b> elle l'est. Le motif est attaché à la valeur
+/// Une catégorie hors de portée, et <b>pourquoi</b> elle l'est. Le motif est attaché au nom
 /// parce que les trois ne le sont pas pour la même raison — l'une cache la donnée, l'autre cache le
 /// régime, la troisième cache le responsable.
 /// </summary>
-/// <param name="Category">La valeur de la taxonomie concernée.</param>
+/// <param name="FrenchName">
+/// Le nom français de la catégorie. ⚠️ <b>Un nom en clair, pas une
+/// <see cref="PersonalDataCategory"/></b> : deux des trois n'ont plus de valeur dans la taxonomie,
+/// et c'est ce qui rend leur mention ici indispensable.
+/// </param>
 /// <param name="Reason">Ce qui la met hors de portée, en une phrase lue par un humain.</param>
-public sealed record CategoryBeyondReach(PersonalDataCategory Category, string Reason);
+public sealed record CategoryBeyondReach(string FrenchName, string Reason);

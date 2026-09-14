@@ -22,6 +22,12 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
 /// écrite ici et ne se recalcule pas toute seule.
 /// </para>
 /// <para>
+/// ⚠️ <b>Le passage aux prototypes ne les a pas touchés, et c'est ce que ces empreintes prouvent.</b>
+/// Les fichiers portent encore <c>ConnectionData</c>, <c>SpecialCategoryData</c>,
+/// <c>CriminalOffenceData</c> et <c>PersonalDataUncategorised</c> : la correspondance vers la
+/// taxonomie neuve s'applique <b>au chargement</b>, jamais par une réécriture du gel.
+/// </para>
+/// <para>
 /// Pour la revérifier à la main :
 /// <c>git show d413d55:exploration/banc-screening/lexiques/dictionnaire-fr.tsv | sha256sum</c>.
 /// </para>

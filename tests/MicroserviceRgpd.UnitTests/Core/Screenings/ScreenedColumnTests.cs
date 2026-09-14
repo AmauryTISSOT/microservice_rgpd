@@ -89,8 +89,7 @@ public class ScreenedColumnTests
 
   /// <summary>
   /// ⚠️ <b>Aucun chemin ne pose <c>Unflagged</c> avec un motif.</b> Une ligne « rien vu » qui se
-  /// justifierait serait une ligne « vue et écartée » déguisée, et c'est exactement la distinction
-  /// que <c>PersonalDataUncategorised</c> existe pour tenir.
+  /// justifierait serait une ligne « vue et écartée » déguisée.
   /// </summary>
   [Fact]
   public void RefusesToFlagAColumnUnderTheUnflaggedValue()
@@ -120,19 +119,19 @@ public class ScreenedColumnTests
   }
 
   /// <summary>
-  /// Le cas d'usage le plus fort du repli : un conteneur libre est <b>vu</b>, il n'est pas
-  /// « rien vu ». Le motif est rédigeable, donc ce n'est pas <c>Unflagged</c>.
+  /// Un conteneur libre est <b>vu</b>, il n'est pas « rien vu ». Le motif est rédigeable, donc ce
+  /// n'est pas <c>Unflagged</c>.
   /// </summary>
   [Fact]
-  public void FlagsAFreeContainerAsUncategorisedRatherThanAsNothingSeen()
+  public void FlagsAFreeContainerAsFreeTextRatherThanAsNothingSeen()
   {
     var column = ScreenedColumn.Flagged(
       AScreening.AListedColumn("cfdata", dataType: "jsonb"),
-      PersonalDataCategory.PersonalDataUncategorised,
+      PersonalDataCategory.FreeTextAboutPerson,
       RuleStrength.TypeHeuristic,
       "conteneur libre : le contenu n'est pas lisible depuis le schéma");
 
-    column.Category.ShouldBe(PersonalDataCategory.PersonalDataUncategorised);
+    column.Category.ShouldBe(PersonalDataCategory.FreeTextAboutPerson);
     column.IsFlagged.ShouldBeTrue();
   }
 

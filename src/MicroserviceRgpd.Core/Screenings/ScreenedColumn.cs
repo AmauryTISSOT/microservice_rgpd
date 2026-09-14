@@ -186,9 +186,7 @@ public sealed class ScreenedColumn
     if (!category.IsFlagged)
     {
       throw new ArgumentException(
-        "Unflagged dit que rien n'a été vu : elle ne se signale pas, et elle ne porte pas de motif. "
-        + "Une colonne vue mais qu'aucune valeur ne décrit est PersonalDataUncategorised, qui est un "
-        + "verdict et non un aveu d'ignorance.",
+        "Unflagged dit que rien n'a été vu : elle ne se signale pas, et elle ne porte pas de motif.",
         nameof(category));
     }
 
