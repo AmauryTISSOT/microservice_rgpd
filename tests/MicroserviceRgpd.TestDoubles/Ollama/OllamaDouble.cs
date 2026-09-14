@@ -21,12 +21,25 @@ namespace MicroserviceRgpd.TestDoubles.Ollama;
 /// par défaut du jeu — une colonne sous le seuil —, si bien qu'un relevé quelconque se détecte sans
 /// que chaque test ait à fabriquer ses vecteurs.
 /// </para>
+/// <para>
+/// <b>Il sait tomber en panne</b>, par <see cref="Fault"/> : chaque panne laisse derrière elle un
+/// texte d'Ollama reconnaissable — <see cref="Canary"/>, l'adresse, un digest étranger —, pour qu'un
+/// test exige qu'aucun ne traverse.
+/// </para>
 /// </remarks>
 public sealed class OllamaDouble : HttpMessageHandler
 {
+  /// <summary>Le fragment que toute panne jouée ici glisse dans ce qu'Ollama dit.</summary>
+  public const string Canary = "ollama-canari-464";
+
+  /// <summary>Le digest que <see cref="OllamaFault.AnotherEncoder"/> déclare servir.</summary>
+  public const string ForeignDigest = "0badc0de4640f00d0badc0de4640f00d0badc0de4640f00d0badc0de4640f00d";
+
   private readonly List<string> _embedBodies = [];
 
   private readonly Lock _gate = new();
+
+  private OllamaFault _fault;
 
   /// <summary>Les corps envoyés à <c>/api/embed</c>, dans l'ordre d'arrivée.</summary>
   public IReadOnlyList<string> EmbedBodies
@@ -40,12 +53,36 @@ public sealed class OllamaDouble : HttpMessageHandler
     }
   }
 
-  /// <summary>Oublie les appels reçus — pour un hôte partagé entre plusieurs tests.</summary>
+  /// <summary>
+  /// La panne jouée. ⚠️ <b>Sur un hôte partagé, la remettre à <see cref="OllamaFault.None"/></b> —
+  /// <see cref="Forget"/> le fait —, sans quoi le test suivant hériterait d'un Ollama en panne.
+  /// </summary>
+  public OllamaFault Fault
+  {
+    get
+    {
+      lock (_gate)
+      {
+        return _fault;
+      }
+    }
+
+    set
+    {
+      lock (_gate)
+      {
+        _fault = value;
+      }
+    }
+  }
+
+  /// <summary>Oublie les appels reçus et la panne jouée — pour un hôte partagé entre plusieurs tests.</summary>
   public void Forget()
   {
     lock (_gate)
     {
       _embedBodies.Clear();
+      _fault = OllamaFault.None;
     }
   }
 
@@ -55,16 +92,36 @@ public sealed class OllamaDouble : HttpMessageHandler
   {
     cancellationToken.ThrowIfCancellationRequested();
 
+    var fault = Fault;
+
+    if (fault == OllamaFault.Unreachable)
+    {
+      // La forme de ce que SocketsHttpHandler rend vraiment : le message cite l'hôte et le port.
+      throw new HttpRequestException(
+        $"Connection refused ({request.RequestUri!.Authority}) — {Canary}",
+        new IOException(Canary));
+    }
+
+    if (fault == OllamaFault.NeverAnswers)
+    {
+      await Task.Delay(Timeout.Infinite, cancellationToken);
+    }
+
+    if (fault == OllamaFault.StallsAfterHeaders)
+    {
+      return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StallingStream()) };
+    }
+
     return request.RequestUri!.AbsolutePath switch
     {
-      "/api/tags" when request.Method == HttpMethod.Get => Json(Tags()),
-      "/api/embed" when request.Method == HttpMethod.Post => Json(
-        Embed(await request.Content!.ReadAsStringAsync(cancellationToken))),
+      "/api/tags" when request.Method == HttpMethod.Get => Json(Tags(fault)),
+      "/api/embed" when request.Method == HttpMethod.Post => Embedded(
+        fault, await request.Content!.ReadAsStringAsync(cancellationToken)),
       _ => new HttpResponseMessage(HttpStatusCode.NotFound),
     };
   }
 
-  private static JsonObject Tags()
+  private static JsonObject Tags(OllamaFault fault)
   {
     return new JsonObject
     {
@@ -72,22 +129,42 @@ public sealed class OllamaDouble : HttpMessageHandler
       {
         ["name"] = A2Equivalence.EncoderTag,
         ["model"] = A2Equivalence.EncoderTag,
-        ["digest"] = A2Equivalence.EncoderDigest,
+        ["digest"] = fault == OllamaFault.AnotherEncoder ? ForeignDigest : A2Equivalence.EncoderDigest,
       }),
     };
   }
 
-  private JsonObject Embed(string body)
+  private HttpResponseMessage Embedded(OllamaFault fault, string body)
   {
+    int batch;
+
     lock (_gate)
     {
       _embedBodies.Add(body);
+      batch = _embedBodies.Count;
     }
 
+    return fault switch
+    {
+      OllamaFault.MalformedEmbedding => new HttpResponseMessage(HttpStatusCode.OK)
+      {
+        Content = new StringContent($"<html>{Canary} : sortie tronquée", Encoding.UTF8, "application/json"),
+      },
+      OllamaFault.FailingEmbedding => new HttpResponseMessage(HttpStatusCode.InternalServerError)
+      {
+        Content = new StringContent(
+          $$"""{"error":"{{Canary}} : model requires more system memory"}""", Encoding.UTF8, "application/json"),
+      },
+      _ => Json(Embed(body, oneShort: fault == OllamaFault.OneVectorShortOnTheSecondBatch && batch == 2)),
+    };
+  }
+
+  private static JsonObject Embed(string body, bool oneShort)
+  {
     using var request = JsonDocument.Parse(body);
     var embeddings = new JsonArray();
 
-    foreach (var text in request.RootElement.GetProperty("input").EnumerateArray())
+    foreach (var text in request.RootElement.GetProperty("input").EnumerateArray().Skip(oneShort ? 1 : 0))
     {
       embeddings.Add(new JsonArray([.. A2Equivalence.VectorOf(text.GetString()!).Select(x => (JsonNode?)x)]));
     }
@@ -101,5 +178,53 @@ public sealed class OllamaDouble : HttpMessageHandler
     {
       Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"),
     };
+  }
+
+  /// <summary>
+  /// Un corps dont aucun octet n'arrive jamais — jusqu'à ce que quelqu'un renonce, comme le flux
+  /// d'une connexion réelle : seule une lecture annulable rend la main.
+  /// </summary>
+  private sealed class StallingStream : Stream
+  {
+    public override bool CanRead => true;
+
+    public override bool CanSeek => false;
+
+    public override bool CanWrite => false;
+
+    public override long Length => throw new NotSupportedException();
+
+    public override long Position
+    {
+      get => throw new NotSupportedException();
+      set => throw new NotSupportedException();
+    }
+
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+      await Task.Delay(Timeout.Infinite, cancellationToken);
+
+      return 0;
+    }
+
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+      return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+      throw new NotSupportedException("Un corps qui ne vient jamais ne se lit pas de façon bloquante.");
+    }
+
+    public override void Flush()
+    {
+    }
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
   }
 }

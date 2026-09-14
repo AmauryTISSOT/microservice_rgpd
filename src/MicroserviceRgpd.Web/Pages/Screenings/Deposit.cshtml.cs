@@ -91,8 +91,8 @@ public class DepositModel(IMediator mediator) : PageModel
 
     if (!deposited.IsSuccess)
     {
-      // Les neuf refus viennent du domaine, où le contrat de format est écrit — l'écran les
-      // redit, il n'en rédige aucun. Deux rédactions pour une même règle finiraient par ne plus
+      // Les refus — les neuf cas du format, le poids, le moteur indisponible — sont rédigés en
+      // amont de l'écran, là où leurs règles sont écrites : l'écran les redit, il n'en rédige aucun. Deux rédactions pour une même règle finiraient par ne plus
       // dire la même chose, et l'écran mentirait sur ce que le service accepte.
       // ⚠️ La clé est celle du champ lié, SANS préfixe. Le refus porte sur « Paste », qui est le
       // nom du textarea : une clé préfixée aurait désigné un champ inexistant, et le message ne

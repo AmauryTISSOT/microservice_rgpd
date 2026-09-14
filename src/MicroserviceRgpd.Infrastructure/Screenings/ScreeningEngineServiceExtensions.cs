@@ -95,16 +95,21 @@ public static class ScreeningEngineServiceExtensions
       {
         client.BaseAddress = new Uri(address, UriKind.Absolute);
 
-        // L'échéance appartient au pipeline, et à lui seul : les cent secondes par défaut de
-        // HttpClient couperaient un lot avant elle, sous une annulation muette.
-        client.Timeout = Timeout.InfiniteTimeSpan;
+        // ⚠️ La même échéance, posée deux fois, et ce n'est pas un doublon. Le pipeline ne couvre
+        // que l'attente des en-têtes : un Ollama qui les rend puis se tait pendant le corps
+        // tiendrait le dépôt indéfiniment. Le client couvre le corps ; les cent secondes par
+        // défaut, elles, auraient contredit l'échéance réglée ici.
+        client.Timeout = deadline;
       })
       .RemoveAllResilienceHandlers()
       .AddResilienceHandler(OllamaClientName, pipeline => pipeline.AddTimeout(deadline));
 #pragma warning restore EXTEXP0001
 
     services.AddSingleton<IScreeningEngine>(provider =>
-      new A2ScreeningEngine(provider.GetRequiredService<IHttpClientFactory>(), artefact));
+      new A2ScreeningEngine(
+        provider.GetRequiredService<IHttpClientFactory>(),
+        artefact,
+        provider.GetRequiredService<ILogger<A2ScreeningEngine>>()));
 
     return services;
   }
