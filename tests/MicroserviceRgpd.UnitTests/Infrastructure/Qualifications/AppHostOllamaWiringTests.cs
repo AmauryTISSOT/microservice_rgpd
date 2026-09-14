@@ -14,8 +14,10 @@ public class AppHostOllamaWiringTests
   [Fact]
   public void BothFlagsOffLeaveOllamaOutOfTheStack()
   {
-    OllamaWiring.For(llmIsOn: false, embeddingsAreOn: false).ShouldBe(
-      new OllamaWiring(Exists: false, PullsQualificationModel: false, PullsEncoder: false, RequiresGpu: false));
+    var wiring = OllamaWiring.For(llmIsOn: false, embeddingsAreOn: false);
+
+    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: false, PullsEncoder: false, RequiresGpu: false));
+    wiring.Exists.ShouldBeFalse();
   }
 
   /// <summary>
@@ -25,22 +27,28 @@ public class AppHostOllamaWiringTests
   [Fact]
   public void DetectionAloneBringsOllamaWithTheEncoderOnlyAndNoGpu()
   {
-    OllamaWiring.For(llmIsOn: false, embeddingsAreOn: true).ShouldBe(
-      new OllamaWiring(Exists: true, PullsQualificationModel: false, PullsEncoder: true, RequiresGpu: false));
+    var wiring = OllamaWiring.For(llmIsOn: false, embeddingsAreOn: true);
+
+    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: false, PullsEncoder: true, RequiresGpu: false)));
+    wiring.Exists.ShouldBeTrue();
   }
 
   [Fact]
   public void LlmAloneKeepsTodaysStack()
   {
-    OllamaWiring.For(llmIsOn: true, embeddingsAreOn: false).ShouldBe(
-      new OllamaWiring(Exists: true, PullsQualificationModel: true, PullsEncoder: false, RequiresGpu: true));
+    var wiring = OllamaWiring.For(llmIsOn: true, embeddingsAreOn: false);
+
+    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: true, PullsEncoder: false, RequiresGpu: true)));
+    wiring.Exists.ShouldBeTrue();
   }
 
   [Fact]
   public void BothFlagsOnShareOneOllamaThatPullsBothModels()
   {
-    OllamaWiring.For(llmIsOn: true, embeddingsAreOn: true).ShouldBe(
-      new OllamaWiring(Exists: true, PullsQualificationModel: true, PullsEncoder: true, RequiresGpu: true));
+    var wiring = OllamaWiring.For(llmIsOn: true, embeddingsAreOn: true);
+
+    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: true, PullsEncoder: true, RequiresGpu: true)));
+    wiring.Exists.ShouldBeTrue();
   }
 
   [Theory]

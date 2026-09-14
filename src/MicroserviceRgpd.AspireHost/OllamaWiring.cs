@@ -10,21 +10,19 @@ namespace MicroserviceRgpd.AspireHost;
 /// <b>indépendants</b> : chacun tire son modèle, et un seul serveur les sert quand ils sont allumés
 /// ensemble.
 /// </summary>
-/// <param name="Exists">La ressource Ollama entre dans la pile.</param>
 /// <param name="PullsQualificationModel">Le modèle génératif du moteur LLM est tiré.</param>
 /// <param name="PullsEncoder">L'encodeur du modèle de détection A2 est tiré, et le service l'attend.</param>
 /// <param name="RequiresGpu">
 /// Le conteneur exige le GPU. Seul le moteur LLM le justifie : l'encodeur est léger, et l'exiger pour
 /// lui ferait refuser de démarrer une pile qui tourne très bien sur le processeur.
 /// </param>
-internal sealed record OllamaWiring(bool Exists, bool PullsQualificationModel, bool PullsEncoder, bool RequiresGpu)
+internal sealed record OllamaWiring(bool PullsQualificationModel, bool PullsEncoder, bool RequiresGpu)
 {
+  /// <summary>La ressource Ollama entre dans la pile : il y a au moins un modèle à servir.</summary>
+  public bool Exists => PullsQualificationModel || PullsEncoder;
+
   public static OllamaWiring For(bool llmIsOn, bool embeddingsAreOn) =>
-    new(
-      Exists: llmIsOn || embeddingsAreOn,
-      PullsQualificationModel: llmIsOn,
-      PullsEncoder: embeddingsAreOn,
-      RequiresGpu: llmIsOn);
+    new(PullsQualificationModel: llmIsOn, PullsEncoder: embeddingsAreOn, RequiresGpu: llmIsOn);
 }
 
 /// <summary>La lecture d'un drapeau de l'AppHost.</summary>
