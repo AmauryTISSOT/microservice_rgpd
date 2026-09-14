@@ -60,10 +60,11 @@ public class ContextlessTypeTests
     // Le point de montage de la couche : nommer les ports de tous les contextes EST son travail, et
     // l'y interdire n'aurait laissé qu'un point de montage par contexte, c'est-à-dire le même
     // fichier découpé en deux. ⚠️ Il ne fait que déclarer des correspondances : il ne lit rien et
-    // n'écrit rien.
+    // n'écrit rien. `Requests` y est entré avec le système hôte, dont l'ADR-0026 met le port dans
+    // `Core/Requests` et l'adaptateur dans `Infrastructure`.
     (
       "MicroserviceRgpd.Infrastructure.InfrastructureServiceExtensions",
-      [ContextInspector.Qualification, ContextInspector.Screening]),
+      [ContextInspector.Qualification, ContextInspector.Requests, ContextInspector.Screening]),
 
     // L'adaptateur de la trace d'audit : il sert `Qualification` seul, et le noyau partagé qu'il
     // touche est celui que `Qualification` a le droit de toucher — voir la liste blanche de la
@@ -119,7 +120,8 @@ public class ContextlessTypeTests
       "La liste des dérogations s'est élargie. Un fichier sans contexte qui en rapproche deux est " +
       "l'angle mort d'ADR-0003 : l'y inscrire est un geste de niveau ADR.");
 
-    Permitted.Sum(exempt => exempt.Contexts.Length).ShouldBe(7);
+    // Huit depuis l'ADR-0026 : le point de montage de la couche branche le système hôte de `Requests`.
+    Permitted.Sum(exempt => exempt.Contexts.Length).ShouldBe(8);
   }
 
   /// <summary>

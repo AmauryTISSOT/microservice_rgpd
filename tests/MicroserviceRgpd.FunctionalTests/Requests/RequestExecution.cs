@@ -1,0 +1,391 @@
+using System.Net;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using MicroserviceRgpd.Core.Configuration;
+using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.TestDoubles.HostSystem;
+using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
+using Microsoft.EntityFrameworkCore;
+using NSwag.Generation;
+
+namespace MicroserviceRgpd.FunctionalTests.Requests;
+
+/// <summary>
+/// <b>Exécuter une demande</b>, exercé par la <b>seule frontière HTTP</b> : le handler
+/// <c>POST /demandes?handler=Execute</c>, frappé directement, jeton anti-rejeu compris — et un système
+/// hôte factice qui écoute sur un port réel, à l'adresse posée dans le Paramétrage (ADR-0026).
+/// </summary>
+/// <remarks>
+/// <para>
+/// ⚠️ <b>Rien n'est remplacé dans le conteneur</b> : c'est le vrai client HTTP du service qui appelle le
+/// système hôte factice, et ce que celui-ci reçoit est ce qu'un intégrateur recevrait.
+/// </para>
+/// <para>
+/// ⚠️ <b>Chaque test part d'un Paramétrage vierge et d'un hôte qui n'a rien reçu</b>, et les rend tels
+/// en sortant : le Paramétrage est un singleton, et la base est partagée par toute la collection.
+/// </para>
+/// </remarks>
+[Collection(WebCollection.Name)]
+public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IAsyncLifetime
+{
+  private readonly RequestSurface _surface = new(factory);
+
+  private HostSystemDouble _host = null!;
+
+  public async Task InitializeAsync()
+  {
+    await ForgetEveryEndpointAsync();
+    _host = await HostSystemDouble.StartAsync();
+  }
+
+  public async Task DisposeAsync()
+  {
+    await _host.DisposeAsync();
+    await ForgetEveryEndpointAsync();
+  }
+
+  /// <summary>
+  /// <b>Le système hôte reçoit un <c>POST</c> <c>application/json</c></b>, à l'adresse du Paramétrage
+  /// telle quelle — query string comprise —, sans en-tête d'authentification, dont le corps porte
+  /// <b>exactement</b> les cinq clés : l'identifiant en texte et le droit sous son nom canonique.
+  /// </summary>
+  [Fact]
+  public async Task SendsAJsonPostWithExactlyTheFiveKeysToTheEndpointOfTheRight()
+  {
+    await ConfigureAsync(DataSubjectRight.Erasure, _host.AddressOf("/rights/erasure?tenant=brocanto"));
+    var email = $"{Guid.NewGuid():N}@example.org";
+
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string>
+    {
+      ["email"] = email,
+      ["lastName"] = "Martin",
+      ["firstName"] = "Jeanne",
+      ["identityVerified"] = "true",
+      ["right"] = nameof(DataSubjectRight.Erasure),
+    });
+
+    var response = await _surface.ExecuteAsync(id);
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+
+    var received = _host.Received.ShouldHaveSingleItem("Le système hôte n'a pas reçu un appel, un seul.");
+
+    received.Method.ShouldBe("POST");
+    received.PathAndQuery.ShouldBe("/rights/erasure?tenant=brocanto");
+    received.ContentType.ShouldNotBeNull().Split(';')[0].ShouldBe("application/json");
+    received.Authorization.ShouldBeEmpty("L'appel porte un en-tête d'authentification.");
+
+    using var body = JsonDocument.Parse(received.Body);
+
+    body.RootElement.EnumerateObject().Select(property => property.Name)
+      .ShouldBe(["requestId", "right", "email", "firstName", "lastName"], ignoreOrder: true);
+    body.RootElement.GetProperty("requestId").GetString().ShouldBe(id.ToString());
+    body.RootElement.GetProperty("right").GetString().ShouldBe("Erasure");
+    body.RootElement.GetProperty("email").GetString().ShouldBe(email);
+    body.RootElement.GetProperty("firstName").GetString().ShouldBe("Jeanne");
+    body.RootElement.GetProperty("lastName").GetString().ShouldBe("Martin");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un prénom ou un nom absent part à <c>null</c></b> : les cinq clés sont toujours présentes.
+  /// </summary>
+  [Fact]
+  public async Task SendsTheMissingNamesAsNull()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string>
+    {
+      ["email"] = $"{Guid.NewGuid():N}@example.org",
+      ["identityVerified"] = "true",
+    });
+
+    (await _surface.ExecuteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    using var body = JsonDocument.Parse(_host.Received.ShouldHaveSingleItem().Body);
+
+    body.RootElement.GetProperty("firstName").ValueKind.ShouldBe(JsonValueKind.Null);
+    body.RootElement.GetProperty("lastName").ValueKind.ShouldBe(JsonValueKind.Null);
+  }
+
+  /// <summary>
+  /// <b>Tout 2xx fait passer la demande à Terminée</b> — <c>202 Accepted</c> compris : le 200 porte la
+  /// ligne, au badge Terminée, le crayon éteint et l'exécution éteinte sous « Demande close ».
+  /// </summary>
+  [Theory]
+  [InlineData(200)]
+  [InlineData(202)]
+  [InlineData(204)]
+  public async Task CompletesTheRequestOnEvery2xxAndRendersItsRow(int statusCode)
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    _host.Answer(statusCode);
+
+    var (id, message) = await AnExecutableRequestAsync();
+
+    var response = await _surface.ExecuteAsync(id);
+    var row = await response.Content.ReadAsStringAsync();
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, row);
+    response.Content.Headers.ContentType.ShouldNotBeNull().MediaType.ShouldBe("text/html");
+
+    Regex.Matches(row, @"<tr\b").Count.ShouldBe(1, "Le 200 ne porte pas une ligne, une seule.");
+    Regex.Match(row, @"data-request-id=""([^""]*)""").Groups[1].Value.ShouldBe(id.ToString());
+    row.ShouldContain(@"data-status=""Completed""", Case.Sensitive, "La ligne rendue n'est pas Terminée.");
+    ActionIn(row, "edit").ShouldContain(@"aria-disabled=""true""", Case.Sensitive, "Le crayon d'une demande Terminée est allumé.");
+    ActionIn(row, "execute").ShouldContain(
+      ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access), Case.Sensitive, "L'exécution d'une demande Terminée ne dit pas « Demande close ».");
+
+    (await _surface.RowOfAsync(message))["status"].ShouldBe("Completed");
+  }
+
+  /// <summary>
+  /// <b>Chaque appel parti laisse une ligne de journal</b> : la demande, le droit, l'adresse <b>sans
+  /// query string ni fragment</b>, l'instant de début, la durée, le résultat, le statut HTTP et
+  /// l'auteur — et <b>aucune donnée personnelle</b>.
+  /// </summary>
+  [Fact]
+  public async Task LeavesOneAttemptWithoutPersonalDataInTheExecutionLog()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access?token=secret"));
+    _host.Answer(204);
+
+    var (id, message) = await AnExecutableRequestAsync();
+    var request = await _surface.RowOfAsync(message);
+
+    var before = DateTimeOffset.UtcNow;
+    (await _surface.ExecuteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    var after = DateTimeOffset.UtcNow;
+
+    var attempt = (await AttemptsOfAsync(id)).ShouldHaveSingleItem("L'exécution n'a pas laissé une ligne de journal, une seule.");
+
+    attempt.Keys.ShouldBe(
+      ["id", "data_subject_request_id", "data_subject_right", "called_url", "started_at", "duration", "outcome", "http_status", "created_by"],
+      ignoreOrder: true);
+
+    attempt["data_subject_request_id"].ShouldBe(id);
+    attempt["data_subject_right"].ShouldBe("Access");
+    attempt["called_url"].ShouldBe(_host.AddressOf("/rights/access"));
+    new DateTimeOffset(attempt["started_at"].ShouldBeOfType<DateTime>()).ShouldBeInRange(before, after);
+    attempt["duration"].ShouldBeOfType<TimeSpan>().ShouldBeInRange(TimeSpan.Zero, after - before);
+    attempt["outcome"].ShouldBe("Succeeded");
+    attempt["http_status"].ShouldBe(204);
+    attempt["created_by"].ShouldBe("operator");
+
+    var personal = new[] { request["email"], request["last_name"], request["first_name"], request["message"] }.OfType<string>();
+
+    foreach (var value in attempt.Values.Select(value => value?.ToString() ?? string.Empty))
+    {
+      foreach (var datum in personal)
+      {
+        value.ShouldNotContain(datum, Case.Insensitive, "La ligne de journal porte une donnée personnelle.");
+      }
+    }
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le journal survit à la suppression de la demande</b> : sa ligne garde un identifiant qui ne
+  /// mène plus à personne, et prouve qu'un droit a été demandé au système hôte.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheAttemptWhenTheRequestIsDeleted()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    var (id, message) = await AnExecutableRequestAsync();
+
+    (await _surface.ExecuteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    (await _surface.DeleteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+    (await _surface.CountOfAsync(message)).ShouldBe(0);
+    (await AttemptsOfAsync(id)).ShouldHaveSingleItem("La suppression de la demande a emporté son journal.");
+  }
+
+  /// <summary>
+  /// <b>Une demande close rend 409</b>, sans appel ni ligne de journal : le <c>ProblemDetails</c> dit
+  /// « Demande close » et porte la ligne à jour.
+  /// </summary>
+  [Fact]
+  public async Task AnswersConflictForAClosedRequestWithoutCallingNorLogging()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    var (id, _) = await AnExecutableRequestAsync();
+    await _surface.SetStatusAsync(id, nameof(RequestStatus.Completed));
+
+    var response = await _surface.ExecuteAsync(id);
+
+    await ShouldBeARefusalAsync(response, HttpStatusCode.Conflict, id, ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access));
+    _host.Received.ShouldBeEmpty("Une demande close a été envoyée au système hôte.");
+    (await AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
+  }
+
+  /// <summary>
+  /// <b>Tout autre motif rend 422</b>, sans appel ni ligne de journal : le <c>ProblemDetails</c> dit le
+  /// motif et porte la ligne à jour.
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
+  [InlineData(nameof(ExecutionBlock.EmailMissing))]
+  [InlineData(nameof(ExecutionBlock.NoEndpoint))]
+  public async Task AnswersUnprocessableForEveryOtherBlockWithoutCallingNorLogging(string blockName)
+  {
+    var block = ExecutionBlock.FromName(blockName);
+
+    if (block != ExecutionBlock.NoEndpoint)
+    {
+      await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    }
+
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string>
+    {
+      ["lastName"] = "Martin",
+      ["firstName"] = "Jeanne",
+      ["email"] = block == ExecutionBlock.EmailMissing ? "" : $"{Guid.NewGuid():N}@example.org",
+      ["identityVerified"] = block == ExecutionBlock.IdentityNotVerified ? "false" : "true",
+    });
+
+    var response = await _surface.ExecuteAsync(id);
+
+    await ShouldBeARefusalAsync(response, HttpStatusCode.UnprocessableEntity, id, block.FrenchLabelFor(DataSubjectRight.Access));
+    _host.Received.ShouldBeEmpty("Une demande bloquée a été envoyée au système hôte.");
+    (await AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
+  }
+
+  /// <summary><b>Une demande disparue rend 404</b>, sans appel.</summary>
+  [Fact]
+  public async Task AnswersNotFoundForARequestThatDoesNotExist()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    var (id, _) = await AnExecutableRequestAsync();
+    (await _surface.DeleteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+    (await _surface.ExecuteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    _host.Received.ShouldBeEmpty();
+  }
+
+  /// <summary><b>Un identifiant qui n'en est pas un rend 400</b>, et non 404.</summary>
+  [Theory]
+  [InlineData("")]
+  [InlineData("pas-un-guid")]
+  [InlineData("00000000-0000-0000-0000-000000000000")]
+  public async Task RefusesAnIdThatIsNotOne(string id)
+  {
+    (await _surface.ExecuteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    _host.Received.ShouldBeEmpty();
+  }
+
+  /// <summary>⚠️ <b>Sans jeton anti-rejeu, rien ne part</b> : une page tierce n'atteint pas le handler.</summary>
+  [Fact]
+  public async Task ExecutesNothingWithoutTheAntiforgeryToken()
+  {
+    await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    var (id, message) = await AnExecutableRequestAsync();
+
+    (await _surface.ExecuteWithoutTokenAsync(id)).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+    _host.Received.ShouldBeEmpty();
+    (await _surface.RowOfAsync(message))["status"].ShouldBe("InProgress");
+  }
+
+  /// <summary>⚠️ <b>L'exécution n'est pas une API</b> : le document Swagger n'en publie rien.</summary>
+  [Fact]
+  public async Task TheApiDocumentDoesNotPublishTheExecution()
+  {
+    using var scope = factory.Services.CreateScope();
+    var document = await scope.ServiceProvider.GetRequiredService<IOpenApiDocumentGenerator>().GenerateAsync("v1");
+    var published = document.ToJson();
+
+    document.Paths.Keys.ShouldContain("/qualifications", "Le document ne publie plus rien : les assertions suivantes seraient vides.");
+    published.ShouldNotContain("handler=Execute", Case.Insensitive, "Le document Swagger publie l'exécution d'une demande.");
+    published.ShouldNotContain("ExecuteDataSubjectRequest", Case.Insensitive, "Le document Swagger publie l'exécution d'une demande.");
+  }
+
+  /// <summary>Une demande En cours, à l'identité vérifiée, avec un email, qui invoque le droit d'accès.</summary>
+  private Task<(Guid Id, string Message)> AnExecutableRequestAsync() =>
+    _surface.RecordAsync(new Dictionary<string, string>
+    {
+      ["email"] = $"{Guid.NewGuid():N}@example.org",
+      ["identityVerified"] = "true",
+    });
+
+  /// <summary>
+  /// Un refus d'exécution : le code, un <c>ProblemDetails</c> dont <c>detail</c> est le motif, et la
+  /// ligne à jour de la demande sous <c>row</c> — celle même que le tableau rend.
+  /// </summary>
+  private async Task ShouldBeARefusalAsync(HttpResponseMessage response, HttpStatusCode status, Guid id, string reason)
+  {
+    var body = await response.Content.ReadAsStringAsync();
+
+    response.StatusCode.ShouldBe(status, body);
+    response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
+
+    using var document = JsonDocument.Parse(body);
+
+    document.RootElement.GetProperty("status").GetInt32().ShouldBe((int)status);
+    document.RootElement.GetProperty("detail").GetString().ShouldBe(reason);
+
+    var row = document.RootElement.GetProperty("row").GetString().ShouldNotBeNull().Trim();
+
+    Regex.Match(row, @"data-request-id=""([^""]*)""").Groups[1].Value.ShouldBe(id.ToString());
+    row.ShouldBe(await _surface.BoardRowWithAsync(id.ToString()), "La ligne du refus n'est pas celle que le tableau rend.");
+  }
+
+  /// <summary>La balise d'ouverture et le contenu du bouton d'action <paramref name="action"/> de la ligne.</summary>
+  private static string ActionIn(string row, string action) =>
+    Regex.Matches(row, @"<button\b[^>]*>.*?</button>", RegexOptions.Singleline)
+      .Select(button => button.Value)
+      .Where(button => button.Contains($@"data-action=""{action}""", StringComparison.Ordinal))
+      .ShouldHaveSingleItem($"La ligne ne porte pas son action « {action} », une fois.");
+
+  /// <summary>
+  /// Les lignes du journal d'exécution de la demande <paramref name="id"/>, relues <b>telles que la
+  /// table les porte</b> — colonne par colonne, sous leur nom SQL.
+  /// </summary>
+  private async Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> AttemptsOfAsync(Guid id)
+  {
+    using var scope = factory.Services.CreateScope();
+    var connection = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.GetDbConnection();
+
+    await connection.OpenAsync();
+
+    await using var command = connection.CreateCommand();
+    command.CommandText = "SELECT * FROM execution_attempts WHERE data_subject_request_id = @id";
+
+    var parameter = command.CreateParameter();
+    parameter.ParameterName = "id";
+    parameter.Value = id;
+    command.Parameters.Add(parameter);
+
+    await using var reader = await command.ExecuteReaderAsync();
+
+    var attempts = new List<IReadOnlyDictionary<string, object?>>();
+
+    while (await reader.ReadAsync())
+    {
+      attempts.Add(Enumerable.Range(0, reader.FieldCount).ToDictionary(
+        reader.GetName,
+        column => reader.IsDBNull(column) ? null : reader.GetValue(column)));
+    }
+
+    return attempts;
+  }
+
+  /// <summary>Pose l'adresse du droit, par le use case du Paramétrage.</summary>
+  private async Task ConfigureAsync(DataSubjectRight right, string address)
+  {
+    using var scope = factory.Services.CreateScope();
+
+    var set = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
+      new SetRightEndpointCommand(right, EndpointUrl.From(address)));
+
+    set.IsSuccess.ShouldBeTrue();
+  }
+
+  /// <summary>Ramène le service à son état d'installation : aucune ligne de Paramétrage.</summary>
+  private async Task ForgetEveryEndpointAsync()
+  {
+    using var scope = factory.Services.CreateScope();
+
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Set<Settings>().ExecuteDeleteAsync();
+  }
+}

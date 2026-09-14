@@ -29,6 +29,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
   public DbSet<DataSubjectRequest> DataSubjectRequests => Set<DataSubjectRequest>();
 
   /// <summary>
+  /// Les <c>ExecutionAttempt</c> — le journal d'exécution des demandes, un agrégat à part qui
+  /// survit à la suppression de la demande qu'il référence (ADR-0026).
+  /// </summary>
+  public DbSet<ExecutionAttempt> ExecutionAttempts => Set<ExecutionAttempt>();
+
+  /// <summary>
   /// Les <c>Screening</c> — le rapport de détection, et l'agrégat racine de son contexte.
   /// </summary>
   public DbSet<Screening> Screenings => Set<Screening>();

@@ -4,6 +4,7 @@ using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.Infrastructure.Data.Screenings;
 using MicroserviceRgpd.Infrastructure.Qualifications;
+using MicroserviceRgpd.Infrastructure.Requests;
 using MicroserviceRgpd.Infrastructure.Screenings;
 using MicroserviceRgpd.Infrastructure.Screenings.Scanning;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -52,6 +53,10 @@ public static class InfrastructureServiceExtensions
     services.TryAddSingleton(TimeProvider.System);
 
     services.AddQualificationEngines(config);
+
+    // Le système hôte, que l'exécution d'une demande appelle : un client sans reprise ni redirection,
+    // au délai HostSystem:TimeoutSeconds (ADR-0026).
+    services.AddHostSystem(config);
 
     // Le moteur de détection : le lexique par défaut, démarré avec le service ; A2 si le drapeau
     // Screening:Embeddings:Enabled l'allume, et Ollama entre alors dans la pile. Un seul des deux,

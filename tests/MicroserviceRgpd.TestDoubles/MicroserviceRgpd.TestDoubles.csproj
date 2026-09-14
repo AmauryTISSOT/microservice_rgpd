@@ -21,6 +21,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Le système hôte factice écoute sur un port réel, sous Kestrel : le vrai client HTTP du
+         service l'appelle, et rien n'est remplacé dans son conteneur. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\MicroserviceRgpd.Core\MicroserviceRgpd.Core.csproj" />
   </ItemGroup>
 
