@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -128,10 +129,11 @@ def _query_int(request: Request, name: str, default: int | None) -> int | None:
         return default
 
     raw = request.query_params[name]
-    try:
-        return int(raw)
-    except ValueError:
-        raise ValueError(f"{name} vaut « {raw} », qui n'est pas un nombre entier.") from None
+    # `int()` accepterait « +5 », « 5_03 », une espace ou des chiffres non latins : ils sont illisibles ici.
+    if not re.fullmatch(r"-?[0-9]+", raw):
+        raise ValueError(f"{name} vaut « {raw} », qui n'est pas un nombre entier.")
+
+    return int(raw)
 
 
 app = create_app()
