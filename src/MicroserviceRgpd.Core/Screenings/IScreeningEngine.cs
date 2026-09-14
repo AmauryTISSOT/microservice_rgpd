@@ -68,13 +68,22 @@ public interface IScreeningEngine
   /// motif de ne pas la signaler : une règle de forme ne peut qu'<b>ajouter</b> un signalement,
   /// jamais en retirer un.
   /// </param>
+  /// <param name="columnsScreened">
+  /// Où rapporter le <b>nombre de colonnes déjà détectées</b>, au fil du travail — ou <c>null</c> sur
+  /// le chemin collé, où personne n'attend devant un écran. ⚠️ <b>Un compte de colonnes, et rien
+  /// d'autre</b> : ni nom, ni lot, ni score. Un moteur qui travaille par lots rapporte après chaque
+  /// lot ; un moteur qui détecte d'un seul coup rapporte une fois, à la fin. Le compte ne dépasse
+  /// jamais le nombre de colonnes du relevé.
+  /// </param>
   /// <param name="cancellationToken">
   /// L'annulation de l'appelant, propagée jusqu'au moteur : un relevé de vingt mille colonnes
   /// détecté pour quelqu'un qui est parti occupe la place de celui qui est resté.
   /// </param>
   /// <exception cref="ArgumentNullException"><paramref name="listing"/> ou <paramref name="previews"/> est absent.</exception>
+  /// <exception cref="ScreeningEngineUnavailable">Le moteur n'a pas pu rendre de rapport.</exception>
   Task<ScreenedListing> ScreenAsync(
     ColumnListing listing,
     IReadOnlyDictionary<ColumnIdentity, ColumnPreview> previews,
+    IProgress<int>? columnsScreened = null,
     CancellationToken cancellationToken = default);
 }

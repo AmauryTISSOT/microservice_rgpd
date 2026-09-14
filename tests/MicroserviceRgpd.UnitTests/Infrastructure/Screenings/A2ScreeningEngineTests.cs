@@ -134,6 +134,46 @@ public class A2ScreeningEngineTests
   }
 
   /// <summary>
+  /// A2 rapporte les colonnes détectées <b>lot par lot</b>, dans l'ordre où les lots reviennent de
+  /// l'encodeur — c'est ce qui fait avancer la phase « détection » de l'écran d'attente.
+  /// </summary>
+  [Fact]
+  public async Task ReportsTheColumnsScreenedBatchByBatch()
+  {
+    var columns = Enumerable.Range(1, 130)
+      .Select(i => APivot.Column($"champ_{i}", table: "clients", position: i))
+      .ToArray();
+    var reported = new List<int>();
+
+    await AScreeningEngine.WiredToA2(new OllamaDouble()).ScreenAsync(
+      Ingested(APivot.Paste(columns)),
+      IScreeningEngine.NoPreviews,
+      new Reported(reported));
+
+    reported.ShouldBe([64, 128, 130]);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le compte est celui des colonnes, pas celui des textes.</b> Deux colonnes de même table et
+  /// de même nom dans deux schémas partent en un seul texte, et le compte atteint quand même le
+  /// nombre de colonnes du relevé.
+  /// </summary>
+  [Fact]
+  public async Task CountsEveryColumnEvenWhenTwoShareTheSameText()
+  {
+    var reported = new List<int>();
+
+    await AScreeningEngine.WiredToA2(new OllamaDouble()).ScreenAsync(
+      Ingested(APivot.Paste(
+        APivot.Column("email", schema: "archive", table: "users", position: 1),
+        APivot.Column("email", schema: "public", table: "users", position: 1))),
+      IScreeningEngine.NoPreviews,
+      new Reported(reported));
+
+    reported.ShouldBe([2]);
+  }
+
+  /// <summary>
   /// <b>L'équivalence avec Python.</b> Sur le jeu figé, le moteur rend les décisions et les
   /// catégories que <c>a2_model.py</c> a rendues — y compris les deux colonnes posées à ±1e-5 du
   /// seuil, qu'un score écarté de plus de 1e-5 ferait passer du mauvais côté.
@@ -281,5 +321,17 @@ public class A2ScreeningEngineTests
     outcome.Refusal.ShouldBeNull();
 
     return outcome.Listing!;
+  }
+
+  /// <summary>
+  /// Ce que le moteur rapporte, recueilli <b>sur le fil qui rapporte</b> — un <see cref="Progress{T}"/>
+  /// posterait au pool, et l'ordre des comptes ne serait plus celui des lots.
+  /// </summary>
+  private sealed class Reported(List<int> counts) : IProgress<int>
+  {
+    public void Report(int value)
+    {
+      counts.Add(value);
+    }
   }
 }

@@ -71,7 +71,7 @@ public sealed record ScanEndingScreen(
 
     // ⚠️ LA PHASE ET LA FAMILLE, ET RIEN D'AUTRE. Pas de geste : la phrase de la famille dit déjà
     // de quel côté chercher, et en ajouter un ferait de l'écran d'échec une consigne — alors que
-    // sur deux des trois familles, le réseau et la base, l'Operator n'a rien à poser.
+    // sur deux des quatre familles, le réseau et la base, l'Operator n'a rien à poser.
     return new ScanEndingScreen(
       "Scan échoué",
       InPhase(failure.Phase),

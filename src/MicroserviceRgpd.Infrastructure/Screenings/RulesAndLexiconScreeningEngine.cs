@@ -116,6 +116,7 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
   public Task<ScreenedListing> ScreenAsync(
     ColumnListing listing,
     IReadOnlyDictionary<ColumnIdentity, ColumnPreview> previews,
+    IProgress<int>? columnsScreened = null,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(listing);
@@ -129,6 +130,9 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
 
       screened.Add(Screen(column, previews.GetValueOrDefault(column.Identity)));
     }
+
+    // Local et sans lot : le compte se rapporte une fois, quand tout est détecté.
+    columnsScreened?.Report(screened.Count);
 
     // ⚠️ La déclaration porte sur ce que l'APPELANT a fourni, jamais sur ce que les règles ont
     // trouvé : un relevé scanné dont aucune colonne ne porte de forme reconnue a bel et bien fait

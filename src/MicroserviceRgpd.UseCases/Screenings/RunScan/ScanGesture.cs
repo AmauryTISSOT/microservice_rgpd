@@ -94,7 +94,31 @@ public sealed class ScanGesture(
     // tu. L'attente en couvre une de plus que le scan parce que l'Operator attend un rapport.
     progress.Detecting(listing.ColumnCount);
 
-    var screened = await engine.ScreenAsync(listing, outcome.Previews, cancellationToken);
+    ScreenedListing screened;
+
+    try
+    {
+      // ⚠️ Les aperçus partent au moteur comme ils sont, et c'est lui qui décide de les lire : A2 ne
+      // lit que les noms, et un relevé scanné rend alors le même rapport que le même relevé collé.
+      screened = await engine.ScreenAsync(
+        listing,
+        outcome.Previews,
+        new ColumnsScreenedOf(progress),
+        cancellationToken);
+    }
+    catch (ScreeningEngineUnavailable)
+    {
+      // ⚠️ Une fin nommée, et non une panne du service : aucun Screening n'est écrit, rien ne part à
+      // l'archive, aucun aperçu n'est déposé — le rapport courant ne recule pas. Laissée filer, elle
+      // tomberait dans le rattrapage du lanceur, qui l'aurait dite « la base », et l'Operator serait
+      // allé chercher chez le client une panne qui est chez l'exploitant. Aucun autre moteur ne
+      // détecte à la place (ADR-0025).
+      progress.EndedWithoutAReport(
+        ScanEnding.Failed,
+        new ScanFailure(ScanPhase.Detecting, ScanFailureFamily.EngineUnavailable));
+
+      return;
+    }
 
     var screening = Screening.Of(
       ScreeningId.Next(),
@@ -138,6 +162,18 @@ public sealed class ScanGesture(
     public void Report(ScanStep value)
     {
       progress.Record(value);
+    }
+  }
+
+  /// <summary>
+  /// Le fil qui relie le compte du moteur à la phase « détection », sur le fil qui le rapporte —
+  /// pour la même raison que <see cref="ProgressOf"/>.
+  /// </summary>
+  private sealed class ColumnsScreenedOf(ScanProgress progress) : IProgress<int>
+  {
+    public void Report(int value)
+    {
+      progress.Screened(value);
     }
   }
 }

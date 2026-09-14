@@ -175,9 +175,10 @@ public sealed class ScanLauncher(
 
       // ⚠️ « LA BASE », ET C'EST UN CHOIX PAR DÉFAUT, NON UNE LECTURE DE L'EXCEPTION. Ce rattrapage
       // ne voit que ce que le port N'A PAS su nommer : les familles vraies — le réseau, ce qui a été
-      // fourni — sortent du port, qui seul sait ce qu'il a tenté. Ici, on ne sait pas, et il n'y a
-      // pas de quatrième famille : en ajouter une « inconnue » ferait, à chaque panne neuve, une
-      // valeur que du code déjà écrit ne saurait pas afficher. Reste la moins trompeuse des trois :
+      // fourni — sortent du port, qui seul sait ce qu'il a tenté ; celle du moteur de détection, le
+      // geste la pose lui-même. Ici, on ne sait pas, et il n'y a pas de famille « inconnue » : en
+      // ajouter une ferait, à chaque panne neuve, une valeur que du code déjà écrit ne saurait pas
+      // afficher. Reste la moins trompeuse des trois familles du scan :
       // elle n'envoie l'Operator ni vérifier une chaîne qui n'est peut-être pas en cause, ni
       // soupçonner un réseau qui a répondu.
       progress.EndedWithoutAReport(

@@ -1,9 +1,9 @@
 namespace MicroserviceRgpd.Core.Screenings;
 
 /// <summary>
-/// De quel côté vient ce qui a fait tomber un <c>Scan</c> : de l'<c>Operator</c>, du réseau, ou de
-/// la base. Trois familles, au grain du <b>geste que l'<c>Operator</c> peut poser</b> — exactement
-/// comme <see cref="PreviewAbsenceReason"/> un cran plus bas.
+/// De quel côté vient ce qui a fait tomber un <c>Scan</c> : de l'<c>Operator</c>, du réseau, de la
+/// base, ou du moteur de détection. Quatre familles, au grain du <b>geste que l'<c>Operator</c> peut
+/// poser</b> — exactement comme <see cref="PreviewAbsenceReason"/> un cran plus bas.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -13,11 +13,18 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// prose venue d'ailleurs, et c'est ce qui tient la règle plutôt qu'une relecture.
 /// </para>
 /// <para>
-/// ⚠️ <b>Trois familles, et non une par panne rencontrée.</b> « Hôte injoignable », « délai
+/// ⚠️ <b>Quatre familles, et non une par panne rencontrée.</b> « Hôte injoignable », « délai
 /// dépassé » et « connexion tombée en cours de relevé » n'offrent pas à l'<c>Operator</c> des gestes
 /// différents : elles se rangent ensemble sous <see cref="Network"/>. Une énumération qui grandirait
 /// au fil des pannes de production serait, à chaque panne neuve, une valeur que du code déjà écrit
 /// ne sait pas afficher.
+/// </para>
+/// <para>
+/// ⚠️ <b>La quatrième ne sort jamais du port de scan.</b> <see cref="EngineUnavailable"/> vient de la
+/// détection — la phase que le scan n'atteint jamais —, et c'est le geste du scan qui la pose quand le
+/// moteur lève <see cref="ScreeningEngineUnavailable"/>. Elle est ici et non dans un second type parce
+/// que l'écran d'attente dit toutes les fins sur la même forme, et qu'un second vocabulaire de cause
+/// obligerait chaque écran à en lire deux.
 /// </para>
 /// </remarks>
 public sealed class ScanFailureFamily : SmartEnum<ScanFailureFamily>
@@ -45,6 +52,21 @@ public sealed class ScanFailureFamily : SmartEnum<ScanFailureFamily>
     3,
     "la base",
     "La base a refusé la lecture ou n'a pas su y répondre.");
+
+  /// <summary>
+  /// Le moteur de détection : la base a été relevée, et le moteur n'a pas rendu de rapport.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Son libellé est celui du dépôt collé</b>, pris sur <see cref="ScreeningEngineUnavailable"/>
+  /// : la même panne se dit de la même façon sur les deux chemins. Sa phrase ne cite rien du moteur —
+  /// ni message, ni adresse, ni digest ; la cause fine est au journal.
+  /// </remarks>
+  public static readonly ScanFailureFamily EngineUnavailable = new(
+    nameof(EngineUnavailable),
+    4,
+    ScreeningEngineUnavailable.FrenchLabel,
+    $"{ScreeningEngineUnavailable.Statement} La base a bien été relevée : relancez le scan plus "
+    + "tard, et prévenez l'exploitant si l'indisponibilité dure.");
 
   private ScanFailureFamily(string name, int value, string frenchLabel, string statement)
     : base(name, value)

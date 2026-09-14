@@ -453,6 +453,9 @@ pour la détection. Les phases qui précèdent le retour du catalogue n'affichen
 avant lui, aucun dénominateur n'est honnête. Et **aucun total global**, parce qu'en produire un
 reviendrait à décider d'avance qu'une table de prélèvement « vaut » *n* colonnes de détection, ce qui
 est le pourcentage inventé — pire qu'aucune barre.
+⚠️ **La détection compte les colonnes détectées, lot par lot.** C'est le moteur qui les rapporte, par
+`IScreeningEngine` : A2 après chaque lot encodé, le lexique une seule fois, à la fin. Le compte est
+celui des **colonnes** du relevé, jamais celui des textes envoyés à l'encodeur.
 ⚠️ **L'écran qu'il alimente couvre une phase de plus que le scan** : la détection, qui existe aussi
 sur le chemin collé. Ce n'est pas une entorse au test, parce que le test porte sur l'**objet** : quand
 on colle, il n'y a ni écran d'attente ni `ScanProgress`. La raison est que l'`Operator` n'attend pas
@@ -604,7 +607,10 @@ comparables.** A2 allumé et Ollama injoignable, trop lent ou servant un autre e
 texte d'Ollama ; la cause fine, « injoignable », « échéance dépassée » ou « encodeur non conforme »,
 ne va qu'au journal — et aucun `Screening` n'est produit ; le lexique ne détecte jamais à sa place.
 Au dépôt collé, le refus nomme la famille et laisse le collage en place, pour réessayer sans
-recoller. Un repli à l'exécution ferait
+recoller. Sur le chemin scanné, l'écran d'attente se termine par une fin d'échec — phase
+« détection », famille « moteur de détection indisponible », la quatrième des familles de cause d'un
+scan, et la seule que le port de scan ne rend jamais —, avec la relance sous la main. Un repli à
+l'exécution ferait
 changer de moteur un rapport dans le dos de l'`Operator`, et deux rapports d'une même pile ne se
 compareraient plus. Le repli existe, mais il est **de déploiement** : l'exploitant qui ne sert pas
 Ollama éteint le drapeau, et toute sa pile détecte au lexique.
