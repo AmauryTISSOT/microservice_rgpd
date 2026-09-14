@@ -1,0 +1,50 @@
+﻿[
+    {
+        "chemin":  "scanne",
+        "materiel":  "cpu",
+        "essai":  1,
+        "statut":  303,
+        "geste_ms":  227457.4614,
+        "phases_debut_ms":  {
+                                "connexion":  32.336600000000004,
+                                "aperçus":  565.106,
+                                "détection":  1198.233
+                            },
+        "lots_embed":  85,
+        "embed_somme_ms":  224272.79084800003,
+        "embed_max_ms":  3199.619464,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "scanne",
+        "materiel":  "cpu",
+        "essai":  2,
+        "statut":  303,
+        "geste_ms":  228144.228,
+        "phases_debut_ms":  {
+                                "connexion":  2.8541000000000003,
+                                "aperçus":  403.7199,
+                                "détection":  910.1846
+                            },
+        "lots_embed":  85,
+        "embed_somme_ms":  225273.3054760001,
+        "embed_max_ms":  3252.78471,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "scanne",
+        "materiel":  "cpu",
+        "essai":  3,
+        "statut":  303,
+        "geste_ms":  227055.2861,
+        "phases_debut_ms":  {
+                                "connexion":  2.6428000000000003,
+                                "aperçus":  384.2902,
+                                "détection":  778.5986
+                            },
+        "lots_embed":  85,
+        "embed_somme_ms":  224274.739841,
+        "embed_max_ms":  3196.4296769999996,
+        "embed_statuts":  "200x85"
+    }
+]

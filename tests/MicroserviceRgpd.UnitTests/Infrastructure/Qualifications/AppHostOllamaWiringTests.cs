@@ -86,4 +86,37 @@ public class AppHostOllamaWiringTests
 
     EncoderModel.TagFrom(manifest).ShouldBe(A2Artefact.Load(A2Artefact.OpenEmbedded).EncoderTag);
   }
+
+  /// <summary>
+  /// ⚠️ <b>L'image d'Ollama est la version qui a construit l'artefact</b>, lue dans le même manifest.
+  /// Laissée au tag par défaut du paquet d'hébergement, elle servait la 0.13.0 : la mesure Dolibarr
+  /// de l'ADR-0025 l'a trouvée ainsi.
+  /// </summary>
+  [Fact]
+  public void RunsTheOllamaVersionTheArtefactWasBuiltWith()
+  {
+    var manifest = Path.Combine(
+      AppHostQualificationWiringTests.RepositoryRoot(),
+      "src/MicroserviceRgpd.Infrastructure/Screenings/Embeddings/Artefact/manifest.json");
+
+    EncoderModel.OllamaImageTagFrom(manifest).ShouldBe("0.34.0");
+  }
+
+  [Fact]
+  public void AManifestThatNamesNoOllamaVersionStopsTheStart()
+  {
+    var manifest = Path.GetTempFileName();
+
+    try
+    {
+      File.WriteAllText(manifest, """{"encoder":{"tag":"bge-m3:latest"}}""");
+
+      Should.Throw<InvalidOperationException>(() => EncoderModel.OllamaImageTagFrom(manifest))
+        .Message.ShouldContain("Ollama");
+    }
+    finally
+    {
+      File.Delete(manifest);
+    }
+  }
 }

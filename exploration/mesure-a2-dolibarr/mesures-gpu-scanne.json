@@ -1,0 +1,50 @@
+﻿[
+    {
+        "chemin":  "scanne",
+        "materiel":  "gpu",
+        "essai":  1,
+        "statut":  303,
+        "geste_ms":  76286.143300000011,
+        "phases_debut_ms":  {
+                                "connexion":  30.091800000000003,
+                                "aperçus":  671.6916,
+                                "détection":  1233.1577
+                            },
+        "lots_embed":  85,
+        "embed_somme_ms":  73180.515704,
+        "embed_max_ms":  1134.363393,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "scanne",
+        "materiel":  "gpu",
+        "essai":  2,
+        "statut":  303,
+        "geste_ms":  75016.4278,
+        "phases_debut_ms":  {
+                                "connexion":  2.8257000000000003,
+                                "aperçus":  382.2806,
+                                "détection":  884.3243
+                            },
+        "lots_embed":  85,
+        "embed_somme_ms":  72260.802992999976,
+        "embed_max_ms":  999.059396,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "scanne",
+        "materiel":  "gpu",
+        "essai":  3,
+        "statut":  303,
+        "geste_ms":  75192.2684,
+        "phases_debut_ms":  {
+                                "connexion":  2.3548,
+                                "aperçus":  385.9825,
+                                "détection":  822.2989
+                            },
+        "lots_embed":  85,
+        "embed_somme_ms":  72593.798394000027,
+        "embed_max_ms":  1031.596839,
+        "embed_statuts":  "200x85"
+    }
+]

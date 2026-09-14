@@ -1,0 +1,46 @@
+﻿[
+    {
+        "chemin":  "colle",
+        "materiel":  "cpu",
+        "essai":  1,
+        "statut":  302,
+        "geste_ms":  228331.30800000002,
+        "lots_embed":  85,
+        "embed_somme_ms":  224259.94203700006,
+        "embed_max_ms":  5300.462066,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "colle",
+        "materiel":  "cpu",
+        "essai":  2,
+        "statut":  302,
+        "geste_ms":  221480.1894,
+        "lots_embed":  85,
+        "embed_somme_ms":  218779.7967849999,
+        "embed_max_ms":  3088.729506,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "colle",
+        "materiel":  "cpu",
+        "essai":  3,
+        "statut":  302,
+        "geste_ms":  228360.3979,
+        "lots_embed":  85,
+        "embed_somme_ms":  225796.45924099995,
+        "embed_max_ms":  3418.3205629999998,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "colle",
+        "materiel":  "cpu",
+        "essai":  4,
+        "statut":  302,
+        "geste_ms":  227215.1829,
+        "lots_embed":  85,
+        "embed_somme_ms":  225153.16436300016,
+        "embed_max_ms":  3142.368385,
+        "embed_statuts":  "200x85"
+    }
+]

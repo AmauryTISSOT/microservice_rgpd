@@ -1,0 +1,46 @@
+﻿[
+    {
+        "chemin":  "colle",
+        "materiel":  "gpu",
+        "essai":  1,
+        "statut":  302,
+        "geste_ms":  112293.6115,
+        "lots_embed":  85,
+        "embed_somme_ms":  108580.44452799999,
+        "embed_max_ms":  20081.868786000003,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "colle",
+        "materiel":  "gpu",
+        "essai":  2,
+        "statut":  302,
+        "geste_ms":  74598.1167,
+        "lots_embed":  85,
+        "embed_somme_ms":  72131.264214999988,
+        "embed_max_ms":  1046.213759,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "colle",
+        "materiel":  "gpu",
+        "essai":  3,
+        "statut":  302,
+        "geste_ms":  74174.5375,
+        "lots_embed":  85,
+        "embed_somme_ms":  72198.763507000011,
+        "embed_max_ms":  1063.2160159999999,
+        "embed_statuts":  "200x85"
+    },
+    {
+        "chemin":  "colle",
+        "materiel":  "gpu",
+        "essai":  4,
+        "statut":  302,
+        "geste_ms":  74704.0116,
+        "lots_embed":  85,
+        "embed_somme_ms":  72762.076999999976,
+        "embed_max_ms":  1011.3695730000001,
+        "embed_statuts":  "200x85"
+    }
+]
