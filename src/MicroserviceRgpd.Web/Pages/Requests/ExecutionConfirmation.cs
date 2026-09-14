@@ -62,6 +62,13 @@ public sealed record ExecutionConfirmation(
   /// <summary>Ce que dit le toast quand le système hôte a appliqué le droit.</summary>
   public const string Executed = "Demande exécutée";
 
+  /// <summary>
+  /// Ce que dit le bandeau quand la réponse du service ne se lit pas — coupure réseau, erreur du
+  /// serveur : l'exécution a pu aboutir, et rien à l'écran ne le sait.
+  /// </summary>
+  public const string Unanswered =
+    "La réponse du service n'a pas pu être lue. Rechargez la page pour savoir si la demande a été exécutée.";
+
   /// <summary>Ce qu'affiche une valeur absente : une absence, pas une cible restée vide.</summary>
   private const string Absent = "—";
 

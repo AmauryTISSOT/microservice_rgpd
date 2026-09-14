@@ -1381,8 +1381,18 @@ execution.addEventListener("close", () => {
 // porte `aria-busy` et son icône le temps de l'appel ; un second clic ne part pas.
 //
 // Sur 200, le corps est la ligne de la demande passée à Terminée : elle remplace la sienne, la
-// confirmation se ferme, et le toast dit « Demande exécutée ». ⚠️ Les refus et les échecs se diront
-// dans le bandeau — ticket suivant — : ici, « Exécuter » redevient seulement utilisable.
+// confirmation se ferme, et le toast dit « Demande exécutée ».
+//
+// SUR 409, 422 OU 502, LE CORPS EST UN `ProblemDetails` : son `detail` va au bandeau, sa ligne à jour
+// remplace celle du tableau, et la confirmation reste ouverte — « Annuler », la croix et Échap la
+// ferment de nouveau. ⚠️ « Exécuter » ne redevient offert que si le serveur dit une nouvelle tentative
+// utile (`retryable`) : un motif de blocage serait opposé de nouveau, et un droit appliqué sans passage
+// à Terminée le serait une seconde fois.
+//
+// 404 : la demande a été supprimée ailleurs — comme pour une modification, sa ligne part, la
+// confirmation se ferme et le toast le dit. Toute autre issue — réponse illisible, coupure réseau —
+// prend la phrase que la page a rendue : l'exécution a pu aboutir, l'écran ne le sait pas, et
+// « Exécuter » s'éteint.
 async function execute() {
   if (executing || executeButton.disabled) {
     return;
@@ -1390,49 +1400,81 @@ async function execute() {
 
   executing = true;
   executeButton.setAttribute("aria-busy", "true");
+  executionBlocked.hidden = true;
 
-  let rowHtml = null;
+  let response = null;
 
   try {
-    const response = await fetch(executionForm.action, {
+    response = await fetch(executionForm.action, {
       method: "POST",
       body: new URLSearchParams(new FormData(executionForm)),
     });
-
-    if (response.status === 200) {
-      rowHtml = await response.text().catch(() => "");
-    }
   } catch {
-    // Les échecs se diront dans le bandeau — ticket suivant.
+    // Une coupure réseau : la phrase de la réponse illisible, plus bas.
   }
+
+  // ⚠️ C'EST EXÉCUTÉ DÈS LE 200, que le corps se lise ou non : un corps perdu ne doit pas poser le
+  // bandeau, qui inviterait à une nouvelle tentative.
+  const rowHtml = response?.status === 200 ? await response.text().catch(() => "") : null;
+  const problem = [409, 422, 502].includes(response?.status) ? await response.json().catch(() => null) : null;
 
   executing = false;
   executeButton.removeAttribute("aria-busy");
 
   if (rowHtml !== null) {
     closeOnExecution(rowHtml);
+  } else if (response?.status === 404) {
+    dropTheVanishedExecution();
+  } else {
+    stopOnProblem(problem);
   }
 }
 
 // LA LIGNE EXÉCUTÉE REMPLACE LA SIENNE, À SA PLACE : ni la date de réception ni l'instant
 // d'enregistrement n'ont changé, le tri n'a rien à revoir. La recherche se rejoue, comme après toute
 // ligne entrée dans le tableau.
-//
-// ⚠️ LE FOCUS SUIT LA LIGNE : l'avion en papier qui a ouvert la confirmation part avec l'ancienne, et
-// c'est celui de la nouvelle — éteint, mais focalisable — qui le reçoit.
 function closeOnExecution(rowHtml) {
-  const row = rowRenderedBy(rowHtml);
-
-  if (row && rowToExecute?.isConnected) {
-    rowToExecute.replaceWith(row);
-    executionOpenedBy = row.querySelector('[data-action="execute"]');
-    applySearch();
-  }
+  replaceTheRowToExecute(rowHtml);
 
   execution.close();
   rowToExecute = null;
 
   say(toast.dataset.executed);
+}
+
+// LE BANDEAU DIT LE MOTIF DE BLOCAGE OU L'ÉCHEC, ET LA LIGNE SE MET À JOUR À SA PLACE quand la réponse
+// la porte. La confirmation reste ouverte, sur la nouvelle ligne. Sans `ProblemDetails` lisible, le
+// bandeau prend la phrase de la réponse illisible.
+function stopOnProblem(problem) {
+  replaceTheRowToExecute(typeof problem?.row === "string" ? problem.row : null);
+
+  executionBlocked.textContent = problem?.detail || executionBlocked.dataset.unanswered;
+  executionBlocked.hidden = false;
+  executeButton.disabled = problem?.retryable !== true;
+}
+
+// LA DEMANDE N'EXISTE PLUS : elle a été supprimée depuis un autre onglet. Aucune nouvelle tentative ne
+// la rattrapera, donc pas de bandeau : sa ligne part, la confirmation se ferme, et le focus va au
+// cadre du tableau.
+function dropTheVanishedExecution() {
+  removeRow(rowToExecute);
+  execution.close();
+  rowToExecute = null;
+
+  say(toast.dataset.vanished);
+}
+
+// ⚠️ LE FOCUS SUIT LA LIGNE : l'avion en papier qui a ouvert la confirmation part avec l'ancienne, et
+// c'est celui de la nouvelle — éteint ou non, mais focalisable — qui le reçoit à la fermeture.
+function replaceTheRowToExecute(rowHtml) {
+  const row = rowHtml ? rowRenderedBy(rowHtml) : null;
+
+  if (row && rowToExecute?.isConnected) {
+    rowToExecute.replaceWith(row);
+    rowToExecute = row;
+    executionOpenedBy = row.querySelector('[data-action="execute"]');
+    applySearch();
+  }
 }
 
 executeButton.addEventListener("click", execute);

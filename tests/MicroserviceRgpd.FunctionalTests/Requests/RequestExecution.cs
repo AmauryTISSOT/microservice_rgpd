@@ -524,7 +524,8 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
   /// <summary>
   /// Un refus ou un échec d'exécution : le code, un <c>ProblemDetails</c> dont <c>detail</c> est le texte, et la
-  /// ligne à jour de la demande sous <c>row</c> — celle même que le tableau rend.
+  /// ligne à jour de la demande sous <c>row</c> — celle même que le tableau rend —, et <c>retryable</c> :
+  /// vrai pour un appel qui n'a pas abouti (502), faux pour un motif de blocage.
   /// </summary>
   private async Task ShouldBeAProblemAsync(HttpResponseMessage response, HttpStatusCode status, Guid id, string reason)
   {
@@ -537,6 +538,8 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     document.RootElement.GetProperty("status").GetInt32().ShouldBe((int)status);
     document.RootElement.GetProperty("detail").GetString().ShouldBe(reason);
+    document.RootElement.GetProperty("retryable").GetBoolean()
+      .ShouldBe(status == HttpStatusCode.BadGateway, "Le ProblemDetails ne dit pas si une nouvelle tentative a un sens.");
 
     var row = document.RootElement.GetProperty("row").GetString().ShouldNotBeNull().Trim();
 

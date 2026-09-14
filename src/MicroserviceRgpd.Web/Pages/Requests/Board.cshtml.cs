@@ -270,7 +270,8 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
   /// Un appel parti qui n'aboutit pas — réponse non 2xx, redirection comprise, délai dépassé, erreur
   /// réseau — répond <b>502</b>, avec pour <c>detail</c> le texte à afficher, qui dit que la demande
   /// reste En cours, et la ligne inchangée. Un droit appliqué dont la demande n'a pas pu passer à
-  /// Terminée répond <b>502</b> aussi, sous son propre texte.
+  /// Terminée répond <b>502</b> aussi, sous son propre texte. <c>retryable</c> dit si une nouvelle
+  /// tentative a un sens : <c>true</c> pour un appel qui n'a pas abouti, et pour lui seul.
   /// </para>
   /// <para>
   /// ⚠️ <b>L'annulation de la requête n'arrête pas l'appel</b> : le use case ne la propage pas au
@@ -342,15 +343,24 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
     RequestRow.Of(execution.Request, ParisCalendar.Today(clock));
 
   /// <summary>
-  /// Un <c>ProblemDetails</c> d'exécution : <paramref name="detail"/> pour <c>detail</c>, et la ligne à
-  /// jour sous <c>row</c>, en HTML.
+  /// Un <c>ProblemDetails</c> d'exécution : <paramref name="detail"/> pour <c>detail</c>, la ligne à
+  /// jour sous <c>row</c>, en HTML, et sous <c>retryable</c> si une nouvelle tentative a un sens.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Seul un appel qui n'a pas abouti se retente.</b> Un motif de blocage serait opposé de nouveau ;
+  /// un droit appliqué sans passage à Terminée le serait une seconde fois — la demande, restée En cours,
+  /// ne s'y oppose pas.
+  /// </remarks>
   private async Task<ObjectResult> ExecutionProblemAsync(int status, string? detail, DataSubjectRequestExecution execution) =>
     new(new Microsoft.AspNetCore.Mvc.ProblemDetails
     {
       Status = status,
       Detail = detail,
-      Extensions = { ["row"] = await RenderedRowAsync(RowOf(execution)) },
+      Extensions =
+      {
+        ["row"] = await RenderedRowAsync(RowOf(execution)),
+        ["retryable"] = execution.Block is null && execution.Outcome != ExecutionOutcome.SucceededButNotRecorded,
+      },
     })
     {
       StatusCode = status,

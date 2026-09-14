@@ -125,23 +125,19 @@ public sealed class ExecuteDataSubjectRequestHandler(
 
       return new FailedExecution(
         new DataSubjectRequestExecution(unchanged, null, call, ExecutionOutcome.SucceededButNotRecorded),
-        SucceededButNotRecordedMessage);
+        ExecutionFailure.SucceededButNotRecorded);
     }
 
     return new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), null, call, call.Outcome);
   }
 
-  /// <summary>Ce que l'<c>Operator</c> lit quand le droit est appliqué sans que la demande soit passée à Terminée.</summary>
-  private const string SucceededButNotRecordedMessage =
-    "Le système hôte a appliqué le droit, mais la demande n'a pas pu passer à Terminée.";
-
   /// <summary>Ce que l'<c>Operator</c> lit d'un appel qui n'a pas abouti.</summary>
   private static string FailureOf(HostSystemCall call) =>
     call.Outcome == ExecutionOutcome.TimedOut
-      ? $"Le système hôte n'a pas répondu dans les {(int)call.Timeout!.Value.TotalSeconds} secondes. La demande reste En cours."
+      ? ExecutionFailure.TimedOut((int)call.Timeout!.Value.TotalSeconds)
       : call.Outcome == ExecutionOutcome.NetworkError
-        ? "Le système hôte est injoignable. La demande reste En cours."
-        : $"Le système hôte a répondu {call.StatusCode}. La demande reste En cours.";
+        ? ExecutionFailure.Unreachable
+        : ExecutionFailure.NonSuccessResponse(call.StatusCode!.Value);
 
   /// <summary>
   /// Un échec <b>qui rend la demande</b> : <c>Error</c>, le texte destiné à l'<c>Operator</c> pour seule
