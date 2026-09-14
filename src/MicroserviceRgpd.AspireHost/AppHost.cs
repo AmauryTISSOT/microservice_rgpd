@@ -62,10 +62,19 @@ var web = builder.AddProject<Projects.MicroserviceRgpd_Web>("web")
 // est qu'une coquille dans le nom d'une clé éteigne un moteur sans un mot.
 if (ollamaWiring.Exists)
 {
+  // Le manifest de l'artefact embarqué par le service : l'image d'Ollama et l'encodeur y sont lus, et
+  // aucun réglage de l'AppHost ne peut les désaccorder du modèle mesuré.
+  var artefactManifest = Path.Combine(
+    builder.AppHostDirectory,
+    "../MicroserviceRgpd.Infrastructure/Screenings/Embeddings/Artefact/manifest.json");
+
   // Le serveur de modèles, **un seul** pour les deux moteurs. Son volume de modèles est nommé et
   // persistant : le retélécharger à chaque démarrage ferait du « la pile entière démarre d'une seule
   // commande » une promesse que personne ne tiendrait deux fois.
+  // L'image est la version d'Ollama qui a construit l'artefact d'A2 : le tag par défaut du paquet
+  // d'hébergement servait la 0.13.0, que rien n'a mesurée (ADR-0025).
   var ollama = builder.AddOllama("ollama")
+    .WithImageTag(EncoderModel.OllamaImageTagFrom(artefactManifest))
     .WithContainerName("microservice_rgpd_ollama")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume("microservice_rgpd_ollama_models");
@@ -120,13 +129,8 @@ if (ollamaWiring.Exists)
 
   if (ollamaWiring.PullsEncoder)
   {
-    // L'encodeur est celui que nomme le manifest de l'artefact embarqué par le service, lu dans ce
-    // fichier même : aucun réglage de l'AppHost ne peut le désaccorder du modèle mesuré.
-    var encoder = ollama.AddModel(
-      "screening-encoder",
-      EncoderModel.TagFrom(Path.Combine(
-        builder.AppHostDirectory,
-        "../MicroserviceRgpd.Infrastructure/Screenings/Embeddings/Artefact/manifest.json")));
+    // L'encodeur est celui que nomme le manifest de l'artefact embarqué par le service.
+    var encoder = ollama.AddModel("screening-encoder", EncoderModel.TagFrom(artefactManifest));
 
     web
       // L'adresse vient de la ressource, jamais d'un hôte ou d'un port écrit à la main.

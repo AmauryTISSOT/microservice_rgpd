@@ -114,7 +114,10 @@ lit que dans le **manifest** de l'artefact, embarqué bit pour bit et vérifié 
 - **le même gabarit de mise en texte** : lu dans le manifest, jamais en configuration ;
 - **des vecteurs normalisés L2**, côté service, avant tout produit scalaire ;
 - **une version d'Ollama compatible** avec la 0.34.0, avec laquelle l'artefact a été construit.
-  L'image d'Ollama de l'AppHost doit l'être ; la mesure Dolibarr consigne celle qui a servi.
+  L'image d'Ollama de l'AppHost est la version que le manifest nomme (`ollama/ollama:0.34.0`) :
+  laissée au tag par défaut du paquet d'hébergement, elle servait la 0.13.0, écart trouvé par la
+  mesure Dolibarr (#467). ⚠️ Le serveur étant partagé, `Qualification` passe elle aussi à la 0.34.0
+  quand `Llm:Enabled` est allumé seul. Son modèle génératif n'a pas été re-mesuré sur cette version.
 
 Le seuil, le digest, le tag, le gabarit, la dimension et les prototypes n'ont **aucune autre source**
 que le manifest : aucune configuration ne peut les désaccorder.
@@ -171,15 +174,60 @@ n'a pas d'équivalent chez A2, qui rend toujours le prototype le plus proche. So
 lexique — le conteneur libre — trouve place dans `FreeTextAboutPerson`. Le taux de repli, que le
 glossaire tenait pour l'instrument de mesure de la taxonomie, n'est plus mesurable.
 
-⚠️ **Le temps de détection d'A2 sur un vrai schéma n'est pas encore mesuré.** Le dépôt collé est
-synchrone, et A2 encode par lots via HTTP. La mesure sur Dolibarr (5 382 colonnes), **sur GPU et
-sur CPU**, avec la version d'Ollama utilisée, est à consigner dans la section ci-dessous ; elle est
-l'objet d'un ticket distinct. Si elle dépasse le budget du geste, rendre le dépôt collé asynchrone se
-décide par une issue à part, pas ici.
+⚠️ **Le dépôt collé synchrone ne tient pas le budget du geste avec A2.** Sur Dolibarr (5 382
+colonnes), la détection prend environ 72 s sur GPU et 225 s sur CPU, pour un budget de 7 s : voir la
+section ci-dessous. Rendre le dépôt collé asynchrone se décide dans une issue à part,
+[#484](https://github.com/AmauryTISSOT/microservice_rgpd/issues/484), pas ici. D'ici là, un
+déploiement qui allume A2 fait attendre l'`Operator` plus d'une minute devant un dépôt collé de
+cette taille.
 
 ## Mesure du temps de détection sur Dolibarr
 
-_À consigner._ Colonnes : 5 382. GPU : —. CPU : —. Version d'Ollama : —.
+Mesuré le 2026-09-14 par [#467](https://github.com/AmauryTISSOT/microservice_rgpd/issues/467). Le
+banc, son mode opératoire et les résultats bruts sont dans
+[`exploration/mesure-a2-dolibarr/`](../../exploration/mesure-a2-dolibarr/README.md).
+
+**Dispositif.**
+- **Pile** lancée par l'AppHost, drapeau de détection allumé. Ollama **0.34.0** tourne dans l'image
+  `ollama/ollama:0.34.0`, `bge-m3` au digest du manifest (`790764642607…`). Le moteur envoie des lots
+  de **64** textes, soit 85 appels à `/api/embed` pour Dolibarr.
+- **Relevé** : le schéma Dolibarr du corpus est chargé dans une MariaDB 11.8. Le chemin collé dépose
+  la sortie de `releves/mariadb.sql` et le chemin scanné lit la même base : les deux portent les mêmes
+  5 382 noms.
+- **Grandeurs** : la **détection** est la somme des durées des appels d'encodage relevées dans le
+  journal d'Ollama. Le **geste** est la durée du POST de dépôt ou, pour le scan, celle du lancement
+  jusqu'au rapport. Les valeurs retenues sont des médianes à chaud, sur trois essais.
+- **Machine** : ordinateur portable, AMD Ryzen 7 5800H (8 cœurs, 16 fils), 15,4 Gio de RAM,
+  NVIDIA GeForce RTX 3070 Laptop GPU (8 Gio), Windows 11 et Docker Desktop 29.1.3 sous WSL2.
+  Docker reçoit 12 cœurs logiques et 6,8 Gio de mémoire.
+- **GPU** : le journal d'Ollama indique `library=CUDA` et `offloaded 25/25 layers to GPU`.
+- **CPU** : le conteneur naît sans GPU, comme l'AppHost le fait naître quand seul A2 est allumé. Le
+  journal indique `library=cpu`.
+
+| Matériel | Chemin | Détection | par lot de 64 | Geste |
+| --- | --- | --- | --- | --- |
+| GPU | collé | 72,2 s | 0,85 s | 74,6 s |
+| GPU | scanné | 72,6 s | 0,85 s | 75,2 s |
+| CPU | collé | 225,2 s | 2,65 s | 227,2 s |
+| CPU | scanné | 224,3 s | 2,64 s | 227,5 s |
+
+Le premier essai de chaque série est écarté quand il est à froid. Le premier dépôt GPU a pris
+112,3 s, dont un premier lot de 20 s pour charger le modèle. Le premier dépôt CPU a pris 228,3 s,
+avec un lot de 5,3 s. Sur le chemin scanné, la connexion et les aperçus prennent moins de 1,3 s : le
+reste du geste est la détection. À chaud, aucun lot n'a dépassé 3,5 s, et l'échéance de 60 s par
+appel est donc tenue avec une large marge. Tous les appels ont répondu `200`.
+
+**Verdict : le dépôt collé synchrone ne tient pas le budget du geste.** Ce budget est de 7 s de
+moteur pour Dolibarr entier, **sous contention** (#136, clause `budget-du-geste` de
+`exploration/contention/borne-cout-cpu.json`). Or la détection seule, mesurée ici **sans**
+contention, dépasse déjà ce budget d'un facteur **10,3 sur GPU** et **32,2 sur CPU**. La contention
+ne pourrait qu'aggraver l'écart. Le chemin scanné n'est pas en cause : il est déjà asynchrone, et la
+phase « détection » avance lot par lot. Le dépôt collé asynchrone est ouvert dans
+[#484](https://github.com/AmauryTISSOT/microservice_rgpd/issues/484).
+
+⚠️ **Ces chiffres ne valent que pour cette machine.** Un GPU de centre de données, ou un autre
+réglage d'Ollama (taille de lot, parallélisme), les déplacerait. Mais il faudrait diviser le temps
+GPU par plus de dix pour tenir le budget : ce n'est pas un réglage, c'est un autre dispositif.
 
 ## Alternatives écartées
 
@@ -201,7 +249,8 @@ _À consigner._ Colonnes : 5 382. GPU : —. CPU : —. Version d'Ollama : —.
 - **Une valeur pour l'art. 10 ou pour les catégories particulières de l'art. 9 hors santé.** La
   rétablir demanderait son propre ADR — et, pour A2, un artefact nouveau.
 - **Le retrait du moteur lexique**, de ses lexiques gelés ou de `exploration/banc-screening`.
-- **Le dépôt collé asynchrone**, suspendu à la mesure Dolibarr.
+- **Le dépôt collé asynchrone** : la mesure Dolibarr l'a rendu nécessaire, et il se décide dans
+  [#484](https://github.com/AmauryTISSOT/microservice_rgpd/issues/484).
 - **Une modification de `Qualification`** ou de `Llm:Enabled`, au-delà du partage de la ressource
   Ollama.
 - **L'ADR-0012**, dont le prélèvement de cinq valeurs par colonne pour l'aperçu est inchangé.

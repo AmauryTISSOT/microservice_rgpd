@@ -55,23 +55,37 @@ internal static class AppHostFlag
   }
 }
 
-/// <summary>L'encodeur que l'AppHost tire pour A2.</summary>
+/// <summary>
+/// L'encodeur que l'AppHost tire pour A2, et le serveur qui le sert — l'un et l'autre lus dans le
+/// manifest de l'artefact que le service embarque, et nulle part ailleurs (ADR-0025, point 4).
+/// </summary>
 internal static class EncoderModel
 {
   /// <summary>
-  /// Le tag de l'encodeur, lu dans le manifest de l'artefact que le service embarque — et nulle part
-  /// ailleurs : un tag recopié en configuration tirerait tôt ou tard un encodeur sur lequel le modèle
-  /// n'a jamais été mesuré (ADR-0025, point 4).
+  /// Le tag de l'encodeur : un tag recopié en configuration tirerait tôt ou tard un encodeur sur lequel
+  /// le modèle n'a jamais été mesuré.
   /// </summary>
   /// <exception cref="InvalidOperationException">Le manifest ne nomme pas d'encodeur.</exception>
-  public static string TagFrom(string manifestPath)
+  public static string TagFrom(string manifestPath) =>
+    EncoderField(manifestPath, "tag", "le tag de son encodeur");
+
+  /// <summary>
+  /// Le tag de l'image d'Ollama : la version qui a construit l'artefact. ⚠️ Laissée au défaut du
+  /// paquet d'hébergement, l'image servait la 0.13.0 — un autre moteur d'inférence que celui sur
+  /// lequel le modèle a été mesuré.
+  /// </summary>
+  /// <exception cref="InvalidOperationException">Le manifest ne nomme pas de version d'Ollama.</exception>
+  public static string OllamaImageTagFrom(string manifestPath) =>
+    EncoderField(manifestPath, "ollama_version", "la version d'Ollama qui a construit son artefact");
+
+  private static string EncoderField(string manifestPath, string property, string whatIsMissing)
   {
     using var manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
 
     return manifest.RootElement.TryGetProperty("encoder", out var encoder)
-      && encoder.TryGetProperty("tag", out var tag)
-      && tag.GetString() is { Length: > 0 } value
+      && encoder.TryGetProperty(property, out var field)
+      && field.GetString() is { Length: > 0 } value
         ? value
-        : throw new InvalidOperationException($"Le manifest « {manifestPath} » ne nomme pas le tag de son encodeur.");
+        : throw new InvalidOperationException($"Le manifest « {manifestPath} » ne nomme pas {whatIsMissing}.");
   }
 }
