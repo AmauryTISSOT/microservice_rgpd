@@ -33,54 +33,66 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
 {
   /// <summary>Le nom, le prénom, la date de naissance, la photographie.</summary>
   public static readonly PersonalDataCategory Identity =
-    new(nameof(Identity), 0, "état civil et identité", "identity");
+    new(nameof(Identity), 0, "état civil et identité", "identity",
+      "le prénom, le nom ou la date de naissance d'une personne");
 
   /// <summary>Une adresse postale, un courriel, un numéro de téléphone.</summary>
   public static readonly PersonalDataCategory ContactDetails =
-    new(nameof(ContactDetails), 1, "coordonnées", "contact");
+    new(nameof(ContactDetails), 1, "coordonnées", "contact",
+      "l'adresse électronique ou le numéro de téléphone d'une personne");
 
   /// <summary>Une position, un trajet, une géolocalisation.</summary>
   public static readonly PersonalDataCategory LocationData =
-    new(nameof(LocationData), 2, "données de localisation", "location");
+    new(nameof(LocationData), 2, "données de localisation", "location",
+      "l'adresse du domicile, le code postal ou les coordonnées géographiques d'une personne");
 
   /// <summary>Un identifiant attribué par l'État : NIR, numéro fiscal, numéro d'allocataire.</summary>
   public static readonly PersonalDataCategory NationalIdentifier =
-    new(nameof(NationalIdentifier), 3, "identifiant national", "government_id");
+    new(nameof(NationalIdentifier), 3, "identifiant national", "government_id",
+      "un numéro d'identité nationale, de sécurité sociale, de passeport ou d'identification fiscale");
 
   /// <summary>Un IBAN, un montant, un encours — la situation économique de la personne.</summary>
   public static readonly PersonalDataCategory FinancialData =
-    new(nameof(FinancialData), 4, "données économiques et financières", "financial");
+    new(nameof(FinancialData), 4, "données économiques et financières", "financial",
+      "le compte bancaire, le numéro de carte ou le salaire d'une personne");
 
   /// <summary>Un mot de passe, une empreinte, un jeton — ce dont la fuite ouvre la porte au reste.</summary>
   public static readonly PersonalDataCategory AuthenticationSecret =
-    new(nameof(AuthenticationSecret), 5, "secret d'authentification", "authentication");
+    new(nameof(AuthenticationSecret), 5, "secret d'authentification", "authentication",
+      "le mot de passe, le secret ou le jeton d'authentification d'un compte utilisateur");
 
   /// <summary>Une adresse IP, un identifiant de session, un pseudonyme, un identifiant de traceur.</summary>
   public static readonly PersonalDataCategory OnlineIdentifier =
-    new(nameof(OnlineIdentifier), 6, "identifiant en ligne", "online_identifier");
+    new(nameof(OnlineIdentifier), 6, "identifiant en ligne", "online_identifier",
+      "l'adresse IP, l'identifiant d'appareil ou le cookie d'un visiteur");
 
   /// <summary>
   /// Le sexe, la nationalité, la religion. ⚠️ Elle ne dit rien de l'art. 9 : une colonne
   /// « confession » y tombe sans que la valeur la distingue d'une colonne « nationalité ».
   /// </summary>
   public static readonly PersonalDataCategory DemographicData =
-    new(nameof(DemographicData), 7, "données démographiques", "demographic");
+    new(nameof(DemographicData), 7, "données démographiques", "demographic",
+      "la nationalité, la religion, la situation matrimoniale ou le niveau d'études d'une personne");
 
   /// <summary>L'emploi, l'employeur, le service, la carrière.</summary>
   public static readonly PersonalDataCategory ProfessionalLife =
-    new(nameof(ProfessionalLife), 8, "vie professionnelle", "professional");
+    new(nameof(ProfessionalLife), 8, "vie professionnelle", "professional",
+      "l'employeur, l'intitulé de poste, le matricule ou la date d'embauche d'un salarié");
 
   /// <summary>Des habitudes, des préférences, un historique d'actions.</summary>
   public static readonly PersonalDataCategory BehaviouralData =
-    new(nameof(BehaviouralData), 9, "données de comportement", "behavioural");
+    new(nameof(BehaviouralData), 9, "données de comportement", "behavioural",
+      "la dernière connexion, l'historique de navigation ou les termes recherchés par un utilisateur");
 
   /// <summary>La santé, seul item de l'art. 9 que la taxonomie nomme encore.</summary>
   public static readonly PersonalDataCategory HealthData =
-    new(nameof(HealthData), 10, "données concernant la santé", "health");
+    new(nameof(HealthData), 10, "données concernant la santé", "health",
+      "le diagnostic, le traitement, le groupe sanguin ou une mesure clinique d'un patient");
 
   /// <summary>Un conjoint, un enfant, un contact d'urgence — une autre personne que celle de la ligne.</summary>
   public static readonly PersonalDataCategory RelatedPerson =
-    new(nameof(RelatedPerson), 11, "personne liée", "relation");
+    new(nameof(RelatedPerson), 11, "personne liée", "relation",
+      "une référence au conjoint, au parent, à l'enfant ou au contact d'urgence d'une personne");
 
   /// <summary>
   /// Une note, un commentaire, un conteneur libre — du texte qui peut dire n'importe quoi d'une
@@ -89,11 +101,13 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
   /// <see cref="Unflagged"/>.
   /// </summary>
   public static readonly PersonalDataCategory FreeTextAboutPerson =
-    new(nameof(FreeTextAboutPerson), 12, "texte libre sur une personne", "free_text");
+    new(nameof(FreeTextAboutPerson), 12, "texte libre sur une personne", "free_text",
+      "une biographie ou une note en texte libre rédigée au sujet d'une personne");
 
   /// <summary>Une clé qui désigne une personne tenue ailleurs : <c>client_id</c>, <c>auteur_id</c>.</summary>
   public static readonly PersonalDataCategory PersonReference =
-    new(nameof(PersonReference), 13, "référence à une personne", "person_link");
+    new(nameof(PersonReference), 13, "référence à une personne", "person_link",
+      "un identifiant qui désigne la ligne d'une personne, comme une clé étrangère vers une table d'utilisateurs ou de clients");
 
   /// <summary>
   /// La valeur rendue quand la détection <b>n'a rien signalé</b> sur une colonne.
@@ -115,13 +129,19 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
   /// </para>
   /// </summary>
   public static readonly PersonalDataCategory Unflagged =
-    new(nameof(Unflagged), 14, "rien signalé", prototypeName: null);
+    new(nameof(Unflagged), 14, "rien signalé", prototypeName: null, prototypeFrenchText: null);
 
-  private PersonalDataCategory(string name, int value, string frenchLabel, string? prototypeName)
+  private PersonalDataCategory(
+    string name,
+    int value,
+    string frenchLabel,
+    string? prototypeName,
+    string? prototypeFrenchText)
     : base(name, value)
   {
     FrenchLabel = frenchLabel;
     PrototypeName = prototypeName;
+    PrototypeFrenchText = prototypeFrenchText;
   }
 
   /// <summary>Le libellé destiné à l'<c>Operator</c>. Le français reste hors des identifiants.</summary>
@@ -132,6 +152,18 @@ public sealed class PersonalDataCategory : SmartEnum<PersonalDataCategory>
   /// <c>person_link</c>. <c>null</c> pour <see cref="Unflagged"/>, qui n'est proche d'aucun.
   /// </summary>
   public string? PrototypeName { get; }
+
+  /// <summary>
+  /// La traduction française du texte du prototype, que le motif d'A2 cite. <c>null</c> pour
+  /// <see cref="Unflagged"/>.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le texte anglais, lui, vit dans le manifest de l'artefact, et nulle part ailleurs.</b> Ce
+  /// qui est attaché ici n'est pas une seconde source du prototype : c'est ce que l'<c>Operator</c>
+  /// lit à sa place, parce qu'il ne lit jamais d'anglais. Écrite une fois, sur la valeur, pour qu'une
+  /// traduction ne puisse pas diverger d'un écran à l'autre.
+  /// </remarks>
+  public string? PrototypeFrenchText { get; }
 
   /// <summary>
   /// Cette valeur signale-t-elle quelque chose ? Vrai partout sauf <see cref="Unflagged"/>. C'est la

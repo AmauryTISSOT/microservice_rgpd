@@ -32,6 +32,11 @@
          moteur démarre avec le service et ne lit aucun fichier du disque. Les rééditer est interdit
          (#155) — FrozenLexiconsTests ancre leur empreinte. -->
     <EmbeddedResource Include="Screenings\Lexicons\*.tsv" />
+    <!-- L'artefact figé du modèle A2 (a2_c1_logreg, commit de provenance f0a2654), copié tel quel :
+         poids, prototypes, manifest et README. Le manifest est l'unique source du seuil, de
+         l'encodeur, du gabarit et des prototypes (ADR-0025) ; EmbeddedA2ArtefactTests ancre les
+         empreintes. -->
+    <EmbeddedResource Include="Screenings\Embeddings\Artefact\*" />
   </ItemGroup>
 
   <ItemGroup>

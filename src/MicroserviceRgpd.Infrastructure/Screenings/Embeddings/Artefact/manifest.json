@@ -1,0 +1,139 @@
+{
+  "format_version": 1,
+  "created_at": "2026-09-14T07:11:06+00:00",
+  "approach": "a2_embeddings",
+  "config": {
+    "context": "C1",
+    "head": "logreg",
+    "augment": 0
+  },
+  "threshold": 0.4056215286254883,
+  "decision_rule": "is_personal = score >= threshold",
+  "beta": 2.0,
+  "score": "sigmoid(dot(vector, coef) + intercept), vector normalisé L2",
+  "encoder": {
+    "tag": "bge-m3:latest",
+    "digest": "7907646426070047a77226ac3e684fbbe8410524f7b4a74d02837e43f2146bab",
+    "dimension": 1024,
+    "normalise": true,
+    "ollama_version": "0.34.0",
+    "endpoint": "/api/embed"
+  },
+  "serialization": {
+    "context": "C1",
+    "template": "table: {table_name} | column: {column_name}",
+    "separator": " | "
+  },
+  "prototype_names": [
+    "identity",
+    "contact",
+    "location",
+    "government_id",
+    "financial",
+    "authentication",
+    "online_identifier",
+    "demographic",
+    "professional",
+    "behavioural",
+    "health",
+    "relation",
+    "free_text",
+    "person_link"
+  ],
+  "prototype_texts": [
+    "the first name, surname or date of birth of a person",
+    "the e-mail address or telephone number of a person",
+    "the home address, postcode or geographic coordinates of a person",
+    "a national identity, social security, passport or tax number",
+    "the bank account, card number or salary of a person",
+    "the password, secret or authentication token of a user account",
+    "the IP address, device identifier or cookie of a visitor",
+    "the nationality, religion, marital status or education of a person",
+    "the employer, job title, staff number or hire date of an employee",
+    "the last login, browsing history or search terms of a user",
+    "the diagnosis, medication, blood group or clinical measurement of a patient",
+    "a reference to the spouse, parent, child or emergency contact of a person",
+    "a free-text biography or note written about a person",
+    "an identifier that points at the row of a person, such as a foreign key to a users or customers table"
+  ],
+  "files": {
+    "weights.npz": {
+      "coef": [
+        "float32",
+        [
+          1024
+        ]
+      ],
+      "intercept": [
+        "float32",
+        [
+          1
+        ]
+      ]
+    },
+    "prototypes.npz": {
+      "vectors": [
+        "float32",
+        [
+          14,
+          1024
+        ]
+      ]
+    }
+  },
+  "seed": 42,
+  "n_train_columns": 9162,
+  "n_train_positive": 1944,
+  "n_train_schemas": 35,
+  "train_data_sha256": "0d4b3830bade557028022396f9659baba8972b8d650c3896150ff354408c5ba8",
+  "versions": {
+    "python": "3.11.14",
+    "numpy": "2.4.6",
+    "scikit_learn": "1.9.0"
+  },
+  "git_commit": "f0a2654b0183d13de2f2bb1a54df83aa1d5897b1",
+  "git_worktree_clean": true,
+  "reference_metrics": {
+    "dev_f2": {
+      "value": 0.7130369824669041,
+      "scope": "moyenne des cinq plis de dev, hors pli",
+      "source": "results/metrics/metrics_dev.csv"
+    },
+    "holdout_f2": {
+      "value": 0.6974041069352964,
+      "ci95": [
+        0.5890198876633186,
+        0.7742856577652701
+      ],
+      "scope": "12 schémas du hold-out, mesure unique",
+      "source": "results/metrics/metrics_holdout.csv"
+    },
+    "holdout_recall": {
+      "value": 0.8275862068965517,
+      "scope": "12 schémas du hold-out, mesure unique",
+      "source": "results/metrics/metrics_holdout.csv"
+    },
+    "holdout_precision": {
+      "value": 0.4280618311533888,
+      "scope": "12 schémas du hold-out, mesure unique",
+      "source": "results/metrics/metrics_holdout.csv"
+    },
+    "holdout_ece": {
+      "value": 0.1592811893058728,
+      "scope": "12 schémas du hold-out, mesure unique",
+      "source": "results/metrics/metrics_holdout.csv"
+    },
+    "published_threshold": {
+      "value": 0.4056215286254883,
+      "scope": "lu sur le dev par tune_threshold",
+      "source": "results/metrics/metrics_holdout.csv"
+    }
+  },
+  "limitations": [
+    "Score non calibré : ECE de 0,159 sur le hold-out. Le score ordonne les colonnes ; il ne se lit pas comme une probabilité.",
+    "La catégorie est celle du prototype personnel le plus proche (similarité cosinus) : elle n'est pas apprise, et elle est rendue même pour une colonne jugée non personnelle.",
+    "Validation humaine requise (D4) : rappel de 0,828 et précision de 0,428 sur le hold-out. Le moteur propose, l'humain décide.",
+    "Valable seulement avec le même encodeur (digest) et le même gabarit de mise en texte ; le modèle ne lit que le nom de la table et le nom de la colonne.",
+    "Mesuré sur des schémas d'applications libres ; aucun chiffre n'est une performance attendue sur un schéma d'entreprise."
+  ]
+}

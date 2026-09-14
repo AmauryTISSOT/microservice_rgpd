@@ -6,8 +6,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>La dérivation est structurelle, et c'est tout l'objet du type.</b> Les cinq membres <i>sont</i>
-/// les cinq familles de règles — il n'existe aucun chemin qui construise un degré autrement qu'en
+/// <b>La dérivation est structurelle, et c'est tout l'objet du type.</b> Les six membres
+/// <i>sont</i> les cinq familles de règles du lexique et la proximité d'un prototype d'A2 — il n'existe aucun chemin qui construise un degré autrement qu'en
 /// nommant la règle qui l'a produit. Pas de constructeur public, pas de fabrique prenant un nombre,
 /// aucune valeur flottante nulle part : un moteur ne peut littéralement pas s'auto-évaluer ici, il
 /// ne peut que dire ce qui a déclenché.
@@ -91,6 +91,19 @@ public sealed class RuleStrength : SmartEnum<RuleStrength>
   public static readonly RuleStrength TypeHeuristic =
     new(nameof(TypeHeuristic), 4, "heuristique de type", "ni le nom ni ses valeurs n'ont parlé : le type déclaré de la colonne a déclenché");
 
+  /// <summary>
+  /// Le nom de la table et de la colonne est <b>proche d'un prototype</b> : c'est le moteur A2 qui a
+  /// parlé, et lui seul le produit.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Il nomme le mécanisme, jamais le score qui l'a décidé.</b> Toute ligne signalée par A2 le
+  /// porte, qu'elle soit juste au-dessus du seuil ou très au-dessus. Et son rang, le dernier, n'est
+  /// pas une comparaison avec les cinq autres : ceux-là ne sont produits que par le lexique, et un
+  /// seul moteur est actif par déploiement (ADR-0025).
+  /// </remarks>
+  public static readonly RuleStrength PrototypeProximity =
+    new(nameof(PrototypeProximity), 5, "proximité d'un prototype", "le nom de la table et de la colonne est proche d'un prototype");
+
   private RuleStrength(
     string name,
     int value,
@@ -116,7 +129,7 @@ public sealed class RuleStrength : SmartEnum<RuleStrength>
 
   /// <summary>
   /// Combien de valeurs comptées il faut pour que ce degré soit atteint, ou <c>null</c> pour les
-  /// trois degrés qui ne lisent aucune valeur.
+  /// quatre degrés qui ne lisent aucune valeur.
   /// <para>
   /// ⚠️ <b>Attaché au membre, comme <see cref="Rule"/> l'est déjà, et jamais un paramètre de
   /// configuration.</b> Un seuil réglable ferait du degré une chose qu'on accorde, alors qu'il
