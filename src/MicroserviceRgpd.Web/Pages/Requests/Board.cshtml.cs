@@ -230,8 +230,10 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
   /// identifiant illisible.
   /// </para>
   /// <para>
-  /// Un appel parti qui n'aboutit pas — réponse non 2xx, délai dépassé, erreur réseau — répond
-  /// <b>502</b>, avec le résultat de la tentative pour <c>detail</c> et la ligne inchangée.
+  /// Un appel parti qui n'aboutit pas — réponse non 2xx, redirection comprise, délai dépassé, erreur
+  /// réseau — répond <b>502</b>, avec pour <c>detail</c> le texte à afficher, qui dit que la demande
+  /// reste En cours, et la ligne inchangée. Un droit appliqué dont la demande n'a pas pu passer à
+  /// Terminée répond <b>502</b> aussi, sous son propre texte.
   /// </para>
   /// <para>
   /// ⚠️ <b>L'annulation de la requête n'arrête pas l'appel</b> : le use case ne la propage pas au
@@ -250,11 +252,10 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
 
     return executed.Status switch
     {
-      ResultStatus.Ok when executed.Value.Call?.Outcome == ExecutionOutcome.Succeeded =>
-        Partial("_RequestRow", RowOf(executed.Value)),
-      ResultStatus.Ok => await ExecutionProblemAsync(
+      ResultStatus.Ok => Partial("_RequestRow", RowOf(executed.Value)),
+      ResultStatus.Error => await ExecutionProblemAsync(
         StatusCodes.Status502BadGateway,
-        executed.Value.Call?.Outcome.FrenchLabel,
+        executed.Errors.First(),
         executed.Value),
       ResultStatus.Conflict or ResultStatus.Invalid => await ExecutionProblemAsync(
         executed.Status is ResultStatus.Conflict ? StatusCodes.Status409Conflict : StatusCodes.Status422UnprocessableEntity,

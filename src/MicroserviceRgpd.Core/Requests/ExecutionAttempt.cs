@@ -29,7 +29,8 @@ public sealed class ExecutionAttempt : IAggregateRoot
     DataSubjectRequestId dataSubjectRequestId,
     DataSubjectRight right,
     string calledUrl,
-    HostSystemCall call)
+    HostSystemCall call,
+    ExecutionOutcome outcome)
   {
     Id = ExecutionAttemptId.Next();
     DataSubjectRequestId = dataSubjectRequestId;
@@ -37,7 +38,7 @@ public sealed class ExecutionAttempt : IAggregateRoot
     CalledUrl = calledUrl;
     StartedAt = call.StartedAt;
     Duration = call.Duration;
-    Outcome = call.Outcome;
+    Outcome = outcome;
     HttpStatus = call.StatusCode;
     CreatedBy = DataSubjectRequest.OperatorAuthor;
   }
@@ -88,7 +89,38 @@ public sealed class ExecutionAttempt : IAggregateRoot
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(call);
 
-    return new ExecutionAttempt(request.Id, request.Right, WithoutQueryNorFragment(endpoint), call);
+    return new ExecutionAttempt(request.Id, request.Right, WithoutQueryNorFragment(endpoint), call, call.Outcome);
+  }
+
+  /// <summary>
+  /// La tentative d'un appel <b>réussi</b>, <paramref name="call"/>, dont la demande n'a pas pu passer
+  /// à Terminée : le système hôte a appliqué le droit, et le service ne l'a pas enregistré. Elle garde
+  /// tout de l'appel — son 2xx compris — sauf son résultat.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ Elle s'écrit <b>dans une seconde transaction</b>, après l'échec de celle qui portait la
+  /// tentative <see cref="ExecutionOutcome.Succeeded"/> et le passage à Terminée (ADR-0026).
+  /// </remarks>
+  /// <exception cref="ArgumentNullException"><paramref name="request"/> ou <paramref name="call"/> est absent.</exception>
+  /// <exception cref="ArgumentException"><paramref name="call"/> n'a pas réussi.</exception>
+  public static ExecutionAttempt SucceededButNotRecorded(DataSubjectRequest request, EndpointUrl endpoint, HostSystemCall call)
+  {
+    ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(call);
+
+    if (call.Outcome != ExecutionOutcome.Succeeded)
+    {
+      throw new ArgumentException(
+        $"Seul un appel réussi peut ne pas avoir été enregistré ; celui-ci a donné {call.Outcome.Name}.",
+        nameof(call));
+    }
+
+    return new ExecutionAttempt(
+      request.Id,
+      request.Right,
+      WithoutQueryNorFragment(endpoint),
+      call,
+      ExecutionOutcome.SucceededButNotRecorded);
   }
 
   /// <summary>L'adresse réduite à son schéma, son autorité et son chemin.</summary>

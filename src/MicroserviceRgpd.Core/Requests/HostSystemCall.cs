@@ -18,7 +18,12 @@ namespace MicroserviceRgpd.Core.Requests;
 /// </remarks>
 public sealed record HostSystemCall
 {
-  private HostSystemCall(ExecutionOutcome outcome, int? statusCode, DateTimeOffset startedAt, TimeSpan duration)
+  private HostSystemCall(
+    ExecutionOutcome outcome,
+    int? statusCode,
+    DateTimeOffset startedAt,
+    TimeSpan duration,
+    TimeSpan? timeout = null)
   {
     ArgumentOutOfRangeException.ThrowIfLessThan(duration, TimeSpan.Zero);
 
@@ -26,6 +31,7 @@ public sealed record HostSystemCall
     StatusCode = statusCode;
     StartedAt = startedAt.ToUniversalTime();
     Duration = duration;
+    Timeout = timeout;
   }
 
   /// <summary>Ce que l'appel a donné.</summary>
@@ -40,6 +46,12 @@ public sealed record HostSystemCall
   /// <summary>Le temps qu'a pris l'appel, jusqu'à la réponse ou à l'échec.</summary>
   public TimeSpan Duration { get; }
 
+  /// <summary>
+  /// Le délai qui a couru, quand le système hôte n'a pas répondu à temps — <c>null</c> sinon.
+  /// L'<c>Operator</c> le lit : « dans les 30 secondes ».
+  /// </summary>
+  public TimeSpan? Timeout { get; }
+
   /// <summary>Le système hôte a répondu <paramref name="statusCode"/>.</summary>
   public static HostSystemCall Answered(int statusCode, DateTimeOffset startedAt, TimeSpan duration) =>
     new(
@@ -48,9 +60,9 @@ public sealed record HostSystemCall
       startedAt,
       duration);
 
-  /// <summary>Le système hôte n'a pas répondu dans le délai.</summary>
-  public static HostSystemCall TimedOut(DateTimeOffset startedAt, TimeSpan duration) =>
-    new(ExecutionOutcome.TimedOut, null, startedAt, duration);
+  /// <summary>Le système hôte n'a pas répondu dans le délai <paramref name="timeout"/>.</summary>
+  public static HostSystemCall TimedOut(DateTimeOffset startedAt, TimeSpan duration, TimeSpan timeout) =>
+    new(ExecutionOutcome.TimedOut, null, startedAt, duration, timeout);
 
   /// <summary>Le système hôte n'a pas pu être joint.</summary>
   public static HostSystemCall Unreachable(DateTimeOffset startedAt, TimeSpan duration) =>

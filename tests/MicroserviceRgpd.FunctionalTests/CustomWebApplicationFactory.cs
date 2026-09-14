@@ -1,4 +1,5 @@
-﻿using MicroserviceRgpd.Core.Qualifications;
+﻿using System.Globalization;
+using MicroserviceRgpd.Core.Qualifications;
 using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -16,6 +17,12 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
 {
   // Docker est requis : PostgreSQL est le seul provider supporte, il n existe plus de repli local.
   private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:18-alpine").Build();
+
+  /// <summary>
+  /// Le délai d'un appel au système hôte dans tout hôte de test, en secondes — <b>réduit</b>, pour
+  /// qu'un délai dépassé s'éprouve sans attendre les 30 secondes d'un déploiement (ADR-0026).
+  /// </summary>
+  public const int HostSystemTimeoutSeconds = 2;
 
   /// <summary>Serialise la pose de la chaine de connexion et la construction de l hote qui la lit.</summary>
   private static readonly Lock HostBuilds = new();
@@ -107,6 +114,8 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
     lock (HostBuilds)
     {
       Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _dbContainer.GetConnectionString());
+      Environment.SetEnvironmentVariable(
+        "HostSystem__TimeoutSeconds", HostSystemTimeoutSeconds.ToString(CultureInfo.InvariantCulture));
 
       host = builder.Build();
     }
