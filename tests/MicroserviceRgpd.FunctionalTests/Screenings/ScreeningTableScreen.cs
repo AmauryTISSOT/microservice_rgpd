@@ -160,6 +160,31 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>L'écran parle la taxonomie des prototypes</b> : une colonne que le lexique gelé range sous
+  /// une valeur retirée se lit sous le libellé de la valeur où la correspondance la ramène.
+  /// </summary>
+  [Fact]
+  public async Task CarriesTheFrenchLabelOfThePrototypeTaxonomyOnEveryFlaggedColumn()
+  {
+    var table = await DepositAndOpenAsync(
+      ScreeningSurface.Column("derniere_connexion", position: 1),
+      ScreeningSurface.Column("confession", position: 2),
+      ScreeningSurface.Column("donnees", position: 3, dataType: "jsonb"));
+
+    var connection = ScreeningSurface.BlockOf(table, "derniere_connexion").ShouldNotBeNull();
+    connection.ShouldContain(PersonalDataCategory.OnlineIdentifier.FrenchLabel, Case.Sensitive);
+    connection.ShouldNotContain("données de connexion");
+
+    var confession = ScreeningSurface.BlockOf(table, "confession").ShouldNotBeNull();
+    confession.ShouldContain(PersonalDataCategory.DemographicData.FrenchLabel, Case.Sensitive);
+    confession.ShouldNotContain("catégorie particulière");
+
+    var container = ScreeningSurface.BlockOf(table, "donnees").ShouldNotBeNull();
+    container.ShouldContain(PersonalDataCategory.FreeTextAboutPerson.FrenchLabel, Case.Sensitive);
+    container.ShouldNotContain("sans catégorie");
+  }
+
+  /// <summary>
   /// <b>L'arbitrage se fait sur pièces</b> : une colonne signalée porte sa catégorie, le <b>nom de
   /// la règle</b> qui a déclenché, et le <b>motif en prose française</b>. « <c>ContactDetails</c>,
   /// 0,72 » ne s'arbitre pas.

@@ -3,59 +3,63 @@ using MicroserviceRgpd.Core.Screenings;
 namespace MicroserviceRgpd.UnitTests.Core.Screenings;
 
 /// <summary>
-/// La taxonomie est fermée, et l'<b>ordre</b> de ses valeurs n'est pas une commodité de lecture :
-/// c'est l'ordre d'arbitrage des collisions, figé. Ces tests sont ce qui rend bruyant le fait d'y
-/// toucher.
+/// La taxonomie est fermée : quatorze prototypes et <c>Unflagged</c>. Ces tests sont ce qui rend
+/// bruyant le fait d'y toucher.
 /// </summary>
+/// <remarks>
+/// ⚠️ <b>Aucun ordre d'arbitrage n'est éprouvé ici</b>, et ce n'est pas un oubli : l'ordre a cessé
+/// d'être une propriété de la taxonomie. Le moteur lexique garde le sien pour départager ses propres
+/// déclenchements, et ses tests vivent avec lui — voir <c>ScreeningRulesTests</c>.
+/// </remarks>
 public class PersonalDataCategoryTests
 {
   [Fact]
-  public void ListsExactlyThirteenValues()
+  public void ListsExactlyFifteenValues()
   {
-    PersonalDataCategory.List.Count.ShouldBe(13);
+    PersonalDataCategory.List.Count.ShouldBe(15);
   }
 
-  /// <summary>
-  /// L'ordre de la liste <b>est</b> l'ordre d'arbitrage, du plus au moins coûteux à omettre. Le
-  /// changer change ce que le service rend sur une colonne où deux règles déclenchent.
-  /// </summary>
   [Fact]
-  public void NamesItsThirteenValuesInTheFrozenArbitrationOrder()
+  public void NamesItsFourteenPrototypesAndUnflagged()
   {
     PersonalDataCategory.List
-      .OrderBy(category => category.ArbitrationRank)
+      .OrderBy(category => category.Value)
       .Select(category => category.Name)
       .ShouldBe(
       [
-        "CriminalOffenceData",
-        "HealthData",
-        "SpecialCategoryData",
-        "AuthenticationSecret",
-        "NationalIdentifier",
-        "FinancialData",
-        "LocationData",
-        "ConnectionData",
         "Identity",
         "ContactDetails",
+        "LocationData",
+        "NationalIdentifier",
+        "FinancialData",
+        "AuthenticationSecret",
+        "OnlineIdentifier",
+        "DemographicData",
         "ProfessionalLife",
-        "PersonalDataUncategorised",
+        "BehaviouralData",
+        "HealthData",
+        "RelatedPerson",
+        "FreeTextAboutPerson",
+        "PersonReference",
         "Unflagged",
       ]);
   }
 
   [Theory]
-  [InlineData("CriminalOffenceData", "données relatives aux infractions")]
-  [InlineData("HealthData", "données concernant la santé")]
-  [InlineData("SpecialCategoryData", "autre catégorie particulière")]
-  [InlineData("AuthenticationSecret", "secret d'authentification")]
-  [InlineData("NationalIdentifier", "identifiant national")]
-  [InlineData("FinancialData", "données économiques et financières")]
-  [InlineData("LocationData", "données de localisation")]
-  [InlineData("ConnectionData", "données de connexion")]
   [InlineData("Identity", "état civil et identité")]
   [InlineData("ContactDetails", "coordonnées")]
+  [InlineData("LocationData", "données de localisation")]
+  [InlineData("NationalIdentifier", "identifiant national")]
+  [InlineData("FinancialData", "données économiques et financières")]
+  [InlineData("AuthenticationSecret", "secret d'authentification")]
+  [InlineData("OnlineIdentifier", "identifiant en ligne")]
+  [InlineData("DemographicData", "données démographiques")]
   [InlineData("ProfessionalLife", "vie professionnelle")]
-  [InlineData("PersonalDataUncategorised", "donnée personnelle sans catégorie")]
+  [InlineData("BehaviouralData", "données de comportement")]
+  [InlineData("HealthData", "données concernant la santé")]
+  [InlineData("RelatedPerson", "personne liée")]
+  [InlineData("FreeTextAboutPerson", "texte libre sur une personne")]
+  [InlineData("PersonReference", "référence à une personne")]
   [InlineData("Unflagged", "rien signalé")]
   public void CarriesTheFrenchLabelOfEachValueAsAttachedData(string name, string frenchLabel)
   {
@@ -63,103 +67,53 @@ public class PersonalDataCategoryTests
   }
 
   /// <summary>
-  /// <c>arret_maladie</c> est santé <i>et</i> vie professionnelle. C'est la santé qui l'emporte,
-  /// parce que c'est elle qui coûte le plus cher à omettre — jamais parce qu'une règle aurait été
-  /// « plus sûre » qu'une autre.
-  /// </summary>
-  [Fact]
-  public void SettlesTheHealthAndProfessionalCollisionOnHealth()
-  {
-    var settled = PersonalDataCategory.MostCostlyToOmit(
-      [PersonalDataCategory.ProfessionalLife, PersonalDataCategory.HealthData]);
-
-    settled.ShouldBe(PersonalDataCategory.HealthData);
-  }
-
-  /// <summary><c>email_pro</c> est coordonnées <i>et</i> vie professionnelle : les coordonnées l'emportent.</summary>
-  [Fact]
-  public void SettlesTheContactAndProfessionalCollisionOnContactDetails()
-  {
-    var settled = PersonalDataCategory.MostCostlyToOmit(
-      [PersonalDataCategory.ProfessionalLife, PersonalDataCategory.ContactDetails]);
-
-    settled.ShouldBe(PersonalDataCategory.ContactDetails);
-  }
-
-  /// <summary>L'ordre de présentation des règles déclenchées ne change rien : le départage est celui du tableau.</summary>
-  [Fact]
-  public void SettlesTheSameWayWhateverOrderTheRulesFiredIn()
-  {
-    var candidates = new[]
-    {
-      PersonalDataCategory.ProfessionalLife,
-      PersonalDataCategory.ContactDetails,
-      PersonalDataCategory.CriminalOffenceData,
-      PersonalDataCategory.Identity,
-    };
-
-    PersonalDataCategory.MostCostlyToOmit(candidates).ShouldBe(PersonalDataCategory.CriminalOffenceData);
-    PersonalDataCategory.MostCostlyToOmit(candidates.Reverse()).ShouldBe(PersonalDataCategory.CriminalOffenceData);
-  }
-
-  /// <summary>Une seule règle déclenchée se départage en elle-même, sans cas particulier.</summary>
-  [Fact]
-  public void SettlesASingleTriggeredValueOnItself()
-  {
-    PersonalDataCategory.MostCostlyToOmit([PersonalDataCategory.LocationData])
-      .ShouldBe(PersonalDataCategory.LocationData);
-  }
-
-  /// <summary>
-  /// « Rien n'a déclenché » ne se départage pas : c'est <c>Unflagged</c>, une valeur nommée qu'on
-  /// pose. Rendre une valeur par défaut ici ferait naître un signalement de nulle part.
-  /// </summary>
-  [Fact]
-  public void RefusesToSettleWhenNoRuleFiredAtAll()
-  {
-    Should.Throw<ArgumentException>(() => PersonalDataCategory.MostCostlyToOmit([]));
-  }
-
-  /// <summary>
-  /// La sensibilité est un <b>calcul</b> sur la catégorie, jamais un drapeau parallèle : deux champs
-  /// qu'un chemin d'écriture peut dissocier finissent par se dissocier.
-  /// </summary>
-  [Fact]
-  public void ReadsSensitivityAsACalculationOverExactlyTheThreeStatutoryValues()
-  {
-    PersonalDataCategory.List
-      .Where(category => category.IsClosedByStatute)
-      .Select(category => category.Name)
-      .ShouldBe(["CriminalOffenceData", "HealthData", "SpecialCategoryData"], ignoreOrder: true);
-  }
-
-  /// <summary>
-  /// La gouvernance a deux étages parce que les valeurs n'ont pas toutes le même auteur : trois
-  /// viennent du texte, les dix autres de notre découpage.
+  /// Le nom de prototype est écrit <b>une seule fois</b>, sur la valeur : c'est lui qu'un moteur à
+  /// prototypes résoudra, et une table de correspondance tenue ailleurs finirait par diverger.
   /// </summary>
   [Theory]
-  [InlineData("CriminalOffenceData", "RGPD art. 10")]
-  [InlineData("HealthData", "RGPD art. 9")]
-  [InlineData("SpecialCategoryData", "RGPD art. 9")]
-  public void TracesTheThreeStatutoryValuesBackToTheirArticle(string name, string origin)
+  [InlineData("Identity", "identity")]
+  [InlineData("ContactDetails", "contact")]
+  [InlineData("LocationData", "location")]
+  [InlineData("NationalIdentifier", "government_id")]
+  [InlineData("FinancialData", "financial")]
+  [InlineData("AuthenticationSecret", "authentication")]
+  [InlineData("OnlineIdentifier", "online_identifier")]
+  [InlineData("DemographicData", "demographic")]
+  [InlineData("ProfessionalLife", "professional")]
+  [InlineData("BehaviouralData", "behavioural")]
+  [InlineData("HealthData", "health")]
+  [InlineData("RelatedPerson", "relation")]
+  [InlineData("FreeTextAboutPerson", "free_text")]
+  [InlineData("PersonReference", "person_link")]
+  public void CarriesThePrototypeNameOfEachFlaggedValueAsAttachedData(string name, string prototypeName)
   {
-    var category = PersonalDataCategory.FromName(name);
-
-    category.Origin.ShouldBe(origin);
-    category.IsClosedByStatute.ShouldBeTrue();
+    PersonalDataCategory.FromName(name).PrototypeName.ShouldBe(prototypeName);
   }
 
+  /// <summary><c>Unflagged</c> n'est proche d'aucun prototype : elle dit que rien n'a été signalé.</summary>
   [Fact]
-  public void ClaimsNoStatutoryAuthorityForTheOrdinaryValues()
+  public void GivesUnflaggedNoPrototype()
   {
-    PersonalDataCategory.List
-      .Where(category => !category.IsClosedByStatute)
-      .ShouldAllBe(category => !category.Origin.StartsWith("RGPD", StringComparison.Ordinal));
+    PersonalDataCategory.Unflagged.PrototypeName.ShouldBeNull();
+  }
+
+  /// <summary>
+  /// Les valeurs retirées ne se lisent plus : un nom de la taxonomie d'avant qui passerait encore
+  /// ferait renaître en silence une catégorie qu'aucun écran ne sait plus rendre.
+  /// </summary>
+  [Theory]
+  [InlineData("CriminalOffenceData")]
+  [InlineData("SpecialCategoryData")]
+  [InlineData("ConnectionData")]
+  [InlineData("PersonalDataUncategorised")]
+  public void NoLongerKnowsTheRetiredValues(string name)
+  {
+    PersonalDataCategory.TryFromName(name, out _).ShouldBeFalse();
   }
 
   /// <summary>
   /// L'invariant du contexte, vu du côté de la taxonomie : <c>Unflagged</c> est la seule valeur qui
-  /// ne signale rien, et le repli en est bien une autre.
+  /// ne signale rien.
   /// </summary>
   [Fact]
   public void FlagsEveryValueButUnflagged()
@@ -167,13 +121,10 @@ public class PersonalDataCategoryTests
     PersonalDataCategory.List
       .Where(category => !category.IsFlagged)
       .ShouldBe([PersonalDataCategory.Unflagged]);
-
-    PersonalDataCategory.PersonalDataUncategorised.IsFlagged.ShouldBeTrue();
   }
 
-  /// <summary>Le mot « catégorie » est interdit ailleurs : le nom complet est porté ici pour que cette interdiction n'ait pas d'exception.</summary>
   [Fact]
-  public void IsSealedSoNoOneAddsAFourteenthValue()
+  public void IsSealedSoNoOneAddsASixteenthValue()
   {
     typeof(PersonalDataCategory).IsSealed.ShouldBeTrue();
   }

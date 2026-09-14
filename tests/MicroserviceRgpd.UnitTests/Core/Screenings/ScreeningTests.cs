@@ -275,7 +275,6 @@ public class ScreeningTests
       "SetAsideCount",
       "TableCount",
       "Tables",
-      "UncategorisedCount",
       "UnreadUnflaggedCount",
     ]);
   }
@@ -308,22 +307,21 @@ public class ScreeningTests
   }
 
   /// <summary>
-  /// Le taux de repli est l'instrument de mesure de la taxonomie : il se compte, et il n'est pas un
-  /// défaut à cacher.
+  /// Ce que la détection a signalé se compte, et le complément est ce qu'elle n'a pas vu — jamais ce
+  /// qui est inoffensif.
   /// </summary>
   [Fact]
-  public void CountsWhatFellBackOnTheOnlyFallbackThereIs()
+  public void CountsWhatWasFlagged()
   {
     var screening = AScreening.Of(
       ScreenedColumn.Flagged(
         AScreening.AListedColumn("cfdata", position: 1, dataType: "jsonb"),
-        PersonalDataCategory.PersonalDataUncategorised,
+        PersonalDataCategory.FreeTextAboutPerson,
         RuleStrength.TypeHeuristic,
         "conteneur libre : le contenu n'est pas lisible depuis le schéma"),
       AScreening.AFlaggedColumn("adr_l1", position: 2),
       ScreenedColumn.NothingSeen(AScreening.AListedColumn("id_adh", position: 3)));
 
-    screening.UncategorisedCount.ShouldBe(1);
     screening.FlaggedCount.ShouldBe(2);
   }
 

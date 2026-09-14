@@ -48,7 +48,11 @@ public class ListingOriginBackfillTests : IAsyncLifetime
 
     await dbContext.GetService<IMigrator>().MigrateAsync(BeforeTheOrigin);
     await WriteAReportOfTheDayBeforeAsync(dbContext);
-    await dbContext.Database.MigrateAsync();
+
+    // ⚠️ La base s'arrête AVANT le passage aux prototypes, et non à la dernière migration : celle-là
+    // supprime tous les rapports, et il n'en resterait aucun à relire.
+    await dbContext.GetService<IMigrator>().MigrateAsync(
+      ClearScreeningsForThePrototypeTaxonomyTests.BeforeTheClearing);
   }
 
   public Task DisposeAsync() => _container.DisposeAsync().AsTask();

@@ -33,8 +33,13 @@ namespace MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
 /// mesurées</b>, pas des défauts à corriger : <c>jour</c> rapproché de <c>journalisation</c> et
 /// <c>passee_le</c> rapproché de <c>passe</c> sont des signalements faux — le degré
 /// <c>Morphological</c> se trompe à 94 % au banc — et <b>aucune</b> ligne ne tombe sur
-/// <c>PersonalDataUncategorised</c>, parce qu'un dictionnaire ne sait pas avouer. Ajouter une
-/// heuristique hors gel pour corriger l'une ou l'autre romprait le gel des lexiques (#155).
+/// <c>FreeTextAboutPerson</c>, parce qu'un dictionnaire ne sait pas avouer. Ajouter une heuristique hors gel pour
+/// corriger l'une ou l'autre romprait le gel des lexiques (#155).
+/// </para>
+/// <para>
+/// ⚠️ <b>Les attendus restent écrits dans la taxonomie du montage gelé</b>, et c'est la
+/// <see cref="Correspondence"/> qui les relit dans celle des prototypes. Les réécrire à la main
+/// dans le vocabulaire neuf les aurait fait sortir du portage plutôt que du banc.
 /// </para>
 /// </remarks>
 public class ScreeningOnTheTemoinPivotTests
@@ -121,7 +126,20 @@ public class ScreeningOnTheTemoinPivotTests
   ];
 
   /// <summary>
-  /// Le portage rend, colonne par colonne et mot pour mot, ce que le montage gelé rendait.
+  /// La correspondance des valeurs retirées vers la taxonomie des prototypes — la même que celle que
+  /// le moteur applique au chargement des lexiques gelés.
+  /// </summary>
+  private static readonly Dictionary<string, string> Correspondence = new(StringComparer.Ordinal)
+  {
+    ["ConnectionData"] = "OnlineIdentifier",
+    ["SpecialCategoryData"] = "DemographicData",
+    ["CriminalOffenceData"] = "DemographicData",
+    ["PersonalDataUncategorised"] = "FreeTextAboutPerson",
+  };
+
+  /// <summary>
+  /// Le portage rend, colonne par colonne et mot pour mot, ce que le montage gelé rendait — relu à
+  /// travers la correspondance.
   /// </summary>
   [Fact]
   public async Task RendersWhatTheFrozenMontageRenderedOnEveryColumnOfTheTemoin()
@@ -130,7 +148,17 @@ public class ScreeningOnTheTemoinPivotTests
 
     var screened = await AScreeningEngine.Wired().ScreenAsync(listing, IScreeningEngine.NoPreviews);
 
-    screened.Columns.Select(Line).ShouldBe(WhatTheFrozenMontageRendered);
+    screened.Columns.Select(Line).ShouldBe(WhatTheFrozenMontageRendered.Select(ThroughTheCorrespondence));
+  }
+
+  /// <summary>Une ligne attendue, sa catégorie relue dans la taxonomie des prototypes.</summary>
+  private static string ThroughTheCorrespondence(string line)
+  {
+    var fields = line.Split(" | ");
+
+    fields[1] = Correspondence.GetValueOrDefault(fields[1], fields[1]);
+
+    return string.Join(" | ", fields);
   }
 
   /// <summary>

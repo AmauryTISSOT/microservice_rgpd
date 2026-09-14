@@ -22,8 +22,8 @@ namespace MicroserviceRgpd.Infrastructure.Screenings;
 /// <b>Le montage FR+EN est l'union mécanique des deux dictionnaires</b>, sans fichier propre — en
 /// avoir un serait une occasion d'éditer. Deux termes portent des valeurs différentes selon la
 /// langue : <c>conviction</c> et <c>coord</c>. Ce n'est pas un défaut à corriger — dans l'union, les
-/// deux entrées déclenchent, et c'est l'<b>ordre d'arbitrage</b> de la taxonomie, hérité et jamais
-/// redécidé, qui tranche.
+/// deux entrées déclenchent, et c'est l'<b>ordre interne</b> du moteur lexique qui tranche — voir
+/// <see cref="LexiconTaxonomy"/>.
 /// </para>
 /// <para>
 /// <b>L'ordre d'insertion est porté, et il n'est pas décoratif</b> : le rapprochement morphologique
@@ -57,9 +57,15 @@ internal sealed class ScreeningLexicon
   /// Charge l'union des dictionnaires embarqués, dans l'ordre où ils sont donnés.
   /// </summary>
   /// <remarks>
+  /// <para>
   /// Une <b>collision</b> entre deux fichiers — même terme, deux valeurs — se règle par l'ordre
-  /// d'arbitrage : on garde la valeur la plus coûteuse à omettre, comme pour tout double
+  /// du lexique : on garde la valeur la plus coûteuse à omettre, comme pour tout double
   /// déclenchement. La position du terme, elle, reste celle de sa première apparition.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Les valeurs sont lues à travers la correspondance</b> vers la taxonomie des prototypes :
+  /// les fichiers gelés gardent les noms d'avant, et c'est ici qu'ils changent de vocabulaire.
+  /// </para>
   /// </remarks>
   internal static ScreeningLexicon Load(params string[] resourceNames)
   {
@@ -70,7 +76,7 @@ internal sealed class ScreeningLexicon
     {
       if (entries.TryGetValue(term, out var known))
       {
-        entries[term] = PersonalDataCategory.MostCostlyToOmit([known, category]);
+        entries[term] = LexiconTaxonomy.MostCostlyToOmit([known, category]);
 
         continue;
       }
@@ -163,7 +169,7 @@ internal sealed class ScreeningLexicon
 
       var term = ScreeningIdentifiers.Normalise(line[..separator]);
 
-      pairs.Add((term, PersonalDataCategory.FromName(line[(separator + 1)..], ignoreCase: false)));
+      pairs.Add((term, LexiconTaxonomy.FromFrozenName(line[(separator + 1)..])));
     }
 
     return pairs;

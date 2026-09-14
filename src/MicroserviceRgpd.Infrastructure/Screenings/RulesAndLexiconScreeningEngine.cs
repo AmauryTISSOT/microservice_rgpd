@@ -16,10 +16,10 @@ namespace MicroserviceRgpd.Infrastructure.Screenings;
 /// </para>
 /// <para>
 /// ⚠️ <b>Un lexique ne sait pas avouer, et c'est une propriété mesurée, pas un défaut à corriger.</b>
-/// Le taux de repli du montage est de 0,65 % des lignes signalées, contre 17,3 % chez l'annotateur
-/// humain : le rapport sera <b>pauvre en <see cref="PersonalDataCategory.PersonalDataUncategorised"/></b>.
-/// Ajouter une heuristique hors gel pour « corriger » ce chiffre romprait le gel et truquerait le
-/// seul instrument de mesure de la taxonomie.
+/// Au banc, le montage ne se replie que sur 0,65 % des lignes signalées, contre 17,3 % chez
+/// l'annotateur humain : le rapport sera <b>pauvre en
+/// <see cref="PersonalDataCategory.FreeTextAboutPerson"/></b>, où ce repli est désormais rangé.
+/// Ajouter une heuristique hors gel pour « corriger » ce chiffre romprait le gel.
 /// </para>
 /// <para>
 /// ⚠️ <b>Les degrés survivent comme ordre, pas comme promesse</b> : au banc, <c>exacte</c> se trompe
@@ -149,9 +149,9 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
       return ScreenedColumn.NothingSeen(column, absence);
     }
 
-    // L'ordre d'arbitrage est hérité du domaine, jamais redécidé ici : un second moteur qui
-    // recopierait l'ordre finirait par en avoir un autre.
-    var category = PersonalDataCategory.MostCostlyToOmit(triggered.Select(trigger => trigger.Category));
+    // L'ordre est celui du lexique, et de lui seul : la taxonomie n'en porte plus, et aucun autre
+    // moteur ne l'hérite.
+    var category = LexiconTaxonomy.MostCostlyToOmit(triggered.Select(trigger => trigger.Category));
 
     var retained = triggered.Where(trigger => trigger.Category == category).ToList();
 
@@ -276,14 +276,14 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
     if (IsFreeContainer(column.DataType))
     {
       triggers.Add(new Trigger(
-        PersonalDataCategory.PersonalDataUncategorised,
+        PersonalDataCategory.FreeTextAboutPerson,
         RuleStrength.TypeHeuristic,
         FreeContainerReason));
     }
 
     // ⚠️ Les formes sont VERSÉES DANS LE MÊME SAC, et c'est tout le dessin. Aucun étage n'arbitre
     // « ce que dit le nom » contre « ce que disent les valeurs » : une règle de forme est un
-    // Trigger de plus, et l'ordre des treize catégories tranche comme il l'a toujours fait. C'est
+    // Trigger de plus, et l'ordre du lexique tranche comme il l'a toujours fait. C'est
     // aussi pourquoi une forme ne peut qu'AJOUTER un signalement — la liste ne sait qu'accueillir.
     triggers.AddRange(FormTriggers(preview));
 
@@ -375,7 +375,7 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
 
   /// <summary>
   /// La prose que l'<c>Operator</c> lira : ce qui a déclenché pour la valeur retenue, et — entre
-  /// parenthèses — ce que l'ordre d'arbitrage a écarté.
+  /// parenthèses — ce que l'ordre du lexique a écarté.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -415,7 +415,7 @@ public sealed class RulesAndLexiconScreeningEngine : IScreeningEngine
       .Select(trigger => trigger.Category)
       .Where(other => other != category)
       .Distinct()
-      .OrderBy(other => other.ArbitrationRank)
+      .OrderBy(LexiconTaxonomy.Rank)
       .Select(other => other.Name)
       .ToList();
 

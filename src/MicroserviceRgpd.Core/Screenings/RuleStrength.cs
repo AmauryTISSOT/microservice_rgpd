@@ -46,8 +46,8 @@ namespace MicroserviceRgpd.Core.Screenings;
 /// </para>
 /// <para>
 /// ⚠️ <b>Deux degrés ne se comparent pas pour désigner un gagnant.</b> Quand plusieurs règles
-/// déclenchent sur une colonne, c'est l'ordre d'arbitrage de <see cref="PersonalDataCategory"/> qui
-/// tranche — jamais le degré, qui serait alors un score produisant une issue.
+/// déclenchent sur une colonne, c'est l'ordre interne du moteur qui les a produites qui tranche —
+/// jamais le degré, qui serait alors un score produisant une issue.
 /// </para>
 /// </remarks>
 public sealed class RuleStrength : SmartEnum<RuleStrength>

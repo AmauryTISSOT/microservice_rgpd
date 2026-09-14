@@ -173,7 +173,6 @@ public sealed class ScreeningConfiguration : IEntityTypeConfiguration<Screening>
     builder.Ignore(screening => screening.RetainedCount);
     builder.Ignore(screening => screening.SetAsideCount);
     builder.Ignore(screening => screening.FlaggedCount);
-    builder.Ignore(screening => screening.UncategorisedCount);
     builder.Ignore(screening => screening.ColumnCount);
     builder.Ignore(screening => screening.ColumnsWithoutACommentCount);
     builder.Ignore(screening => screening.TableCount);

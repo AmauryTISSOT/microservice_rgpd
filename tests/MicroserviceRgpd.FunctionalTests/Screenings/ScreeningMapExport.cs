@@ -200,6 +200,37 @@ public class ScreeningMapExport(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>L'export parle la taxonomie des prototypes</b>, dans les deux formats : le nom canonique et
+  /// le libellé que l'écran rend — jamais une valeur retirée.
+  /// </summary>
+  [Fact]
+  public async Task CarriesThePrototypeTaxonomyInBothFiles()
+  {
+    await _surface.DepositAndReadTheReportAsync(
+      ScreeningSurface.Paste(
+        ScreeningSurface.Column("derniere_connexion", position: 1),
+        ScreeningSurface.Column("confession", position: 2)));
+
+    using var json = JsonDocument.Parse(
+      await _surface.Client.GetByteArrayAsync(ScreeningSurface.MapAsJson));
+
+    json.RootElement.GetProperty("colonnes").EnumerateArray()
+      .Select(row => (row.GetProperty("categorie").GetString(), row.GetProperty("categorieLibelle").GetString()))
+      .ShouldBe(
+      [
+        (PersonalDataCategory.OnlineIdentifier.Name, "identifiant en ligne"),
+        (PersonalDataCategory.DemographicData.Name, "données démographiques"),
+      ]);
+
+    var csv = CsvTextOf(await _surface.Client.GetByteArrayAsync(ScreeningSurface.MapAsCsv));
+
+    csv.ShouldContain(";OnlineIdentifier;identifiant en ligne;");
+    csv.ShouldContain(";DemographicData;données démographiques;");
+    csv.ShouldNotContain("ConnectionData");
+    csv.ShouldNotContain("SpecialCategoryData");
+  }
+
+  /// <summary>
   /// ⚠️ <b>Ni valeur lue, ni compte de valeurs, ni un mot de la clause d'incomplétude</b> — alors
   /// même que l'écran d'où l'on vient la porte en toutes lettres.
   /// </summary>
