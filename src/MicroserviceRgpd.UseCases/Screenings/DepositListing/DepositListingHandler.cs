@@ -81,7 +81,19 @@ public sealed class DepositListingHandler(
 
     // ⚠️ Aucun aperçu : c'est le chemin COLLÉ, et c'est la seule chose qui l'en distingue. Les
     // règles de forme y sont donc inactives, et le relevé se détecte exactement comme avant.
-    var screened = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews, cancellationToken);
+    ScreenedListing screened;
+
+    try
+    {
+      screened = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews, cancellationToken);
+    }
+    catch (ScreeningEngineUnavailable)
+    {
+      // ⚠️ Aucun Screening n'est produit, et rien n'est archivé : le rapport courant ne recule pas,
+      // aucun arbitrage n'est perdu. Aucun autre moteur ne détecte à la place (ADR-0025) — un
+      // rapport ne change pas de moteur dans le dos de l'Operator.
+      return Result<ScreeningId>.Invalid(EngineUnavailable());
+    }
 
     var screening = Screening.Of(
       ScreeningId.Next(),
@@ -159,6 +171,36 @@ public sealed class DepositListingHandler(
         + $"{ColumnListing.MaxColumns.ToString(CultureInfo.InvariantCulture)} colonnes — le plafond — "
         + "pèse environ 4 Mo ; au-delà du plafond d'octets le collage est refusé plutôt que tronqué. "
         + NothingWasIngested,
+      Severity = ValidationSeverity.Error,
+    };
+  }
+
+  /// <summary>
+  /// Le refus d'un relevé <b>sincère</b> que le moteur n'a pas pu détecter : la famille « moteur de
+  /// détection indisponible », et rien de la cause.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Il ne dit pas « aucune colonne n'a été ingérée : relancez la requête ».</b> Le relevé
+  /// était bon : le faire rejouer chez le client serait un long trajet pour rien. Ce que
+  /// l'<c>Operator</c> doit savoir est que <b>son collage est resté en place</b>, et qu'il peut
+  /// réessayer sans le recoller.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Aucun texte du moteur n'y entre</b> — ni message d'Ollama, ni adresse, ni digest : la
+  /// panne se dit dans la langue du contexte, et la cause fine est au journal, pour l'exploitant.
+  /// </para>
+  /// </remarks>
+  private static ValidationError EngineUnavailable()
+  {
+    return new ValidationError
+    {
+      Identifier = nameof(DepositListingCommand.Paste),
+      ErrorCode = nameof(ScreeningEngineUnavailable),
+      ErrorMessage =
+        $"Relevé non détecté — {ScreeningEngineUnavailable.Statement} Le rapport courant n'a pas "
+        + "changé. Votre collage est resté en place : réessayez sans le recoller, et prévenez "
+        + "l'exploitant si l'indisponibilité dure.",
       Severity = ValidationSeverity.Error,
     };
   }

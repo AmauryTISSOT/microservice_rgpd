@@ -600,8 +600,11 @@ drapeau `Screening:Embeddings:Enabled` et enregistre **l'un ou l'autre** : allum
 éteint, le lexique. Toute autre valeur arrête le démarrage.
 ⚠️ **Aucun composant ne choisit entre les deux à l'exécution, et c'est ce qui rend les rapports
 comparables.** A2 allumé et Ollama injoignable, trop lent ou servant un autre encodeur, le port
-**échoue** — famille « moteur de détection indisponible », sans aucun texte d'Ollama — et aucun
-`Screening` n'est produit ; le lexique ne détecte jamais à sa place. Un repli à l'exécution ferait
+**échoue** — famille « moteur de détection indisponible » (`ScreeningEngineUnavailable`), sans aucun
+texte d'Ollama ; la cause fine, « injoignable », « échéance dépassée » ou « encodeur non conforme »,
+ne va qu'au journal — et aucun `Screening` n'est produit ; le lexique ne détecte jamais à sa place.
+Au dépôt collé, le refus nomme la famille et laisse le collage en place, pour réessayer sans
+recoller. Un repli à l'exécution ferait
 changer de moteur un rapport dans le dos de l'`Operator`, et deux rapports d'une même pile ne se
 compareraient plus. Le repli existe, mais il est **de déploiement** : l'exploitant qui ne sert pas
 Ollama éteint le drapeau, et toute sa pile détecte au lexique.

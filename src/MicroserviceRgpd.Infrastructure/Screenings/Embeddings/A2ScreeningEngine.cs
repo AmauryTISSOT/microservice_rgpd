@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Screenings;
+using Polly.Timeout;
 
 namespace MicroserviceRgpd.Infrastructure.Screenings.Embeddings;
 
@@ -24,8 +25,18 @@ namespace MicroserviceRgpd.Infrastructure.Screenings.Embeddings;
 /// tag produirait des vecteurs sur lesquels la régression n'a jamais été ajustée : un rapport sans
 /// valeur, que rien ne distinguerait du bon.
 /// </para>
+/// <para>
+/// ⚠️ <b>Une panne sort en <see cref="ScreeningEngineUnavailable"/>, et en rien d'autre.</b>
+/// Injoignable, échéance dépassée, encodeur non conforme — réponse illisible, statut d'échec, nombre
+/// de vecteurs ou digest faux : la cause fine va au <b>journal</b>, avec le détail d'Ollama ;
+/// l'exception n'en porte rien, pas même une exception interne. L'annulation de l'appelant, elle,
+/// ressort telle quelle : un appelant parti n'est pas un moteur en panne.
+/// </para>
 /// </remarks>
-internal sealed class A2ScreeningEngine(IHttpClientFactory clients, A2Artefact artefact) : IScreeningEngine
+internal sealed class A2ScreeningEngine(
+  IHttpClientFactory clients,
+  A2Artefact artefact,
+  ILogger<A2ScreeningEngine> logger) : IScreeningEngine
 {
   /// <summary>Le nom sous lequel ce moteur se déclare.</summary>
   internal const string EngineName = "a2-bge-m3-logreg";
@@ -43,6 +54,17 @@ internal sealed class A2ScreeningEngine(IHttpClientFactory clients, A2Artefact a
   /// </summary>
   private const int ShortLength = 12;
 
+  /// <summary>
+  /// Les causes fines d'une panne, telles que le journal les nomme. Trois, parce que l'exploitant ne
+  /// corrige pas la même chose : démarrer Ollama, lui donner de quoi calculer, ou lui faire servir
+  /// le bon encodeur.
+  /// </summary>
+  private const string Unreachable = "injoignable";
+
+  private const string DeadlineExceeded = "échéance dépassée";
+
+  private const string NonConformingEncoder = "encodeur non conforme";
+
   private static readonly JsonSerializerOptions Wire = new(JsonSerializerDefaults.Web);
 
   /// <inheritdoc />
@@ -54,6 +76,45 @@ internal sealed class A2ScreeningEngine(IHttpClientFactory clients, A2Artefact a
     ArgumentNullException.ThrowIfNull(listing);
     ArgumentNullException.ThrowIfNull(previews);
 
+    try
+    {
+      return await ScreenOrFailAsync(listing, cancellationToken);
+    }
+    catch (TimeoutRejectedException tooSlow)
+    {
+      throw Unavailable(DeadlineExceeded, tooSlow);
+    }
+    // L'échéance du client, qui couvre la lecture du corps : HttpClient la dit par une annulation
+    // dont la cause est un TimeoutException — et non par l'annulation de l'appelant.
+    catch (TaskCanceledException tooSlow)
+      when (tooSlow.InnerException is TimeoutException && !cancellationToken.IsCancellationRequested)
+    {
+      throw Unavailable(DeadlineExceeded, tooSlow);
+    }
+    // Sans statut, la requête n'a pas eu de réponse : Ollama n'a pas été joint.
+    catch (HttpRequestException unreachable) when (unreachable.StatusCode is null)
+    {
+      throw Unavailable(Unreachable, unreachable);
+    }
+    catch (Exception nonConforming) when (nonConforming is HttpRequestException or JsonException or NotSupportedException or EncoderDidNotConform)
+    {
+      throw Unavailable(NonConformingEncoder, nonConforming);
+    }
+  }
+
+  /// <summary>
+  /// Journalise la cause fine et son détail, et rend l'exception de la famille — <b>sans</b> ce
+  /// détail.
+  /// </summary>
+  private ScreeningEngineUnavailable Unavailable(string cause, Exception detail)
+  {
+    logger.LogWarning(detail, "Le moteur de détection A2 est indisponible — {Cause}.", cause);
+
+    return new ScreeningEngineUnavailable();
+  }
+
+  private async Task<ScreenedListing> ScreenOrFailAsync(ColumnListing listing, CancellationToken cancellationToken)
+  {
     var client = clients.CreateClient(ScreeningEngineServiceExtensions.OllamaClientName);
     var digest = await ServedDigestAsync(client, cancellationToken);
 
@@ -81,7 +142,7 @@ internal sealed class A2ScreeningEngine(IHttpClientFactory clients, A2Artefact a
 
     if (served != artefact.EncoderDigest)
     {
-      throw new InvalidOperationException(
+      throw new EncoderDidNotConform(
         $"L'encodeur servi sous « {artefact.EncoderTag} » n'est pas celui sur lequel le modèle A2 a été ajusté.");
     }
 
@@ -106,7 +167,7 @@ internal sealed class A2ScreeningEngine(IHttpClientFactory clients, A2Artefact a
 
       if (embedded?.Embeddings is not { } embeddings || embeddings.Count != batch.Length)
       {
-        throw new InvalidOperationException(
+        throw new EncoderDidNotConform(
           $"L'encodeur a rendu {embedded?.Embeddings?.Count ?? 0} vecteurs pour {batch.Length} textes.");
       }
 
@@ -114,7 +175,7 @@ internal sealed class A2ScreeningEngine(IHttpClientFactory clients, A2Artefact a
       {
         if (vector.Length != artefact.Coefficients.Length)
         {
-          throw new InvalidOperationException(
+          throw new EncoderDidNotConform(
             $"L'encodeur a rendu un vecteur de dimension {vector.Length}, et le modèle A2 en attend {artefact.Coefficients.Length}.");
         }
 
@@ -189,4 +250,10 @@ internal sealed class A2ScreeningEngine(IHttpClientFactory clients, A2Artefact a
   private sealed record TagsResponse(IReadOnlyList<ServedModel>? Models);
 
   private sealed record ServedModel(string? Name, string? Digest);
+
+  /// <summary>
+  /// Ollama a répondu, et ce qu'il a répondu n'est pas ce que le modèle A2 attend. Elle ne quitte
+  /// jamais le moteur : son message va au journal, et la famille sort à sa place.
+  /// </summary>
+  private sealed class EncoderDidNotConform(string message) : Exception(message);
 }

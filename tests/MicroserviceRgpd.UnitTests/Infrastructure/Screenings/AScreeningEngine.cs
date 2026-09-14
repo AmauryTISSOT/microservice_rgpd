@@ -3,6 +3,7 @@ using MicroserviceRgpd.Infrastructure.Screenings;
 using MicroserviceRgpd.TestDoubles.Ollama;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace MicroserviceRgpd.UnitTests.Infrastructure.Screenings;
 
@@ -38,9 +39,17 @@ internal static class AScreeningEngine
   /// Le moteur que le service câble sous cette configuration, résolu par son port — et, s'il en
   /// appelle un, branché sur ce double d'Ollama.
   /// </summary>
-  internal static IScreeningEngine Wired(IConfiguration configuration, HttpMessageHandler? ollama = null)
+  internal static IScreeningEngine Wired(
+    IConfiguration configuration,
+    HttpMessageHandler? ollama = null,
+    ILoggerProvider? logs = null)
   {
     var services = new ServiceCollection().AddScreeningEngine(configuration);
+
+    if (logs is not null)
+    {
+      services.AddLogging(logging => logging.AddProvider(logs));
+    }
 
     if (ollama is not null)
     {
@@ -57,6 +66,18 @@ internal static class AScreeningEngine
   internal static IScreeningEngine WiredToA2(OllamaDouble ollama)
   {
     return Wired(Configuration(A2On()), ollama);
+  }
+
+  /// <summary>
+  /// Le moteur A2 branché sur ce double d'Ollama, journal capturé, sous l'échéance donnée — courte
+  /// quand c'est elle qu'on éprouve.
+  /// </summary>
+  internal static IScreeningEngine WiredToA2(OllamaDouble ollama, RecordedLogs logs, string deadlineSeconds = "30")
+  {
+    var settings = A2On();
+    settings[ScreeningEngineServiceExtensions.EmbeddingsDeadlineKey] = deadlineSeconds;
+
+    return Wired(Configuration(settings), ollama, logs);
   }
 
   /// <summary>Les réglages complets d'un déploiement qui allume A2.</summary>
