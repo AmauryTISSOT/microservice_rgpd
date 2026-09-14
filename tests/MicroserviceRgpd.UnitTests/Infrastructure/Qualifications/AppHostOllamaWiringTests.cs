@@ -29,7 +29,7 @@ public class AppHostOllamaWiringTests
   {
     var wiring = OllamaWiring.For(llmIsOn: false, embeddingsAreOn: true);
 
-    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: false, PullsEncoder: true, RequiresGpu: false)));
+    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: false, PullsEncoder: true, RequiresGpu: false));
     wiring.Exists.ShouldBeTrue();
   }
 
@@ -38,7 +38,7 @@ public class AppHostOllamaWiringTests
   {
     var wiring = OllamaWiring.For(llmIsOn: true, embeddingsAreOn: false);
 
-    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: true, PullsEncoder: false, RequiresGpu: true)));
+    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: true, PullsEncoder: false, RequiresGpu: true));
     wiring.Exists.ShouldBeTrue();
   }
 
@@ -47,7 +47,7 @@ public class AppHostOllamaWiringTests
   {
     var wiring = OllamaWiring.For(llmIsOn: true, embeddingsAreOn: true);
 
-    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: true, PullsEncoder: true, RequiresGpu: true)));
+    wiring.ShouldBe(new OllamaWiring(PullsQualificationModel: true, PullsEncoder: true, RequiresGpu: true));
     wiring.Exists.ShouldBeTrue();
   }
 
