@@ -85,7 +85,8 @@ public sealed class DepositListingHandler(
 
     try
     {
-      screened = await engine.ScreenAsync(listing, IScreeningEngine.NoPreviews, cancellationToken);
+      screened = await engine.ScreenAsync(
+        listing, IScreeningEngine.NoPreviews, cancellationToken: cancellationToken);
     }
     catch (ScreeningEngineUnavailable)
     {

@@ -333,7 +333,7 @@ public class ScreeningRulesTests
     var listing = Ingested(APivot.Paste(APivot.Column("email", table: "clients")));
 
     await Should.ThrowAsync<OperationCanceledException>(
-      async () => await AScreeningEngine.Wired().ScreenAsync(listing, IScreeningEngine.NoPreviews, cancelled.Token));
+      async () => await AScreeningEngine.Wired().ScreenAsync(listing, IScreeningEngine.NoPreviews, cancellationToken: cancelled.Token));
   }
 
   /// <summary>Le relevé absent est une programmation fautive, pas un relevé vide.</summary>

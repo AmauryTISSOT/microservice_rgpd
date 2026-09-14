@@ -144,6 +144,36 @@ public sealed class ScanProgress
   }
 
   /// <summary>
+  /// Le moteur a détecté un lot de plus : voici combien de colonnes du relevé sont déjà détectées.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le compte est celui des colonnes, sur le dénominateur que <see cref="Detecting"/> a
+  /// posé</b> — jamais au-delà : « colonne 140 sur 130 » serait le chiffre inventé que cet objet
+  /// refuse.
+  /// </remarks>
+  /// <param name="columnsScreened">Le nombre de colonnes déjà détectées, depuis le début de la phase.</param>
+  /// <exception cref="ArgumentOutOfRangeException">
+  /// <paramref name="columnsScreened"/> est négatif, ou dépasse le nombre de colonnes du relevé.
+  /// </exception>
+  public void Screened(int columnsScreened)
+  {
+    ArgumentOutOfRangeException.ThrowIfNegative(columnsScreened);
+
+    lock (_turn)
+    {
+      if (_snapshot.HasEnded)
+      {
+        // Un lot rapporté après la fin est celui d'une détection que plus personne n'attend.
+        return;
+      }
+
+      ArgumentOutOfRangeException.ThrowIfGreaterThan(columnsScreened, _snapshot.Total ?? 0);
+
+      _snapshot = _snapshot with { Phase = ScanPhase.Detecting, Done = columnsScreened };
+    }
+  }
+
+  /// <summary>
   /// Le rapport est écrit : ce scan est fini, et l'écran d'attente n'a plus qu'à céder la place.
   /// </summary>
   /// <param name="report">L'identité du <see cref="Screening"/> que ce scan a produit.</param>

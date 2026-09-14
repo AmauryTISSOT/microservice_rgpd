@@ -41,6 +41,10 @@ public sealed class OllamaDouble : HttpMessageHandler
 
   private OllamaFault _fault;
 
+  private TaskCompletionSource? _held;
+
+  private int _holdAfter;
+
   /// <summary>Les corps envoyés à <c>/api/embed</c>, dans l'ordre d'arrivée.</summary>
   public IReadOnlyList<string> EmbedBodies
   {
@@ -76,13 +80,46 @@ public sealed class OllamaDouble : HttpMessageHandler
     }
   }
 
-  /// <summary>Oublie les appels reçus et la panne jouée — pour un hôte partagé entre plusieurs tests.</summary>
+  /// <summary>
+  /// Retient <c>/api/embed</c> une fois <paramref name="batches"/> lots encodés, et jusqu'à
+  /// <see cref="Release"/> : c'est ce qui rend observable une détection à mi-chemin.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Une retenue, et non un délai</b> : l'échéance du câblage court pendant qu'on attend, et
+  /// un délai assez long pour observer l'écran serait assez long pour la faire tomber.
+  /// </remarks>
+  public void HoldAfterBatches(int batches)
+  {
+    lock (_gate)
+    {
+      _holdAfter = batches;
+      _held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+  }
+
+  /// <summary>Libère les lots retenus, qui répondent tout de suite.</summary>
+  public void Release()
+  {
+    lock (_gate)
+    {
+      _held?.TrySetResult();
+      _held = null;
+    }
+  }
+
+  /// <summary>Oublie les appels reçus, la panne jouée et la retenue — pour un hôte partagé entre plusieurs tests.</summary>
   public void Forget()
   {
     lock (_gate)
     {
       _embedBodies.Clear();
       _fault = OllamaFault.None;
+
+      // ⚠️ La retenue est LIBÉRÉE avant d'être lâchée : un test tombé entre la retenue et la
+      // libération laisserait sinon un scan garé pour toujours, et l'hôte partagé refuserait tout
+      // lancement suivant.
+      _held?.TrySetResult();
+      _held = null;
     }
   }
 
@@ -112,6 +149,11 @@ public sealed class OllamaDouble : HttpMessageHandler
       return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StallingStream()) };
     }
 
+    if (request.RequestUri!.AbsolutePath == "/api/embed" && HeldNow() is { } held)
+    {
+      await held.WaitAsync(cancellationToken);
+    }
+
     return request.RequestUri!.AbsolutePath switch
     {
       "/api/tags" when request.Method == HttpMethod.Get => Json(Tags(fault)),
@@ -119,6 +161,15 @@ public sealed class OllamaDouble : HttpMessageHandler
         fault, await request.Content!.ReadAsStringAsync(cancellationToken)),
       _ => new HttpResponseMessage(HttpStatusCode.NotFound),
     };
+  }
+
+  /// <summary>La retenue qui s'applique au lot qui arrive, s'il vient après ceux qu'on laisse passer.</summary>
+  private Task? HeldNow()
+  {
+    lock (_gate)
+    {
+      return _held is { } held && _embedBodies.Count >= _holdAfter ? held.Task : null;
+    }
   }
 
   private static JsonObject Tags(OllamaFault fault)

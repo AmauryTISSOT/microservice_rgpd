@@ -121,7 +121,7 @@ public class A2ScreeningEngineFailureTests
 
     var thrown = await Record.ExceptionAsync(
       () => AScreeningEngine.WiredToA2(new OllamaDouble { Fault = OllamaFault.NeverAnswers }, logs)
-        .ScreenAsync(AListing(1), IScreeningEngine.NoPreviews, leaving.Token));
+        .ScreenAsync(AListing(1), IScreeningEngine.NoPreviews, cancellationToken: leaving.Token));
 
     thrown.ShouldBeAssignableTo<OperationCanceledException>();
     logs.Written.ShouldNotContain(entry => entry.Properties.ContainsKey("Cause"));

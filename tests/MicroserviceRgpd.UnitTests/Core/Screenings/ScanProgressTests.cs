@@ -71,6 +71,59 @@ public class ScanProgressTests
     progress.Snapshot.Total.ShouldBe(4_980);
   }
 
+  /// <summary>
+  /// La détection avance <b>lot par lot</b> : chaque lot encodé porte le compte des colonnes
+  /// détectées, sur le dénominateur du relevé.
+  /// </summary>
+  [Fact]
+  public void CountsTheDetectionBatchByBatch()
+  {
+    var progress = AScan();
+
+    progress.Detecting(130);
+    progress.Screened(64);
+
+    progress.Snapshot.Phase.ShouldBe(ScanPhase.Detecting);
+    progress.Snapshot.Done.ShouldBe(64);
+    progress.Snapshot.Total.ShouldBe(130);
+
+    progress.Screened(128);
+
+    progress.Snapshot.Done.ShouldBe(128);
+    progress.Snapshot.Total.ShouldBe(130);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un compte au-delà du relevé est une faute, pas un avancement.</b> « colonne 140 sur 130 »
+  /// serait le chiffre inventé que cet objet refuse.
+  /// </summary>
+  [Fact]
+  public void RefusesADetectionCountBeyondTheListing()
+  {
+    var progress = AScan();
+
+    progress.Detecting(130);
+
+    Should.Throw<ArgumentOutOfRangeException>(() => progress.Screened(131));
+    Should.Throw<ArgumentOutOfRangeException>(() => progress.Screened(-1));
+  }
+
+  /// <summary>⚠️ <b>Un lot rapporté après la fin ne rouvre pas l'avancement.</b></summary>
+  [Fact]
+  public void IgnoresABatchReportedAfterTheEnding()
+  {
+    var progress = AScan();
+
+    progress.Detecting(130);
+    progress.EndedWithoutAReport(
+      ScanEnding.Failed,
+      new ScanFailure(ScanPhase.Detecting, ScanFailureFamily.EngineUnavailable));
+    progress.Screened(64);
+
+    progress.Snapshot.Ending.ShouldBe(ScanEnding.Failed);
+    progress.Snapshot.Done.ShouldBe(0);
+  }
+
   /// <summary>Le rapport écrit, le scan est fini et l'écran d'attente sait où mener.</summary>
   [Fact]
   public void CarriesTheReportItProduced()

@@ -71,6 +71,7 @@ internal sealed class A2ScreeningEngine(
   public async Task<ScreenedListing> ScreenAsync(
     ColumnListing listing,
     IReadOnlyDictionary<ColumnIdentity, ColumnPreview> previews,
+    IProgress<int>? columnsScreened = null,
     CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(listing);
@@ -78,7 +79,7 @@ internal sealed class A2ScreeningEngine(
 
     try
     {
-      return await ScreenOrFailAsync(listing, cancellationToken);
+      return await ScreenOrFailAsync(listing, columnsScreened, cancellationToken);
     }
     catch (TimeoutRejectedException tooSlow)
     {
@@ -113,7 +114,10 @@ internal sealed class A2ScreeningEngine(
     return new ScreeningEngineUnavailable();
   }
 
-  private async Task<ScreenedListing> ScreenOrFailAsync(ColumnListing listing, CancellationToken cancellationToken)
+  private async Task<ScreenedListing> ScreenOrFailAsync(
+    ColumnListing listing,
+    IProgress<int>? progress,
+    CancellationToken cancellationToken)
   {
     var client = clients.CreateClient(ScreeningEngineServiceExtensions.OllamaClientName);
     var digest = await ServedDigestAsync(client, cancellationToken);
@@ -121,7 +125,11 @@ internal sealed class A2ScreeningEngine(
     var texts = listing.Columns
       .Select(column => artefact.Serialize(column.Identity.Table, column.Identity.Column))
       .ToList();
-    var vectors = await EmbedAsync(client, [.. texts.Distinct(StringComparer.Ordinal)], cancellationToken);
+    var vectors = await EmbedAsync(
+      client,
+      [.. texts.Distinct(StringComparer.Ordinal)],
+      ColumnsCounted(texts, progress),
+      cancellationToken);
 
     var screened = listing.Columns
       .Zip(texts, (column, text) => Screen(column, vectors[text]))
@@ -149,10 +157,41 @@ internal sealed class A2ScreeningEngine(
     return served;
   }
 
-  /// <summary>Encode les textes par lots, et rend un vecteur <b>normalisé L2</b> par texte.</summary>
+  /// <summary>
+  /// Ce qui reçoit chaque lot encodé et rapporte <b>le nombre de colonnes</b> déjà détectées — ou
+  /// <c>null</c> si personne n'écoute.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Des colonnes, pas des textes.</b> Deux colonnes de même table et de même nom dans deux
+  /// schémas partent en un seul texte : compter les textes laisserait la barre s'arrêter avant le
+  /// dénominateur du relevé.
+  /// </remarks>
+  private static Action<IReadOnlyList<string>>? ColumnsCounted(IReadOnlyList<string> texts, IProgress<int>? progress)
+  {
+    if (progress is null)
+    {
+      return null;
+    }
+
+    var columnsPerText = texts.CountBy(text => text, StringComparer.Ordinal)
+      .ToDictionary(StringComparer.Ordinal);
+    var done = 0;
+
+    return batch =>
+    {
+      done += batch.Sum(text => columnsPerText[text]);
+      progress.Report(done);
+    };
+  }
+
+  /// <summary>
+  /// Encode les textes par lots, et rend un vecteur <b>normalisé L2</b> par texte. Chaque lot
+  /// accepté est remis à <paramref name="encoded"/>.
+  /// </summary>
   private async Task<Dictionary<string, double[]>> EmbedAsync(
     HttpClient client,
     IReadOnlyList<string> texts,
+    Action<IReadOnlyList<string>>? encoded,
     CancellationToken cancellationToken)
   {
     var vectors = new Dictionary<string, double[]>(texts.Count, StringComparer.Ordinal);
@@ -181,6 +220,8 @@ internal sealed class A2ScreeningEngine(
 
         vectors[text] = Normalised(vector);
       }
+
+      encoded?.Invoke(batch);
     }
 
     return vectors;
