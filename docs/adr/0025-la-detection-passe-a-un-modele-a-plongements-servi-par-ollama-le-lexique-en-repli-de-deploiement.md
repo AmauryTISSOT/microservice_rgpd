@@ -56,9 +56,11 @@ voir plus bas.
 
 `Screening` porte **deux implémentations** du port `IScreeningEngine`, dont la signature ne change pas :
 
-- le moteur **lexique** actuel — règles de nom, règles de forme, lexiques gelés —, intact dans son
-  code, identité `regles-lexique-fr-en` ;
-- le moteur **A2**, en C# dans `Infrastructure`, qui appelle Ollama par HTTP.
+- le moteur **lexique** actuel — règles de nom, règles de forme, lexiques gelés —, identité
+  `regles-lexique-fr-en`. Ses règles et ses lexiques ne changent pas ; seules changent les
+  catégories qu'il rend, ramenées à la nouvelle taxonomie (point 5) ;
+- le moteur **A2**, en C# dans `Infrastructure`, qui appelle Ollama par HTTP. Il s'identifie
+  `a2-bge-m3-logreg`, en version `modele-<empreinte courte du manifest>+encodeur-<digest court>`.
 
 Le câblage lit **au démarrage** le drapeau `Screening:Embeddings:Enabled` et enregistre **l'un ou
 l'autre**. Même règle que `Llm:Enabled` : absent vaut éteint, toute valeur autre que « true » ou
@@ -93,8 +95,8 @@ de forme inactives sans aperçu.
 
 Une colonne est signalée si `sigmoid(v · coef + intercept) ≥ seuil`, le seuil lu dans le manifest.
 Elle porte alors la catégorie du **prototype le plus proche** (similarité cosinus maximale parmi les
-quatorze de l'artefact), le degré `PrototypeProximity`, et un motif français qui cite `table.colonne`
-et le texte du prototype. Sous le seuil : `Unflagged`, sans catégorie, sans motif, sans degré.
+quatorze de l'artefact), le degré `PrototypeProximity`, et un motif français qui cite `table.colonne`,
+la traduction française du texte du prototype, puis le libellé de la catégorie. Sous le seuil : `Unflagged`, sans catégorie, sans motif, sans degré.
 
 ⚠️ **Le score ne sort pas du moteur** : ni à l'écran, ni dans le motif, ni dans l'export, ni en base.
 Il n'est **pas calibré** (ECE 0,159) : un 0,72 affiché se lirait comme une probabilité qu'il n'est

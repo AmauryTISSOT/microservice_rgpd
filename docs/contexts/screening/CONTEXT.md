@@ -593,7 +593,9 @@ troisième moteur pas encore écrit.
 ⚠️ **Il a deux implémentations, et une seule est active par déploiement**
 ([ADR-0025](../../adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md)).
 Le moteur **A2** — plongements `bge-m3` servis par Ollama, régression logistique, prototypes — et le
-moteur **lexique** — règles de nom, règles de forme, lexiques gelés. Le câblage lit au démarrage le
+moteur **lexique** — règles de nom, règles de forme, lexiques gelés. « A2 » est le nom du modèle figé
+que le banc du mémoire a mesuré, embarqué depuis l'artefact `a2_c1_logreg` ; le moteur qui le porte
+s'identifie `a2-bge-m3-logreg` — voir `ScreeningEngineIdentity`. Le câblage lit au démarrage le
 drapeau `Screening:Embeddings:Enabled` et enregistre **l'un ou l'autre** : allumé, A2 ; absent ou
 éteint, le lexique. Toute autre valeur arrête le démarrage.
 ⚠️ **Aucun composant ne choisit entre les deux à l'exécution, et c'est ce qui rend les rapports
@@ -764,12 +766,14 @@ gardent leur nom.
 sensibles dans un **bloc parallèle** à ses six catégories ordinaires, et on pourrait croire qu'il
 faut l'imiter — une colonne serait alors une catégorie **plus** un drapeau. C'est un artefact de son
 **grain** : une fiche de registre décrit un traitement entier, où « identité **et** santé » coexistent
-forcément. Notre grain est **la colonne**, et à ce grain la coexistence s'effondre : `confession` est
-une conviction religieuse, elle n'est pas *aussi* de l'état civil. Un drapeau qui vaudrait vrai
+forcément. Notre grain est **la colonne**, et à ce grain la coexistence s'effondre : `diagnostic` est
+une donnée de santé, elle n'est pas *aussi* de l'état civil. Un drapeau qui vaudrait vrai
 exactement quand la catégorie est déjà une valeur de droit est un champ redondant — et
 deux champs qu'un chemin d'écriture peut dissocier finissent par se dissocier. « Montre-moi les
 colonnes sensibles » est donc un **calcul** sur la catégorie, comme « courant » est un calcul sur le
-`Screening`.
+`Screening`. ⚠️ **Depuis l'ADR-0025, ce calcul ne rend plus que la santé** : une colonne `confession`
+porte `DemographicData`, et aucun calcul sur la catégorie ne la retrouve comme catégorie
+particulière — voir l'art. 9 ci-dessous.
 
 ⚠️ **L'art. 9 ne tient plus qu'en une valeur, la santé — et c'est la régression principale de la
 bascule.** `HealthData` reste, pour les raisons qui l'avaient détachée : c'est le seul des huit items
@@ -806,7 +810,7 @@ serait un score qui produit une issue, ce que l'`Aide à la décision` interdit.
 règle qui lit les **valeurs** ne l'emporte pas sur une règle qui lit le **nom**, ni l'inverse : son
 ordre interne décrit la catégorie, jamais la qualité de la règle qui l'a atteinte.
 
-**Sa gouvernance a un seul étage de droit, et il s'est réduit.**
+**Sa gouvernance a deux étages, et celui du droit s'est réduit à une valeur.**
 `DataSubjectRight` peut écrire qu'ajouter une valeur est une rupture de niveau ADR : il y a six droits
 parce que le RGPD en ouvre six, et la clause emprunte sa solennité au règlement. **Cette taxonomie-ci
 n'a pas cet appui** — le RGPD n'énumère nulle part les catégories *ordinaires*, l'art. 30 impose
@@ -920,6 +924,9 @@ parlé, sans graduer la preuve.
 score, mais le degré ne le lit pas : toute ligne signalée par A2 porte `PrototypeProximity`, qu'elle
 soit juste au-dessus du seuil ou très au-dessus. Le score n'est pas calibré (ECE 0,159) ; le décliner
 en paliers en ferait le score à la ligne que ce type existe pour empêcher.
+⚠️ **« Score » nomme désormais une chose réelle de ce contexte, et une seule : le calcul interne
+d'A2**, qui décide du signalement et ne sort jamais du moteur. Il reste sur la liste _Avoid_
+ci-dessous pour nommer un degré, un motif ou quoi que ce soit que l'`Operator` lirait.
 
 ⚠️ **Les deux membres de forme ne se distinguent pas par le nombre de valeurs, mais par la clé**, et
 c'est un résultat mesuré, pas une intuition. Un test de **forme** ne se multiplie pas sur cinq
@@ -938,7 +945,7 @@ sur cinq » à « cinq sur cinq » serait un ratio promu palier, c'est-à-dire u
 chemin — le même interdit que la clause suivante, vu depuis l'intérieur d'un membre plutôt qu'entre
 deux membres.
 ⚠️ **Le degré ne dit pas combien de règles ont parlé, seulement laquelle a parlé le plus
-directement.** Une colonne `iban` dont les valeurs sont des IBAN a été reconnue deux fois, par deux
+directement** — chez le lexique, seul moteur qui en fasse parler plusieurs. Une colonne `iban` dont les valeurs sont des IBAN a été reconnue deux fois, par deux
 familles ; elle porte pourtant `ExactName`, et son motif porte les deux phrases. Un membre
 « corroboré » aurait fait dire au degré une **quantité de preuve**, ce qui est la définition du score
 que ce type existe pour empêcher. L'`Operator` ne perd rien : ce qui a déclenché est écrit en toutes
