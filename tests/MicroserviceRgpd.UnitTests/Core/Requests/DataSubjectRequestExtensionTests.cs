@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.UnitTests.Core.Requests;
 /// </remarks>
 public class DataSubjectRequestExtensionTests
 {
-  private static readonly DateOnly Today = new(2026, 9, 11);
+  private static readonly DateOnly ReceptionDay = new(2026, 9, 11);
 
   private static readonly DateTimeOffset Now = new(2026, 9, 11, 8, 15, 0, TimeSpan.Zero);
 
@@ -59,7 +59,7 @@ public class DataSubjectRequestExtensionTests
     var initial = DateOnly.Parse(deadline, System.Globalization.CultureInfo.InvariantCulture);
     var request = ARequestWithDeadline(initial);
 
-    request.Extend(AValidExtension(), Today, Later).IsSuccess.ShouldBeTrue();
+    request.Extend(AValidExtension(), Later).IsSuccess.ShouldBeTrue();
 
     request.InitialResponseDeadline.ShouldBe(initial);
     request.ResponseDeadline.ShouldBe(DateOnly.Parse(extended, System.Globalization.CultureInfo.InvariantCulture));
@@ -74,7 +74,7 @@ public class DataSubjectRequestExtensionTests
   {
     var request = ARequest();
 
-    request.Extend(AValidExtension() with { Ground = "NumberOfRequests" }, Today, Later).IsSuccess.ShouldBeTrue();
+    request.Extend(AValidExtension() with { Ground = "NumberOfRequests" }, Later).IsSuccess.ShouldBeTrue();
 
     request.Extended.ShouldBeTrue();
     request.InitialResponseDeadline.ShouldBe(new DateOnly(2026, 10, 10));
@@ -103,7 +103,7 @@ public class DataSubjectRequestExtensionTests
   {
     var request = ARequest();
 
-    request.Extend(AValidExtension(), Today, new DateTimeOffset(2026, 9, 11, 19, 40, 0, TimeSpan.FromHours(2)))
+    request.Extend(AValidExtension(), new DateTimeOffset(2026, 9, 11, 19, 40, 0, TimeSpan.FromHours(2)))
       .IsSuccess.ShouldBeTrue();
 
     request.ExtendedAt.ShouldBe(new DateTimeOffset(2026, 9, 11, 17, 40, 0, TimeSpan.Zero));
@@ -116,7 +116,7 @@ public class DataSubjectRequestExtensionTests
   {
     var request = ARequest();
 
-    request.Extend(AValidExtension() with { Justification = "  Quatre systèmes.  " }, Today, Later)
+    request.Extend(AValidExtension() with { Justification = "  Quatre systèmes.  " }, Later)
       .IsSuccess.ShouldBeTrue();
 
     request.ExtensionJustification!.Value.Value.ShouldBe("Quatre systèmes.");
@@ -131,7 +131,7 @@ public class DataSubjectRequestExtensionTests
   {
     var request = ARequest();
 
-    var result = request.Extend(new ExtensionEntry(Ground: "Autre", Justification: "   "), Today, Later);
+    var result = request.Extend(new ExtensionEntry(Ground: "Autre", Justification: "   "), Later);
 
     result.Status.ShouldBe(ResultStatus.Invalid);
     result.ValidationErrors.Select(error => error.Identifier).ShouldBe(
@@ -158,7 +158,7 @@ public class DataSubjectRequestExtensionTests
   {
     var request = ARequest();
 
-    var result = request.Extend(AValidExtension() with { Ground = ground }, Today, Later);
+    var result = request.Extend(AValidExtension() with { Ground = ground }, Later);
 
     RefusalsOf(result).ShouldBe(
       [$"{DataSubjectRequestField.ExtensionGround} : {DataSubjectRequestMessages.ExtensionGroundMissing}"]);
@@ -178,7 +178,7 @@ public class DataSubjectRequestExtensionTests
   {
     var request = ARequest();
 
-    var result = request.Extend(AValidExtension() with { Justification = justification }, Today, Later);
+    var result = request.Extend(AValidExtension() with { Justification = justification }, Later);
 
     RefusalsOf(result).ShouldBe(
       [$"{DataSubjectRequestField.ExtensionJustification} : {DataSubjectRequestMessages.ExtensionJustificationMissing}"]);
@@ -196,7 +196,6 @@ public class DataSubjectRequestExtensionTests
 
     var result = request.Extend(
       AValidExtension() with { Justification = new string('j', ExtensionJustification.MaxLength + 1) },
-      Today,
       Later);
 
     RefusalsOf(result).ShouldBe(
@@ -205,7 +204,6 @@ public class DataSubjectRequestExtensionTests
 
     request.Extend(
       AValidExtension() with { Justification = $"  {new string('j', ExtensionJustification.MaxLength)}  " },
-      Today,
       Later).IsSuccess.ShouldBeTrue("Une justification au plafond exact est refusée.");
   }
 
@@ -245,7 +243,7 @@ public class DataSubjectRequestExtensionTests
         IdentityVerified: false,
         Message: "Je souhaite accéder à mes données.",
         Right: "Access"),
-      Today,
+      ReceptionDay,
       Now).Value;
 
   /// <summary>

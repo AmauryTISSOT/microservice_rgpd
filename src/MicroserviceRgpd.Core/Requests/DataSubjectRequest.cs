@@ -280,15 +280,17 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// <para>
   /// ⚠️ <b>Le geste ne change pas le statut</b> : une demande prolongée reste En cours.
   /// </para>
+  /// <para>
+  /// ⚠️ <b>Il ne juge pas sa propre fenêtre</b> : c'est <see cref="ExtensionBlockFacing"/> qui dit si
+  /// la prolongation est possible, et l'appelant la lui demande <b>juste avant</b> — comme
+  /// l'exécution interroge <see cref="ExecutionBlockFacing"/> avant de remettre le droit. Écrite ici
+  /// aussi, la règle se dirait deux fois, et l'écran finirait par éteindre un bouton que le serveur
+  /// accepte.
+  /// </para>
   /// </remarks>
   /// <param name="entry">Les valeurs brutes saisies, ni trimées ni validées.</param>
-  /// <param name="todayInParis">
-  /// Aujourd'hui à Paris — voir <see cref="ParisCalendar"/>. ⚠️ <b>Le geste ne s'en sert pas
-  /// encore</b> : c'est contre lui que la fenêtre du geste — « tant que la date limite n'est pas
-  /// passée » — se refermera, avec les autres blocages d'état.
-  /// </param>
   /// <param name="extendedAt">L'instant de la prolongation, lu sur l'horloge.</param>
-  public Result Extend(ExtensionEntry entry, DateOnly todayInParis, DateTimeOffset extendedAt)
+  public Result Extend(ExtensionEntry entry, DateTimeOffset extendedAt)
   {
     var validated = ValidateExtension(entry);
 
@@ -364,6 +366,43 @@ public sealed class DataSubjectRequest : IAggregateRoot
       // « Non configuré », le troisième et dernier cas : la hiérarchie est fermée.
       _ => ExecutionBlock.RightNotConfigured,
     };
+  }
+
+  /// <summary>
+  /// <b>Dit si la demande se prolonge</b> le jour <paramref name="todayInParis"/> : <c>null</c> quand
+  /// elle le peut, sinon le <b>premier</b> <see cref="ExtensionBlock"/> — demande close, demande déjà
+  /// prolongée, date limite de réponse dépassée (ADR-0029).
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Le jour limite est accepté</b> : la fenêtre se ferme le <b>lendemain</b> de la date limite
+  /// de réponse. L'<c>Operator</c> ne perd pas le dernier jour que le règlement lui accorde.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Il ne regarde ni le Paramétrage ni le déploiement</b>, à la différence de
+  /// <see cref="ExecutionBlockFacing"/> : prolonger un délai ne remet rien à personne. La demande et
+  /// le jour qu'il est suffisent à répondre.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une demande déjà prolongée se juge sur sa date limite reportée</b>, mais elle est bloquée
+  /// avant qu'on la lise : <see cref="ExtensionBlock.AlreadyExtended"/> passe devant — il n'y a pas
+  /// de seconde prolongation, fenêtre ouverte ou non.
+  /// </para>
+  /// </remarks>
+  /// <param name="todayInParis">Aujourd'hui à Paris — voir <see cref="ParisCalendar"/>.</param>
+  public ExtensionBlock? ExtensionBlockFacing(DateOnly todayInParis)
+  {
+    if (Status != RequestStatus.InProgress)
+    {
+      return ExtensionBlock.Closed;
+    }
+
+    if (Extended)
+    {
+      return ExtensionBlock.AlreadyExtended;
+    }
+
+    return todayInParis > ResponseDeadline ? ExtensionBlock.DeadlineElapsed : null;
   }
 
   /// <summary>

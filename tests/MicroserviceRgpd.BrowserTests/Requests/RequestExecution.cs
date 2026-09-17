@@ -245,7 +245,9 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
 
     await ExecutionOf(row).HoverAsync();
 
-    await Expect(row.GetByText(ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access), new() { Exact = true }))
+    // ⚠️ L'infobulle se lit SUR L'AVION EN PAPIER : une demande close ne se prolonge pas non plus, et
+    // la flèche d'horloge porte le même motif.
+    await Expect(ExecutionOf(row).GetByText(ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access), new() { Exact = true }))
       .ToBeVisibleAsync();
     (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("L'exécution a rechargé la page.");
     _host.Received.ShouldHaveSingleItem();

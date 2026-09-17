@@ -6,8 +6,9 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
 /// <b>Le bouton « Exécuter la demande », dans un vrai navigateur</b> : actif sur une demande qui
-/// s'exécute, éteint sinon, où son infobulle dit le premier motif de blocage (ADR-0026). Éteint, son
-/// clic n'ouvre rien ; actif, il ouvre la confirmation — voir <see cref="RequestExecution"/>.
+/// s'exécute, éteint sinon, où son infobulle dit le premier motif de blocage (ADR-0026). Actif comme
+/// éteint, son clic ouvre la confirmation — qui, éteint, dit le motif et refuse d'exécuter. Ce que la
+/// confirmation fait ensuite appartient à <see cref="RequestExecution"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -95,32 +96,44 @@ public class ExecutionButton(BrowserHarness harness) : IAsyncLifetime
   }
 
   /// <summary>
-  /// <b>Le clic sur le bouton éteint n'ouvre rien</b> : aucune modale, aucun appel, et la page ne
-  /// quitte pas le tableau. ⚠️ Le clic est forcé : Playwright tient un <c>aria-disabled</c> pour
+  /// ⚠️ <b>Le clic sur le bouton éteint ouvre la confirmation, qui dit le motif et refuse d'exécuter</b> :
+  /// le doigt et le lecteur d'écran, qui ne survolent pas, atteignent ainsi le motif que l'infobulle
+  /// réserve à la souris. Le clic est forcé : Playwright tient un <c>aria-disabled</c> pour
   /// inatteignable, là où le navigateur délivre le clic.
   /// </summary>
+  /// <remarks>
+  /// La modale ne peut rien faire : « Exécuter » y est <c>disabled</c>, et aucune écriture n'est
+  /// appelée. La flèche d'horloge se comporte à l'identique — voir <see cref="ExtensionButton"/>.
+  /// </remarks>
   [Fact]
-  public async Task OpensNothingOnClickWhenDimmed()
+  public async Task OpensTheConfirmationSayingTheBlockWhenDimmed()
   {
     await harness.ConfigureEndpointAsync(DataSubjectRight.Access);
     await using var context = await harness.NewContextAsync();
     var page = await context.NewPageAsync();
     var row = await RowOfARequestAsync(page, identityVerified: false);
 
-    var requested = 0;
+    var written = 0;
     page.Request += (_, request) =>
     {
-      if (request.Url.Contains("handler=", StringComparison.Ordinal))
+      if (request.Url.Contains("handler=Execute", StringComparison.Ordinal))
       {
-        Interlocked.Increment(ref requested);
+        Interlocked.Increment(ref written);
       }
     };
 
     await ExecutionOf(row).ClickAsync(new() { Force = true });
 
-    await Expect(page.Locator("dialog[open]")).ToHaveCountAsync(0);
+    var dialog = page.GetByRole(AriaRole.Alertdialog, new() { Name = ExecutionConfirmation.Title, Exact = true });
+
+    await Expect(dialog).ToBeVisibleAsync();
+    await Expect(dialog.GetByText(
+      ExecutionBlock.IdentityNotVerified.FrenchLabelFor(DataSubjectRight.Access),
+      new() { Exact = true })).ToBeVisibleAsync();
+    await Expect(dialog.GetByRole(AriaRole.Button, new() { Name = ExecutionConfirmation.Confirm, Exact = true }))
+      .ToBeDisabledAsync();
     await Expect(page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex("/demandes$"));
-    requested.ShouldBe(0, "Le clic sur l'exécution a appelé le serveur.");
+    written.ShouldBe(0, "Le clic sur l'exécution éteinte a exécuté la demande.");
   }
 
   private static ILocator ExecutionOf(ILocator row) =>

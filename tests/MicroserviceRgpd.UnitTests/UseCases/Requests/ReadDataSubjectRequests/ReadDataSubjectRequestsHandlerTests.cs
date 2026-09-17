@@ -122,7 +122,7 @@ public class ReadDataSubjectRequestsHandlerTests
 
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns(settings is null ? [] : [settings]);
 
-    return await new ReadDataSubjectRequestsHandler(_requests, _settings, ADeploymentThatCanPublish())
+    return await new ReadDataSubjectRequestsHandler(_requests, _settings, ADeploymentThatCanPublish(), new AClockStuckAt(Now))
       .Handle(new ReadDataSubjectRequestsQuery(), CancellationToken.None);
   }
 

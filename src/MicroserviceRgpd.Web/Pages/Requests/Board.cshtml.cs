@@ -193,14 +193,22 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
   /// <summary>
   /// <b>Prolonge une demande</b> — la date limite de réponse est reportée de deux mois — et répond 200,
   /// avec pour corps <b>la ligne mise à jour</b> : la nouvelle date limite et la mention « Prolongée »
-  /// (ADR-0029). Ou 400 <c>ValidationProblem</c>, les refus indexés par les clés du corps, ou 404 quand
-  /// la demande n'existe plus, sans rien avoir écrit.
+  /// (ADR-0029). Ou <b>409</b> quand la demande est close ou déjà prolongée, <b>422</b> quand sa date
+  /// limite est dépassée — un <c>ProblemDetails</c> qui porte le motif et la ligne à jour —, ou 400
+  /// <c>ValidationProblem</c>, les refus indexés par les clés du corps, ou 404 quand la demande
+  /// n'existe plus, sans rien avoir écrit.
   /// </summary>
   /// <remarks>
+  /// <para>
   /// La ligne est rendue par la vue partielle <c>_RequestRow</c>, celle du tableau : un seul gabarit,
   /// aucune divergence d'affichage possible. Comme les autres gestes de l'écran, c'est un handler de la
   /// page, appelé par le script avec le jeton anti-rejeu que la page rend : aucune route publique, rien
   /// dans Swagger.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le tableau peut être obsolète depuis son rendu</b> : le use case revérifie le blocage juste
+  /// avant d'écrire, et la ligne que porte le refus corrige l'écran de lui-même.
+  /// </para>
   /// </remarks>
   public async Task<IActionResult> OnPostExtendAsync(string? id, ExtensionForm form, CancellationToken cancellationToken)
   {
@@ -219,6 +227,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
     {
       return extended.Status switch
       {
+        ResultStatus.Conflict => await ExtensionProblemAsync(extended.Value),
         ResultStatus.Invalid => ValidationProblem(extended.ValidationErrors),
         ResultStatus.NotFound => NotFound(),
         _ => StatusCode(StatusCodes.Status500InternalServerError),
@@ -453,6 +462,39 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
     {
       StatusCode = status,
     };
+
+  /// <summary>
+  /// Un <c>ProblemDetails</c> de prolongation refusée : le motif de blocage de la ligne pour
+  /// <c>detail</c>, et la ligne à jour sous <c>row</c>, en HTML — l'écran obsolète se corrige de
+  /// lui-même.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le code se tire du motif</b> : <b>409</b> pour ce qui est déjà joué — demande close, demande
+  /// déjà prolongée —, <b>422</b> pour une fenêtre que le calendrier a refermée. Le geste était bien
+  /// formé dans les deux cas ; ce n'est pas un refus de saisie, et il ne s'indexe par aucun champ.
+  ///
+  /// ⚠️ <b>Aucun <c>retryable</c></b>, à la différence de l'exécution : un motif de blocage serait
+  /// opposé de nouveau, et rien ici n'a pu échouer en chemin.
+  /// </remarks>
+  private async Task<ObjectResult> ExtensionProblemAsync(RecordedDataSubjectRequest request)
+  {
+    // ⚠️ LE MOTIF SE LIT SUR LA LIGNE, ET NON SUR LES REFUS DU RÉSULTAT : le statut et la phrase
+    // viennent alors de la même source, et ne peuvent pas se contredire.
+    var block = request.ExtensionBlock!;
+    var status = block == ExtensionBlock.DeadlineElapsed
+      ? StatusCodes.Status422UnprocessableEntity
+      : StatusCodes.Status409Conflict;
+
+    return new ObjectResult(new Microsoft.AspNetCore.Mvc.ProblemDetails
+    {
+      Status = status,
+      Detail = block.FrenchLabel,
+      Extensions = { ["row"] = await RenderedRowAsync(RequestRow.Of(request, ParisCalendar.Today(clock))) },
+    })
+    {
+      StatusCode = status,
+    };
+  }
 
   /// <summary>
   /// La ligne rendue par <c>_RequestRow</c>, <b>en texte</b> — la même vue partielle que celle du

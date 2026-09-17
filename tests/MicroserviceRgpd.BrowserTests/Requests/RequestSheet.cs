@@ -463,7 +463,13 @@ public class RequestSheet(BrowserHarness harness)
     var untouched = UniqueEmail();
     var justification = ALongJustification();
 
-    await harness.RecordRequestAsync("Martin", "Jeanne", extended);
+    // ⚠️ LA DATE LIMITE EST POSÉE DANS UN MOIS : la fenêtre de prolongation se juge sur le jour
+    // courant, et une date en dur finirait par la fermer — la demande ne se prolongerait plus.
+    var deadline = ParisCalendar.Today(TimeProvider.System).AddMonths(1);
+
+    await harness.SetResponseDeadlineAsync(
+      await harness.RecordRequestAsync("Martin", "Jeanne", extended),
+      deadline);
     await harness.RecordRequestAsync("Martin", "Jeanne", untouched);
     await page.GotoAsync("/demandes");
 
@@ -483,7 +489,8 @@ public class RequestSheet(BrowserHarness harness)
 
     sent.ShouldBeEmpty("L'ouverture de la fiche d'une demande prolongée a appelé le service.");
     await Expect(ExtensionBlock(page)).ToBeVisibleAsync();
-    (await FactsOfAsync(page)).ShouldContain("Date limite initiale : 15/02/2026");
+    (await FactsOfAsync(page)).ShouldContain(
+      $"Date limite initiale : {deadline.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture)}");
     (await FactsOfAsync(page)).ShouldContain($"Date de la prolongation : {extendedAt}");
     (await FactsOfAsync(page)).ShouldContain($"{ExtensionConfirmation.GroundLabel} : {ExtensionGround.Complexity.FrenchLabel}");
 

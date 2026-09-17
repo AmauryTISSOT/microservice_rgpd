@@ -109,6 +109,22 @@ _Avoid_ : ExtensionMotive, motivation, commentaire, explication, note
 `ExtensionMotive` y verrait « motif » — c'est-à-dire l'exact opposé : le motif est la valeur fermée,
 la justification est le texte.
 
+**Motif de blocage de la prolongation** :
+La raison pour laquelle une demande ne peut pas être prolongée, la première dans cet ordre : demande
+close, demande déjà prolongée, date limite de réponse dépassée. Le serveur le calcule ; l'`Operator`
+ne le saisit jamais. Il éteint la flèche d'horloge de la ligne, dont l'infobulle le dit, et la modale
+le répète en refusant de confirmer. Dans le code : `ExtensionBlock`.
+_Avoid_ : ExtensionRefusal, ExtensionError, empêchement, prérequis
+
+⚠️ **Trois notions distinctes, qu'on ne confond pas** : le **motif de prolongation** est ce que
+l'`Operator` choisit pour prolonger ; le **motif de blocage de la prolongation** est ce que le serveur
+oppose quand elle est impossible ; le **motif de blocage** dit, lui, pourquoi une demande ne
+s'**exécute** pas. Une même demande peut porter les deux blocages, pour des raisons différentes.
+
+⚠️ **La fenêtre est stricte et se juge sur le jour de Paris.** Le jour de la date limite est encore
+accepté ; le lendemain ne l'est plus. Et elle ne s'ouvre qu'une fois : la prolongation ne se reprend
+pas, l'article 12 §3 n'en accorde qu'une.
+
 **Échéance proche** :
 Le signalement d'une demande **En cours** dont la date limite de réponse tombe entre aujourd'hui et
 aujourd'hui plus sept jours, bornes comprises. Le jour même de la date limite, la demande est en
