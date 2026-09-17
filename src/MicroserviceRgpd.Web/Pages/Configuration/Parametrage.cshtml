@@ -2,7 +2,7 @@
 @model ParametrageModel
 @using MicroserviceRgpd.Core.Configuration
 @{
-  ViewData["Title"] = "Paramétrage du microservice RGPD";
+  ViewData["Title"] = ParametrageFaces.ScreenName;
 
   // Les refus d'un envoi, rendus en un seul endroit du gabarit : dans la section du droit refusé,
   // ou en tête d'écran quand le droit envoyé n'est pas l'un des six.
@@ -17,7 +17,9 @@
   }
 }
 
-<h1>Paramétrage du microservice RGPD</h1>
+<h1>@ParametrageFaces.ScreenName</h1>
+
+<partial name="_ParametrageTabs" model="@ParametrageFaces.Http" />
 
 @*
   La phrase dit ce que l'écran est : la configuration, droit par droit, de l'adresse à laquelle le

@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace MicroserviceRgpd.FunctionalTests.Layout;
 
 /// <summary>
-/// Le layout partagé des douze écrans de la surface : une feuille de style et une police que <b>le service sert
+/// Le layout partagé des treize écrans de la surface : une feuille de style et une police que <b>le service sert
 /// lui-même</b>, et aucune ressource tierce.
 /// </summary>
 /// <remarks>
@@ -308,7 +308,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   /// ⚠️ <b>AUCUN CHIFFRE DANS LA BARRE</b>, ni compteur ni badge. La règle des chiffres que le
   /// service applique — un « 0 demande en retard » se lit comme une mesure
   /// rassurante là où la phrase dit ce qu'elle est — vaut aussi pour une barre qu'on lit sur les
-  /// douze écrans sans jamais l'ouvrir.
+  /// treize écrans sans jamais l'ouvrir.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Une exception, nommée et étroite : la version du produit</b>, à l'extrémité droite de la
@@ -437,7 +437,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   /// le service n'a pas ; le second est une décision explicite du demandeur.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les douze écrans sans moyen de la
+  /// ⚠️ <b>Conséquence consignée</b> : la barre se répète sur les treize écrans sans moyen de la
   /// sauter au clavier, ce qui est une régression d'accessibilité par rapport à l'état d'avant, où
   /// aucune barre n'existait. Aucun chantier d'accessibilité n'est ouvert ici.
   /// </remarks>
