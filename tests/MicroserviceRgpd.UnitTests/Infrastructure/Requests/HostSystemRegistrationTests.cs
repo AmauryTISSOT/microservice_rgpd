@@ -28,13 +28,20 @@ public class HostSystemRegistrationTests
     ClientOf(services).Timeout.ShouldBe(TimeSpan.FromSeconds(45));
   }
 
+  /// <summary>
+  /// <b>Le port rend le système hôte joint par le canal</b> : le seul endroit où le canal se filtre
+  /// pour appeler, et derrière lui l'adaptateur HTTP.
+  /// </summary>
   [Fact]
   public void ProvidesTheHostSystemByItsPort()
   {
     using var services = Registered(timeout: null);
     using var scope = services.CreateScope();
 
-    scope.ServiceProvider.GetRequiredService<IHostSystem>().ShouldBeOfType<HttpHostSystem>();
+    scope.ServiceProvider.GetRequiredService<IHostSystem>().ShouldBeOfType<HostSystemByChannel>();
+
+    // Le destinataire que le dispatcher demande : sa résolution est l'assertion.
+    scope.ServiceProvider.GetRequiredService<HttpHostSystem>();
   }
 
   /// <summary>
