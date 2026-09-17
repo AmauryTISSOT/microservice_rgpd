@@ -74,7 +74,7 @@ public sealed record ExecutionConfirmation(
   private const string Absent = "—";
 
   /// <summary>Un routage RabbitMQ en toutes lettres : ses deux valeurs, nommées.</summary>
-  private const string Routing = "exchange {0}, routing key {1}";
+  private const string RoutingFormat = "exchange {0}, routing key {1}";
 
   /// <summary>Le récapitulatif en libellés.</summary>
   /// <exception cref="ArgumentNullException"><paramref name="summary"/> est absent.</exception>
@@ -100,7 +100,7 @@ public sealed record ExecutionConfirmation(
     ExerciseChannel.HttpEndpoint http => http.Address.Value,
     ExerciseChannel.RabbitMq rabbit => string.Format(
       CultureInfo.InvariantCulture,
-      Routing,
+      RoutingFormat,
       rabbit.Routing.Exchange.Value,
       rabbit.Routing.RoutingKey.Value),
 

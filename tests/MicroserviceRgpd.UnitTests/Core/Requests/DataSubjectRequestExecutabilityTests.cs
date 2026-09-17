@@ -93,7 +93,7 @@ public class DataSubjectRequestExecutabilityTests
       .ShouldBe(ExecutionBlock.RabbitMqNotYetSupported);
   }
 
-  /// <summary>Le motif rendu est le premier qui manque, dans l'ordre de l'ADR-0026.</summary>
+  /// <summary>Le motif rendu est le premier qui manque, dans l'ordre des ADR-0026 et 0027.</summary>
   [Theory]
   [MemberData(nameof(EveryCombination))]
   public void RendersTheFirstBlockInOrder(bool closed, bool verified, bool withEmail, string channel, string? expected)

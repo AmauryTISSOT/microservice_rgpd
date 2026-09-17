@@ -7,7 +7,7 @@ namespace MicroserviceRgpd.Core.Requests;
 /// Le <b>motif de blocage</b> : la raison pour laquelle une <see cref="DataSubjectRequest"/> ne peut
 /// pas être exécutée — <see cref="Closed"/>, <see cref="IdentityNotVerified"/>,
 /// <see cref="EmailMissing"/>, <see cref="RightNotConfigured"/> ou
-/// <see cref="RabbitMqNotYetSupported"/> (ADR-0026).
+/// <see cref="RabbitMqNotYetSupported"/> (ADR-0026, ADR-0027).
 /// </summary>
 /// <remarks>
 /// <para>

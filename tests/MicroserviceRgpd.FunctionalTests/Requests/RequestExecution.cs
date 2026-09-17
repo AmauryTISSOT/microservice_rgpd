@@ -314,11 +314,16 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
   [InlineData(nameof(ExecutionBlock.EmailMissing))]
   [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
+  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
   public async Task AnswersUnprocessableForEveryOtherBlockWithoutCallingNorLogging(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
 
-    if (block != ExecutionBlock.RightNotConfigured)
+    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    {
+      await RouteAsync(DataSubjectRight.Access);
+    }
+    else if (block != ExecutionBlock.RightNotConfigured)
     {
       await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
     }

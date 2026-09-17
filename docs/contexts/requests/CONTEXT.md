@@ -149,8 +149,9 @@ suppression : ses lignes gardent l'identifiant de la demande, qui ne mène alors
 ### L'exécution
 
 **Exécuter une demande** :
-Le `Gesture` par lequel l'`Operator` fait appliquer le droit invoqué par le système hôte, par le canal
-d'exercice que le Paramétrage associe à ce droit. Il n'est offert que sur une demande En cours, dont
+Le `Gesture` par lequel l'`Operator` fait appliquer le droit invoqué par le système hôte, par le
+**canal d'exercice** — terme du glossaire de `Configuration`, sans rapport avec le canal d'arrivée de
+l'**origine** — que le Paramétrage associe à ce droit. Il n'est offert que sur une demande En cours, dont
 l'identité est vérifiée, qui porte un email, et dont le droit porte une adresse HTTP — un droit exercé
 par RabbitMQ est bloqué tant que le service ne sait pas publier. Quand le système hôte confirme
 avoir appliqué le droit, la demande passe à Terminée ; sinon son statut ne change pas, et
