@@ -1,19 +1,21 @@
 namespace MicroserviceRgpd.Core.Requests;
 
 /// <summary>
-/// <b>Ce que rend un appel au système hôte</b> : une réponse — 2xx ou non, avec son code —, un délai
-/// dépassé ou une erreur réseau, avec l'instant de début et la durée de l'appel (ADR-0026).
+/// <b>Ce que rend une remise au système hôte</b> — un appel HTTP ou une publication sur un bus : une
+/// réponse — 2xx ou non, avec son code —, un délai dépassé ou une erreur réseau, avec l'instant de
+/// début et la durée de la remise (ADR-0026, ADR-0028).
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Tout 2xx vaut « le droit a été appliqué »</b>, <c>202 Accepted</c> compris ; tout autre code
+/// ⚠️ <b>Tout 2xx vaut « le droit a été remis »</b>, <c>202 Accepted</c> compris ; tout autre code
 /// — une redirection comprise, qui n'est pas suivie — est une réponse non 2xx. La règle n'est écrite
-/// qu'ici : l'adaptateur rend le code, il ne le juge pas.
+/// qu'ici : l'adaptateur rend le code, il ne le juge pas. <b>Le code reste nul</b> sur toute remise
+/// qui n'est pas un appel HTTP.
 /// </para>
 /// <para>
-/// Il ne se construit que par ses trois fabriques : un appel ne rend jamais
+/// Il ne se construit que par ses trois fabriques : une remise ne rend jamais
 /// <see cref="ExecutionOutcome.SucceededButNotRecorded"/>, qui dit ce que le service a fait
-/// <i>après</i> l'appel.
+/// <i>après</i> la remise.
 /// </para>
 /// </remarks>
 public sealed record HostSystemCall
@@ -34,16 +36,16 @@ public sealed record HostSystemCall
     Timeout = timeout;
   }
 
-  /// <summary>Ce que l'appel a donné.</summary>
+  /// <summary>Ce que la remise a donné.</summary>
   public ExecutionOutcome Outcome { get; }
 
   /// <summary>Le statut HTTP de la réponse, ou <c>null</c> quand le système hôte n'a pas répondu.</summary>
   public int? StatusCode { get; }
 
-  /// <summary>L'instant où l'appel est parti, en UTC.</summary>
+  /// <summary>L'instant où la remise est partie, en UTC.</summary>
   public DateTimeOffset StartedAt { get; }
 
-  /// <summary>Le temps qu'a pris l'appel, jusqu'à la réponse ou à l'échec.</summary>
+  /// <summary>Le temps qu'a pris la remise, jusqu'à la réponse ou à l'échec.</summary>
   public TimeSpan Duration { get; }
 
   /// <summary>

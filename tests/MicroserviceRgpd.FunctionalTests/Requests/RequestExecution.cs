@@ -163,12 +163,12 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     var attempt = (await AttemptsOfAsync(id)).ShouldHaveSingleItem("L'exécution n'a pas laissé une ligne de journal, une seule.");
 
     attempt.Keys.ShouldBe(
-      ["id", "data_subject_request_id", "data_subject_right", "called_url", "started_at", "duration", "outcome", "http_status", "created_by"],
+      ["id", "data_subject_request_id", "data_subject_right", "exercise", "started_at", "duration", "outcome", "http_status", "created_by"],
       ignoreOrder: true);
 
     attempt["data_subject_request_id"].ShouldBe(id);
     attempt["data_subject_right"].ShouldBe("Access");
-    attempt["called_url"].ShouldBe(_host.AddressOf("/rights/access"));
+    attempt["exercise"].ShouldBe(_host.AddressOf("/rights/access"));
     new DateTimeOffset(attempt["started_at"].ShouldBeOfType<DateTime>()).ShouldBeInRange(before, after);
     attempt["duration"].ShouldBeOfType<TimeSpan>().ShouldBeInRange(TimeSpan.Zero, after - before);
     attempt["outcome"].ShouldBe("Succeeded");

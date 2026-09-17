@@ -6,8 +6,8 @@ namespace MicroserviceRgpd.UnitTests.Core.Requests;
 
 /// <summary>
 /// <b>Une tentative d'exécution</b> : une ligne du journal d'exécution, qui dit qu'un droit a été
-/// demandé au système hôte, où, quand, en combien de temps et avec quel résultat — et rien de la
-/// personne (ADR-0026).
+/// demandé au système hôte, <b>par où</b>, quand, en combien de temps et avec quel résultat — et rien
+/// de la personne (ADR-0026, ADR-0028).
 /// </summary>
 public class ExecutionAttemptTests
 {
@@ -21,11 +21,11 @@ public class ExecutionAttemptTests
     var request = ARequest();
     var call = HostSystemCall.Answered(204, StartedAt, TimeSpan.FromMilliseconds(420));
 
-    var attempt = ExecutionAttempt.Of(request, EndpointUrl.From("https://brocanto.example.fr/rgpd/effacement"), call);
+    var attempt = ExecutionAttempt.Of(request, AnAddress("https://brocanto.example.fr/rgpd/effacement"), call);
 
     attempt.DataSubjectRequestId.ShouldBe(request.Id);
     attempt.Right.ShouldBe(DataSubjectRight.Erasure);
-    attempt.CalledUrl.ShouldBe("https://brocanto.example.fr/rgpd/effacement");
+    attempt.Exercise.ShouldBe("https://brocanto.example.fr/rgpd/effacement");
     attempt.StartedAt.ShouldBe(StartedAt);
     attempt.Duration.ShouldBe(TimeSpan.FromMilliseconds(420));
     attempt.Outcome.ShouldBe(ExecutionOutcome.Succeeded);
@@ -42,11 +42,11 @@ public class ExecutionAttemptTests
   [InlineData("https://brocanto.example.fr/rgpd/effacement#ancre", "https://brocanto.example.fr/rgpd/effacement")]
   [InlineData("http://localhost:8080/rights/erasure?status=503&delay_ms=10#x", "http://localhost:8080/rights/erasure")]
   [InlineData("https://brocanto.example.fr?token=secret", "https://brocanto.example.fr/")]
-  public void DropsTheQueryStringAndTheFragmentOfTheCalledUrl(string endpoint, string logged)
+  public void DropsTheQueryStringAndTheFragmentOfTheExercisedAddress(string endpoint, string logged)
   {
-    var attempt = ExecutionAttempt.Of(ARequest(), EndpointUrl.From(endpoint), HostSystemCall.Unreachable(StartedAt, TimeSpan.Zero));
+    var attempt = ExecutionAttempt.Of(ARequest(), AnAddress(endpoint), HostSystemCall.Unreachable(StartedAt, TimeSpan.Zero));
 
-    attempt.CalledUrl.ShouldBe(logged);
+    attempt.Exercise.ShouldBe(logged);
   }
 
   [Fact]
@@ -54,7 +54,7 @@ public class ExecutionAttemptTests
   {
     var attempt = ExecutionAttempt.Of(
       ARequest(),
-      EndpointUrl.From("https://brocanto.example.fr/rgpd"),
+      AnAddress("https://brocanto.example.fr/rgpd"),
       HostSystemCall.TimedOut(StartedAt, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)));
 
     attempt.Outcome.ShouldBe(ExecutionOutcome.TimedOut);
@@ -72,11 +72,11 @@ public class ExecutionAttemptTests
     var call = HostSystemCall.Answered(202, StartedAt, TimeSpan.FromMilliseconds(420));
 
     var attempt = ExecutionAttempt.SucceededButNotRecorded(
-      request, EndpointUrl.From("https://brocanto.example.fr/rgpd/effacement?token=secret"), call);
+      request, AnAddress("https://brocanto.example.fr/rgpd/effacement?token=secret"), call);
 
     attempt.DataSubjectRequestId.ShouldBe(request.Id);
     attempt.Right.ShouldBe(DataSubjectRight.Erasure);
-    attempt.CalledUrl.ShouldBe("https://brocanto.example.fr/rgpd/effacement");
+    attempt.Exercise.ShouldBe("https://brocanto.example.fr/rgpd/effacement");
     attempt.StartedAt.ShouldBe(StartedAt);
     attempt.Duration.ShouldBe(TimeSpan.FromMilliseconds(420));
     attempt.Outcome.ShouldBe(ExecutionOutcome.SucceededButNotRecorded);
@@ -89,7 +89,7 @@ public class ExecutionAttemptTests
   {
     Should.Throw<ArgumentException>(() => ExecutionAttempt.SucceededButNotRecorded(
       ARequest(),
-      EndpointUrl.From("https://brocanto.example.fr/rgpd"),
+      AnAddress("https://brocanto.example.fr/rgpd"),
       HostSystemCall.Answered(503, StartedAt, TimeSpan.Zero)));
   }
 
@@ -101,7 +101,7 @@ public class ExecutionAttemptTests
   public void HoldsNoPersonalData()
   {
     typeof(ExecutionAttempt).GetProperties().Select(property => property.Name).ShouldBe(
-      ["Id", "DataSubjectRequestId", "Right", "CalledUrl", "StartedAt", "Duration", "Outcome", "HttpStatus", "CreatedBy"],
+      ["Id", "DataSubjectRequestId", "Right", "Exercise", "StartedAt", "Duration", "Outcome", "HttpStatus", "CreatedBy"],
       ignoreOrder: true);
   }
 
@@ -109,11 +109,56 @@ public class ExecutionAttemptTests
   public void GivesEachAttemptItsOwnIdentity()
   {
     var request = ARequest();
-    var endpoint = EndpointUrl.From("https://brocanto.example.fr/rgpd");
+    var channel = AnAddress("https://brocanto.example.fr/rgpd");
     var call = HostSystemCall.Answered(200, StartedAt, TimeSpan.Zero);
 
-    ExecutionAttempt.Of(request, endpoint, call).Id.ShouldNotBe(ExecutionAttempt.Of(request, endpoint, call).Id);
+    ExecutionAttempt.Of(request, channel, call).Id.ShouldNotBe(ExecutionAttempt.Of(request, channel, call).Id);
   }
+
+  /// <summary>
+  /// <b>Un routage s'écrit en toutes lettres</b> : ses deux valeurs, nommées, et aucun statut HTTP —
+  /// une publication n'en rend pas (ADR-0028).
+  /// </summary>
+  [Fact]
+  public void WritesARabbitMqRoutingInFullWordsAndNoHttpStatus()
+  {
+    var attempt = ExecutionAttempt.Of(
+      ARequest(),
+      new ExerciseChannel.RabbitMq(new RabbitMqRouting(ExchangeName.From("rgpd.rights"), RoutingKey.From("rights.erasure"))),
+      HostSystemCall.Unreachable(StartedAt, TimeSpan.FromMilliseconds(12)));
+
+    attempt.Exercise.ShouldBe("exchange rgpd.rights, routing key rights.erasure");
+    attempt.HttpStatus.ShouldBeNull();
+  }
+
+  /// <summary>Un succès non enregistré dit lui aussi le routage par lequel la remise est partie.</summary>
+  [Fact]
+  public void WritesTheRoutingOfASuccessThatCouldNotBeRecorded()
+  {
+    var attempt = ExecutionAttempt.SucceededButNotRecorded(
+      ARequest(),
+      new ExerciseChannel.RabbitMq(new RabbitMqRouting(ExchangeName.From("rgpd.rights"), RoutingKey.From("rights.erasure"))),
+      HostSystemCall.Answered(204, StartedAt, TimeSpan.Zero));
+
+    attempt.Exercise.ShouldBe("exchange rgpd.rights, routing key rights.erasure");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un droit « non configuré » ne s'exerce pas</b> : les motifs de blocage l'écartent bien avant
+  /// la remise, et aucune tentative ne s'écrit sur un canal qui n'en est pas un.
+  /// </summary>
+  [Fact]
+  public void RefusesToRecordAnAttemptOnARightThatIsNotConfigured()
+  {
+    Should.Throw<ArgumentException>(() => ExecutionAttempt.Of(
+      ARequest(),
+      ExerciseChannel.NotConfigured.Instance,
+      HostSystemCall.Answered(204, StartedAt, TimeSpan.Zero)));
+  }
+
+  /// <summary>Le canal HTTP du Paramétrage, tel que le handler le lit.</summary>
+  private static ExerciseChannel AnAddress(string address) =>
+    new ExerciseChannel.HttpEndpoint(EndpointUrl.From(address));
 
   private static DataSubjectRequest ARequest() =>
     DataSubjectRequest.Receive(

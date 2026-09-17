@@ -93,7 +93,7 @@ public sealed class ExecuteDataSubjectRequestHandler(
 
     if (call.Outcome != ExecutionOutcome.Succeeded)
     {
-      await attempts.AddAsync(ExecutionAttempt.Of(request, called, call), CancellationToken.None);
+      await attempts.AddAsync(ExecutionAttempt.Of(request, channel, call), CancellationToken.None);
 
       return new FailedExecution(new DataSubjectRequestExecution(unchanged, null, call, call.Outcome), FailureOf(call));
     }
@@ -102,7 +102,7 @@ public sealed class ExecuteDataSubjectRequestHandler(
 
     try
     {
-      await attempts.AddAsync(ExecutionAttempt.Of(request, called, call), CancellationToken.None);
+      await attempts.AddAsync(ExecutionAttempt.Of(request, channel, call), CancellationToken.None);
     }
     catch (Exception notRecorded)
     {
@@ -121,7 +121,7 @@ public sealed class ExecuteDataSubjectRequestHandler(
       // logs, et aucune troisième tentative d'écrire n'est faite.
 
       await scope.ServiceProvider.GetRequiredService<IRepository<ExecutionAttempt>>()
-        .AddAsync(ExecutionAttempt.SucceededButNotRecorded(request, called, call), CancellationToken.None);
+        .AddAsync(ExecutionAttempt.SucceededButNotRecorded(request, channel, call), CancellationToken.None);
 
       return new FailedExecution(
         new DataSubjectRequestExecution(unchanged, null, call, ExecutionOutcome.SucceededButNotRecorded),

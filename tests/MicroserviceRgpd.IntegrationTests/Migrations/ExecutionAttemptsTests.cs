@@ -76,7 +76,7 @@ public class ExecutionAttemptsTests : IAsyncLifetime
         "id uuid NO",
         "data_subject_request_id uuid NO",
         "data_subject_right text NO",
-        "called_url text NO",
+        "exercise text NO",
         "started_at timestamp with time zone NO",
         "duration interval NO",
         "outcome text NO",

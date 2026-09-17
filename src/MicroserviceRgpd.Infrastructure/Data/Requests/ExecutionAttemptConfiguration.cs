@@ -4,8 +4,8 @@ using MicroserviceRgpd.Core.SharedKernel;
 namespace MicroserviceRgpd.Infrastructure.Data.Requests;
 
 /// <summary>
-/// La table <c>execution_attempts</c> : le <b>journal d'exécution</b>, une ligne par appel parti vers
-/// le système hôte (ADR-0026).
+/// La table <c>execution_attempts</c> : le <b>journal d'exécution</b>, une ligne par remise partie vers
+/// le système hôte (ADR-0026, ADR-0028).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,7 +15,8 @@ namespace MicroserviceRgpd.Infrastructure.Data.Requests;
 /// </para>
 /// <para>
 /// Les vocabulaires fermés sont stockés par leur nom, comme sur <c>data_subject_requests</c>. La
-/// durée est un <c>interval</c>.
+/// durée est un <c>interval</c>. L'<b>exercice</b> dit par où la remise est partie — une adresse ou un
+/// routage —, en <b>une seule colonne</b> et sans colonne discriminante (ADR-0028).
 /// </para>
 /// </remarks>
 public sealed class ExecutionAttemptConfiguration : IEntityTypeConfiguration<ExecutionAttempt>
@@ -44,7 +45,7 @@ public sealed class ExecutionAttemptConfiguration : IEntityTypeConfiguration<Exe
       .HasConversion(right => right.Name, name => DataSubjectRight.FromName(name))
       .IsRequired();
 
-    builder.Property(attempt => attempt.CalledUrl).HasColumnName("called_url").IsRequired();
+    builder.Property(attempt => attempt.Exercise).HasColumnName("exercise").IsRequired();
 
     builder.Property(attempt => attempt.StartedAt).HasColumnName("started_at").IsRequired();
 
