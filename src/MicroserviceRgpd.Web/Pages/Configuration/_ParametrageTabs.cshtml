@@ -1,0 +1,29 @@
+@model string
+@using MicroserviceRgpd.Web.Pages.Configuration
+@*
+  LES ONGLETS DU PARAMÉTRAGE — deux liens, et rien d'autre. Le modèle du partial est l'adresse de la
+  face rendue : c'est elle qui décide lequel des deux se marque, et elle est passée par la page
+  plutôt que lue sur la requête, pour qu'une page rendue hors d'une requête se marque quand même.
+
+  ⚠️ CE `nav` EST CELUI DE L'ÉCRAN, PAS DU LAYOUT. Les deux régions de navigation du layout — le
+  panneau latéral et le header — vivent hors du `main` ; celle-ci vit dedans, et le harnais de layout
+  compte les siennes hors du `main` pour cette raison.
+*@
+<nav class="tabs" aria-label="Faces du Paramétrage">
+  <ul>
+    @foreach (var tab in ParametrageFaces.Tabs)
+    {
+      var current = string.Equals(tab.Address, Model, StringComparison.Ordinal);
+
+      <li>
+        @*
+          LA FACE COURANTE SE MARQUE DEUX FOIS, comme l'écran courant du panneau latéral : `aria-current`
+          à qui écoute la page, l'accent structurel à qui la regarde.
+        *@
+        <a href="@tab.Address"
+           class="@(current ? "current" : null)"
+           aria-current="@(current ? "page" : null)">@tab.Label</a>
+      </li>
+    }
+  </ul>
+</nav>

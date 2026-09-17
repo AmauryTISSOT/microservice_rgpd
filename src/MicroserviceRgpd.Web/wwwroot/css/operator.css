@@ -589,6 +589,50 @@ table.queue:not(.columns, .table-frame > table) {
   font-style: italic;
 }
 
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES ONGLETS D'UN ÉCRAN — aujourd'hui les deux faces du Paramétrage. Ils vivent DANS le `main`, sous
+  le titre : ils décrivent l'intérieur d'un écran, là où le panneau latéral décrit les points
+  d'entrée du service. Le titre ne se répète donc pas d'une face à l'autre — c'est le même.
+
+  ⚠️ PAS UNE LIGNE DE JAVASCRIPT. Ce sont des liens, chaque face est une adresse que le serveur rend
+  entièrement, et l'onglet courant se marque au rendu — jamais au clic.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+nav.tabs ul {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  list-style: none;
+  margin: var(--space-md) 0 0;
+  padding: 0;
+}
+
+nav.tabs a {
+  color: var(--ink-secondary);
+  display: block;
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  padding: var(--space-xs) 0;
+  text-decoration: none;
+}
+
+nav.tabs a:hover {
+  color: var(--ink-primary);
+}
+
+/*
+  La face courante se marque avec l'accent structurel, et le filet sous l'onglet vient AVEC l'encre,
+  jamais à sa place : la couleur seule aurait dit la face courante à qui distingue les bleus, et rien
+  à qui ne les distingue pas.
+*/
+nav.tabs a.current {
+  border-bottom: var(--rule-width) solid var(--accent);
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
+}
+
 table.queue {
   border-collapse: collapse;
   width: 100%;

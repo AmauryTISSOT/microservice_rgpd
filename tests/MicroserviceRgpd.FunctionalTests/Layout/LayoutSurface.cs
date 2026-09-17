@@ -198,6 +198,13 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal const string Board = "/demandes";
 
   private const string Parametrage = "/parametrage";
+
+  /// <summary>
+  /// <b>La seconde face du Paramétrage</b>, et non un cinquième point d'entrée : elle pend sous
+  /// <c>/parametrage</c>, porte le même titre que la première, et c'est « Paramétrage » qui reste
+  /// marqué dans le panneau quand on la lit — on n'a pas quitté le Paramétrage.
+  /// </summary>
+  private const string ParametrageRabbitMq = "/parametrage/rabbitmq";
   private const string ScreeningDeposit = "/detection/depot";
   private const string Connection = "/detection/connexion";
   private const string Report = "/detection";
@@ -238,6 +245,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
       Qualification,
       Board,
       Parametrage,
+      ParametrageRabbitMq,
       .. ScreeningScreens(archived),
     ];
   }
@@ -309,10 +317,12 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </para>
   /// <para>
   /// ⚠️ <b>Le compte est vérifié, et pas seulement la présence</b> — comme pour l'élément de version.
-  /// L'écran porte <b>exactement deux</b> <c>nav</c>, et chacun est reconnu <b>à sa classe</b>. Un
-  /// troisième <c>nav</c> posé un jour — une pagination, un fil d'Ariane — ferait échouer ce compte
-  /// plutôt que de se faire lire à la place de l'un des deux, ce qui est la seule façon dont un tel
-  /// ajout pouvait se retourner en silence.
+  /// Le <b>layout</b> de l'écran — tout ce qui est hors du <c>main</c> — porte <b>exactement deux</b>
+  /// <c>nav</c>, et chacun est reconnu <b>à sa classe</b>. Un troisième <c>nav</c> de layout posé un
+  /// jour ferait échouer ce compte plutôt que de se faire lire à la place de l'un des deux, ce qui
+  /// est la seule façon dont un tel ajout pouvait se retourner en silence. ⚠️ La navigation qu'un
+  /// <b>écran</b> pose dans son <c>main</c> — les onglets du Paramétrage — n'en relève pas : elle
+  /// décrit l'intérieur d'un écran, pas les points d'entrée du service.
   /// </para>
   /// <para>
   /// ⚠️ <b>Les deux régions se lisent SÉPARÉMENT, et jamais concaténées.</b> Le nom du service est
@@ -322,12 +332,21 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </remarks>
   internal static (string Sidepanel, string Header) NavigationOf(string rendered)
   {
-    var regions = Regex.Matches(rendered, @"<nav\b([^>]*)>(.*?)</nav>", RegexOptions.Singleline);
+    // ⚠️ LE `main` EST RETIRÉ AVANT LE COMPTE, et c'est ce qui garde le compte VRAI plutôt que de le
+    // desserrer : ce qui est compté ici est ce que LE LAYOUT pose, et le layout pose ses deux
+    // régions HORS du `main`. Un écran qui porte sa propre navigation — les onglets du Paramétrage —
+    // en pose une DEDANS, et elle ne relève pas de ce compte. Compter la page entière aurait
+    // confondu les deux, et desserrer le compte à « au moins deux » aurait rendu muet le seul cas
+    // que ce compte attrape : un troisième `nav` de layout posé un jour, qui se ferait lire à la
+    // place de l'un des deux.
+    var layout = Regex.Replace(rendered, @"<main\b[^>]*>.*?</main>", string.Empty, RegexOptions.Singleline);
+
+    var regions = Regex.Matches(layout, @"<nav\b([^>]*)>(.*?)</nav>", RegexOptions.Singleline);
 
     regions.Count.ShouldBe(
       2,
-      "L'écran doit porter exactement deux régions de navigation — le panneau latéral et le header : un "
-      + "`nav` de plus se ferait lire à la place de l'un des deux.");
+      "Le layout de l'écran doit porter exactement deux régions de navigation — le panneau latéral et "
+      + "le header : un `nav` de plus se ferait lire à la place de l'un des deux.");
 
     return (RegionOf(regions, "sidepanel"), RegionOf(regions, "header"));
   }

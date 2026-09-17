@@ -1,0 +1,70 @@
+@page "/parametrage/rabbitmq"
+@model ParametrageRabbitMqModel
+@using MicroserviceRgpd.Core.Configuration
+@{
+  ViewData["Title"] = ParametrageFaces.ScreenName;
+}
+
+@*
+  LE MÊME `h1` QUE LA FACE HTTP, et c'est ce qui fait lire les deux comme un seul écran à deux faces
+  plutôt que comme deux écrans voisins. Il est écrit une fois, sur `ParametrageFaces`.
+*@
+<h1>@ParametrageFaces.ScreenName</h1>
+
+<partial name="_ParametrageTabs" model="@ParametrageFaces.RabbitMq" />
+
+@*
+  La phrase dit ce que cette face est : le routage, droit par droit, par lequel le service publiera
+  l'exercice de chacun des six droits. Un droit sans adresse ni routage est « non configuré ».
+*@
+<p class="caveat">
+  Cette face donne à lire le <strong>routage RabbitMQ</strong> — un exchange et une routing key — par
+  lequel le service exercera un droit. Un droit sans adresse ni routage est
+  <strong>« non configuré »</strong> : c'est un état normal, et rien ne vous oblige à les renseigner
+  tous.
+</p>
+
+@foreach (var right in Model.Settings.Rights)
+{
+  @* Cette page ne montre que l'espèce qu'elle configure : un droit réglé sur une adresse HTTP n'a
+     pas de routage à afficher ici (ADR-0027). *@
+  var routing = right.Channel is ExerciseChannel.RabbitMq rabbitMq ? rabbitMq.Routing : null;
+
+  <div class="right">
+    <h2>@right.Right.FrenchLabel</h2>
+    <dl>
+      <dt>Article</dt>
+      <dd>Article @right.Right.Article du RGPD</dd>
+
+      @if (routing is not null)
+      {
+        <dt>Exchange</dt>
+        <dd>@routing.Exchange.Value</dd>
+
+        <dt>Routing key</dt>
+        <dd>@routing.RoutingKey.Value</dd>
+      }
+      else if (!right.IsConfigured)
+      {
+        @*
+          ⚠️ « NON CONFIGURÉ » NE SE DIT QUE D'UN DROIT SANS ADRESSE NI ROUTAGE, et c'est ce qui garde
+          au mot son sens sur les deux faces : un droit réglé en HTTP est configuré, et l'appeler
+          « non configuré » ici ferait de cette face la seule du service qui mente sur son état.
+        *@
+        <dt>Routage d'exercice</dt>
+        <dd><span class="none">non configuré</span></dd>
+      }
+      else
+      {
+        @*
+          ⚠️ UN DROIT RÉGLÉ EN HTTP N'EST PAS UNE ABSENCE, et il ne prend donc pas l'encre pâle de
+          `.none` : il est configuré, sur l'autre face. Ce que cette face en dit s'arrête là — MONTRER
+          l'adresse et avertir qu'un enregistrement ici la remplacerait vient au ticket des
+          formulaires.
+        *@
+        <dt>Routage d'exercice</dt>
+        <dd>réglé sur la configuration HTTP</dd>
+      }
+    </dl>
+  </div>
+}

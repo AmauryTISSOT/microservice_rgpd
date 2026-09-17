@@ -212,7 +212,7 @@ SHA
 
 ### Layout
 
-Le cadre fixe que les douze écrans de la surface portent tous, écrit une seule fois dans
+Le cadre fixe que les treize écrans de la surface portent tous, écrit une seule fois dans
 `_Layout.cshtml` : la feuille de style et la police que le service sert lui-même, le **panneau
 latéral**, le **header**, la balise `<main>` qui enveloppe l'écran, et l'absence de pied de page
 comme de lien d'évitement. Ce qui ne varie pas d'un écran à l'autre en relève ; ce qui varie est
@@ -245,7 +245,13 @@ supprimée » ou qu'une suppression a échoué : il se pose au-dessus de l'écra
 qu'il dit, puis s'efface. La confirmation de suppression, elle, n'a pas de bandeau : quelle que
 soit l'issue, elle se ferme, et c'est le toast qui la dit.
 
-⚠️ **Douze écrans, et non quatorze : les deux routes de la `Cartographie` n'en sont pas.**
+Ces deux régions vivent **hors du `<main>`**, et ce qu'un **écran** pose dans son `<main>` n'en
+relève pas : le Paramétrage se tient sur **deux faces** — `/parametrage` et `/parametrage/rabbitmq` —
+reliées par des **onglets** rendus par le serveur, qui décrivent l'intérieur d'un écran et non les
+points d'entrée du service. Le panneau garde donc ses quatre entrées, et « Paramétrage » y reste
+marqué courant sur les deux faces.
+
+⚠️ **Treize écrans, et non quinze : les deux routes de la `Cartographie` n'en sont pas.**
 `cartographie.json` et `cartographie.csv` sont des Razor Pages qui rendent un fichier, jamais une
 page — pas de layout, pas de panneau, pas de header. Aucun test de layout ne les couvre, et aucun ne
 doit les couvrir.
