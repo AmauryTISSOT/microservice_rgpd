@@ -9,6 +9,7 @@ using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.TestDoubles.HostSystem;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
 using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
+using MicroserviceRgpd.Web.Pages.Requests;
 using Microsoft.EntityFrameworkCore;
 using NSwag.Generation;
 
@@ -418,12 +419,13 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     var summary = await SummaryOfAsync(id);
 
-    summary.Keys.ShouldBe(["right", "firstName", "lastName", "email", "exercise", "block"], ignoreOrder: true);
+    summary.Keys.ShouldBe(["right", "firstName", "lastName", "email", "exercise", "warning", "block"], ignoreOrder: true);
     summary["right"].GetString().ShouldBe("Droit à l'effacement (art. 17)");
     summary["firstName"].GetString().ShouldBe("Jeanne");
     summary["lastName"].GetString().ShouldBe("Martin");
     summary["email"].GetString().ShouldBe(email);
     summary["exercise"].GetString().ShouldBe(address);
+    summary["warning"].GetString().ShouldBe(ExecutionConfirmation.AddressedWarning);
     summary["block"].ValueKind.ShouldBe(JsonValueKind.Null, "Une demande exécutable porte un motif de blocage.");
     _host.Received.ShouldBeEmpty("Lire le récapitulatif a appelé le système hôte.");
   }
@@ -442,6 +444,9 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     summary["firstName"].GetString().ShouldBe("—");
     summary["lastName"].GetString().ShouldBe("—");
     summary["exercise"].GetString().ShouldBe("—");
+
+    // Un droit « non configuré » garde la phrase de l'adresse — voir ExecutionConfirmation.WarningOf.
+    summary["warning"].GetString().ShouldBe(ExecutionConfirmation.AddressedWarning);
   }
 
   /// <summary>
@@ -604,9 +609,11 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   }
 
   /// <summary>
-  /// <b>Le récapitulatif d'un droit exercé par RabbitMQ dit le routage</b> — l'exchange et la routing
-  /// key, sous le champ « Exercice » —, et l'appel au système hôte n'a pas lieu. ⚠️ Ce déploiement ne
-  /// déclare aucune connexion : le motif le dit (ADR-0028).
+  /// <b>Le récapitulatif d'un droit exercé par RabbitMQ dit le routage et avertit du bus</b> —
+  /// l'exchange et la routing key sous le champ « Exercice », puis la phrase qui dit que le service
+  /// saura que le broker a accepté le message, <b>jamais</b> que le système hôte l'a traité —, et
+  /// l'appel au système hôte n'a pas lieu. ⚠️ Ce déploiement ne déclare aucune connexion : le motif le
+  /// dit (ADR-0028).
   /// </summary>
   [Fact]
   public async Task AnswersTheRoutingOfARightExercisedByRabbitMq()
@@ -618,6 +625,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     var summary = await SummaryOfAsync(id);
 
     summary["exercise"].GetString().ShouldBe("exchange rgpd.exercice, routing key droit.acces");
+    summary["warning"].GetString().ShouldBe(ExecutionConfirmation.RoutedWarning);
     summary["block"].GetString()
       .ShouldBe(ExecutionBlock.BrokerConnectionMissing.FrenchLabelFor(DataSubjectRight.Access));
     _host.Received.ShouldBeEmpty("Lire le récapitulatif a appelé le système hôte.");
