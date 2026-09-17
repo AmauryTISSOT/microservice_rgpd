@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using MicroserviceRgpd.Core.Requests;
 
@@ -35,21 +34,23 @@ internal sealed record ExecutionWireBody(
   /// <summary>Les clés en camelCase, comme partout ailleurs sur le fil.</summary>
   private static readonly JsonSerializerOptions Wire = new(JsonSerializerDefaults.Web);
 
-  /// <summary>Le corps de <paramref name="body"/>, sérialisé.</summary>
-  public static string Of(ExecutionBody body)
+  /// <summary>Le corps de <paramref name="body"/>, sérialisé — la forme qu'un appel HTTP prend.</summary>
+  public static string Of(ExecutionBody body) => JsonSerializer.Serialize(Projected(body), Wire);
+
+  /// <summary>Le même corps, en octets UTF-8 — la forme qu'une publication prend.</summary>
+  public static ReadOnlyMemory<byte> BytesOf(ExecutionBody body) =>
+    JsonSerializer.SerializeToUtf8Bytes(Projected(body), Wire);
+
+  /// <summary>Les cinq valeurs de <paramref name="body"/>, telles qu'elles partent.</summary>
+  private static ExecutionWireBody Projected(ExecutionBody body)
   {
     ArgumentNullException.ThrowIfNull(body);
 
-    return JsonSerializer.Serialize(
-      new ExecutionWireBody(
-        body.RequestId.Value.ToString(),
-        body.Right.Name,
-        body.Email.Value,
-        body.FirstName?.Value,
-        body.LastName?.Value),
-      Wire);
+    return new ExecutionWireBody(
+      body.RequestId.Value.ToString(),
+      body.Right.Name,
+      body.Email.Value,
+      body.FirstName?.Value,
+      body.LastName?.Value);
   }
-
-  /// <summary>Le même corps, en octets UTF-8 — la forme qu'une publication prend.</summary>
-  public static ReadOnlyMemory<byte> BytesOf(ExecutionBody body) => Encoding.UTF8.GetBytes(Of(body));
 }

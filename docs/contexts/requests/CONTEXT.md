@@ -5,8 +5,7 @@ quand, de qui, et quel droit la personne invoque. L'`Operator` peut ensuite **mo
 pour corriger une erreur de saisie, puis **exécuter la demande** : le droit invoqué est remis au
 système hôte — appelé à son adresse, ou publié sur son routage —, et la demande passe à Terminée
 quand le destinataire, ou le broker pour lui, en accuse réception. Une demande porte une date limite
-de réponse et un statut ;
-l'exécution est le seul `Gesture` qui fait changer le statut.
+de réponse et un statut ; l'exécution est le seul `Gesture` qui fait changer le statut.
 
 Les identifiants du code sont en anglais (`DataSubjectRequest`, `Origin`) ; les textes destinés à
 l'humain sont en français (« demande », « Courrier »).

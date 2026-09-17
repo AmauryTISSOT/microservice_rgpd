@@ -117,12 +117,14 @@ public sealed class ExecuteDataSubjectRequestHandler(
     {
       // Rattrapage large assumé : quelle que soit la raison du refus, le droit est appliqué, et le
       // journal d'exécution doit le dire. L'annulation n'est pas à craindre : aucun jeton annulable n'est passé.
+      // ⚠️ Le journal applicatif dit l'exercice, non un statut HTTP : celui-ci est nul sur toute
+      // publication, et « (HTTP ) » ne dirait rien de ce qui s'est passé sur un routage.
       logger.LogError(
         notRecorded,
-        "Le droit {Right} a été remis au système hôte pour la demande {DataSubjectRequestId} (HTTP {HttpStatus}), mais la demande n'a pas pu passer à Terminée.",
+        "Le droit {Right} a été remis au système hôte pour la demande {DataSubjectRequestId} par {Exercise}, mais la demande n'a pas pu passer à Terminée.",
         request.Right.Name,
         request.Id.Value,
-        call.StatusCode);
+        channel);
 
       await using var scope = scopes.CreateAsyncScope();
 

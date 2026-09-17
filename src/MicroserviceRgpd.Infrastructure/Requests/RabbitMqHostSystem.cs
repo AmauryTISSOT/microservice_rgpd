@@ -1,4 +1,3 @@
-using System.Net.Sockets;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Infrastructure.Configuration;
@@ -63,7 +62,7 @@ public sealed class RabbitMqHostSystem(IBrokerChannels channels, RabbitMqOptions
     {
       channel = await channels.OpenAsync(cancellationToken);
     }
-    catch (Exception unreachable) when (unreachable is RabbitMQClientException or IOException or SocketException or TimeoutException)
+    catch (Exception unreachable) when (BrokerFailure.IsUnreachable(unreachable))
     {
       // Rien n'est parti : la connexion est jetée, et la prochaine exécution en rouvrira une.
       await channels.DiscardAsync();
@@ -103,7 +102,7 @@ public sealed class RabbitMqHostSystem(IBrokerChannels channels, RabbitMqOptions
         // Le délai se dit par une annulation que personne n'a demandée — comme pour le client HTTP.
         return HostSystemCall.TimedOut(startedAt, clock.GetElapsedTime(started), options.PublishTimeout);
       }
-      catch (Exception unreachable) when (unreachable is RabbitMQClientException or IOException or SocketException)
+      catch (Exception unreachable) when (BrokerFailure.IsUnreachable(unreachable))
       {
         await channels.DiscardAsync();
 
@@ -140,7 +139,7 @@ public sealed class RabbitMqHostSystem(IBrokerChannels channels, RabbitMqOptions
     {
       await channel.DisposeAsync();
     }
-    catch (Exception closing) when (closing is RabbitMQClientException or IOException or SocketException)
+    catch (Exception closing) when (BrokerFailure.IsNetwork(closing))
     {
       // Rien à dire : il ne servira plus.
     }

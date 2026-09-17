@@ -15,7 +15,8 @@ namespace MicroserviceRgpd.Infrastructure.Requests;
 /// </para>
 /// <para>
 /// ⚠️ <b>Un channel par exécution, jeté après</b> : l'appelant en dispose, toujours. La connexion,
-/// elle, survit et se partage — c'est <see cref="DiscardAsync"/>, et elle seule, qui la jette.
+/// elle, survit et se partage — c'est <see cref="DiscardAsync"/>, et elle seule, qui la jette quand
+/// elle est tombée.
 /// </para>
 /// </remarks>
 public interface IBrokerChannels
@@ -29,9 +30,19 @@ public interface IBrokerChannels
   Task<IChannel> OpenAsync(CancellationToken cancellationToken);
 
   /// <summary>
-  /// <b>Jette la connexion</b> : la prochaine publication en rouvrira une. ⚠️ Elle ne se jette que
-  /// sur une <b>erreur réseau</b> — un <c>nack</c> ou un message non routable n'ont rien cassé, et
-  /// jeter la connexion pour eux ferait payer un aller-retour TCP à chaque refus.
+  /// <b>Jette la connexion partagée si elle est tombée</b> : la prochaine publication en rouvrira
+  /// une.
   /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Elle ne s'appelle que sur une erreur réseau</b> — un <c>nack</c> ou un message non
+  /// routable n'ont rien cassé, et jeter la connexion pour eux ferait payer un aller-retour TCP à
+  /// chaque refus.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une connexion saine survit à cet appel</b> : deux exécutions concurrentes la partagent, et
+  /// l'échec de l'une ne doit pas emporter celle que l'autre vient de rouvrir.
+  /// </para>
+  /// </remarks>
   ValueTask DiscardAsync();
 }

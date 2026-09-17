@@ -35,8 +35,14 @@ public sealed class ABrokerConfiguredWebApplicationFactory : CustomWebApplicatio
   public const string Password = "mot-de-passe-du-deploiement";
 
   /// <summary>
-  /// Le délai d'attente d'une confirmation dans tout hôte de test, en secondes — <b>réduit</b>, pour
-  /// qu'un délai dépassé s'éprouve sans attendre les dix secondes d'un déploiement (ADR-0028).
+  /// Le délai d'attente d'une confirmation dans cet hôte, en secondes — <b>réduit</b> : un broker en
+  /// conteneur confirme en quelques millisecondes, et ce réglage borne l'attente d'un test qui
+  /// tomberait sur un broker muet plutôt que de le laisser pendre dix secondes (ADR-0028).
+  /// <para>
+  /// ⚠️ <b>Aucun test ne provoque ce délai ici</b>, et aucun ne le peut : un broker sain confirme.
+  /// La traduction « annulation par le délai → <c>TimedOut</c> » s'éprouve sur
+  /// <c>RabbitMqHostSystemTests</c>, contre un <c>IChannel</c> substitué.
+  /// </para>
   /// </summary>
   public const int PublishTimeoutSeconds = 2;
 

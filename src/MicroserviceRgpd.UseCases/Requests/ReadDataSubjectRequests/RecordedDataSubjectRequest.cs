@@ -59,6 +59,7 @@ public sealed record RecordedDataSubjectRequest(
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(settings);
+    ArgumentNullException.ThrowIfNull(connection);
 
     return new RecordedDataSubjectRequest(
       request.Id,

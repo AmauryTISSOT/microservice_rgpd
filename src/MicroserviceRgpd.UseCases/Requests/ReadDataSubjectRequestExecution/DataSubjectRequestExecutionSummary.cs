@@ -38,6 +38,7 @@ public sealed record DataSubjectRequestExecutionSummary(
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(settings);
+    ArgumentNullException.ThrowIfNull(connection);
 
     var channel = settings.ChannelFor(request.Right);
 

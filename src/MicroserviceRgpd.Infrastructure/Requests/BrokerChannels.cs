@@ -1,3 +1,4 @@
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Infrastructure.Configuration;
 using RabbitMQ.Client;
 
@@ -47,47 +48,76 @@ public sealed class BrokerChannels(RabbitMqOptions options) : IBrokerChannels, I
   private IConnection? _connection;
 
   /// <inheritdoc />
+  /// <exception cref="InvalidOperationException">
+  /// ⚠️ <b>Ce déploiement ne déclare aucune connexion</b>, et rien n'aurait dû demander à publier :
+  /// le motif <c>BrokerConnectionMissing</c> écarte un droit routé bien avant la remise, et le
+  /// serveur le revérifie juste avant. Le dire plutôt que le supposer — et le dire en faute de
+  /// programmation, non en panne de réseau, qu'un <c>ExecutionOutcome</c> ferait passer pour un
+  /// broker éteint.
+  /// </exception>
   public async Task<IChannel> OpenAsync(CancellationToken cancellationToken)
   {
+    if (BrokerConnection.Declaring(options.HostName) is BrokerConnection.Absent)
+    {
+      throw new InvalidOperationException(
+        "Ce déploiement ne déclare aucune connexion au broker : il n'y a nulle part où publier.");
+    }
+
     var connection = await ConnectionAsync(cancellationToken);
 
     return await connection.CreateChannelAsync(PublisherConfirms, cancellationToken);
   }
 
   /// <inheritdoc />
-  public async ValueTask DiscardAsync()
+  public ValueTask DiscardAsync() => CloseAsync(onlyIfBroken: true);
+
+  /// <inheritdoc />
+  public async ValueTask DisposeAsync()
+  {
+    // À l'arrêt, la connexion se ferme qu'elle soit saine ou non.
+    await CloseAsync(onlyIfBroken: false);
+
+    _opening.Dispose();
+  }
+
+  /// <summary>Ferme la connexion partagée, s'il y en a une.</summary>
+  /// <remarks>
+  /// ⚠️ <b><paramref name="onlyIfBroken"/> évite qu'une exécution en échec emporte la connexion
+  /// qu'une autre vient de rouvrir.</b> Deux exécutions concurrentes partagent une seule connexion :
+  /// la jeter à l'aveugle ferait payer à la seconde la panne de la première. Le client AMQP ferme la
+  /// sienne dès qu'elle casse — c'est ce qu'on lit, plutôt que de le supposer. Une connexion
+  /// réellement morte que le client n'a pas encore marquée fermée survit à ce tour, et la
+  /// publication suivante échouera à y tailler un channel : elle rappellera ici, et la trouvera
+  /// fermée.
+  /// </remarks>
+  private async ValueTask CloseAsync(bool onlyIfBroken)
   {
     await _opening.WaitAsync(CancellationToken.None);
 
     try
     {
-      if (_connection is { } discarded)
+      if (_connection is not { } current || (onlyIfBroken && current.IsOpen))
       {
-        _connection = null;
+        return;
+      }
 
-        // La connexion est déjà cassée dans le cas qui nous amène ici : la fermer proprement est un
-        // effort de politesse, et son échec ne doit pas masquer l'échec de la publication.
-        try
-        {
-          await discarded.DisposeAsync();
-        }
-        catch (Exception closing) when (closing is RabbitMQ.Client.Exceptions.RabbitMQClientException or IOException or System.Net.Sockets.SocketException)
-        {
-          // Rien à dire : elle ne servira plus.
-        }
+      _connection = null;
+
+      // Dans le cas qui nous amène ici, la connexion est déjà cassée : la fermer proprement est un
+      // effort de politesse, et son échec ne doit pas masquer l'échec de la publication.
+      try
+      {
+        await current.DisposeAsync();
+      }
+      catch (Exception closing) when (BrokerFailure.IsNetwork(closing))
+      {
+        // Rien à dire : elle ne servira plus.
       }
     }
     finally
     {
       _opening.Release();
     }
-  }
-
-  /// <inheritdoc />
-  public async ValueTask DisposeAsync()
-  {
-    await DiscardAsync();
-    _opening.Dispose();
   }
 
   /// <summary>
