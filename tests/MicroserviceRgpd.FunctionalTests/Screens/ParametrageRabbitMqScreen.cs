@@ -1,19 +1,21 @@
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
-using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
 /// <summary>
 /// La <b>seconde face du Paramétrage</b> — « Configuration RabbitMQ » —, exercée par sa seule
-/// frontière HTTP. Elle donne à <b>lire</b> les routages en vigueur : les formulaires viennent
-/// ensuite. Les deux faces se rejoignent par des <b>onglets rendus par le serveur</b>, sans une
-/// ligne de JavaScript.
+/// frontière HTTP. L'intégrateur y lit les routages en vigueur, et les y <b>déclare</b> droit par
+/// droit : un exchange, une routing key, et le bouton qui ramène le droit à « non configuré ». Les
+/// deux faces se rejoignent par des <b>onglets rendus par le serveur</b>, sans une ligne de
+/// JavaScript.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,6 +23,11 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// écran à deux faces plutôt que comme deux écrans voisins. Le panneau latéral ne bouge pas : on
 /// n'a pas quitté le Paramétrage, et « Paramétrage » y reste marqué courant — ce que le harnais de
 /// layout garde pour toute la surface, cette page comprise.
+/// </para>
+/// <para>
+/// ⚠️ <b>Il configure, il n'appelle pas.</b> Enregistrer un routage est une écriture locale : rien
+/// n'est publié, aucun exchange n'est déclaré ni vérifié, et un routage reste enregistrable alors
+/// même qu'aucun broker n'existe — ce que ces tests exercent sur un service qui n'en a aucun.
 /// </para>
 /// <para>
 /// ⚠️ <b>Chaque test part d'un service vierge</b>, pour la même raison que sur la page HTTP : le
@@ -33,25 +40,34 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   private const string Http = "/parametrage";
   private const string RabbitMq = "/parametrage/rabbitmq";
 
+  /// <summary>L'adresse du formulaire d'un droit : la page, et le gestionnaire d'enregistrement.</summary>
+  private const string Save = "/parametrage/rabbitmq?handler=Set";
+
+  /// <summary>L'adresse du bouton Effacer d'un droit : la page, et le gestionnaire d'effacement.</summary>
+  private const string Clear = "/parametrage/rabbitmq?handler=Clear";
+
   /// <summary>Le nom que les <b>deux</b> faces portent en tête, recopié à dessein.</summary>
   private const string ScreenName = "Paramétrage du microservice RGPD";
 
   private const string HttpTab = "Configuration HTTP";
   private const string RabbitMqTab = "Configuration RabbitMQ";
 
+  private const string Erasure = "droit à l'effacement";
+
   /// <summary>
   /// <b>Les six droits, leur libellé français et leur article</b>, recopiés à dessein : un test qui
   /// lirait le SmartEnum qu'il vérifie ne vérifierait plus rien. C'est l'ordre du règlement — 15,
-  /// 16, 17, 18, 20, 21 — et l'énumération est <b>non contiguë</b>.
+  /// 16, 17, 18, 20, 21 — et l'énumération est <b>non contiguë</b>. Chaque droit porte aussi son
+  /// <b>nom canonique</b>, celui que sa mini-form envoie.
   /// </summary>
-  private static readonly (string Label, int Article)[] TheSixRights =
+  private static readonly (string Name, string Label, int Article)[] TheSixRights =
   [
-    ("droit d'accès", 15),
-    ("droit de rectification", 16),
-    ("droit à l'effacement", 17),
-    ("droit à la limitation du traitement", 18),
-    ("droit à la portabilité", 20),
-    ("droit d'opposition", 21),
+    ("Access", "droit d'accès", 15),
+    ("Rectification", "droit de rectification", 16),
+    ("Erasure", "droit à l'effacement", 17),
+    ("Restriction", "droit à la limitation du traitement", 18),
+    ("Portability", "droit à la portabilité", 20),
+    ("Objection", "droit d'opposition", 21),
   ];
 
   private readonly HttpClient _client = factory.CreateClient(
@@ -146,6 +162,375 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
+  /// Le critère du ticket : <b>enregistrer un exchange et une routing key pour un droit</b>, et les
+  /// relire sur la page. Les cinq autres droits sont inchangés.
+  /// </summary>
+  [Fact]
+  public async Task SavesTheExchangeAndTheRoutingKeyOfARightAndLeavesTheFiveOthersUntouched()
+  {
+    const string Exchange = "rgpd.exercices";
+    const string Key = "droit.effacement";
+
+    (await SaveAsync("Erasure", Exchange, Key)).StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    var sections = await SectionsAsync();
+
+    sections[Erasure].ShouldContain(Exchange);
+    sections[Erasure].ShouldContain(Key);
+    sections[Erasure].ShouldNotContain("non configuré");
+
+    foreach (var (_, label, _) in TheSixRights.Where(right => right.Label != Erasure))
+    {
+      sections[label].ShouldContain("non configuré", customMessage: $"Le {label} ne devait pas être touché.");
+    }
+  }
+
+  /// <summary>
+  /// <b>L'enregistrement suit le Post-Redirect-Get</b> : l'écriture répond par une redirection vers
+  /// la face RabbitMQ, et recharger la page relit l'état au lieu de renvoyer la saisie.
+  /// </summary>
+  [Fact]
+  public async Task RedirectsBackToTheScreenAfterSaving()
+  {
+    var response = await SaveAsync("Erasure", "rgpd.exercices", "droit.effacement");
+
+    response.StatusCode.ShouldBe(HttpStatusCode.Found);
+    response.Headers.Location!.OriginalString.ShouldBe(RabbitMq);
+  }
+
+  /// <summary>
+  /// <b>Corriger sans repartir de zéro</b> : les champs d'un droit routé portent déjà son routage, et
+  /// l'enregistrer de nouveau le <b>remplace</b> — l'ancien disparaît, l'autre droit routé ne bouge
+  /// pas.
+  /// </summary>
+  [Fact]
+  public async Task RevisesAnAlreadyRoutedRightWithoutTouchingTheOtherRights()
+  {
+    await SaveAsync("Rectification", "rgpd.v1", "droit.rectification");
+    await SaveAsync("Erasure", "rgpd.exercices", "droit.effacement");
+
+    (await SectionAsync("droit de rectification")).ShouldContain("value=\"rgpd.v1\"");
+
+    (await SaveAsync("Rectification", "rgpd.v2", "droit.rectification.v2")).StatusCode
+      .ShouldBe(HttpStatusCode.Found);
+
+    var rectification = await SectionAsync("droit de rectification");
+
+    rectification.ShouldContain("rgpd.v2");
+    rectification.ShouldNotContain("rgpd.v1");
+    (await SectionAsync(Erasure)).ShouldContain("rgpd.exercices");
+  }
+
+  /// <summary>
+  /// <b>Les espaces de début et de fin sont rognés avant enregistrement</b> : un copier-coller
+  /// malheureux ne crée pas un exchange fantôme.
+  /// </summary>
+  [Fact]
+  public async Task TrimsTheSurroundingSpacesBeforeSaving()
+  {
+    (await SaveAsync("Access", "  rgpd.exercices  ", "\tdroit.acces\n")).StatusCode
+      .ShouldBe(HttpStatusCode.Found);
+
+    var access = await SectionAsync("droit d'accès");
+
+    access.ShouldContain("value=\"rgpd.exercices\"");
+    access.ShouldContain("value=\"droit.acces\"");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>C'est le serveur qui refuse, pas le navigateur</b> : un exchange vide, une routing key
+  /// vide ou une valeur de plus de 255 octets sont rendus à l'écran — un statut 200, aucune
+  /// redirection —, et rien n'est enregistré.
+  /// </summary>
+  [Theory]
+  [InlineData("", "droit.acces", "Le nom de l'exchange est absent ou vide.")]
+  [InlineData("   ", "droit.acces", "Le nom de l'exchange est absent ou vide.")]
+  [InlineData("rgpd.exercices", "", "La routing key est absente ou vide.")]
+  [InlineData("rgpd.exercices", "  ", "La routing key est absente ou vide.")]
+  public async Task RefusesAnEmptyFieldOnTheServerAndSaysSoWithoutRedirecting(
+    string exchange, string key, string refusal)
+  {
+    var response = await SaveAsync("Access", exchange, key);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    response.Headers.Location.ShouldBeNull();
+    WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()).ShouldContain(refusal);
+
+    (await SectionAsync("droit d'accès")).ShouldContain("non configuré");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le plafond se compte en octets UTF-8, pas en caractères</b> : 256 caractères latins sont
+  /// refusés, et 128 idéogrammes — 384 octets pour 128 caractères — le sont aussi, là où un compte
+  /// de caractères les aurait laissés passer.
+  /// </summary>
+  [Theory]
+  [InlineData("Exchange", 256, 'a')]
+  [InlineData("Exchange", 128, '銀')]
+  [InlineData("RoutingKey", 256, 'a')]
+  [InlineData("RoutingKey", 128, '銀')]
+  public async Task RefusesAValueLongerThanTwoHundredAndFiftyFiveBytes(string field, int length, char letter)
+  {
+    var tooLong = new string(letter, length);
+
+    Encoding.UTF8.GetByteCount(tooLong).ShouldBeGreaterThan(255);
+
+    var response = field == "Exchange"
+      ? await SaveAsync("Access", tooLong, "droit.acces")
+      : await SaveAsync("Access", "rgpd.exercices", tooLong);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    // Le refus se range SOUS LE CHAMP FAUTIF, ici comme pour un champ vide : c'est ce qui dit lequel
+    // des deux corriger, et le lire sur la page entière ne l'aurait pas dit.
+    var access = SectionIn(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "droit d'accès");
+    var sound = field == "Exchange" ? "RoutingKey" : "Exchange";
+
+    FieldIn(access, field).ShouldContain("dépasse 255 octets UTF-8");
+    FieldIn(access, sound).ShouldNotContain("dépasse 255 octets UTF-8");
+
+    (await SectionAsync("droit d'accès")).ShouldContain("non configuré");
+  }
+
+  /// <summary>
+  /// Le refus se dit <b>dans la section du bon droit et sous le bon champ</b> — exchange ou routing
+  /// key —, et la saisie refusée <b>reste dans les champs</b> : on corrige, on ne retape pas.
+  /// </summary>
+  [Theory]
+  [InlineData("Exchange", "", "droit.opposition", "Le nom de l'exchange est absent ou vide.")]
+  [InlineData("RoutingKey", "rgpd.exercices", "", "La routing key est absente ou vide.")]
+  public async Task SaysTheRefusalUnderItsOwnFieldInTheSectionOfTheRightBeingEdited(
+    string faulty, string exchange, string key, string refusal)
+  {
+    var response = await SaveAsync("Objection", exchange, key);
+    var screen = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+    var objection = SectionIn(screen, "droit d'opposition");
+    var sound = faulty == "Exchange" ? "RoutingKey" : "Exchange";
+
+    FieldIn(objection, faulty).ShouldContain(refusal);
+    FieldIn(objection, sound).ShouldNotContain(refusal);
+
+    // Les cinq autres droits n'ont rien à dire d'un refus qui n'est pas le leur.
+    SectionIn(screen, "droit d'accès").ShouldNotContain(refusal);
+
+    // La saisie refusée reste affichée — celle des deux champs, pas seulement celle du fautif.
+    FieldIn(objection, "Exchange").ShouldContain($"value=\"{exchange}\"");
+    FieldIn(objection, "RoutingKey").ShouldContain($"value=\"{key}\"");
+  }
+
+  /// <summary>
+  /// <b>Les deux champs sont jugés tous les deux</b> : une saisie où l'exchange et la routing key
+  /// sont l'un et l'autre fautifs se lit d'un coup, chaque refus sous son champ — et non en deux
+  /// allers-retours.
+  /// </summary>
+  [Fact]
+  public async Task JudgesBothFieldsAndSaysBothRefusalsAtOnce()
+  {
+    var response = await SaveAsync("Access", "", "");
+    var access = SectionIn(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "droit d'accès");
+
+    FieldIn(access, "Exchange").ShouldContain("Le nom de l'exchange est absent ou vide.");
+    FieldIn(access, "RoutingKey").ShouldContain("La routing key est absente ou vide.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Les champs ne portent pas d'attribut <c>maxlength</c></b> : l'attribut compte des unités
+  /// UTF-16 là où la contrainte compte des octets, et un navigateur qui tronquerait à 255 unités
+  /// laisserait passer une valeur que le broker refuserait. <b>Le serveur fait foi.</b> Chaque champ
+  /// porte en revanche un <b>texte d'aide</b>, qui dit ce que le service attend.
+  /// </summary>
+  [Fact]
+  public async Task CarriesNoMaxlengthOnItsFieldsAndAccompaniesEachWithAHint()
+  {
+    var access = await SectionAsync("droit d'accès");
+
+    foreach (var field in new[] { "Exchange", "RoutingKey" })
+    {
+      var block = FieldIn(access, field);
+
+      block.ShouldNotContain("maxlength", Case.Insensitive);
+      block.ShouldContain("class=\"hint\"");
+
+      // ⚠️ L'AIDE NE RENVOIE PAS À LA DOCUMENTATION DE RABBITMQ : elle dit ce que CE service attend.
+      block.ShouldNotContain("rabbitmq.com");
+    }
+  }
+
+  /// <summary>
+  /// <b>Les deux champs d'un droit lui sont rattachés par un <c>fieldset</c> et sa <c>legend</c></b>,
+  /// et non par une périphrase recopiée dans chaque libellé : les libellés se lisent « Exchange » et
+  /// « Routing key », et c'est la légende qui nomme le droit.
+  /// </summary>
+  [Fact]
+  public async Task TiesBothFieldsToTheirRightByAFieldsetAndItsLegend()
+  {
+    var screen = WebUtility.HtmlDecode(await ReadAsync(RabbitMq));
+
+    foreach (var (_, label, _) in TheSixRights)
+    {
+      var section = SectionIn(screen, label);
+
+      section.ShouldContain("<fieldset>");
+      section.ShouldContain($"</legend>");
+      LegendIn(section).ShouldContain(label);
+
+      FieldIn(section, "Exchange").ShouldContain(">Exchange</label>");
+      FieldIn(section, "RoutingKey").ShouldContain(">Routing key</label>");
+    }
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La page HTTP n'est pas modifiée sur ce point</b> : son champ unique n'a pas de second
+  /// champ dont le distinguer, et l'entourer d'un <c>fieldset</c> pour ressembler à sa voisine aurait
+  /// été de la symétrie sans objet.
+  /// </summary>
+  [Fact]
+  public async Task LeavesTheHttpFaceWithoutAFieldset()
+  {
+    (await ReadAsync(Http)).ShouldNotContain("<fieldset", Case.Insensitive);
+  }
+
+  /// <summary>
+  /// Le critère du ticket : <b>effacer le routage d'un droit le ramène à « non configuré »</b>, et
+  /// l'effacement suit le Post-Redirect-Get.
+  /// </summary>
+  [Fact]
+  public async Task ClearsTheRoutingOfARightBackToUnconfigured()
+  {
+    await SaveAsync("Erasure", "rgpd.exercices", "droit.effacement");
+
+    var response = await ClearAsync("Erasure");
+
+    response.StatusCode.ShouldBe(HttpStatusCode.Found);
+    response.Headers.Location!.OriginalString.ShouldBe(RabbitMq);
+
+    var erasure = await SectionAsync(Erasure);
+
+    erasure.ShouldContain("non configuré");
+    erasure.ShouldNotContain("rgpd.exercices");
+  }
+
+  /// <summary>
+  /// <b>Effacer n'est offert qu'à un droit portant un routage</b> : un droit « non configuré » n'a
+  /// rien à oublier, et un bouton qui ne ferait rien serait une promesse vide.
+  /// </summary>
+  [Fact]
+  public async Task OffersToClearOnlyARightThatCarriesARouting()
+  {
+    await SaveAsync("Objection", "rgpd.exercices", "droit.opposition");
+
+    var sections = await SectionsAsync();
+
+    sections["droit d'opposition"].ShouldContain(">Effacer</button>");
+
+    foreach (var (_, label, _) in TheSixRights.Where(right => right.Label != "droit d'opposition"))
+    {
+      sections[label].ShouldNotContain(">Effacer</button>");
+    }
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un droit réglé en HTTP ne se voit pas offrir « Effacer » sur cette face</b> : cette page
+  /// ne montre pas son canal, et un bouton qui l'effacerait sans le dire serait une destruction
+  /// aveugle.
+  /// </summary>
+  [Fact]
+  public async Task DoesNotOfferToClearARightConfiguredOverHttp()
+  {
+    await AddressAsync(DataSubjectRight.Access, "https://brocanto.example.fr/rgpd/acces");
+
+    (await SectionAsync("droit d'accès")).ShouldNotContain(">Effacer</button>");
+  }
+
+  /// <summary>
+  /// <b>Un envoi sans jeton anti-rejeu est refusé</b>, et rien n'est enregistré : le formulaire est
+  /// le seul chemin vers le Paramétrage, et un site tiers n'a pas à y écrire à la place de
+  /// l'intégrateur.
+  /// </summary>
+  [Fact]
+  public async Task RefusesASaveThatCarriesNoAntiforgeryToken()
+  {
+    var response = await _client.PostAsync(Save, new FormUrlEncodedContent(
+    [
+      new("Form.Right", "Access"),
+      new("Form.Exchange", "tiers.exercices"),
+      new("Form.RoutingKey", "droit.acces"),
+    ]));
+
+    response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    (await SectionAsync("droit d'accès")).ShouldContain("non configuré");
+  }
+
+  /// <summary>
+  /// <b>Un effacement sans jeton anti-rejeu est refusé</b>, et le routage reste : un site tiers n'a
+  /// pas à déconfigurer un droit à la place de l'intégrateur.
+  /// </summary>
+  [Fact]
+  public async Task RefusesAClearThatCarriesNoAntiforgeryToken()
+  {
+    await SaveAsync("Access", "rgpd.exercices", "droit.acces");
+
+    var response = await _client.PostAsync(Clear, new FormUrlEncodedContent([new("Form.Right", "Access")]));
+
+    response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    (await SectionAsync("droit d'accès")).ShouldContain("rgpd.exercices");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un droit forgé est refusé en le nommant</b> — <c>OutOfScope</c> compris, qui est un verdict
+  /// et non un droit qu'on exerce —, à l'enregistrement comme à l'effacement, et rien n'est écrit.
+  /// </summary>
+  [Theory]
+  [InlineData("OutOfScope")]
+  [InlineData("Profiling")]
+  public async Task RefusesARightTheScreenDoesNotConfigure(string right)
+  {
+    var saved = await SaveAsync(right, "rgpd.exercices", "droit.forge");
+
+    saved.StatusCode.ShouldBe(HttpStatusCode.OK);
+    WebUtility.HtmlDecode(await saved.Content.ReadAsStringAsync())
+      .ShouldContain($"« {right} » n'est pas un droit du Paramétrage");
+
+    var cleared = await ClearAsync(right);
+
+    cleared.StatusCode.ShouldBe(HttpStatusCode.OK);
+    cleared.Headers.Location.ShouldBeNull();
+
+    (await ReadAsync(RabbitMq)).ShouldNotContain("rgpd.exercices");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Aucun appel au broker à l'enregistrement.</b> L'exchange enregistré désigne un port
+  /// d'écoute ouvert par le test : si le service tentait de joindre ce qu'il enregistre — pour
+  /// « vérifier » l'exchange, le déclarer, s'y connecter —, une connexion y attendrait. Déclarer un
+  /// routage reste une écriture locale, et c'est ce qui le rend enregistrable avant que le broker
+  /// existe.
+  /// </summary>
+  [Fact]
+  public async Task EmitsNoNetworkCallWhenSaving()
+  {
+    var listener = new TcpListener(IPAddress.Loopback, 0);
+    listener.Start();
+
+    try
+    {
+      var exchange = $"127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}";
+
+      (await SaveAsync("Portability", exchange, "droit.portabilite")).StatusCode
+        .ShouldBe(HttpStatusCode.Found);
+
+      (await SectionAsync("droit à la portabilité")).ShouldContain(exchange);
+
+      listener.Pending().ShouldBeFalse("Le service a ouvert une connexion vers le routage qu'il enregistrait.");
+    }
+    finally
+    {
+      listener.Stop();
+    }
+  }
+
+  /// <summary>
   /// <b>Un droit portant un routage affiche son exchange et sa routing key</b>, et lui seul : les
   /// cinq autres restent « non configuré ».
   /// </summary>
@@ -155,15 +540,15 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     const string Exchange = "rgpd.exercices";
     const string Key = "droit.effacement";
 
-    await RouteAsync(DataSubjectRight.Erasure, Exchange, Key);
+    await SaveAsync("Erasure", Exchange, Key);
 
     var sections = SectionsIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)));
 
-    sections["droit à l'effacement"].ShouldContain(Exchange);
-    sections["droit à l'effacement"].ShouldContain(Key);
-    sections["droit à l'effacement"].ShouldNotContain("non configuré");
+    sections[Erasure].ShouldContain(Exchange);
+    sections[Erasure].ShouldContain(Key);
+    sections[Erasure].ShouldNotContain("non configuré");
 
-    foreach (var untouched in sections.Where(section => section.Key != "droit à l'effacement"))
+    foreach (var untouched in sections.Where(section => section.Key != Erasure))
     {
       untouched.Value.ShouldContain(
         "non configuré", customMessage: $"Le {untouched.Key} ne devait pas être touché.");
@@ -173,7 +558,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   /// <summary>
   /// ⚠️ <b>Un droit réglé sur l'autre canal n'est pas « non configuré »</b> sur cette page : le mot
   /// garde son sens — ni adresse, ni routage —, et cette page ne revendique pas le routage d'un
-  /// droit qui n'en a pas. L'affichage du réglage d'en face vient au ticket des formulaires.
+  /// droit qui n'en a pas. L'affichage du réglage d'en face vient au ticket de l'avertissement.
   /// </summary>
   [Fact]
   public async Task DoesNotCallARightConfiguredOverHttpUnconfigured()
@@ -193,14 +578,49 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     return await response.Content.ReadAsStringAsync();
   }
 
+  /// <summary>La section d'un droit, retrouvée par son libellé — entités décodées.</summary>
+  private async Task<string> SectionAsync(string label) =>
+    SectionIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)), label);
+
+  /// <summary>Les six sections de la face RabbitMQ, chacune sous son libellé.</summary>
+  private async Task<IReadOnlyDictionary<string, string>> SectionsAsync() =>
+    SectionsIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)));
+
   /// <summary>Les sections des six droits, chacune sous son libellé.</summary>
   private static IReadOnlyDictionary<string, string> SectionsIn(string screen)
   {
-    var sections = screen.Split("<div class=\"right\">").Skip(1).ToList();
+    return TheSixRights.ToDictionary(right => right.Label, right => SectionIn(screen, right.Label));
+  }
 
-    return TheSixRights.ToDictionary(
-      right => right.Label,
-      right => sections.Single(section => section.Contains($"<h2>{right.Label}</h2>", StringComparison.Ordinal)));
+  private static string SectionIn(string screen, string label) =>
+    screen.Split("<div class=\"right\">")
+      .Single(section => section.Contains($"<h2>{label}</h2>", StringComparison.Ordinal));
+
+  /// <summary>
+  /// Le bloc d'un champ dans la section d'un droit — son libellé, son champ, son aide et le refus
+  /// qui s'y range. ⚠️ C'est LUI qu'on lit pour dire qu'un refus est <b>sous le bon champ</b> : lu
+  /// sur la section entière, le refus de l'exchange se serait confondu avec celui de la routing key.
+  /// </summary>
+  private static string FieldIn(string section, string field)
+  {
+    var blocks = Regex.Matches(section, @"<p\b[^>]*>(?:(?!</p>).)*</p>", RegexOptions.Singleline)
+      .Select(block => block.Value)
+      .Where(block => block.Contains($"name=\"Form.{field}\"", StringComparison.Ordinal))
+      .ToList();
+
+    blocks.Count.ShouldBe(1, $"La section ne porte pas un bloc unique pour le champ {field}.");
+
+    return blocks[0];
+  }
+
+  /// <summary>La légende du <c>fieldset</c> d'une section — ce qui rattache ses champs à son droit.</summary>
+  private static string LegendIn(string section)
+  {
+    var legend = Regex.Match(section, @"<legend\b[^>]*>(.*?)</legend>", RegexOptions.Singleline);
+
+    legend.Success.ShouldBeTrue("La section ne porte aucune légende.");
+
+    return legend.Groups[1].Value;
   }
 
   /// <summary>
@@ -233,22 +653,48 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   }
 
   /// <summary>
-  /// Pose le routage d'un droit par le use case — le seul chemin qui existe aujourd'hui, la page
-  /// étant en lecture seule jusqu'au ticket des formulaires.
+  /// Remplit la mini-form d'un droit et la renvoie, jeton anti-rejeu compris — exactement ce que
+  /// fait un navigateur, et le seul chemin qui existe vers la face RabbitMQ.
   /// </summary>
-  private async Task RouteAsync(DataSubjectRight right, string exchange, string key)
+  private async Task<HttpResponseMessage> SaveAsync(string right, string exchange, string key)
   {
-    using var scope = factory.Services.CreateScope();
-
-    var written = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
-      new SetRightRabbitMqRoutingCommand(
-        right,
-        new RabbitMqRouting(ExchangeName.From(exchange), RoutingKey.From(key))));
-
-    written.IsSuccess.ShouldBeTrue();
+    return await _client.PostAsync(Save, new FormUrlEncodedContent(
+    [
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
+      new("Form.Right", right),
+      new("Form.Exchange", exchange),
+      new("Form.RoutingKey", key),
+    ]));
   }
 
-  /// <summary>Pose l'adresse HTTP d'un droit, par le même chemin.</summary>
+  /// <summary>
+  /// Envoie le bouton <b>Effacer</b> de la mini-form d'un droit, jeton anti-rejeu compris : l'envoi
+  /// ne porte que le droit, jamais un routage.
+  /// </summary>
+  private async Task<HttpResponseMessage> ClearAsync(string right)
+  {
+    return await _client.PostAsync(Clear, new FormUrlEncodedContent(
+    [
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
+      new("Form.Right", right),
+    ]));
+  }
+
+  private async Task<string> AntiforgeryTokenAsync()
+  {
+    var token = Regex.Match(
+      await ReadAsync(RabbitMq),
+      @"<input name=""__RequestVerificationToken""[^>]*value=""([^""]+)""");
+
+    token.Success.ShouldBeTrue("La face RabbitMQ ne porte aucun jeton anti-rejeu.");
+
+    return token.Groups[1].Value;
+  }
+
+  /// <summary>
+  /// Pose l'adresse HTTP d'un droit <b>par le use case</b> : c'est le réglage de l'autre face, et
+  /// cette face n'a pas à l'écrire.
+  /// </summary>
   private async Task AddressAsync(DataSubjectRight right, string url)
   {
     using var scope = factory.Services.CreateScope();

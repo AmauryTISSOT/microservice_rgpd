@@ -988,7 +988,14 @@ fieldset {
   border-radius: var(--radius-md);
 }
 
-fieldset label {
+/*
+  ⚠️ LE LIBELLÉ D'UN BOUTON RADIO N'EST PAS CELUI D'UN CHAMP DE SAISIE : il se lit À CÔTÉ de sa case,
+  en ligne et sans graisse, là où le libellé d'un champ se lit AU-DESSUS de lui. La règle vise donc
+  le groupe qui porte des CHOIX, et non tout `fieldset` — un groupe de champs de saisie y aurait
+  autrement des libellés couchés les uns contre les autres. C'est la FORME du groupe qui la
+  déclenche, jamais le nom de l'écran qui l'emploie.
+*/
+fieldset:has(input[type="radio"]) label {
   display: inline-block;
   font-weight: var(--weight-regular);
   margin-right: var(--space-lg);
@@ -1005,6 +1012,16 @@ fieldset label {
 .refusal {
   color: var(--signal-error);
   font-weight: var(--weight-semibold);
+}
+
+/*
+  LE REFUS D'UN CHAMP SE LIT SOUS LUI, sur sa propre ligne — comme dans la modale des demandes. Dans
+  une mini-form du Paramétrage, deux champs se suivent : un refus laissé en ligne se serait lu comme
+  la suite du champ voisin, et on aurait corrigé le mauvais.
+*/
+.right form .refusal {
+  display: block;
+  margin-top: var(--space-xxs);
 }
 
 /* Le bloc des refus est une carte, et son filet reste rouge : c'est ce qui le fait lire d'abord. */

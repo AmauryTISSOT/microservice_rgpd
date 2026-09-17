@@ -3,6 +3,57 @@
 @using MicroserviceRgpd.Core.Configuration
 @{
   ViewData["Title"] = ParametrageFaces.ScreenName;
+
+  // Les noms de liaison des deux champs : ce qui se range SOUS un champ, et donc ce qui ne se redit
+  // pas dans le bloc de refus d'une section.
+  var exchangeName = $"{ParametrageRabbitMqModel.FormPrefix}.Exchange";
+  var routingKeyName = $"{ParametrageRabbitMqModel.FormPrefix}.RoutingKey";
+
+  // Les refus à dire en bloc — ceux qu'aucun champ ne porte. ⚠️ ON LES FILTRE PLUTÔT QUE DE NE LIRE
+  // QUE LES DEUX CHAMPS CONNUS : un refus déposé sous un autre nom — le droit forgé d'aujourd'hui,
+  // ce que le domaine ajouterait demain — serait autrement avalé en silence, et l'intégrateur
+  // n'aurait jamais su pourquoi son envoi n'a pas été retenu.
+  IReadOnlyList<string> Refusals(Func<string, bool> said) =>
+    [.. ViewData.ModelState
+         .Where(entry => said(entry.Key))
+         .SelectMany(entry => entry.Value!.Errors)
+         .Select(refusal => refusal.ErrorMessage)];
+
+  // UN CHAMP DE LA MINI-FORM D'UN DROIT — son libellé, sa saisie, son aide, et le refus qui se range
+  // SOUS LUI. Les deux champs se suivent dans un même fieldset : un refus laissé en tête de section
+  // n'aurait pas dit LEQUEL des deux corriger.
+  //
+  // ⚠️ PAS D'ATTRIBUT `maxlength`. Il compte des unités UTF-16, la contrainte des octets UTF-8 : un
+  // navigateur qui tronquerait à 255 unités laisserait passer une valeur que le broker refuserait,
+  // et en couperait une que le service accepte. LE SERVEUR FAIT FOI.
+  void Field(string id, string name, string label, string hint, string? value, string? refusal)
+  {
+    var describedBy = refusal is null ? $"{id}-hint" : $"{id}-hint {id}-refusal";
+
+    <p>
+      <label for="@id">@label</label>
+      <input type="text" id="@id" name="@name" value="@value" autocomplete="off"
+             aria-describedby="@describedBy" aria-invalid="@(refusal is null ? null : "true")" />
+      <span class="hint" id="@($"{id}-hint")">@hint</span>
+      @if (refusal is not null)
+      {
+        <span class="refusal" id="@($"{id}-refusal")">@refusal</span>
+      }
+    </p>
+  }
+
+  // Le refus déposé sous un champ, s'il y en a un et si c'est bien le droit qu'on saisissait.
+  string? RefusalOf(bool refused, string field)
+  {
+    if (!refused)
+    {
+      return null;
+    }
+
+    var entry = ViewData.ModelState[field];
+
+    return entry?.Errors.Count > 0 ? entry.Errors[0].ErrorMessage : null;
+  }
 }
 
 @*
@@ -16,16 +67,31 @@
 @*
   La phrase dit ce que cette face est : le routage, droit par droit, par lequel le service publiera
   l'exercice de chacun des six droits. Un droit sans adresse ni routage est « non configuré ».
+
+  ⚠️ ELLE DIT AUSSI QUE DÉCLARER N'EST PAS APPELER : enregistrer ici n'ouvre aucune connexion et ne
+  déclare aucun exchange, et l'intégrateur qui configure avant que son broker existe doit le savoir
+  plutôt que d'attendre un verdict qui ne viendra pas.
 *@
 <p class="caveat">
-  Cette face donne à lire le <strong>routage RabbitMQ</strong> — un exchange et une routing key — par
-  lequel le service exercera un droit. Un droit sans adresse ni routage est
+  Cette face porte le <strong>routage RabbitMQ</strong> — un exchange et une routing key — par lequel
+  le service exercera un droit. Un droit sans adresse ni routage est
   <strong>« non configuré »</strong> : c'est un état normal, et rien ne vous oblige à les renseigner
-  tous.
+  tous. Enregistrer ici <strong>déclare</strong> un routage : le service ne se connecte pas au
+  broker et ne crée aucun exchange.
 </p>
+
+@if (!ViewData.ModelState.IsValid && Model.Refused is null)
+{
+  @* Un droit que l'écran ne configure pas n'a pas de section où dire son refus : il se dit ici. *@
+  <partial name="_ParametrageRefusals" model="Refusals(_ => true)" />
+}
 
 @foreach (var right in Model.Settings.Rights)
 {
+  var refused = right.Right == Model.Refused;
+  var exchangeField = $"exchange-{right.Right.Name}";
+  var routingKeyField = $"routing-key-{right.Right.Name}";
+
   @* Cette page ne montre que l'espèce qu'elle configure : un droit réglé sur une adresse HTTP n'a
      pas de routage à afficher ici (ADR-0027). *@
   var routing = right.Channel is ExerciseChannel.RabbitMq rabbitMq ? rabbitMq.Routing : null;
@@ -59,12 +125,67 @@
         @*
           ⚠️ UN DROIT RÉGLÉ EN HTTP N'EST PAS UNE ABSENCE, et il ne prend donc pas l'encre pâle de
           `.none` : il est configuré, sur l'autre face. Ce que cette face en dit s'arrête là — MONTRER
-          l'adresse et avertir qu'un enregistrement ici la remplacerait vient au ticket des
-          formulaires.
+          l'adresse et avertir qu'un enregistrement ici la remplacerait vient au ticket de
+          l'avertissement.
         *@
         <dt>Routage d'exercice</dt>
         <dd>réglé sur la configuration HTTP</dd>
       }
     </dl>
+
+    @if (refused)
+    {
+      @* Les refus de la section qu'aucun des deux champs ne porte — le reste est sous son champ. *@
+      <partial name="_ParametrageRefusals"
+               model="Refusals(key => key != exchangeName && key != routingKeyName)" />
+    }
+
+    @*
+      Une mini-form par droit, qui n'envoie que lui — ni « tout enregistrer », ni « tout effacer ».
+      LES DEUX CHAMPS SONT RATTACHÉS À LEUR DROIT PAR LE `fieldset` ET SA `legend`, et non par une
+      périphrase recopiée dans chaque libellé : « Exchange » et « Routing key » se lisent alors pour
+      ce qu'ils sont, et le lecteur d'écran annonce le droit en entrant dans le groupe.
+    *@
+    <form method="post" asp-page-handler="Set">
+      <input type="hidden" name="Form.Right" value="@right.Right.Name" />
+      <fieldset>
+        <legend>Routage d'exercice du @right.Right.FrenchLabel</legend>
+        @{
+          // Le champ porte le routage déjà enregistré — on le corrige sans repartir de zéro —, ou la
+          // saisie qui vient d'être refusée, pour qu'elle se corrige sans être retapée.
+          Field(
+            exchangeField,
+            exchangeName,
+            "Exchange",
+            "Le nom de l'exchange sur lequel le service publiera. Il doit déjà exister sur votre broker : le service ne le crée pas.",
+            refused ? Model.Form.Exchange ?? string.Empty : routing?.Exchange.Value,
+            RefusalOf(refused, exchangeName));
+
+          Field(
+            routingKeyField,
+            routingKeyName,
+            "Routing key",
+            "La clé avec laquelle le service publiera sur cet exchange. C'est elle que vos bindings devront reconnaître.",
+            refused ? Model.Form.RoutingKey ?? string.Empty : routing?.RoutingKey.Value,
+            RefusalOf(refused, routingKeyName));
+        }
+      </fieldset>
+      <button type="submit" class="primary">Enregistrer</button>
+    </form>
+
+    @*
+      Effacer n'est offert qu'à un droit dont cette page montre le canal : un droit « non configuré »
+      n'a rien à oublier, et un droit réglé en HTTP n'a pas à voir son réglage détruit depuis une face
+      qui ne le montre pas. Sa propre form, qui n'envoie que le droit — pas les champs voisins, qu'on
+      aurait pu retoucher sans vouloir les enregistrer. Le bouton n'est pas « destructif » : un droit
+      sans routage est un état normal, et le routage se ressaisit.
+    *@
+    @if (routing is not null)
+    {
+      <form method="post" asp-page-handler="Clear">
+        <input type="hidden" name="Form.Right" value="@right.Right.Name" />
+        <button type="submit">Effacer</button>
+      </form>
+    }
   </div>
 }
