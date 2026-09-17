@@ -2,9 +2,10 @@
 
 Ce contexte enregistre une **demande RGPD dès sa réception** : ce qui est arrivé, par quel canal,
 quand, de qui, et quel droit la personne invoque. L'`Operator` peut ensuite **modifier une demande**
-pour corriger une erreur de saisie, puis **exécuter la demande** : le système hôte applique le droit
-invoqué, et la demande passe à Terminée. Une demande porte une date limite de réponse et un statut ;
-l'exécution est le seul `Gesture` qui fait changer le statut.
+pour corriger une erreur de saisie, **prolonger la demande** de deux mois quand le règlement l'y
+autorise, puis **exécuter la demande** : le système hôte applique le droit invoqué, et la demande
+passe à Terminée. Une demande porte une date limite de réponse et un statut ; l'exécution est le
+seul `Gesture` qui fait changer le statut.
 
 Les identifiants du code sont en anglais (`DataSubjectRequest`, `Origin`) ; les textes destinés à
 l'humain sont en français (« demande », « Courrier »).
@@ -53,10 +54,59 @@ _Avoid_ : détail, panneau (pris par la navigation, ADR-0009), popup, aperçu
 Le jour avant lequel le responsable doit répondre : la date de réception plus un mois, ramenée au
 dernier jour du mois suivant quand ce jour n'y existe pas (31 janvier → 28 ou 29 février). Fixée
 quand la demande est enregistrée, et tenue par la demande : elle ne se recalcule pas d'elle-même.
-Une modification la refait par la même règle, et elle ne change donc que si la date de réception a
-changé. Elle part de la
-date de réception, jamais de l'instant d'enregistrement.
+Deux gestes seulement la déplacent : une modification la refait par la même règle, et elle ne change
+donc que si la date de réception a changé ; une **prolongation** la reporte de deux mois. Sur une
+demande prolongée, la même règle s'applique augmentée de ces deux mois. Elle part de la date de
+réception, jamais de l'instant d'enregistrement. Dans le code : `ResponseDeadline`. Voir
+[ADR-0029](../../adr/0029-prolonger-une-demande-est-un-geste-une-seule-fois-de-deux-mois.md).
 _Avoid_ : échéance légale, délai, date d'échéance, StatutoryDeadline
+
+⚠️ **C'est la date limite de réponse qui fait foi partout** — le tableau, les signalements,
+l'échéance qui engage le responsable. Prolongée ou non, c'est toujours elle que l'on lit : aucune
+autre date ne prend sa place.
+
+**Prolongation** :
+Les deux mois dont la date limite de réponse d'une demande est reportée au titre de l'article 12 §3,
+portant le total autorisé à trois mois à compter de la réception. Une demande est prolongée, ou elle
+ne l'est pas : il n'y en a **qu'une seule par demande**, jamais une seconde, et elle n'est possible
+que **tant que la date limite de réponse n'est pas passée**. La durée n'est pas saisie : deux mois
+est une constante du domaine, pas un champ. Rien ne défait une prolongation — **pas de retour
+arrière** ; une modification de la demande la conserve, même quand les dates recalculées la placent
+rétroactivement après une échéance dépassée. La fenêtre garde la porte d'entrée du geste, elle ne
+s'applique pas à une prolongation déjà posée. Voir
+[ADR-0029](../../adr/0029-prolonger-une-demande-est-un-geste-une-seule-fois-de-deux-mois.md).
+_Avoid_ : prorogation, extension, report, délai supplémentaire, rallonge
+
+**Date limite initiale** :
+La date limite de réponse telle qu'elle valait **avant** la prolongation. Enregistrée et non
+recalculée par soustraction : `AddMonths` n'est pas inversible (31 décembre + 2 mois = 28 février,
+et 28 février − 2 mois = 28 décembre), et c'est elle qui fixe l'échéance de l'obligation d'informer
+la personne concernée. Elle n'existe que sur une demande prolongée. Dans le code :
+`InitialResponseDeadline`.
+_Avoid_ : ancienne date limite, date limite d'origine, date limite avant prolongation,
+OriginalDeadline, PreviousDeadline
+
+⚠️ **La date limite initiale est une trace, pas une source.** Elle dit ce qui valait avant ; la date
+qui fait foi partout ailleurs reste la date limite de réponse.
+
+**Motif de prolongation** :
+La raison pour laquelle la demande est prolongée, prise dans un **vocabulaire fermé à deux valeurs**
+— la **complexité de la demande** et le **nombre de demandes** —, parce que l'article 12 §3 n'en
+ouvre pas une troisième. Il n'y a pas de valeur « Autre ». Il ne se confond pas avec le **motif de
+blocage**, que le serveur calcule pour dire pourquoi une demande ne s'exécute pas. Dans le code :
+`ExtensionGround`.
+_Avoid_ : ExtensionMotive, ExtensionReason, raison, cause, motif (seul)
+
+**Justification de la prolongation** :
+Le texte écrit par l'`Operator` pour dire le **fait concret** — quelle complexité, quel afflux — qui
+justifie la prolongation. Obligatoire : le motif fermé prouve que l'`Operator` est resté dans le
+cadre, la justification fournit ce qu'une autorité de contrôle demandera. C'est le premier texte
+libre saisi par l'`Operator` dans ce service. Dans le code : `ExtensionJustification`.
+_Avoid_ : ExtensionMotive, motivation, commentaire, explication, note
+
+⚠️ **Le texte libre s'appelle « justification », jamais « motive ».** Un lecteur francophone lisant
+`ExtensionMotive` y verrait « motif » — c'est-à-dire l'exact opposé : le motif est la valeur fermée,
+la justification est le texte.
 
 **Échéance proche** :
 Le signalement d'une demande **En cours** dont la date limite de réponse tombe entre aujourd'hui et
@@ -126,10 +176,25 @@ telle qu'elle a été enregistrée. Geste interne, sans effet juridique. Il lais
 — `ModifiedAt`, `ModifiedBy` — qui n'est affichée nulle part et s'écrase à chaque correction. Une
 modification qui ne change aucune valeur n'a pas eu lieu : elle ne laisse rien. Une demande close,
 Terminée ou Annulée, n'est plus modifiable. Corriger la date de réception recalcule la date limite
-de réponse. Voir [ADR-0023](../../adr/0023-modifier-une-demande-est-un-geste.md).
+de réponse — et, sur une demande prolongée, les deux dates ensemble, sans défaire la prolongation.
+Voir [ADR-0023](../../adr/0023-modifier-une-demande-est-un-geste.md) et
+[ADR-0029](../../adr/0029-prolonger-une-demande-est-un-geste-une-seule-fois-de-deux-mois.md).
 _Avoid_ : rectification — le **droit de rectification** (art. 16) est le droit invoqué par la
 personne concernée pour faire corriger *ses* données chez le responsable de traitement. Il porte sur
 les données du sujet, jamais sur le dossier qui l'enregistre. Aussi : éditer, mettre à jour, amender
+
+**Prolonger une demande** :
+Le `Gesture` par lequel l'`Operator` reporte de deux mois la date limite de réponse d'une demande,
+au titre de l'article 12 §3. Il exige un **motif de prolongation** et une **justification de la
+prolongation** ; il n'est offert que sur une demande En cours dont la date limite de réponse n'est
+pas passée, et **une seule fois**. La durée ne se saisit pas. Il ne change pas le statut, et rien ne
+le défait : modifier une demande prolongée recalcule la date limite initiale et la date limite de
+réponse ensemble, depuis la date de réception corrigée, sans toucher au motif, à la justification,
+ni à la date à laquelle la prolongation a été posée.
+Le service n'enregistre pas qui a prolongé — aucun `Operator` n'est identifié — et n'informe pas la
+personne concernée : l'`Operator` l'informe ailleurs. Voir
+[ADR-0029](../../adr/0029-prolonger-une-demande-est-un-geste-une-seule-fois-de-deux-mois.md).
+_Avoid_ : prorogation, extension, report, délai supplémentaire, rallonge
 
 **Supprimer une demande** :
 Le retrait définitif d'une demande par l'`Operator`, quel que soit son statut : elle disparaît du
