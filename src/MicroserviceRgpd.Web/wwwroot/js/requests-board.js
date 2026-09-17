@@ -1386,7 +1386,7 @@ execution.addEventListener("close", () => {
 // SUR 409, 422 OU 502, LE CORPS EST UN `ProblemDetails` : son `detail` va au bandeau, sa ligne à jour
 // remplace celle du tableau, et la confirmation reste ouverte — « Annuler », la croix et Échap la
 // ferment de nouveau. ⚠️ « Exécuter » ne redevient offert que si le serveur dit une nouvelle tentative
-// utile (`retryable`) : un motif de blocage serait opposé de nouveau, et un droit appliqué sans passage
+// utile (`retryable`) : un motif de blocage serait opposé de nouveau, et un droit remis sans passage
 // à Terminée le serait une seconde fois.
 //
 // 404 : la demande a été supprimée ailleurs — comme pour une modification, sa ligne part, la

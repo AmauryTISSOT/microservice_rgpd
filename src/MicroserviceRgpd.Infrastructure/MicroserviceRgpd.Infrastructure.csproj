@@ -24,6 +24,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="NimblePros.Metronome" />
+    <!-- Le client AMQP par lequel une demande routée se publie (#511). La 7.x est entièrement
+         asynchrone : BasicPublishAsync attend l'accusé du broker quand le channel est ouvert en
+         publisher confirms avec suivi des confirmations. -->
+    <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Vogen" />
   </ItemGroup>
   

@@ -16,17 +16,17 @@ namespace MicroserviceRgpd.Infrastructure.Requests;
 /// </para>
 /// <para>
 /// <b>Il ne juge rien et n'ajoute rien</b> : ni délai, ni reprise, ni lecture de ce que l'adaptateur
-/// rend. Ce que <see cref="HttpHostSystem"/> rend est ce qu'il rend.
+/// rend. Ce que <see cref="HttpHostSystem"/> ou <see cref="RabbitMqHostSystem"/> rend est ce qu'il rend.
 /// </para>
 /// </remarks>
-/// <param name="http">Le système hôte joint par HTTP, seul destinataire pour l'instant.</param>
-public sealed class HostSystemByChannel(HttpHostSystem http) : IHostSystem
+/// <param name="http">Le système hôte joint par HTTP, à l'adresse déclarée.</param>
+/// <param name="rabbit">Le système hôte joint par une publication RabbitMQ, sur le routage déclaré.</param>
+public sealed class HostSystemByChannel(HttpHostSystem http, RabbitMqHostSystem rabbit) : IHostSystem
 {
   /// <inheritdoc />
   /// <exception cref="ArgumentNullException"><paramref name="channel"/> est absent.</exception>
   /// <exception cref="ArgumentException">
-  /// Le canal est un routage RabbitMQ, que le service ne sait pas encore publier, ou « non
-  /// configuré » : les motifs de blocage écartent les deux avant toute remise.
+  /// Le canal est « non configuré » : le motif de blocage l'écarte avant toute remise.
   /// </exception>
   public Task<HostSystemCall> ApplyAsync(
     ExerciseChannel channel,
@@ -38,12 +38,10 @@ public sealed class HostSystemByChannel(HttpHostSystem http) : IHostSystem
     return channel switch
     {
       ExerciseChannel.HttpEndpoint endpoint => http.ApplyAsync(endpoint.Address, body, cancellationToken),
+      ExerciseChannel.RabbitMq routed => rabbit.PublishAsync(routed.Routing, body, cancellationToken),
 
-      // Les deux cas restants ne sont pas atteignables : le handler d'exécution refuse un droit routé
-      // comme un droit non configuré, sans rien remettre. Le dire plutôt que le supposer.
-      ExerciseChannel.RabbitMq => throw new ArgumentException(
-        "Un droit exercé par RabbitMQ ne se remet pas encore : le motif de blocage l'écarte avant.",
-        nameof(channel)),
+      // Le dernier cas n'est pas atteignable : le handler d'exécution refuse un droit non configuré
+      // sans rien remettre. Le dire plutôt que le supposer.
       ExerciseChannel.NotConfigured => throw new ArgumentException(
         "Un droit non configuré ne s'exerce pas : il n'y a rien à qui le remettre.",
         nameof(channel)),

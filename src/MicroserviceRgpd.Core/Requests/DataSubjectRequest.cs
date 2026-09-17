@@ -220,9 +220,10 @@ public sealed class DataSubjectRequest : IAggregateRoot
 
   /// <summary>
   /// <b>Dit si la demande s'exécute</b> face au canal d'exercice que le Paramétrage associe à son
-  /// droit : <c>null</c> quand elle est exécutable, sinon le <b>premier</b> <see cref="ExecutionBlock"/>
-  /// — demande close, identité non vérifiée, email manquant, droit non configuré, exercice par
-  /// RabbitMQ (ADR-0026, ADR-0027).
+  /// droit, <b>et à ce que le déploiement sait publier</b> : <c>null</c> quand elle est exécutable,
+  /// sinon le <b>premier</b> <see cref="ExecutionBlock"/> — demande close, identité non vérifiée,
+  /// email manquant, droit non configuré, connexion au broker absente sur un droit routé (ADR-0026,
+  /// ADR-0027, ADR-0028).
   /// </summary>
   /// <remarks>
   /// <para>
@@ -231,15 +232,23 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// est fermée —, et les deux motifs du canal en tombent ensemble.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Le blocage « exercice par RabbitMQ » est provisoire</b> : il dit ce que le service ne sait
-  /// pas encore faire, pas un défaut du Paramétrage.
+  /// <b>Il faut les deux arguments pour répondre, et ils ne disent pas la même chose</b> : le canal
+  /// est ce que l'intégrateur a déclaré pour ce droit, la connexion est ce que l'exploitant a donné
+  /// à ce déploiement. Un routage sans connexion est un Paramétrage juste sur un déploiement muet —
+  /// et c'est le seul cas où la connexion pèse : un droit adressé en HTTP se moque du bus.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une connexion configurée ne promet aucun broker joignable</b> : elle dit ce que le
+  /// déploiement déclare. Le bouton s'allume, et c'est la publication qui découvrira l'échec.
   /// </para>
   /// </remarks>
   /// <param name="channel">Le canal d'exercice du droit invoqué — une adresse, un routage, ou « non configuré ».</param>
-  /// <exception cref="ArgumentNullException"><paramref name="channel"/> est absent.</exception>
-  public ExecutionBlock? ExecutionBlockFacing(ExerciseChannel channel)
+  /// <param name="connection">Ce que le déploiement déclare savoir publier.</param>
+  /// <exception cref="ArgumentNullException"><paramref name="channel"/> ou <paramref name="connection"/> est absent.</exception>
+  public ExecutionBlock? ExecutionBlockFacing(ExerciseChannel channel, BrokerConnection connection)
   {
     ArgumentNullException.ThrowIfNull(channel);
+    ArgumentNullException.ThrowIfNull(connection);
 
     if (Status != RequestStatus.InProgress)
     {
@@ -259,7 +268,8 @@ public sealed class DataSubjectRequest : IAggregateRoot
     return channel switch
     {
       ExerciseChannel.HttpEndpoint => null,
-      ExerciseChannel.RabbitMq => ExecutionBlock.RabbitMqNotYetSupported,
+      ExerciseChannel.RabbitMq =>
+        connection is BrokerConnection.Absent ? ExecutionBlock.BrokerConnectionMissing : null,
 
       // « Non configuré », le troisième et dernier cas : la hiérarchie est fermée.
       _ => ExecutionBlock.RightNotConfigured,

@@ -10,9 +10,10 @@ using NSubstitute.ExceptionExtensions;
 namespace MicroserviceRgpd.UnitTests.UseCases.Requests.ExecuteDataSubjectRequest;
 
 /// <summary>
-/// Ce que le use case d'exécution ajoute au domaine : il retrouve la demande et le Paramétrage,
-/// <b>recalcule l'exécutabilité juste avant l'appel</b>, appelle le système hôte, termine la demande
-/// sur un 2xx et écrit la tentative avec elle — et rend la demande dans tous les cas (ADR-0026).
+/// Ce que le use case d'exécution ajoute au domaine : il retrouve la demande, le Paramétrage et l'état
+/// de la connexion au broker, <b>recalcule l'exécutabilité juste avant la remise</b>, remet le droit au
+/// système hôte, termine la demande quand la remise a abouti et écrit la tentative avec elle — et rend
+/// la demande dans tous les cas (ADR-0026, ADR-0028).
 /// </summary>
 /// <remarks>
 /// Les règles — l'ordre des motifs, le passage à Terminée, ce que la tentative retient — se vérifient
@@ -33,6 +34,8 @@ public class ExecuteDataSubjectRequestHandlerTests
 
   private readonly IReadRepository<Settings> _settings = Substitute.For<IReadRepository<Settings>>();
 
+  private readonly IBrokerConnectionState _broker = Substitute.For<IBrokerConnectionState>();
+
   private readonly IHostSystem _hostSystem = Substitute.For<IHostSystem>();
 
   /// <summary>Le journal d'exécution tel que la seconde transaction le voit, dans sa portée neuve.</summary>
@@ -47,6 +50,10 @@ public class ExecuteDataSubjectRequestHandlerTests
     var settings = Settings.Unconfigured();
     settings.SetChannel(DataSubjectRight.Access, Channel);
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([settings]);
+
+    // Le déploiement par défaut sait publier : le canal reste le seul levier des tests qui n'en
+    // parlent pas.
+    _broker.Current.Returns(BrokerConnection.Configured.Instance);
 
     var scope = Substitute.For<IServiceScope>();
     scope.ServiceProvider.GetService(typeof(IRepository<ExecutionAttempt>)).Returns(_recovery);
@@ -137,22 +144,97 @@ public class ExecuteDataSubjectRequestHandlerTests
   }
 
   /// <summary>
-  /// ⚠️ <b>Un droit exercé par RabbitMQ n'appelle rien, ne publie rien et n'écrit aucune tentative</b> :
-  /// le service ne sait pas encore publier, et le motif le dit sans rien tenter.
+  /// ⚠️ <b>Un droit routé sur un déploiement sans bus ne publie rien et n'écrit aucune tentative</b> :
+  /// le Paramétrage est bon, c'est la connexion qui manque, et le motif le dit sans rien tenter.
   /// </summary>
   [Fact]
-  public async Task PublishesNothingForARightExercisedByRabbitMq()
+  public async Task PublishesNothingWhenTheDeploymentHasNoBrokerConnection()
   {
     RouteAccessOnRabbitMq();
+    _broker.Current.Returns(BrokerConnection.Absent.Instance);
     var request = AnExecutableRequest();
 
     var result = await HandleAsync(request);
 
-    result.Value.Block.ShouldBe(ExecutionBlock.RabbitMqNotYetSupported);
-    result.Value.Request.ExecutionBlock.ShouldBe(ExecutionBlock.RabbitMqNotYetSupported);
+    result.Value.Block.ShouldBe(ExecutionBlock.BrokerConnectionMissing);
+    result.Value.Request.ExecutionBlock.ShouldBe(ExecutionBlock.BrokerConnectionMissing);
     request.Status.ShouldBe(RequestStatus.InProgress);
     await NothingWasCalledNorWrittenAsync();
   }
+
+  /// <summary>
+  /// <b>Un droit routé sur un déploiement qui sait publier part au port</b>, exactement comme un droit
+  /// adressé : le canal du Paramétrage tel quel, la demande passe à Terminée, et la tentative dit le
+  /// routage, sans statut HTTP (ADR-0028).
+  /// </summary>
+  [Fact]
+  public async Task PublishesARoutedRightAndCompletesTheRequest()
+  {
+    var routing = RouteAccessOnRabbitMq();
+    _hostSystem.ApplyAsync(null!, null!, default)
+      .ReturnsForAnyArgs(HostSystemCall.Acknowledged(Now, TimeSpan.FromMilliseconds(9)));
+    var request = AnExecutableRequest();
+
+    var result = await HandleAsync(request);
+
+    result.IsSuccess.ShouldBeTrue();
+    request.Status.ShouldBe(RequestStatus.Completed);
+
+    await _hostSystem.Received(1).ApplyAsync(
+      new ExerciseChannel.RabbitMq(routing),
+      new ExecutionBody(request.Id, DataSubjectRight.Access, request.Email!.Value, request.FirstName, request.LastName),
+      Arg.Any<CancellationToken>());
+
+    await _attempts.Received(1).AddAsync(
+      Arg.Is<ExecutionAttempt>(attempt =>
+        attempt.Outcome == ExecutionOutcome.Succeeded
+        && attempt.HttpStatus == null
+        && attempt.Exercise == "exchange rgpd.exercice, routing key droit.acces"),
+      Arg.Any<CancellationToken>());
+  }
+
+  /// <summary>
+  /// <b>Une publication qui n'aboutit pas laisse la demande En cours</b>, écrit sa ligne de journal, et
+  /// rend <b>la phrase du bus</b> — jamais celle d'un appel HTTP : le même délai dépassé ne se dit pas
+  /// avec les mêmes mots selon le canal (ADR-0028).
+  /// </summary>
+  [Theory]
+  [MemberData(nameof(FailedPublications))]
+  public async Task RendersThePhrasesOfTheBusWhenAPublicationDoesNotSucceed(string outcomeName, string message)
+  {
+    RouteAccessOnRabbitMq();
+    var outcome = ExecutionOutcome.FromName(outcomeName);
+    _hostSystem.ApplyAsync(null!, null!, default).ReturnsForAnyArgs(FailedPublication(outcome));
+    var request = AnExecutableRequest();
+
+    var result = await HandleAsync(request);
+
+    result.Status.ShouldBe(ResultStatus.Error);
+    result.Errors.ShouldBe([message]);
+    request.Status.ShouldBe(RequestStatus.InProgress);
+    result.Value.Outcome.ShouldBe(outcome);
+
+    await _attempts.Received(1).AddAsync(
+      Arg.Is<ExecutionAttempt>(attempt => attempt.Outcome == outcome && attempt.HttpStatus == null),
+      Arg.Any<CancellationToken>());
+  }
+
+  public static TheoryData<string, string> FailedPublications() => new()
+  {
+    { nameof(ExecutionOutcome.Unroutable), "Le message a été publié, mais aucune file ne l'a reçu. La demande reste En cours." },
+    { nameof(ExecutionOutcome.Rejected), "Le broker a refusé la publication. La demande reste En cours." },
+    {
+      nameof(ExecutionOutcome.TimedOut),
+      "Le broker n'a pas confirmé la publication dans les 10 secondes. Le message a peut-être été publié. La demande reste En cours."
+    },
+    { nameof(ExecutionOutcome.NetworkError), "Le broker est injoignable. La demande reste En cours." },
+  };
+
+  private static HostSystemCall FailedPublication(ExecutionOutcome outcome) =>
+    outcome == ExecutionOutcome.Unroutable ? HostSystemCall.Unroutable(Now, TimeSpan.FromMilliseconds(4))
+    : outcome == ExecutionOutcome.Rejected ? HostSystemCall.Rejected(Now, TimeSpan.FromMilliseconds(4))
+    : outcome == ExecutionOutcome.TimedOut ? HostSystemCall.TimedOut(Now, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10))
+    : HostSystemCall.Unreachable(Now, TimeSpan.FromMilliseconds(4));
 
   /// <summary>
   /// <b>Une demande close est refusée en conflit</b>, sans appel ni tentative — et rendue, pour que
@@ -183,7 +265,7 @@ public class ExecuteDataSubjectRequestHandlerTests
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
   [InlineData(nameof(ExecutionBlock.EmailMissing))]
   [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
-  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
+  [InlineData(nameof(ExecutionBlock.BrokerConnectionMissing))]
   public async Task RefusesEveryOtherBlockAsInvalidWithoutCallingNorLogging(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
@@ -193,9 +275,10 @@ public class ExecuteDataSubjectRequestHandlerTests
       _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([]);
     }
 
-    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    if (block == ExecutionBlock.BrokerConnectionMissing)
     {
       RouteAccessOnRabbitMq();
+      _broker.Current.Returns(BrokerConnection.Absent.Instance);
     }
 
     var request = ARequest(
@@ -212,15 +295,16 @@ public class ExecuteDataSubjectRequestHandlerTests
     await NothingWasCalledNorWrittenAsync();
   }
 
-  /// <summary>Route le droit d'accès sur RabbitMQ : un droit configuré, que le service ne sait pas encore exercer.</summary>
-  private void RouteAccessOnRabbitMq()
+  /// <summary>Route le droit d'accès sur RabbitMQ, et rend le routage posé.</summary>
+  private RabbitMqRouting RouteAccessOnRabbitMq()
   {
+    var routing = new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces"));
     var routed = Settings.Unconfigured();
-    routed.SetChannel(
-      DataSubjectRight.Access,
-      new ExerciseChannel.RabbitMq(new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces"))));
+    routed.SetChannel(DataSubjectRight.Access, new ExerciseChannel.RabbitMq(routing));
 
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([routed]);
+
+    return routing;
   }
 
   /// <summary><b>Une demande disparue rend « introuvable »</b>, sans appel ni tentative.</summary>
@@ -347,5 +431,12 @@ public class ExecuteDataSubjectRequestHandlerTests
   }
 
   private ExecuteDataSubjectRequestHandler Handler() =>
-    new(_requests, _attempts, _settings, _hostSystem, _scopes, new LoggerFactory([_logs]).CreateLogger<ExecuteDataSubjectRequestHandler>());
+    new(
+      _requests,
+      _attempts,
+      _settings,
+      _broker,
+      _hostSystem,
+      _scopes,
+      new LoggerFactory([_logs]).CreateLogger<ExecuteDataSubjectRequestHandler>());
 }

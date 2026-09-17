@@ -1,4 +1,5 @@
 using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.Infrastructure.Configuration;
 using MicroserviceRgpd.Infrastructure.Requests;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,18 +31,53 @@ public class HostSystemRegistrationTests
 
   /// <summary>
   /// <b>Le port rend le système hôte joint par le canal</b> : le seul endroit où le canal se filtre
-  /// pour appeler, et derrière lui l'adaptateur HTTP.
+  /// pour remettre un droit, et derrière lui les deux adaptateurs.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La portée et le conteneur se ferment en asynchrone</b> : la connexion au broker ne se
+  /// ferme pas autrement (RabbitMQ.Client 7.x), et le conteneur refuse un <c>Dispose</c> synchrone
+  /// sur un singleton qui ne sait que <c>DisposeAsync</c>. L'hôte ASP.NET, lui, ferme déjà ainsi.
+  /// </remarks>
   [Fact]
-  public void ProvidesTheHostSystemByItsPort()
+  public async Task ProvidesTheHostSystemByItsPort()
   {
-    using var services = Registered(timeout: null);
-    using var scope = services.CreateScope();
+    await using var services = Registered(timeout: null);
+    await using var scope = services.CreateAsyncScope();
 
     scope.ServiceProvider.GetRequiredService<IHostSystem>().ShouldBeOfType<HostSystemByChannel>();
 
-    // Le destinataire que le dispatcher demande : sa résolution est l'assertion.
+    // Les deux destinataires que le dispatcher demande : leur résolution est l'assertion.
     scope.ServiceProvider.GetRequiredService<HttpHostSystem>();
+    scope.ServiceProvider.GetRequiredService<RabbitMqHostSystem>();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>La connexion au broker est un singleton</b> : une seule, partagée par toutes les
+  /// exécutions — deux portées voient la même (ADR-0028).
+  /// </summary>
+  [Fact]
+  public async Task SharesASingleBrokerConnectionAcrossEveryScope()
+  {
+    await using var services = Registered(timeout: null);
+    await using var first = services.CreateAsyncScope();
+    await using var second = services.CreateAsyncScope();
+
+    first.ServiceProvider.GetRequiredService<IBrokerChannels>()
+      .ShouldBeSameAs(second.ServiceProvider.GetRequiredService<IBrokerChannels>());
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Résoudre le système hôte n'ouvre aucune socket</b> : la connexion au broker est
+  /// paresseuse, et un déploiement sans bus résout ses services comme les autres (ADR-0027).
+  /// </summary>
+  [Fact]
+  public async Task OpensNothingWhenTheHostSystemIsResolved()
+  {
+    await using var services = Registered(timeout: null);
+    await using var scope = services.CreateAsyncScope();
+
+    // Aucun hôte n'est déclaré : si la résolution joignait un broker, elle n'aurait pas où aller.
+    Should.NotThrow(() => scope.ServiceProvider.GetRequiredService<IHostSystem>());
   }
 
   /// <summary>
@@ -80,8 +116,11 @@ public class HostSystemRegistrationTests
 
     var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
 
+    // ⚠️ Les deux ensemble : l'adaptateur RabbitMQ lit la connexion que le déploiement déclare, et
+    // c'est AddBrokerConnection qui l'enregistre — comme dans le câblage réel.
     return new ServiceCollection()
       .AddSingleton(TimeProvider.System)
+      .AddBrokerConnection(configuration)
       .AddHostSystem(configuration)
       .BuildServiceProvider();
   }

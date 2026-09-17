@@ -52,6 +52,7 @@ namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 /// <param name="requests">Les demandes enregistrées.</param>
 /// <param name="attempts">Le journal d'exécution.</param>
 /// <param name="settings">Le Paramétrage, en lecture seule.</param>
+/// <param name="broker">Ce que ce déploiement déclare savoir publier — le cinquième motif de blocage.</param>
 /// <param name="hostSystem">Le système hôte.</param>
 /// <param name="scopes">De quoi ouvrir la portée de la seconde transaction, après un succès non enregistré.</param>
 /// <param name="logger">Les logs applicatifs, où un succès non enregistré s'écrit en erreur.</param>
@@ -59,6 +60,7 @@ public sealed class ExecuteDataSubjectRequestHandler(
   IRepository<DataSubjectRequest> requests,
   IRepository<ExecutionAttempt> attempts,
   IReadRepository<Settings> settings,
+  IBrokerConnectionState broker,
   IHostSystem hostSystem,
   IServiceScopeFactory scopes,
   ILogger<ExecuteDataSubjectRequestHandler> logger)
@@ -81,15 +83,19 @@ public sealed class ExecuteDataSubjectRequestHandler(
     var current = await ServiceSettings.ReadAsync(settings, cancellationToken);
     var channel = current.ChannelFor(request.Right);
 
-    if (request.ExecutionBlockFacing(channel) is { } block)
+    // ⚠️ Lue une seule fois pour toute l'exécution : le motif de blocage, la ligne du refus et la
+    // ligne rendue après coup disent ainsi la même vérité du même déploiement.
+    var connection = broker.Current;
+
+    if (request.ExecutionBlockFacing(channel, connection) is { } block)
     {
       return new BlockedExecution(
-        new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), block, null, null),
+        new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current, connection), block, null, null),
         block.FrenchLabelFor(request.Right));
     }
 
-    // La demande telle que la base la porte avant l'appel : celle que rend tout échec.
-    var unchanged = RecordedDataSubjectRequest.Of(request, current);
+    // La demande telle que la base la porte avant la remise : celle que rend tout échec.
+    var unchanged = RecordedDataSubjectRequest.Of(request, current, connection);
 
     var call = await hostSystem.ApplyAsync(channel, ExecutionBody.Of(request), CancellationToken.None);
 
@@ -97,7 +103,8 @@ public sealed class ExecuteDataSubjectRequestHandler(
     {
       await attempts.AddAsync(ExecutionAttempt.Of(request, channel, call), CancellationToken.None);
 
-      return new FailedExecution(new DataSubjectRequestExecution(unchanged, null, call, call.Outcome), FailureOf(call));
+      return new FailedExecution(
+        new DataSubjectRequestExecution(unchanged, null, call, call.Outcome), FailureOf(call, channel));
     }
 
     request.Complete();
@@ -110,12 +117,14 @@ public sealed class ExecuteDataSubjectRequestHandler(
     {
       // Rattrapage large assumé : quelle que soit la raison du refus, le droit est appliqué, et le
       // journal d'exécution doit le dire. L'annulation n'est pas à craindre : aucun jeton annulable n'est passé.
+      // ⚠️ Le journal applicatif dit l'exercice, non un statut HTTP : celui-ci est nul sur toute
+      // publication, et « (HTTP ) » ne dirait rien de ce qui s'est passé sur un routage.
       logger.LogError(
         notRecorded,
-        "Le système hôte a appliqué le droit {Right} pour la demande {DataSubjectRequestId} (HTTP {HttpStatus}), mais la demande n'a pas pu passer à Terminée.",
+        "Le droit {Right} a été remis au système hôte pour la demande {DataSubjectRequestId} par {Exercise}, mais la demande n'a pas pu passer à Terminée.",
         request.Right.Name,
         request.Id.Value,
-        call.StatusCode);
+        channel);
 
       await using var scope = scopes.CreateAsyncScope();
 
@@ -130,16 +139,32 @@ public sealed class ExecuteDataSubjectRequestHandler(
         ExecutionFailure.SucceededButNotRecorded);
     }
 
-    return new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), null, call, call.Outcome);
+    return new DataSubjectRequestExecution(
+      RecordedDataSubjectRequest.Of(request, current, connection), null, call, call.Outcome);
   }
 
-  /// <summary>Ce que l'<c>Operator</c> lit d'un appel qui n'a pas abouti.</summary>
-  private static string FailureOf(HostSystemCall call) =>
+  /// <summary>
+  /// Ce que l'<c>Operator</c> lit d'une remise qui n'a pas abouti. ⚠️ <b>Le canal est nécessaire</b> :
+  /// un délai dépassé et un injoignable sont le même résultat sur les deux canaux, et ne se disent pas
+  /// avec les mêmes mots — « le système hôte » d'un côté, « le broker » de l'autre (ADR-0028).
+  /// </summary>
+  private static string FailureOf(HostSystemCall call, ExerciseChannel channel) =>
+    channel is ExerciseChannel.RabbitMq ? PublicationFailureOf(call) : CallFailureOf(call);
+
+  /// <summary>Ce qu'un appel HTTP qui n'a pas abouti se dit.</summary>
+  private static string CallFailureOf(HostSystemCall call) =>
     call.Outcome == ExecutionOutcome.TimedOut
       ? ExecutionFailure.TimedOut((int)call.Timeout!.Value.TotalSeconds)
       : call.Outcome == ExecutionOutcome.NetworkError
         ? ExecutionFailure.Unreachable
         : ExecutionFailure.NonSuccessResponse(call.StatusCode!.Value);
+
+  /// <summary>Ce qu'une publication qui n'a pas abouti se dit.</summary>
+  private static string PublicationFailureOf(HostSystemCall call) =>
+    call.Outcome == ExecutionOutcome.Unroutable ? ExecutionFailure.Unroutable
+    : call.Outcome == ExecutionOutcome.Rejected ? ExecutionFailure.Rejected
+    : call.Outcome == ExecutionOutcome.TimedOut ? ExecutionFailure.BrokerTimedOut((int)call.Timeout!.Value.TotalSeconds)
+    : ExecutionFailure.BrokerUnreachable;
 
   /// <summary>
   /// Un échec <b>qui rend la demande</b> : <c>Error</c>, le texte destiné à l'<c>Operator</c> pour seule

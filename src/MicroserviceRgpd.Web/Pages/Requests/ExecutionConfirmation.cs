@@ -60,7 +60,7 @@ public sealed record ExecutionConfirmation(
   /// <summary>Le bouton qui exécute.</summary>
   public const string Confirm = "Exécuter";
 
-  /// <summary>Ce que dit le toast quand le système hôte a appliqué le droit.</summary>
+  /// <summary>Ce que dit le toast quand le droit a été remis et la réception accusée.</summary>
   public const string Executed = "Demande exécutée";
 
   /// <summary>

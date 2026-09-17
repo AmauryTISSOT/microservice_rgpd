@@ -160,7 +160,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     (await _surface.ExecuteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.OK);
     var after = DateTimeOffset.UtcNow;
 
-    var attempt = (await AttemptsOfAsync(id)).ShouldHaveSingleItem("L'exécution n'a pas laissé une ligne de journal, une seule.");
+    var attempt = (await _surface.AttemptsOfAsync(id)).ShouldHaveSingleItem("L'exécution n'a pas laissé une ligne de journal, une seule.");
 
     attempt.Keys.ShouldBe(
       ["id", "data_subject_request_id", "data_subject_right", "exercise", "started_at", "duration", "outcome", "http_status", "created_by"],
@@ -200,7 +200,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
     (await _surface.DeleteAsync(id)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
     (await _surface.CountOfAsync(message)).ShouldBe(0);
-    (await AttemptsOfAsync(id)).ShouldHaveSingleItem("La suppression de la demande a emporté son journal.");
+    (await _surface.AttemptsOfAsync(id)).ShouldHaveSingleItem("La suppression de la demande a emporté son journal.");
   }
 
   /// <summary>
@@ -303,7 +303,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     await ShouldBeAProblemAsync(response, HttpStatusCode.Conflict, id, ExecutionBlock.Closed.FrenchLabelFor(DataSubjectRight.Access));
     _host.Received.ShouldBeEmpty("Une demande close a été envoyée au système hôte.");
-    (await AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
+    (await _surface.AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
   }
 
   /// <summary>
@@ -314,12 +314,12 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
   [InlineData(nameof(ExecutionBlock.EmailMissing))]
   [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
-  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
+  [InlineData(nameof(ExecutionBlock.BrokerConnectionMissing))]
   public async Task AnswersUnprocessableForEveryOtherBlockWithoutCallingNorLogging(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
 
-    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    if (block == ExecutionBlock.BrokerConnectionMissing)
     {
       await RouteAsync(DataSubjectRight.Access);
     }
@@ -340,7 +340,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     await ShouldBeAProblemAsync(response, HttpStatusCode.UnprocessableEntity, id, block.FrenchLabelFor(DataSubjectRight.Access));
     _host.Received.ShouldBeEmpty("Une demande bloquée a été envoyée au système hôte.");
-    (await AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
+    (await _surface.AttemptsOfAsync(id)).ShouldBeEmpty("Un refus a écrit une ligne de journal.");
   }
 
   /// <summary><b>Une demande disparue rend 404</b>, sans appel.</summary>
@@ -451,12 +451,12 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   [Theory]
   [InlineData(nameof(ExecutionBlock.Closed))]
   [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
-  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
+  [InlineData(nameof(ExecutionBlock.BrokerConnectionMissing))]
   public async Task AnswersTheBlockOfARequestThatNoLongerExecutes(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
 
-    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    if (block == ExecutionBlock.BrokerConnectionMissing)
     {
       await RouteAsync(DataSubjectRight.Access);
     }
@@ -566,7 +566,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   {
     (await _surface.RowOfAsync(message))["status"].ShouldBe("InProgress", "La demande a changé de statut.");
 
-    var attempt = (await AttemptsOfAsync(id)).ShouldHaveSingleItem("L'échec n'a pas laissé une ligne de journal, une seule.");
+    var attempt = (await _surface.AttemptsOfAsync(id)).ShouldHaveSingleItem("L'échec n'a pas laissé une ligne de journal, une seule.");
 
     attempt["outcome"].ShouldBe(outcome);
     attempt["http_status"].ShouldBe(httpStatus);
@@ -592,39 +592,6 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
       .Where(button => button.Contains($@"data-action=""{action}""", StringComparison.Ordinal))
       .ShouldHaveSingleItem($"La ligne ne porte pas son action « {action} », une fois.");
 
-  /// <summary>
-  /// Les lignes du journal d'exécution de la demande <paramref name="id"/>, relues <b>telles que la
-  /// table les porte</b> — colonne par colonne, sous leur nom SQL.
-  /// </summary>
-  private async Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> AttemptsOfAsync(Guid id)
-  {
-    using var scope = factory.Services.CreateScope();
-    var connection = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.GetDbConnection();
-
-    await connection.OpenAsync();
-
-    await using var command = connection.CreateCommand();
-    command.CommandText = "SELECT * FROM execution_attempts WHERE data_subject_request_id = @id";
-
-    var parameter = command.CreateParameter();
-    parameter.ParameterName = "id";
-    parameter.Value = id;
-    command.Parameters.Add(parameter);
-
-    await using var reader = await command.ExecuteReaderAsync();
-
-    var attempts = new List<IReadOnlyDictionary<string, object?>>();
-
-    while (await reader.ReadAsync())
-    {
-      attempts.Add(Enumerable.Range(0, reader.FieldCount).ToDictionary(
-        reader.GetName,
-        column => reader.IsDBNull(column) ? null : reader.GetValue(column)));
-    }
-
-    return attempts;
-  }
-
   /// <summary>Pose l'adresse du droit, par le use case du Paramétrage.</summary>
   private async Task ConfigureAsync(DataSubjectRight right, string address)
   {
@@ -638,7 +605,8 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
   /// <summary>
   /// <b>Le récapitulatif d'un droit exercé par RabbitMQ dit le routage</b> — l'exchange et la routing
-  /// key, sous le champ « Exercice » —, et l'appel au système hôte n'a pas lieu.
+  /// key, sous le champ « Exercice » —, et l'appel au système hôte n'a pas lieu. ⚠️ Ce déploiement ne
+  /// déclare aucune connexion : le motif le dit (ADR-0028).
   /// </summary>
   [Fact]
   public async Task AnswersTheRoutingOfARightExercisedByRabbitMq()
@@ -651,28 +619,14 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     summary["exercise"].GetString().ShouldBe("exchange rgpd.exercice, routing key droit.acces");
     summary["block"].GetString()
-      .ShouldBe(ExecutionBlock.RabbitMqNotYetSupported.FrenchLabelFor(DataSubjectRight.Access));
+      .ShouldBe(ExecutionBlock.BrokerConnectionMissing.FrenchLabelFor(DataSubjectRight.Access));
     _host.Received.ShouldBeEmpty("Lire le récapitulatif a appelé le système hôte.");
   }
 
   /// <summary>Route le droit sur RabbitMQ, par le use case du Paramétrage.</summary>
-  private async Task RouteAsync(DataSubjectRight right)
-  {
-    using var scope = factory.Services.CreateScope();
-
-    var set = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
-      new SetRightRabbitMqRoutingCommand(
-        right,
-        new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces"))));
-
-    set.IsSuccess.ShouldBeTrue();
-  }
+  private Task RouteAsync(DataSubjectRight right) =>
+    _surface.RouteAsync(right, new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces")));
 
   /// <summary>Ramène le service à son état d'installation : aucune ligne de Paramétrage.</summary>
-  private async Task ForgetEveryEndpointAsync()
-  {
-    using var scope = factory.Services.CreateScope();
-
-    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Set<Settings>().ExecuteDeleteAsync();
-  }
+  private Task ForgetEveryEndpointAsync() => _surface.ForgetEveryChannelAsync();
 }

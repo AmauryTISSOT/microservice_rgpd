@@ -26,6 +26,12 @@ public class ModifyDataSubjectRequestHandlerTests
 
   private readonly AClockStuckAt _clock = new(Now);
 
+  /// <summary>
+  /// Un déploiement qui déclare une connexion au broker : la modification ne parle pas du bus, et un
+  /// déploiement muet ferait apparaître un motif de blocage qui n'est pas son sujet.
+  /// </summary>
+  private readonly IBrokerConnectionState _broker = Substitute.For<IBrokerConnectionState>();
+
   public ModifyDataSubjectRequestHandlerTests()
   {
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([]);
@@ -197,5 +203,10 @@ public class ModifyDataSubjectRequestHandlerTests
       CancellationToken.None);
   }
 
-  private ModifyDataSubjectRequestHandler Handler() => new(_requests, _settings, _clock);
+  private ModifyDataSubjectRequestHandler Handler()
+  {
+    _broker.Current.Returns(BrokerConnection.Configured.Instance);
+
+    return new ModifyDataSubjectRequestHandler(_requests, _settings, _broker, _clock);
+  }
 }

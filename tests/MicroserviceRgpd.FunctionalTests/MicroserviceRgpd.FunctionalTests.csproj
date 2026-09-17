@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Testcontainers" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
     <!--
       ⚠️ Le pilote SQLite est ici pour ÉCRIRE la base de fixture du canari à cinq surfaces, jamais
       pour la lire : c'est le service, par son vrai port de scan, qui la lit.

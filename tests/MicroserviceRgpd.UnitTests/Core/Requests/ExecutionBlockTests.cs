@@ -13,7 +13,7 @@ public class ExecutionBlockTests
   public void ListsExactlyFiveBlocksInTheirOrder()
   {
     ExecutionBlock.List.OrderBy(block => block.Value).Select(block => block.Name).ShouldBe(
-      ["Closed", "IdentityNotVerified", "EmailMissing", "RightNotConfigured", "RabbitMqNotYetSupported"]);
+      ["Closed", "IdentityNotVerified", "EmailMissing", "RightNotConfigured", "BrokerConnectionMissing"]);
   }
 
   [Theory]
@@ -42,14 +42,27 @@ public class ExecutionBlockTests
   }
 
   /// <summary>
-  /// ⚠️ <b>Le motif provisoire dit la vérité</b> : le droit est configuré, et c'est le service qui ne
-  /// sait pas encore publier. Il nomme lui aussi le droit.
+  /// ⚠️ <b>Le cinquième motif dit ce qui manque au déploiement, non au Paramétrage</b> : le routage
+  /// est bon, et c'est la connexion au broker qui n'existe pas. Il nomme lui aussi le droit.
   /// </summary>
   [Theory]
-  [InlineData("Access", "Le droit d'accès s'exerce par RabbitMQ, que le service ne sait pas encore publier")]
-  [InlineData("Erasure", "Le droit à l'effacement s'exerce par RabbitMQ, que le service ne sait pas encore publier")]
-  public void SaysTheServiceCannotPublishYet(string right, string frenchLabel)
+  [InlineData("Access", "Le droit d'accès s'exerce par RabbitMQ, mais aucune connexion n'est configurée")]
+  [InlineData("Erasure", "Le droit à l'effacement s'exerce par RabbitMQ, mais aucune connexion n'est configurée")]
+  public void SaysTheDeploymentHasNoBrokerConnection(string right, string frenchLabel)
   {
-    ExecutionBlock.RabbitMqNotYetSupported.FrenchLabelFor(DataSubjectRight.FromName(right)).ShouldBe(frenchLabel);
+    ExecutionBlock.BrokerConnectionMissing.FrenchLabelFor(DataSubjectRight.FromName(right)).ShouldBe(frenchLabel);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le motif provisoire de l'ADR-0027 n'existe plus</b> : rien à l'écran ne parle d'une limite
+  /// qui n'existe pas — le service publie (ADR-0028). Le nom est cité en texte, faute de symbole.
+  /// </summary>
+  [Fact]
+  public void NoLongerSaysTheServiceCannotPublishYet()
+  {
+    ExecutionBlock.List.Select(block => block.Name).ShouldNotContain("RabbitMqNotYetSupported");
+
+    ExecutionBlock.List.Select(block => block.FrenchLabelFor(DataSubjectRight.Access))
+      .ShouldAllBe(label => !label.Contains("pas encore", StringComparison.Ordinal));
   }
 }

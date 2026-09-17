@@ -1,11 +1,18 @@
 using System.Globalization;
 using MicroserviceRgpd.Core.Requests;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MicroserviceRgpd.Infrastructure.Requests;
 
 /// <summary>
-/// Branche le système hôte, que l'exécution d'une demande appelle (ADR-0026).
+/// Branche le système hôte, que l'exécution d'une demande appelle (ADR-0026, ADR-0028) : le canal
+/// filtré, le client qui joint une adresse, et la connexion sur laquelle se publie un routage.
 /// </summary>
+/// <remarks>
+/// ⚠️ <b>Il suppose <c>AddBrokerConnection</c> posé</b> : l'adaptateur RabbitMQ lit la connexion que
+/// le déploiement déclare, et c'est la <c>Configuration</c> qui l'enregistre. Les deux se posent
+/// ensemble, dans <c>InfrastructureServiceExtensions</c>.
+/// </remarks>
 public static class HostSystemServiceExtensions
 {
   /// <summary>
@@ -25,7 +32,8 @@ public static class HostSystemServiceExtensions
 
   /// <summary>
   /// Enregistre le système hôte <b>par son port</b> — le canal filtré par
-  /// <see cref="HostSystemByChannel"/> —, et le client qui le joint.
+  /// <see cref="HostSystemByChannel"/> —, le client qui joint une adresse, et de quoi publier un
+  /// routage.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -57,6 +65,12 @@ public static class HostSystemServiceExtensions
 #pragma warning restore EXTEXP0001
 
     services.AddScoped<HttpHostSystem>();
+
+    // ⚠️ La connexion au broker est un SINGLETON : une seule, partagée, ouverte paresseusement au
+    // premier besoin. Le channel, lui, naît et meurt avec une exécution (ADR-0028).
+    services.TryAddSingleton<IBrokerChannels, BrokerChannels>();
+    services.AddScoped<RabbitMqHostSystem>();
+
     services.AddScoped<IHostSystem, HostSystemByChannel>();
 
     return services;
