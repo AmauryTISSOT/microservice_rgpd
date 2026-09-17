@@ -224,3 +224,31 @@ C'est le prix du « aucun test réseau au rendu ».
   ADR-0016 et 0026.
 - **La datation par droit** : le Paramétrage ne sait toujours ni quand un canal a été posé, ni par
   qui.
+
+## Suite — le cinquième motif de blocage a été supprimé (2026-09-17)
+
+⚠️ **Rien de ce qui précède n'a été édité** : on supplante un ADR, on ne le réécrit pas. Cette
+section nomme le point qui ne vaut plus depuis
+l'[ADR-0028](./0028-l-aboutissement-d-une-execution-cesse-d-etre-un-2xx-le-broker-accuse-reception.md),
+qui apprend au service à publier.
+
+- **Le cinquième motif de blocage, « Le {droit} s'exerce par RabbitMQ, que le service ne sait pas
+  encore publier »** — le seul élément de cette US conçu pour être supprimé. Il l'est. Le service
+  sait publier, et rien à l'écran ne parle plus d'une limite qui n'existe plus.
+
+  À son rang vient un motif **permanent**, qui dit une autre vérité : « Le {droit} s'exerce par
+  RabbitMQ, mais aucune connexion n'est configurée ». Il ne vise plus le service mais le
+  **déploiement**, et il se décide sur la même règle que le bandeau de la page « Configuration
+  RabbitMQ » — la seule présence d'une clé de connexion, sans le moindre test réseau. Comme le
+  quatrième, il nomme le droit. Les cinq motifs gardent leur ordre, et la raison de cet ordre ne
+  change pas ; une exécution ainsi bloquée continue de n'appeler rien, ne publier rien et n'écrire
+  aucune tentative.
+
+La conséquence « un motif de blocage est écrit pour mourir » est donc soldée. Ce qu'elle coûte
+désormais est écrit dans l'ADR-0028 : le nouveau motif hérite exactement de l'angle mort du bandeau.
+
+Tout le reste de cet ADR reste en vigueur : « un droit, un seul canal », l'exclusivité tenue à
+l'écriture sans valeur dormante, l'absence de colonne discriminante, le canal d'exercice comme type
+fermé à trois cas, « il configure, il n'appelle pas », la topologie du bus propriété de l'exploitant,
+la connexion au broker comme affaire de déploiement, les sept écarts assumés au texte de l'US, et la
+conséquence « le bandeau peut mentir par optimisme ».

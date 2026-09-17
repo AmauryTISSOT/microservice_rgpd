@@ -169,3 +169,31 @@ l'hôte et se lit dans la modale comme dans le Paramétrage.
 - **Le choix de la méthode HTTP ou d'en-têtes** dans le Paramétrage.
 - **L'écran de consultation du journal d'exécution**, et sa durée de conservation.
 - **Annuler une demande**, l'autre acte qui fait changer le statut.
+
+## Suite — l'aboutissement d'une exécution cesse d'être un 2xx (2026-09-17)
+
+⚠️ **Rien de ce qui précède n'a été édité**, et rien ne le sera : on supplante un ADR, on ne le
+réécrit pas. Cette section nomme le point qui ne vaut plus depuis
+l'[ADR-0028](./0028-l-aboutissement-d-une-execution-cesse-d-etre-un-2xx-le-broker-accuse-reception.md),
+qui ouvre la publication sur RabbitMQ.
+
+- **« Tout 2xx vaut "le droit a été appliqué" »**, dans « Le contrat de l'appel », et avec elle
+  « l'hôte ne répond 2xx qu'une fois le droit appliqué ; l'exécution est synchrone ». Une exécution
+  aboutit désormais quand **le destinataire, ou le broker pour lui, a accusé réception** ; le 2xx
+  reste la forme que prend cet accusé sur le canal HTTP, et rien du comportement HTTP ne change.
+  Sur un routage RabbitMQ, un `ack` du broker prouve que le message a été **accepté**, jamais que le
+  système hôte l'a **traité** : « Terminée » change de sens sur ce canal.
+
+Deux points de cet ADR sont touchés en conséquence, sans changer de règle :
+
+- **Le journal d'exécution** garde sa forme — une ligne par tentative, aucune donnée personnelle,
+  survie à la suppression —, mais sa colonne « URL appelée » devient l'**exercice**, et son résultat
+  fermé gagne deux cas propres au bus. Le statut HTTP reste nul sur toute publication.
+- **Le port d'appel** est typé sur le **canal d'exercice** (ADR-0027) et non plus sur une
+  `EndpointUrl` ; le handler d'exécution ne filtre rien.
+
+Tout ce qui valait encore de cet ADR reste en vigueur : la relation `Requests → Configuration`, la
+revérification serveur et ses codes de refus, l'écriture de la tentative après l'acte, le succès non
+enregistré, **aucune nouvelle tentative automatique**, et la réserve sur l'ADR-0022. Les conditions
+d'exécution et l'ordre des motifs de blocage écrits ici étaient déjà supplantés par l'ADR-0027 ;
+l'ADR-0028 n'en reprend que le cinquième motif.
