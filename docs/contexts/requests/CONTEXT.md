@@ -82,8 +82,9 @@ _Avoid_ : prorogation, extension, report, délai supplémentaire, rallonge
 La date limite de réponse telle qu'elle valait **avant** la prolongation. Enregistrée et non
 recalculée par soustraction : `AddMonths` n'est pas inversible (31 décembre + 2 mois = 28 février,
 et 28 février − 2 mois = 28 décembre), et c'est elle qui fixe l'échéance de l'obligation d'informer
-la personne concernée. Elle n'existe que sur une demande prolongée. Dans le code :
-`InitialResponseDeadline`.
+la personne concernée. Elle n'existe que sur une demande prolongée. Corriger la date de réception la
+refait, comme celle en vigueur : les deux dates suivent la réception ensemble, et les deux mois qui
+les séparent ne bougent pas. Dans le code : `InitialResponseDeadline`.
 _Avoid_ : ancienne date limite, date limite d'origine, date limite avant prolongation,
 OriginalDeadline, PreviousDeadline
 
@@ -124,6 +125,12 @@ s'**exécute** pas. Une même demande peut porter les deux blocages, pour des ra
 ⚠️ **La fenêtre est stricte et se juge sur le jour de Paris.** Le jour de la date limite est encore
 accepté ; le lendemain ne l'est plus. Et elle ne s'ouvre qu'une fois : la prolongation ne se reprend
 pas, l'article 12 §3 n'en accorde qu'une.
+
+⚠️ **Le motif de blocage juge le geste à venir, jamais celui qui a eu lieu.** Corriger la date de
+réception d'une demande prolongée peut la placer rétroactivement en retard, et reporter ainsi la
+prolongation hors de sa fenêtre : la correction est **acceptée** quand même. C'est une vérité à
+afficher, pas un état à empêcher — aucune erreur de saisie n'est indéracinable. La demande reste
+prolongée, et ne se prolonge toujours pas une seconde fois.
 
 **Échéance proche** :
 Le signalement d'une demande **En cours** dont la date limite de réponse tombe entre aujourd'hui et

@@ -84,9 +84,10 @@ public sealed class DataSubjectRequest : IAggregateRoot
 
   /// <summary>
   /// Le jour avant lequel le responsable doit répondre : <see cref="ReceivedOn"/> plus un mois,
-  /// ramené au dernier jour du mois suivant quand ce jour n'y existe pas (ADR-0021). ⚠️ Fixée à la
-  /// réception et enregistrée : elle ne se recalcule pas à la lecture, et ne part jamais de l'instant
-  /// d'enregistrement. Seule une <see cref="Modify"/> qui change la date de réception la refait.
+  /// ramené au dernier jour du mois suivant quand ce jour n'y existe pas (ADR-0021) — plus deux mois
+  /// une fois la demande prolongée. ⚠️ Fixée à la réception et enregistrée : elle ne se recalcule pas
+  /// à la lecture, et ne part jamais de l'instant d'enregistrement. Seules une <see cref="Modify"/>
+  /// qui change la date de réception et une <see cref="Extend"/> la refont.
   /// </summary>
   public DateOnly ResponseDeadline { get; private set; }
 
@@ -146,6 +147,9 @@ public sealed class DataSubjectRequest : IAggregateRoot
   ///
   /// ⚠️ <b>C'est une trace, pas une source</b> : la date qui fait foi partout ailleurs reste
   /// <see cref="ResponseDeadline"/>.
+  ///
+  /// ⚠️ <b>Une correction de la date de réception la refait</b>, comme celle en vigueur : les deux
+  /// dates suivent la date de réception ensemble, et l'écart de deux mois entre elles ne bouge pas.
   /// </remarks>
   public DateOnly? InitialResponseDeadline { get; private set; }
 
@@ -201,6 +205,19 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// propriété — pas même <see cref="ResponseDeadline"/> — et ne laisse aucune empreinte. Rien n'étant
   /// touché, le suivi des modifications n'émet aucun <c>UPDATE</c>, et l'empreinte reste celle de la
   /// modification précédente.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Corriger la date de réception d'une demande prolongée ne détruit pas la prolongation</b> :
+  /// <see cref="InitialResponseDeadline"/> et <see cref="ResponseDeadline"/> se refont <b>ensemble</b>
+  /// depuis la date de réception corrigée, l'écart de deux mois conservé, et ni le motif, ni la
+  /// justification, ni <see cref="ExtendedAt"/> ne bougent. La demande reste prolongée, et ne se
+  /// prolonge toujours pas une seconde fois (ADR-0029, qui supplante l'ADR-0023 sur ce point).
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Une correction qui place rétroactivement la demande en retard est acceptée</b>, la
+  /// prolongation fût-elle ainsi reportée hors de sa fenêtre : aucune erreur de saisie n'est
+  /// indéracinable (ADR-0029). <see cref="ExtensionBlockFacing"/> juge le geste à venir, jamais celui
+  /// qui a eu lieu.
   /// </para>
   /// </remarks>
   /// <param name="entry">Les valeurs brutes corrigées, ni trimées ni validées.</param>
@@ -460,21 +477,43 @@ public sealed class DataSubjectRequest : IAggregateRoot
   }
 
   /// <summary>
-  /// Pose les huit valeurs d'une saisie validée, et la date limite qui en découle. Écrit une seule
-  /// fois : la réception les pose à la naissance, la modification les repose.
+  /// Pose les huit valeurs d'une saisie validée, et la ou les dates limites qui en découlent. Écrit
+  /// une seule fois : la réception les pose à la naissance, la modification les repose.
   /// </summary>
   [MemberNotNull(nameof(Origin), nameof(Right))]
   private void Apply(ValidatedEntry entry)
   {
     Origin = entry.Origin;
     ReceivedOn = entry.ReceivedOn;
-    ResponseDeadline = DeadlineFor(entry.ReceivedOn);
+    ApplyDeadlinesFor(entry.ReceivedOn);
     LastName = entry.LastName;
     FirstName = entry.FirstName;
     Email = entry.Email;
     IdentityVerified = entry.IdentityVerified;
     Message = entry.Message;
     Right = entry.Right;
+  }
+
+  /// <summary>
+  /// Pose la date limite qui découle de <paramref name="receivedOn"/> — les <b>deux</b> quand la
+  /// demande est prolongée : la date limite initiale par la règle de l'ADR-0021, et celle en vigueur
+  /// par cette même règle augmentée des deux mois de la prolongation (ADR-0029). ⚠️ <b>La
+  /// prolongation elle-même n'est pas touchée</b> : corriger une erreur de saisie ne défait pas un
+  /// geste.
+  /// </summary>
+  private void ApplyDeadlinesFor(DateOnly receivedOn)
+  {
+    var deadline = DeadlineFor(receivedOn);
+
+    if (Extended)
+    {
+      InitialResponseDeadline = deadline;
+      ResponseDeadline = DeadlineExtendedFrom(deadline);
+
+      return;
+    }
+
+    ResponseDeadline = deadline;
   }
 
   /// <summary>Les valeurs courantes sous la forme d'une saisie validée, pour se comparer à une autre.</summary>

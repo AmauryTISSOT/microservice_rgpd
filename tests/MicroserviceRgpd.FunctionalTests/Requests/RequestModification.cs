@@ -1,8 +1,10 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.FunctionalTests.Layout;
+using MicroserviceRgpd.Web.Pages.Requests;
 using NSwag.Generation;
 
 namespace MicroserviceRgpd.FunctionalTests.Requests;
@@ -78,6 +80,10 @@ public class RequestModification(CustomWebApplicationFactory<Program> factory)
       // La date limite se rejoue depuis la nouvelle date de réception : un 31 janvier donne le 28
       // février, dernier jour du mois suivant (ADR-0021).
       row["response_deadline"].ShouldBe(new DateOnly(2026, 2, 28));
+
+      // ⚠️ Une demande qui n'a pas été prolongée n'a qu'une date limite : la correction n'en invente
+      // pas une seconde.
+      row["initial_response_deadline"].ShouldBeNull();
 
       row["modified_by"].ShouldBe("operator");
 
@@ -160,6 +166,101 @@ public class RequestModification(CustomWebApplicationFactory<Program> factory)
 
     row["modified_at"].ShouldBe(stamped["modified_at"], "Un renvoi à l'identique a redaté l'empreinte.");
     row["modified_by"].ShouldBe(stamped["modified_by"]);
+  }
+
+  /// <summary>
+  /// <b>Corriger la date de réception d'une demande prolongée refait les deux dates limites</b> —
+  /// <c>initial_response_deadline</c> et <c>response_deadline</c> — depuis la date de réception
+  /// corrigée, l'écart de deux mois conservé, et <b>n'efface pas la prolongation</b> : motif,
+  /// justification et <c>extended_at</c> sont relus intacts.
+  /// </summary>
+  [Fact]
+  public async Task RecomputesBothDeadlinesOfAnExtendedRequestWithoutErasingTheExtension()
+  {
+    var (id, message) = await AnExtendedRequestAsync();
+    var extended = await _surface.RowOfAsync(message);
+
+    var correctedReceivedOn = ParisCalendar.Today(factory.Clock).AddMonths(-3);
+
+    var response = await _surface.ModifyAsync(id, Correction(message, new Dictionary<string, string>
+    {
+      ["receivedOn"] = correctedReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+    }));
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+
+    var row = await _surface.RowOfAsync(message);
+
+    row["received_on"].ShouldBe(correctedReceivedOn);
+    row["initial_response_deadline"].ShouldBe(correctedReceivedOn.AddMonths(1));
+    row["response_deadline"].ShouldBe(correctedReceivedOn.AddMonths(1).AddMonths(2));
+
+    row["extension_ground"].ShouldBe(extended["extension_ground"]);
+    row["extension_justification"].ShouldBe(extended["extension_justification"]);
+    row["extended_at"].ShouldBe(extended["extended_at"], "Une correction a redaté la prolongation.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un renvoi à l'identique ne touche aucune des deux dates limites</b> : la règle ne vaut que
+  /// sur le chemin d'écriture. La ligne entière est relue avant et après, et ne bouge pas d'une
+  /// colonne.
+  /// </summary>
+  [Fact]
+  public async Task TouchesNeitherDeadlineOfAnExtendedRequestWhenNothingChanges()
+  {
+    var (id, message) = await AnExtendedRequestAsync();
+    var before = await _surface.RowOfAsync(message);
+
+    var response = await _surface.ModifyAsync(id, Correction(message));
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+    (await _surface.RowOfAsync(message)).ShouldBe(before, "Un renvoi à l'identique a rejoué les dates limites.");
+  }
+
+  /// <summary>
+  /// <b>Une correction qui place rétroactivement la demande en retard est acceptée</b> — la
+  /// prolongation fût-elle ainsi reportée hors de sa fenêtre : c'est une vérité à afficher, pas un
+  /// état à empêcher. La ligne rendue le dit — « Prolongée » et « En retard » —, et la demande ne se
+  /// prolonge toujours pas une seconde fois.
+  /// </summary>
+  [Fact]
+  public async Task AcceptsACorrectionThatPutsAnExtendedRequestRetroactivelyLate()
+  {
+    var (id, message) = await AnExtendedRequestAsync();
+
+    var correctedReceivedOn = ParisCalendar.Today(factory.Clock).AddYears(-1);
+
+    var response = await _surface.ModifyAsync(id, Correction(message, new Dictionary<string, string>
+    {
+      ["receivedOn"] = correctedReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+    }));
+
+    var body = await response.Content.ReadAsStringAsync();
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK, body);
+
+    var row = await _surface.RowOfAsync(message);
+    var inForce = row["response_deadline"].ShouldBeOfType<DateOnly>();
+
+    inForce.ShouldBe(correctedReceivedOn.AddMonths(1).AddMonths(2));
+    inForce.ShouldBeLessThan(ParisCalendar.Today(factory.Clock), "La correction n'a pas mis la demande en retard.");
+    row["extended_at"].ShouldNotBeNull();
+
+    var deadlineCell = Regex.Match(
+      body,
+      @"<td\b[^>]*data-field=""responseDeadline""[^>]*>(?<cell>.*?)</td>",
+      RegexOptions.Singleline).Groups["cell"].Value;
+
+    LayoutSurface.TextIn(deadlineCell).ShouldBe(
+      $"{inForce.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} {DeadlineSignal.Overdue.FrenchLabel} {RequestRow.Extended}");
+
+    using var summary = JsonDocument.Parse(
+      await (await _surface.ExtensionOfAsync(id)).Content.ReadAsStringAsync());
+
+    summary.RootElement.GetProperty("block").GetString().ShouldBe(ExtensionBlock.AlreadyExtended.FrenchLabel);
+
+    // ⚠️ L'écran le dit, et le serveur le tient : une seconde prolongation est refusée en 409.
+    (await _surface.ExtendAsync(id)).StatusCode.ShouldBe(HttpStatusCode.Conflict);
   }
 
   /// <summary>
@@ -358,5 +459,20 @@ public class RequestModification(CustomWebApplicationFactory<Program> factory)
     }
 
     return correction;
+  }
+
+  /// <summary>
+  /// Une demande <b>prolongée</b> par la frontière HTTP : sa date limite est d'abord posée dans la
+  /// fenêtre — un mois après aujourd'hui —, faute de quoi la prolongation serait refusée.
+  /// </summary>
+  private async Task<(Guid Id, string Message)> AnExtendedRequestAsync()
+  {
+    var (id, message) = await _surface.RecordAsync();
+
+    await _surface.SetResponseDeadlineAsync(id, ParisCalendar.Today(factory.Clock).AddMonths(1));
+
+    (await _surface.ExtendAsync(id)).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    return (id, message);
   }
 }
