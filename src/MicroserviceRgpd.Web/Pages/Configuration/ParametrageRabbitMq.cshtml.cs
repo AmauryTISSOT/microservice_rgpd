@@ -1,3 +1,4 @@
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,9 +30,58 @@ namespace MicroserviceRgpd.Web.Pages.Configuration;
 /// <c>maxlength</c> — l'attribut compte des unités UTF-16, la contrainte des octets UTF-8 —, et
 /// c'est le domaine qui juge, en français, sous le champ fautif.
 /// </para>
+/// <para>
+/// <b>Elle avertit que le déploiement ne sait pas publier</b>, quand il n'a pas de connexion
+/// configurée et qu'un routage a pourtant été posé : voir <see cref="LacksABrokerConnection"/>.
+/// </para>
 /// </remarks>
-public class ParametrageRabbitMqModel(IMediator mediator) : ParametrageFaceModel<RightRabbitMqForm>(mediator)
+/// <param name="mediator">Le médiateur par lequel la face lit et écrit le Paramétrage.</param>
+/// <param name="configuration">
+/// La configuration du déploiement, lue <b>au rendu</b> pour la seule présence de la clé de
+/// connexion. Elle est injectée plutôt que lue par un type d'options : un type d'options viendra
+/// avec l'US de publication, quand port, vhost et identifiants s'ajouteront à l'hôte.
+/// </param>
+public class ParametrageRabbitMqModel(IMediator mediator, IConfiguration configuration)
+  : ParametrageFaceModel<RightRabbitMqForm>(mediator)
 {
+  /// <summary>
+  /// La clé de déploiement dont la <b>seule présence</b> dit que ce déploiement a une connexion
+  /// RabbitMQ. Elle est publique pour que les tests la <b>citent</b> plutôt que de la recopier :
+  /// recopiée, elle aurait divergé, et le bandeau se serait mis à parler d'une clé que personne ne
+  /// pose.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Elle n'est validée nulle part au démarrage.</b> Son absence n'est pas une erreur de
+  /// configuration : un routage doit rester enregistrable avant que le bus existe (ADR-0027). Le
+  /// port, le vhost et les identifiants ne sont pas de ce ticket — ils viendront avec la
+  /// publication, et un type d'options avec eux.
+  /// </remarks>
+  public const string BrokerHostNameKey = "RabbitMq:HostName";
+
+  /// <summary>
+  /// Le déploiement <b>n'a aucune connexion RabbitMQ configurée</b> : rien ne partira sur le bus,
+  /// quels que soient les routages posés ici.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Aucun test réseau.</b> La décision se prend sur la seule présence de la clé, jamais sur
+  /// un broker joignable : l'affichage de cette page ne dépend ainsi jamais de la disponibilité du
+  /// bus (ADR-0027). Le prix en est assumé — une clé posée et un broker éteint n'avertissent de
+  /// rien.
+  /// <para>
+  /// Une clé vide ou faite d'espaces vaut une clé absente : un hôte de broker qui ne nomme aucune
+  /// machine ne connecte rien, et avertir l'intégrateur reste alors la vérité.
+  /// </para>
+  /// </remarks>
+  public bool LacksABrokerConnection => string.IsNullOrWhiteSpace(configuration[BrokerHostNameKey]);
+
+  /// <summary>
+  /// Le bandeau <b>concerne-t-il l'intégrateur</b> ? Il ne paraît que si le déploiement n'a pas de
+  /// connexion <b>et</b> qu'au moins un routage a été posé : avertir d'un manque avant qu'il gêne
+  /// qui que ce soit aurait fait du bandeau un meuble qu'on cesse de lire.
+  /// </summary>
+  public bool WarnsThatNothingWillBePublished =>
+    LacksABrokerConnection && Settings.Rights.Any(right => right.Channel is ExerciseChannel.RabbitMq);
+
   public async Task<IActionResult> OnPostSetAsync(CancellationToken cancellationToken)
   {
     var fields = Form.Read(ModelState, FormPrefix);

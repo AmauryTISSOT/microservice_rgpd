@@ -6,6 +6,7 @@ using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
+using MicroserviceRgpd.Web.Pages.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
@@ -629,6 +630,81 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     onTheOtherFace.ShouldNotContain(Endpoint);
     onTheOtherFace.ShouldContain(Exchange);
     onTheOtherFace.ShouldContain(Key);
+  }
+
+  /// <summary>
+  /// Le critère du ticket : <b>clé de connexion absente et au moins un routage posé</b>, le bandeau
+  /// paraît sur la face RabbitMQ — et il <b>nomme la clé</b>, sans quoi l'intégrateur saurait qu'il
+  /// manque quelque chose sans savoir où le poser.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le routage s'enregistre quand même</b>, et le test le vérifie dans le même souffle :
+  /// avertir n'est pas refuser, et le déploiement dont le bus n'existe pas encore doit pouvoir se
+  /// préparer (ADR-0027).
+  /// </remarks>
+  [Fact]
+  public async Task WarnsThatNoBrokerConnectionIsConfiguredOnceARoutingIsPosed()
+  {
+    const string Exchange = "rgpd.exercices";
+
+    (await SaveAsync("Erasure", Exchange, "droit.effacement")).StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    var screen = WebUtility.HtmlDecode(await ReadAsync(RabbitMq));
+
+    var advisory = TheBrokerConnectionAdvisory.In(screen);
+
+    advisory.ShouldNotBeNull("Aucun bandeau ne prévient que rien ne partira sur le bus.");
+    advisory.ShouldContain(ParametrageRabbitMqModel.BrokerHostNameKey);
+
+    // Le routage est bien là : le bandeau avertit, il n'a rien refusé.
+    (await SectionAsync(Erasure)).ShouldContain(Exchange);
+  }
+
+  /// <summary>
+  /// <b>Pas de bandeau tant qu'aucun routage n'a été posé</b> — pas même sur un service vierge, et
+  /// pas davantage pour un droit réglé sur l'autre canal : le manque de connexion ne concerne pas
+  /// encore celui qui n'a rien déclaré, et un avertissement permanent devient un meuble.
+  /// </summary>
+  [Fact]
+  public async Task SaysNothingAboutTheBrokerConnectionUntilARoutingIsPosed()
+  {
+    TheBrokerConnectionAdvisory.In(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)))
+      .ShouldBeNull("Un service vierge n'a aucun routage dont il faudrait avertir.");
+
+    await AddressAsync(DataSubjectRight.Access, "https://brocanto.example.fr/rgpd/acces");
+
+    TheBrokerConnectionAdvisory.In(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)))
+      .ShouldBeNull("Un droit réglé en HTTP n'est pas un routage qu'on croirait opérationnel.");
+  }
+
+  /// <summary>
+  /// <b>Effacer le dernier routage retire le bandeau</b> : l'avertissement suit ce qui est déclaré,
+  /// et ne survit pas à ce qui l'a fait paraître.
+  /// </summary>
+  [Fact]
+  public async Task TakesTheWarningBackDownWhenTheLastRoutingIsCleared()
+  {
+    await SaveAsync("Erasure", "rgpd.exercices", "droit.effacement");
+
+    (await ClearAsync("Erasure")).StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    TheBrokerConnectionAdvisory.In(WebUtility.HtmlDecode(await ReadAsync(RabbitMq))).ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le bandeau ne paraît jamais sur la face HTTP</b>, routage posé ou non : un avertissement
+  /// RabbitMQ n'a rien à dire d'un écran qui ne parle pas de RabbitMQ, et la clé n'y est pas même
+  /// nommée.
+  /// </summary>
+  [Fact]
+  public async Task NeverWarnsAboutTheBrokerConnectionOnTheHttpFace()
+  {
+    await SaveAsync("Erasure", "rgpd.exercices", "droit.effacement");
+
+    var http = WebUtility.HtmlDecode(await ReadAsync(Http));
+
+    TheBrokerConnectionAdvisory.In(http).ShouldBeNull("La face HTTP porte un avertissement qui ne la regarde pas.");
+    http.ShouldNotContain(ParametrageRabbitMqModel.BrokerHostNameKey);
   }
 
   private async Task<string> ReadAsync(string screen)
