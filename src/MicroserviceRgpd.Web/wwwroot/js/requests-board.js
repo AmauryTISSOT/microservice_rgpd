@@ -1503,6 +1503,29 @@ const extensionForm = document.getElementById("extend-request-form");
 const extendButton = extension.querySelector("[data-extend]");
 const extensionFailure = extension.querySelector("[data-failure]");
 
+// LES DEUX CHAMPS SAISIS, DANS L'ORDRE DU FORMULAIRE : c'est le premier refusé qui prend le focus.
+const extensionFields = [
+  extensionForm.elements.namedItem("extensionGround"),
+  extensionForm.elements.namedItem("extensionJustification"),
+];
+
+// ⚠️ LA MODALE NE REJOUE AUCUNE RÈGLE AVANT D'ENVOYER : le serveur fait foi, et c'est lui seul qui
+// refuse. Le module place ses refus sous leurs champs — la place que la page a rendue sous chacun —,
+// exactement comme la modale de saisie place les siens.
+function showExtensionRefusals(refusals) {
+  for (const field of extensionFields) {
+    showRefusal(field, refusals[field.name]);
+  }
+
+  extensionFields.find((field) => refusals[field.name])?.focus();
+}
+
+function forgetExtensionRefusals() {
+  for (const field of extensionFields) {
+    showRefusal(field, undefined);
+  }
+}
+
 // La flèche d'horloge qui a ouvert la modale, et la ligne qu'elle prolonge.
 let extensionOpenedBy = null;
 let rowToExtend = null;
@@ -1544,6 +1567,7 @@ function fillExtension(summary) {
   }
 
   extensionForm.reset();
+  forgetExtensionRefusals();
   extensionFailure.textContent = "";
   extensionFailure.hidden = true;
 }
@@ -1588,6 +1612,10 @@ extension.addEventListener("close", () => {
 // ferme, et le toast dit « Demande prolongée ».
 //
 // 404 : la demande a été supprimée ailleurs — sa ligne part, la modale se ferme et le toast le dit.
+//
+// 400 portant des refus de la saisie : ils vont sous leurs champs, la modale reste ouverte, et rien
+// de ce que l'Operator a écrit n'est perdu.
+//
 // Toute autre issue prend la phrase que la page a rendue : la prolongation a pu aboutir, l'écran ne le
 // sait pas.
 async function extend() {
@@ -1598,6 +1626,7 @@ async function extend() {
   extending = true;
   extendButton.setAttribute("aria-busy", "true");
   extensionFailure.hidden = true;
+  forgetExtensionRefusals();
 
   let response = null;
 
@@ -1619,8 +1648,21 @@ async function extend() {
 
   if (rowHtml !== null) {
     closeOnExtension(rowHtml);
-  } else if (response?.status === 404) {
+    return;
+  }
+
+  if (response?.status === 404) {
     dropTheVanishedExtension();
+    return;
+  }
+
+  // 400 PORTANT DES REFUS DE LA SAISIE : chacun va sous son champ, LA MODALE RESTE OUVERTE ET LA
+  // SAISIE RESTE LÀ — l'Operator corrige ce qui est fautif, sans le retaper. Un 400 sans refus, lui,
+  // est un jeton anti-rejeu refusé : il prend le bandeau, comme les autres échecs.
+  const refusals = response?.status === 400 ? await refusalsFromTheServer(response) : {};
+
+  if (extensionFields.some((field) => refusals[field.name])) {
+    showExtensionRefusals(refusals);
   } else {
     stopOnExtensionFailure();
   }

@@ -224,6 +224,119 @@ public class RequestExtensionDialog(BrowserHarness harness)
     await Expect(ExtensionOf(row)).ToBeFocusedAsync();
   }
 
+  /// <summary>
+  /// <b>Une prolongation mal saisie est refusée sur le champ fautif</b> : la modale reste ouverte, le
+  /// refus du serveur s'affiche sous le motif <b>et</b> sous la justification, le premier fautif prend
+  /// le focus — et <b>rien de ce qui a été écrit n'est perdu</b>. La ligne, elle, n'a pas bougé.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le motif est forgé depuis le script</b> : le choix fermé de l'écran ne le propose pas. C'est
+  /// justement ce que le domaine revérifie.
+  /// </remarks>
+  [Fact]
+  public async Task ShowsTheServerRefusalUnderEachFaultyFieldAndKeepsTheEntry()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var row = await RowOfARequestAsync(page, UniqueEmail());
+
+    await ExtensionOf(row).ClickAsync();
+
+    var dialog = Dialog(page);
+    await Expect(dialog).ToBeVisibleAsync();
+
+    await ForgeTheGroundAsync(page, "Autre");
+    await Justification(dialog).FillAsync("   ");
+    await Button(page, ExtensionConfirmation.Confirm).ClickAsync();
+
+    await ExpectTheRefusalAsync(Ground(dialog), DataSubjectRequestMessages.ExtensionGroundMissing);
+    await ExpectTheRefusalAsync(Justification(dialog), DataSubjectRequestMessages.ExtensionJustificationMissing);
+
+    // LA MODALE RESTE OUVERTE, LA SAISIE EST LÀ, ET LE PREMIER CHAMP FAUTIF A LE FOCUS.
+    await Expect(dialog).ToBeVisibleAsync();
+    await Expect(Ground(dialog)).ToBeFocusedAsync();
+    await Expect(Justification(dialog)).ToHaveValueAsync("   ");
+
+    await Expect(Deadline(row)).ToContainTextAsync("15/02/2026");
+    await Expect(Deadline(row)).Not.ToContainTextAsync(RequestRow.Extended);
+  }
+
+  /// <summary>
+  /// <b>Une justification au-delà du plafond est refusée sous son champ</b>, et le message dit la
+  /// borne en toutes lettres. Le motif, lui, est juste : il ne porte aucun refus.
+  /// </summary>
+  [Fact]
+  public async Task RefusesAJustificationOverItsCeilingUnderItsOwnField()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var row = await RowOfARequestAsync(page, UniqueEmail());
+
+    await ExtensionOf(row).ClickAsync();
+
+    var dialog = Dialog(page);
+    await Expect(dialog).ToBeVisibleAsync();
+
+    await Ground(dialog).SelectOptionAsync(nameof(ExtensionGround.Complexity));
+    await Justification(dialog).FillAsync(new string('j', ExtensionJustification.MaxLength + 1));
+    await Button(page, ExtensionConfirmation.Confirm).ClickAsync();
+
+    await ExpectTheRefusalAsync(Justification(dialog), DataSubjectRequestMessages.ExtensionJustificationTooLong);
+    await Expect(Ground(dialog)).Not.ToHaveAttributeAsync("aria-invalid", "true");
+    await Expect(dialog).ToBeVisibleAsync();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un refus corrigé, puis confirmé, prolonge</b> : la modale corrigée part sans que l'écran ne
+  /// garde de trace du refus d'avant — ni sous les champs, ni au rouvrir.
+  /// </summary>
+  [Fact]
+  public async Task ExtendsOnceTheRefusedEntryIsCorrected()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var row = await RowOfARequestAsync(page, UniqueEmail());
+
+    await ExtensionOf(row).ClickAsync();
+
+    var dialog = Dialog(page);
+    await Expect(dialog).ToBeVisibleAsync();
+
+    await Justification(dialog).FillAsync("Quatre systèmes à interroger.");
+    await Button(page, ExtensionConfirmation.Confirm).ClickAsync();
+
+    await ExpectTheRefusalAsync(Ground(dialog), DataSubjectRequestMessages.ExtensionGroundMissing);
+
+    await Ground(dialog).SelectOptionAsync(nameof(ExtensionGround.Complexity));
+    await Button(page, ExtensionConfirmation.Confirm).ClickAsync();
+
+    await Expect(dialog).ToBeHiddenAsync();
+    await Expect(Deadline(row)).ToContainTextAsync("15/04/2026");
+    await Expect(Deadline(row)).ToContainTextAsync(RequestRow.Extended);
+  }
+
+  /// <summary>Le refus s'affiche dans la place que le serveur a rendue sous le champ, et le marque fautif.</summary>
+  private static async Task ExpectTheRefusalAsync(ILocator field, string refusal)
+  {
+    await Expect(field).ToHaveAccessibleDescriptionAsync(refusal);
+    await Expect(field).ToHaveAttributeAsync("aria-invalid", "true");
+  }
+
+  /// <summary>
+  /// Pose sur le choix fermé une valeur qu'il ne propose pas : l'option est ajoutée au vol, puis
+  /// choisie. C'est l'envoi forgé que le domaine revérifie.
+  /// </summary>
+  private static Task ForgeTheGroundAsync(IPage page, string ground) =>
+    page.EvaluateAsync(
+      """
+      (ground) => {
+        const select = document.getElementById("request-extension-ground");
+        select.add(new Option(ground, ground));
+        select.value = ground;
+      }
+      """,
+      ground);
+
   private static Task CloseByAsync(IPage page, string mode)
   {
     return mode switch
