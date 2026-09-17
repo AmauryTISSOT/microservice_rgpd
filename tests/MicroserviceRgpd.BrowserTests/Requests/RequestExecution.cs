@@ -78,7 +78,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
     var dialog = Confirmation(page);
 
     await Expect(dialog).ToBeVisibleAsync();
-    await Expect(dialog).ToHaveAccessibleDescriptionAsync(ExecutionConfirmation.Warning);
+    await Expect(dialog).ToHaveAccessibleDescriptionAsync(expected.Warning);
     await Expect(Fact(dialog, ExecutionConfirmation.RightLabel)).ToHaveTextAsync(expected.Right);
     await Expect(Fact(dialog, ExecutionConfirmation.FirstNameLabel)).ToHaveTextAsync(expected.FirstName);
     await Expect(Fact(dialog, ExecutionConfirmation.LastNameLabel)).ToHaveTextAsync(expected.LastName);
@@ -110,9 +110,16 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
   }
 
   /// <summary>
-  /// ⚠️ <b>Un droit routé est bloqué sur un déploiement sans bus, et la modale dit par où la demande
-  /// partirait</b> : le champ « Exercice » porte l'exchange et la routing key, le bandeau dit que la
-  /// connexion manque, et « Exécuter » est éteint (ADR-0028).
+  /// ⚠️ <b>Un droit routé est bloqué sur un déploiement sans bus, la modale dit par où la demande
+  /// partirait et avertit du bus</b> : le champ « Exercice » porte l'exchange et la routing key,
+  /// l'avertissement dit que le service saura que le broker a accepté le message, <b>jamais</b> que le
+  /// système hôte l'a traité, le bandeau dit que la connexion manque, et « Exécuter » est éteint
+  /// (ADR-0028).
+  /// <para>
+  /// ⚠️ <b>C'est le seul scénario navigateur de l'avertissement</b> : les deux phrases vivent sur le
+  /// serveur et le script les recopie. Qu'il recopie <b>celle du canal</b> se voit ici, une fois ; que
+  /// le serveur rende la bonne se prouve à la couture fonctionnelle.
+  /// </para>
   /// <para>
   /// ⚠️ <b>L'hôte des tests navigateur ne déclare aucune connexion</b>, et c'est ce qui rend ce cas
   /// observable ici : la publication elle-même s'éprouve contre un vrai broker, dans la couture
@@ -120,7 +127,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
   /// </para>
   /// </summary>
   [Fact]
-  public async Task SaysTheRoutingAndTheMissingBrokerConnectionOfARightExercisedByRabbitMq()
+  public async Task SaysTheRoutingTheBusWarningAndTheMissingBrokerConnectionOfARightExercisedByRabbitMq()
   {
     // ⚠️ L'adresse d'abord : c'est elle qui offre l'avion en papier de la ligne. Le droit est routé
     // sur RabbitMQ dans le dos de l'écran, et la modale relit le canal de l'instant.
@@ -144,6 +151,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
 
     await Expect(dialog).ToBeVisibleAsync();
     await Expect(Fact(dialog, ExecutionConfirmation.ExerciseLabel)).ToHaveTextAsync(expected.Exercise);
+    await Expect(dialog).ToHaveAccessibleDescriptionAsync(expected.Warning);
     await Expect(dialog.GetByRole(AriaRole.Alert)).ToHaveTextAsync(expected.Block!);
     await Expect(Button(page, ExecutionConfirmation.Confirm)).ToBeDisabledAsync();
     _host.Received.ShouldBeEmpty("Une demande bloquée a appelé le système hôte.");

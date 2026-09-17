@@ -545,9 +545,14 @@
   l'écran. L'avion en papier actif d'une ligne l'ouvre, une fois le récapitulatif relu sur le serveur
   (`data-summary`) : ce que le système hôte recevrait, et par où la demande partirait (ADR-0026).
 
-  ⚠️ TOUS SES MOTS SONT ICI, écrits une fois dans ExecutionConfirmation : le titre, les libellés,
-  l'avertissement, les boutons. Seules les valeurs sont vides au chargement ; le module y verse celles
-  du récapitulatif, déjà en libellés — « — » compris —, par `textContent`.
+  ⚠️ TOUS SES MOTS SONT ICI, écrits une fois dans ExecutionConfirmation : le titre, les libellés, les
+  boutons, et les deux avertissements. Seules les valeurs sont vides au chargement ; le module y verse
+  celles du récapitulatif, déjà en libellés — « — » compris —, par `textContent`.
+
+  ⚠️ L'AVERTISSEMENT EST L'UNE DE CES VALEURS, et non un mot du gabarit : il se décide sur le canal du
+  droit — l'adresse, ou le bus dont « Terminée » ne dit plus que le droit a été appliqué (ADR-0028) —,
+  que seule la lecture de l'instant connaît. Ses deux phrases sont écrites sur le serveur comme les
+  autres mots de la modale ; le script recopie celle du canal, et n'en compose aucune.
 
   ⚠️ UNE DEMANDE DEVENUE NON EXÉCUTABLE DEPUIS LE CHARGEMENT LE DIT DÈS L'OUVERTURE : le bandeau porte
   le motif que le serveur a rendu, et « Exécuter » est éteint. Le bandeau est vide et caché sinon.
@@ -593,7 +598,7 @@
     <dd data-summary-field="exercise"></dd>
   </dl>
 
-  <p id="execute-request-warning">@ExecutionConfirmation.Warning</p>
+  <p id="execute-request-warning" data-summary-field="warning"></p>
 
   <p class="modal-failure" role="alert" data-blocked hidden
      data-unanswered="@ExecutionConfirmation.Unanswered"></p>
