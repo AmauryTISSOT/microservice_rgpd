@@ -19,16 +19,26 @@ autre méthode rend `405`, ce que le routage fait de lui-même.
 Deux paramètres de l'adresse simulent un échec ou une attente, droit par droit, pour le seul appel
 qui les porte : `status` force le code de réponse, `delay_ms` remplace `MOCK_DELAY_MS`. Une valeur
 illisible rend `400` sur-le-champ.
+
+Le mock est aussi la cible de l'**autre canal d'exercice**, le routage RabbitMQ (ADR-0027) : quand
+l'environnement lui dit où joindre le broker, il consomme `rgpd.rights` en plus de ses routes HTTP.
+Ce consommateur vit dans `consumer`, et ce qu'il journalise dans `rights_journal`.
 """
 
 from __future__ import annotations
 
 import asyncio
-import os
 import re
+import sys
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+
+from mock_host.consumer import BrokerConnection, connection_from_environment, consume
+from mock_host.environment import int_setting
+from mock_host.output import say
+from mock_host.rights_journal import RightsJournal
 
 #: Le délai simulé quand `MOCK_DELAY_MS` est absente : assez long pour qu'une attente se voie à
 #: l'écran, assez court pour ne pas lasser une démonstration.
@@ -53,26 +63,27 @@ BODILESS_STATUS_CODES = frozenset({204, 304})
 
 def delay_ms_from_environment() -> int:
     """Lit `MOCK_DELAY_MS`. Une valeur illisible arrête le démarrage plutôt que de passer pour zéro."""
-    raw = os.environ.get("MOCK_DELAY_MS", "").strip()
-
-    if not raw:
-        return DEFAULT_DELAY_MS
-
-    try:
-        delay_ms = int(raw)
-    except ValueError:
-        raise ValueError(f"MOCK_DELAY_MS vaut « {raw} », qui n'est pas un nombre entier de millisecondes.") from None
-
-    if delay_ms < 0:
-        raise ValueError(f"MOCK_DELAY_MS vaut « {raw} » : un délai ne peut pas être négatif.")
-
-    return delay_ms
+    return int_setting(
+        "MOCK_DELAY_MS",
+        default=DEFAULT_DELAY_MS,
+        minimum=0,
+        maximum=sys.maxsize,
+        what="un nombre entier de millisecondes positif ou nul",
+    )
 
 
 def create_app(delay_ms: int | None = None) -> FastAPI:
     """Construit le mock. Sans délai explicite, il est lu dans l'environnement."""
     delay_seconds = (delay_ms_from_environment() if delay_ms is None else delay_ms) / 1_000
-    app = FastAPI(title="mock-host", openapi_url=None, docs_url=None, redoc_url=None)
+    # Lue au plus tôt : un réglage de broker illisible arrête le démarrage, comme `MOCK_DELAY_MS`.
+    broker = connection_from_environment()
+    app = FastAPI(
+        title="mock-host",
+        openapi_url=None,
+        docs_url=None,
+        redoc_url=None,
+        lifespan=_lifespan_consuming(broker, delay_seconds),
+    )
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -90,6 +101,36 @@ def create_app(delay_ms: int | None = None) -> FastAPI:
     return app
 
 
+def _lifespan_consuming(broker: BrokerConnection | None, handling_seconds: float):
+    """Le consommateur, pour la durée de vie de l'application — quand un broker est déclaré.
+
+    ⚠️ **Aucune attente du broker au démarrage** : la tâche est lancée et l'application répond
+    aussitôt sur ses routes HTTP. Broker éteint, `connect_robust` réessaie en fond, et le mock passe
+    « healthy » quand même — le pendant, côté mock, de l'absence de `WaitFor` dans l'AppHost.
+
+    ⚠️ **Rien n'est consommé quand rien n'est déclaré** : sans hôte, le mock est exactement celui
+    d'avant, et la suite de tests n'ouvre aucune socket.
+    """
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if broker is None:
+            yield
+            return
+
+        consumer = asyncio.create_task(consume(broker, RightsJournal(), handling_seconds))
+        try:
+            yield
+        finally:
+            consumer.cancel()
+            # L'annulation est la façon normale de l'arrêter : elle n'a rien à rapporter. Elle est
+            # aussi la **seule** façon dont `consume` se termine — il retente tout le reste.
+            with suppress(asyncio.CancelledError):
+                await consumer
+
+    return lifespan
+
+
 def _right_endpoint(success_status_code: int, default_delay_seconds: float):
     async def endpoint(request: Request) -> Response:
         try:
@@ -105,12 +146,7 @@ def _right_endpoint(success_status_code: int, default_delay_seconds: float):
 
         delay_seconds = default_delay_seconds if delay_ms is None else delay_ms / 1_000
         body = await request.body()
-        # Sur la sortie standard, et non par `logging` : uvicorn écrit ses journaux sur l'erreur
-        # standard, et c'est la sortie standard que le dashboard Aspire présente comme telle.
-        print(
-            f"{request.method} {request.url.path} {body.decode('utf-8', errors='replace')}",
-            flush=True,
-        )
+        say(f"{request.method} {request.url.path} {body.decode('utf-8', errors='replace')}")
 
         if delay_seconds > 0:
             await asyncio.sleep(delay_seconds)
