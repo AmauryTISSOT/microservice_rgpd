@@ -115,12 +115,9 @@ public class ExecutionAttemptTests
     ExecutionAttempt.Of(request, channel, call).Id.ShouldNotBe(ExecutionAttempt.Of(request, channel, call).Id);
   }
 
-  /// <summary>
-  /// <b>Un routage s'écrit en toutes lettres</b> : ses deux valeurs, nommées, et aucun statut HTTP —
-  /// une publication n'en rend pas (ADR-0028).
-  /// </summary>
+  /// <summary><b>Un routage s'écrit en toutes lettres</b> : ses deux valeurs, nommées (ADR-0028).</summary>
   [Fact]
-  public void WritesARabbitMqRoutingInFullWordsAndNoHttpStatus()
+  public void WritesARabbitMqRoutingInFullWords()
   {
     var attempt = ExecutionAttempt.Of(
       ARequest(),
@@ -128,10 +125,13 @@ public class ExecutionAttemptTests
       HostSystemCall.Unreachable(StartedAt, TimeSpan.FromMilliseconds(12)));
 
     attempt.Exercise.ShouldBe("exchange rgpd.rights, routing key rights.erasure");
-    attempt.HttpStatus.ShouldBeNull();
   }
 
-  /// <summary>Un succès non enregistré dit lui aussi le routage par lequel la remise est partie.</summary>
+  /// <summary>
+  /// Un succès non enregistré dit lui aussi le routage par lequel la remise est partie. ⚠️ La remise
+  /// est ici une réponse HTTP faute d'aboutissement propre au bus : celui-ci arrive avec l'adaptateur
+  /// qui publie (ADR-0028), et le statut suivra son canal.
+  /// </summary>
   [Fact]
   public void WritesTheRoutingOfASuccessThatCouldNotBeRecorded()
   {

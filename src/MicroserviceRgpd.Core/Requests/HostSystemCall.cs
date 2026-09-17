@@ -39,7 +39,10 @@ public sealed record HostSystemCall
   /// <summary>Ce que la remise a donné.</summary>
   public ExecutionOutcome Outcome { get; }
 
-  /// <summary>Le statut HTTP de la réponse, ou <c>null</c> quand le système hôte n'a pas répondu.</summary>
+  /// <summary>
+  /// Le statut HTTP de la réponse, ou <c>null</c> quand le système hôte n'a pas répondu — et sur toute
+  /// remise qui n'est pas un appel HTTP.
+  /// </summary>
   public int? StatusCode { get; }
 
   /// <summary>L'instant où la remise est partie, en UTC.</summary>

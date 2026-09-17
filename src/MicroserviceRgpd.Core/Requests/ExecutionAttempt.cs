@@ -1,4 +1,3 @@
-using System.Globalization;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.SharedKernel;
 
@@ -73,10 +72,10 @@ public sealed class ExecutionAttempt : IAggregateRoot
   /// </summary>
   public string Exercise { get; private set; }
 
-  /// <summary>L'instant où l'appel est parti, en UTC.</summary>
+  /// <summary>L'instant où la remise est partie, en UTC.</summary>
   public DateTimeOffset StartedAt { get; private set; }
 
-  /// <summary>Le temps qu'a pris l'appel.</summary>
+  /// <summary>Le temps qu'a pris la remise.</summary>
   public TimeSpan Duration { get; private set; }
 
   /// <summary>Ce que la tentative a donné.</summary>
@@ -146,9 +145,7 @@ public sealed class ExecutionAttempt : IAggregateRoot
   private static string ExerciseOf(ExerciseChannel channel) => channel switch
   {
     ExerciseChannel.HttpEndpoint http => new Uri(http.Address.Value, UriKind.Absolute).GetLeftPart(UriPartial.Path),
-    ExerciseChannel.RabbitMq rabbit => string.Create(
-      CultureInfo.InvariantCulture,
-      $"exchange {rabbit.Routing.Exchange.Value}, routing key {rabbit.Routing.RoutingKey.Value}"),
+    ExerciseChannel.RabbitMq rabbit => rabbit.Routing.InFullWords(),
 
     // « Non configuré », le troisième et dernier cas : les motifs de blocage l'écartent avant toute remise.
     _ => throw new ArgumentException("Un droit non configuré ne s'exerce pas, et ne se journalise pas.", nameof(channel)),

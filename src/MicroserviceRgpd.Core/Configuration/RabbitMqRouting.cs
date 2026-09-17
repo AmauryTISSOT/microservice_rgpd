@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace MicroserviceRgpd.Core.Configuration;
 
 /// <summary>
@@ -23,4 +25,17 @@ namespace MicroserviceRgpd.Core.Configuration;
 /// </remarks>
 /// <param name="Exchange">L'exchange sur lequel publier.</param>
 /// <param name="RoutingKey">La routing key avec laquelle publier.</param>
-public sealed record RabbitMqRouting(ExchangeName Exchange, RoutingKey RoutingKey);
+public sealed record RabbitMqRouting(ExchangeName Exchange, RoutingKey RoutingKey)
+{
+  /// <summary>
+  /// Le routage <b>en toutes lettres</b> : ses deux valeurs, nommées — « exchange rgpd.rights,
+  /// routing key rights.erasure ».
+  /// </summary>
+  /// <remarks>
+  /// La phrase est écrite <b>ici et nulle part ailleurs</b> : le récapitulatif de la modale la montre
+  /// à l'<c>Operator</c>, le journal d'exécution l'écrit comme exercice, et les deux disent le même
+  /// canal avec les mêmes mots.
+  /// </remarks>
+  public string InFullWords() =>
+    string.Create(CultureInfo.InvariantCulture, $"exchange {Exchange.Value}, routing key {RoutingKey.Value}");
+}

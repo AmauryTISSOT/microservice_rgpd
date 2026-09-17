@@ -26,7 +26,7 @@ public class ExecutionExerciseTests : IAsyncLifetime
 {
   private const string TheExerciseRenaming = "20260917152612_RenameCalledUrlToExercise";
 
-  private const string TheCalledAddress = "https://brocanto.example.fr/rgpd/effacement";
+  private const string TheExercisedAddress = "https://brocanto.example.fr/rgpd/effacement";
 
   private static readonly Guid AnAttemptOfTheDayBefore = new("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
 
@@ -95,7 +95,7 @@ public class ExecutionExerciseTests : IAsyncLifetime
     var exercises = await dbContext.Database.SqlQueryRaw<string>(
       """SELECT exercise AS "Value" FROM execution_attempts""").ToListAsync();
 
-    exercises.ShouldBe([TheCalledAddress]);
+    exercises.ShouldBe([TheExercisedAddress]);
   }
 
   /// <summary>Une tentative, écrite avec les colonnes de sa date.</summary>
@@ -107,7 +107,7 @@ public class ExecutionExerciseTests : IAsyncLifetime
         (id, data_subject_request_id, data_subject_right, called_url, started_at, duration, outcome,
          http_status, created_by)
       VALUES
-        ({AnAttemptOfTheDayBefore}, {ARequestOfTheDayBefore}, 'Erasure', {TheCalledAddress},
+        ({AnAttemptOfTheDayBefore}, {ARequestOfTheDayBefore}, 'Erasure', {TheExercisedAddress},
          TIMESTAMPTZ '2026-09-16 08:00:00+00', INTERVAL '420 milliseconds', 'Succeeded', 204,
          'operator');
       """);
