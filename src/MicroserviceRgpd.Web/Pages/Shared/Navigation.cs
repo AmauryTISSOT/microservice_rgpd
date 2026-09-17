@@ -139,8 +139,9 @@ internal static class Navigation
       "Paramétrage",
       "Paramétrage du microservice RGPD",
       "/parametrage",
-      "Vous y associez à chacun des six droits RGPD l'adresse à laquelle le service l'exercera. Un " +
-      "droit sans adresse reste « non configuré », et rien ne vous oblige à les renseigner tous."),
+      "Vous y associez à chacun des six droits RGPD le canal par lequel le service l'exercera : une " +
+      "adresse HTTP, ou un routage RabbitMQ. Un droit sans l'un ni l'autre reste « non configuré », " +
+      "et rien ne vous oblige à les renseigner tous."),
     new(
       "Détection des données personnelles",
       "Détection des données personnelles",

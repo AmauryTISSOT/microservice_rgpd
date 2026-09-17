@@ -92,9 +92,14 @@
   var exchangeField = $"exchange-{right.Right.Name}";
   var routingKeyField = $"routing-key-{right.Right.Name}";
 
-  @* Cette page ne montre que l'espèce qu'elle configure : un droit réglé sur une adresse HTTP n'a
-     pas de routage à afficher ici (ADR-0027). *@
   var routing = right.Channel is ExerciseChannel.RabbitMq rabbitMq ? rabbitMq.Routing : null;
+
+  @*
+    LE RÉGLAGE DE L'AUTRE FACE, LU ICI. Cette page ne configure que le routage, mais elle DIT
+    l'adresse d'un droit réglé en HTTP : enregistrer un routage la remplacerait (ADR-0027), et un
+    écran qui tairait ce qu'un geste détruit ferait détruire à l'aveugle.
+  *@
+  var address = right.Channel is ExerciseChannel.HttpEndpoint http ? http.Address.Value : null;
 
   <div class="right">
     <h2>@right.Right.FrenchLabel</h2>
@@ -110,7 +115,18 @@
         <dt>Routing key</dt>
         <dd>@routing.RoutingKey.Value</dd>
       }
-      else if (!right.IsConfigured)
+      else if (address is not null)
+      {
+        @*
+          ⚠️ UN DROIT RÉGLÉ EN HTTP N'EST PAS UNE ABSENCE, et il ne prend donc pas l'encre pâle de
+          `.none` : il est configuré, sur l'autre face. On lit ici l'adresse elle-même, et non une
+          périphrase — c'est ELLE que l'enregistrement d'un routage remplacerait, et on la relit avant
+          de la perdre.
+        *@
+        <dt>Adresse d'exercice</dt>
+        <dd>@address</dd>
+      }
+      else
       {
         @*
           ⚠️ « NON CONFIGURÉ » NE SE DIT QUE D'UN DROIT SANS ADRESSE NI ROUTAGE, et c'est ce qui garde
@@ -119,17 +135,6 @@
         *@
         <dt>Routage d'exercice</dt>
         <dd><span class="none">non configuré</span></dd>
-      }
-      else
-      {
-        @*
-          ⚠️ UN DROIT RÉGLÉ EN HTTP N'EST PAS UNE ABSENCE, et il ne prend donc pas l'encre pâle de
-          `.none` : il est configuré, sur l'autre face. Ce que cette face en dit s'arrête là — MONTRER
-          l'adresse et avertir qu'un enregistrement ici la remplacerait vient au ticket de
-          l'avertissement.
-        *@
-        <dt>Routage d'exercice</dt>
-        <dd>réglé sur la configuration HTTP</dd>
       }
     </dl>
 
@@ -170,13 +175,28 @@
             RefusalOf(refused, routingKeyName));
         }
       </fieldset>
+
+      @*
+        ⚠️ L'AVERTISSEMENT PRÉCÈDE LE BOUTON, et il NOMME le réglage qui sera remplacé. Lu après, il
+        aurait prévenu d'un geste déjà fait ; sans le nom du réglage, il aurait averti sans dire de
+        quoi. Il ne paraît que pour un droit réglé sur l'autre face : un droit « non configuré » n'a
+        rien à perdre, et un droit déjà routé ne remplace que le sien.
+      *@
+      @if (address is not null)
+      {
+        <p class="caveat replacement">
+          Ce droit porte déjà une adresse d'exercice, sur la face « Configuration HTTP ».
+          Enregistrer un routage ici remplacera cette adresse : un droit ne porte qu'un seul canal.
+        </p>
+      }
+
       <button type="submit" class="primary">Enregistrer</button>
     </form>
 
     @*
-      Effacer n'est offert qu'à un droit dont cette page montre le canal : un droit « non configuré »
-      n'a rien à oublier, et un droit réglé en HTTP n'a pas à voir son réglage détruit depuis une face
-      qui ne le montre pas. Sa propre form, qui n'envoie que le droit — pas les champs voisins, qu'on
+      Effacer n'est offert qu'à un droit que cette page CONFIGURE : un droit « non configuré » n'a
+      rien à oublier, et un droit réglé en HTTP — dont cette page montre l'adresse sans l'écrire —
+      n'a pas à voir son réglage détruit par le bouton d'une face qui ne le configure pas. Sa propre form, qui n'envoie que le droit — pas les champs voisins, qu'on
       aurait pu retoucher sans vouloir les enregistrer. Le bouton n'est pas « destructif » : un droit
       sans routage est un état normal, et le routage se ressaisit.
     *@

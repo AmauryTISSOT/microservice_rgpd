@@ -15,14 +15,14 @@
 <partial name="_ParametrageTabs" model="@ParametrageFaces.Http" />
 
 @*
-  La phrase dit ce que l'écran est : la configuration, droit par droit, de l'adresse à laquelle le
-  service exercera chacun des six droits RGPD. Un droit sans adresse est « non configuré », et c'est
-  l'état d'un service qu'on vient d'installer.
+  La phrase dit ce que cette face est : la configuration, droit par droit, de l'adresse à laquelle le
+  service exercera chacun des six droits RGPD. Un droit sans adresse NI ROUTAGE est « non configuré »,
+  et c'est l'état d'un service qu'on vient d'installer — le mot garde le même sens sur les deux faces.
 *@
 <p class="caveat">
   Chacun des six droits ouverts par le RGPD porte l'adresse à laquelle le service l'exercera. Un
-  droit sans adresse est <strong>« non configuré »</strong> : c'est un état normal, et rien ne vous
-  oblige à les renseigner tous.
+  droit sans adresse ni routage est <strong>« non configuré »</strong> : c'est un état normal, et
+  rien ne vous oblige à les renseigner tous.
 </p>
 
 @if (!ViewData.ModelState.IsValid && Model.Refused is null)
@@ -35,9 +35,14 @@
 {
   var refused = right.Right == Model.Refused;
   var field = $"url-{right.Right.Name}";
-  @* Cette page ne montre que l'espèce qu'elle configure : un droit réglé sur un routage RabbitMQ
-     n'a pas d'adresse à afficher ici (ADR-0027). *@
   var address = right.Channel is ExerciseChannel.HttpEndpoint http ? http.Address.Value : null;
+
+  @*
+    LE RÉGLAGE DE L'AUTRE FACE, LU ICI. Cette page ne configure que l'adresse, mais elle DIT le
+    routage d'un droit réglé sur RabbitMQ : enregistrer une adresse le remplacerait (ADR-0027), et un
+    écran qui tairait ce qu'un geste détruit ferait détruire à l'aveugle.
+  *@
+  var routing = right.Channel is ExerciseChannel.RabbitMq rabbitMq ? rabbitMq.Routing : null;
 
   <div class="right">
     <h2>@right.Right.FrenchLabel</h2>
@@ -45,17 +50,34 @@
       <dt>Article</dt>
       <dd>Article @right.Right.Article du RGPD</dd>
 
-      <dt>Adresse d'exercice</dt>
-      <dd>
-        @if (address is not null)
-        {
-          @address
-        }
-        else
-        {
-          <span class="none">non configuré</span>
-        }
-      </dd>
+      @if (address is not null)
+      {
+        <dt>Adresse d'exercice</dt>
+        <dd>@address</dd>
+      }
+      else if (routing is not null)
+      {
+        @*
+          ⚠️ UN DROIT RÉGLÉ SUR RABBITMQ N'EST PAS UNE ABSENCE, et il ne prend donc pas l'encre pâle
+          de `.none` : il est configuré, sur l'autre face. On lit ici le routage lui-même — c'est LUI
+          que l'enregistrement d'une adresse remplacerait, et on le relit avant de le perdre.
+        *@
+        <dt>Exchange</dt>
+        <dd>@routing.Exchange.Value</dd>
+
+        <dt>Routing key</dt>
+        <dd>@routing.RoutingKey.Value</dd>
+      }
+      else
+      {
+        @*
+          ⚠️ « NON CONFIGURÉ » NE SE DIT QUE D'UN DROIT SANS ADRESSE NI ROUTAGE, et c'est ce qui garde
+          au mot son sens sur les deux faces : un droit réglé sur RabbitMQ est configuré, et l'appeler
+          « non configuré » ici ferait de cette face la seule du service qui mente sur son état.
+        *@
+        <dt>Adresse d'exercice</dt>
+        <dd><span class="none">non configuré</span></dd>
+      }
     </dl>
 
     @if (refused)
@@ -76,12 +98,28 @@
         <input type="text" inputmode="url" id="@field" name="Form.Url"
                value="@(refused ? Model.Form.Url : address)" maxlength="@EndpointUrl.MaxLength" />
       </p>
+
+      @*
+        ⚠️ L'AVERTISSEMENT PRÉCÈDE LE BOUTON, et il NOMME le réglage qui sera remplacé. Lu après, il
+        aurait prévenu d'un geste déjà fait ; sans le nom du réglage, il aurait averti sans dire de
+        quoi. Il ne paraît que pour un droit réglé sur l'autre face : un droit « non configuré » n'a
+        rien à perdre, et un droit déjà adressé ne remplace que le sien.
+      *@
+      @if (routing is not null)
+      {
+        <p class="caveat replacement">
+          Ce droit porte déjà un routage d'exercice, sur la face « Configuration RabbitMQ ».
+          Enregistrer une adresse ici remplacera ce routage : un droit ne porte qu'un seul canal.
+        </p>
+      }
+
       <button type="submit" class="primary">Enregistrer</button>
     </form>
 
     @*
-      Effacer n'est offert qu'à un droit dont cette page montre le canal : un droit « non configuré »
-      n'a rien à oublier. Sa propre form, qui n'envoie que le droit — pas l'adresse du champ voisin,
+      Effacer n'est offert qu'à un droit que cette page CONFIGURE : un droit « non configuré » n'a
+      rien à oublier, et un droit réglé sur RabbitMQ — dont cette page montre le routage sans
+      l'écrire — n'a pas à voir son réglage détruit par le bouton d'une face qui ne le configure pas. Sa propre form, qui n'envoie que le droit — pas l'adresse du champ voisin,
       qu'on aurait pu retoucher sans vouloir l'enregistrer. Le bouton n'est pas « destructif » : un
       droit sans adresse est un état normal, et l'adresse se ressaisit.
     *@

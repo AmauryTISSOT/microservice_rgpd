@@ -97,9 +97,12 @@ _Avoid_ : manquant, incomplet, à compléter, vide, désactivé
 **Les deux faces du Paramétrage** :
 L'écran se tient sur **deux pages** reliées par des **onglets rendus par le serveur** : « Configuration
 HTTP » (`/parametrage`) et « Configuration RabbitMQ » (`/parametrage/rabbitmq`). Elles portent le
-**même titre** et se lisent comme un seul écran à deux faces. Chaque face ne montre que **l'espèce de
-canal qu'elle configure** ; « non configuré » ne se dit que d'un droit **sans adresse ni routage**, et
-le mot garde donc le même sens sur les deux. Les onglets ne sont pas un point d'entrée : le panneau
+**même titre** et se lisent comme un seul écran à deux faces. Chaque face ne **configure** que son
+espèce de canal, mais les deux **racontent la même histoire** : un droit réglé sur l'autre canal y
+montre ce réglage, accompagné, **avant le bouton d'enregistrement**, de l'avertissement qui
+**nomme** ce qu'un enregistrement ici remplacerait. « Non configuré » ne se dit que d'un droit
+**sans adresse ni routage**, et le mot garde donc le même sens sur les deux. Les onglets ne sont pas
+un point d'entrée : le panneau
 latéral garde ses quatre entrées, et « Paramétrage » y reste marqué courant sur les deux faces.
 _Avoid_ : sous-écran, cinquième entrée, onglet JavaScript
 
