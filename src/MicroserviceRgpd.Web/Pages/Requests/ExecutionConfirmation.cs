@@ -73,9 +73,6 @@ public sealed record ExecutionConfirmation(
   /// <summary>Ce qu'affiche une valeur absente : une absence, pas une cible restée vide.</summary>
   private const string Absent = "—";
 
-  /// <summary>Un routage RabbitMQ en toutes lettres : ses deux valeurs, nommées.</summary>
-  private const string RoutingFormat = "exchange {0}, routing key {1}";
-
   /// <summary>Le récapitulatif en libellés.</summary>
   /// <exception cref="ArgumentNullException"><paramref name="summary"/> est absent.</exception>
   public static ExecutionConfirmation Of(DataSubjectRequestExecutionSummary summary)
@@ -98,11 +95,7 @@ public sealed record ExecutionConfirmation(
   private static string ExerciseOf(ExerciseChannel channel) => channel switch
   {
     ExerciseChannel.HttpEndpoint http => http.Address.Value,
-    ExerciseChannel.RabbitMq rabbit => string.Format(
-      CultureInfo.InvariantCulture,
-      RoutingFormat,
-      rabbit.Routing.Exchange.Value,
-      rabbit.Routing.RoutingKey.Value),
+    ExerciseChannel.RabbitMq rabbit => rabbit.Routing.InFullWords(),
 
     // « Non configuré », le troisième et dernier cas : la hiérarchie est fermée.
     _ => Absent,

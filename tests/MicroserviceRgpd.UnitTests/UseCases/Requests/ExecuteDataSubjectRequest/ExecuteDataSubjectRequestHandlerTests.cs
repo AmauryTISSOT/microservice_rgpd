@@ -71,7 +71,7 @@ public class ExecuteDataSubjectRequestHandlerTests
         attempt.DataSubjectRequestId == request.Id
         && attempt.Outcome == ExecutionOutcome.Succeeded
         && attempt.HttpStatus == 204
-        && attempt.CalledUrl == "https://brocanto.example.fr/rgpd/acces"),
+        && attempt.Exercise == "https://brocanto.example.fr/rgpd/acces"),
       Arg.Any<CancellationToken>());
 
     // ⚠️ La demande n'est pas enregistrée à part : c'est l'ajout de la tentative qui l'emporte, dans
