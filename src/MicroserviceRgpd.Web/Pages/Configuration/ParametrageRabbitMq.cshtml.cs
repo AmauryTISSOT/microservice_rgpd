@@ -36,43 +36,30 @@ namespace MicroserviceRgpd.Web.Pages.Configuration;
 /// </para>
 /// </remarks>
 /// <param name="mediator">Le médiateur par lequel la face lit et écrit le Paramétrage.</param>
-/// <param name="configuration">
-/// La configuration du déploiement, lue <b>au rendu</b> pour la seule présence de la clé de
-/// connexion. Elle est injectée plutôt que lue par un type d'options : un type d'options viendra
-/// avec l'US de publication, quand port, vhost et identifiants s'ajouteront à l'hôte.
+/// <param name="broker">
+/// L'état de la connexion du déploiement au broker, <b>lu au rendu</b>. La face ne relit pas la
+/// configuration : elle pose la question sous le nom qu'elle porte au domaine, et la réponse est
+/// celle que tous les lecteurs obtiennent (ADR-0028).
 /// </param>
-public class ParametrageRabbitMqModel(IMediator mediator, IConfiguration configuration)
+public class ParametrageRabbitMqModel(IMediator mediator, IBrokerConnectionState broker)
   : ParametrageFaceModel<RightRabbitMqForm>(mediator)
 {
-  /// <summary>
-  /// La clé de déploiement dont la <b>seule présence</b> dit que ce déploiement a une connexion
-  /// RabbitMQ. Elle est publique pour que les tests la <b>citent</b> plutôt que de la recopier :
-  /// recopiée, elle aurait divergé, et le bandeau se serait mis à parler d'une clé que personne ne
-  /// pose.
-  /// </summary>
-  /// <remarks>
-  /// ⚠️ <b>Elle n'est validée nulle part au démarrage.</b> Son absence n'est pas une erreur de
-  /// configuration : un routage doit rester enregistrable avant que le bus existe (ADR-0027). Le
-  /// port, le vhost et les identifiants ne sont pas de ce ticket — ils viendront avec la
-  /// publication, et un type d'options avec eux.
-  /// </remarks>
-  public const string BrokerHostNameKey = "RabbitMq:HostName";
-
   /// <summary>
   /// Le déploiement <b>n'a aucune connexion RabbitMQ configurée</b> : rien ne partira sur le bus,
   /// quels que soient les routages posés ici.
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Aucun test réseau.</b> La décision se prend sur la seule présence de la clé, jamais sur
+  /// ⚠️ <b>Aucun test réseau.</b> La décision se prend sur ce que le déploiement déclare, jamais sur
   /// un broker joignable : l'affichage de cette page ne dépend ainsi jamais de la disponibilité du
   /// bus (ADR-0027). Le prix en est assumé — une clé posée et un broker éteint n'avertissent de
   /// rien.
   /// <para>
-  /// Une clé vide ou faite d'espaces vaut une clé absente : un hôte de broker qui ne nomme aucune
-  /// machine ne connecte rien, et avertir l'intégrateur reste alors la vérité.
+  /// ⚠️ <b>Le bandeau ne juge plus lui-même.</b> Ce qu'une clé absente, vide ou faite d'espaces
+  /// signifie est écrit une seule fois, sur la <c>BrokerConnection</c> du noyau : le bandeau et le
+  /// motif de blocage d'une demande routée lisent ainsi la même vérité (ADR-0028).
   /// </para>
   /// </remarks>
-  public bool LacksABrokerConnection => string.IsNullOrWhiteSpace(configuration[BrokerHostNameKey]);
+  public bool LacksABrokerConnection => broker.Current is BrokerConnection.Absent;
 
   /// <summary>
   /// Le bandeau <b>concerne-t-il l'intégrateur</b> ? Il ne paraît que si le déploiement n'a pas de

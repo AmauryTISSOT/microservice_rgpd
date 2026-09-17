@@ -1,6 +1,7 @@
 @page "/parametrage/rabbitmq"
 @model ParametrageRabbitMqModel
 @using MicroserviceRgpd.Core.Configuration
+@using MicroserviceRgpd.Infrastructure.Configuration
 @{
   ViewData["Title"] = ParametrageFaces.ScreenName;
 
@@ -75,7 +76,7 @@
 
   ⚠️ IL NOMME LA CLÉ, et c'est ce qui le rend actionnable : dire « aucune connexion configurée »
   sans dire OÙ la configurer aurait renvoyé l'intégrateur à la documentation. Elle se lit sur la
-  constante que le page model interroge, jamais recopiée ici.
+  constante de la connexion déclarée au déploiement, jamais recopiée ici.
 
   ⚠️ IL NE PARAÎT JAMAIS SUR LA FACE HTTP : un avertissement RabbitMQ n'a rien à dire d'un écran qui
   ne parle pas de RabbitMQ. C'est pour cela qu'il vit dans CE gabarit et non dans le layout.
@@ -90,8 +91,8 @@
     </p>
     <p>
       La connexion se pose dans la configuration du déploiement, sous la clé
-      <code>@ParametrageRabbitMqModel.BrokerHostNameKey</code> — jamais depuis cet écran, qui ne
-      détient aucun secret.
+      <code>@RabbitMqOptions.HostNameKey</code> — jamais depuis cet écran, qui ne détient aucun
+      secret.
     </p>
   </div>
 }
