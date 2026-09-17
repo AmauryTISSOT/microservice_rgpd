@@ -23,7 +23,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// refusée n'a souvent pas de message qui la distinguerait des autres.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestExecutionWebCollection.Name)]
 public class RequestRefusal(CustomWebApplicationFactory<Program> factory)
 {
   private readonly RequestSurface _surface = new(factory);

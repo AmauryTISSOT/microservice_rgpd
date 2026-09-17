@@ -29,7 +29,7 @@ namespace MicroserviceRgpd.FunctionalTests.Qualifications;
 /// taille. Ce qui est gardé est ce que l'écran <b>dit</b> et où il <b>mène</b>.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(QualificationsWebCollection.Name)]
 public class QualificationScreen
 {
   private readonly CustomWebApplicationFactory<Program> _factory;

@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.FunctionalTests.Platform;
 /// se lirait encore comme un contrat.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(SettingsWebCollection.Name)]
 public class NoRetiredBoardSurfaceRemains(CustomWebApplicationFactory<Program> factory)
 {
   private readonly HttpClient _client = factory.CreateClient(

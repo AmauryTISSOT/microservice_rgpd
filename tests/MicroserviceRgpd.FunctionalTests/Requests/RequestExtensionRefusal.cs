@@ -25,7 +25,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// saisie refusée laisse la demande non prolongée, date limite comprise.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestExecutionWebCollection.Name)]
 public class RequestExtensionRefusal(CustomWebApplicationFactory<Program> factory)
 {
   private readonly RequestSurface _surface = new(factory);

@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.FunctionalTests.Layout;
 /// visuel se vérifie à l'œil ; c'est une conséquence assumée.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(SettingsWebCollection.Name)]
 public class SharedLayout(CustomWebApplicationFactory<Program> factory)
 {
   private readonly LayoutSurface _layout = new(factory);

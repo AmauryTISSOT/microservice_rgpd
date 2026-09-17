@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.FunctionalTests.Layout;
 /// <b>mène</b> ; le survol, le focus et la réorganisation en écran étroit se vérifient à l'œil.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(SettingsWebCollection.Name)]
 public class Doorstep(CustomWebApplicationFactory<Program> factory)
 {
   private readonly LayoutSurface _layout = new(factory);

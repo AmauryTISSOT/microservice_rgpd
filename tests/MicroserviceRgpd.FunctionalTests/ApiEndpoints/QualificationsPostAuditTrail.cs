@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.FunctionalTests.ApiEndpoints;
 /// echoue rend <c>500</c>, jamais <c>200</c> degrade.
 /// </para>
 /// </summary>
-[Collection(WebCollection.Name)]
+[Collection(QualificationsWebCollection.Name)]
 public class QualificationsPostAuditTrail
 {
   private readonly CustomWebApplicationFactory<Program> _factory;

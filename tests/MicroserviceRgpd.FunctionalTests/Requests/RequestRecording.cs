@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// partagée par toute la collection, et ne se vide pas entre deux tests.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestsWebCollection.Name)]
 public class RequestRecording(CustomWebApplicationFactory<Program> factory)
 {
   private readonly RequestSurface _surface = new(factory);

@@ -33,7 +33,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// d'installer —, jamais une assertion : tout ce qui est vérifié l'est par la frontière HTTP.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(SettingsWebCollection.Name)]
 public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : IAsyncLifetime
 {
   private const string Parametrage = "/parametrage";

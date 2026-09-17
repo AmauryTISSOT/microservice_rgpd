@@ -31,7 +31,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// écrans à la fois par <see cref="SharedLayout"/>.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestsWebCollection.Name)]
 public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
 {
   private const string Board = "/demandes";

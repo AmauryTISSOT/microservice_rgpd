@@ -35,7 +35,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// Paramétrage est un singleton, et la base est partagée par toute la collection.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(SettingsWebCollection.Name)]
 public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> factory) : IAsyncLifetime
 {
   private const string Http = "/parametrage";

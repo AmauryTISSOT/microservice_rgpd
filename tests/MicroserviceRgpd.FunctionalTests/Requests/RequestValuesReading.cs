@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// trace n'est laissée. La base étant partagée sans purge, chaque demande garde son message unique
 /// pour clé de retrouvage.
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestsWebCollection.Name)]
 public class RequestValuesReading(CustomWebApplicationFactory<Program> factory)
 {
   private readonly RequestSurface _surface = new(factory);

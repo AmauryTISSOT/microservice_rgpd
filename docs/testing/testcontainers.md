@@ -25,7 +25,7 @@ choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de 
 | --- | --- | --- | --- |
 | `UnitTests` | **aucun** | — | domaine, handlers, adaptateurs HTTP moqués |
 | `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **ce que seule une vraie base prouve** : la trace d'audit, et les colonnes du Paramétrage |
-| `FunctionalTests` | un par fabrique d'application | `Migrate()` | l'endpoint public de bout en bout |
+| `FunctionalTests` | un par fabrique d'application, soit **un par collection** | `Migrate()` | l'endpoint public de bout en bout |
 | `BrowserTests` | **un par collection**, cinq en tout | `Migrate()` | un parcours d'écrans dans un vrai Chromium |
 | `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les cinq |
 
@@ -54,6 +54,12 @@ comptent les lignes de `data_subject_requests` dans le container partagé.
 `ConnectionStrings__DefaultConnection` — variable d'environnement, seul moyen de la fournir assez
 tôt, le `ConfigurationManager` de `Program` étant construit avant tout `ConfigureAppConfiguration`
 — puis applique `Migrate()`.
+
+Il y a **une fabrique par collection**, et la moitié d'entre elles portent une forme d'hôte à part —
+drapeau A2 allumé, LLM éteint, broker configuré ou injoignable. Les autres démarrent le câblage
+ordinaire, et sont **cinq** : voir `WebCollection.cs`, qui dit pourquoi. Comme dans la suite
+navigateur, chaque collection a **sa propre base**, ses tests y restent en série, et le découpage
+reste au **grain de la classe**.
 
 **Les deux moteurs de qualification y sont substitués**, sur le port `IQualificationEngine` du
 domaine. La trace d'audit, elle, **n'est pas substituée** : elle écrit dans le vrai PostgreSQL, et

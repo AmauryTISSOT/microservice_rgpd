@@ -8,7 +8,7 @@ namespace MicroserviceRgpd.FunctionalTests.Platform;
 /// RFC 9457, porteuse d'un <c>traceId</c>. Les codes rendus par la plateforme, avant que la
 /// moindre application ne soit atteinte, sont le cas le plus pur.
 /// </summary>
-[Collection(WebCollection.Name)]
+[Collection(SettingsWebCollection.Name)]
 public class ProblemDetailsErrorFormat(CustomWebApplicationFactory<Program> factory)
 {
   private readonly HttpClient _client = factory.CreateClient();

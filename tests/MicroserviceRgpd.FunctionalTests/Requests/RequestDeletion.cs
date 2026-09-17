@@ -12,7 +12,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// ⚠️ <b>La suppression ne laisse aucune trace</b> (ADR-0022) : ce qui se vérifie ici est que la
 /// ligne a quitté la table, pas qu'une autre l'a remplacée.
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestsWebCollection.Name)]
 public class RequestDeletion(CustomWebApplicationFactory<Program> factory)
 {
   private readonly RequestSurface _surface = new(factory);

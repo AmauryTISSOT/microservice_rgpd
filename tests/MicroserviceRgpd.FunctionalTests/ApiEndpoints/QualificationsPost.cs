@@ -17,7 +17,7 @@ namespace MicroserviceRgpd.FunctionalTests.ApiEndpoints;
 /// que quelqu'un l'ait décidé.
 /// </para>
 /// </summary>
-[Collection(WebCollection.Name)]
+[Collection(QualificationsWebCollection.Name)]
 public class QualificationsPost
 {
   private readonly CustomWebApplicationFactory<Program> factory;
