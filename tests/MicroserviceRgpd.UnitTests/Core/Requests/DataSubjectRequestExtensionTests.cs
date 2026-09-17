@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ardalis.Result;
 using MicroserviceRgpd.Core.Requests;
 
@@ -138,6 +139,98 @@ public class DataSubjectRequestExtensionTests
       ignoreOrder: true);
     request.Extended.ShouldBeFalse();
     request.ResponseDeadline.ShouldBe(new DateOnly(2026, 10, 10));
+  }
+
+  /// <summary>
+  /// <b>Un motif absent, blanc ou forgé est refusé sous le champ motif</b>, sous le message que le
+  /// serveur a écrit une seule fois. ⚠️ <b>Le choix fermé de l'écran ne suffit pas</b> : un envoi
+  /// forgé n'en vient pas, et le domaine revérifie — <c>Autre</c> n'est pas un motif.
+  /// </summary>
+  [Theory]
+  [InlineData(null)]
+  [InlineData("")]
+  [InlineData("   ")]
+  [InlineData("Autre")]
+  [InlineData("complexity")]
+  [InlineData("Complexité de la demande")]
+  [InlineData("0")]
+  public void RefusesAGroundThatIsNotOneOfTheTwo(string? ground)
+  {
+    var request = ARequest();
+
+    var result = request.Extend(AValidExtension() with { Ground = ground }, Today, Later);
+
+    RefusalsOf(result).ShouldBe(
+      [$"{DataSubjectRequestField.ExtensionGround} : {DataSubjectRequestMessages.ExtensionGroundMissing}"]);
+    request.Extended.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// <b>Une justification absente, vide ou blanche après élagage est refusée sous son champ</b> : le
+  /// texte qui dit le fait concret est obligatoire.
+  /// </summary>
+  [Theory]
+  [InlineData(null)]
+  [InlineData("")]
+  [InlineData("   ")]
+  [InlineData(" \t\n ")]
+  public void RefusesAJustificationThatSaysNothing(string? justification)
+  {
+    var request = ARequest();
+
+    var result = request.Extend(AValidExtension() with { Justification = justification }, Today, Later);
+
+    RefusalsOf(result).ShouldBe(
+      [$"{DataSubjectRequestField.ExtensionJustification} : {DataSubjectRequestMessages.ExtensionJustificationMissing}"]);
+    request.Extended.ShouldBeFalse();
+  }
+
+  /// <summary>
+  /// <b>Un caractère au-delà du plafond suffit</b> : deux mille un est refusé, deux mille passe. Le
+  /// domaine ne tronque rien, il refuse — et les bordures ne comptent pas, elles sont élaguées avant.
+  /// </summary>
+  [Fact]
+  public void RefusesAJustificationOverItsCeiling()
+  {
+    var request = ARequest();
+
+    var result = request.Extend(
+      AValidExtension() with { Justification = new string('j', ExtensionJustification.MaxLength + 1) },
+      Today,
+      Later);
+
+    RefusalsOf(result).ShouldBe(
+      [$"{DataSubjectRequestField.ExtensionJustification} : {DataSubjectRequestMessages.ExtensionJustificationTooLong}"]);
+    request.Extended.ShouldBeFalse();
+
+    request.Extend(
+      AValidExtension() with { Justification = $"  {new string('j', ExtensionJustification.MaxLength)}  " },
+      Today,
+      Later).IsSuccess.ShouldBeTrue("Une justification au plafond exact est refusée.");
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le plafond que la phrase dit en toutes lettres est celui de l'objet valeur</b> : « 2 000 »
+  /// n'est pas interpolé, et rien ne les tiendrait ensemble sans ce test.
+  /// </summary>
+  [Fact]
+  public void SaysTheCeilingItEnforces()
+  {
+    // Le plafond tel que la phrase l'écrit : les milliers séparés d'une espace, comme le français
+    // les écrit — et une espace ordinaire, celle que le message porte.
+    var written = ExtensionJustification.MaxLength
+      .ToString("#,##0", CultureInfo.InvariantCulture)
+      .Replace(",", " ", StringComparison.Ordinal);
+
+    DataSubjectRequestMessages.ExtensionJustificationTooLong.ShouldContain(written);
+  }
+
+  /// <summary>Les refus d'un résultat, sous la forme <c>champ : message</c>.</summary>
+  private static string[] RefusalsOf(Result result)
+  {
+    result.Status.ShouldBe(ResultStatus.Invalid);
+
+    return [.. result.ValidationErrors.Select(error => $"{error.Identifier} : {error.ErrorMessage}")];
   }
 
   /// <summary>Une demande valide, reçue le 10 septembre 2026 : sa date limite est le 10 octobre.</summary>

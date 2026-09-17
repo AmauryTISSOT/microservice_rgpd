@@ -356,6 +356,23 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
     ]));
   }
 
+  /// <summary>
+  /// Demande la prolongation de la demande <paramref name="id"/> avec <b>exactement</b> ces champs —
+  /// aucune saisie valide dessous. ⚠️ C'est ainsi qu'un champ <b>absent du corps</b> s'éprouve : posé
+  /// par-dessus une saisie valide, il ne manquerait jamais.
+  /// </summary>
+  internal async Task<HttpResponseMessage> ExtendExactlyAsync(Guid id, IReadOnlyDictionary<string, string> extension)
+  {
+    ArgumentNullException.ThrowIfNull(extension);
+
+    return await _client.PostAsync(Extend, new FormUrlEncodedContent(
+    [
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
+      new("id", id.ToString()),
+      .. extension,
+    ]));
+  }
+
   /// <summary>Une saisie de prolongation complète et valide.</summary>
   internal static Dictionary<string, string> AValidExtension() => new()
   {
