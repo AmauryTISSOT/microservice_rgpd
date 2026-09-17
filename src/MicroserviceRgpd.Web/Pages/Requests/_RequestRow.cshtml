@@ -5,8 +5,8 @@
   chargement ; la création la rendra pour la demande qu'elle vient d'enregistrer, que le script
   insérera à sa place. Une seule vue partielle : deux gabarits de ligne finiraient par diverger.
 
-  LA DERNIÈRE CELLULE PORTE LES QUATRE ACTIONS DE LA LIGNE, EN ICÔNES : la poubelle, le crayon,
-  l'œil, l'avion en papier. Chacune est nommée par son `aria-label` pour qui ne la voit pas, et
+  LA DERNIÈRE CELLULE PORTE LES CINQ ACTIONS DE LA LIGNE, EN ICÔNES : la poubelle, le crayon, la
+  flèche d'horloge, l'œil, l'avion en papier. Chacune est nommée par son `aria-label` pour qui ne la voit pas, et
   montre son libellé dans une infobulle au survol et au focus — un élément de la page, que le CSS
   montre, et non un `title`, que chaque navigateur rend à sa façon et à son délai. L'infobulle est
   `aria-hidden` : le nom accessible le dit déjà, un lecteur d'écran ne doit pas l'entendre deux
@@ -18,6 +18,10 @@
   sinon éteint comme le crayon, par `aria-disabled`, et son infobulle dit le premier motif de
   blocage, rendu par le serveur. Actif, son clic ouvre la confirmation d'exécution ; éteint, il
   n'ouvre rien.
+
+  LA FLÈCHE D'HORLOGE PROLONGE LE DÉLAI DE RÉPONSE (ADR-0029), ENTRE LE CRAYON ET L'ŒIL : le geste
+  porte sur la même demande que le crayon, et se lit avant les gestes qui la quittent — la consulter,
+  l'exécuter. Son clic ouvre la modale de prolongation, que le serveur a rendue fermée.
 
   L'ŒIL OUVRE LA FICHE DE LA DEMANDE, la lecture à l'écran de ce que le service en tient : un simple
   bouton, hors de tout formulaire, que le module reconnaît à son `data-action`, comme la poubelle et
@@ -53,7 +57,12 @@
   SIGNALEMENT, jamais la ligne : son nom canonique, que la feuille de style colore, et son libellé,
   écrit après la date. Le script ne le recalcule pas.
 
-  ⚠️ LA MENTION PORTE LE NOM CANONIQUE ELLE AUSSI, et ce n'est pas une redite : la cellule colore la
+  UNE DEMANDE PROLONGÉE LE DIT DANS LA MÊME CELLULE, APRÈS LA DATE ET APRÈS LE SIGNALEMENT : la
+  mention « Prolongée », un span de plus, et NON UNE DOUZIÈME COLONNE. Elle atteint ainsi la fiche par
+  le clonage des cellules, sans mécanisme. ⚠️ LA DATE QUI S'Y LIT RESTE LA DATE LIMITE DE RÉPONSE, qui
+  porte déjà les deux mois : la mention dit d'où elle vient, elle ne la remplace pas.
+
+  ⚠️ LA MENTION DU SIGNALEMENT PORTE LE NOM CANONIQUE ELLE AUSSI, et ce n'est pas une redite : la cellule colore la
   date entière ici, où la colonne est étroite ; la fiche, qui n'en reçoit que LES NŒUDS ENFANTS,
   n'aurait plus de quoi la signaler. Le nom est donc écrit là où il se lit de part et d'autre.
 
@@ -82,6 +91,7 @@
   [
     ("Supprimer la demande", "Supprimer la demande", "M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5", "delete", false),
     ("Modifier la demande", Model.ModificationTooltip, "M10.5 2.5l3 3L5.5 13.5H2.5v-3zM9 4l3 3", "edit", !Model.ModificationAllowed),
+    (RequestRow.ExtensionOffered, Model.ExtensionTooltip, "M8 4v4l2.5 2.5M8 1.5a6.5 6.5 0 1 1-6.13 8.66M1.5 4.5v3h3", "extend", !Model.ExtensionAllowed),
     ("Voir la fiche de la demande", "Voir la fiche de la demande", "M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8zM6 8a2 2 0 1 0 4 0a2 2 0 1 0-4 0", "view", false),
     (RequestRow.ExecutionOffered, Model.ExecutionTooltip, "M14.5 1.5L7 9M14.5 1.5l-4.5 13-3-5.5-5.5-3z", "execute", !Model.ExecutionAllowed),
   ];
@@ -101,7 +111,11 @@
   <td data-field="receivedOn">@Model.ReceivedOn</td>
   @if (Model.DeadlineSignal is { } signal)
   {
-    <td data-field="responseDeadline" data-deadline-signal="@signal.Name">@Model.ResponseDeadline <span data-deadline-signal="@signal.Name">@signal.Label</span></td>
+    <td data-field="responseDeadline" data-deadline-signal="@signal.Name">@Model.ResponseDeadline <span data-deadline-signal="@signal.Name">@signal.Label</span>@if (Model.ExtensionMention is { } signalledMention) {<text> </text><span class="extended">@signalledMention</span>}</td>
+  }
+  else if (Model.ExtensionMention is { } mention)
+  {
+    <td data-field="responseDeadline">@Model.ResponseDeadline <span class="extended">@mention</span></td>
   }
   else
   {

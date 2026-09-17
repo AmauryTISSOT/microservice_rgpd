@@ -2,8 +2,10 @@ using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.UseCases.Requests.DeleteDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
+using MicroserviceRgpd.UseCases.Requests.ExtendDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExecution;
+using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExtension;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestValues;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
@@ -18,7 +20,8 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// <summary>
 /// Le <b>tableau des demandes RGPD</b> : le nom de l'écran, le bouton « Créer une demande », le
 /// tableau de toutes les demandes enregistrées, la modale de création que le serveur rend fermée,
-/// avec son formulaire à ses valeurs par défaut, et la confirmation de suppression d'une demande.
+/// avec son formulaire à ses valeurs par défaut, la confirmation de suppression d'une demande et la
+/// modale de prolongation du délai de réponse.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -46,6 +49,13 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
       .Where(right => right != DataSubjectRight.OutOfScope)
       .OrderBy(right => right.Value),
   ];
+
+  /// <summary>
+  /// Les <b>deux</b> motifs de prolongation du règlement, dans l'ordre où la modale les propose.
+  /// ⚠️ Il n'y en a pas de troisième : l'article 12 §3 n'en ouvre pas d'autre (ADR-0029).
+  /// </summary>
+  public static IReadOnlyList<ExtensionGround> ExtensionGrounds { get; } =
+    [.. ExtensionGround.List.OrderBy(ground => ground.Value)];
 
   /// <summary>Les canaux d'arrivée, l'email d'abord : c'est l'origine par défaut.</summary>
   public static IReadOnlyList<Origin> Origins { get; } = [.. Origin.List.OrderBy(origin => origin.Value)];
@@ -140,6 +150,83 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
     Response.Headers.CacheControl = "no-store";
 
     return new JsonResult(ExecutionConfirmation.Of(read.Value));
+  }
+
+  /// <summary>
+  /// <b>Rend le récapitulatif de la prolongation d'une demande</b> en JSON — le droit avec son article,
+  /// le prénom, le nom, l'email, la date limite en vigueur, celle qui en résultera et l'avertissement
+  /// qui la date — et répond 200, ou 404 quand la demande n'existe plus, ou 400 quand l'identifiant
+  /// n'en est pas un.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// ⚠️ <b>Les deux dates viennent d'ici, jamais du navigateur</b> : <c>Date.setMonth</c> ne fait pas le
+  /// même repli de fin de mois que <c>DateOnly.AddMonths</c>, et la modale annoncerait une date que le
+  /// serveur n'écrirait pas (ADR-0029).
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Relu à chaque ouverture, jamais gardé</b> : un autre onglet a pu corriger la date de
+  /// réception de la demande, et donc sa date limite. Lire n'est pas prolonger — rien n'est écrit.
+  /// </para>
+  /// </remarks>
+  public async Task<IActionResult> OnGetExtensionAsync(string? id, CancellationToken cancellationToken)
+  {
+    if (ReadId(id) is not { } dataSubjectRequest)
+    {
+      return BadRequest();
+    }
+
+    var read = await mediator.Send(new ReadDataSubjectRequestExtensionQuery(dataSubjectRequest), cancellationToken);
+
+    if (read.Status is not ResultStatus.Ok)
+    {
+      return read.Status is ResultStatus.NotFound
+        ? NotFound()
+        : StatusCode(StatusCodes.Status500InternalServerError);
+    }
+
+    Response.Headers.CacheControl = "no-store";
+
+    return new JsonResult(ExtensionConfirmation.Of(read.Value));
+  }
+
+  /// <summary>
+  /// <b>Prolonge une demande</b> — la date limite de réponse est reportée de deux mois — et répond 200,
+  /// avec pour corps <b>la ligne mise à jour</b> : la nouvelle date limite et la mention « Prolongée »
+  /// (ADR-0029). Ou 400 <c>ValidationProblem</c>, les refus indexés par les clés du corps, ou 404 quand
+  /// la demande n'existe plus, sans rien avoir écrit.
+  /// </summary>
+  /// <remarks>
+  /// La ligne est rendue par la vue partielle <c>_RequestRow</c>, celle du tableau : un seul gabarit,
+  /// aucune divergence d'affichage possible. Comme les autres gestes de l'écran, c'est un handler de la
+  /// page, appelé par le script avec le jeton anti-rejeu que la page rend : aucune route publique, rien
+  /// dans Swagger.
+  /// </remarks>
+  public async Task<IActionResult> OnPostExtendAsync(string? id, ExtensionForm form, CancellationToken cancellationToken)
+  {
+    ArgumentNullException.ThrowIfNull(form);
+
+    if (ReadId(id) is not { } dataSubjectRequest)
+    {
+      return BadRequest();
+    }
+
+    var extended = await mediator.Send(
+      new ExtendDataSubjectRequestCommand(dataSubjectRequest, form.ToEntry()),
+      cancellationToken);
+
+    if (extended.Status is not ResultStatus.Ok)
+    {
+      return extended.Status switch
+      {
+        ResultStatus.Invalid => ValidationProblem(extended.ValidationErrors),
+        ResultStatus.NotFound => NotFound(),
+        _ => StatusCode(StatusCodes.Status500InternalServerError),
+      };
+    }
+
+    // La ligne du 200 se signale comme celles du tableau : contre « aujourd'hui », relu ici (ADR-0021).
+    return Partial("_RequestRow", RequestRow.Of(extended.Value, ParisCalendar.Today(clock)));
   }
 
   /// <summary>

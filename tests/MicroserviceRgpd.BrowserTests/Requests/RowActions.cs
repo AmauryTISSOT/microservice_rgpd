@@ -1,8 +1,10 @@
+using MicroserviceRgpd.Web.Pages.Requests;
+
 namespace MicroserviceRgpd.BrowserTests.Requests;
 
 /// <summary>
-/// <b>Les actions de chaque ligne</b>, dans un vrai navigateur : la poubelle, le crayon et
-/// l'œil montrent leur infobulle au survol.
+/// <b>Les actions de chaque ligne</b>, dans un vrai navigateur : la poubelle, le crayon, la flèche
+/// d'horloge et l'œil montrent leur infobulle au survol.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,6 +31,7 @@ public class RowActions(BrowserHarness harness)
   [Theory]
   [InlineData("Supprimer la demande")]
   [InlineData("Modifier la demande")]
+  [InlineData(RequestRow.ExtensionOffered)]
   [InlineData("Voir la fiche de la demande")]
   public async Task ShowsItsTooltipOnHover(string action)
   {

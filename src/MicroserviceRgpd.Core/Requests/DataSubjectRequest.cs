@@ -21,6 +21,10 @@ namespace MicroserviceRgpd.Core.Requests;
 /// de saisie : une correction ne peut pas produire une demande que la réception aurait refusée.
 /// </para>
 /// <para>
+/// <b>Elle se prolonge par <see cref="Extend"/></b> : la date limite de réponse est reportée de deux
+/// mois, sur un motif fermé et une justification écrite (ADR-0029).
+/// </para>
+/// <para>
 /// <b>Elle se termine par <see cref="Complete"/></b>, quand le système hôte a appliqué le droit
 /// invoqué (ADR-0026).
 /// </para>
@@ -37,6 +41,13 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// pas de nom.
   /// </summary>
   public const string OperatorAuthor = "operator";
+
+  /// <summary>
+  /// De combien de mois une prolongation reporte la date limite de réponse. ⚠️ <b>C'est une
+  /// constante, pas une saisie</b> : le règlement dit « deux mois », et non « jusqu'à deux mois »
+  /// (ADR-0029).
+  /// </summary>
+  public const int ExtensionInMonths = 2;
 
   private DataSubjectRequest(ValidatedEntry entry, DateTimeOffset createdAt)
   {
@@ -122,6 +133,36 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// pas l'histoire des modifications.
   /// </summary>
   public DateTimeOffset? ModifiedAt { get; private set; }
+
+  /// <summary>
+  /// La date limite de réponse telle qu'elle valait <b>avant</b> la prolongation, ou <c>null</c> tant
+  /// que la demande n'a pas été prolongée.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Enregistrée, et non recalculée par soustraction</b> : <see cref="DateOnly.AddMonths"/>
+  /// n'est pas inversible — 31 décembre plus deux mois donne 28 février, dont deux mois en moins
+  /// donnent 28 décembre. C'est elle qui fixe l'échéance de l'obligation d'informer la personne
+  /// concernée.
+  ///
+  /// ⚠️ <b>C'est une trace, pas une source</b> : la date qui fait foi partout ailleurs reste
+  /// <see cref="ResponseDeadline"/>.
+  /// </remarks>
+  public DateOnly? InitialResponseDeadline { get; private set; }
+
+  /// <summary>Le motif de la prolongation, ou <c>null</c> tant que la demande n'a pas été prolongée.</summary>
+  public ExtensionGround? ExtensionGround { get; private set; }
+
+  /// <summary>Le texte qui justifie la prolongation, ou <c>null</c> tant qu'elle n'a pas eu lieu.</summary>
+  public ExtensionJustification? ExtensionJustification { get; private set; }
+
+  /// <summary>L'instant de la prolongation, en UTC, ou <c>null</c> tant qu'elle n'a pas eu lieu.</summary>
+  public DateTimeOffset? ExtendedAt { get; private set; }
+
+  /// <summary>
+  /// La demande a-t-elle été prolongée ? Les quatre valeurs de la prolongation sont renseignées
+  /// ensemble : <see cref="ExtendedAt"/> les dit toutes.
+  /// </summary>
+  public bool Extended => ExtendedAt is not null;
 
   /// <summary>
   /// <b>Reçoit une demande</b> à partir des valeurs brutes saisies par l'<c>Operator</c>, ou rend
@@ -219,6 +260,55 @@ public sealed class DataSubjectRequest : IAggregateRoot
   }
 
   /// <summary>
+  /// <b>Prolonge la demande</b> — l'<c>Operator</c> reporte de deux mois la date limite de réponse, au
+  /// titre de l'article 12 §3 (ADR-0029). C'est un <c>Gesture</c> : il laisse ses quatre valeurs,
+  /// <see cref="InitialResponseDeadline"/>, <see cref="ExtensionGround"/>,
+  /// <see cref="ExtensionJustification"/> et <see cref="ExtendedAt"/>, posées ensemble.
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// <b>La date limite en vigueur est d'abord recopiée, puis reportée</b> : la prolongation part de
+  /// la date limite, jamais de la date de réception. Le repli de fin de mois est celui de
+  /// <see cref="DateOnly.AddMonths"/>, comme la règle de l'ADR-0021 — 31 décembre plus deux mois
+  /// donne 28 (ou 29) février.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>La date qui fait foi partout ailleurs reste <see cref="ResponseDeadline"/></b> : aucun
+  /// écran, aucun tri, aucun signalement ne change de source. Une demande fraîchement prolongée perd
+  /// donc son « Échéance proche », et c'est le comportement voulu.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le geste ne change pas le statut</b> : une demande prolongée reste En cours.
+  /// </para>
+  /// </remarks>
+  /// <param name="entry">Les valeurs brutes saisies, ni trimées ni validées.</param>
+  /// <param name="todayInParis">
+  /// Aujourd'hui à Paris — voir <see cref="ParisCalendar"/>. ⚠️ <b>Le geste ne s'en sert pas
+  /// encore</b> : c'est contre lui que la fenêtre du geste — « tant que la date limite n'est pas
+  /// passée » — se refermera, avec les autres blocages d'état.
+  /// </param>
+  /// <param name="extendedAt">L'instant de la prolongation, lu sur l'horloge.</param>
+  public Result Extend(ExtensionEntry entry, DateOnly todayInParis, DateTimeOffset extendedAt)
+  {
+    var validated = ValidateExtension(entry);
+
+    if (!validated.IsSuccess)
+    {
+      return Result.Invalid(validated.ValidationErrors);
+    }
+
+    var (ground, justification) = validated.Value;
+
+    InitialResponseDeadline = ResponseDeadline;
+    ResponseDeadline = DeadlineExtendedFrom(ResponseDeadline);
+    ExtensionGround = ground;
+    ExtensionJustification = justification;
+    ExtendedAt = extendedAt.ToUniversalTime();
+
+    return Result.Success();
+  }
+
+  /// <summary>
   /// <b>Dit si la demande s'exécute</b> face au canal d'exercice que le Paramétrage associe à son
   /// droit, <b>et à ce que le déploiement sait publier</b> : <c>null</c> quand elle est exécutable,
   /// sinon le <b>premier</b> <see cref="ExecutionBlock"/> — demande close, identité non vérifiée,
@@ -281,6 +371,19 @@ public sealed class DataSubjectRequest : IAggregateRoot
   /// (ADR-0021), écrite <b>une seule fois</b> : la réception la pose, la modification la recalcule.
   /// </summary>
   private static DateOnly DeadlineFor(DateOnly receivedOn) => receivedOn.AddMonths(1);
+
+  /// <summary>
+  /// La date limite que <paramref name="responseDeadline"/> devient une fois prolongée : deux mois
+  /// de plus, au repli de fin de mois de <see cref="DateOnly.AddMonths"/>. Écrite <b>une seule
+  /// fois</b> : le geste la pose, et l'écran l'annonce avant qu'il ne soit posé.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est le serveur qui la calcule, jamais le navigateur</b> : <c>Date.setMonth</c> ne fait
+  /// pas le même repli — un 31 décembre plus deux mois donne 3 mars en JavaScript. La modale
+  /// annoncerait une date, le serveur en écrirait une autre.
+  /// </remarks>
+  public static DateOnly DeadlineExtendedFrom(DateOnly responseDeadline) =>
+    responseDeadline.AddMonths(ExtensionInMonths);
 
   /// <summary>
   /// Les règles de saisie, partagées par la réception et la modification : <b>toutes</b> les raisons
@@ -438,6 +541,47 @@ public sealed class DataSubjectRequest : IAggregateRoot
     }
 
     errors.Add(Error(field, read.Error.ErrorMessage));
+    return null;
+  }
+
+  /// <summary>
+  /// Les règles de saisie d'une prolongation : <b>toutes</b> les raisons de refuser à la fois, ou les
+  /// deux valeurs converties.
+  /// </summary>
+  private static Result<(ExtensionGround Ground, ExtensionJustification Justification)> ValidateExtension(
+    ExtensionEntry entry)
+  {
+    ArgumentNullException.ThrowIfNull(entry);
+
+    var errors = new List<ValidationError>();
+
+    var ground = ReadExtensionGround(entry.Ground, errors);
+    var justification = ReadRequired(
+      entry.Justification,
+      Requests.ExtensionJustification.TryFrom,
+      DataSubjectRequestField.ExtensionJustification,
+      errors);
+
+    if (errors.Count > 0)
+    {
+      return Result<(ExtensionGround, ExtensionJustification)>.Invalid(errors);
+    }
+
+    return (ground!, justification!.Value);
+  }
+
+  /// <summary>
+  /// L'un des deux motifs, sous son nom canonique. ⚠️ <b>Le choix fermé de l'écran ne suffit pas</b> :
+  /// un envoi forgé n'en vient pas, et le domaine revérifie.
+  /// </summary>
+  private static ExtensionGround? ReadExtensionGround(string? raw, List<ValidationError> errors)
+  {
+    if (Requests.ExtensionGround.TryFromName(raw?.Trim(), out var ground))
+    {
+      return ground;
+    }
+
+    errors.Add(Error(DataSubjectRequestField.ExtensionGround, DataSubjectRequestMessages.ExtensionGroundMissing));
     return null;
   }
 

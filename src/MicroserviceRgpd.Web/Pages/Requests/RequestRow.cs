@@ -36,7 +36,12 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 ///
 /// De même pour l'<b>exécution</b> : <c>ExecutionAllowed</c> et <c>ExecutionTooltip</c> — son libellé
 /// quand la demande s'exécute, sinon le premier motif de blocage, que la lecture a déjà calculé face
-/// au Paramétrage (ADR-0026).
+/// au Paramétrage (ADR-0026). Et pour la <b>prolongation</b> : <c>ExtensionAllowed</c> et
+/// <c>ExtensionTooltip</c>, calculés ici de même.
+///
+/// ⚠️ <b>La mention « Prolongée » est une mention de la date limite, pas une colonne</b> : elle se lit
+/// dans la cellule de la date limite de réponse, après la date, comme le signalement — et rejoint
+/// ainsi la fiche par le clonage des cellules, sans mécanisme (ADR-0029).
 /// </remarks>
 public sealed record RequestRow(
   string Id,
@@ -57,6 +62,9 @@ public sealed record RequestRow(
   string ModificationTooltip,
   bool ExecutionAllowed,
   string ExecutionTooltip,
+  bool ExtensionAllowed,
+  string ExtensionTooltip,
+  string? ExtensionMention,
   RequestRow.SearchableText Searchable,
   RequestRow.SortKeys Sort,
   RequestRow.Sheet ForSheet)
@@ -139,6 +147,19 @@ public sealed record RequestRow(
   /// </summary>
   public const string ExecutionOffered = "Exécuter la demande";
 
+  /// <summary>
+  /// Ce que dit l'infobulle de la prolongation quand elle est offerte, et le libellé accessible du
+  /// bouton — le nom même du geste, celui que porte le titre de la modale.
+  /// </summary>
+  public const string ExtensionOffered = "Prolonger le délai de réponse";
+
+  /// <summary>
+  /// Ce que la cellule de la date limite ajoute quand la demande a été prolongée. ⚠️ <b>La date qui
+  /// s'y lit reste la date limite de réponse</b> : la mention dit d'où elle vient, elle ne la
+  /// remplace pas (ADR-0029).
+  /// </summary>
+  public const string Extended = "Prolongée";
+
   private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
 
   /// <summary>La ligne d'une demande enregistrée, telle qu'elle se lit <paramref name="todayInParis"/>.</summary>
@@ -171,6 +192,13 @@ public sealed record RequestRow(
       modificationAllowed ? ModificationOffered : ModificationRefused,
       request.ExecutionBlock is null,
       request.ExecutionBlock?.FrenchLabelFor(request.Right) ?? ExecutionOffered,
+
+      // ⚠️ LA PROLONGATION EST OFFERTE SUR TOUTE LIGNE, POUR L'INSTANT : les motifs qui l'éteignent —
+      // demande close, demande déjà prolongée, date limite dépassée — arrivent avec leur vocabulaire,
+      // et c'est alors qu'ils se calculeront ici, comme ceux de l'exécution.
+      true,
+      ExtensionOffered,
+      request.Extended ? Extended : null,
       new SearchableText(
         request.Email?.Value ?? string.Empty,
         request.LastName?.Value ?? string.Empty,
@@ -182,7 +210,7 @@ public sealed record RequestRow(
   }
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
-  private static string Day(DateOnly day) => day.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+  internal static string Day(DateOnly day) => day.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
   /// <summary>
   /// « La demande de {Prénom} {Nom} ({email}) sera définitivement supprimée. Cette action est

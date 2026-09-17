@@ -23,7 +23,7 @@ namespace MicroserviceRgpd.Infrastructure.Data.Requests;
 /// </para>
 /// <para>
 /// <b>Le <c>snake_case</c> est déclaré ici, explicitement</b>, comme sur toutes les autres tables du
-/// dépôt.
+/// dépôt, colonne par colonne.
 /// </para>
 /// </remarks>
 public sealed class DataSubjectRequestConfiguration : IEntityTypeConfiguration<DataSubjectRequest>
@@ -95,5 +95,27 @@ public sealed class DataSubjectRequestConfiguration : IEntityTypeConfiguration<D
     builder.Property(request => request.ModifiedBy).HasColumnName("modified_by");
 
     builder.Property(request => request.ModifiedAt).HasColumnName("modified_at");
+
+    // ⚠️ LES QUATRE COLONNES DE LA PROLONGATION SONT NULLABLES, ET LE NUL DIT « JAMAIS PROLONGÉE ».
+    // Elles sont écrites ensemble, ou pas du tout (ADR-0029).
+    //
+    // ⚠️ `initial_response_deadline` NE PREND PAS LE PRÉFIXE `extension_` : c'est une date limite de
+    // réponse — celle qui valait avant —, pas un attribut de l'acte. `extended_at` suit `created_at`
+    // et `modified_at`.
+    builder.Property(request => request.InitialResponseDeadline).HasColumnName("initial_response_deadline");
+
+    builder.Property(request => request.ExtensionGround)
+      .HasColumnName("extension_ground")
+      .HasConversion(
+        ground => ground == null ? null : ground.Name,
+        name => name == null ? null : ExtensionGround.FromName(name));
+
+    builder.Property(request => request.ExtensionJustification)
+      .HasColumnName("extension_justification")
+      .HasConversion(
+        justification => justification == null ? null : justification.Value.Value,
+        value => value == null ? null : ExtensionJustification.From(value));
+
+    builder.Property(request => request.ExtendedAt).HasColumnName("extended_at");
   }
 }
