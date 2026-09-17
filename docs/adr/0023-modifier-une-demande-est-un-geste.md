@@ -124,3 +124,33 @@ premier, et aucune des deux parties n'apprend que l'autre a écrit.
 - **Les actes qui font changer le statut** — terminer, annuler —, que l'ADR-0021 rangeait déjà
   parmi ce qu'il n'ouvrait pas.
 - **La prolongation du délai** (art. 12.3).
+
+## Suite — une modification refait les deux dates, et n'efface pas une prolongation (2026-09-17)
+
+⚠️ **Rien de ce qui précède n'a été édité**, et rien ne le sera : on supplante un ADR, on ne le
+réécrit pas. Cette section nomme les points qui ne valent plus depuis
+l'[ADR-0029](./0029-prolonger-une-demande-est-un-geste-une-seule-fois-de-deux-mois.md), qui fait de
+la prolongation un `Gesture`.
+
+- **« La date limite de réponse est refaite par toute modification effective, depuis la date de
+  réception qu'elle porte »**, par la seule fonction `DeadlineFor(receivedOn)`. Telle quelle, cette
+  clause **écraserait silencieusement une prolongation** : une demande prolongée redeviendrait une
+  demande à un mois, sans que rien ne le dise. Sur une demande prolongée, `Modify` recalcule
+  désormais **les deux dates ensemble** — la date limite initiale par la règle de l'ADR-0021, la
+  date limite de réponse par cette même règle augmentée des deux mois — et ne touche ni au motif, ni
+  à la justification, ni à la date de prolongation.
+- **« La prolongation du délai (art. 12.3) »**, parmi ce que cet ADR n'ouvrait pas. Elle est
+  ouverte.
+
+⚠️ **Un lecteur qui ne lirait que cet ADR croirait qu'une modification remet toute demande à un
+mois.** Elle ne le fait plus.
+
+Corriger la date de réception reste **toujours accepté**, y compris quand les dates recalculées
+placent rétroactivement la prolongation après une échéance dépassée : refuser rendrait une faute de
+frappe indéracinable, et forcerait à supprimer puis re-saisir la demande — la perte de trace
+(ADR-0022) que la modification existe pour éviter.
+
+Tout le reste de cet ADR reste en vigueur : l'empreinte non affichée qui s'écrase au lieu de
+s'empiler, la modification sans changement qui n'a pas eu lieu, le refus en `Result.Conflict()` sur
+une demande close avant toute validation de la saisie, le dernier enregistrement qui l'emporte sans
+verrou optimiste, et l'historique des modifications parmi ce que cet ADR n'ouvre pas.

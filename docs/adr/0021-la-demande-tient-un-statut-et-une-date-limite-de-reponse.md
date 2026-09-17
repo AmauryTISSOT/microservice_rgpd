@@ -86,3 +86,30 @@ lit.
 - **L'instruction**, et tout acte qui fait changer le statut.
 - **La prolongation du délai** (art. 12.3).
 - **Le filtre par statut.**
+
+## Suite — la date limite de réponse n'est plus immuable (2026-09-17)
+
+⚠️ **Rien de ce qui précède n'a été édité**, et rien ne le sera : on supplante un ADR, on ne le
+réécrit pas. Cette section nomme les points qui ne valent plus depuis
+l'[ADR-0029](./0029-prolonger-une-demande-est-un-geste-une-seule-fois-de-deux-mois.md), qui fait de
+la prolongation un `Gesture`.
+
+- **« Elle est fixée par `DataSubjectRequest.Receive` et enregistrée ; elle ne se recalcule pas »**,
+  dans « Une demande tient une date limite de réponse ». La date limite **se déplace** désormais :
+  une prolongation lui ajoute deux mois, une fois, et une modification la refait depuis la date de
+  réception corrigée (ADR-0023, puis ADR-0029 pour la demande prolongée). La demande porte en outre
+  sa **date limite initiale**, enregistrée et non dérivée, parce que `AddMonths` n'est pas
+  inversible.
+- **« La prolongation du délai (art. 12.3) »**, parmi ce que cet ADR n'ouvrait pas. Elle est
+  ouverte : une fois, de deux mois, sur motif fermé et justification écrite, tant que la date limite
+  n'est pas passée.
+
+Ce que cet ADR avait prévu se réalise sans se démentir : c'est en écartant l'option « calculer la
+date limite à la lecture » qu'il écrivait que « la prolongation de l'art. 12.3 [...] la fera
+changer ; une valeur enregistrée est ce que ces actes modifieront ».
+
+Tout le reste de cet ADR reste en vigueur : la **règle de calcul** — réception plus un mois, ramenée
+au dernier jour du mois suivant —, écrite une seule fois et rejouée par les gestes qui déplacent la
+date limite ; le départ depuis la date de réception déclarée et jamais depuis l'instant
+d'enregistrement ; le statut comme état et son vocabulaire fermé ; les signalements calculés au
+rendu et non enregistrés ; la reprise des demandes existantes par la migration.
