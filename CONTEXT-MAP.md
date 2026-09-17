@@ -261,14 +261,16 @@ doit les couvrir.
 - `docs/adr/` — décisions de **système**, valables au-delà d'un seul contexte.
 - `docs/contexts/<contexte>/adr/` — décisions propres à un contexte. Aucune à ce jour.
 
-Vingt-sept ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
-écrite dans l'ADR qui supplante, toujours sur un point nommé. L'ADR-0006 et l'ADR-0008 portent en
-fin de fichier une suite datée qui nomme leurs points morts jusqu'à l'ADR-0016 ; l'ADR-0017, qui
-vise l'ADR-0006 une cinquième fois, n'y ajoute rien et écrit ses supplantations chez lui ;
-l'ADR-0018, qui vise les ADR-0005 et 0009, fait de même, comme les ADR-0021, 0023 et 0024, qui visent
-l'ADR-0017, l'ADR-0025, qui vise l'ADR-0004, l'ADR-0026, qui vise les ADR-0003, 0016, 0017 et
-0021, et l'ADR-0027, qui vise les ADR-0016 et 0026. Une réserve suit la même règle : celles des
-ADR-0024 et 0026 sur l'ADR-0022 sont écrites chez eux.
+Vingt-huit ADR de système sont en vigueur. Un ADR supplanté n'est jamais édité : la supplantation est
+écrite dans l'ADR qui supplante, toujours sur un point nommé. Quatre ADR portent en outre, en fin de
+fichier, une **suite datée** qui nomme leurs propres points morts, pour qu'un lecteur ne les tienne
+pas pour vivants faute d'ouvrir cette carte : les ADR-0006 et 0008, jusqu'à l'ADR-0016, puis les
+ADR-0026 et 0027, que l'ADR-0028 a supplantés. Les autres ADR supplantés n'en portent pas :
+l'ADR-0006 n'a rien reçu de l'ADR-0017, qui le vise une cinquième fois et écrit ses supplantations
+chez lui ; il en va de même des ADR-0005 et 0009 visés par l'ADR-0018, de l'ADR-0017 visé par les
+ADR-0021, 0023 et 0024, de l'ADR-0004 visé par l'ADR-0025, des ADR-0003, 0016, 0017 et 0021 visés
+par l'ADR-0026, et des ADR-0016 et 0026 visés par l'ADR-0027. Une réserve suit la même règle :
+celles des ADR-0024 et 0026 sur l'ADR-0022 sont écrites chez eux.
 
 | ADR | Objet | Supplante |
 | --- | --- | --- |
@@ -299,6 +301,7 @@ ADR-0024 et 0026 sur l'ADR-0022 sont écrites chez eux.
 | [0025](./docs/adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md) | La détection passe à A2, un modèle à plongements `bge-m3` servi par Ollama ; le lexique reste le moteur des déploiements sans Ollama. Deux moteurs derrière `IScreeningEngine`, un seul actif, choisi au démarrage par `Screening:Embeddings:Enabled`, sans repli à l'exécution. A2 ne lit que le nom de la table et de la colonne ; son score n'est jamais exposé. La taxonomie `PersonalDataCategory` est remplacée — les art. 9 hors santé et 10 n'ont plus de valeur —, et les `Screening` existants sont supprimés. Garde « pas de second sidecar ». | 0004 : « le montage retenu est **règles + lexique FR+EN** » (clause 1) et « le cas mixte (« règles plus un petit modèle de similarité ») est forclos » (clause 3). Garde « il n'y a pas de second sidecar Python ». |
 | [0026](./docs/adr/0026-executer-une-demande-requests-lit-le-parametrage-et-appelle-le-systeme-hote.md) | Exécuter une demande est un `Gesture` : `Requests` lit l'adresse du droit dans le Paramétrage (_Customer/Supplier_, conformiste) et fait un `POST` JSON synchrone au système hôte — cinq clés, tout 2xx vaut application, délai `HostSystem:TimeoutSeconds`, aucune relance, `requestId` clé d'idempotence. Une demande En cours, à l'identité vérifiée, avec un email et une adresse configurée, passe à Terminée. Chaque tentative laisse une ligne d'un journal d'exécution sans donnée personnelle, qui survit à la suppression. | 0016 : « le déclenchement de l'appel » parmi ce qu'il n'ouvrait pas. 0003 et 0017 : la liste blanche, qui gagne `Requests → Configuration`. 0021 : « terminer » parmi ce qu'il n'ouvrait pas. Réserve sur l'ADR-0022 : le journal d'exécution survit à la suppression. |
 | [0027](./docs/adr/0027-un-droit-un-seul-canal-une-adresse-http-ou-un-routage-rabbitmq.md) | Un droit, un seul canal : il porte une adresse HTTP, ou un routage RabbitMQ, ou rien. L'exclusivité est tenue à l'écriture, sans valeur dormante ni colonne discriminante ; « canal d'exercice » est le genre, un type fermé à trois cas dont `NotConfigured` est un membre nommé. Le Paramétrage configure et n'appelle pas : aucune connexion au broker, aucune déclaration d'exchange, la topologie du bus reste à l'exploitant. Les motifs de blocage passent à cinq, le dernier provisoire. Consigne les sept écarts assumés au texte de l'US. | 0016 : « un droit, une adresse », jusque dans son titre. 0026 : « son droit a une adresse configurée » parmi les conditions d'exécution, et la liste et l'ordre des motifs de blocage. |
+| [0028](./docs/adr/0028-l-aboutissement-d-une-execution-cesse-d-etre-un-2xx-le-broker-accuse-reception.md) | L'aboutissement d'une exécution cesse d'être un 2xx : le destinataire, ou le broker pour lui, accuse réception. Exécuter une demande routée publie sur RabbitMQ en publisher confirms avec `mandatory` ; le message porte les cinq mêmes valeurs que le corps HTTP, un `message-id` égal à l'identifiant de la demande, et il est persistant. Un port typé sur le canal, un seul endroit où le canal se filtre ; une colonne de journal qui dit l'exercice ; un blocage permanent quand le déploiement n'a pas de connexion au broker ; aucune reprise automatique du client AMQP. Sur ce canal, « Terminée » dit que le broker a accepté le message, jamais que le système hôte l'a traité. | 0026 : « tout 2xx vaut application » et l'exécution synchrone. 0027 : le cinquième motif de blocage, provisoire, remplacé par un motif permanent sur la connexion absente. |
 
 ⚠️ **Les ADR-0010 et 0011 sont deux et non un, délibérément** : ce sont deux décisions sans rapport,
 qui se défont séparément. Le dépôt supplante par points nommés ; un ADR fondu ne saurait plus se
