@@ -4,6 +4,9 @@ version = "1.0.0"
 description = "Mock local du système hôte : une route par droit configurable dans le Paramétrage."
 requires-python = ">=3.12"
 dependencies = [
+    # Le client AMQP du consommateur : asynchrone, donc il vit dans la boucle d'uvicorn plutôt que
+    # dans un thread à côté, et `connect_robust` se raccroche seul quand le broker arrive.
+    "aio-pika>=9.5",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
 ]

@@ -24,6 +24,21 @@ var postgres = builder.AddPostgres("postgres")
 // Add the database
 var cleanArchDb = postgres.AddDatabase("cleanarchitecture");
 
+// Le broker, à l'image de Postgres : conteneur nommé, volume persistant, et la console de gestion
+// joignable depuis le dashboard — de quoi voir l'exchange, les files et les messages sans outil
+// tiers. Il entre dans la pile **sans drapeau** : « la pile entière part d'une seule commande » ne
+// souffre pas qu'un canal d'exercice sur deux demande une procédure à côté.
+var rabbitmq = builder.AddRabbitMQ("rabbitmq")
+  .WithContainerName("microservice_rgpd_broker")
+  .WithLifetime(ContainerLifetime.Persistent)
+  .WithDataVolume("microservice_rgpd_broker_data")
+  .WithManagementPlugin();
+
+// Où joindre le broker, tel que la ressource le dit. Nommé une fois, lu par le service et par le
+// mock : deux recopies de la même navigation auraient fini par diverger.
+var brokerHost = rabbitmq.Resource.PrimaryEndpoint.Property(EndpointProperty.Host);
+var brokerPort = rabbitmq.Resource.PrimaryEndpoint.Property(EndpointProperty.Port);
+
 // Le sidecar Python, où vivent les moteurs de qualification. Il entre ici dès sa naissance pour
 // que la pile entière démarre d'une seule commande : un moteur qu'on ne peut pas démontrer sans
 // une procédure à part finit par n'être démontré par personne.
@@ -53,8 +68,22 @@ var web = builder.AddProject<Projects.MicroserviceRgpd_Web>("web")
   // Posé dans les deux états, comme celui du LLM : éteint ici, le service ne retombe pas sur la
   // valeur de son propre fichier, qui pourrait dire autre chose.
   .WithEnvironment("Screening__Embeddings__Enabled", AsEnvironmentValue(embeddingsAreOn))
+  // La connexion au broker, sous les clés de la section `RabbitMq` que le service lit (ADR-0028).
+  // Hôte, port et identifiants viennent de la ressource, jamais d'une valeur écrite à la main — et
+  // **aucune chaîne de connexion URI** : les identifiants n'entrent pas dans une URL, qui se
+  // journalise, se recopie et s'affiche.
+  .WithEnvironment("RabbitMq__HostName", brokerHost)
+  .WithEnvironment("RabbitMq__Port", brokerPort)
+  .WithEnvironment("RabbitMq__UserName", rabbitmq.Resource.UserNameReference)
+  .WithEnvironment("RabbitMq__Password", rabbitmq.Resource.PasswordParameter)
   .WaitFor(cleanArchDb)
   .WaitFor(sidecar);
+
+// ⚠️ **Aucun `WaitFor(rabbitmq)`, et c'est une décision.** Le service ne dépend pas du démarrage du
+// broker : il enregistre un routage, rend ses écrans et exerce les droits configurés en HTTP sans
+// qu'une socket AMQP existe (ADR-0027, ADR-0028). Lier les deux ferait attendre la pile entière
+// pour un canal dont ce déploiement ne se sert peut-être pas — et priverait le bandeau du
+// Paramétrage de la situation qu'il sert précisément à annoncer.
 
 // Les deux éteints, rien de ce qui suit n'existe : ni serveur de modèles, ni modèle à tirer, ni un
 // seul réglage de moteur propagé. C'est ce qui fait tenir la promesse « la pile entière démarre d'une
@@ -158,7 +187,15 @@ if (FlagIsOn("MockHost:Enabled"))
     .WithUv()
     .WithoutHttpsCertificate()
     .WithEndpoint("http", endpoint => endpoint.Port = 5199)
-    .WithHttpHealthCheck("/health");
+    .WithHttpHealthCheck("/health")
+    // Le mock consomme aussi ce que le service publie : c'est lui qui déclare l'exchange, la file
+    // et le binding, jamais le service (ADR-0027). Il reçoit donc la même connexion, sous ses
+    // propres noms — le mock n'a pas de section `RabbitMq` et n'est pas un service .NET.
+    // Pas de `WaitFor(rabbitmq)` non plus : il se raccroche seul quand le broker arrive.
+    .WithEnvironment("MOCK_RABBITMQ_HOST", brokerHost)
+    .WithEnvironment("MOCK_RABBITMQ_PORT", brokerPort)
+    .WithEnvironment("MOCK_RABBITMQ_USER", rabbitmq.Resource.UserNameReference)
+    .WithEnvironment("MOCK_RABBITMQ_PASSWORD", rabbitmq.Resource.PasswordParameter);
 #pragma warning restore ASPIRECERTIFICATES001
 }
 
