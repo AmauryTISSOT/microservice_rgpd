@@ -1,10 +1,11 @@
 ﻿using MicroserviceRgpd.Core.Configuration;
 
-namespace MicroserviceRgpd.UseCases.Configuration.ClearRightEndpoint;
+namespace MicroserviceRgpd.UseCases.Configuration.ClearRightChannel;
 
 /// <summary>
-/// Ramène un droit du Paramétrage à « non configuré », et <b>seulement celui-là</b> : sa colonne passe
-/// à <c>NULL</c>, les cinq autres ne bougent pas.
+/// Ramène un droit du Paramétrage à « non configuré », et <b>seulement celui-là</b> : ses colonnes passent
+/// à <c>NULL</c>, celles des cinq autres ne bougent pas. <b>Un seul geste pour les deux canaux</b> :
+/// effacer une adresse et effacer un routage, c'est ramener un droit au même état (ADR-0027).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,15 +17,15 @@ namespace MicroserviceRgpd.UseCases.Configuration.ClearRightEndpoint;
 /// ⚠️ <b>La ligne est enregistrée par le suivi des modifications, jamais par un <c>Update</c>
 /// global</b>, pour la même raison qu'à l'enregistrement : un <c>Update</c> réécrirait les cinq autres
 /// droits avec la valeur lue un instant plus tôt, et écraserait en silence un enregistrement
-/// concurrent. Seule la colonne du droit effacé part en base.
+/// concurrent. Seules les colonnes du droit effacé partent en base.
 /// </para>
 /// </remarks>
 /// <param name="settings">Le Paramétrage persisté — au plus une ligne.</param>
-public sealed class ClearRightEndpointHandler(IRepository<Settings> settings)
-  : ICommandHandler<ClearRightEndpointCommand, Result>
+public sealed class ClearRightChannelHandler(IRepository<Settings> settings)
+  : ICommandHandler<ClearRightChannelCommand, Result>
 {
   /// <inheritdoc />
-  public async ValueTask<Result> Handle(ClearRightEndpointCommand command, CancellationToken cancellationToken)
+  public async ValueTask<Result> Handle(ClearRightChannelCommand command, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(command);
 
@@ -32,7 +33,7 @@ public sealed class ClearRightEndpointHandler(IRepository<Settings> settings)
     {
       return Result.Invalid(new ValidationError
       {
-        Identifier = nameof(ClearRightEndpointCommand.Right),
+        Identifier = nameof(ClearRightChannelCommand.Right),
         ErrorMessage = $"« {command.Right.Name} » n'est pas un droit du Paramétrage.",
         Severity = ValidationSeverity.Error,
       });
@@ -45,7 +46,7 @@ public sealed class ClearRightEndpointHandler(IRepository<Settings> settings)
       return Result.Success();
     }
 
-    persisted.ClearEndpoint(command.Right);
+    persisted.ClearChannel(command.Right);
 
     await settings.SaveChangesAsync(cancellationToken);
 

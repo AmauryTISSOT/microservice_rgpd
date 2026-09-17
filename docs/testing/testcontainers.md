@@ -24,7 +24,7 @@ choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de 
 | Projet | Container | Schéma | Portée |
 | --- | --- | --- | --- |
 | `UnitTests` | **aucun** | — | domaine, handlers, adaptateurs HTTP moqués |
-| `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **la persistance de la trace d'audit, et rien d'autre** |
+| `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **ce que seule une vraie base prouve** : la trace d'audit, et les colonnes du Paramétrage |
 | `FunctionalTests` | un par fabrique d'application | `Migrate()` | l'endpoint public de bout en bout |
 | `BrowserTests` | un, partagé par toute la suite | `Migrate()` | un parcours d'écrans dans un vrai Chromium |
 | `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les cinq |
@@ -36,9 +36,13 @@ choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de 
 même migration. Le schéma vient de `MigrateAsync()`, jamais d'`EnsureCreated()` — ce sont les
 migrations du dépôt que ces tests vérifient, pas le modèle dont elles sont issues.
 
-Ce projet a **un seul rôle** : la persistance de la trace d'audit. Ce qui le sauve de la
-suppression est une conséquence du contrat public — sans `GET`, la trace est inatteignable depuis
-l'endpoint, donc aucun test fonctionnel ne peut la voir.
+Ce projet ne porte que ce qu'**aucune autre couche ne peut prouver**. Son premier rôle est la
+persistance de la trace d'audit : c'est une conséquence du contrat public — sans `GET`, la trace est
+inatteignable depuis l'endpoint, donc aucun test fonctionnel ne peut la voir.
+
+Le second, depuis l'ADR-0027, est la ligne du **Paramétrage** : une valeur dormante ne se voit pas
+dans l'agrégat qui vient de l'effacer, elle se voit dans la ligne. `SettingsChannelPersistenceTests`
+y vérifie qu'un canal posé efface **en base** les colonnes de l'autre canal du même droit.
 
 ⚠️ **`SeedRequestsTests` monte son propre container**, comme les tests de reprise de migration : il
 y rejoue `scripts/seed-requests.sql`, et les cent demandes plantées fausseraient les classes qui

@@ -39,7 +39,9 @@ public class ModifyDataSubjectRequestHandlerTests
   public async Task RendersTheCorrectedRequestWithItsExecutionBlockFacingTheSettings()
   {
     var settings = Settings.Unconfigured();
-    settings.SetEndpoint(DataSubjectRight.Access, EndpointUrl.From("https://brocanto.example.fr/rgpd/acces"));
+    settings.SetChannel(
+      DataSubjectRight.Access,
+      new ExerciseChannel.HttpEndpoint(EndpointUrl.From("https://brocanto.example.fr/rgpd/acces")));
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([settings]);
 
     var request = ARequestInProgress();

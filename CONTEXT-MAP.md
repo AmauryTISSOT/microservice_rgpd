@@ -29,8 +29,9 @@ quels : « la `Qualification` », « le `Settings` ».
   ni les valeurs, ni la chaîne de connexion.
 - [Configuration](./docs/contexts/configuration/CONTEXT.md) — **ce qui vaut pour toutes les
   demandes.** Tient le `Settings` — à l'écran, le **Paramétrage** — qui associe à chacun des six
-  droits l'adresse à laquelle le service l'exercera. Un droit, une adresse ; un droit sans adresse
-  est « non configuré ». Enregistrer une adresse n'appelle rien.
+  droits le **canal d'exercice** par lequel le service l'exercera : une adresse HTTP, ou un routage
+  RabbitMQ. Un droit, un seul canal ; un droit sans l'un ni l'autre est « non configuré ».
+  Enregistrer un canal n'appelle rien — pas même une connexion au broker.
 
 `Qualification`, `Requests` et `Configuration` parlent du même sujet : les droits que le RGPD ouvre
 aux personnes concernées. `Screening` regarde le paysage de données du client avant que quiconque
@@ -77,8 +78,8 @@ trace relève de la redevabilité de `Qualification`.
 autres : pas de noyau partagé, pas de fournisseur amont, pas même un identifiant opaque.
 
 **`Requests → Configuration` : _Customer/Supplier_, `Requests` conformiste (ADR-0026).**
-`Configuration` est en amont. Pour exécuter une demande, `Requests` lit l'adresse du droit invoqué
-dans le `Settings`, telle que `Configuration` la publie, sans la traduire. `Configuration` ignore
+`Configuration` est en amont. Pour exécuter une demande, `Requests` lit le canal du droit invoqué
+dans le `Settings`, tel que `Configuration` le publie, sans le traduire. `Configuration` ignore
 cette lecture. C'est la seule traversée entre deux contextes qui passe par un type, et elle est
 écrite dans la liste blanche.
 
@@ -147,7 +148,7 @@ l'authentification. **Modifier une demande** en est un second : sa trace est l'e
 valeur n'a pas eu lieu — elle ne laisse rien (ADR-0023). **Exécuter une demande** en est un
 troisième, fidèle à la définition : chaque tentative laisse une ligne du journal d'exécution, datée,
 signée, qui s'empile (ADR-0026). Un arbitrage de `Screening` est daté et ne se signe pas (ADR-0014).
-`Configuration` n'emploie pas le mot : poser l'adresse d'un droit est un réglage, qui remplace l'état
+`Configuration` n'emploie pas le mot : poser le canal d'un droit est un réglage, qui remplace l'état
 précédent sans laisser de trace datée. Le `Settings` est un état, et c'est ce qui le tient hors de
 la matière de preuve.
 

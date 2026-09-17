@@ -40,6 +40,9 @@
 {
   var refused = right.Right == Model.Refused;
   var field = $"url-{right.Right.Name}";
+  @* Cette page ne montre que l'espèce qu'elle configure : un droit réglé sur un routage RabbitMQ
+     n'a pas d'adresse à afficher ici (ADR-0027). *@
+  var address = right.Channel is ExerciseChannel.HttpEndpoint http ? http.Address.Value : null;
 
   <div class="right">
     <h2>@right.Right.FrenchLabel</h2>
@@ -49,9 +52,9 @@
 
       <dt>Adresse d'exercice</dt>
       <dd>
-        @if (right.IsConfigured)
+        @if (address is not null)
         {
-          @right.Endpoint!.Value.Value
+          @address
         }
         else
         {
@@ -76,18 +79,18 @@
       <p>
         <label for="@field">Adresse d'exercice du @right.Right.FrenchLabel</label>
         <input type="text" inputmode="url" id="@field" name="Form.Url"
-               value="@(refused ? Model.Form.Url : right.Endpoint?.Value)" maxlength="@EndpointUrl.MaxLength" />
+               value="@(refused ? Model.Form.Url : address)" maxlength="@EndpointUrl.MaxLength" />
       </p>
       <button type="submit" class="primary">Enregistrer</button>
     </form>
 
     @*
-      Effacer n'est offert qu'à un droit configuré : un droit « non configuré » n'a rien à oublier.
-      Sa propre form, qui n'envoie que le droit — pas l'adresse du champ voisin, qu'on aurait pu
-      retoucher sans vouloir l'enregistrer. Le bouton n'est pas « destructif » : un droit sans adresse
-      est un état normal, et l'adresse se ressaisit.
+      Effacer n'est offert qu'à un droit dont cette page montre le canal : un droit « non configuré »
+      n'a rien à oublier. Sa propre form, qui n'envoie que le droit — pas l'adresse du champ voisin,
+      qu'on aurait pu retoucher sans vouloir l'enregistrer. Le bouton n'est pas « destructif » : un
+      droit sans adresse est un état normal, et l'adresse se ressaisit.
     *@
-    @if (right.IsConfigured)
+    @if (address is not null)
     {
       <form method="post" asp-page-handler="Clear">
         <input type="hidden" name="Form.Right" value="@right.Right.Name" />

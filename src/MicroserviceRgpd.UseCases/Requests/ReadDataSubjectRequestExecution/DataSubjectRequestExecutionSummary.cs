@@ -33,7 +33,7 @@ public sealed record DataSubjectRequestExecutionSummary(
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(settings);
 
-    var endpoint = settings.EndpointFor(request.Right);
+    var endpoint = ServiceSettings.HttpAddressFor(settings, request.Right);
 
     return new DataSubjectRequestExecutionSummary(
       request.Right,
