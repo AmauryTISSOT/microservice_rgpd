@@ -31,6 +31,10 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
 {
   private HostSystemDouble _host = null!;
 
+  /// <summary>Le routage d'un droit exercé par RabbitMQ, que le service ne sait pas encore publier.</summary>
+  private static readonly RabbitMqRouting Routing =
+    new(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces"));
+
   /// <summary>Les trois façons de renoncer.</summary>
   public static TheoryData<string> ClosingModes { get; } = ["Annuler", "la croix", "Échap"];
 
@@ -68,7 +72,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
       FirstName.From("Jeanne"),
       LastName.From("Martin"),
       EmailAddress.From(email),
-      EndpointUrl.From(address),
+      new ExerciseChannel.HttpEndpoint(EndpointUrl.From(address)),
       null));
 
     var dialog = Confirmation(page);
@@ -79,7 +83,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
     await Expect(Fact(dialog, ExecutionConfirmation.FirstNameLabel)).ToHaveTextAsync(expected.FirstName);
     await Expect(Fact(dialog, ExecutionConfirmation.LastNameLabel)).ToHaveTextAsync(expected.LastName);
     await Expect(Fact(dialog, ExecutionConfirmation.EmailLabel)).ToHaveTextAsync(expected.Email);
-    await Expect(Fact(dialog, ExecutionConfirmation.EndpointLabel)).ToHaveTextAsync(expected.Endpoint);
+    await Expect(Fact(dialog, ExecutionConfirmation.ExerciseLabel)).ToHaveTextAsync(expected.Exercise);
     await Expect(Button(page, ExecutionConfirmation.Confirm)).ToBeEnabledAsync();
     await Expect(dialog.GetByRole(AriaRole.Alert)).ToBeHiddenAsync();
     await Expect(Button(page, ExecutionConfirmation.Cancel)).ToBeFocusedAsync();
@@ -101,8 +105,43 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
     await ExecutionOf(row).ClickAsync();
 
     await Expect(Confirmation(page).GetByRole(AriaRole.Alert))
-      .ToHaveTextAsync(ExecutionBlock.NoEndpoint.FrenchLabelFor(DataSubjectRight.Access));
+      .ToHaveTextAsync(ExecutionBlock.RightNotConfigured.FrenchLabelFor(DataSubjectRight.Access));
     await Expect(Button(page, ExecutionConfirmation.Confirm)).ToBeDisabledAsync();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Un droit exercé par RabbitMQ est bloqué, et la modale dit par où la demande partirait</b> :
+  /// le champ « Exercice » porte l'exchange et la routing key, le bandeau porte le motif provisoire,
+  /// et « Exécuter » est éteint — le service ne sait pas encore publier (ADR-0027).
+  /// </summary>
+  [Fact]
+  public async Task SaysTheRoutingAndTheProvisionalBlockOfARightExercisedByRabbitMq()
+  {
+    // ⚠️ L'adresse d'abord : c'est elle qui offre l'avion en papier de la ligne. Le droit est routé
+    // sur RabbitMQ dans le dos de l'écran, et la modale relit le canal de l'instant.
+    await harness.ConfigureEndpointAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    var row = await RowOfAnExecutableRequestAsync(page, email);
+    await harness.RouteOnRabbitMqAsync(DataSubjectRight.Access, Routing);
+
+    await ExecutionOf(row).ClickAsync();
+
+    var dialog = Confirmation(page);
+    var expected = ExecutionConfirmation.Of(new DataSubjectRequestExecutionSummary(
+      DataSubjectRight.Access,
+      FirstName.From("Jeanne"),
+      LastName.From("Martin"),
+      EmailAddress.From(email),
+      new ExerciseChannel.RabbitMq(Routing),
+      ExecutionBlock.RabbitMqNotYetSupported));
+
+    await Expect(dialog).ToBeVisibleAsync();
+    await Expect(Fact(dialog, ExecutionConfirmation.ExerciseLabel)).ToHaveTextAsync(expected.Exercise);
+    await Expect(dialog.GetByRole(AriaRole.Alert)).ToHaveTextAsync(expected.Block!);
+    await Expect(Button(page, ExecutionConfirmation.Confirm)).ToBeDisabledAsync();
+    _host.Received.ShouldBeEmpty("Une demande bloquée a appelé le système hôte.");
   }
 
   /// <summary>
@@ -281,7 +320,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
 
     await confirm.ClickAsync();
 
-    var block = ExecutionBlock.NoEndpoint.FrenchLabelFor(DataSubjectRight.Access);
+    var block = ExecutionBlock.RightNotConfigured.FrenchLabelFor(DataSubjectRight.Access);
 
     await Expect(Confirmation(page).GetByRole(AriaRole.Alert)).ToHaveTextAsync(block);
     await Expect(Confirmation(page)).ToBeVisibleAsync();

@@ -149,9 +149,10 @@ suppression : ses lignes gardent l'identifiant de la demande, qui ne mène alors
 ### L'exécution
 
 **Exécuter une demande** :
-Le `Gesture` par lequel l'`Operator` fait appliquer le droit invoqué par le système hôte, à l'adresse
-que le Paramétrage associe à ce droit. Il n'est offert que sur une demande En cours, dont l'identité
-est vérifiée, qui porte un email, et dont le droit a une adresse. Quand le système hôte confirme
+Le `Gesture` par lequel l'`Operator` fait appliquer le droit invoqué par le système hôte, par le canal
+d'exercice que le Paramétrage associe à ce droit. Il n'est offert que sur une demande En cours, dont
+l'identité est vérifiée, qui porte un email, et dont le droit porte une adresse HTTP — un droit exercé
+par RabbitMQ est bloqué tant que le service ne sait pas publier. Quand le système hôte confirme
 avoir appliqué le droit, la demande passe à Terminée ; sinon son statut ne change pas, et
 l'`Operator` peut recommencer. Ses traces sont les tentatives du journal d'exécution, pas une
 empreinte sur la demande.
@@ -160,7 +161,9 @@ RGPD), transmettre, envoyer, clôturer
 
 **Motif de blocage** :
 La raison pour laquelle une demande ne peut pas être exécutée, la première dans cet ordre : demande
-close, identité non vérifiée, email manquant, aucune adresse configurée pour le droit.
+close, identité non vérifiée, email manquant, droit non configuré, exercice par RabbitMQ. Les deux
+derniers nomment le droit ; le dernier est provisoire, et disparaîtra le jour où le service publiera
+sur RabbitMQ.
 _Avoid_ : erreur, refus, prérequis
 
 **Système hôte** :

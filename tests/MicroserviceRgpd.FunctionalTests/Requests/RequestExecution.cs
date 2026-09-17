@@ -8,6 +8,7 @@ using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.TestDoubles.HostSystem;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
+using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
 using Microsoft.EntityFrameworkCore;
 using NSwag.Generation;
 
@@ -312,12 +313,12 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   [Theory]
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
   [InlineData(nameof(ExecutionBlock.EmailMissing))]
-  [InlineData(nameof(ExecutionBlock.NoEndpoint))]
+  [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
   public async Task AnswersUnprocessableForEveryOtherBlockWithoutCallingNorLogging(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
 
-    if (block != ExecutionBlock.NoEndpoint)
+    if (block != ExecutionBlock.RightNotConfigured)
     {
       await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
     }
@@ -412,18 +413,18 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     var summary = await SummaryOfAsync(id);
 
-    summary.Keys.ShouldBe(["right", "firstName", "lastName", "email", "endpoint", "block"], ignoreOrder: true);
+    summary.Keys.ShouldBe(["right", "firstName", "lastName", "email", "exercise", "block"], ignoreOrder: true);
     summary["right"].GetString().ShouldBe("Droit à l'effacement (art. 17)");
     summary["firstName"].GetString().ShouldBe("Jeanne");
     summary["lastName"].GetString().ShouldBe("Martin");
     summary["email"].GetString().ShouldBe(email);
-    summary["endpoint"].GetString().ShouldBe(address);
+    summary["exercise"].GetString().ShouldBe(address);
     summary["block"].ValueKind.ShouldBe(JsonValueKind.Null, "Une demande exécutable porte un motif de blocage.");
     _host.Received.ShouldBeEmpty("Lire le récapitulatif a appelé le système hôte.");
   }
 
   /// <summary>
-  /// <b>Une valeur absente se dit « — »</b>, écrit par le serveur : un prénom, un nom, ou l'adresse
+  /// <b>Une valeur absente se dit « — »</b>, écrit par le serveur : un prénom, un nom, ou l'exercice
   /// d'un droit « non configuré ».
   /// </summary>
   [Fact]
@@ -435,7 +436,7 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     summary["firstName"].GetString().ShouldBe("—");
     summary["lastName"].GetString().ShouldBe("—");
-    summary["endpoint"].GetString().ShouldBe("—");
+    summary["exercise"].GetString().ShouldBe("—");
   }
 
   /// <summary>
@@ -444,12 +445,17 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
   /// </summary>
   [Theory]
   [InlineData(nameof(ExecutionBlock.Closed))]
-  [InlineData(nameof(ExecutionBlock.NoEndpoint))]
+  [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
+  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
   public async Task AnswersTheBlockOfARequestThatNoLongerExecutes(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
 
-    if (block != ExecutionBlock.NoEndpoint)
+    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    {
+      await RouteAsync(DataSubjectRight.Access);
+    }
+    else if (block != ExecutionBlock.RightNotConfigured)
     {
       await ConfigureAsync(DataSubjectRight.Access, _host.AddressOf("/rights/access"));
     }
@@ -621,6 +627,38 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     var set = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
       new SetRightEndpointCommand(right, EndpointUrl.From(address)));
+
+    set.IsSuccess.ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// <b>Le récapitulatif d'un droit exercé par RabbitMQ dit le routage</b> — l'exchange et la routing
+  /// key, sous le champ « Exercice » —, et l'appel au système hôte n'a pas lieu.
+  /// </summary>
+  [Fact]
+  public async Task AnswersTheRoutingOfARightExercisedByRabbitMq()
+  {
+    await RouteAsync(DataSubjectRight.Access);
+
+    var (id, _) = await AnExecutableRequestAsync();
+
+    var summary = await SummaryOfAsync(id);
+
+    summary["exercise"].GetString().ShouldBe("exchange rgpd.exercice, routing key droit.acces");
+    summary["block"].GetString()
+      .ShouldBe(ExecutionBlock.RabbitMqNotYetSupported.FrenchLabelFor(DataSubjectRight.Access));
+    _host.Received.ShouldBeEmpty("Lire le récapitulatif a appelé le système hôte.");
+  }
+
+  /// <summary>Route le droit sur RabbitMQ, par le use case du Paramétrage.</summary>
+  private async Task RouteAsync(DataSubjectRight right)
+  {
+    using var scope = factory.Services.CreateScope();
+
+    var set = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
+      new SetRightRabbitMqRoutingCommand(
+        right,
+        new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces"))));
 
     set.IsSuccess.ShouldBeTrue();
   }

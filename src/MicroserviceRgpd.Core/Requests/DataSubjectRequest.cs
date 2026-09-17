@@ -219,17 +219,28 @@ public sealed class DataSubjectRequest : IAggregateRoot
   }
 
   /// <summary>
-  /// <b>Dit si la demande s'exécute</b> face à l'adresse que le Paramétrage associe à son droit :
-  /// <c>null</c> quand elle est exécutable, sinon le <b>premier</b> <see cref="ExecutionBlock"/> —
-  /// demande close, identité non vérifiée, email manquant, aucune adresse (ADR-0026).
+  /// <b>Dit si la demande s'exécute</b> face au canal d'exercice que le Paramétrage associe à son
+  /// droit : <c>null</c> quand elle est exécutable, sinon le <b>premier</b> <see cref="ExecutionBlock"/>
+  /// — demande close, identité non vérifiée, email manquant, droit non configuré, exercice par
+  /// RabbitMQ (ADR-0026, ADR-0027).
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>L'adresse est lue telle que <c>Configuration</c> la publie</b>, sans traduction :
-  /// <c>Requests</c> s'y conforme. Seule sa présence compte ici.
+  /// <para>
+  /// ⚠️ <b>Le canal est lu tel que <c>Configuration</c> le publie</b>, sans traduction :
+  /// <c>Requests</c> s'y conforme. Le <c>switch</c> sur ses trois cas est exhaustif — la hiérarchie
+  /// est fermée —, et les deux motifs du canal en tombent ensemble.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Le blocage « exercice par RabbitMQ » est provisoire</b> : il dit ce que le service ne sait
+  /// pas encore faire, pas un défaut du Paramétrage.
+  /// </para>
   /// </remarks>
-  /// <param name="endpoint">L'adresse du droit invoqué, ou <c>null</c> s'il est « non configuré ».</param>
-  public ExecutionBlock? ExecutionBlockFacing(EndpointUrl? endpoint)
+  /// <param name="channel">Le canal d'exercice du droit invoqué — une adresse, un routage, ou « non configuré ».</param>
+  /// <exception cref="ArgumentNullException"><paramref name="channel"/> est absent.</exception>
+  public ExecutionBlock? ExecutionBlockFacing(ExerciseChannel channel)
   {
+    ArgumentNullException.ThrowIfNull(channel);
+
     if (Status != RequestStatus.InProgress)
     {
       return ExecutionBlock.Closed;
@@ -245,7 +256,14 @@ public sealed class DataSubjectRequest : IAggregateRoot
       return ExecutionBlock.EmailMissing;
     }
 
-    return endpoint is null ? ExecutionBlock.NoEndpoint : null;
+    return channel switch
+    {
+      ExerciseChannel.HttpEndpoint => null,
+      ExerciseChannel.RabbitMq => ExecutionBlock.RabbitMqNotYetSupported,
+
+      // « Non configuré », le troisième et dernier cas : la hiérarchie est fermée.
+      _ => ExecutionBlock.RightNotConfigured,
+    };
   }
 
   /// <summary>

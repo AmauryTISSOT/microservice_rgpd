@@ -668,13 +668,14 @@ public class DataSubjectRequestTests
   public void IsNoLongerExecutableOnceCompleted()
   {
     var request = Receive(AValidEntry() with { IdentityVerified = true }).Value;
-    var endpoint = MicroserviceRgpd.Core.Configuration.EndpointUrl.From("https://brocanto.example.fr/rgpd");
+    var channel = new MicroserviceRgpd.Core.Configuration.ExerciseChannel.HttpEndpoint(
+      MicroserviceRgpd.Core.Configuration.EndpointUrl.From("https://brocanto.example.fr/rgpd"));
 
-    request.ExecutionBlockFacing(endpoint).ShouldBeNull();
+    request.ExecutionBlockFacing(channel).ShouldBeNull();
 
     request.Complete();
 
-    request.ExecutionBlockFacing(endpoint).ShouldBe(ExecutionBlock.Closed);
+    request.ExecutionBlockFacing(channel).ShouldBe(ExecutionBlock.Closed);
   }
 
   /// <summary>La saisie valide de départ, telle que la demande la tient encore après un refus.</summary>

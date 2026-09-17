@@ -52,12 +52,12 @@ public class ExecutionButton(BrowserHarness harness) : IAsyncLifetime
   /// </summary>
   [Theory]
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
-  [InlineData(nameof(ExecutionBlock.NoEndpoint))]
+  [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
   public async Task DimsTheExecutionAndSaysTheBlockOnHover(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
 
-    if (block != ExecutionBlock.NoEndpoint)
+    if (block != ExecutionBlock.RightNotConfigured)
     {
       await harness.ConfigureEndpointAsync(DataSubjectRight.Access);
     }

@@ -4,6 +4,7 @@ using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
+using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
 using MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
@@ -226,6 +227,18 @@ public sealed class BrowserHarness : IAsyncLifetime
     using var scope = Service.Services.CreateScope();
 
     (await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new SetRightEndpointCommand(right, EndpointUrl.From(endpoint))))
+      .IsSuccess.ShouldBeTrue();
+  }
+
+  /// <summary>
+  /// Route le droit <paramref name="right"/> sur RabbitMQ <b>par le use case du Paramétrage</b> — pour
+  /// qui doit voir un droit configuré que le service ne sait pas encore exercer.
+  /// </summary>
+  public async Task RouteOnRabbitMqAsync(DataSubjectRight right, RabbitMqRouting routing)
+  {
+    using var scope = Service.Services.CreateScope();
+
+    (await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new SetRightRabbitMqRoutingCommand(right, routing)))
       .IsSuccess.ShouldBeTrue();
   }
 

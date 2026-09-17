@@ -543,7 +543,7 @@
 @*
   LA CONFIRMATION D'EXÉCUTION, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT, cinquième `dialog` de
   l'écran. L'avion en papier actif d'une ligne l'ouvre, une fois le récapitulatif relu sur le serveur
-  (`data-summary`) : ce que le système hôte recevrait, et à quelle adresse (ADR-0026).
+  (`data-summary`) : ce que le système hôte recevrait, et par où la demande partirait (ADR-0026).
 
   ⚠️ TOUS SES MOTS SONT ICI, écrits une fois dans ExecutionConfirmation : le titre, les libellés,
   l'avertissement, les boutons. Seules les valeurs sont vides au chargement ; le module y verse celles
@@ -589,8 +589,8 @@
     <dd data-summary-field="lastName"></dd>
     <dt>@ExecutionConfirmation.EmailLabel</dt>
     <dd data-summary-field="email"></dd>
-    <dt>@ExecutionConfirmation.EndpointLabel</dt>
-    <dd data-summary-field="endpoint"></dd>
+    <dt>@ExecutionConfirmation.ExerciseLabel</dt>
+    <dd data-summary-field="exercise"></dd>
   </dl>
 
   <p id="execute-request-warning">@ExecutionConfirmation.Warning</p>

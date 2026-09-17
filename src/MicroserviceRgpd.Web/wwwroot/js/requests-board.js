@@ -1285,9 +1285,9 @@ for (const dismiss of sheet.querySelectorAll("[data-dismiss]")) {
 closeOnBackdropClick(sheet, closeSheet);
 
 // L'EXÉCUTION D'UNE DEMANDE. L'avion en papier actif d'une ligne fait relire au serveur le
-// récapitulatif de son exécution — ce que le système hôte recevrait, et à quelle adresse —, puis ouvre la
-// confirmation qu'il remplit. ⚠️ Relu à chaque ouverture : la page a pu être chargée avant qu'un autre
-// onglet clôture la demande ou change l'adresse de son droit (ADR-0026).
+// récapitulatif de son exécution — ce que le système hôte recevrait, et par où la demande partirait —,
+// puis ouvre la confirmation qu'il remplit. ⚠️ Relu à chaque ouverture : la page a pu être chargée avant
+// qu'un autre onglet clôture la demande ou change le canal d'exercice de son droit (ADR-0026).
 //
 // Le récapitulatif arrive DÉJÀ EN LIBELLÉS : le module verse chaque valeur dans la cible de même nom,
 // par `textContent`, et recopie le motif de blocage tel quel. Il n'écrit aucun mot.
