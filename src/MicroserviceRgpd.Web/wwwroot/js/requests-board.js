@@ -1271,6 +1271,9 @@ function openSheet(eye) {
 // écrit par le serveur. ⚠️ `textContent`, jamais `innerHTML` : le message est un texte que la
 // personne a écrit, et il s'affiche tel qu'il est enregistré.
 //
+// ET, SUR UNE DEMANDE PROLONGÉE SEULEMENT, LE BLOC « PROLONGATION » : ses quatre valeurs arrivent
+// par des `data-sheet-*` de la même façon, et le bloc entier se masque quand elles ne sont pas là.
+//
 // ⚠️ CES TROIS CIBLES-LÀ NE SE GARDENT PAS, quand la boucle se garde : une cellule qui n'intéresse
 // pas la fiche est une possibilité, une fiche qui aurait perdu son titre, son origine ou son
 // message est un gabarit cassé — et il vaut mieux qu'il se voie.
@@ -1284,6 +1287,38 @@ function fillSheet(row) {
   sheetTitle.textContent = row.dataset.sheetPerson;
   sheet.querySelector('[data-field="origin"]').textContent = row.dataset.sheetOrigin;
   sheet.querySelector('[data-field="message"]').textContent = row.dataset.sheetMessage;
+
+  fillTheExtensionBlock(row);
+}
+
+// LE BLOC « PROLONGATION » DE LA FICHE, MONTRÉ SUR LA SEULE DEMANDE QUI A ÉTÉ PROLONGÉE. C'est le
+// seul bloc de la fiche qui apparaisse et disparaisse : ailleurs, une valeur absente se lit « — »,
+// ici l'acte n'a pas eu lieu, et quatre tirets sur chaque fiche apprendraient à ne plus lire la
+// section.
+//
+// ⚠️ LE SERVEUR N'ÉCRIT LES QUATRE `data-sheet-*` QUE SUR UNE LIGNE PROLONGÉE : leur absence est la
+// réponse, et le script ne déduit rien d'autre. La date de la prolongation les dit toutes — les
+// quatre valeurs sont posées ensemble.
+//
+// ⚠️ LE BLOC SE MASQUE ENTIER, TITRE COMPRIS, par `hidden` : les cibles vidées laisseraient un titre
+// suivi de trois lignes blanches, qu'un lecteur d'écran parcourrait encore.
+//
+// ⚠️ LES QUATRE VALEURS ARRIVENT DÉJÀ ÉCRITES PAR LE SERVEUR — les deux dates en libellés, le motif
+// sous son libellé français : le script ne formate aucune date et ne dérive aucun libellé.
+function fillTheExtensionBlock(row) {
+  const block = sheet.querySelector('[data-block="extension"]');
+  const extended = row.dataset.sheetExtendedAt !== undefined;
+
+  block.hidden = !extended;
+
+  if (!extended) {
+    return;
+  }
+
+  block.querySelector('[data-field="initialDeadline"]').textContent = row.dataset.sheetInitialResponseDeadline;
+  block.querySelector('[data-field="extendedAt"]').textContent = row.dataset.sheetExtendedAt;
+  block.querySelector('[data-field="extensionGround"]').textContent = row.dataset.sheetExtensionGround;
+  block.querySelector('[data-field="extensionJustification"]').textContent = row.dataset.sheetExtensionJustification;
 }
 
 sheet.addEventListener("close", () => giveTheFocusBackTo(sheetOpenedBy));

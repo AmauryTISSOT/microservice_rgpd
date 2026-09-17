@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.FunctionalTests.Layout;
+using MicroserviceRgpd.Web.Pages.Requests;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
 
@@ -61,8 +62,10 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   private const string FirstSheetBlock = "La personne";
 
   /// <summary>
-  /// <b>Tout ce que la fiche donne à lire au chargement</b> : ses cinq blocs titrés, les libellés de
-  /// chaque valeur dans l'ordre, et sa sortie nommée. Recopié à dessein.
+  /// <b>Tout ce que la fiche donne à lire au chargement</b> : ses six blocs titrés, les libellés de
+  /// chaque valeur dans l'ordre, et sa sortie nommée. Recopié à dessein — sauf les deux mots que la
+  /// modale de prolongation nomme déjà, lus sur ses constantes : un même champ ne porte pas deux noms
+  /// selon l'endroit où il se lit.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Ni titre, ni valeur</b> : le titre nomme la personne et chaque valeur est celle d'une
@@ -73,6 +76,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
     "La personne Nom Prénom Email Identité vérifiée "
     + "La demande Droit invoqué Origine Date de réception Message "
     + "Le délai Date limite de réponse "
+    + $"Prolongation Date limite initiale Date de la prolongation {ExtensionConfirmation.GroundLabel} {ExtensionConfirmation.JustificationLabel} "
     + "Le statut "
     + "L'enregistrement Date de création Créé par "
     + "Fermer";
@@ -179,10 +183,13 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La fiche porte tous ses libellés, rendus par le serveur</b> : ses cinq blocs titrés dans
-  /// l'ordre — La personne, La demande, Le délai, Le statut, L'enregistrement —, les mots de chaque
-  /// valeur, et sa sortie nommée. <b>Et rien d'autre</b> : le titre et les valeurs sont vides tant
-  /// que l'œil d'une ligne n'y a rien versé.
+  /// <b>La fiche porte tous ses libellés, rendus par le serveur</b> : ses six blocs titrés dans
+  /// l'ordre — La personne, La demande, Le délai, Prolongation, Le statut, L'enregistrement —, les
+  /// mots de chaque valeur, et sa sortie nommée. <b>Et rien d'autre</b> : le titre et les valeurs sont
+  /// vides tant que l'œil d'une ligne n'y a rien versé.
+  ///
+  /// ⚠️ <b>Le bloc « Prolongation » est rendu lui aussi, et masqué</b> : le serveur écrit ses mots
+  /// comme ceux des autres blocs, et c'est l'œil d'une ligne prolongée qui le montre.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Les mots sont ceux de l'écran</b> : « Origine » comme le formulaire de création, « Droit
@@ -200,8 +207,8 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
     Regex.Matches(sheet, @"<h3\b[^>]*>(.*?)</h3>", RegexOptions.Singleline)
       .Select(block => LayoutSurface.TextIn(block.Groups[1].Value))
       .ShouldBe(
-        ["La personne", "La demande", "Le délai", "Le statut", "L'enregistrement"],
-        "La fiche ne porte pas ses cinq blocs titrés, dans l'ordre.");
+        ["La personne", "La demande", "Le délai", "Prolongation", "Le statut", "L'enregistrement"],
+        "La fiche ne porte pas ses six blocs titrés, dans l'ordre.");
   }
 
   /// <summary>

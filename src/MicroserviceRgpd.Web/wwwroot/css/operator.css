@@ -1872,6 +1872,9 @@ dialog.modal.sheet[open] {
   dont la première tient l'intitulé, 10 000 caractères dicteraient la hauteur de tout le bloc. Il
   s'affiche TEL QU'ENREGISTRÉ, ses retours à la ligne conservés, et se coupe là où il le faut — un
   mot sans espace ne le pousse pas hors de la fiche.
+
+  LA JUSTIFICATION DE LA PROLONGATION EMPRUNTE LE MÊME BLOC, et pour la même raison : c'est l'autre
+  texte long de la fiche, et il se lit comme le message.
 */
 .sheet-message {
   margin-top: var(--space-md);

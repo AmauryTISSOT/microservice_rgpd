@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Html;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 
@@ -103,7 +104,8 @@ public sealed record RequestRow(
   /// Ce que la ligne porte <b>pour la fiche</b>, et qu'aucune cellule ne montre : le <b>nom
   /// replié</b> de la personne — « Prénom Nom », à défaut l'email seul —, celui que le titre de la
   /// fiche annonce, puis l'<b>origine</b> sous son libellé français et le <b>message</b> de la
-  /// demande. La fiche les lit là, sans aucun aller-retour réseau.
+  /// demande — et, sur une demande prolongée seulement, les quatre valeurs de sa
+  /// <b>prolongation</b>. La fiche les lit là, sans aucun aller-retour réseau.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Le nom replié n'est jamais vide et n'est jamais « — »</b> : l'<c>Identification</c> d'une
@@ -117,7 +119,63 @@ public sealed record RequestRow(
   /// ⚠️ <b>Le message n'a pas de repli</b> : il est obligatoire (ADR-0019), et aucune demande sans
   /// message ne s'enregistre. Un « — » n'y aurait aucun cas.
   /// </remarks>
-  public sealed record Sheet(string Person, string Origin, string Message);
+  public sealed record Sheet(string Person, string Origin, string Message, SheetExtension? Extension);
+
+  /// <summary>
+  /// Ce que la ligne porte <b>pour le bloc « Prolongation » de la fiche</b>, absent tant que la
+  /// demande n'a pas été prolongée : la <b>date limite initiale</b>, la <b>date de la
+  /// prolongation</b>, le <b>motif</b> sous son libellé français et la <b>justification</b> telle
+  /// que l'<c>Operator</c> l'a écrite.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Les quatre valeurs voyagent ensemble ou pas du tout</b> : la fiche montre le bloc
+  /// entier, ou ne le montre pas. Quatre tirets sur chaque fiche apprendraient à ne plus lire la
+  /// section.
+  ///
+  /// ⚠️ <b>C'est le prix assumé du « sans aller-retour réseau »</b> : une justification de 2 000
+  /// caractères voyage dans un attribut HTML sur chaque ligne du tableau — le message de la
+  /// demande, plafonné à 10 000, le paie déjà.
+  ///
+  /// ⚠️ <b>Le motif arrive sous son libellé français</b>, rendu par le serveur : le script ne
+  /// dérive jamais un libellé d'un nom canonique.
+  /// </remarks>
+  public sealed record SheetExtension(
+    string InitialResponseDeadline,
+    string ExtendedAt,
+    string Ground,
+    string Justification)
+  {
+    /// <summary>
+    /// Les <b>quatre attributs</b> que la ligne porte pour la fiche, prêts à écrire dans la balise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>C'est la seule façon de ne pas les rendre du tout sur une demande qui n'a pas été
+    /// prolongée</b> : Razor n'ôte pas un attribut <c>data-*</c> dont la valeur est <c>null</c> — il
+    /// l'écrit vide, comme le rappelle déjà la vue partielle. Or la fiche lit leur <b>absence</b>
+    /// pour masquer le bloc entier, et un attribut vide n'est pas une absence.
+    ///
+    /// ⚠️ <b>Les valeurs sont encodées</b> : <see cref="HtmlContentBuilder.Append(string)"/> échappe
+    /// ce qu'il reçoit — un guillemet d'une justification ne sort pas de son attribut. Seuls les noms
+    /// des attributs, écrits ici, passent en HTML brut.
+    /// </remarks>
+    public IHtmlContent Attributes()
+    {
+      var attributes = new HtmlContentBuilder();
+
+      foreach (var (name, value) in new[]
+      {
+        ("data-sheet-initial-response-deadline", InitialResponseDeadline),
+        ("data-sheet-extended-at", ExtendedAt),
+        ("data-sheet-extension-ground", Ground),
+        ("data-sheet-extension-justification", Justification),
+      })
+      {
+        attributes.AppendHtml($" {name}=\"").Append(value).AppendHtml("\"");
+      }
+
+      return attributes;
+    }
+  }
 
   /// <summary>
   /// Le signalement de la date limite, s'il y en a un : son <b>nom canonique</b>, que la cellule
@@ -206,11 +264,28 @@ public sealed record RequestRow(
       new SortKeys(
         request.ReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         request.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'", CultureInfo.InvariantCulture)),
-      new Sheet(PersonOf(request), request.Origin.FrenchLabel, request.Message.Value));
+      new Sheet(PersonOf(request), request.Origin.FrenchLabel, request.Message.Value, ExtensionOf(request)));
   }
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
   internal static string Day(DateOnly day) => day.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+  /// <summary>
+  /// Ce que la ligne porte pour le bloc « Prolongation » de la fiche, ou <c>null</c> tant que la
+  /// demande n'a pas été prolongée : les quatre valeurs, <b>déjà en libellés</b>.
+  /// </summary>
+  /// <remarks>
+  /// La date de la prolongation se lit <b>à Paris</b>, au même format que la date de création : les
+  /// deux disent un instant, et l'<c>Operator</c> les lit dans la même fiche.
+  /// </remarks>
+  private static SheetExtension? ExtensionOf(RecordedDataSubjectRequest request) =>
+    request.Extension is not { } extension
+      ? null
+      : new SheetExtension(
+        Day(extension.InitialResponseDeadline),
+        ParisCalendar.InParis(extension.ExtendedAt).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture),
+        extension.Ground.FrenchLabel,
+        extension.Justification.Value);
 
   /// <summary>
   /// « La demande de {Prénom} {Nom} ({email}) sera définitivement supprimée. Cette action est
