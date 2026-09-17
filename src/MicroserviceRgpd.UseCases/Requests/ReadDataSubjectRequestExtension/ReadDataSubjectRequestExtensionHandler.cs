@@ -4,7 +4,7 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExtension;
 
 /// <summary>
 /// Rend le récapitulatif de la prolongation de la demande nommée, <b>relu à l'instant</b> sur la
-/// demande — ou « introuvable » quand elle n'existe plus.
+/// demande — <b>le motif qui l'empêche compris</b> — ou « introuvable » quand elle n'existe plus.
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>Relu, jamais repris de la page</b> : depuis son chargement, un autre onglet a pu corriger la
@@ -12,7 +12,10 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExtension;
 /// l'instant.
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
-public sealed class ReadDataSubjectRequestExtensionHandler(IReadRepository<DataSubjectRequest> requests)
+/// <param name="clock">L'horloge du service, d'où se tire le jour contre lequel la fenêtre se juge.</param>
+public sealed class ReadDataSubjectRequestExtensionHandler(
+  IReadRepository<DataSubjectRequest> requests,
+  TimeProvider clock)
   : IQueryHandler<ReadDataSubjectRequestExtensionQuery, Result<DataSubjectRequestExtensionSummary>>
 {
   /// <inheritdoc />
@@ -26,6 +29,6 @@ public sealed class ReadDataSubjectRequestExtensionHandler(IReadRepository<DataS
 
     return request is null
       ? Result<DataSubjectRequestExtensionSummary>.NotFound()
-      : DataSubjectRequestExtensionSummary.Of(request);
+      : DataSubjectRequestExtensionSummary.Of(request, ParisCalendar.Today(clock));
   }
 }

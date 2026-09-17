@@ -56,6 +56,7 @@ namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 /// <param name="hostSystem">Le système hôte.</param>
 /// <param name="scopes">De quoi ouvrir la portée de la seconde transaction, après un succès non enregistré.</param>
 /// <param name="logger">Les logs applicatifs, où un succès non enregistré s'écrit en erreur.</param>
+/// <param name="clock">L'horloge du service : la ligne rendue dit aussi si la demande se prolonge encore (ADR-0029).</param>
 public sealed class ExecuteDataSubjectRequestHandler(
   IRepository<DataSubjectRequest> requests,
   IRepository<ExecutionAttempt> attempts,
@@ -63,7 +64,8 @@ public sealed class ExecuteDataSubjectRequestHandler(
   IBrokerConnectionState broker,
   IHostSystem hostSystem,
   IServiceScopeFactory scopes,
-  ILogger<ExecuteDataSubjectRequestHandler> logger)
+  ILogger<ExecuteDataSubjectRequestHandler> logger,
+  TimeProvider clock)
   : ICommandHandler<ExecuteDataSubjectRequestCommand, Result<DataSubjectRequestExecution>>
 {
   /// <inheritdoc />
@@ -87,15 +89,19 @@ public sealed class ExecuteDataSubjectRequestHandler(
     // ligne rendue après coup disent ainsi la même vérité du même déploiement.
     var connection = broker.Current;
 
+    // ⚠️ Lu une seule fois lui aussi : toutes les lignes rendues par cette exécution — celle du refus,
+    // celle d'avant la remise, celle d'après — disent leur prolongation contre le même jour.
+    var todayInParis = ParisCalendar.Today(clock);
+
     if (request.ExecutionBlockFacing(channel, connection) is { } block)
     {
       return new BlockedExecution(
-        new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current, connection), block, null, null),
+        new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current, connection, todayInParis), block, null, null),
         block.FrenchLabelFor(request.Right));
     }
 
     // La demande telle que la base la porte avant la remise : celle que rend tout échec.
-    var unchanged = RecordedDataSubjectRequest.Of(request, current, connection);
+    var unchanged = RecordedDataSubjectRequest.Of(request, current, connection, todayInParis);
 
     var call = await hostSystem.ApplyAsync(channel, ExecutionBody.Of(request), CancellationToken.None);
 
@@ -140,7 +146,7 @@ public sealed class ExecuteDataSubjectRequestHandler(
     }
 
     return new DataSubjectRequestExecution(
-      RecordedDataSubjectRequest.Of(request, current, connection), null, call, call.Outcome);
+      RecordedDataSubjectRequest.Of(request, current, connection, todayInParis), null, call, call.Outcome);
   }
 
   /// <summary>

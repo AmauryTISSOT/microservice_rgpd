@@ -24,6 +24,18 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 [Collection(BrowserCollection.Name)]
 public class RequestExtensionDialog(BrowserHarness harness)
 {
+  /// <summary>
+  /// <b>La date limite de réponse de la demande de chaque test</b>, posée dans un mois : la fenêtre de
+  /// prolongation se juge sur le jour courant, et une date en dur finirait par la fermer.
+  /// </summary>
+  private static readonly DateOnly ResponseDeadline = ParisCalendar.Today(TimeProvider.System).AddMonths(1);
+
+  /// <summary>Cette date limite, telle que l'écran l'écrit.</summary>
+  private static readonly string CurrentDay = Day(ResponseDeadline);
+
+  /// <summary>La date limite qui résulte de la prolongation, telle que l'écran l'écrit.</summary>
+  private static readonly string ExtendedDay = Day(ResponseDeadline.AddMonths(2));
+
   /// <summary>Les trois façons de renoncer.</summary>
   public static TheoryData<string> ClosingModes { get; } = ["Annuler", "la croix", "Échap"];
 
@@ -50,12 +62,12 @@ public class RequestExtensionDialog(BrowserHarness harness)
     await Expect(Fact(dialog, ExtensionConfirmation.FirstNameLabel)).ToHaveTextAsync("Jeanne");
     await Expect(Fact(dialog, ExtensionConfirmation.LastNameLabel)).ToHaveTextAsync("Martin");
     await Expect(Fact(dialog, ExtensionConfirmation.EmailLabel)).ToHaveTextAsync(email);
-    await Expect(Fact(dialog, ExtensionConfirmation.CurrentDeadlineLabel)).ToHaveTextAsync("15/02/2026");
-    await Expect(Fact(dialog, ExtensionConfirmation.ResultingDeadlineLabel)).ToHaveTextAsync("15/04/2026");
+    await Expect(Fact(dialog, ExtensionConfirmation.CurrentDeadlineLabel)).ToHaveTextAsync(CurrentDay);
+    await Expect(Fact(dialog, ExtensionConfirmation.ResultingDeadlineLabel)).ToHaveTextAsync(ExtendedDay);
 
     // L'avertissement est daté de la date limite INITIALE : c'est avant elle qu'il faut informer.
     await Expect(dialog).ToHaveAccessibleDescriptionAsync(
-      string.Format(System.Globalization.CultureInfo.InvariantCulture, ExtensionConfirmation.WarningFormat, "15/02/2026"));
+      string.Format(System.Globalization.CultureInfo.InvariantCulture, ExtensionConfirmation.WarningFormat, CurrentDay));
 
     // LES DEUX MOTIFS DU RÈGLEMENT, DERRIÈRE L'INVITE, ET PAS UN TROISIÈME.
     var ground = Ground(dialog);
@@ -85,7 +97,7 @@ public class RequestExtensionDialog(BrowserHarness harness)
 
     // Un marqueur posé sur la fenêtre : un rechargement l'effacerait.
     await page.EvaluateAsync("() => { window.untouched = true; }");
-    await Expect(Deadline(row)).ToContainTextAsync("15/02/2026");
+    await Expect(Deadline(row)).ToContainTextAsync(CurrentDay);
     await Expect(Deadline(row)).Not.ToContainTextAsync(RequestRow.Extended);
 
     await ExtensionOf(row).ClickAsync();
@@ -96,7 +108,7 @@ public class RequestExtensionDialog(BrowserHarness harness)
     await Expect(Dialog(page)).ToBeHiddenAsync();
     await Expect(page.GetByRole(AriaRole.Status).And(page.GetByText(ExtensionConfirmation.Extended, new() { Exact = true })))
       .ToBeVisibleAsync();
-    await Expect(Deadline(row)).ToContainTextAsync("15/04/2026");
+    await Expect(Deadline(row)).ToContainTextAsync(ExtendedDay);
     await Expect(Deadline(row)).ToContainTextAsync(RequestRow.Extended);
     (await page.EvaluateAsync<bool>("() => window.untouched === true")).ShouldBeTrue("La prolongation a rechargé la page.");
   }
@@ -157,7 +169,7 @@ public class RequestExtensionDialog(BrowserHarness harness)
     await CloseByAsync(page, mode);
 
     await Expect(Dialog(page)).ToBeHiddenAsync();
-    await Expect(Deadline(row)).ToContainTextAsync("15/02/2026");
+    await Expect(Deadline(row)).ToContainTextAsync(CurrentDay);
     await Expect(Deadline(row)).Not.ToContainTextAsync(RequestRow.Extended);
     sent.ShouldBeEmpty("La fermeture a appelé le service.");
   }
@@ -257,7 +269,7 @@ public class RequestExtensionDialog(BrowserHarness harness)
     await Expect(Ground(dialog)).ToBeFocusedAsync();
     await Expect(Justification(dialog)).ToHaveValueAsync("   ");
 
-    await Expect(Deadline(row)).ToContainTextAsync("15/02/2026");
+    await Expect(Deadline(row)).ToContainTextAsync(CurrentDay);
     await Expect(Deadline(row)).Not.ToContainTextAsync(RequestRow.Extended);
   }
 
@@ -311,7 +323,7 @@ public class RequestExtensionDialog(BrowserHarness harness)
     await Button(page, ExtensionConfirmation.Confirm).ClickAsync();
 
     await Expect(dialog).ToBeHiddenAsync();
-    await Expect(Deadline(row)).ToContainTextAsync("15/04/2026");
+    await Expect(Deadline(row)).ToContainTextAsync(ExtendedDay);
     await Expect(Deadline(row)).ToContainTextAsync(RequestRow.Extended);
   }
 
@@ -348,15 +360,20 @@ public class RequestExtensionDialog(BrowserHarness harness)
     };
   }
 
+  /// <summary>Cette date, telle que l'écran l'écrit.</summary>
+  private static string Day(DateOnly date) =>
+    date.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+
   private static string UniqueEmail() => $"{Guid.NewGuid():N}@example.org";
 
   /// <summary>
-  /// Enregistre une demande reçue le 15/01/2026 — Jeanne Martin, droit d'accès —, ouvre le tableau et
-  /// rend sa ligne. Sa date limite de réponse est donc le 15/02/2026.
+  /// Enregistre une demande — Jeanne Martin, droit d'accès —, pose sa date limite de réponse dans un
+  /// mois, ouvre le tableau et rend sa ligne.
   /// </summary>
   private async Task<ILocator> RowOfARequestAsync(IPage page, string email)
   {
-    await harness.RecordRequestAsync("Martin", "Jeanne", email, right: nameof(DataSubjectRight.Access));
+    var message = await harness.RecordRequestAsync("Martin", "Jeanne", email, right: nameof(DataSubjectRight.Access));
+    await harness.SetResponseDeadlineAsync(message, ResponseDeadline);
     await page.GotoAsync("/demandes");
 
     var row = page.GetByRole(AriaRole.Row).Filter(new() { HasText = email });

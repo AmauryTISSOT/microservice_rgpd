@@ -38,7 +38,9 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// De même pour l'<b>exécution</b> : <c>ExecutionAllowed</c> et <c>ExecutionTooltip</c> — son libellé
 /// quand la demande s'exécute, sinon le premier motif de blocage, que la lecture a déjà calculé face
 /// au Paramétrage (ADR-0026). Et pour la <b>prolongation</b> : <c>ExtensionAllowed</c> et
-/// <c>ExtensionTooltip</c>, calculés ici de même.
+/// <c>ExtensionTooltip</c>, de même — son libellé quand la demande se prolonge, sinon le premier motif
+/// de blocage de la prolongation, que la lecture a calculé contre le jour qu'il est (ADR-0029).
+/// ⚠️ <b>Ce motif-là ne nomme aucun droit</b> : il se lit tel quel.
 ///
 /// ⚠️ <b>La mention « Prolongée » est une mention de la date limite, pas une colonne</b> : elle se lit
 /// dans la cellule de la date limite de réponse, après la date, comme le signalement — et rejoint
@@ -251,11 +253,8 @@ public sealed record RequestRow(
       request.ExecutionBlock is null,
       request.ExecutionBlock?.FrenchLabelFor(request.Right) ?? ExecutionOffered,
 
-      // ⚠️ LA PROLONGATION EST OFFERTE SUR TOUTE LIGNE, POUR L'INSTANT : les motifs qui l'éteignent —
-      // demande close, demande déjà prolongée, date limite dépassée — arrivent avec leur vocabulaire,
-      // et c'est alors qu'ils se calculeront ici, comme ceux de l'exécution.
-      true,
-      ExtensionOffered,
+      request.ExtensionBlock is null,
+      request.ExtensionBlock?.FrenchLabel ?? ExtensionOffered,
       request.Extended ? Extended : null,
       new SearchableText(
         request.Email?.Value ?? string.Empty,

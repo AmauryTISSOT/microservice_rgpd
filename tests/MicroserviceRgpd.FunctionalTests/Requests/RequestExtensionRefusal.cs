@@ -114,7 +114,7 @@ public class RequestExtensionRefusal(CustomWebApplicationFactory<Program> factor
   [Fact]
   public async Task AcceptsAJustificationAtItsCeiling()
   {
-    var (id, message) = await _surface.RecordAsync();
+    var (id, message, _) = await AnExtendableRequestAsync();
 
     var response = await _surface.ExtendAsync(id, new Dictionary<string, string>
     {
@@ -133,7 +133,7 @@ public class RequestExtensionRefusal(CustomWebApplicationFactory<Program> factor
   /// </summary>
   private async Task<string[]> RefusalsOfAsync(Dictionary<string, string> extension)
   {
-    var (id, message) = await _surface.RecordAsync(new Dictionary<string, string> { ["receivedOn"] = "2026-01-15" });
+    var (id, message, deadline) = await AnExtendableRequestAsync();
 
     var response = await _surface.ExtendExactlyAsync(id, extension);
     var body = await response.Content.ReadAsStringAsync();
@@ -147,7 +147,7 @@ public class RequestExtensionRefusal(CustomWebApplicationFactory<Program> factor
     row["initial_response_deadline"].ShouldBeNull();
     row["extension_ground"].ShouldBeNull();
     row["extension_justification"].ShouldBeNull();
-    row["response_deadline"].ShouldBe(new DateOnly(2026, 2, 15), "La date limite a bougé sur une prolongation refusée.");
+    row["response_deadline"].ShouldBe(deadline, "La date limite a bougé sur une prolongation refusée.");
 
     using var document = JsonDocument.Parse(body);
 
@@ -158,5 +158,20 @@ public class RequestExtensionRefusal(CustomWebApplicationFactory<Program> factor
       .. document.RootElement.GetProperty("errors").EnumerateObject().SelectMany(field =>
         field.Value.EnumerateArray().Select(refusal => $"{field.Name} : {refusal.GetString()}")),
     ];
+  }
+
+  /// <summary>
+  /// Une demande <b>dans la fenêtre du geste</b> : sa date limite de réponse est posée un mois
+  /// devant. ⚠️ <b>Sans quoi le motif de blocage passerait avant la saisie</b> : une demande dont la
+  /// date limite est dépassée reçoit un 422, et ces tests ne verraient jamais leur 400.
+  /// </summary>
+  private async Task<(Guid Id, string Message, DateOnly Deadline)> AnExtendableRequestAsync()
+  {
+    var (id, message) = await _surface.RecordAsync();
+    var deadline = ParisCalendar.Today(factory.Clock).AddMonths(1);
+
+    await _surface.SetResponseDeadlineAsync(id, deadline);
+
+    return (id, message, deadline);
   }
 }

@@ -438,5 +438,6 @@ public class ExecuteDataSubjectRequestHandlerTests
       _broker,
       _hostSystem,
       _scopes,
-      new LoggerFactory([_logs]).CreateLogger<ExecuteDataSubjectRequestHandler>());
+      new LoggerFactory([_logs]).CreateLogger<ExecuteDataSubjectRequestHandler>(),
+      new AClockStuckAt(Now));
 }

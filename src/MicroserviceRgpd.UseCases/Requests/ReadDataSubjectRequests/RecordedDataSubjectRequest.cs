@@ -36,6 +36,12 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 /// la demande face au canal d'exercice que le Paramétrage associe à son droit, <b>et à ce que le
 /// déploiement sait publier</b> (ADR-0026, ADR-0027, ADR-0028).
 /// </param>
+/// <param name="ExtensionBlock">
+/// Le premier motif de blocage de la prolongation, ou <c>null</c> quand la demande se prolonge —
+/// calculé par la demande contre le jour qu'il est à Paris (ADR-0029). ⚠️ <b>Il se calcule sur un
+/// jour, et non sur un Paramétrage</b> : une ligne rendue hier ne dit plus la vérité aujourd'hui, et
+/// c'est pourquoi l'écriture le revérifie.
+/// </param>
 public sealed record RecordedDataSubjectRequest(
   DataSubjectRequestId Id,
   Origin Origin,
@@ -51,7 +57,8 @@ public sealed record RecordedDataSubjectRequest(
   DateTimeOffset CreatedAt,
   RequestStatus Status,
   RecordedExtension? Extension,
-  ExecutionBlock? ExecutionBlock)
+  ExecutionBlock? ExecutionBlock,
+  ExtensionBlock? ExtensionBlock)
 {
   /// <summary>
   /// La demande a-t-elle été prolongée ? ⚠️ <b>C'est la présence de la prolongation qui le dit</b>,
@@ -61,13 +68,19 @@ public sealed record RecordedDataSubjectRequest(
 
   /// <summary>
   /// Ce que la lecture rend d'une demande enregistrée, sous le Paramétrage <paramref name="settings"/>
-  /// et la connexion <paramref name="connection"/> que le déploiement déclare.
+  /// et la connexion <paramref name="connection"/> que le déploiement déclare, <b>le jour
+  /// <paramref name="todayInParis"/></b>.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Le jour est un argument, jamais une lecture d'horloge d'ici</b> : l'appelant lit l'horloge
+  /// une seule fois, et toutes les lignes d'un même tableau se jugent alors sur le même jour.
+  /// </remarks>
   /// <exception cref="ArgumentNullException"><paramref name="request"/>, <paramref name="settings"/> ou <paramref name="connection"/> est absent.</exception>
   internal static RecordedDataSubjectRequest Of(
     DataSubjectRequest request,
     Settings settings,
-    BrokerConnection connection)
+    BrokerConnection connection,
+    DateOnly todayInParis)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(settings);
@@ -88,6 +101,7 @@ public sealed record RecordedDataSubjectRequest(
       request.CreatedAt,
       request.Status,
       RecordedExtension.Of(request),
-      request.ExecutionBlockFacing(settings.ChannelFor(request.Right), connection));
+      request.ExecutionBlockFacing(settings.ChannelFor(request.Right), connection),
+      request.ExtensionBlockFacing(todayInParis));
   }
 }

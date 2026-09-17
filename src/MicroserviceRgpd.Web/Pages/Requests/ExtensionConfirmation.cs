@@ -16,6 +16,11 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// autre.
 /// </para>
 /// <para>
+/// ⚠️ <b>Le motif de blocage arrive avec le récapitulatif</b>, et la modale s'ouvre même bloquée :
+/// c'est le seul endroit où il se dit à un <c>Operator</c> tactile ou au lecteur d'écran — une
+/// infobulle ne s'atteint ni au doigt ni à la voix. « Prolonger » y est alors éteint.
+/// </para>
+/// <para>
 /// ⚠️ <b>L'avertissement est daté de la date limite <i>initiale</i></b> — celle qui vaut encore au
 /// moment où l'<c>Operator</c> décide : c'est avant elle que la personne concernée doit être
 /// informée, et non avant la nouvelle.
@@ -32,6 +37,7 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// <param name="CurrentDeadline">La date limite de réponse en vigueur, en <c>jj/mm/aaaa</c>.</param>
 /// <param name="ResultingDeadline">La date limite de réponse qui résultera de la prolongation, en <c>jj/mm/aaaa</c>.</param>
 /// <param name="Warning">L'avertissement d'information de la personne concernée, daté de la date limite initiale.</param>
+/// <param name="Block">Le motif de blocage, ou <c>null</c> quand la demande se prolonge.</param>
 public sealed record ExtensionConfirmation(
   string Right,
   string FirstName,
@@ -39,7 +45,8 @@ public sealed record ExtensionConfirmation(
   string Email,
   string CurrentDeadline,
   string ResultingDeadline,
-  string Warning)
+  string Warning,
+  string? Block)
 {
   /// <summary>Le titre de la modale : le nom même du geste, celui du bouton de la ligne.</summary>
   public const string Title = RequestRow.ExtensionOffered;
@@ -115,6 +122,7 @@ public sealed record ExtensionConfirmation(
       summary.Email?.Value ?? Absent,
       currentDeadline,
       RequestRow.Day(summary.ExtendedResponseDeadline),
-      string.Format(CultureInfo.InvariantCulture, WarningFormat, currentDeadline));
+      string.Format(CultureInfo.InvariantCulture, WarningFormat, currentDeadline),
+      summary.Block?.FrenchLabel);
   }
 }

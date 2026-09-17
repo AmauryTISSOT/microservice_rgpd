@@ -43,7 +43,7 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
   public async Task AnswersOkAndStoresTheFourExtensionColumns()
   {
     var ahead = TimeSpan.FromDays(3);
-    var (id, message) = await _surface.RecordAsync(new Dictionary<string, string> { ["receivedOn"] = "2026-01-15" });
+    var (id, message, deadline) = await AnExtendableRequestAsync();
 
     factory.Clock.Advance(ahead);
 
@@ -63,8 +63,8 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
 
       var row = await _surface.RowOfAsync(message);
 
-      row["initial_response_deadline"].ShouldBe(new DateOnly(2026, 2, 15));
-      row["response_deadline"].ShouldBe(new DateOnly(2026, 4, 15));
+      row["initial_response_deadline"].ShouldBe(deadline);
+      row["response_deadline"].ShouldBe(deadline.AddMonths(2));
       row["extension_ground"].ShouldBe(nameof(ExtensionGround.NumberOfRequests));
       row["extension_justification"].ShouldBe("Le service a reçu quatre cents demandes ce mois-ci.");
       new DateTimeOffset(row["extended_at"].ShouldBeOfType<DateTime>(), TimeSpan.Zero)
@@ -89,7 +89,7 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task AnswersWithTheRowCarryingTheNewDeadlineAndTheExtendedMention()
   {
-    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["receivedOn"] = "2026-01-15" });
+    var (id, _, deadline) = await AnExtendableRequestAsync();
 
     var response = await _surface.ExtendAsync(id);
     var row = await response.Content.ReadAsStringAsync();
@@ -100,10 +100,14 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
     Regex.Matches(row, @"<tr\b").Count.ShouldBe(1, "Le 200 ne porte pas une ligne, une seule.");
     Regex.Match(row, @"data-request-id=""([^""]*)""").Groups[1].Value.ShouldBe(id.ToString());
 
-    var deadline = DeadlineCellOf(row);
+    var cell = DeadlineCellOf(row);
 
-    deadline.ShouldContain("15/04/2026", Case.Sensitive, "La cellule ne porte pas la nouvelle date limite.");
-    deadline.ShouldContain(RequestRow.Extended, Case.Sensitive, "La cellule ne porte pas la mention « Prolongée ».");
+    cell.ShouldContain(
+      deadline.AddMonths(2).ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture),
+      Case.Sensitive,
+      "La cellule ne porte pas la nouvelle date limite.");
+
+    cell.ShouldContain(RequestRow.Extended, Case.Sensitive, "La cellule ne porte pas la mention « Prolongée ».");
 
     RequestSurface.FieldNamesIn(row).ShouldBe(
       [.. RequestSurface.RowFields, RequestSurface.UnnamedActionsCell],
@@ -117,7 +121,7 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
   [Fact]
   public async Task CarriesTheExtendedMentionOnTheBoardOnlyOnAnExtendedRequest()
   {
-    var (id, message) = await _surface.RecordAsync(new Dictionary<string, string> { ["receivedOn"] = "2026-01-15" });
+    var (id, message, _) = await AnExtendableRequestAsync();
 
     DeadlineCellOf(await _surface.BoardRowWithAsync(message))
       .ShouldNotContain(RequestRow.Extended, Case.Sensitive, "Une demande non prolongée porte la mention.");
@@ -260,7 +264,7 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
   public async Task CarriesTheFourExtensionValuesForTheSheetOnlyOnAnExtendedRequest()
   {
     var justification = "  Les données sont réparties sur quatre systèmes.  ";
-    var (id, message) = await _surface.RecordAsync(new Dictionary<string, string> { ["receivedOn"] = "2026-01-15" });
+    var (id, message, deadline) = await AnExtendableRequestAsync();
 
     foreach (var name in SheetExtensionAttributes)
     {
@@ -277,7 +281,8 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
     var extendedAt = (DateTime)(await _surface.RowOfAsync(message))["extended_at"]!;
     var attributes = AttributesOf(await _surface.BoardRowWithAsync(message));
 
-    AttributeOf(attributes, "data-sheet-initial-response-deadline").ShouldBe("15/02/2026");
+    AttributeOf(attributes, "data-sheet-initial-response-deadline").ShouldBe(
+      deadline.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture));
     AttributeOf(attributes, "data-sheet-extended-at").ShouldBe(
       ParisCalendar.InParis(new DateTimeOffset(extendedAt, TimeSpan.Zero))
         .ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture));
@@ -305,6 +310,210 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
     attribute.Success.ShouldBeTrue($"La ligne ne porte pas « {name} ».");
 
     return WebUtility.HtmlDecode(attribute.Groups[1].Value);
+  }
+
+  /// <summary>
+  /// <b>Une demande close ne se prolonge pas</b> : le <c>POST</c> répond <b>409</b>, le motif pour
+  /// <c>detail</c>, la ligne à jour sous <c>row</c>, et rien n'est écrit. ⚠️ <b>Les deux statuts
+  /// clos</b>, et non le seul « Terminée ».
+  /// </summary>
+  [Theory]
+  [InlineData(nameof(RequestStatus.Completed))]
+  [InlineData(nameof(RequestStatus.Cancelled))]
+  public async Task AnswersConflictForAClosedRequest(string status)
+  {
+    var (id, message) = await _surface.RecordAsync();
+
+    await _surface.SetStatusAsync(id, status);
+
+    await ShouldBeABlockAsync(await _surface.ExtendAsync(id), HttpStatusCode.Conflict, id, ExtensionBlock.Closed);
+
+    (await _surface.RowOfAsync(message))["extended_at"].ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>Une demande ne se prolonge pas deux fois</b> : la seconde prolongation répond <b>409</b>, et
+  /// la date limite ne bouge plus. ⚠️ <b>La fenêtre est pourtant grande ouverte</b> — la date limite
+  /// reportée est loin devant : c'est bien « déjà prolongée » qui arrête le geste.
+  /// </summary>
+  [Fact]
+  public async Task AnswersConflictForAnAlreadyExtendedRequest()
+  {
+    var (id, message, _) = await AnExtendableRequestAsync();
+
+    (await _surface.ExtendAsync(id)).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    var deadline = (await _surface.RowOfAsync(message))["response_deadline"];
+
+    await ShouldBeABlockAsync(await _surface.ExtendAsync(id), HttpStatusCode.Conflict, id, ExtensionBlock.AlreadyExtended);
+
+    var unchanged = await _surface.RowOfAsync(message);
+
+    unchanged["response_deadline"].ShouldBe(deadline, "Une seconde prolongation a reporté la date limite.");
+    unchanged["initial_response_deadline"].ShouldBe(deadline is DateOnly day ? day.AddMonths(-2) : null);
+  }
+
+  /// <summary>
+  /// <b>Une date limite dépassée ferme la fenêtre</b> : le <c>POST</c> répond <b>422</b> — le geste
+  /// était bien formé, c'est le calendrier qui l'a emporté —, et rien n'est écrit.
+  /// </summary>
+  [Fact]
+  public async Task AnswersUnprocessableForAnElapsedDeadline()
+  {
+    var (id, message) = await _surface.RecordAsync();
+
+    await _surface.SetResponseDeadlineAsync(id, ParisCalendar.Today(factory.Clock).AddDays(-1));
+
+    await ShouldBeABlockAsync(
+      await _surface.ExtendAsync(id), HttpStatusCode.UnprocessableEntity, id, ExtensionBlock.DeadlineElapsed);
+
+    (await _surface.RowOfAsync(message))["extended_at"].ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le jour limite est accepté, le lendemain est refusé</b> : l'<c>Operator</c> ne perd pas le
+  /// dernier jour que le règlement lui accorde.
+  /// </summary>
+  [Fact]
+  public async Task AcceptsTheDeadlineDayAndRefusesTheDayAfter()
+  {
+    var today = ParisCalendar.Today(factory.Clock);
+
+    var (onTime, _) = await _surface.RecordAsync();
+    var (tooLate, message) = await _surface.RecordAsync();
+
+    await _surface.SetResponseDeadlineAsync(onTime, today);
+    await _surface.SetResponseDeadlineAsync(tooLate, today.AddDays(-1));
+
+    (await _surface.ExtendAsync(onTime)).StatusCode.ShouldBe(HttpStatusCode.OK);
+    (await _surface.ExtendAsync(tooLate)).StatusCode.ShouldBe(HttpStatusCode.UnprocessableEntity);
+
+    (await _surface.RowOfAsync(message))["extended_at"].ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le blocage se revérifie au moment de l'écriture</b>, depuis un tableau rendu <b>avant</b>
+  /// que la demande ne change d'état : la ligne montrait un geste offert, et le serveur le refuse
+  /// quand même. C'est la promesse même du ticket — un onglet resté ouvert ne force rien.
+  /// </summary>
+  [Fact]
+  public async Task RechecksTheBlockAtWriteTimeFromAStaleBoard()
+  {
+    var (id, message, _) = await AnExtendableRequestAsync();
+
+    var rendered = await _surface.BoardRowWithAsync(message);
+
+    rendered.ShouldContain(RequestRow.ExtensionOffered, Case.Sensitive,
+      "Le tableau rendu n'offrait pas la prolongation : il n'y a rien à revérifier.");
+
+    await _surface.SetStatusAsync(id, nameof(RequestStatus.Completed));
+
+    var response = await _surface.ExtendAsync(id);
+
+    await ShouldBeABlockAsync(response, HttpStatusCode.Conflict, id, ExtensionBlock.Closed);
+
+    (await _surface.RowOfAsync(message))["extended_at"].ShouldBeNull();
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le blocage passe avant la saisie</b> : une demande close refusée avec un motif vide dit
+  /// « Demande close », et non ce qui manque à un formulaire dont le geste n'aura pas lieu.
+  /// </summary>
+  [Fact]
+  public async Task SaysTheBlockRatherThanTheFaultyEntry()
+  {
+    var (id, _) = await _surface.RecordAsync();
+
+    await _surface.SetStatusAsync(id, nameof(RequestStatus.Completed));
+
+    var response = await _surface.ExtendAsync(id, new Dictionary<string, string>
+    {
+      [DataSubjectRequestField.ExtensionGround] = string.Empty,
+      [DataSubjectRequestField.ExtensionJustification] = string.Empty,
+    });
+
+    await ShouldBeABlockAsync(response, HttpStatusCode.Conflict, id, ExtensionBlock.Closed);
+  }
+
+  /// <summary>
+  /// <b>Le récapitulatif rend le motif de blocage le cas échéant</b> — et les deux dates avec lui :
+  /// la modale s'ouvre bloquée, et dit pourquoi. Une demande prolongeable ne porte aucun motif.
+  /// </summary>
+  [Fact]
+  public async Task ReadsTheBlockInTheSummary()
+  {
+    var (id, _, deadline) = await AnExtendableRequestAsync();
+
+    BlockIn(await (await _surface.ExtensionOfAsync(id)).Content.ReadAsStringAsync()).ShouldBeNull();
+
+    await _surface.SetStatusAsync(id, nameof(RequestStatus.Completed));
+
+    using var blocked = JsonDocument.Parse(await (await _surface.ExtensionOfAsync(id)).Content.ReadAsStringAsync());
+
+    blocked.RootElement.GetProperty("block").GetString().ShouldBe(ExtensionBlock.Closed.FrenchLabel);
+
+    // ⚠️ Bloquée, la modale montre quand même ce que la prolongation aurait donné.
+    var day = System.Globalization.CultureInfo.InvariantCulture;
+
+    blocked.RootElement.GetProperty("currentDeadline").GetString().ShouldBe(deadline.ToString("dd/MM/yyyy", day));
+    blocked.RootElement.GetProperty("resultingDeadline").GetString()
+      .ShouldBe(deadline.AddMonths(2).ToString("dd/MM/yyyy", day));
+  }
+
+  /// <summary>Le motif que porte un récapitulatif rendu, ou <c>null</c>.</summary>
+  private static string? BlockIn(string summary)
+  {
+    using var document = JsonDocument.Parse(summary);
+
+    return document.RootElement.GetProperty("block").ValueKind is JsonValueKind.Null
+      ? null
+      : document.RootElement.GetProperty("block").GetString();
+  }
+
+  /// <summary>
+  /// Un refus de prolongation : le <c>ProblemDetails</c> attendu — son code, son <c>detail</c>, et la
+  /// <b>ligne à jour</b> sous <c>row</c>, celle-là même que le tableau rend. ⚠️ <b>Aucun
+  /// <c>retryable</c></b> : le motif serait opposé de nouveau.
+  /// </summary>
+  private async Task ShouldBeABlockAsync(
+    HttpResponseMessage response,
+    HttpStatusCode status,
+    Guid id,
+    ExtensionBlock block)
+  {
+    var body = await response.Content.ReadAsStringAsync();
+
+    response.StatusCode.ShouldBe(status, body);
+    response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
+
+    using var document = JsonDocument.Parse(body);
+
+    document.RootElement.GetProperty("status").GetInt32().ShouldBe((int)status);
+    document.RootElement.GetProperty("detail").GetString().ShouldBe(block.FrenchLabel);
+    document.RootElement.TryGetProperty("retryable", out _).ShouldBeFalse(
+      "Le refus d'une prolongation invite à une nouvelle tentative.");
+
+    var row = document.RootElement.GetProperty("row").GetString().ShouldNotBeNull().Trim();
+
+    Regex.Match(row, @"data-request-id=""([^""]*)""").Groups[1].Value.ShouldBe(id.ToString());
+    row.ShouldBe(await _surface.BoardRowWithAsync(id.ToString()), "La ligne du refus n'est pas celle que le tableau rend.");
+    row.ShouldContain(block.FrenchLabel, Case.Sensitive, "La ligne du refus ne dit pas le motif.");
+  }
+
+  /// <summary>
+  /// Une demande <b>dans la fenêtre du geste</b> : sa date limite de réponse est posée un mois
+  /// devant. ⚠️ <b>Elle se calcule contre l'horloge du service</b>, et non en dur : une date écrite
+  /// une fois pour toutes ferme la fenêtre le jour où le calendrier la dépasse, et tous ces tests
+  /// tomberaient ensemble, longtemps après la livraison.
+  /// </summary>
+  private async Task<(Guid Id, string Message, DateOnly Deadline)> AnExtendableRequestAsync()
+  {
+    var (id, message) = await _surface.RecordAsync();
+    var deadline = ParisCalendar.Today(factory.Clock).AddMonths(1);
+
+    await _surface.SetResponseDeadlineAsync(id, deadline);
+
+    return (id, message, deadline);
   }
 
   /// <summary>La cellule de la date limite de réponse d'une ligne rendue.</summary>

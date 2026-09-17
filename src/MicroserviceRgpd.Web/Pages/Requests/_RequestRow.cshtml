@@ -16,12 +16,18 @@
   L'AVION EN PAPIER EXÉCUTE LA DEMANDE (ADR-0026). Il est offert quand la demande s'exécute — En
   cours, identité vérifiée, avec un email, et un droit qui a une adresse dans le Paramétrage —,
   sinon éteint comme le crayon, par `aria-disabled`, et son infobulle dit le premier motif de
-  blocage, rendu par le serveur. Actif, son clic ouvre la confirmation d'exécution ; éteint, il
-  n'ouvre rien.
+  blocage, rendu par le serveur.
 
   LA FLÈCHE D'HORLOGE PROLONGE LE DÉLAI DE RÉPONSE (ADR-0029), ENTRE LE CRAYON ET L'ŒIL : le geste
   porte sur la même demande que le crayon, et se lit avant les gestes qui la quittent — la consulter,
-  l'exécuter. Son clic ouvre la modale de prolongation, que le serveur a rendue fermée.
+  l'exécuter. Elle est offerte quand la demande se prolonge — En cours, jamais prolongée, date limite
+  non dépassée —, sinon éteinte comme l'avion, et son infobulle dit le premier motif de blocage de la
+  prolongation.
+
+  ⚠️ ÉTEINTS, L'AVION ET LA FLÈCHE OUVRENT LEUR MODALE QUAND MÊME, et elle y dit le motif, la
+  confirmation éteinte. DEUX BOUTONS IDENTIQUES DANS LA MÊME RANGÉE NE SE COMPORTENT PAS DIFFÉREMMENT
+  SOUS LE DOIGT, et la modale est le seul endroit où le motif atteint un Operator tactile ou un
+  lecteur d'écran : une infobulle demande un survol ou un focus visible, que ni l'un ni l'autre n'a.
 
   L'ŒIL OUVRE LA FICHE DE LA DEMANDE, la lecture à l'écran de ce que le service en tient : un simple
   bouton, hors de tout formulaire, que le module reconnaît à son `data-action`, comme la poubelle et

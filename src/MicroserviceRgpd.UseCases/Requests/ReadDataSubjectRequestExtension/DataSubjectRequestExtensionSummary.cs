@@ -19,17 +19,29 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExtension;
 /// <param name="Email">L'email de la personne, ou <c>null</c>.</param>
 /// <param name="ResponseDeadline">La date limite de réponse en vigueur — celle qui deviendra la date limite initiale.</param>
 /// <param name="ExtendedResponseDeadline">La date limite de réponse qui résultera de la prolongation.</param>
+/// <param name="Block">
+/// Le premier motif de blocage, ou <c>null</c> quand la demande se prolonge. ⚠️ <b>La modale s'ouvre
+/// quand même</b> : c'est le seul endroit où le motif se dit à un <c>Operator</c> tactile ou au
+/// lecteur d'écran, et la confirmation y est éteinte.
+/// </param>
 public sealed record DataSubjectRequestExtensionSummary(
   DataSubjectRight Right,
   FirstName? FirstName,
   LastName? LastName,
   EmailAddress? Email,
   DateOnly ResponseDeadline,
-  DateOnly ExtendedResponseDeadline)
+  DateOnly ExtendedResponseDeadline,
+  ExtensionBlock? Block)
 {
-  /// <summary>Le récapitulatif de <paramref name="request"/>.</summary>
+  /// <summary>Le récapitulatif de <paramref name="request"/>, tel qu'il se lit <paramref name="todayInParis"/>.</summary>
+  /// <remarks>
+  /// ⚠️ <b>Les deux dates sont rendues même quand la demande est bloquée</b> : l'<c>Operator</c> lit
+  /// ce que la prolongation aurait donné, et pourquoi elle n'aura pas lieu.
+  /// </remarks>
+  /// <param name="request">La demande.</param>
+  /// <param name="todayInParis">Aujourd'hui à Paris — voir <see cref="ParisCalendar"/>.</param>
   /// <exception cref="ArgumentNullException"><paramref name="request"/> est absente.</exception>
-  internal static DataSubjectRequestExtensionSummary Of(DataSubjectRequest request)
+  internal static DataSubjectRequestExtensionSummary Of(DataSubjectRequest request, DateOnly todayInParis)
   {
     ArgumentNullException.ThrowIfNull(request);
 
@@ -39,6 +51,7 @@ public sealed record DataSubjectRequestExtensionSummary(
       request.LastName,
       request.Email,
       request.ResponseDeadline,
-      DataSubjectRequest.DeadlineExtendedFrom(request.ResponseDeadline));
+      DataSubjectRequest.DeadlineExtendedFrom(request.ResponseDeadline),
+      request.ExtensionBlockFacing(todayInParis));
   }
 }

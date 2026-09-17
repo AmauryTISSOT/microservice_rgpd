@@ -65,11 +65,11 @@ public sealed class ModifyDataSubjectRequestHandler(
       // ⚠️ Un refus ne rejoue pas la projection : `Map` ne transporte que le statut et les raisons, et
       // la demande n'est pas rendue ici. C'est ce qui garde le refus du domaine intact — `Invalid`
       // reste `Invalid`, `Conflict` reste `Conflict` — sans le réécrire d'un statut à l'autre.
-      return modified.Map(_ => RecordedDataSubjectRequest.Of(request, current, broker.Current));
+      return modified.Map(_ => RecordedDataSubjectRequest.Of(request, current, broker.Current, ParisCalendar.DateOf(now)));
     }
 
     await requests.SaveChangesAsync(cancellationToken);
 
-    return RecordedDataSubjectRequest.Of(request, current, broker.Current);
+    return RecordedDataSubjectRequest.Of(request, current, broker.Current, ParisCalendar.DateOf(now));
   }
 }

@@ -1357,8 +1357,12 @@ let rowToExecute = null;
 // confirmation ne peut pas s'ouvrir sur la mauvaise demande.
 let readingTheSummary = false;
 
+// ⚠️ UN AVION ÉTEINT OUVRE LA CONFIRMATION LUI AUSSI : la modale y dit le motif et « Exécuter » y est
+// éteint. C'est le seul endroit où le motif se dit à qui n'a ni survol ni focus visible — un doigt, un
+// lecteur d'écran —, et deux boutons identiques dans la même rangée ne doivent pas se comporter
+// différemment sous le doigt. Le serveur, lui, refuse de toute façon.
 async function openExecution(plane) {
-  if (!isOffered(plane) || readingTheSummary) {
+  if (readingTheSummary) {
     return;
   }
 
@@ -1575,8 +1579,10 @@ let rowToExtend = null;
 // modale ne peut pas s'ouvrir sur la mauvaise demande.
 let readingTheExtension = false;
 
+// ⚠️ UNE FLÈCHE ÉTEINTE OUVRE LA MODALE LUI AUSSI, exactement comme l'avion en papier : elle y dit le
+// motif, et « Prolonger » y est éteint (ADR-0029).
 async function openExtension(clock) {
-  if (!isOffered(clock) || readingTheExtension) {
+  if (readingTheExtension) {
     return;
   }
 
@@ -1609,8 +1615,13 @@ function fillExtension(summary) {
 
   extensionForm.reset();
   forgetExtensionRefusals();
-  extensionFailure.textContent = "";
-  extensionFailure.hidden = true;
+
+  // UNE DEMANDE QUI NE SE PROLONGE PLUS LE DIT DÈS L'OUVERTURE : le bandeau porte le motif, et
+  // « Prolonger » est éteint. `disabled` suffit ici — le motif se lit dans le bandeau, pas dans une
+  // infobulle.
+  extensionFailure.textContent = summary.block ?? "";
+  extensionFailure.hidden = !summary.block;
+  extendButton.disabled = Boolean(summary.block);
 }
 
 // ⚠️ PENDANT L'APPEL, RIEN NE FERME LA MODALE — ni « Annuler », ni la croix, ni le fond, ni Échap : la
@@ -1660,7 +1671,7 @@ extension.addEventListener("close", () => {
 // Toute autre issue prend la phrase que la page a rendue : la prolongation a pu aboutir, l'écran ne le
 // sait pas.
 async function extend() {
-  if (extending) {
+  if (extending || extendButton.disabled) {
     return;
   }
 
@@ -1683,6 +1694,7 @@ async function extend() {
   // ⚠️ C'EST PROLONGÉ DÈS LE 200, que le corps se lise ou non : un corps perdu ne doit pas poser le
   // bandeau, qui inviterait à une nouvelle tentative.
   const rowHtml = response?.status === 200 ? await response.text().catch(() => "") : null;
+  const problem = [409, 422].includes(response?.status) ? await response.json().catch(() => null) : null;
 
   extending = false;
   extendButton.removeAttribute("aria-busy");
@@ -1706,7 +1718,7 @@ async function extend() {
   if (extensionFields.some((field) => refusals[field.name])) {
     showExtensionRefusals(refusals);
   } else {
-    stopOnExtensionFailure();
+    stopOnExtensionFailure(problem);
   }
 }
 
@@ -1732,9 +1744,16 @@ function dropTheVanishedExtension() {
   say(toast.dataset.vanished);
 }
 
-// LA MODALE RESTE OUVERTE ET LE BANDEAU DIT QUE LA RÉPONSE NE S'EST PAS LUE : la saisie est conservée.
-function stopOnExtensionFailure() {
-  extensionFailure.textContent = extensionFailure.dataset.unanswered;
+// LA MODALE RESTE OUVERTE ET LE BANDEAU DIT LE MOTIF DE BLOCAGE, OU QUE LA RÉPONSE NE S'EST PAS LUE :
+// la saisie est conservée. Quand la réponse porte la ligne à jour — 409, 422 —, elle remplace la sienne
+// à sa place, et « Prolonger » s'éteint : le motif serait opposé de nouveau.
+function stopOnExtensionFailure(problem) {
+  if (problem) {
+    replaceTheRowToExtend(typeof problem.row === "string" ? problem.row : null);
+    extendButton.disabled = true;
+  }
+
+  extensionFailure.textContent = problem?.detail || extensionFailure.dataset.unanswered;
   extensionFailure.hidden = false;
 }
 

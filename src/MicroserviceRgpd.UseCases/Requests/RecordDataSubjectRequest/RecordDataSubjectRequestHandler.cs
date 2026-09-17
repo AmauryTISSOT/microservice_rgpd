@@ -46,6 +46,9 @@ public sealed class RecordDataSubjectRequestHandler(
     await requests.AddAsync(received.Value, cancellationToken);
 
     return RecordedDataSubjectRequest.Of(
-      received.Value, await ServiceSettings.ReadAsync(settings, cancellationToken), broker.Current);
+      received.Value,
+      await ServiceSettings.ReadAsync(settings, cancellationToken),
+      broker.Current,
+      ParisCalendar.DateOf(now));
   }
 }
