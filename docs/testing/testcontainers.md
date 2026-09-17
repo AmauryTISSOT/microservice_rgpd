@@ -26,7 +26,7 @@ choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de 
 | `UnitTests` | **aucun** | — | domaine, handlers, adaptateurs HTTP moqués |
 | `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **ce que seule une vraie base prouve** : la trace d'audit, et les colonnes du Paramétrage |
 | `FunctionalTests` | un par fabrique d'application | `Migrate()` | l'endpoint public de bout en bout |
-| `BrowserTests` | un, partagé par toute la suite | `Migrate()` | un parcours d'écrans dans un vrai Chromium |
+| `BrowserTests` | **un par collection**, cinq en tout | `Migrate()` | un parcours d'écrans dans un vrai Chromium |
 | `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les cinq |
 
 ### `IntegrationTests`
@@ -61,8 +61,12 @@ c'est ce qui donne du sens à « qualifier, écrire, répondre ».
 
 ### `BrowserTests`
 
-`BrowserHarness` monte **un seul container, un seul service et un seul Chromium** pour toute la
-suite, partagés par une `ICollectionFixture`. Le service tourne sous **Kestrel, sur un port que
+`BrowserHarness` monte **un container, un service et un Chromium par collection**, partagés par une
+`ICollectionFixture`. La suite en compte **cinq** — voir `BrowserCollection.cs`, qui dit pourquoi :
+xUnit ne parallélise pas les tests d'une même collection, et une collection unique faisait passer
+les 265 tests un par un, six minutes durant. Cinq harnais tournent donc de front, chacun sur **sa
+propre base** ; le découpage reste au **grain de la classe**, et deux classes qui se lisent l'état
+l'une de l'autre doivent rester ensemble. Le service tourne sous **Kestrel, sur un port que
 l'OS attribue** (`WebApplicationFactory.UseKestrel(0)`) : le serveur en mémoire des tests
 fonctionnels n'est atteignable par aucun navigateur. La chaîne de connexion passe par la même
 variable d'environnement, puis `Migrate()`.

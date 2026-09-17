@@ -18,7 +18,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// sont recopiés à dessein.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserCreationCollection.Name)]
 public class CreationValidation(BrowserHarness harness)
 {
   private const string DialogTitle = "Créer une nouvelle demande";

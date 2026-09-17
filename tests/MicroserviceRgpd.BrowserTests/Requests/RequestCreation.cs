@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// l'envoi. Le reste atteint le vrai handler.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserCreationCollection.Name)]
 public class RequestCreation(BrowserHarness harness)
 {
   private const string DialogTitle = "Créer une nouvelle demande";

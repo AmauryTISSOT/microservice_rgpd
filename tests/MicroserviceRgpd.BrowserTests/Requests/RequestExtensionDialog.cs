@@ -21,7 +21,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// <see cref="ExtensionGround"/>, <see cref="RequestRow"/> : une phrase retouchée là l'est ici.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserModificationCollection.Name)]
 public class RequestExtensionDialog(BrowserHarness harness)
 {
   /// <summary>Les trois façons de renoncer.</summary>
