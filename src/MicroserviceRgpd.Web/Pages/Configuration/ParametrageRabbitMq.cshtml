@@ -65,6 +65,38 @@
 <partial name="_ParametrageTabs" model="@ParametrageFaces.RabbitMq" />
 
 @*
+  LE BANDEAU DE CONNEXION — ce déploiement n'a aucune connexion RabbitMQ, et rien ne partira donc
+  sur le bus quoi qu'on déclare ici. Il est EN TÊTE DE LA FACE, avant la prose et avant les six
+  droits : lu après les routages, il serait arrivé trop tard pour empêcher de les croire opérants.
+
+  ⚠️ IL NE PARAÎT QUE S'IL CONCERNE L'INTÉGRATEUR — pas tant qu'aucun routage n'est posé. Un
+  avertissement permanent sur un écran qu'on vient d'ouvrir devient un meuble, et on cesse de le
+  lire le jour où il dit quelque chose.
+
+  ⚠️ IL NOMME LA CLÉ, et c'est ce qui le rend actionnable : dire « aucune connexion configurée »
+  sans dire OÙ la configurer aurait renvoyé l'intégrateur à la documentation. Elle se lit sur la
+  constante que le page model interroge, jamais recopiée ici.
+
+  ⚠️ IL NE PARAÎT JAMAIS SUR LA FACE HTTP : un avertissement RabbitMQ n'a rien à dire d'un écran qui
+  ne parle pas de RabbitMQ. C'est pour cela qu'il vit dans CE gabarit et non dans le layout.
+*@
+@if (Model.WarnsThatNothingWillBePublished)
+{
+  <div class="advisory">
+    <p>
+      <strong>Aucune connexion RabbitMQ n'est configurée sur ce déploiement.</strong> Les routages
+      ci-dessous sont bien enregistrés, mais le service n'a pas de broker où publier : tant qu'il
+      n'en a pas, l'exercice d'un droit réglé sur RabbitMQ ne partira pas.
+    </p>
+    <p>
+      La connexion se pose dans la configuration du déploiement, sous la clé
+      <code>@ParametrageRabbitMqModel.BrokerHostNameKey</code> — jamais depuis cet écran, qui ne
+      détient aucun secret.
+    </p>
+  </div>
+}
+
+@*
   La phrase dit ce que cette face est : le routage, droit par droit, par lequel le service publiera
   l'exercice de chacun des six droits. Un droit sans adresse ni routage est « non configuré ».
 

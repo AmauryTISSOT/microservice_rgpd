@@ -471,6 +471,7 @@ h2 {
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
 a.doorway,
+.advisory,
 .caveat,
 .claim,
 .clause,
@@ -497,6 +498,31 @@ table.queue:not(.columns, .table-frame > table) {
   border-left: var(--rule-width) solid var(--ink-secondary);
   color: var(--ink-secondary);
   font-style: italic;
+}
+
+/*
+  L'AVERTISSEMENT DE DÉPLOIEMENT — la carte de la mise en garde, dont il ne change QUE LE FILET : il
+  occupe la même place et se lit de la même façon, et c'est l'orange qui dit qu'ici quelque chose
+  manque. Il n'est ni en italique ni en encre secondaire : une mise en garde s'efface derrière ce
+  qu'elle accompagne, un avertissement se lit d'abord.
+
+  ⚠️ L'ORANGE N'EST PAS ROUGE. `.refusals` porte le filet rouge du refus — un geste que le service
+  n'a pas retenu. Ici, rien n'a été refusé : ce qui est enregistré l'est bien, et c'est le
+  déploiement qui ne sait pas encore s'en servir.
+
+  ⚠️ LA COULEUR NE DIT JAMAIS SEULE CE QU'ELLE SIGNALE : le texte porte l'avertissement en toutes
+  lettres, et le filet ôté, la phrase dit encore tout.
+*/
+.advisory {
+  border-left: var(--rule-width) solid var(--signal-warning);
+}
+
+.advisory p {
+  margin: 0;
+}
+
+.advisory p + p {
+  margin-top: var(--space-xs);
 }
 
 .premises h3,
