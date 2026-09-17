@@ -14,7 +14,7 @@ namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 /// <remarks>
 /// <para>
 /// ⚠️ <b>Le serveur fait foi, juste avant l'appel.</b> L'écran a pu montrer un bouton actif sur une
-/// demande qu'un autre onglet a close, ou dont l'adresse a été retirée : les conditions sont relues
+/// demande qu'un autre onglet a close, ou dont le canal a été retiré : les conditions sont relues
 /// ici, sur la demande et le Paramétrage de l'instant. Une demande close est un <c>Conflict</c>, comme
 /// pour la modification ; tout autre motif est un <c>Invalid</c>.
 /// </para>
@@ -74,17 +74,17 @@ public sealed class ExecuteDataSubjectRequestHandler(
     }
 
     var current = await ServiceSettings.ReadAsync(settings, cancellationToken);
-    var endpoint = ServiceSettings.HttpAddressFor(current, request.Right);
+    var channel = current.ChannelFor(request.Right);
 
-    if (request.ExecutionBlockFacing(endpoint) is { } block)
+    if (request.ExecutionBlockFacing(channel) is { } block)
     {
       return new BlockedExecution(
         new DataSubjectRequestExecution(RecordedDataSubjectRequest.Of(request, current), block, null, null),
         block.FrenchLabelFor(request.Right));
     }
 
-    // Exécutable implique une adresse : le dernier motif est son absence.
-    var called = endpoint!.Value;
+    // Exécutable implique une adresse HTTP : les deux derniers motifs disent tout autre canal.
+    var called = ((ExerciseChannel.HttpEndpoint)channel).Address;
 
     // La demande telle que la base la porte avant l'appel : celle que rend tout échec.
     var unchanged = RecordedDataSubjectRequest.Of(request, current);

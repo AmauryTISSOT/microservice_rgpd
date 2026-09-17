@@ -1,4 +1,5 @@
 using System.Globalization;
+using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExecution;
 
 namespace MicroserviceRgpd.Web.Pages.Requests;
@@ -21,14 +22,14 @@ namespace MicroserviceRgpd.Web.Pages.Requests;
 /// <param name="FirstName">Le prénom, ou « — ».</param>
 /// <param name="LastName">Le nom, ou « — ».</param>
 /// <param name="Email">L'email, ou « — ».</param>
-/// <param name="Endpoint">L'adresse appelée, query string comprise, ou « — ».</param>
+/// <param name="Exercise">Par où la demande partirait : l'adresse appelée, query string comprise, l'exchange et la routing key, ou « — ».</param>
 /// <param name="Block">Le motif de blocage, ou <c>null</c> quand la demande s'exécute.</param>
 public sealed record ExecutionConfirmation(
   string Right,
   string FirstName,
   string LastName,
   string Email,
-  string Endpoint,
+  string Exercise,
   string? Block)
 {
   /// <summary>Le titre de la modale : le nom même du geste, celui du bouton de la ligne.</summary>
@@ -50,8 +51,8 @@ public sealed record ExecutionConfirmation(
   /// <summary>Le libellé de l'email dans le récapitulatif.</summary>
   public const string EmailLabel = "Email";
 
-  /// <summary>Le libellé de l'adresse dans le récapitulatif.</summary>
-  public const string EndpointLabel = "Adresse appelée";
+  /// <summary>Le libellé du canal d'exercice dans le récapitulatif.</summary>
+  public const string ExerciseLabel = "Exercice";
 
   /// <summary>Le bouton qui renonce, sans aucun appel.</summary>
   public const string Cancel = "Annuler";
@@ -72,6 +73,9 @@ public sealed record ExecutionConfirmation(
   /// <summary>Ce qu'affiche une valeur absente : une absence, pas une cible restée vide.</summary>
   private const string Absent = "—";
 
+  /// <summary>Un routage RabbitMQ en toutes lettres : ses deux valeurs, nommées.</summary>
+  private const string RoutingFormat = "exchange {0}, routing key {1}";
+
   /// <summary>Le récapitulatif en libellés.</summary>
   /// <exception cref="ArgumentNullException"><paramref name="summary"/> est absent.</exception>
   public static ExecutionConfirmation Of(DataSubjectRequestExecutionSummary summary)
@@ -83,7 +87,24 @@ public sealed record ExecutionConfirmation(
       summary.FirstName?.Value ?? Absent,
       summary.LastName?.Value ?? Absent,
       summary.Email?.Value ?? Absent,
-      summary.Endpoint?.Value ?? Absent,
+      ExerciseOf(summary.Exercise),
       summary.Block?.FrenchLabelFor(summary.Right));
   }
+
+  /// <summary>
+  /// Par où la demande partirait, en toutes lettres : l'adresse telle quelle, le routage sous ses deux
+  /// valeurs, ou l'absence d'un droit « non configuré » (ADR-0027).
+  /// </summary>
+  private static string ExerciseOf(ExerciseChannel channel) => channel switch
+  {
+    ExerciseChannel.HttpEndpoint http => http.Address.Value,
+    ExerciseChannel.RabbitMq rabbit => string.Format(
+      CultureInfo.InvariantCulture,
+      RoutingFormat,
+      rabbit.Routing.Exchange.Value,
+      rabbit.Routing.RoutingKey.Value),
+
+    // « Non configuré », le troisième et dernier cas : la hiérarchie est fermée.
+    _ => Absent,
+  };
 }

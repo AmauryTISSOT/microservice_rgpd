@@ -80,7 +80,7 @@ public class ReadDataSubjectRequestsHandlerTests
       ARequestFrom(Origin.Email, identityVerified: false, right: "Access"));
 
     read.Select(request => request.ExecutionBlock).ShouldBe(
-      [null, ExecutionBlock.NoEndpoint, ExecutionBlock.IdentityNotVerified]);
+      [null, ExecutionBlock.RightNotConfigured, ExecutionBlock.IdentityNotVerified]);
   }
 
   /// <summary>
@@ -104,7 +104,7 @@ public class ReadDataSubjectRequestsHandlerTests
   {
     var read = await ReadAllAsync(null, ARequestFrom(Origin.Email, identityVerified: true));
 
-    read.ShouldHaveSingleItem().ExecutionBlock.ShouldBe(ExecutionBlock.NoEndpoint);
+    read.ShouldHaveSingleItem().ExecutionBlock.ShouldBe(ExecutionBlock.RightNotConfigured);
   }
 
   /// <summary>Ce que la lecture rend de la demande nommée, elle seule étant enregistrée.</summary>

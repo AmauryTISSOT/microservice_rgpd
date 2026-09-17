@@ -134,6 +134,24 @@ public class ExecuteDataSubjectRequestHandlerTests
   }
 
   /// <summary>
+  /// ⚠️ <b>Un droit exercé par RabbitMQ n'appelle rien, ne publie rien et n'écrit aucune tentative</b> :
+  /// le service ne sait pas encore publier, et le motif le dit sans rien tenter.
+  /// </summary>
+  [Fact]
+  public async Task PublishesNothingForARightExercisedByRabbitMq()
+  {
+    RouteAccessOnRabbitMq();
+    var request = AnExecutableRequest();
+
+    var result = await HandleAsync(request);
+
+    result.Value.Block.ShouldBe(ExecutionBlock.RabbitMqNotYetSupported);
+    result.Value.Request.ExecutionBlock.ShouldBe(ExecutionBlock.RabbitMqNotYetSupported);
+    request.Status.ShouldBe(RequestStatus.InProgress);
+    await NothingWasCalledNorWrittenAsync();
+  }
+
+  /// <summary>
   /// <b>Une demande close est refusée en conflit</b>, sans appel ni tentative — et rendue, pour que
   /// l'écran remette la ligne à jour.
   /// </summary>
@@ -161,14 +179,20 @@ public class ExecuteDataSubjectRequestHandlerTests
   [Theory]
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
   [InlineData(nameof(ExecutionBlock.EmailMissing))]
-  [InlineData(nameof(ExecutionBlock.NoEndpoint))]
+  [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
+  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
   public async Task RefusesEveryOtherBlockAsInvalidWithoutCallingNorLogging(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
 
-    if (block == ExecutionBlock.NoEndpoint)
+    if (block == ExecutionBlock.RightNotConfigured)
     {
       _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([]);
+    }
+
+    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    {
+      RouteAccessOnRabbitMq();
     }
 
     var request = ARequest(
@@ -183,6 +207,17 @@ public class ExecuteDataSubjectRequestHandlerTests
     result.Value.Request.Id.ShouldBe(request.Id);
     request.Status.ShouldBe(RequestStatus.InProgress);
     await NothingWasCalledNorWrittenAsync();
+  }
+
+  /// <summary>Route le droit d'accès sur RabbitMQ : un droit configuré, que le service ne sait pas encore exercer.</summary>
+  private void RouteAccessOnRabbitMq()
+  {
+    var routed = Settings.Unconfigured();
+    routed.SetChannel(
+      DataSubjectRight.Access,
+      new ExerciseChannel.RabbitMq(new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces"))));
+
+    _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([routed]);
   }
 
   /// <summary><b>Une demande disparue rend « introuvable »</b>, sans appel ni tentative.</summary>

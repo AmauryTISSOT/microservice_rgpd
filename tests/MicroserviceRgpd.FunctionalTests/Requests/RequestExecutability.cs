@@ -5,6 +5,7 @@ using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
+using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
 using MicroserviceRgpd.Web.Pages.Requests;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,13 +61,18 @@ public class RequestExecutability(CustomWebApplicationFactory<Program> factory) 
   [InlineData(nameof(ExecutionBlock.Closed))]
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
   [InlineData(nameof(ExecutionBlock.EmailMissing))]
-  [InlineData(nameof(ExecutionBlock.NoEndpoint))]
+  [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
+  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
   public async Task DimsTheExecutionAndSaysTheBlock(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
     var marker = Guid.NewGuid().ToString("N");
 
-    if (block != ExecutionBlock.NoEndpoint)
+    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    {
+      await RouteAsync(DataSubjectRight.Erasure);
+    }
+    else if (block != ExecutionBlock.RightNotConfigured)
     {
       await ConfigureAsync(DataSubjectRight.Erasure);
     }
@@ -164,6 +170,19 @@ public class RequestExecutability(CustomWebApplicationFactory<Program> factory) 
 
     var set = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
       new SetRightEndpointCommand(right, EndpointUrl.From("https://brocanto.example.fr/rgpd")));
+
+    set.IsSuccess.ShouldBeTrue();
+  }
+
+  /// <summary>Route le droit sur RabbitMQ, par le use case du Paramétrage.</summary>
+  private async Task RouteAsync(DataSubjectRight right)
+  {
+    using var scope = factory.Services.CreateScope();
+
+    var set = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
+      new SetRightRabbitMqRoutingCommand(
+        right,
+        new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.effacement"))));
 
     set.IsSuccess.ShouldBeTrue();
   }

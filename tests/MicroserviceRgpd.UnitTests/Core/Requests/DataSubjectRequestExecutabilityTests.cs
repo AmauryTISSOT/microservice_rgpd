@@ -5,26 +5,43 @@ using MicroserviceRgpd.Core.SharedKernel;
 namespace MicroserviceRgpd.UnitTests.Core.Requests;
 
 /// <summary>
-/// <b>Une demande dit si elle s'exécute</b>, face à l'adresse — ou à l'absence d'adresse — que le
-/// Paramétrage associe à son droit : « exécutable », ou le <b>premier</b> motif de blocage, dans
-/// l'ordre demande close → identité non vérifiée → email manquant → aucune adresse (ADR-0026).
+/// <b>Une demande dit si elle s'exécute</b>, face au canal d'exercice que le Paramétrage associe à
+/// son droit : « exécutable », ou le <b>premier</b> motif de blocage, dans l'ordre demande close →
+/// identité non vérifiée → email manquant → droit non configuré → exercice par RabbitMQ (ADR-0026,
+/// ADR-0027).
 /// </summary>
 /// <remarks>
-/// ⚠️ <b>Les seize combinaisons des quatre conditions sont jouées</b> : un ordre qui ne se lit que
-/// sur des cas isolés laisse passer une inversion entre deux motifs qui manquent ensemble.
+/// ⚠️ <b>Les vingt-quatre combinaisons des trois conditions et des trois canaux sont jouées</b> : un
+/// ordre qui ne se lit que sur des cas isolés laisse passer une inversion entre deux motifs qui
+/// manquent ensemble.
 /// </remarks>
 public class DataSubjectRequestExecutabilityTests
 {
   private static readonly DateTimeOffset Now = new(2026, 9, 11, 8, 15, 0, TimeSpan.Zero);
 
-  private static readonly EndpointUrl Endpoint = EndpointUrl.From("https://brocanto.example.fr/rgpd/acces");
+  private static readonly ExerciseChannel Http = new ExerciseChannel.HttpEndpoint(
+    EndpointUrl.From("https://brocanto.example.fr/rgpd/acces"));
 
-  /// <summary>Chaque combinaison des quatre conditions, et le motif attendu — <c>null</c> pour « exécutable ».</summary>
-  public static TheoryData<bool, bool, bool, bool, string?> EveryCombination
+  private static readonly ExerciseChannel Routed = new ExerciseChannel.RabbitMq(
+    new RabbitMqRouting(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces")));
+
+  /// <summary>Les trois canaux, sous le nom que la théorie leur donne.</summary>
+  private static readonly Dictionary<string, ExerciseChannel> Channels = new(StringComparer.Ordinal)
+  {
+    ["http"] = Http,
+    ["rabbitmq"] = Routed,
+    ["aucun"] = ExerciseChannel.NotConfigured.Instance,
+  };
+
+  /// <summary>
+  /// Chaque combinaison des trois conditions et des trois canaux, et le motif attendu — <c>null</c>
+  /// pour « exécutable ».
+  /// </summary>
+  public static TheoryData<bool, bool, bool, string, string?> EveryCombination
   {
     get
     {
-      var combinations = new TheoryData<bool, bool, bool, bool, string?>();
+      var combinations = new TheoryData<bool, bool, bool, string, string?>();
 
       foreach (var closed in new[] { false, true })
       {
@@ -32,16 +49,17 @@ public class DataSubjectRequestExecutabilityTests
         {
           foreach (var withEmail in new[] { false, true })
           {
-            foreach (var withEndpoint in new[] { false, true })
+            foreach (var channel in Channels.Keys)
             {
               var expected =
                 closed ? nameof(ExecutionBlock.Closed)
                 : !verified ? nameof(ExecutionBlock.IdentityNotVerified)
                 : !withEmail ? nameof(ExecutionBlock.EmailMissing)
-                : !withEndpoint ? nameof(ExecutionBlock.NoEndpoint)
+                : channel == "aucun" ? nameof(ExecutionBlock.RightNotConfigured)
+                : channel == "rabbitmq" ? nameof(ExecutionBlock.RabbitMqNotYetSupported)
                 : null;
 
-              combinations.Add(closed, verified, withEmail, withEndpoint, expected);
+              combinations.Add(closed, verified, withEmail, channel, expected);
             }
           }
         }
@@ -52,23 +70,35 @@ public class DataSubjectRequestExecutabilityTests
   }
 
   /// <summary>
-  /// <b>En cours, identité vérifiée, avec un email, et un droit qui a une adresse</b> : la demande
-  /// s'exécute, et aucun motif n'est rendu.
+  /// <b>En cours, identité vérifiée, avec un email, et un droit qui a une adresse HTTP</b> : la
+  /// demande s'exécute, et aucun motif n'est rendu.
   /// </summary>
   [Fact]
   public void IsExecutableWhenEveryConditionHolds()
   {
     ARequest(closed: false, verified: true, withEmail: true)
-      .ExecutionBlockFacing(Endpoint)
+      .ExecutionBlockFacing(Http)
       .ShouldBeNull();
   }
 
-  /// <summary>Le motif rendu est le premier qui manque, dans l'ordre de l'ADR-0026.</summary>
+  /// <summary>
+  /// ⚠️ <b>Un droit routé sur RabbitMQ est configuré, et pourtant bloqué</b> : le service ne sait pas
+  /// encore publier, et le motif le dit — le dernier des cinq.
+  /// </summary>
+  [Fact]
+  public void BlocksARightExercisedByRabbitMq()
+  {
+    ARequest(closed: false, verified: true, withEmail: true)
+      .ExecutionBlockFacing(Routed)
+      .ShouldBe(ExecutionBlock.RabbitMqNotYetSupported);
+  }
+
+  /// <summary>Le motif rendu est le premier qui manque, dans l'ordre des ADR-0026 et 0027.</summary>
   [Theory]
   [MemberData(nameof(EveryCombination))]
-  public void RendersTheFirstBlockInOrder(bool closed, bool verified, bool withEmail, bool withEndpoint, string? expected)
+  public void RendersTheFirstBlockInOrder(bool closed, bool verified, bool withEmail, string channel, string? expected)
   {
-    var block = ARequest(closed, verified, withEmail).ExecutionBlockFacing(withEndpoint ? Endpoint : null);
+    var block = ARequest(closed, verified, withEmail).ExecutionBlockFacing(Channels[channel]);
 
     block?.Name.ShouldBe(expected);
     (block is null).ShouldBe(expected is null);
@@ -85,7 +115,7 @@ public class DataSubjectRequestExecutabilityTests
     var request = ARequest(closed: false, verified: true, withEmail: true);
     SetStatus(request, RequestStatus.FromName(status));
 
-    request.ExecutionBlockFacing(Endpoint).ShouldBe(ExecutionBlock.Closed);
+    request.ExecutionBlockFacing(Http).ShouldBe(ExecutionBlock.Closed);
   }
 
   /// <summary>

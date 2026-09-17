@@ -108,13 +108,13 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
 
   /// <summary>
   /// <b>Rend le récapitulatif de l'exécution d'une demande</b> en JSON — le droit avec son article, le
-  /// prénom, le nom, l'email, l'adresse appelée et le motif de blocage — et répond 200, ou 404 quand
+  /// prénom, le nom, l'email, le canal d'exercice et le motif de blocage — et répond 200, ou 404 quand
   /// la demande n'existe plus, ou 400 quand l'identifiant n'en est pas un.
   /// </summary>
   /// <remarks>
   /// <para>
-  /// ⚠️ <b>Relu à chaque ouverture de la modale, jamais gardé</b> : l'<c>Operator</c> confirme l'adresse
-  /// et les données de l'instant, pas celles du chargement de la page (ADR-0026).
+  /// ⚠️ <b>Relu à chaque ouverture de la modale, jamais gardé</b> : l'<c>Operator</c> confirme le canal
+  /// et les données de l'instant, pas ceux du chargement de la page (ADR-0026).
   /// </para>
   /// <para>
   /// Lire n'est pas exécuter : rien ne part au système hôte. Comme les autres handlers de la page, ce

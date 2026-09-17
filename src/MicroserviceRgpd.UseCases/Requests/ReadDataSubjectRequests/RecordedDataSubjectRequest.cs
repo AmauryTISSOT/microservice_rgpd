@@ -28,7 +28,7 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 /// <param name="Status">Où en est la demande.</param>
 /// <param name="ExecutionBlock">
 /// Le premier motif de blocage de l'exécution, ou <c>null</c> quand la demande s'exécute — calculé par
-/// la demande face à l'adresse que le Paramétrage associe à son droit (ADR-0026).
+/// la demande face au canal d'exercice que le Paramétrage associe à son droit (ADR-0026, ADR-0027).
 /// </param>
 public sealed record RecordedDataSubjectRequest(
   DataSubjectRequestId Id,
@@ -67,6 +67,6 @@ public sealed record RecordedDataSubjectRequest(
       request.CreatedBy,
       request.CreatedAt,
       request.Status,
-      request.ExecutionBlockFacing(ServiceSettings.HttpAddressFor(settings, request.Right)));
+      request.ExecutionBlockFacing(settings.ChannelFor(request.Right)));
   }
 }
