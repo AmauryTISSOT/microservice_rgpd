@@ -1,5 +1,6 @@
 using System.Globalization;
 using MicroserviceRgpd.Core.Requests;
+using MicroserviceRgpd.Web.Pages.Requests;
 
 namespace MicroserviceRgpd.BrowserTests.Requests;
 
@@ -39,6 +40,9 @@ public class RequestSheet(BrowserHarness harness)
 
   /// <summary>Le premier bloc de la fiche, à quoi elle se reconnaît, recopié à dessein.</summary>
   private const string FirstBlock = "La personne";
+
+  /// <summary>Le titre du bloc de la prolongation, recopié à dessein.</summary>
+  private const string ExtensionBlockTitle = "Prolongation";
 
   /// <summary>Le titre de la confirmation d'abandon : celle qui ne doit jamais se montrer ici.</summary>
   private const string ConfirmationTitle = "Abandonner la saisie ?";
@@ -439,6 +443,99 @@ public class RequestSheet(BrowserHarness harness)
     (await FactsOfAsync(page)).ShouldContain("Origine : Courrier");
     (await FactsOfAsync(page)).ShouldContain($"Email : {email}");
   }
+
+  /// <summary>
+  /// <b>La fiche d'une demande prolongée montre le bloc « Prolongation » entier</b> — la date limite
+  /// initiale, la date de la prolongation, le motif sous son libellé français et la justification —,
+  /// et <b>celle d'une demande non prolongée ne le montre pas du tout</b> : ni titre, ni champ vide,
+  /// ni tiret. Les deux demandes sont sur la même page, et rien n'est rechargé entre les deux.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La justification se lit en entier</b>, dans le même bloc que le message de la demande :
+  /// c'est l'autre texte long de la fiche.
+  /// </remarks>
+  [Fact]
+  public async Task ShowsTheExtensionBlockOnAnExtendedRequestAndHidesItOnAnother()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var extended = UniqueEmail();
+    var untouched = UniqueEmail();
+    var justification = ALongJustification();
+
+    await harness.RecordRequestAsync("Martin", "Jeanne", extended);
+    await harness.RecordRequestAsync("Martin", "Jeanne", untouched);
+    await page.GotoAsync("/demandes");
+
+    var extendedRow = await RowOfAsync(page, extended);
+    await ExtendFromTheDialogAsync(page, extendedRow, justification);
+    await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+    var extendedAt = await extendedRow.GetAttributeAsync("data-sheet-extended-at");
+    extendedAt.ShouldNotBeNull("La ligne prolongée ne porte pas la date de la prolongation.");
+    extendedAt.ShouldMatch(@"^\d{2}/\d{2}/\d{4} \d{2}:\d{2}$", "La date de la prolongation n'est pas un instant en jj/mm/aaaa hh:mm.");
+
+    // ⚠️ RIEN NE PART AU RÉSEAU : le bloc vient des `data-sheet-*` de la ligne, comme le reste.
+    var sent = new List<string>();
+    page.Request += (_, request) => sent.Add($"{request.Method} {request.Url}");
+
+    await OpenTheSheetAsync(extendedRow);
+
+    sent.ShouldBeEmpty("L'ouverture de la fiche d'une demande prolongée a appelé le service.");
+    await Expect(ExtensionBlock(page)).ToBeVisibleAsync();
+    (await FactsOfAsync(page)).ShouldContain("Date limite initiale : 15/02/2026");
+    (await FactsOfAsync(page)).ShouldContain($"Date de la prolongation : {extendedAt}");
+    (await FactsOfAsync(page)).ShouldContain($"{ExtensionConfirmation.GroundLabel} : {ExtensionGround.Complexity.FrenchLabel}");
+
+    // ⚠️ LA JUSTIFICATION LA PLUS LONGUE QUE LE DOMAINE ACCEPTE S'AFFICHE EN ENTIER, comme le message.
+    (await JustificationOf(page).TextContentAsync()).ShouldBe(justification);
+    await Expect(JustificationOf(page)).ToHaveCSSAsync("white-space", "pre-wrap");
+    await Expect(JustificationOf(page)).ToHaveCSSAsync("overflow-y", "auto");
+
+    await CloseByAsync(page, "Échap");
+    await Expect(Sheet(page)).ToBeHiddenAsync();
+
+    // ⚠️ L'AUTRE DEMANDE DE LA MÊME PAGE : le bloc disparaît entier, titre compris.
+    await OpenTheSheetAsync(await RowOfAsync(page, untouched));
+
+    await Expect(ExtensionBlock(page)).ToBeHiddenAsync();
+    await Expect(Sheet(page).GetByRole(AriaRole.Heading, new() { Name = ExtensionBlockTitle, Exact = true })).ToBeHiddenAsync();
+    (await LabelsOfAsync(page)).ShouldNotContain("Date limite initiale");
+    (await LabelsOfAsync(page)).ShouldNotContain(ExtensionConfirmation.GroundLabel);
+    (await Sheet(page).InnerTextAsync()).ShouldNotContain(justification);
+  }
+
+  /// <summary>
+  /// La justification <b>la plus longue que le domaine accepte</b> — 2 000 caractères —, sur plusieurs
+  /// lignes et reconnaissable d'un scénario à l'autre : c'est ce texte-là qui voyage dans un attribut
+  /// de la ligne, et que la fiche doit rendre en entier.
+  /// </summary>
+  private static string ALongJustification()
+  {
+    var opening = $"Les données sont réparties sur quatre systèmes. {Guid.NewGuid()}\n";
+
+    return opening + new string('à', 2_000 - opening.Length);
+  }
+
+  /// <summary>Prolonge la demande de cette ligne depuis la modale, pour le motif de la complexité.</summary>
+  private static async Task ExtendFromTheDialogAsync(IPage page, ILocator row, string justification)
+  {
+    await row.GetByRole(AriaRole.Button, new() { Name = RequestRow.ExtensionOffered, Exact = true }).ClickAsync();
+
+    var dialog = page.GetByRole(AriaRole.Dialog, new() { Name = ExtensionConfirmation.Title, Exact = true });
+    await dialog.GetByLabel(ExtensionConfirmation.GroundLabel, new() { Exact = true })
+      .SelectOptionAsync(nameof(ExtensionGround.Complexity));
+    await dialog.GetByLabel(ExtensionConfirmation.JustificationLabel, new() { Exact = true }).FillAsync(justification);
+    await dialog.GetByRole(AriaRole.Button, new() { Name = ExtensionConfirmation.Confirm, Exact = true }).ClickAsync();
+
+    await Expect(dialog).ToBeHiddenAsync();
+  }
+
+  /// <summary>Le bloc « Prolongation » de la fiche, montré sur la seule demande qui a été prolongée.</summary>
+  private static ILocator ExtensionBlock(IPage page) => Sheet(page).Locator("[data-block='extension']");
+
+  /// <summary>La justification, sous son libellé, hors de la liste de définitions.</summary>
+  private static ILocator JustificationOf(IPage page) => Sheet(page).Locator("[data-field='extensionJustification']");
 
   /// <summary>Crée une demande depuis la modale, reçue par courrier, et attend sa ligne.</summary>
   private static async Task CreateFromTheDialogAsync(IPage page, string email, string message)

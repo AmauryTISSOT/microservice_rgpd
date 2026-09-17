@@ -81,12 +81,22 @@
   qu'enregistré, retours à la ligne compris. ⚠️ AUCUN REPLI « — » POUR LE MESSAGE : il est
   obligatoire (ADR-0019), une demande sans message ne s'enregistre pas.
 
+  ET, SUR UNE DEMANDE PROLONGÉE SEULEMENT, LES QUATRE VALEURS DE SA PROLONGATION : la date limite
+  initiale, la date de la prolongation, le motif sous SON LIBELLÉ FRANÇAIS et la justification telle
+  qu'elle a été écrite. ⚠️ AUCUN DE CES QUATRE ATTRIBUTS N'EST RENDU SUR UNE DEMANDE NON PROLONGÉE :
+  c'est leur ABSENCE qui dit à la fiche de ne pas montrer le bloc — et comme Razor écrirait un
+  attribut vide plutôt que de l'ôter, le view model rend les quatre d'un bloc, ou rien. C'est le prix
+  assumé du « sans aller-retour réseau » : une justification de 2 000 caractères voyage dans un
+  attribut de chaque ligne — le message, plafonné à 10 000, le paie déjà.
+
   ET CE QUE LE TRI COMPARE : la date de réception en ISO, et l'instant d'enregistrement en ISO UTC,
   qui départage deux demandes reçues le même jour — et non les libellés `jj/mm/aaaa`, qui ne se
   trient pas. Ce sont aussi les clés que le script compare pour placer la ligne d'une demande qu'on
   vient de créer, dans le sens du tri sélectionné : les mêmes clés, lues des deux côtés.
 *@
 @{
+  var extensionAttributes = Model.ForSheet.Extension?.Attributes();
+
   (string Label, string Tooltip, string Icon, string Action, bool Dimmed)[] actions =
   [
     ("Supprimer la demande", "Supprimer la demande", "M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4M6.5 6.5v4.5M9.5 6.5v4.5", "delete", false),
@@ -104,7 +114,8 @@
     data-created-at="@Model.Sort.CreatedAt"
     data-sheet-person="@Model.ForSheet.Person"
     data-sheet-origin="@Model.ForSheet.Origin"
-    data-sheet-message="@Model.ForSheet.Message">
+    data-sheet-message="@Model.ForSheet.Message"
+    @extensionAttributes>
   <td data-field="email">@Model.Email</td>
   <td data-field="lastName">@Model.LastName</td>
   <td data-field="firstName">@Model.FirstName</td>

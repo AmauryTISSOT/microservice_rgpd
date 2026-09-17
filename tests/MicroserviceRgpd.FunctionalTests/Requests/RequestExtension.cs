@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -243,6 +244,67 @@ public class RequestExtension(CustomWebApplicationFactory<Program> factory)
 
     response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     (await _surface.RowOfAsync(message))["extended_at"].ShouldBeNull();
+  }
+
+  /// <summary>
+  /// <b>La ligne d'une demande prolongée porte les quatre valeurs de sa prolongation pour la
+  /// fiche</b> — la date limite initiale, la date de la prolongation, le motif <b>sous son libellé
+  /// français</b> et la justification telle qu'enregistrée —, et celle d'une demande <b>non</b>
+  /// prolongée n'en porte aucune : c'est leur absence qui dit à la fiche de masquer le bloc.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>C'est ce qui permet à la fiche de s'ouvrir sans aller-retour réseau</b> : tout ce qu'elle
+  /// montre, la ligne le porte déjà.
+  /// </remarks>
+  [Fact]
+  public async Task CarriesTheFourExtensionValuesForTheSheetOnlyOnAnExtendedRequest()
+  {
+    var justification = "  Les données sont réparties sur quatre systèmes.  ";
+    var (id, message) = await _surface.RecordAsync(new Dictionary<string, string> { ["receivedOn"] = "2026-01-15" });
+
+    foreach (var name in SheetExtensionAttributes)
+    {
+      AttributesOf(await _surface.BoardRowWithAsync(message))
+        .ShouldNotContain(name, Case.Sensitive, $"Une demande non prolongée porte « {name} ».");
+    }
+
+    (await _surface.ExtendAsync(id, new Dictionary<string, string>
+    {
+      [DataSubjectRequestField.ExtensionGround] = nameof(ExtensionGround.Complexity),
+      [DataSubjectRequestField.ExtensionJustification] = justification,
+    })).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    var extendedAt = (DateTime)(await _surface.RowOfAsync(message))["extended_at"]!;
+    var attributes = AttributesOf(await _surface.BoardRowWithAsync(message));
+
+    AttributeOf(attributes, "data-sheet-initial-response-deadline").ShouldBe("15/02/2026");
+    AttributeOf(attributes, "data-sheet-extended-at").ShouldBe(
+      ParisCalendar.InParis(new DateTimeOffset(extendedAt, TimeSpan.Zero))
+        .ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture));
+    AttributeOf(attributes, "data-sheet-extension-ground").ShouldBe(ExtensionGround.Complexity.FrenchLabel);
+    AttributeOf(attributes, "data-sheet-extension-justification").ShouldBe(justification.Trim());
+  }
+
+  /// <summary>Les quatre attributs que la ligne d'une demande prolongée porte pour la fiche.</summary>
+  private static readonly string[] SheetExtensionAttributes =
+  [
+    "data-sheet-initial-response-deadline",
+    "data-sheet-extended-at",
+    "data-sheet-extension-ground",
+    "data-sheet-extension-justification",
+  ];
+
+  /// <summary>Les attributs de la balise <c>tr</c> d'une ligne rendue.</summary>
+  private static string AttributesOf(string row) => Regex.Match(row, @"<tr\b([^>]*)>").Groups[1].Value;
+
+  /// <summary>La valeur de l'attribut <paramref name="name"/>, décodée.</summary>
+  private static string AttributeOf(string attributes, string name)
+  {
+    var attribute = Regex.Match(attributes, $@"\b{Regex.Escape(name)}=""([^""]*)""");
+
+    attribute.Success.ShouldBeTrue($"La ligne ne porte pas « {name} ».");
+
+    return WebUtility.HtmlDecode(attribute.Groups[1].Value);
   }
 
   /// <summary>La cellule de la date limite de réponse d'une ligne rendue.</summary>

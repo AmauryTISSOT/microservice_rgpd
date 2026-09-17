@@ -26,9 +26,10 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 /// <param name="CreatedBy">Qui a enregistré la demande.</param>
 /// <param name="CreatedAt">L'instant d'enregistrement, en UTC.</param>
 /// <param name="Status">Où en est la demande.</param>
-/// <param name="Extended">
-/// La demande a-t-elle été prolongée ? ⚠️ <b>La date limite rendue est celle qui fait foi</b> :
-/// prolongée, elle porte déjà les deux mois. Ce booléen ne dit que la mention à afficher (ADR-0029).
+/// <param name="Extension">
+/// La prolongation de la demande, ou <c>null</c> tant qu'elle n'a pas été prolongée. ⚠️ <b>La date
+/// limite rendue reste celle qui fait foi</b> : prolongée, elle porte déjà les deux mois. La
+/// prolongation dit ce qui valait avant, et pourquoi (ADR-0029).
 /// </param>
 /// <param name="ExecutionBlock">
 /// Le premier motif de blocage de l'exécution, ou <c>null</c> quand la demande s'exécute — calculé par
@@ -49,9 +50,15 @@ public sealed record RecordedDataSubjectRequest(
   string CreatedBy,
   DateTimeOffset CreatedAt,
   RequestStatus Status,
-  bool Extended,
+  RecordedExtension? Extension,
   ExecutionBlock? ExecutionBlock)
 {
+  /// <summary>
+  /// La demande a-t-elle été prolongée ? ⚠️ <b>C'est la présence de la prolongation qui le dit</b>,
+  /// et non une valeur de plus : ses quatre valeurs sont renseignées ensemble ou pas du tout.
+  /// </summary>
+  public bool Extended => Extension is not null;
+
   /// <summary>
   /// Ce que la lecture rend d'une demande enregistrée, sous le Paramétrage <paramref name="settings"/>
   /// et la connexion <paramref name="connection"/> que le déploiement déclare.
@@ -80,7 +87,7 @@ public sealed record RecordedDataSubjectRequest(
       request.CreatedBy,
       request.CreatedAt,
       request.Status,
-      request.Extended,
+      RecordedExtension.Of(request),
       request.ExecutionBlockFacing(settings.ChannelFor(request.Right), connection));
   }
 }

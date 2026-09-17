@@ -434,7 +434,7 @@
   ⚠️ AUCUN GESTE NE S'Y TROUVE — ni suppression, ni modification, ni changement de statut : les
   gestes restent sur la ligne, à un seul endroit. Les deux seuls boutons ferment.
 
-  ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les cinq blocs titrés et les mots de chaque
+  ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les six blocs titrés et les mots de chaque
   valeur. ⚠️ SEULES LES VALEURS SONT VIDES AU CHARGEMENT : le titre — qui nomme la personne — et les
   cibles `data-field` attendent que l'œil d'une ligne y verse ce que sa ligne porte. Chaque cible se
   nomme comme la cellule dont elle reçoit les nœuds ; le module ne compose aucun libellé, et n'écrit
@@ -443,6 +443,10 @@
   ⚠️ AUCUNE CIBLE NE DISPARAÎT QUAND SA VALEUR MANQUE : la cellule porte alors « — », que la fiche
   reçoit comme le reste. « Pas de prénom » doit se distinguer de « la fiche ne montre pas le
   prénom », et la fiche garde la même forme d'une demande à l'autre.
+
+  ⚠️ LE BLOC « PROLONGATION » EST LA SEULE EXCEPTION, ET IL DISPARAÎT ENTIER : une demande non
+  prolongée n'en montre ni le titre, ni les champs, ni un tiret. Les autres cibles disent une valeur
+  absente d'une demande qui a le champ ; celle-ci dirait un acte qui n'a pas eu lieu.
 
   ⚠️ L'IDENTIFIANT TECHNIQUE DE LA DEMANDE N'A AUCUNE CIBLE ICI, et n'en aura pas : aucune cellule ne
   le porte, et il ne dit rien à l'`Operator`.
@@ -519,6 +523,39 @@
         <dt>Date limite de réponse</dt>
         <dd data-field="responseDeadline"></dd>
       </dl>
+    </section>
+
+    @*
+      LE BLOC DE LA PROLONGATION, MASQUÉ TANT QUE LA DEMANDE N'EST PAS PROLONGÉE — le seul bloc de la
+      fiche qui apparaisse et disparaisse. ⚠️ PAS QUATRE TIRETS SUR CHAQUE FICHE : ils apprendraient à
+      ne plus lire la section. C'est l'exception assumée à « aucune cible ne disparaît » : les autres
+      cibles disent une valeur absente d'une demande qui a le champ ; celles-ci diraient un acte qui
+      n'a pas eu lieu.
+
+      ⚠️ `hidden` SUR LA SECTION ENTIÈRE, TITRE COMPRIS : masquée, elle sort aussi de ce qu'un lecteur
+      d'écran parcourt, et la forme de la fiche reste celle d'avant.
+
+      LA JUSTIFICATION SORT DE LA LISTE DE DÉFINITIONS, comme le message de la demande : dans la
+      grille des faits, 2 000 caractères dicteraient la hauteur de tout le bloc.
+
+      LES MOTS SONT CEUX DE LA MODALE DE PROLONGATION pour les deux qu'elle nomme déjà : un même champ
+      ne porte pas deux noms selon l'endroit où il se lit.
+    *@
+    <section data-block="extension" hidden>
+      <h3>Prolongation</h3>
+      <dl class="facts">
+        <dt>Date limite initiale</dt>
+        <dd data-field="initialDeadline"></dd>
+        <dt>Date de la prolongation</dt>
+        <dd data-field="extendedAt"></dd>
+        <dt>@ExtensionConfirmation.GroundLabel</dt>
+        <dd data-field="extensionGround"></dd>
+      </dl>
+
+      <div class="sheet-message">
+        <h4>@ExtensionConfirmation.JustificationLabel</h4>
+        <p data-field="extensionJustification"></p>
+      </div>
     </section>
 
     <section>
