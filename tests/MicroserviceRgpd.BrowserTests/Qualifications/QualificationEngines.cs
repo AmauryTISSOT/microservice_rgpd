@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.BrowserTests.Qualifications;
 /// Les phrases de l'écran sont recopiées à dessein, comme ailleurs dans ce projet.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserProposalCollection.Name)]
 public class QualificationEngines
 {
   private readonly BrowserHarness _harness;

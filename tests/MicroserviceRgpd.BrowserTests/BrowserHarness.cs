@@ -29,6 +29,11 @@ namespace MicroserviceRgpd.BrowserTests;
 /// </remarks>
 public sealed class BrowserHarness : IAsyncLifetime
 {
+  /// <summary>Sérialise l'installation de Chromium, que tous les harnais demandent en démarrant.</summary>
+  private static readonly Lock ChromiumInstalls = new();
+
+  private static bool _chromiumInstalled;
+
   private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:18-alpine").Build();
 
   private ServiceOnARealPort? _service;
@@ -283,10 +288,25 @@ public sealed class BrowserHarness : IAsyncLifetime
 
   private Uri Address => _address ?? throw new InvalidOperationException("Le service n'est pas démarré.");
 
+  /// <summary>
+  /// ⚠️ <b>Une seule fois par processus, et sous verrou.</b> Les harnais des collections démarrent
+  /// de front : deux pilotes qui téléchargent dans le même cache se marchent dessus, et le premier
+  /// lancement d'un poste neuf échouerait sur une moitié de navigateur.
+  /// </summary>
   private static void InstallChromium()
   {
-    var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
+    lock (ChromiumInstalls)
+    {
+      if (_chromiumInstalled)
+      {
+        return;
+      }
 
-    exitCode.ShouldBe(0, "L'installation de Chromium par le pilote Playwright a échoué.");
+      var exitCode = Microsoft.Playwright.Program.Main(["install", "chromium"]);
+
+      exitCode.ShouldBe(0, "L'installation de Chromium par le pilote Playwright a échoué.");
+
+      _chromiumInstalled = true;
+    }
   }
 }

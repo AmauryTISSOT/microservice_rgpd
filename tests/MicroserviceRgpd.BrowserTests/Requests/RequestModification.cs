@@ -29,7 +29,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// base étant partagée par toute la collection.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserModificationCollection.Name)]
 public class RequestModification(BrowserHarness harness)
 {
   /// <summary>Le titre de la modale en mode modification, qui la nomme.</summary>

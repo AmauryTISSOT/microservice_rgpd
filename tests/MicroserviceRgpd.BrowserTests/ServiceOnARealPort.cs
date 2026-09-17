@@ -28,6 +28,18 @@ namespace MicroserviceRgpd.BrowserTests;
 /// </remarks>
 internal sealed class ServiceOnARealPort : WebApplicationFactory<Program>
 {
+  /// <summary>
+  /// Sérialise la pose de la chaîne de connexion et la construction de l'hôte qui la lit — comme
+  /// <c>CustomWebApplicationFactory</c> le fait dans les tests fonctionnels.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>La variable d'environnement est à tout le processus, les harnais ne le sont pas.</b>
+  /// Depuis que la suite compte plusieurs collections, plusieurs harnais bâtissent leur hôte en même
+  /// temps, chacun sur <b>sa</b> base : sans ce verrou, la chaîne posée par l'un serait lue par
+  /// l'autre, et une collection entière parlerait à la base d'une autre.
+  /// </remarks>
+  private static readonly Lock HostBuilds = new();
+
   private readonly string _connectionString;
 
   /// <summary>
@@ -81,14 +93,18 @@ internal sealed class ServiceOnARealPort : WebApplicationFactory<Program>
   {
     builder.UseEnvironment("Testing");
 
-    // Le ConfigurationManager de Program se construit pendant Build : la variable d'environnement est
-    // le seul moyen de lui fournir la chaîne assez tôt. Les fabriques de ce processus démarrent l'une
-    // après l'autre — toute la collection s'exécute en série — et sur la même base : aucun verrou
-    // n'est donc nécessaire, à la différence des tests fonctionnels.
-    Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _connectionString);
+    IHost host;
 
-    // La base construit l'hôte, lui pose le port retenu par UseKestrel, puis le démarre.
-    var host = base.CreateHost(builder);
+    // Le ConfigurationManager de Program se construit pendant Build : la variable d'environnement est
+    // le seul moyen de lui fournir la chaîne assez tôt. Elle est à tout le processus, et plusieurs
+    // collections bâtissent leur hôte en même temps : poser et lire doivent donc tenir ensemble.
+    lock (HostBuilds)
+    {
+      Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", _connectionString);
+
+      // La base construit l'hôte, lui pose le port retenu par UseKestrel, puis le démarre.
+      host = base.CreateHost(builder);
+    }
 
     using var scope = host.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();

@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// collection, et ne se vide pas entre deux tests.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestsWebCollection.Name)]
 public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 {
   /// <summary>Le message de l'état vide, recopié à dessein.</summary>

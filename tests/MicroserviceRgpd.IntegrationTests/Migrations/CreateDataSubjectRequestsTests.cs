@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
@@ -13,15 +12,14 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// <remarks>
 /// ⚠️ <b>L'ordre est gardé, et pas seulement l'état final.</b> Le Tableau des demandes repart d'une
 /// page blanche <i>après</i> le retrait de l'ancien : une migration qui le précéderait ferait
-/// coexister, sur une base en retard, les deux tableaux le temps d'un déploiement. Il monte son
-/// <b>propre</b> conteneur, comme <see cref="DropCaseworkTests"/>.
+/// coexister, sur une base en retard, les deux tableaux le temps d'un déploiement. Il monte sa
+/// <b>propre</b> base, comme <see cref="DropCaseworkTests"/>.
 /// </remarks>
 public class CreateDataSubjectRequestsTests : IAsyncLifetime
 {
   internal const string TheCreation = "20260911161754_CreateDataSubjectRequests";
 
-  private readonly PostgreSqlContainer _container =
-    new PostgreSqlBuilder("postgres:18-alpine").Build();
+  private string _database = string.Empty;
 
   private List<string> _before = [];
   private List<string> _after = [];
@@ -29,7 +27,7 @@ public class CreateDataSubjectRequestsTests : IAsyncLifetime
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    _database = await PostgreSqlServer.NewDatabaseAsync(nameof(CreateDataSubjectRequestsTests));
 
     await using var dbContext = NewDbContext();
     var migrator = dbContext.GetService<IMigrator>();
@@ -43,7 +41,7 @@ public class CreateDataSubjectRequestsTests : IAsyncLifetime
     _after = await TablesAsync(dbContext);
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>La migration vient <b>immédiatement</b> après le retrait de <c>Casework</c>.</summary>
   [Fact]
@@ -75,6 +73,6 @@ public class CreateDataSubjectRequestsTests : IAsyncLifetime
 
   private AppDbContext NewDbContext() =>
     new(new DbContextOptionsBuilder<AppDbContext>()
-      .UseNpgsql(_container.GetConnectionString())
+      .UseNpgsql(_database)
       .Options);
 }

@@ -24,7 +24,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// gardent donc le message intact</b> : c'est la clé de retrouvage.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestsWebCollection.Name)]
 public class RequestModification(CustomWebApplicationFactory<Program> factory)
 {
   private readonly RequestSurface _surface = new(factory);

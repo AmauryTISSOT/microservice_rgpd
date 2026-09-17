@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
@@ -18,7 +17,7 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// système hôte.
 /// </para>
 /// <para>
-/// Son propre conteneur, pour la même raison que <see cref="ExecutionAttemptsTests"/> : une tentative
+/// Sa propre base, pour la même raison que <see cref="ExecutionAttemptsTests"/> : une tentative
 /// écrite <i>avant</i> la migration ne s'écrit que sur une base qui n'est pas encore migrée.
 /// </para>
 /// </remarks>
@@ -32,14 +31,13 @@ public class ExecutionExerciseTests : IAsyncLifetime
 
   private static readonly Guid ARequestOfTheDayBefore = new("ffffffff-ffff-ffff-ffff-ffffffffffff");
 
-  private readonly PostgreSqlContainer _container =
-    new PostgreSqlBuilder("postgres:18-alpine").Build();
+  private string _database = string.Empty;
 
   private List<string> _migrations = [];
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    _database = await PostgreSqlServer.NewDatabaseAsync(nameof(ExecutionExerciseTests));
 
     await using var dbContext = NewDbContext();
 
@@ -50,7 +48,7 @@ public class ExecutionExerciseTests : IAsyncLifetime
     await dbContext.Database.MigrateAsync();
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>
   /// <b>La colonne a changé de nom, et rien d'autre n'a bougé</b> : ni colonne ajoutée, ni colonne
@@ -115,6 +113,6 @@ public class ExecutionExerciseTests : IAsyncLifetime
 
   private AppDbContext NewDbContext() =>
     new(new DbContextOptionsBuilder<AppDbContext>()
-      .UseNpgsql(_container.GetConnectionString())
+      .UseNpgsql(_database)
       .Options);
 }

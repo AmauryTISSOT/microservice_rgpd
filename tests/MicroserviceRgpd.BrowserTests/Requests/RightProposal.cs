@@ -29,7 +29,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// Tout se lit par le rôle et le nom accessible ; les phrases sont recopiées à dessein.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserProposalCollection.Name)]
 public class RightProposal
 {
   private const string Qualify = "Qualification du droit par IA";

@@ -30,7 +30,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// en sortant : le Paramétrage est un singleton, et la base est partagée par toute la collection.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestExecutionWebCollection.Name)]
 public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IAsyncLifetime
 {
   private readonly RequestSurface _surface = new(factory);

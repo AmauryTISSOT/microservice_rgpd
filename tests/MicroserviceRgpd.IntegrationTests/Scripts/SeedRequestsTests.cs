@@ -2,7 +2,7 @@
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
+using Npgsql;
 
 namespace MicroserviceRgpd.IntegrationTests.Scripts;
 
@@ -265,25 +265,25 @@ public class SeedRequestsTests(SeedRequestsTests.SeededDatabase database)
     ["2027-03-15", "2027-03-30", "2027-03-31", "2028-02-29", "2026-12-31", "2027-01-01", "2027-05-31"];
 
   /// <summary>
-  /// Un PostgreSQL à lui seul : les autres classes comptent les lignes de
-  /// <c>data_subject_requests</c>, et cent demandes plantées leur mentiraient.
+  /// Une base à elle seule, sur le serveur partagé du projet : les autres classes comptent les lignes
+  /// de <c>data_subject_requests</c>, et cent demandes plantées leur mentiraient.
   /// </summary>
   public sealed class SeededDatabase : IAsyncLifetime
   {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18-alpine").Build();
+    private string _connectionString = string.Empty;
 
     private readonly string _script = File.ReadAllText(
       Path.Combine(AppContext.BaseDirectory, "Scripts", "seed-requests.sql"));
 
     public async Task InitializeAsync()
     {
-      await _container.StartAsync();
+      _connectionString = await PostgreSqlServer.NewDatabaseAsync(nameof(SeededDatabase));
 
       await using var dbContext = NewDbContext();
       await dbContext.Database.MigrateAsync();
     }
 
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public Task DisposeAsync() => Task.CompletedTask;
 
     public static DateTimeOffset AfternoonInParis(DateOnly day)
     {
@@ -352,11 +352,21 @@ public class SeedRequestsTests(SeedRequestsTests.SeededDatabase database)
     }
 
     public AppDbContext NewDbContext() =>
-      new(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(_container.GetConnectionString()).Options);
+      new(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(_connectionString).Options);
 
+    /// <summary>
+    /// ⚠️ <b><c>\connect</c> d'abord.</b> <c>ExecScriptAsync</c> lance <c>psql</c> sur la base par
+    /// défaut du serveur, qui en héberge désormais plusieurs : sans cette ligne, le script planterait
+    /// ses cent demandes ailleurs que là où ce test les relit. Elle se pose comme les autres
+    /// méta-commandes que la méthode reçoit déjà.
+    /// </summary>
     private async Task RunAsync(IEnumerable<string> variables)
     {
-      var result = await _container.ExecScriptAsync(string.Join('\n', [.. variables, _script]));
+      var database = new NpgsqlConnectionStringBuilder(_connectionString).Database;
+      var server = await PostgreSqlServer.StartedAsync();
+
+      var result = await server.ExecScriptAsync(
+        string.Join('\n', [$"\\connect {database}", .. variables, _script]));
 
       result.ExitCode.ShouldBe(0, result.Stderr);
       result.Stderr.ShouldNotContain("ERROR", Case.Insensitive);

@@ -19,7 +19,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// la retrouve par son email unique.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserSheetCollection.Name)]
 public class SheetOnScreen(BrowserHarness harness)
 {
   /// <summary>Le nom accessible de l'œil, recopié à dessein.</summary>

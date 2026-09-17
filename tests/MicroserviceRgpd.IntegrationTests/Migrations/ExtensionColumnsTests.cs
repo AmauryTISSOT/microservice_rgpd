@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
@@ -15,10 +14,10 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// vérité des demandes existantes : aucune n'a été prolongée. Une migration qui les aurait remplies
 /// leur prêterait une décision qui n'a pas été prise.
 /// <para>
-/// <b>C'est ce qui lui vaut son propre conteneur</b>, contre l'usage que pose
+/// <b>C'est ce qui lui vaut sa propre base</b>, contre l'usage que pose
 /// <c>docs/testing/testcontainers.md</c> — et pour la même raison que
 /// <see cref="ModificationStampTests"/> : <b>l'absence de reprise ne s'éprouve que sur des demandes
-/// écrites avant la migration</b>. Le conteneur partagé de la suite arrive déjà migré.
+/// écrites avant la migration</b>. La base partagée de la suite arrive déjà migrée.
 /// </para>
 /// </remarks>
 public class ExtensionColumnsTests : IAsyncLifetime
@@ -39,14 +38,13 @@ public class ExtensionColumnsTests : IAsyncLifetime
   private static readonly Guid AnEmailRequest = new("dddddddd-dddd-dddd-dddd-dddddddddddd");
   private static readonly Guid ALetterRequest = new("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
 
-  private readonly PostgreSqlContainer _container =
-    new PostgreSqlBuilder("postgres:18-alpine").Build();
+  private string _database = string.Empty;
 
   private List<string> _migrations = [];
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    _database = await PostgreSqlServer.NewDatabaseAsync(nameof(ExtensionColumnsTests));
 
     await using var dbContext = NewDbContext();
 
@@ -57,7 +55,7 @@ public class ExtensionColumnsTests : IAsyncLifetime
     await dbContext.Database.MigrateAsync();
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>La migration vient <b>immédiatement</b> après le renommage de l'exercice.</summary>
   [Fact]
@@ -147,6 +145,6 @@ public class ExtensionColumnsTests : IAsyncLifetime
 
   private AppDbContext NewDbContext() =>
     new(new DbContextOptionsBuilder<AppDbContext>()
-      .UseNpgsql(_container.GetConnectionString())
+      .UseNpgsql(_database)
       .Options);
 }

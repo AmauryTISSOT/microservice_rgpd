@@ -22,7 +22,7 @@ namespace MicroserviceRgpd.FunctionalTests.Qualifications;
 /// handler : il vaut pour toute l'application.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(QualificationsWebCollection.Name)]
 public class QualificationProposal
 {
   private readonly CustomWebApplicationFactory<Program> _factory;

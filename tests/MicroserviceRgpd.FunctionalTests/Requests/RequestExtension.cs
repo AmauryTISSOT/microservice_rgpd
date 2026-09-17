@@ -28,7 +28,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// partagée par toute la collection, et ne se vide pas entre deux tests.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestExecutionWebCollection.Name)]
 public class RequestExtension(CustomWebApplicationFactory<Program> factory)
 {
   private readonly RequestSurface _surface = new(factory);

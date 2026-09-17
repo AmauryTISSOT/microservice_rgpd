@@ -1,11 +1,10 @@
 ﻿using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests;
 
 /// <summary>
-/// Un PostgreSQL réel, monté une fois pour toute la suite, et le schéma posé par les migrations du
-/// dépôt — jamais par une création à la volée.
+/// Un PostgreSQL réel — une base à elle sur le serveur partagé du projet, et le schéma posé par les
+/// migrations du dépôt, jamais par une création à la volée.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,20 +20,22 @@ namespace MicroserviceRgpd.IntegrationTests;
 /// </remarks>
 public sealed class PostgreSqlFixture : IAsyncLifetime
 {
-  private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18-alpine").Build();
-
-  /// <summary>La chaîne de connexion du conteneur, une fois démarré.</summary>
-  public string ConnectionString => _container.GetConnectionString();
+  /// <summary>La chaîne de connexion de la base de la suite, une fois créée et migrée.</summary>
+  public string ConnectionString { get; private set; } = string.Empty;
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    ConnectionString = await PostgreSqlServer.NewDatabaseAsync(nameof(PostgreSqlFixture));
 
     await using var dbContext = NewDbContext();
     await dbContext.Database.MigrateAsync();
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  /// <summary>
+  /// Rien à défaire : la base vit dans le serveur partagé, que le <i>reaper</i> de Testcontainers
+  /// retire à la mort du processus. Voir <see cref="PostgreSqlServer"/>.
+  /// </summary>
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>
   /// Un contexte neuf. Chaque test en prend le sien : un contexte partagé rendrait les lectures
@@ -48,8 +49,8 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
 }
 
 /// <summary>
-/// Partage un seul conteneur entre toutes les classes de test : en monter un par classe coûterait
-/// des dizaines de secondes pour vérifier la même migration.
+/// Partage une seule base migrée entre les classes de test qui en attendent une : la migrer par
+/// classe coûterait des secondes pour poser le même schéma.
 /// </summary>
 [CollectionDefinition(Name)]
 public class PostgreSqlCollection : ICollectionFixture<PostgreSqlFixture>

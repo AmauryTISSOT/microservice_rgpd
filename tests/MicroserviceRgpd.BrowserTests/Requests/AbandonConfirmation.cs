@@ -15,7 +15,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// libellés sont recopiés à dessein.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserCreationCollection.Name)]
 public class AbandonConfirmation(BrowserHarness harness)
 {
   private const string DialogTitle = "Créer une nouvelle demande";

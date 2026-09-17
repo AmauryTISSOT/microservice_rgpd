@@ -32,7 +32,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// email unique, la base étant partagée par toute la collection.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserSheetCollection.Name)]
 public class RequestSheet(BrowserHarness harness)
 {
   /// <summary>Le nom accessible de l'œil, recopié à dessein.</summary>

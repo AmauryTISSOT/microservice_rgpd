@@ -32,7 +32,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// Ce que le serveur rend se garde dans <c>RequestConsultation</c> et <c>RequestValuesReading</c>.
 /// </para>
 /// </remarks>
-[Collection(BrowserCollection.Name)]
+[Collection(BrowserModificationCollection.Name)]
 public class ModificationDialog(BrowserHarness harness)
 {
   /// <summary>Le nom accessible du crayon, le même quel que soit le statut de la demande.</summary>

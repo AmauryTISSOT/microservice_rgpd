@@ -26,7 +26,7 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 /// ce qui se garde ici est que la ligne rend celui de sa demande.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestExecutionWebCollection.Name)]
 public class RequestExecutability(CustomWebApplicationFactory<Program> factory) : IAsyncLifetime
 {
   private readonly RequestSurface _surface = new(factory);

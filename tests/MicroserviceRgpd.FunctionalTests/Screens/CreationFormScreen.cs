@@ -23,7 +23,7 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// et chaque libellé est recopié à dessein.
 /// </para>
 /// </remarks>
-[Collection(WebCollection.Name)]
+[Collection(RequestsWebCollection.Name)]
 public class CreationFormScreen(CustomWebApplicationFactory<Program> factory)
 {
   private const string AiQualification = "Qualification du droit par IA";
