@@ -67,6 +67,6 @@ public sealed record RecordedDataSubjectRequest(
       request.CreatedBy,
       request.CreatedAt,
       request.Status,
-      request.ExecutionBlockFacing(settings.EndpointFor(request.Right)));
+      request.ExecutionBlockFacing(ServiceSettings.HttpAddressFor(settings, request.Right)));
   }
 }

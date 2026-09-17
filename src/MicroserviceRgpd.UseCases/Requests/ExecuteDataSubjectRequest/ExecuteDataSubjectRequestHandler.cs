@@ -74,7 +74,7 @@ public sealed class ExecuteDataSubjectRequestHandler(
     }
 
     var current = await ServiceSettings.ReadAsync(settings, cancellationToken);
-    var endpoint = current.EndpointFor(request.Right);
+    var endpoint = ServiceSettings.HttpAddressFor(current, request.Right);
 
     if (request.ExecutionBlockFacing(endpoint) is { } block)
     {

@@ -1,5 +1,5 @@
 using MicroserviceRgpd.Core.SharedKernel;
-using MicroserviceRgpd.UseCases.Configuration.ClearRightEndpoint;
+using MicroserviceRgpd.UseCases.Configuration.ClearRightChannel;
 using MicroserviceRgpd.UseCases.Configuration.ReadSettings;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
 using Microsoft.AspNetCore.Mvc;
@@ -70,7 +70,7 @@ public class ParametrageModel(IMediator mediator) : PageModel
     if (Form.ReadRight(ModelState, FormPrefix) is { } right)
     {
       return await WrittenAsync(
-        await mediator.Send(new ClearRightEndpointCommand(right), cancellationToken),
+        await mediator.Send(new ClearRightChannelCommand(right), cancellationToken),
         cancellationToken);
     }
 

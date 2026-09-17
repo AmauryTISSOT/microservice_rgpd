@@ -3,7 +3,9 @@
 namespace MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
 
 /// <summary>
-/// Écrit l'adresse d'un droit dans le Paramétrage, et <b>seulement celle-là</b>.
+/// Écrit l'adresse d'un droit dans le Paramétrage, et <b>seulement celle-là</b> : le droit s'exerce
+/// désormais par une adresse HTTP, et le routage RabbitMQ qu'il portait peut-être est oublié du même
+/// geste (ADR-0027).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -12,9 +14,9 @@ namespace MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
 /// </para>
 /// <para>
 /// ⚠️ <b>La ligne existante est enregistrée par le suivi des modifications, jamais par un
-/// <c>Update</c> global.</b> Un <c>Update</c> marquerait les six colonnes comme modifiées et réécrirait
+/// <c>Update</c> global.</b> Un <c>Update</c> marquerait toutes les colonnes comme modifiées et réécrirait
 /// les cinq autres droits avec la valeur lue un instant plus tôt — un enregistrement concurrent sur un
-/// autre droit serait écrasé en silence. Seule la colonne du droit touché part en base.
+/// autre droit serait écrasé en silence. Seules les colonnes du droit touché partent en base.
 /// </para>
 /// <para>
 /// <b>Aucun appel réseau.</b> L'adresse est écrite, pas jointe : qu'elle réponde ou non se
@@ -45,14 +47,14 @@ public sealed class SetRightEndpointHandler(IRepository<Settings> settings)
     if (persisted is null)
     {
       var born = Settings.Unconfigured();
-      born.SetEndpoint(command.Right, command.Endpoint);
+      born.SetChannel(command.Right, new ExerciseChannel.HttpEndpoint(command.Endpoint));
 
       await settings.AddAsync(born, cancellationToken);
 
       return Result.Success();
     }
 
-    persisted.SetEndpoint(command.Right, command.Endpoint);
+    persisted.SetChannel(command.Right, new ExerciseChannel.HttpEndpoint(command.Endpoint));
 
     await settings.SaveChangesAsync(cancellationToken);
 

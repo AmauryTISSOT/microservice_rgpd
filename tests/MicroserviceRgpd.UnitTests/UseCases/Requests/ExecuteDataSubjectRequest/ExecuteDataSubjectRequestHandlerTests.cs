@@ -42,7 +42,7 @@ public class ExecuteDataSubjectRequestHandlerTests
   public ExecuteDataSubjectRequestHandlerTests()
   {
     var settings = Settings.Unconfigured();
-    settings.SetEndpoint(DataSubjectRight.Access, Endpoint);
+    settings.SetChannel(DataSubjectRight.Access, new ExerciseChannel.HttpEndpoint(Endpoint));
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([settings]);
 
     var scope = Substitute.For<IServiceScope>();
