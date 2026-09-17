@@ -24,7 +24,8 @@ public static class HostSystemServiceExtensions
   public const string ClientName = "requests-host-system";
 
   /// <summary>
-  /// Enregistre le système hôte <b>par son port</b>, et le client qui le joint.
+  /// Enregistre le système hôte <b>par son port</b> — le canal filtré par
+  /// <see cref="HostSystemByChannel"/> —, et le client qui le joint.
   /// </summary>
   /// <remarks>
   /// <para>
@@ -55,7 +56,8 @@ public static class HostSystemServiceExtensions
       .RemoveAllResilienceHandlers();
 #pragma warning restore EXTEXP0001
 
-    services.AddScoped<IHostSystem, HttpHostSystem>();
+    services.AddScoped<HttpHostSystem>();
+    services.AddScoped<IHostSystem, HostSystemByChannel>();
 
     return services;
   }

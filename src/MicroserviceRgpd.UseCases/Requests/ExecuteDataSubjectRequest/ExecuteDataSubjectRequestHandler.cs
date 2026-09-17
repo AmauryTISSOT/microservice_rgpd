@@ -7,9 +7,10 @@ using Microsoft.Extensions.Logging;
 namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 
 /// <summary>
-/// Recalcule l'exécutabilité de la demande face au Paramétrage, appelle le système hôte, termine la
-/// demande sur un 2xx et écrit la tentative — ou rend « introuvable », ou le refus du premier motif de
-/// blocage, sans appel ni tentative (ADR-0026).
+/// Recalcule l'exécutabilité de la demande face au Paramétrage, remet le droit au système hôte <b>par
+/// le canal du Paramétrage</b>, termine la demande quand la remise a abouti et écrit la tentative —
+/// ou rend « introuvable », ou le refus du premier motif de blocage, sans remise ni tentative
+/// (ADR-0026, ADR-0028).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -42,6 +43,10 @@ namespace MicroserviceRgpd.UseCases.Requests.ExecuteDataSubjectRequest;
 /// </para>
 /// <para>
 /// Aucune nouvelle tentative : un appel, une tentative écrite.
+/// </para>
+/// <para>
+/// ⚠️ <b>Il ne lit pas l'espèce du canal</b> : il le passe tel quel au port, qui sait par où remettre,
+/// et au journal, qui sait par où c'est parti. Le canal ne se filtre qu'à l'adaptateur.
 /// </para>
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
@@ -83,13 +88,10 @@ public sealed class ExecuteDataSubjectRequestHandler(
         block.FrenchLabelFor(request.Right));
     }
 
-    // Exécutable implique une adresse HTTP : les deux derniers motifs disent tout autre canal.
-    var called = ((ExerciseChannel.HttpEndpoint)channel).Address;
-
     // La demande telle que la base la porte avant l'appel : celle que rend tout échec.
     var unchanged = RecordedDataSubjectRequest.Of(request, current);
 
-    var call = await hostSystem.ApplyAsync(called, ExecutionBody.Of(request), CancellationToken.None);
+    var call = await hostSystem.ApplyAsync(channel, ExecutionBody.Of(request), CancellationToken.None);
 
     if (call.Outcome != ExecutionOutcome.Succeeded)
     {

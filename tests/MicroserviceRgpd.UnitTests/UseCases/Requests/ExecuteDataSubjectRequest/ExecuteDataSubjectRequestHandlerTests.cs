@@ -24,6 +24,9 @@ public class ExecuteDataSubjectRequestHandlerTests
 
   private static readonly EndpointUrl Endpoint = EndpointUrl.From("https://brocanto.example.fr/rgpd/acces?jeton=secret");
 
+  /// <summary>Le canal du droit d'accès, tel que le Paramétrage le porte et que le port le reçoit.</summary>
+  private static readonly ExerciseChannel Channel = new ExerciseChannel.HttpEndpoint(Endpoint);
+
   private readonly IRepository<DataSubjectRequest> _requests = Substitute.For<IRepository<DataSubjectRequest>>();
 
   private readonly IRepository<ExecutionAttempt> _attempts = Substitute.For<IRepository<ExecutionAttempt>>();
@@ -42,7 +45,7 @@ public class ExecuteDataSubjectRequestHandlerTests
   public ExecuteDataSubjectRequestHandlerTests()
   {
     var settings = Settings.Unconfigured();
-    settings.SetChannel(DataSubjectRight.Access, new ExerciseChannel.HttpEndpoint(Endpoint));
+    settings.SetChannel(DataSubjectRight.Access, Channel);
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns([settings]);
 
     var scope = Substitute.For<IServiceScope>();
@@ -96,18 +99,18 @@ public class ExecuteDataSubjectRequestHandlerTests
   }
 
   /// <summary>
-  /// <b>Le système hôte reçoit l'adresse du Paramétrage telle quelle</b> — query string comprise — et
-  /// les cinq valeurs de la demande.
+  /// <b>Le système hôte reçoit le canal du Paramétrage tel quel</b> — l'adresse, query string
+  /// comprise — et les cinq valeurs de la demande.
   /// </summary>
   [Fact]
-  public async Task CallsTheHostAtTheEndpointOfTheRightWithTheFiveValues()
+  public async Task CallsTheHostOnTheChannelOfTheRightWithTheFiveValues()
   {
     var request = AnExecutableRequest();
 
     await HandleAsync(request);
 
     await _hostSystem.Received(1).ApplyAsync(
-      Endpoint,
+      Channel,
       new ExecutionBody(request.Id, DataSubjectRight.Access, request.Email!.Value, request.FirstName, request.LastName),
       Arg.Any<CancellationToken>());
   }
@@ -125,7 +128,7 @@ public class ExecuteDataSubjectRequestHandlerTests
 
     await Handler().Handle(new ExecuteDataSubjectRequestCommand(request.Id), browserLeft.Token);
 
-    // ⚠️ Lu sur l'appel reçu plutôt que par Arg.Any : l'adresse est un objet valeur que NSubstitute ne
+    // ⚠️ Lu sur l'appel reçu plutôt que par Arg.Any : le canal est un objet valeur que NSubstitute ne
     // sait pas construire par défaut.
     _hostSystem.ReceivedCalls().ShouldHaveSingleItem().GetArguments()[2]
       .ShouldBeOfType<CancellationToken>().CanBeCanceled.ShouldBeFalse();
@@ -245,7 +248,7 @@ public class ExecuteDataSubjectRequestHandlerTests
     string message)
   {
     var outcome = ExecutionOutcome.FromName(outcomeName);
-    _hostSystem.ApplyAsync(Endpoint, null!, default).ReturnsForAnyArgs(FailedCall(outcome, httpStatus));
+    _hostSystem.ApplyAsync(Channel, null!, default).ReturnsForAnyArgs(FailedCall(outcome, httpStatus));
     var request = AnExecutableRequest();
 
     var result = await HandleAsync(request);
@@ -305,7 +308,7 @@ public class ExecuteDataSubjectRequestHandlerTests
   }
 
   private void HostAnswers(int statusCode) =>
-    _hostSystem.ApplyAsync(Endpoint, null!, default)
+    _hostSystem.ApplyAsync(Channel, null!, default)
       .ReturnsForAnyArgs(HostSystemCall.Answered(statusCode, Now, TimeSpan.FromMilliseconds(120)));
 
   private static HostSystemCall FailedCall(ExecutionOutcome outcome, int? httpStatus) =>
