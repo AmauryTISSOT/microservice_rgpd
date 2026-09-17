@@ -1,12 +1,12 @@
-using MicroserviceRgpd.UseCases.Configuration.ReadSettings;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MicroserviceRgpd.Web.Pages.Configuration;
 
 /// <summary>
 /// La <b>seconde face du Paramétrage</b> — « Configuration RabbitMQ » : on y relit, droit par droit,
-/// le routage par lequel le service exercera chacun des six droits RGPD, ou leur état « non
-/// configuré ».
+/// le routage par lequel le service exercera chacun des six droits RGPD — ou leur état « non
+/// configuré » —, et on y <b>déclare</b> ce routage : un exchange, une routing key.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -14,18 +14,35 @@ namespace MicroserviceRgpd.Web.Pages.Configuration;
 /// par des onglets ; le panneau latéral ne bouge pas, et « Paramétrage » y reste marqué courant.
 /// </para>
 /// <para>
-/// ⚠️ <b>Elle est en lecture seule à ce stade.</b> Poser et effacer un routage depuis cet écran
-/// viennent au ticket des formulaires ; ce que cette page garantit aujourd'hui est que l'état se
-/// lit.
+/// <b>Une mini-form par droit, indépendantes</b>, comme sur la face HTTP : chacune n'envoie que son
+/// droit, et il n'y a ni « tout enregistrer » ni « tout effacer ». Un droit portant un routage offre
+/// en plus <b>Effacer</b>, qui le ramène à « non configuré » — le geste des deux faces, tenu par
+/// <see cref="ParametrageFaceModel{TForm}"/>.
+/// </para>
+/// <para>
+/// ⚠️ <b>Elle configure, elle n'appelle pas.</b> Enregistrer est une écriture locale : aucune
+/// connexion au broker, aucun exchange déclaré ni vérifié, rien de publié (ADR-0027). Un routage
+/// reste donc enregistrable alors même que le broker n'existe pas encore.
+/// </para>
+/// <para>
+/// ⚠️ <b>Le refus vient du serveur, jamais du navigateur.</b> Les champs ne portent pas de
+/// <c>maxlength</c> — l'attribut compte des unités UTF-16, la contrainte des octets UTF-8 —, et
+/// c'est le domaine qui juge, en français, sous le champ fautif.
 /// </para>
 /// </remarks>
-public class ParametrageRabbitMqModel(IMediator mediator) : PageModel
+public class ParametrageRabbitMqModel(IMediator mediator) : ParametrageFaceModel<RightRabbitMqForm>(mediator)
 {
-  /// <summary>Le Paramétrage tel qu'il se lit à cet instant — six droits, configurés ou non.</summary>
-  public Core.Configuration.Settings Settings { get; private set; } = Core.Configuration.Settings.Unconfigured();
-
-  public async Task OnGetAsync(CancellationToken cancellationToken)
+  public async Task<IActionResult> OnPostSetAsync(CancellationToken cancellationToken)
   {
-    Settings = await mediator.Send(new ReadSettingsQuery(), cancellationToken);
+    var fields = Form.Read(ModelState, FormPrefix);
+
+    if (fields is { } saving)
+    {
+      return await WrittenAsync(
+        await Mediator.Send(new SetRightRabbitMqRoutingCommand(saving.Right, saving.Routing), cancellationToken),
+        cancellationToken);
+    }
+
+    return await RefusedAsync(cancellationToken);
   }
 }

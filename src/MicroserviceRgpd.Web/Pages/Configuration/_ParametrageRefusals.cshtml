@@ -1,0 +1,18 @@
+@model IReadOnlyList<string>
+@*
+  LES REFUS D'UN ENVOI, RENDUS EN UN SEUL ENDROIT — le bloc que les deux faces du Paramétrage
+  emploient : dans la section du droit envoyé, ou en tête d'écran quand le droit envoyé n'est pas
+  l'un des six.
+
+  ⚠️ SON MODÈLE EST LA LISTE DES MESSAGES À DIRE, ET NON LE `ModelState` ENTIER : une face qui range
+  déjà certains refus sous leur champ ne doit pas les redire ici, et c'est elle qui sait lesquels.
+*@
+@if (Model.Count > 0)
+{
+  <div class="refusals">
+    @foreach (var refusal in Model)
+    {
+      <p class="refusal">@refusal</p>
+    }
+  </div>
+}

@@ -4,17 +4,10 @@
 @{
   ViewData["Title"] = ParametrageFaces.ScreenName;
 
-  // Les refus d'un envoi, rendus en un seul endroit du gabarit : dans la section du droit refusé,
-  // ou en tête d'écran quand le droit envoyé n'est pas l'un des six.
-  void Refusals()
-  {
-    <div class="refusals">
-      @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
-      {
-        <p class="refusal">@refusal.ErrorMessage</p>
-      }
-    </div>
-  }
+  // Les refus d'un envoi, dits dans la section du droit refusé — ou en tête d'écran quand le droit
+  // envoyé n'est pas l'un des six. Le bloc lui-même est celui des deux faces.
+  IReadOnlyList<string> Refusals() =>
+    [.. ViewData.ModelState.Values.SelectMany(entry => entry.Errors).Select(refusal => refusal.ErrorMessage)];
 }
 
 <h1>@ParametrageFaces.ScreenName</h1>
@@ -35,7 +28,7 @@
 @if (!ViewData.ModelState.IsValid && Model.Refused is null)
 {
   @* Un droit que l'écran ne configure pas n'a pas de section où dire son refus : il se dit ici. *@
-  Refusals();
+  <partial name="_ParametrageRefusals" model="Refusals()" />
 }
 
 @foreach (var right in Model.Settings.Rights)
@@ -67,7 +60,7 @@
 
     @if (refused)
     {
-      Refusals();
+      <partial name="_ParametrageRefusals" model="Refusals()" />
     }
 
     @*
