@@ -671,11 +671,13 @@ public class DataSubjectRequestTests
     var channel = new MicroserviceRgpd.Core.Configuration.ExerciseChannel.HttpEndpoint(
       MicroserviceRgpd.Core.Configuration.EndpointUrl.From("https://brocanto.example.fr/rgpd"));
 
-    request.ExecutionBlockFacing(channel).ShouldBeNull();
+    var connection = MicroserviceRgpd.Core.Configuration.BrokerConnection.Configured.Instance;
+
+    request.ExecutionBlockFacing(channel, connection).ShouldBeNull();
 
     request.Complete();
 
-    request.ExecutionBlockFacing(channel).ShouldBe(ExecutionBlock.Closed);
+    request.ExecutionBlockFacing(channel, connection).ShouldBe(ExecutionBlock.Closed);
   }
 
   /// <summary>La saisie valide de départ, telle que la demande la tient encore après un refus.</summary>

@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using MicroserviceRgpd.Core.Configuration;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicroserviceRgpd.FunctionalTests.Requests;
@@ -326,6 +329,58 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
   internal async Task<HttpResponseMessage> ExecuteWithoutTokenAsync(Guid id)
   {
     return await _client.PostAsync(Execute, new FormUrlEncodedContent([new("id", id.ToString())]));
+  }
+
+  /// <summary>
+  /// Les lignes du <b>journal d'exécution</b> de la demande <paramref name="id"/>, relues <b>telles
+  /// que la table les porte</b> — colonne par colonne, sous leur nom SQL.
+  /// </summary>
+  internal async Task<IReadOnlyList<IReadOnlyDictionary<string, object?>>> AttemptsOfAsync(Guid id)
+  {
+    using var scope = factory.Services.CreateScope();
+    var connection = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.GetDbConnection();
+
+    await connection.OpenAsync();
+
+    await using var command = connection.CreateCommand();
+    command.CommandText = "SELECT * FROM execution_attempts WHERE data_subject_request_id = @id";
+
+    var parameter = command.CreateParameter();
+    parameter.ParameterName = "id";
+    parameter.Value = id;
+    command.Parameters.Add(parameter);
+
+    await using var reader = await command.ExecuteReaderAsync();
+
+    var attempts = new List<IReadOnlyDictionary<string, object?>>();
+
+    while (await reader.ReadAsync())
+    {
+      attempts.Add(Enumerable.Range(0, reader.FieldCount).ToDictionary(
+        reader.GetName,
+        column => reader.IsDBNull(column) ? null : reader.GetValue(column)));
+    }
+
+    return attempts;
+  }
+
+  /// <summary>Route le droit sur RabbitMQ, par le use case du Paramétrage.</summary>
+  internal async Task RouteAsync(DataSubjectRight right, RabbitMqRouting routing)
+  {
+    using var scope = factory.Services.CreateScope();
+
+    var set = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
+      new SetRightRabbitMqRoutingCommand(right, routing));
+
+    set.IsSuccess.ShouldBeTrue();
+  }
+
+  /// <summary>Ramène le service à son état d'installation : aucune ligne de Paramétrage.</summary>
+  internal async Task ForgetEveryChannelAsync()
+  {
+    using var scope = factory.Services.CreateScope();
+
+    await scope.ServiceProvider.GetRequiredService<AppDbContext>().Set<Settings>().ExecuteDeleteAsync();
   }
 
   private async Task<int> CountAsync(FormattableString query)

@@ -255,7 +255,8 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
   }
 
   /// <summary>
-  /// <b>Exécute une demande</b> — le système hôte applique le droit invoqué — et répond 200, avec pour
+  /// <b>Exécute une demande</b> — le droit invoqué est remis au système hôte, par appel ou par
+  /// publication — et répond 200, avec pour
   /// corps <b>la ligne de la demande passée à Terminée</b> (ADR-0026).
   /// </summary>
   /// <remarks>
@@ -269,7 +270,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
   /// <para>
   /// Un appel parti qui n'aboutit pas — réponse non 2xx, redirection comprise, délai dépassé, erreur
   /// réseau — répond <b>502</b>, avec pour <c>detail</c> le texte à afficher, qui dit que la demande
-  /// reste En cours, et la ligne inchangée. Un droit appliqué dont la demande n'a pas pu passer à
+  /// reste En cours, et la ligne inchangée. Un droit remis dont la demande n'a pas pu passer à
   /// Terminée répond <b>502</b> aussi, sous son propre texte. <c>retryable</c> dit si une nouvelle
   /// tentative a un sens : <c>true</c> pour un appel qui n'a pas abouti, et pour lui seul.
   /// </para>
@@ -348,7 +349,7 @@ public class BoardModel(TimeProvider clock, IMediator mediator, IRazorViewEngine
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Seul un appel qui n'a pas abouti se retente.</b> Un motif de blocage serait opposé de nouveau ;
-  /// un droit appliqué sans passage à Terminée le serait une seconde fois — la demande, restée En cours,
+  /// un droit remis sans passage à Terminée le serait une seconde fois — la demande, restée En cours,
   /// ne s'y oppose pas.
   /// </remarks>
   private async Task<ObjectResult> ExecutionProblemAsync(int status, string? detail, DataSubjectRequestExecution execution) =>

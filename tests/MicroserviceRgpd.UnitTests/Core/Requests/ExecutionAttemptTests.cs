@@ -128,19 +128,44 @@ public class ExecutionAttemptTests
   }
 
   /// <summary>
-  /// Un succès non enregistré dit lui aussi le routage par lequel la remise est partie. ⚠️ La remise
-  /// est ici une réponse HTTP faute d'aboutissement propre au bus : celui-ci arrive avec l'adaptateur
-  /// qui publie (ADR-0028), et le statut suivra son canal.
+  /// <b>Une publication laisse une ligne sans statut HTTP</b>, dont l'exercice dit l'exchange et la
+  /// routing key, et dont la durée court jusqu'à l'accusé du broker (ADR-0028).
+  /// </summary>
+  [Theory]
+  [InlineData("Succeeded")]
+  [InlineData("Unroutable")]
+  [InlineData("Rejected")]
+  public void WritesAPublicationWithItsRoutingItsDurationAndNoHttpStatus(string outcomeName)
+  {
+    var outcome = ExecutionOutcome.FromName(outcomeName);
+    var duration = TimeSpan.FromMilliseconds(37);
+
+    var call = outcome == ExecutionOutcome.Succeeded ? HostSystemCall.Acknowledged(StartedAt, duration)
+      : outcome == ExecutionOutcome.Unroutable ? HostSystemCall.Unroutable(StartedAt, duration)
+      : HostSystemCall.Rejected(StartedAt, duration);
+
+    var attempt = ExecutionAttempt.Of(ARequest(), ARouting(), call);
+
+    attempt.Exercise.ShouldBe("exchange rgpd.rights, routing key rights.erasure");
+    attempt.Outcome.ShouldBe(outcome);
+    attempt.HttpStatus.ShouldBeNull("Une publication ne porte pas de statut HTTP.");
+    attempt.Duration.ShouldBe(duration);
+    attempt.Duration.ShouldNotBe(TimeSpan.Zero, "Une publication ne dure pas zéro au journal.");
+  }
+
+  /// <summary>
+  /// Un succès non enregistré dit lui aussi le routage par lequel la remise est partie — et reste
+  /// sans statut HTTP, comme la publication qu'il suit.
   /// </summary>
   [Fact]
   public void WritesTheRoutingOfASuccessThatCouldNotBeRecorded()
   {
     var attempt = ExecutionAttempt.SucceededButNotRecorded(
-      ARequest(),
-      new ExerciseChannel.RabbitMq(new RabbitMqRouting(ExchangeName.From("rgpd.rights"), RoutingKey.From("rights.erasure"))),
-      HostSystemCall.Answered(204, StartedAt, TimeSpan.Zero));
+      ARequest(), ARouting(), HostSystemCall.Acknowledged(StartedAt, TimeSpan.FromMilliseconds(12)));
 
     attempt.Exercise.ShouldBe("exchange rgpd.rights, routing key rights.erasure");
+    attempt.Outcome.ShouldBe(ExecutionOutcome.SucceededButNotRecorded);
+    attempt.HttpStatus.ShouldBeNull();
   }
 
   /// <summary>
@@ -155,6 +180,10 @@ public class ExecutionAttemptTests
       ExerciseChannel.NotConfigured.Instance,
       HostSystemCall.Answered(204, StartedAt, TimeSpan.Zero)));
   }
+
+  /// <summary>Le routage RabbitMQ du Paramétrage, tel que le handler le lit.</summary>
+  private static ExerciseChannel ARouting() =>
+    new ExerciseChannel.RabbitMq(new RabbitMqRouting(ExchangeName.From("rgpd.rights"), RoutingKey.From("rights.erasure")));
 
   /// <summary>Le canal HTTP du Paramétrage, tel que le handler le lit.</summary>
   private static ExerciseChannel AnAddress(string address) =>

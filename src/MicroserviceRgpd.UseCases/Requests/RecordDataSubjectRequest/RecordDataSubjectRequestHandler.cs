@@ -19,10 +19,12 @@ namespace MicroserviceRgpd.UseCases.Requests.RecordDataSubjectRequest;
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
 /// <param name="settings">Le Paramétrage, en lecture seule.</param>
+/// <param name="broker">Ce que ce déploiement déclare savoir publier.</param>
 /// <param name="clock">L'horloge du service, qui date le geste.</param>
 public sealed class RecordDataSubjectRequestHandler(
   IRepository<DataSubjectRequest> requests,
   IReadRepository<Settings> settings,
+  IBrokerConnectionState broker,
   TimeProvider clock)
   : ICommandHandler<RecordDataSubjectRequestCommand, Result<RecordedDataSubjectRequest>>
 {
@@ -43,6 +45,7 @@ public sealed class RecordDataSubjectRequestHandler(
 
     await requests.AddAsync(received.Value, cancellationToken);
 
-    return RecordedDataSubjectRequest.Of(received.Value, await ServiceSettings.ReadAsync(settings, cancellationToken));
+    return RecordedDataSubjectRequest.Of(
+      received.Value, await ServiceSettings.ReadAsync(settings, cancellationToken), broker.Current);
   }
 }

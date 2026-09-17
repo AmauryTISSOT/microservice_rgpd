@@ -122,8 +122,20 @@ public class ReadDataSubjectRequestsHandlerTests
 
     _settings.ListAsync(Arg.Any<CancellationToken>()).Returns(settings is null ? [] : [settings]);
 
-    return await new ReadDataSubjectRequestsHandler(_requests, _settings)
+    return await new ReadDataSubjectRequestsHandler(_requests, _settings, ADeploymentThatCanPublish())
       .Handle(new ReadDataSubjectRequestsQuery(), CancellationToken.None);
+  }
+
+  /// <summary>
+  /// Un déploiement qui déclare une connexion au broker : ces lectures ne parlent pas du bus, et un
+  /// déploiement muet y ferait apparaître un motif de blocage qui n'est pas leur sujet.
+  /// </summary>
+  private static IBrokerConnectionState ADeploymentThatCanPublish()
+  {
+    var broker = Substitute.For<IBrokerConnectionState>();
+    broker.Current.Returns(BrokerConnection.Configured.Instance);
+
+    return broker;
   }
 
   private static DataSubjectRequest ARequestFrom(

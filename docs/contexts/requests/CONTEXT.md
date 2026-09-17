@@ -2,8 +2,10 @@
 
 Ce contexte enregistre une **demande RGPD dès sa réception** : ce qui est arrivé, par quel canal,
 quand, de qui, et quel droit la personne invoque. L'`Operator` peut ensuite **modifier une demande**
-pour corriger une erreur de saisie, puis **exécuter la demande** : le système hôte applique le droit
-invoqué, et la demande passe à Terminée. Une demande porte une date limite de réponse et un statut ;
+pour corriger une erreur de saisie, puis **exécuter la demande** : le droit invoqué est remis au
+système hôte — appelé à son adresse, ou publié sur son routage —, et la demande passe à Terminée
+quand le destinataire, ou le broker pour lui, en accuse réception. Une demande porte une date limite
+de réponse et un statut ;
 l'exécution est le seul `Gesture` qui fait changer le statut.
 
 Les identifiants du code sont en anglais (`DataSubjectRequest`, `Origin`) ; les textes destinés à
@@ -81,9 +83,14 @@ un état tenu par la demande, et non la trace d'un `Gesture`.
 _Avoid_ : état, étape, phase, avancement
 
 **Terminée** :
-Le statut d'une demande dont le droit invoqué a été appliqué par le système hôte. Une demande
-Terminée est close : elle ne se modifie plus et ne s'exécute plus.
-_Avoid_ : exécutée, traitée, répondue, fermée
+Le statut d'une demande dont le droit invoqué a été **remis** au système hôte, et dont le
+destinataire — ou le broker pour lui — a accusé réception. Une demande Terminée est close : elle ne
+se modifie plus et ne s'exécute plus.
+⚠️ **Terminée ne dit pas que le droit a été appliqué.** Sur une adresse HTTP, un 2xx est ce que le
+destinataire répond quand il a appliqué le droit ; sur un routage, le service sait seulement que le
+broker a accepté le message, jamais qu'un consommateur l'a traité. Voir `Publication confirmée` et
+[ADR-0028](../../adr/0028-l-aboutissement-d-une-execution-cesse-d-etre-un-2xx-le-broker-accuse-reception.md).
+_Avoid_ : exécutée, traitée, répondue, fermée, appliquée
 
 **Demande close** :
 Une demande Terminée ou Annulée.
@@ -149,35 +156,57 @@ suppression : ses lignes gardent l'identifiant de la demande, qui ne mène alors
 ### L'exécution
 
 **Exécuter une demande** :
-Le `Gesture` par lequel l'`Operator` fait appliquer le droit invoqué par le système hôte, par le
+Le `Gesture` par lequel l'`Operator` fait **remettre** le droit invoqué au système hôte, par le
 **canal d'exercice** — terme du glossaire de `Configuration`, sans rapport avec le canal d'arrivée de
-l'**origine** — que le Paramétrage associe à ce droit. Il n'est offert que sur une demande En cours, dont
-l'identité est vérifiée, qui porte un email, et dont le droit porte une adresse HTTP — un droit exercé
-par RabbitMQ est bloqué tant que le service ne sait pas publier. Quand le système hôte confirme
-avoir appliqué le droit, la demande passe à Terminée ; sinon son statut ne change pas, et
-l'`Operator` peut recommencer. Ses traces sont les tentatives du journal d'exécution, pas une
-empreinte sur la demande.
+l'**origine** — que le Paramétrage associe à ce droit. **Même geste, même bouton, même modale, même
+journal, quel que soit le canal** : un appel HTTP à l'adresse déclarée, ou une publication sur le
+routage déclaré. Il n'est offert que sur une demande En cours, dont l'identité est vérifiée, qui
+porte un email, dont le droit porte un canal, et — sur un droit routé — dont le déploiement déclare
+une connexion au broker. Quand le destinataire, ou le broker pour lui, accuse réception, la demande
+passe à Terminée ; sinon son statut ne change pas, et l'`Operator` peut recommencer. Ses traces sont
+les tentatives du journal d'exécution, pas une empreinte sur la demande.
 _Avoid_ : exercer (c'est la personne concernée qui exerce son droit), traiter (réservé au sens du
 RGPD), transmettre, envoyer, clôturer
 
 **Motif de blocage** :
 La raison pour laquelle une demande ne peut pas être exécutée, la première dans cet ordre : demande
-close, identité non vérifiée, email manquant, droit non configuré, exercice par RabbitMQ. Les deux
-derniers nomment le droit ; le dernier est provisoire, et disparaîtra le jour où le service publiera
-sur RabbitMQ.
+close, identité non vérifiée, email manquant, droit non configuré, connexion au broker absente sur un
+droit routé. Les deux derniers nomment le droit. Ce qui se corrige sur la demande passe avant ce qui
+se règle dans le Paramétrage, et ce qui se règle dans le Paramétrage avant ce qui se règle dans le
+déploiement.
+⚠️ **« Connexion absente » parle du déploiement, jamais du Paramétrage** : le routage est bon, et
+c'est le service qui n'a nulle part où publier. Ce motif et le bandeau de la page « Configuration
+RabbitMQ » se décident sur la **même** règle, pour que l'`Operator` et l'intégrateur lisent la même
+vérité. Il ne promet pas non plus un broker joignable : un déploiement qui déclare une connexion
+devant un broker éteint n'est pas bloqué, et c'est l'exécution qui échouera.
 _Avoid_ : erreur, refus, prérequis
 
 **Système hôte** :
-L'application du responsable qui applique réellement les droits sur les données de la personne. Le
-service lui demande d'appliquer un droit ; il ne voit jamais ces données lui-même.
-_Avoid_ : backend, application cliente, SI, système tiers
+Ce qui, chez le responsable, applique réellement les droits sur les données de la personne. Le
+service lui **remet** un droit ; il ne voit jamais ces données lui-même.
+⚠️ **Ce n'est pas nécessairement une application joignable.** Sur une adresse HTTP, c'est une
+application qui répond ; sur un routage, c'est un **consommateur que le service ne voit jamais** —
+qui peut être arrêté, en retard, ou en train d'échouer, sans que le service en sache rien.
+_Avoid_ : backend, application cliente, SI, système tiers, destinataire joignable
+
+**Publication confirmée** :
+L'accusé de réception que le broker rend au service pour un message publié. Il prouve que le broker
+a **accepté** le message et l'a routé vers au moins une file. Il ne prouve **pas** qu'un consommateur
+l'a lu, ni qu'il l'a traité, ni que le droit a été appliqué. Une publication qu'aucune file ne reçoit
+n'est pas confirmée : le broker rend le message, et la demande reste En cours.
+_Avoid_ : accusé de traitement, acquittement du système hôte, livraison
 
 **Tentative d'exécution** :
-Un appel au système hôte pour une demande, et son résultat : **Succès**, **Réponse non 2xx**,
-**Délai dépassé**, **Erreur réseau**, ou **Succès non enregistré** quand le système hôte a appliqué
-le droit mais que la demande n'a pas pu passer à Terminée. Datée, signée `operator`, elle ne porte
-aucune donnée personnelle. Une exécution refusée pour un motif de blocage n'appelle rien et n'est pas
-une tentative.
+Une **remise** du droit au système hôte pour une demande — un appel HTTP **ou** une publication —, et
+son résultat : **Succès**, **Réponse non 2xx**, **Message non routable**, **Publication refusée par
+le broker**, **Délai dépassé**, **Erreur réseau**, ou **Succès non enregistré** quand la remise a
+abouti mais que la demande n'a pas pu passer à Terminée. Les sept valeurs forment **un seul
+vocabulaire fermé**, partagé par les deux canaux : « Réponse non 2xx » n'a de sens que sur HTTP, et
+les deux cas du bus n'en ont que sur un routage. Elle dit **par où** la remise est partie — l'adresse
+appelée, ou l'exchange et la routing key en toutes lettres —, combien de temps elle a duré, jusqu'à
+la réponse ou à l'accusé. Datée, signée `operator`, elle ne porte aucune donnée personnelle, et son
+statut HTTP est nul sur toute publication. Une exécution refusée pour un motif de blocage ne remet
+rien et n'est pas une tentative.
 _Avoid_ : essai, appel (seul), log
 
 **Journal d'exécution** :

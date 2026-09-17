@@ -3,8 +3,9 @@ using MicroserviceRgpd.Core.Requests;
 namespace MicroserviceRgpd.UnitTests.Core.Requests;
 
 /// <summary>
-/// <b>Ce que rend un appel au système hôte</b> : une réponse 2xx, une réponse non 2xx avec son code,
-/// un délai dépassé ou une erreur réseau — avec l'instant de début et la durée (ADR-0026).
+/// <b>Ce que rend une remise au système hôte</b> : une réponse 2xx, une réponse non 2xx avec son code,
+/// un accusé du broker, un message non routable, une publication refusée, un délai dépassé ou une
+/// erreur réseau — avec l'instant de début et la durée (ADR-0026, ADR-0028).
 /// </summary>
 public class HostSystemCallTests
 {
@@ -52,6 +53,40 @@ public class HostSystemCallTests
     call.Outcome.ShouldBe(ExecutionOutcome.TimedOut);
     call.StatusCode.ShouldBeNull();
     call.Timeout.ShouldBe(TimeSpan.FromSeconds(30));
+  }
+
+  /// <summary>
+  /// <b>Un accusé du broker vaut aboutissement</b>, et <b>sans statut HTTP</b> : une publication n'a
+  /// pas de code de réponse (ADR-0028).
+  /// </summary>
+  [Fact]
+  public void ReadsAnAcknowledgementAsASuccessWithoutAnyHttpStatus()
+  {
+    var call = HostSystemCall.Acknowledged(StartedAt, Duration);
+
+    call.Outcome.ShouldBe(ExecutionOutcome.Succeeded);
+    call.StatusCode.ShouldBeNull();
+    call.Timeout.ShouldBeNull();
+    call.Duration.ShouldBe(Duration);
+  }
+
+  /// <summary>
+  /// <b>Les deux cas que seul un bus produit</b> : un message qu'aucune file n'a reçu, et une
+  /// publication refusée. Ni l'un ni l'autre ne porte de statut HTTP.
+  /// </summary>
+  [Fact]
+  public void ReadsTheTwoOutcomesThatOnlyABusProduces()
+  {
+    var unroutable = HostSystemCall.Unroutable(StartedAt, Duration);
+    var rejected = HostSystemCall.Rejected(StartedAt, Duration);
+
+    unroutable.Outcome.ShouldBe(ExecutionOutcome.Unroutable);
+    rejected.Outcome.ShouldBe(ExecutionOutcome.Rejected);
+
+    unroutable.StatusCode.ShouldBeNull();
+    rejected.StatusCode.ShouldBeNull();
+    unroutable.Timeout.ShouldBeNull();
+    rejected.Timeout.ShouldBeNull();
   }
 
   [Fact]

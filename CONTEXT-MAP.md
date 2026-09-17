@@ -17,9 +17,10 @@ quels : « la `Qualification` », « le `Settings` ».
   demande d'exercice de droits dès sa réception : par quel canal, quand, de qui, et quel droit la
   personne invoque — un droit qu'une qualification peut proposer, mais que seul l'`Operator`
   choisit. Son type est la `DataSubjectRequest` — à l'écran, une **demande**. L'`Operator`
-  peut ensuite **modifier une demande** pour corriger une erreur de saisie, puis l'**exécuter** :
-  le système hôte applique le droit invoqué, à l'adresse du Paramétrage, et la demande passe à
-  Terminée. Chaque tentative laisse une ligne dans le **journal d'exécution**.
+  peut ensuite **modifier une demande** pour corriger une erreur de saisie, puis l'**exécuter** : le
+  droit invoqué est remis au système hôte par le canal du Paramétrage — appelé à son adresse, ou
+  publié sur son routage —, et la demande passe à Terminée quand le destinataire, ou le broker pour
+  lui, en accuse réception. Chaque tentative laisse une ligne dans le **journal d'exécution**.
 - [Screening](./docs/contexts/screening/CONTEXT.md) — **le temps d'avant.** Détecte les colonnes qui
   portent vraisemblablement des données personnelles, dans le relevé des colonnes d'une base du
   client. Le relevé est collé par un `Operator`, ou produit par le service lui-même quand il

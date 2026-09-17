@@ -13,9 +13,11 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequestExecution;
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
 /// <param name="settings">Le Paramétrage, en lecture seule.</param>
+/// <param name="broker">Ce que ce déploiement déclare savoir publier.</param>
 public sealed class ReadDataSubjectRequestExecutionHandler(
   IReadRepository<DataSubjectRequest> requests,
-  IReadRepository<Settings> settings)
+  IReadRepository<Settings> settings,
+  IBrokerConnectionState broker)
   : IQueryHandler<ReadDataSubjectRequestExecutionQuery, Result<DataSubjectRequestExecutionSummary>>
 {
   /// <inheritdoc />
@@ -32,6 +34,7 @@ public sealed class ReadDataSubjectRequestExecutionHandler(
       return Result<DataSubjectRequestExecutionSummary>.NotFound();
     }
 
-    return DataSubjectRequestExecutionSummary.Of(request, await ServiceSettings.ReadAsync(settings, cancellationToken));
+    return DataSubjectRequestExecutionSummary.Of(
+      request, await ServiceSettings.ReadAsync(settings, cancellationToken), broker.Current);
   }
 }

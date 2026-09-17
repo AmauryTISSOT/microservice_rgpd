@@ -7,7 +7,7 @@ namespace MicroserviceRgpd.Core.Requests;
 /// Le <b>motif de blocage</b> : la raison pour laquelle une <see cref="DataSubjectRequest"/> ne peut
 /// pas être exécutée — <see cref="Closed"/>, <see cref="IdentityNotVerified"/>,
 /// <see cref="EmailMissing"/>, <see cref="RightNotConfigured"/> ou
-/// <see cref="RabbitMqNotYetSupported"/> (ADR-0026, ADR-0027).
+/// <see cref="BrokerConnectionMissing"/> (ADR-0026, ADR-0027, ADR-0028).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -34,17 +34,25 @@ public sealed class ExecutionBlock : SmartEnum<ExecutionBlock>
   public static readonly ExecutionBlock RightNotConfigured = new(nameof(RightNotConfigured), 3, "Le {0} n'est pas configuré");
 
   /// <summary>
-  /// Le droit invoqué s'exerce par une publication RabbitMQ, <b>que le service ne sait pas encore
-  /// faire</b> : le Paramétrage est bon, c'est l'exercice qui manque.
+  /// Le droit invoqué s'exerce par une publication RabbitMQ, et <b>ce déploiement n'a aucune
+  /// connexion au broker</b> : le Paramétrage est bon, c'est le déploiement qui ne sait pas publier
+  /// (ADR-0028).
   /// </summary>
   /// <remarks>
-  /// ⚠️ <b>Motif provisoire, à supprimer avec l'US qui publiera sur RabbitMQ</b> : le jour où le
-  /// service publie, ce motif n'a plus rien à dire, et un droit routé s'exécute comme un droit adressé.
+  /// <para>
+  /// ⚠️ <b>Il ne dit rien du broker joignable</b> : la connexion se juge sur ce que le déploiement
+  /// déclare, jamais sur une socket — voir <see cref="Configuration.BrokerConnection"/>. Un hôte
+  /// déclaré devant un broker éteint n'est pas bloqué ; c'est la publication qui échouera.
+  /// </para>
+  /// <para>
+  /// ⚠️ <b>Ce motif et le bandeau de « Configuration RabbitMQ » se décident sur la même règle</b> :
+  /// l'<c>Operator</c> et l'intégrateur lisent la même vérité du même déploiement.
+  /// </para>
   /// </remarks>
-  public static readonly ExecutionBlock RabbitMqNotYetSupported = new(
-    nameof(RabbitMqNotYetSupported),
+  public static readonly ExecutionBlock BrokerConnectionMissing = new(
+    nameof(BrokerConnectionMissing),
     4,
-    "Le {0} s'exerce par RabbitMQ, que le service ne sait pas encore publier");
+    "Le {0} s'exerce par RabbitMQ, mais aucune connexion n'est configurée");
 
   private readonly string _frenchLabel;
 
@@ -56,7 +64,7 @@ public sealed class ExecutionBlock : SmartEnum<ExecutionBlock>
 
   /// <summary>
   /// Le libellé destiné à l'<c>Operator</c>, pour une demande qui invoque <paramref name="right"/>.
-  /// Seuls <see cref="RightNotConfigured"/> et <see cref="RabbitMqNotYetSupported"/> — les motifs qui
+  /// Seuls <see cref="RightNotConfigured"/> et <see cref="BrokerConnectionMissing"/> — les motifs qui
   /// regardent le canal — nomment le droit, sous son libellé du noyau partagé.
   /// </summary>
   /// <exception cref="ArgumentNullException"><paramref name="right"/> est absent.</exception>

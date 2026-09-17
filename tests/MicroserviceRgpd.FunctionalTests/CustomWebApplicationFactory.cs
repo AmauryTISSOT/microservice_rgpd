@@ -90,9 +90,14 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
   /// </summary>
   protected virtual bool SubstitutesTheScanningPort => true;
 
-  public Task InitializeAsync() => _dbContainer.StartAsync();
+  /// <summary>
+  /// Démarre ce dont l'hôte a besoin avant d'être bâti. ⚠️ <b>Virtuelle</b> : un hôte dont le
+  /// déploiement déclare un broker démarre aussi le sien, et un vrai.
+  /// </summary>
+  public virtual Task InitializeAsync() => _dbContainer.StartAsync();
 
-  public new Task DisposeAsync() => _dbContainer.DisposeAsync().AsTask();
+  /// <summary>Range ce que <see cref="InitializeAsync"/> a démarré.</summary>
+  public new virtual Task DisposeAsync() => _dbContainer.DisposeAsync().AsTask();
 
   /// <summary>
   /// Overriding CreateHost to avoid creating a separate ServiceProvider per this thread:

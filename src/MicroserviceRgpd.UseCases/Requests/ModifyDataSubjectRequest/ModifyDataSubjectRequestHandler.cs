@@ -33,10 +33,12 @@ namespace MicroserviceRgpd.UseCases.Requests.ModifyDataSubjectRequest;
 /// </remarks>
 /// <param name="requests">Les demandes enregistrées.</param>
 /// <param name="settings">Le Paramétrage, en lecture seule.</param>
+/// <param name="broker">Ce que ce déploiement déclare savoir publier.</param>
 /// <param name="clock">L'horloge du service, qui date le geste.</param>
 public sealed class ModifyDataSubjectRequestHandler(
   IRepository<DataSubjectRequest> requests,
   IReadRepository<Settings> settings,
+  IBrokerConnectionState broker,
   TimeProvider clock)
   : ICommandHandler<ModifyDataSubjectRequestCommand, Result<RecordedDataSubjectRequest>>
 {
@@ -63,11 +65,11 @@ public sealed class ModifyDataSubjectRequestHandler(
       // ⚠️ Un refus ne rejoue pas la projection : `Map` ne transporte que le statut et les raisons, et
       // la demande n'est pas rendue ici. C'est ce qui garde le refus du domaine intact — `Invalid`
       // reste `Invalid`, `Conflict` reste `Conflict` — sans le réécrire d'un statut à l'autre.
-      return modified.Map(_ => RecordedDataSubjectRequest.Of(request, current));
+      return modified.Map(_ => RecordedDataSubjectRequest.Of(request, current, broker.Current));
     }
 
     await requests.SaveChangesAsync(cancellationToken);
 
-    return RecordedDataSubjectRequest.Of(request, current);
+    return RecordedDataSubjectRequest.Of(request, current, broker.Current);
   }
 }

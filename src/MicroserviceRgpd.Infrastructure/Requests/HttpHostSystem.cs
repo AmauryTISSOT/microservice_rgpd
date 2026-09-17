@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.Requests;
 
@@ -8,7 +7,8 @@ namespace MicroserviceRgpd.Infrastructure.Requests;
 
 /// <summary>
 /// Le système hôte joint <b>par HTTP</b> : un <c>POST</c> <c>application/json</c> synchrone à l'adresse
-/// du droit, dont le corps porte exactement cinq clés (ADR-0026). Il est l'un des destinataires de
+/// du droit, dont le corps — le même que celui d'une publication, écrit une seule fois sur
+/// <see cref="ExecutionWireBody"/> — porte exactement cinq clés (ADR-0026). Il est l'un des destinataires de
 /// <see cref="HostSystemByChannel"/>, et <b>ne connaît que l'adresse</b> — jamais le genre du canal.
 /// </summary>
 /// <remarks>
@@ -27,12 +27,6 @@ namespace MicroserviceRgpd.Infrastructure.Requests;
 public sealed class HttpHostSystem(IHttpClientFactory clients, TimeProvider clock)
 {
   /// <summary>
-  /// Les clés du corps en camelCase, et <b>les nuls écrits</b> : un prénom ou un nom absent part à
-  /// <c>null</c>, pour que les cinq clés soient toujours présentes.
-  /// </summary>
-  private static readonly JsonSerializerOptions Wire = new(JsonSerializerDefaults.Web);
-
-  /// <summary>
   /// Poste à <paramref name="endpoint"/> le droit que porte <paramref name="body"/>, et rend ce que
   /// l'appel a donné. ⚠️ <b>Il ne lève pas pour un échec de l'appel</b> : une réponse non 2xx, un
   /// délai dépassé ou une erreur réseau sont des <see cref="HostSystemCall"/> comme les autres.
@@ -43,7 +37,7 @@ public sealed class HttpHostSystem(IHttpClientFactory clients, TimeProvider cloc
 
     var client = clients.CreateClient(HostSystemServiceExtensions.ClientName);
 
-    using var content = new StringContent(JsonSerializer.Serialize(WireBody.Of(body), Wire), Encoding.UTF8);
+    using var content = new StringContent(ExecutionWireBody.Of(body), Encoding.UTF8);
     content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
     var startedAt = clock.GetUtcNow();
@@ -64,16 +58,5 @@ public sealed class HttpHostSystem(IHttpClientFactory clients, TimeProvider cloc
     {
       return HostSystemCall.Unreachable(startedAt, clock.GetElapsedTime(started));
     }
-  }
-
-  /// <summary>Le corps tel qu'il part : cinq clés, le droit sous son nom canonique, l'identifiant en texte.</summary>
-  private sealed record WireBody(string RequestId, string Right, string Email, string? FirstName, string? LastName)
-  {
-    public static WireBody Of(ExecutionBody body) => new(
-      body.RequestId.Value.ToString(),
-      body.Right.Name,
-      body.Email.Value,
-      body.FirstName?.Value,
-      body.LastName?.Value);
   }
 }

@@ -31,7 +31,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
 {
   private HostSystemDouble _host = null!;
 
-  /// <summary>Le routage d'un droit exercé par RabbitMQ, que le service ne sait pas encore publier.</summary>
+  /// <summary>Le routage d'un droit exercé par RabbitMQ, sur un déploiement sans connexion au broker.</summary>
   private static readonly RabbitMqRouting Routing =
     new(ExchangeName.From("rgpd.exercice"), RoutingKey.From("droit.acces"));
 
@@ -110,12 +110,17 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
   }
 
   /// <summary>
-  /// ⚠️ <b>Un droit exercé par RabbitMQ est bloqué, et la modale dit par où la demande partirait</b> :
-  /// le champ « Exercice » porte l'exchange et la routing key, le bandeau porte le motif provisoire,
-  /// et « Exécuter » est éteint — le service ne sait pas encore publier (ADR-0027).
+  /// ⚠️ <b>Un droit routé est bloqué sur un déploiement sans bus, et la modale dit par où la demande
+  /// partirait</b> : le champ « Exercice » porte l'exchange et la routing key, le bandeau dit que la
+  /// connexion manque, et « Exécuter » est éteint (ADR-0028).
+  /// <para>
+  /// ⚠️ <b>L'hôte des tests navigateur ne déclare aucune connexion</b>, et c'est ce qui rend ce cas
+  /// observable ici : la publication elle-même s'éprouve contre un vrai broker, dans la couture
+  /// fonctionnelle.
+  /// </para>
   /// </summary>
   [Fact]
-  public async Task SaysTheRoutingAndTheProvisionalBlockOfARightExercisedByRabbitMq()
+  public async Task SaysTheRoutingAndTheMissingBrokerConnectionOfARightExercisedByRabbitMq()
   {
     // ⚠️ L'adresse d'abord : c'est elle qui offre l'avion en papier de la ligne. Le droit est routé
     // sur RabbitMQ dans le dos de l'écran, et la modale relit le canal de l'instant.
@@ -135,7 +140,7 @@ public class RequestExecution(BrowserHarness harness) : IAsyncLifetime
       LastName.From("Martin"),
       EmailAddress.From(email),
       new ExerciseChannel.RabbitMq(Routing),
-      ExecutionBlock.RabbitMqNotYetSupported));
+      ExecutionBlock.BrokerConnectionMissing));
 
     await Expect(dialog).ToBeVisibleAsync();
     await Expect(Fact(dialog, ExecutionConfirmation.ExerciseLabel)).ToHaveTextAsync(expected.Exercise);

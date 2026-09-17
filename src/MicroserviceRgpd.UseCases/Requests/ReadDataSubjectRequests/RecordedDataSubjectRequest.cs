@@ -28,7 +28,8 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 /// <param name="Status">Où en est la demande.</param>
 /// <param name="ExecutionBlock">
 /// Le premier motif de blocage de l'exécution, ou <c>null</c> quand la demande s'exécute — calculé par
-/// la demande face au canal d'exercice que le Paramétrage associe à son droit (ADR-0026, ADR-0027).
+/// la demande face au canal d'exercice que le Paramétrage associe à son droit, <b>et à ce que le
+/// déploiement sait publier</b> (ADR-0026, ADR-0027, ADR-0028).
 /// </param>
 public sealed record RecordedDataSubjectRequest(
   DataSubjectRequestId Id,
@@ -46,9 +47,15 @@ public sealed record RecordedDataSubjectRequest(
   RequestStatus Status,
   ExecutionBlock? ExecutionBlock)
 {
-  /// <summary>Ce que la lecture rend d'une demande enregistrée, sous le Paramétrage <paramref name="settings"/>.</summary>
-  /// <exception cref="ArgumentNullException"><paramref name="request"/> ou <paramref name="settings"/> est absent.</exception>
-  internal static RecordedDataSubjectRequest Of(DataSubjectRequest request, Settings settings)
+  /// <summary>
+  /// Ce que la lecture rend d'une demande enregistrée, sous le Paramétrage <paramref name="settings"/>
+  /// et la connexion <paramref name="connection"/> que le déploiement déclare.
+  /// </summary>
+  /// <exception cref="ArgumentNullException"><paramref name="request"/>, <paramref name="settings"/> ou <paramref name="connection"/> est absent.</exception>
+  internal static RecordedDataSubjectRequest Of(
+    DataSubjectRequest request,
+    Settings settings,
+    BrokerConnection connection)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(settings);
@@ -67,6 +74,6 @@ public sealed record RecordedDataSubjectRequest(
       request.CreatedBy,
       request.CreatedAt,
       request.Status,
-      request.ExecutionBlockFacing(settings.ChannelFor(request.Right)));
+      request.ExecutionBlockFacing(settings.ChannelFor(request.Right), connection));
   }
 }

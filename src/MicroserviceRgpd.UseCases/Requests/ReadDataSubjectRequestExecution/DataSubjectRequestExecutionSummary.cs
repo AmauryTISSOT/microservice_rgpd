@@ -26,9 +26,15 @@ public sealed record DataSubjectRequestExecutionSummary(
   ExerciseChannel Exercise,
   ExecutionBlock? Block)
 {
-  /// <summary>Le récapitulatif de <paramref name="request"/>, sous le Paramétrage <paramref name="settings"/>.</summary>
-  /// <exception cref="ArgumentNullException"><paramref name="request"/> ou <paramref name="settings"/> est absent.</exception>
-  internal static DataSubjectRequestExecutionSummary Of(DataSubjectRequest request, Settings settings)
+  /// <summary>
+  /// Le récapitulatif de <paramref name="request"/>, sous le Paramétrage <paramref name="settings"/>
+  /// et la connexion <paramref name="connection"/> que le déploiement déclare.
+  /// </summary>
+  /// <exception cref="ArgumentNullException"><paramref name="request"/>, <paramref name="settings"/> ou <paramref name="connection"/> est absent.</exception>
+  internal static DataSubjectRequestExecutionSummary Of(
+    DataSubjectRequest request,
+    Settings settings,
+    BrokerConnection connection)
   {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(settings);
@@ -41,6 +47,6 @@ public sealed record DataSubjectRequestExecutionSummary(
       request.LastName,
       request.Email,
       channel,
-      request.ExecutionBlockFacing(channel));
+      request.ExecutionBlockFacing(channel, connection));
   }
 }

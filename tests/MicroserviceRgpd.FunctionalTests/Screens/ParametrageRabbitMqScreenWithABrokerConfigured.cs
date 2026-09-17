@@ -12,10 +12,10 @@ namespace MicroserviceRgpd.FunctionalTests.Screens;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠️ <b>Aucun broker ne répond derrière la clé</b>, et c'est ce qui donne son sens à cette classe :
-/// l'hôte déclaré ne se résout nulle part. La page rend quand même, et rien ne l'a fait attendre —
-/// la décision se prend sur la <b>seule présence</b> de la clé, sans le moindre test réseau
-/// (ADR-0027).
+/// ⚠️ <b>Un vrai broker tourne derrière ces clés</b>, et la page ne le joint pas davantage : la
+/// décision se prend sur la <b>seule présence</b> de la clé, sans le moindre test réseau (ADR-0027).
+/// Ce que cette classe garde est que le rendu n'a rien à voir avec le bus — ni pour paraître, ni
+/// pour se taire.
 /// </para>
 /// <para>
 /// <b>Un hôte à part</b>, parce que la clé se pose à la construction de l'hôte : c'est la seule
@@ -76,15 +76,20 @@ public class ParametrageRabbitMqScreenWithABrokerConfigured(ABrokerConfiguredWeb
   }
 
   /// <summary>
-  /// <b>La clé ne se lit pas à l'écran</b> : elle nomme un hôte de déploiement, et cette face ne
-  /// montre que ce que l'intégrateur y a déclaré.
+  /// ⚠️ <b>Aucun secret du déploiement ne se lit à l'écran</b> : l'hôte, le port et le mot de passe du
+  /// broker relèvent de la configuration de déploiement, et cette face ne montre que ce que
+  /// l'intégrateur y a déclaré (ADR-0027, ADR-0028).
   /// </summary>
   [Fact]
-  public async Task NeverShowsTheDeclaredBrokerHostOnTheScreen()
+  public async Task NeverShowsTheDeploymentConnectionOnTheScreen()
   {
     await SaveAndExpectARedirectAsync("Erasure", "rgpd.exercices", "droit.effacement");
 
-    (await ReadAsync()).ShouldNotContain(ABrokerConfiguredWebApplicationFactory.HostName);
+    var screen = await ReadAsync();
+
+    screen.ShouldNotContain(ABrokerConfiguredWebApplicationFactory.Password, Case.Insensitive);
+    screen.ShouldNotContain(ABrokerConfiguredWebApplicationFactory.UserName, Case.Insensitive);
+    screen.ShouldNotContain($"{factory.HostName}:{factory.Port}", Case.Insensitive);
   }
 
   private async Task<string> ReadAsync()

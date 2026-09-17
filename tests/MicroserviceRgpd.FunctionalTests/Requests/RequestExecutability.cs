@@ -62,13 +62,13 @@ public class RequestExecutability(CustomWebApplicationFactory<Program> factory) 
   [InlineData(nameof(ExecutionBlock.IdentityNotVerified))]
   [InlineData(nameof(ExecutionBlock.EmailMissing))]
   [InlineData(nameof(ExecutionBlock.RightNotConfigured))]
-  [InlineData(nameof(ExecutionBlock.RabbitMqNotYetSupported))]
+  [InlineData(nameof(ExecutionBlock.BrokerConnectionMissing))]
   public async Task DimsTheExecutionAndSaysTheBlock(string blockName)
   {
     var block = ExecutionBlock.FromName(blockName);
     var marker = Guid.NewGuid().ToString("N");
 
-    if (block == ExecutionBlock.RabbitMqNotYetSupported)
+    if (block == ExecutionBlock.BrokerConnectionMissing)
     {
       await RouteAsync(DataSubjectRight.Erasure);
     }
