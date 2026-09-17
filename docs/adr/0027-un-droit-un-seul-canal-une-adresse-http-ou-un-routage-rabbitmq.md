@@ -4,7 +4,8 @@
 - **Date** : 2026-09-17
 - **Décidé par** : l'US [#489](https://github.com/AmauryTISSOT/microservice_rgpd/issues/489)
   « Configuration : l'intégrateur déclare, droit par droit, le routage RabbitMQ par lequel le
-  service exercera un droit », ouverte par [#490](https://github.com/AmauryTISSOT/microservice_rgpd/issues/490)
+  service exercera un droit », ouverte par
+  [#490](https://github.com/AmauryTISSOT/microservice_rgpd/issues/490)
 - **Glossaires** : [`CONTEXT-MAP.md`](../../CONTEXT-MAP.md),
   [Configuration](../contexts/configuration/CONTEXT.md), [Requests](../contexts/requests/CONTEXT.md)
 - **Supplante, sur des points nommés** :
@@ -14,8 +15,8 @@
     espèce. Le reste de l'ADR-0016 tient : le grain par droit, le singleton, la naissance
     paresseuse, « non configuré » comme état valide, « enregistrer n'émet aucun appel », le contexte
     `Configuration` et sa traversée vers le noyau partagé.
-  - [ADR-0026](./0026-executer-une-demande-requests-lit-le-parametrage-et-appelle-le-systeme-hote.md) —
-    deux points, et deux seulement :
+  - [ADR-0026](./0026-executer-une-demande-requests-lit-le-parametrage-et-appelle-le-systeme-hote.md)
+    — deux points, et deux seulement :
     - la clause **« son droit a une adresse configurée »** parmi les conditions d'exécution, qui
       devient « son droit s'exerce par une adresse HTTP » ;
     - **la liste et l'ordre des motifs de blocage**, qui passent de quatre à cinq et dont le
@@ -203,8 +204,8 @@ l'invariant réellement observable.
 reste lisible en tête d'un ADR en vigueur par ailleurs. Le dépôt n'édite pas un ADR supplanté : la
 table de `CONTEXT-MAP.md` est le seul endroit où les deux se lisent ensemble.
 
-⚠️ **Le bandeau de connexion peut mentir par optimisme.** Il se décide sur la présence d'une clé, pas
-sur un broker joignable : une clé présente et un broker éteint ne produisent aucun avertissement.
+⚠️ **Le bandeau de connexion peut mentir par optimisme.** Il se décide sur la présence d'une clé,
+pas sur un broker joignable : une clé présente et un broker éteint ne produisent aucun avertissement.
 C'est le prix du « aucun test réseau au rendu ».
 
 ## Ce que cet ADR n'ouvre pas
