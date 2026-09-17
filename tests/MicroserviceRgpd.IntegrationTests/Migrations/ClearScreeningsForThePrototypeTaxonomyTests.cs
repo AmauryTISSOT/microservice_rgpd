@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
@@ -12,8 +11,8 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// </summary>
 /// <remarks>
 /// ⚠️ <b>C'est le seul endroit d'où la suppression puisse être éprouvée</b> : une base neuve n'a
-/// aucun rapport à supprimer, et une migration vide y afficherait vert. Il monte donc son
-/// <b>propre</b> conteneur, comme <see cref="ListingOriginBackfillTests"/>.
+/// aucun rapport à supprimer, et une migration vide y afficherait vert. Il monte donc sa
+/// <b>propre</b> base, comme <see cref="ListingOriginBackfillTests"/>.
 /// </remarks>
 public class ClearScreeningsForThePrototypeTaxonomyTests : IAsyncLifetime
 {
@@ -22,15 +21,14 @@ public class ClearScreeningsForThePrototypeTaxonomyTests : IAsyncLifetime
 
   private static readonly Guid ReportId = new("66666666-6666-6666-6666-666666666666");
 
-  private readonly PostgreSqlContainer _container =
-    new PostgreSqlBuilder("postgres:18-alpine").Build();
+  private string _database = string.Empty;
 
   private List<string> _columnsBefore = [];
   private List<string> _columnsAfter = [];
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    _database = await PostgreSqlServer.NewDatabaseAsync(nameof(ClearScreeningsForThePrototypeTaxonomyTests));
 
     await using var dbContext = NewDbContext();
 
@@ -42,7 +40,7 @@ public class ClearScreeningsForThePrototypeTaxonomyTests : IAsyncLifetime
     _columnsAfter = await ColumnsAsync(dbContext);
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>
   /// Aucun rapport ne survit, et aucune ligne : une colonne qui porterait encore
@@ -111,6 +109,6 @@ public class ClearScreeningsForThePrototypeTaxonomyTests : IAsyncLifetime
 
   private AppDbContext NewDbContext() =>
     new(new DbContextOptionsBuilder<AppDbContext>()
-      .UseNpgsql(_container.GetConnectionString())
+      .UseNpgsql(_database)
       .Options);
 }

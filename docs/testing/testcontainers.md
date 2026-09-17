@@ -24,17 +24,30 @@ choisie pour cela ; le démarrage d'un container coûte ensuite une poignée de 
 | Projet | Container | Schéma | Portée |
 | --- | --- | --- | --- |
 | `UnitTests` | **aucun** | — | domaine, handlers, adaptateurs HTTP moqués |
-| `IntegrationTests` | un, partagé par toute la suite | `MigrateAsync()` | **ce que seule une vraie base prouve** : la trace d'audit, et les colonnes du Paramétrage |
+| `IntegrationTests` | **un seul**, et une base par classe qui en demande une | `MigrateAsync()` | **ce que seule une vraie base prouve** : la trace d'audit, et les colonnes du Paramétrage |
 | `FunctionalTests` | un par fabrique d'application, soit **un par collection** | `Migrate()` | l'endpoint public de bout en bout |
 | `BrowserTests` | **un par collection**, cinq en tout | `Migrate()` | un parcours d'écrans dans un vrai Chromium |
 | `AspireTests` | **aucun**, et il doit le rester | — | volontairement vide — `IsTestProject=false`, il ne compte pas parmi les cinq |
 
 ### `IntegrationTests`
 
-`PostgreSqlFixture` monte **un seul container pour toute la suite**, partagé par une
-`ICollectionFixture` : en monter un par classe coûterait des dizaines de secondes pour vérifier la
-même migration. Le schéma vient de `MigrateAsync()`, jamais d'`EnsureCreated()` — ce sont les
-migrations du dépôt que ces tests vérifient, pas le modèle dont elles sont issues.
+`PostgreSqlServer` monte **un seul container pour tout le projet**, et rend à qui lui en demande une
+**base neuve et vide**. `PostgreSqlFixture` en prend une, la migre, et la partage par une
+`ICollectionFixture` avec les classes qui attendent un schéma à jour. Le schéma vient de
+`MigrateAsync()`, jamais d'`EnsureCreated()` — ce sont les migrations du dépôt que ces tests
+vérifient, pas le modèle dont elles sont issues.
+
+⚠️ **Les classes qui éprouvent une migration ont besoin d'une base *non migrée*** : elles remontent à
+un état d'avant, y écrivent des lignes de cette date-là, puis jouent la migration. Chacune montait
+donc son propre container — dix containers pour dix schémas, et une minute d'horloge. Elles
+demandent maintenant leur base à `PostgreSqlServer` : `CREATE DATABASE` coûte quelques dizaines de
+millisecondes, l'isolement est le même — deux bases d'un serveur ne partagent ni table, ni séquence,
+ni transaction —, et **elles gardent leur parallélisme**, n'étant rassemblées dans aucune collection.
+
+⚠️ **Le container n'est jamais arrêté en code.** xUnit v2 n'offre pas de point d'accroche à
+l'échelle de l'assembly : c'est le *resource reaper* de Testcontainers (Ryuk) qui le retire à la
+mort du processus de test. Le désactiver (`TESTCONTAINERS_RYUK_DISABLED`) laisserait un container
+derrière chaque exécution.
 
 Ce projet ne porte que ce qu'**aucune autre couche ne peut prouver**. Son premier rôle est la
 persistance de la trace d'audit : c'est une conséquence du contrat public — sans `GET`, la trace est
@@ -44,9 +57,11 @@ Le second, depuis l'ADR-0027, est la ligne du **Paramétrage** : une valeur dorm
 dans l'agrégat qui vient de l'effacer, elle se voit dans la ligne. `SettingsChannelPersistenceTests`
 y vérifie qu'un canal posé efface **en base** les colonnes de l'autre canal du même droit.
 
-⚠️ **`SeedRequestsTests` monte son propre container**, comme les tests de reprise de migration : il
-y rejoue `scripts/seed-requests.sql`, et les cent demandes plantées fausseraient les classes qui
-comptent les lignes de `data_subject_requests` dans le container partagé.
+⚠️ **`SeedRequestsTests` prend sa propre base**, comme les tests de reprise de migration : il y
+rejoue `scripts/seed-requests.sql`, et les cent demandes plantées fausseraient les classes qui
+comptent les lignes de `data_subject_requests` dans la base partagée. Le script est joué par `psql`
+dans le container, qui s'ouvre sur la base par défaut du serveur : un `\connect` posé en tête le
+mène à la sienne.
 
 ### `FunctionalTests`
 

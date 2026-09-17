@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Screenings;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
@@ -18,8 +17,8 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// ⚠️ <b>C'est le seul endroit d'où le remplissage puisse être éprouvé.</b> Une suite qui monte un
 /// schéma neuf n'a aucun rapport ancien à relire : la colonne y serait posée non nullable sur zéro
 /// ligne, et une migration qui aurait oublié de remplir l'existant afficherait vert. C'est la même
-/// exception assumée que <c>VocabularyRenameSurvivalTests</c>, et elle monte son <b>propre</b>
-/// conteneur pour la même raison — celui de <c>PostgreSqlFixture</c> est déjà migré jusqu'au bout.
+/// exception assumée que <c>VocabularyRenameSurvivalTests</c>, et elle monte sa <b>propre</b>
+/// base pour la même raison — celle de <c>PostgreSqlFixture</c> est déjà migrée jusqu'au bout.
 /// </para>
 /// <para>
 /// <b>« Collé » est vrai par construction</b> : aucun chemin connecté n'existait quand ces rapports
@@ -37,12 +36,11 @@ public class ListingOriginBackfillTests : IAsyncLifetime
 
   private static readonly DateTimeOffset RenderedOn = new(2026, 9, 1, 10, 0, 0, TimeSpan.Zero);
 
-  private readonly PostgreSqlContainer _container =
-    new PostgreSqlBuilder("postgres:18-alpine").Build();
+  private string _database = string.Empty;
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    _database = await PostgreSqlServer.NewDatabaseAsync(nameof(ListingOriginBackfillTests));
 
     await using var dbContext = NewDbContext();
 
@@ -55,7 +53,7 @@ public class ListingOriginBackfillTests : IAsyncLifetime
       ClearScreeningsForThePrototypeTaxonomyTests.BeforeTheClearing);
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>
   /// Le rapport écrit avant la migration se relit <b>par le domaine</b>, et il se lit
@@ -209,6 +207,6 @@ public class ListingOriginBackfillTests : IAsyncLifetime
 
   private AppDbContext NewDbContext() =>
     new(new DbContextOptionsBuilder<AppDbContext>()
-      .UseNpgsql(_container.GetConnectionString())
+      .UseNpgsql(_database)
       .Options);
 }

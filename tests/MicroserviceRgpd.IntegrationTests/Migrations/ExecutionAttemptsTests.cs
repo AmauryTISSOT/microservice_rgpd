@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
@@ -17,7 +16,7 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// preuve en cascade.
 /// </para>
 /// <para>
-/// Son propre conteneur, pour la même raison que <see cref="ModificationStampTests"/> : une demande
+/// Sa propre base, pour la même raison que <see cref="ModificationStampTests"/> : une demande
 /// écrite <i>avant</i> la migration ne s'écrit que sur une base qui n'est pas encore migrée.
 /// </para>
 /// </remarks>
@@ -27,14 +26,13 @@ public class ExecutionAttemptsTests : IAsyncLifetime
 
   private static readonly Guid ARequestOfTheDayBefore = new("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
-  private readonly PostgreSqlContainer _container =
-    new PostgreSqlBuilder("postgres:18-alpine").Build();
+  private string _database = string.Empty;
 
   private List<string> _migrations = [];
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    _database = await PostgreSqlServer.NewDatabaseAsync(nameof(ExecutionAttemptsTests));
 
     await using var dbContext = NewDbContext();
 
@@ -45,7 +43,7 @@ public class ExecutionAttemptsTests : IAsyncLifetime
     await dbContext.Database.MigrateAsync();
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>La migration vient <b>immédiatement</b> après le vidage des détections pour la taxonomie prototype.</summary>
   [Fact]
@@ -138,6 +136,6 @@ public class ExecutionAttemptsTests : IAsyncLifetime
 
   private AppDbContext NewDbContext() =>
     new(new DbContextOptionsBuilder<AppDbContext>()
-      .UseNpgsql(_container.GetConnectionString())
+      .UseNpgsql(_database)
       .Options);
 }

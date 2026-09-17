@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using MicroserviceRgpd.Infrastructure.Data;
-using Testcontainers.PostgreSql;
 
 namespace MicroserviceRgpd.IntegrationTests.Migrations;
 
@@ -14,8 +13,8 @@ namespace MicroserviceRgpd.IntegrationTests.Migrations;
 /// <para>
 /// ⚠️ <b>C'est la différence des deux relevés qui est éprouvée, pas l'état final seul.</b> Une base
 /// neuve où les treize tables manqueraient ne dirait rien d'une migration qui en aurait emporté une
-/// quatorzième : c'est ce qu'elle a <i>retiré</i> qui doit être exactement la liste. Il monte donc son
-/// <b>propre</b> conteneur, comme <see cref="ListingOriginBackfillTests"/> — celui de
+/// quatorzième : c'est ce qu'elle a <i>retiré</i> qui doit être exactement la liste. Il monte donc sa
+/// <b>propre</b> base, comme <see cref="ListingOriginBackfillTests"/> — celui de
 /// <c>PostgreSqlFixture</c> est déjà migré jusqu'au bout.
 /// </para>
 /// <para>
@@ -52,15 +51,14 @@ public class DropCaseworkTests : IAsyncLifetime
     "evidence_log_entries",
   ];
 
-  private readonly PostgreSqlContainer _container =
-    new PostgreSqlBuilder("postgres:18-alpine").Build();
+  private string _database = string.Empty;
 
   private List<string> _before = [];
   private List<string> _after = [];
 
   public async Task InitializeAsync()
   {
-    await _container.StartAsync();
+    _database = await PostgreSqlServer.NewDatabaseAsync(nameof(DropCaseworkTests));
 
     await using var dbContext = NewDbContext();
 
@@ -71,7 +69,7 @@ public class DropCaseworkTests : IAsyncLifetime
     _after = await TablesAsync(dbContext);
   }
 
-  public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+  public Task DisposeAsync() => Task.CompletedTask;
 
   /// <summary>
   /// Ce qui a disparu est <b>exactement</b> la liste : une table de <c>Casework</c> oubliée
@@ -103,6 +101,6 @@ public class DropCaseworkTests : IAsyncLifetime
 
   private AppDbContext NewDbContext() =>
     new(new DbContextOptionsBuilder<AppDbContext>()
-      .UseNpgsql(_container.GetConnectionString())
+      .UseNpgsql(_database)
       .Options);
 }
