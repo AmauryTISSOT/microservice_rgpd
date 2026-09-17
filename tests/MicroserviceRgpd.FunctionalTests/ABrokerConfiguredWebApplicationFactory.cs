@@ -1,11 +1,11 @@
-using MicroserviceRgpd.Web.Pages.Configuration;
+using MicroserviceRgpd.Infrastructure.Configuration;
 
 namespace MicroserviceRgpd.FunctionalTests;
 
 /// <summary>
 /// Le service démarré <b>avec une connexion RabbitMQ configurée sur le déploiement</b> : la clé
-/// <see cref="ParametrageRabbitMqModel.BrokerHostNameKey"/> est posée, et c'est la seule chose qui
-/// distingue cet hôte de l'hôte ordinaire.
+/// <see cref="RabbitMqOptions.HostNameKey"/> est posée, et c'est la seule chose qui distingue cet
+/// hôte de l'hôte ordinaire.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -15,8 +15,8 @@ namespace MicroserviceRgpd.FunctionalTests;
 /// cherche.
 /// </para>
 /// <para>
-/// La clé est posée par <c>UseSetting</c>, sous le nom exact que le page model lit — cité sur la
-/// constante de production, jamais recopié.
+/// La clé est posée par <c>UseSetting</c>, sous le nom exact que le déploiement emploie — cité sur
+/// la constante de production, jamais recopié.
 /// </para>
 /// </remarks>
 public sealed class ABrokerConfiguredWebApplicationFactory : CustomWebApplicationFactory<Program>
@@ -28,7 +28,7 @@ public sealed class ABrokerConfiguredWebApplicationFactory : CustomWebApplicatio
   {
     base.ConfigureWebHost(builder);
 
-    builder.UseSetting(ParametrageRabbitMqModel.BrokerHostNameKey, HostName);
+    builder.UseSetting(RabbitMqOptions.HostNameKey, HostName);
   }
 }
 

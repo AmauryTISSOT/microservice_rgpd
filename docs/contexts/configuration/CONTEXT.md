@@ -74,6 +74,36 @@ Un droit et son canal — « non configuré » compris : ce que l'écran relit, 
 recopie ni le libellé ni l'article, qui se lisent sur le `DataSubjectRight`.
 _Avoid_ : RightEndpoint, Binding, Mapping, Entry, ligne de configuration
 
+### La connexion du déploiement au broker
+
+**Connexion du déploiement** (`BrokerConnection`) :
+Ce qui dit « **ce déploiement sait publier** ». Type **fermé à deux cas** — `Configured` et
+`Absent` —, et non un booléen nu : la question se pose à plusieurs endroits — le bandeau de la face
+RabbitMQ, et l'exécution d'une demande routée —, et elle doit s'y lire sous le même nom, avec la
+même réponse (ADR-0028). **`Absent` est un état légal**, jamais une erreur de configuration : un
+service sans bus démarre normalement, et un routage reste enregistrable avant que le broker existe.
+Elle dit ce que le déploiement **déclare**, jamais ce qu'il **atteint** : aucun test réseau ne se
+cache derrière elle, et une connexion déclarée devant un broker éteint est un cas prévu, dont seule
+l'exécution découvrira l'échec.
+_Avoid_ : broker, bus, client AMQP, connexion ouverte, disponibilité, santé
+
+**Son état** (`IBrokerConnectionState`) :
+Le seul endroit où la question se pose : une propriété, qui se lit. Elle n'ouvre rien, ne teste rien
+et ne ferme rien. Ce qu'**une clé vide ou faite d'espaces** vaut — une clé absente — est écrit sur la
+connexion elle-même, **dans le noyau et à ce seul endroit** : recopiée chez chaque lecteur, la règle
+aurait divergé, et deux publics auraient lu deux vérités de la même configuration.
+_Avoid_ : health check, ping, sonde, `IsBrokerAvailable`
+
+**Ce que le déploiement déclare** (`RabbitMqOptions`, section `RabbitMq`) :
+Hôte, port, vhost, identifiants, TLS, et le délai d'attente d'une confirmation de publication —
+**10 secondes par défaut**. Cela vit dans la **configuration de déploiement**, jamais en base ni à
+l'écran : aucun secret ne transite par le Paramétrage. **Pas d'hôte, pas de connexion** — état
+légal ; un hôte présent avec un port ou un délai **aberrant** arrête le démarrage, comme
+`HostSystem:TimeoutSeconds`, pour qu'une faute de frappe ne passe pas pour un réglage. **Aucune
+chaîne de connexion URI** : les identifiants n'entrent pas dans une URL, pour le motif qui interdit
+déjà l'`userinfo` dans une `EndpointUrl`.
+_Avoid_ : connection string, URI AMQP, credentials en base, réglage d'écran
+
 ### Les droits, et celui qui n'en est pas un
 
 **Les six droits configurables** :

@@ -1,5 +1,6 @@
 ﻿using MicroserviceRgpd.Core.Qualifications.Audit;
 using MicroserviceRgpd.Core.Screenings;
+using MicroserviceRgpd.Infrastructure.Configuration;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.Infrastructure.Data.Audit;
 using MicroserviceRgpd.Infrastructure.Data.Screenings;
@@ -57,6 +58,11 @@ public static class InfrastructureServiceExtensions
     // Le système hôte, que l'exécution d'une demande appelle : un client sans reprise ni redirection,
     // au délai HostSystem:TimeoutSeconds (ADR-0026).
     services.AddHostSystem(config);
+
+    // La connexion du déploiement au broker : ce qu'il déclare sous la section RabbitMq, et l'état
+    // qui répond « ce déploiement sait publier » (ADR-0028). ⚠️ Aucune socket ne s'ouvre ici : pas
+    // d'hôte, pas de connexion — un état légal, et le service démarre.
+    services.AddBrokerConnection(config);
 
     // Le moteur de détection : le lexique par défaut, démarré avec le service ; A2 si le drapeau
     // Screening:Embeddings:Enabled l'allume, et Ollama entre alors dans la pile. Un seul des deux,

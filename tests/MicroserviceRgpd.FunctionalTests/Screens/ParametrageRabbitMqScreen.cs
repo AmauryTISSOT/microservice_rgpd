@@ -4,9 +4,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.SharedKernel;
+using MicroserviceRgpd.Infrastructure.Configuration;
 using MicroserviceRgpd.Infrastructure.Data;
 using MicroserviceRgpd.UseCases.Configuration.SetRightEndpoint;
-using MicroserviceRgpd.Web.Pages.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
@@ -654,7 +654,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     var advisory = TheBrokerConnectionAdvisory.In(screen);
 
     advisory.ShouldNotBeNull("Aucun bandeau ne prévient que rien ne partira sur le bus.");
-    advisory.ShouldContain(ParametrageRabbitMqModel.BrokerHostNameKey);
+    advisory.ShouldContain(RabbitMqOptions.HostNameKey);
 
     // Le routage est bien là : le bandeau avertit, il n'a rien refusé.
     (await SectionAsync(Erasure)).ShouldContain(Exchange);
@@ -704,7 +704,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     var http = WebUtility.HtmlDecode(await ReadAsync(Http));
 
     TheBrokerConnectionAdvisory.In(http).ShouldBeNull("La face HTTP porte un avertissement qui ne la regarde pas.");
-    http.ShouldNotContain(ParametrageRabbitMqModel.BrokerHostNameKey);
+    http.ShouldNotContain(RabbitMqOptions.HostNameKey);
   }
 
   private async Task<string> ReadAsync(string screen)
