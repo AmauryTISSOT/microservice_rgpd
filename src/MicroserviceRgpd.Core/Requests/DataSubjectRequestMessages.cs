@@ -1,10 +1,10 @@
 namespace MicroserviceRgpd.Core.Requests;
 
 /// <summary>
-/// Les <b>dix</b> messages par lesquels une saisie est refusée, écrits <b>une seule fois</b>, ici. Le
-/// domaine les rend dans le <c>Result</c> de <see cref="DataSubjectRequest.Receive"/>, et la page les
-/// fournit tels quels au navigateur par <see cref="All"/> : le script ne porte que la logique, il
-/// n'écrit aucun message.
+/// Les messages par lesquels une saisie est refusée, écrits <b>une seule fois</b>, ici. Le domaine
+/// les rend dans le <c>Result</c> de <see cref="DataSubjectRequest.Receive"/> et de
+/// <see cref="DataSubjectRequest.Extend"/>, et la page les fournit tels quels au navigateur : le
+/// script ne porte que la logique, il n'écrit aucun message.
 /// </summary>
 /// <remarks>
 /// ⚠️ Les nombres sont écrits en toutes lettres dans les phrases, et non interpolés depuis les
@@ -43,9 +43,19 @@ public static class DataSubjectRequestMessages
   /// <summary>Aucun des six droits n'est choisi — <c>OutOfScope</c> compris, qui n'en est pas un.</summary>
   public const string RightMissing = "Sélectionnez un droit RGPD.";
 
+  /// <summary>Aucun motif de prolongation n'est choisi, ou la valeur envoyée n'en est pas un.</summary>
+  public const string ExtensionGroundMissing = "Sélectionnez un motif de prolongation.";
+
+  /// <summary>La justification de la prolongation est absente ou ne contient que des espaces.</summary>
+  public const string ExtensionJustificationMissing = "La justification est obligatoire.";
+
+  /// <summary>La justification de la prolongation dépasse son plafond.</summary>
+  public const string ExtensionJustificationTooLong = "La justification ne peut pas dépasser 2 000 caractères.";
+
   /// <summary>
-  /// Les dix messages sous une clé stable, pour que la page les sérialise dans l'îlot JSON que lit
-  /// le script du navigateur.
+  /// Les <b>dix</b> messages de la saisie d'une demande, sous une clé stable, pour que la page les
+  /// sérialise dans l'îlot JSON que lit le script du navigateur. ⚠️ Les refus de la prolongation n'y
+  /// sont pas : la modale de prolongation ne rejoue aucune règle avant d'envoyer.
   /// </summary>
   public static IReadOnlyDictionary<string, string> All { get; } = new Dictionary<string, string>
   {

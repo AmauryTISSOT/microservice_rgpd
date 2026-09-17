@@ -19,6 +19,7 @@
   var modifyAction = Url.Page(null, "Modify");
   var valuesAction = Url.Page(null, "Values");
   var summaryAction = Url.Page(null, "Execution");
+  var extensionSummaryAction = Url.Page(null, "Extension");
 
   // ⚠️ LA ROUTE DE LA QUALIFICATION EST CELLE D'UN AUTRE ÉCRAN, ET SEULE LA VUE LA CONNAÎT : le
   // page model du tableau appartient à Requests, et n'envoie aucune commande de Qualification
@@ -343,11 +344,11 @@
 
 @*
   LE TOAST, VIDE TANT QU'IL N'A RIEN À DIRE. Le module y écrit « Demande créée », « Demande
-  modifiée », « Demande supprimée », « Demande exécutée », l'échec d'une suppression, celui d'un
-  pré-remplissage, ou la disparition d'une demande corrigée — les mots que la page lui donne ici —
-  quand une modale se ferme sur une création, sur une modification, sur une suppression ou sur une
-  exécution, ou quand le crayon ou l'exécution d'une ligne n'a pas pu lire sa demande, et l'efface
-  quelques secondes plus tard. Il est hors des modales, qui
+  modifiée », « Demande supprimée », « Demande exécutée », « Demande prolongée », l'échec d'une
+  suppression, celui d'un pré-remplissage, ou la disparition d'une demande corrigée — les mots que la
+  page lui donne ici — quand une modale se ferme sur une création, sur une modification, sur une
+  suppression, sur une exécution ou sur une prolongation, ou quand le crayon, l'exécution ou la
+  prolongation d'une ligne n'a pas pu lire sa demande, et l'efface quelques secondes plus tard. Il est hors des modales, qui
   viennent de se fermer ou ne se sont pas ouvertes ; `role="status"` le fait lire sans voler le focus.
 
   ⚠️ UNE DEMANDE SUPPRIMÉE DEPUIS UN AUTRE ONGLET NE SE DIT PAS DANS LE BANDEAU DE LA MODALE, mais
@@ -358,6 +359,7 @@
 *@
 <p class="toast" role="status" id="requests-toast" data-created="Demande créée" data-deleted="Demande supprimée"
    data-modified="Demande modifiée" data-executed="@ExecutionConfirmation.Executed"
+   data-extended="@ExtensionConfirmation.Extended"
    data-deletion-failed="La suppression a échoué, veuillez réessayer."
    data-load-failed="La demande n'a pas pu être chargée."
    data-vanished="La demande a été supprimée entre-temps."></p>
@@ -614,6 +616,105 @@
           <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
         </svg>
         @ExecutionConfirmation.Confirm
+      </button>
+    </div>
+  </form>
+</dialog>
+
+@*
+  LA MODALE DE PROLONGATION DU DÉLAI DE RÉPONSE, RENDUE PAR LE SERVEUR ET FERMÉE AU CHARGEMENT,
+  sixième `dialog` de l'écran. La flèche d'horloge d'une ligne l'ouvre, une fois le récapitulatif relu
+  sur le serveur (`data-summary`) : la demande, la date limite en vigueur, et CELLE QUI EN RÉSULTERA
+  (ADR-0029).
+
+  ⚠️ LE SCRIPT NE CALCULE AUCUNE DATE. `Date.setMonth` ne fait pas le même repli de fin de mois que
+  `DateOnly.AddMonths` : un 31 décembre plus deux mois donne 3 mars dans le navigateur et 28 février
+  dans le domaine. Les deux dates arrivent ÉCRITES par le serveur, comme tous les mots de la modale.
+
+  ⚠️ TOUS SES MOTS SONT ICI, écrits une fois dans ExtensionConfirmation : le titre, les libellés, les
+  boutons, l'invite du choix. L'AVERTISSEMENT FAIT EXCEPTION — il porte une date, et arrive donc avec
+  le récapitulatif, composé par le serveur lui aussi : il est DATÉ DE LA DATE LIMITE INITIALE, celle
+  qui vaut encore, car c'est avant elle que la personne concernée doit être informée.
+
+  LES DEUX MOTIFS DU RÈGLEMENT, ET PAS UN TROISIÈME : l'article 12 §3 n'en ouvre pas d'autre, et il
+  n'y a pas de « Autre ». L'invite d'abord : l'Operator choisit consciemment. La justification est un
+  texte libre, VIDE AU CHARGEMENT — rien n'y est pré-rempli : c'est le fait concret que l'Operator
+  écrit, et une phrase toute faite serait la sienne, pas la sienne.
+
+  LA DURÉE N'EST PAS UN CHAMP : le règlement dit « deux mois », pas « jusqu'à deux mois ».
+
+  ⚠️ « ANNULER » A LE FOCUS PAR DÉFAUT (`autofocus`, que `showModal` honore) : une touche Entrée
+  réflexe ne prolonge rien. « Prolonger » vient en dernier.
+
+  PENDANT L'APPEL, « PROLONGER » PORTE `aria-busy` ET SON ICÔNE DE CHARGEMENT, et rien ne ferme la
+  modale — ni « Annuler », ni la croix, ni Échap : la fermer n'annulerait pas l'appel.
+
+  LE FORMULAIRE DÉCLARE SON ENVOI — `POST /demandes?handler=Extend` — ET PORTE LE JETON ANTI-REJEU,
+  que le tag helper pose. Le script l'envoie par `fetch` ; aucun bouton ne le soumet nativement.
+*@
+<dialog class="modal" id="extend-request" aria-labelledby="extend-request-title"
+        aria-describedby="extend-request-warning" data-summary="@extensionSummaryAction">
+  <div class="modal-head">
+    <h2 id="extend-request-title">@ExtensionConfirmation.Title</h2>
+    <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" fill="none" />
+      </svg>
+    </button>
+  </div>
+
+  <dl class="facts">
+    <dt>@ExtensionConfirmation.RightLabel</dt>
+    <dd data-summary-field="right"></dd>
+    <dt>@ExtensionConfirmation.FirstNameLabel</dt>
+    <dd data-summary-field="firstName"></dd>
+    <dt>@ExtensionConfirmation.LastNameLabel</dt>
+    <dd data-summary-field="lastName"></dd>
+    <dt>@ExtensionConfirmation.EmailLabel</dt>
+    <dd data-summary-field="email"></dd>
+    <dt>@ExtensionConfirmation.CurrentDeadlineLabel</dt>
+    <dd data-summary-field="currentDeadline"></dd>
+    <dt>@ExtensionConfirmation.ResultingDeadlineLabel</dt>
+    <dd data-summary-field="resultingDeadline"></dd>
+  </dl>
+
+  <form id="extend-request-form" method="post" asp-page-handler="Extend">
+    <input type="hidden" name="id" />
+
+    <p>
+      <label for="request-extension-ground">@ExtensionConfirmation.GroundLabel</label>
+      <select id="request-extension-ground" name="@DataSubjectRequestField.ExtensionGround"
+              aria-describedby="request-extension-ground-refusal">
+        <option value="">@ExtensionConfirmation.GroundPrompt</option>
+        @foreach (var ground in BoardModel.ExtensionGrounds)
+        {
+          <option value="@ground.Name">@ground.FrenchLabel</option>
+        }
+      </select>
+      <span class="refusal" id="request-extension-ground-refusal"></span>
+    </p>
+
+    <p>
+      <label for="request-extension-justification">@ExtensionConfirmation.JustificationLabel</label>
+      <textarea id="request-extension-justification" name="@DataSubjectRequestField.ExtensionJustification" rows="4"
+                aria-describedby="request-extension-justification-refusal"></textarea>
+      <span class="refusal" id="request-extension-justification-refusal"></span>
+    </p>
+
+    <p id="extend-request-warning" class="extension-warning" data-summary-field="warning"></p>
+
+    <p class="modal-failure" role="alert" data-failure hidden
+       data-unanswered="@ExtensionConfirmation.Unanswered"></p>
+
+    <div class="modal-actions">
+      <button type="button" data-dismiss autofocus>@ExtensionConfirmation.Cancel</button>
+      <button type="button" class="primary" data-extend>
+        <svg class="spinner" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-opacity="0.25" fill="none" />
+          <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+        </svg>
+        @ExtensionConfirmation.Confirm
       </button>
     </div>
   </form>

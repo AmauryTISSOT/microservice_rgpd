@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.FunctionalTests.Layout;
+using MicroserviceRgpd.Web.Pages.Requests;
 
 namespace MicroserviceRgpd.FunctionalTests.Requests;
 
@@ -141,10 +142,11 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>Chaque ligne porte ses quatre actions</b> dans sa dernière cellule — la poubelle, le crayon,
-  /// l'œil, l'avion en papier —, des boutons en icônes que leur libellé accessible nomme pour qui ne les voit
-  /// pas : « Supprimer la demande », « Modifier la demande », « Voir la fiche de la demande »,
-  /// « Exécuter la demande ». Ce que l'avion en papier offre se garde dans <see cref="RequestExecutability"/>.
+  /// <b>Chaque ligne porte ses cinq actions</b> dans sa dernière cellule — la poubelle, le crayon, la
+  /// flèche d'horloge, l'œil, l'avion en papier —, des boutons en icônes que leur libellé accessible
+  /// nomme pour qui ne les voit pas : « Supprimer la demande », « Modifier la demande », « Prolonger le
+  /// délai de réponse », « Voir la fiche de la demande », « Exécuter la demande ». Ce que l'avion en
+  /// papier offre se garde dans <see cref="RequestExecutability"/>.
   /// </summary>
   /// <remarks>
   /// Ce sont de simples boutons, qui ne soumettent rien et ne mènent nulle part : aucun formulaire
@@ -152,7 +154,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   /// un vrai navigateur.
   /// </remarks>
   [Fact]
-  public async Task CarriesFourActionsOnEachRowNamedForAScreenReader()
+  public async Task CarriesFiveActionsOnEachRowNamedForAScreenReader()
   {
     var first = $"{Guid.NewGuid():N}@example.org";
     var second = $"{Guid.NewGuid():N}@example.org";
@@ -170,8 +172,14 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
       buttons
         .Select(attributes => Regex.Match(attributes, @"aria-label=""([^""]*)""").Groups[1].Value)
         .ShouldBe(
-          ["Supprimer la demande", "Modifier la demande", "Voir la fiche de la demande", "Exécuter la demande"],
-          "La ligne ne porte pas ses quatre actions, nommées dans l'ordre.");
+          [
+            "Supprimer la demande",
+            "Modifier la demande",
+            RequestRow.ExtensionOffered,
+            "Voir la fiche de la demande",
+            "Exécuter la demande",
+          ],
+          "La ligne ne porte pas ses cinq actions, nommées dans l'ordre.");
 
       buttons.ShouldAllBe(
         attributes => attributes.Contains(@"type=""button""", StringComparison.Ordinal),
@@ -179,7 +187,7 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
 
       buttons
         .Select(attributes => Regex.Match(attributes, @"data-action=""([^""]*)""").Groups[1].Value)
-        .ShouldBe(["delete", "edit", "view", "execute"], "Seule la poubelle doit se désigner comme la suppression.");
+        .ShouldBe(["delete", "edit", "extend", "view", "execute"], "Seule la poubelle doit se désigner comme la suppression.");
 
       actions.ShouldNotContain("<form", Case.Insensitive, "Une action de la ligne est dans un formulaire.");
       actions.ShouldNotContain("<a ", Case.Insensitive, "Une action de la ligne mène quelque part.");

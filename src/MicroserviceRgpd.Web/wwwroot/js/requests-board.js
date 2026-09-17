@@ -1007,6 +1007,13 @@ requests.addEventListener("click", (event) => {
     return;
   }
 
+  const clock = event.target.closest('[data-action="extend"]');
+
+  if (clock) {
+    openExtension(clock);
+    return;
+  }
+
   const plane = event.target.closest('[data-action="execute"]');
 
   if (plane) {
@@ -1478,3 +1485,186 @@ function replaceTheRowToExecute(rowHtml) {
 }
 
 executeButton.addEventListener("click", execute);
+
+// LA PROLONGATION DU DÉLAI DE RÉPONSE D'UNE DEMANDE (ADR-0029). La flèche d'horloge d'une ligne fait
+// relire au serveur le récapitulatif de sa prolongation — la demande, la date limite en vigueur et
+// CELLE QUI EN RÉSULTERA —, puis ouvre la modale qu'il remplit. ⚠️ Relu à chaque ouverture : un autre
+// onglet a pu corriger la date de réception de la demande, et donc sa date limite.
+//
+// ⚠️ LE MODULE NE CALCULE AUCUNE DATE, ET N'ÉCRIT AUCUN MOT. `Date.setMonth` ne fait pas le même repli
+// de fin de mois que `DateOnly.AddMonths` : un 31 décembre plus deux mois donne 3 mars ici et
+// 28 février dans le domaine. Les deux dates et l'avertissement qui les date arrivent ÉCRITS par le
+// serveur, et le module les verse par `textContent`.
+//
+// ⚠️ LA SAISIE REPART VIDE À CHAQUE OUVERTURE : le motif sur son invite, la justification vide. Rien
+// n'est pré-rempli — c'est le fait concret que l'Operator écrit.
+const extension = document.getElementById("extend-request");
+const extensionForm = document.getElementById("extend-request-form");
+const extendButton = extension.querySelector("[data-extend]");
+const extensionFailure = extension.querySelector("[data-failure]");
+
+// La flèche d'horloge qui a ouvert la modale, et la ligne qu'elle prolonge.
+let extensionOpenedBy = null;
+let rowToExtend = null;
+
+// ⚠️ UNE SEULE LECTURE EN VOL : un second clic pendant qu'un récapitulatif arrive ne lance rien, et la
+// modale ne peut pas s'ouvrir sur la mauvaise demande.
+let readingTheExtension = false;
+
+async function openExtension(clock) {
+  if (!isOffered(clock) || readingTheExtension) {
+    return;
+  }
+
+  const row = clock.closest("tr");
+
+  readingTheExtension = true;
+  const summary = await readJsonOf(extension.dataset.summary, row.dataset.requestId);
+  readingTheExtension = false;
+
+  if (!summary) {
+    say(toast.dataset.loadFailed);
+    return;
+  }
+
+  fillExtension(summary);
+  extensionForm.elements.namedItem("id").value = row.dataset.requestId;
+  extensionOpenedBy = clock;
+  rowToExtend = row;
+
+  // « Annuler » prend le focus : `showModal` honore son `autofocus`.
+  extension.showModal();
+}
+
+// Le récapitulatif arrive DÉJÀ EN LIBELLÉS, l'avertissement daté compris : chaque valeur va dans la
+// cible de même nom. La saisie repart vide, et le bandeau d'échec avec elle.
+function fillExtension(summary) {
+  for (const target of extension.querySelectorAll("[data-summary-field]")) {
+    target.textContent = summary[target.dataset.summaryField];
+  }
+
+  extensionForm.reset();
+  extensionFailure.textContent = "";
+  extensionFailure.hidden = true;
+}
+
+// ⚠️ PENDANT L'APPEL, RIEN NE FERME LA MODALE — ni « Annuler », ni la croix, ni le fond, ni Échap : la
+// fermer n'annulerait pas la prolongation, et la réponse doit trouver la ligne qu'elle concerne.
+let extending = false;
+
+function closeExtension() {
+  if (!extending) {
+    extension.close();
+  }
+}
+
+for (const dismiss of extension.querySelectorAll("[data-dismiss]")) {
+  dismiss.addEventListener("click", closeExtension);
+}
+
+closeOnBackdropClick(extension, closeExtension);
+
+extension.addEventListener("cancel", (event) => {
+  if (extending) {
+    event.preventDefault();
+  }
+});
+
+// ⚠️ CHROMIUM NE REND PAS TOUJOURS ÉCHAP ANNULABLE (voir la modale de saisie) : une fermeture qu'il
+// impose pendant l'appel est aussitôt défaite, et la modale revient telle quelle.
+extension.addEventListener("close", () => {
+  if (extending) {
+    extension.showModal();
+    return;
+  }
+
+  giveTheFocusBackTo(extensionOpenedBy);
+});
+
+// L'ENVOI. Le formulaire part tel quel au handler qu'il déclare, jeton anti-rejeu compris.
+// « Prolonger » porte `aria-busy` et son icône le temps de l'appel ; un second clic ne part pas.
+//
+// Sur 200, le corps est la ligne de la demande prolongée : elle remplace la sienne, la modale se
+// ferme, et le toast dit « Demande prolongée ».
+//
+// 404 : la demande a été supprimée ailleurs — sa ligne part, la modale se ferme et le toast le dit.
+// Toute autre issue prend la phrase que la page a rendue : la prolongation a pu aboutir, l'écran ne le
+// sait pas.
+async function extend() {
+  if (extending) {
+    return;
+  }
+
+  extending = true;
+  extendButton.setAttribute("aria-busy", "true");
+  extensionFailure.hidden = true;
+
+  let response = null;
+
+  try {
+    response = await fetch(extensionForm.action, {
+      method: "POST",
+      body: new URLSearchParams(new FormData(extensionForm)),
+    });
+  } catch {
+    // Une coupure réseau : la phrase de la réponse illisible, plus bas.
+  }
+
+  // ⚠️ C'EST PROLONGÉ DÈS LE 200, que le corps se lise ou non : un corps perdu ne doit pas poser le
+  // bandeau, qui inviterait à une nouvelle tentative.
+  const rowHtml = response?.status === 200 ? await response.text().catch(() => "") : null;
+
+  extending = false;
+  extendButton.removeAttribute("aria-busy");
+
+  if (rowHtml !== null) {
+    closeOnExtension(rowHtml);
+  } else if (response?.status === 404) {
+    dropTheVanishedExtension();
+  } else {
+    stopOnExtensionFailure();
+  }
+}
+
+// LA LIGNE PROLONGÉE REMPLACE LA SIENNE, À SA PLACE : ni la date de réception ni l'instant
+// d'enregistrement n'ont changé, le tri n'a rien à revoir. Elle porte la nouvelle date limite et la
+// mention « Prolongée », écrites par le serveur.
+function closeOnExtension(rowHtml) {
+  replaceTheRowToExtend(rowHtml);
+
+  extension.close();
+  rowToExtend = null;
+
+  say(toast.dataset.extended);
+}
+
+// LA DEMANDE N'EXISTE PLUS : elle a été supprimée depuis un autre onglet. Sa ligne part, la modale se
+// ferme, et le focus va au cadre du tableau.
+function dropTheVanishedExtension() {
+  removeRow(rowToExtend);
+  extension.close();
+  rowToExtend = null;
+
+  say(toast.dataset.vanished);
+}
+
+// LA MODALE RESTE OUVERTE ET LE BANDEAU DIT QUE LA RÉPONSE NE S'EST PAS LUE : la saisie est conservée.
+function stopOnExtensionFailure() {
+  extensionFailure.textContent = extensionFailure.dataset.unanswered;
+  extensionFailure.hidden = false;
+}
+
+// ⚠️ LE FOCUS SUIT LA LIGNE : la flèche d'horloge qui a ouvert la modale part avec l'ancienne, et c'est
+// celle de la nouvelle — éteinte ou non, mais focalisable — qui le reçoit à la fermeture.
+function replaceTheRowToExtend(rowHtml) {
+  const row = rowHtml ? rowRenderedBy(rowHtml) : null;
+
+  if (row && rowToExtend?.isConnected) {
+    rowToExtend.replaceWith(row);
+    rowToExtend = row;
+    extensionOpenedBy = row.querySelector('[data-action="extend"]');
+    applySearch();
+  }
+}
+
+extendButton.addEventListener("click", extend);

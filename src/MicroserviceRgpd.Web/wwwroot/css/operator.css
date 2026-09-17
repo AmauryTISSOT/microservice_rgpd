@@ -919,6 +919,31 @@ table.queue td[data-deadline-signal="Overdue"] {
   font-weight: var(--weight-bold);
 }
 
+/*
+  LA MENTION D'UNE DEMANDE PROLONGÉE, APRÈS LA DATE LIMITE ET APRÈS SON SIGNALEMENT — dans la même
+  cellule, jamais dans une colonne à elle. Elle se lit en second : la date qui engage le responsable
+  reste ce que la cellule dit d'abord, et la mention ne fait qu'en dire l'origine (ADR-0029).
+
+  ⚠️ ELLE NE PREND AUCUNE COULEUR DE SIGNALEMENT : une prolongation n'est ni une alerte ni un retard,
+  c'est une décision régulière. Elle hérite donc de la teinte de sa cellule, signalée ou non, et ne
+  se distingue que par sa graisse et sa capitale.
+*/
+.extended {
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/*
+  L'AVERTISSEMENT DE LA MODALE DE PROLONGATION : ce que l'Operator devra faire ailleurs — informer la
+  personne concernée, avant la date limite initiale. Il est écrit et daté par le serveur ; la modale
+  ne fait que le montrer.
+*/
+.extension-warning {
+  color: var(--ink-secondary);
+}
+
 .banner {
   display: grid;
   gap: var(--space-xxs) var(--space-md);

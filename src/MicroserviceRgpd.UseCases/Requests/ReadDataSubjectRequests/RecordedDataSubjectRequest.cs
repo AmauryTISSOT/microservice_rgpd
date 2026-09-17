@@ -26,6 +26,10 @@ namespace MicroserviceRgpd.UseCases.Requests.ReadDataSubjectRequests;
 /// <param name="CreatedBy">Qui a enregistré la demande.</param>
 /// <param name="CreatedAt">L'instant d'enregistrement, en UTC.</param>
 /// <param name="Status">Où en est la demande.</param>
+/// <param name="Extended">
+/// La demande a-t-elle été prolongée ? ⚠️ <b>La date limite rendue est celle qui fait foi</b> :
+/// prolongée, elle porte déjà les deux mois. Ce booléen ne dit que la mention à afficher (ADR-0029).
+/// </param>
 /// <param name="ExecutionBlock">
 /// Le premier motif de blocage de l'exécution, ou <c>null</c> quand la demande s'exécute — calculé par
 /// la demande face au canal d'exercice que le Paramétrage associe à son droit, <b>et à ce que le
@@ -45,6 +49,7 @@ public sealed record RecordedDataSubjectRequest(
   string CreatedBy,
   DateTimeOffset CreatedAt,
   RequestStatus Status,
+  bool Extended,
   ExecutionBlock? ExecutionBlock)
 {
   /// <summary>
@@ -75,6 +80,7 @@ public sealed record RecordedDataSubjectRequest(
       request.CreatedBy,
       request.CreatedAt,
       request.Status,
+      request.Extended,
       request.ExecutionBlockFacing(settings.ChannelFor(request.Right), connection));
   }
 }

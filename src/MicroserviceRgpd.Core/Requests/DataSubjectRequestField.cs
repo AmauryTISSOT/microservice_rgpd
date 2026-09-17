@@ -1,9 +1,10 @@
 namespace MicroserviceRgpd.Core.Requests;
 
 /// <summary>
-/// <b>Les noms des champs du formulaire</b> — les clés mêmes du corps envoyé par la page. Une erreur
-/// rendue par le domaine s'y rattache, et se place sous son champ sans table de correspondance ;
-/// certains champs n'en portent jamais.
+/// <b>Les noms des champs des formulaires de la page</b> — les clés mêmes des corps qu'elle envoie :
+/// les huit de la saisie d'une demande, puis les deux de la prolongation. Une erreur rendue par le
+/// domaine s'y rattache, et se place sous son champ sans table de correspondance ; certains champs
+/// n'en portent jamais.
 /// </summary>
 public static class DataSubjectRequestField
 {
@@ -30,4 +31,10 @@ public static class DataSubjectRequestField
 
   /// <summary>Le droit invoqué.</summary>
   public const string Right = "right";
+
+  /// <summary>Le motif de prolongation.</summary>
+  public const string ExtensionGround = "extensionGround";
+
+  /// <summary>La justification de la prolongation.</summary>
+  public const string ExtensionJustification = "extensionJustification";
 }

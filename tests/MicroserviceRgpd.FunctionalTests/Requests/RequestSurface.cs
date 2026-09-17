@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using MicroserviceRgpd.Core.Requests;
 using MicroserviceRgpd.Core.Configuration;
 using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.Infrastructure.Data;
@@ -10,7 +11,8 @@ namespace MicroserviceRgpd.FunctionalTests.Requests;
 
 /// <summary>
 /// Les handlers de <c>/demandes</c> — <c>POST ?handler=Create</c>, <c>POST ?handler=Modify</c>,
-/// <c>POST ?handler=Delete</c> et <c>GET ?handler=Values</c> —, <b>frappés directement</b> : avec le
+/// <c>POST ?handler=Delete</c>, <c>POST ?handler=Extend</c>, <c>GET ?handler=Values</c>,
+/// <c>GET ?handler=Execution</c> et <c>GET ?handler=Extension</c> —, <b>frappés directement</b> : avec le
 /// jeton anti-rejeu que la page rend et le cookie qui va avec — exactement ce que fait le
 /// navigateur —, et la table <c>data_subject_requests</c> relue telle qu'ils l'ont laissée.
 /// </summary>
@@ -29,6 +31,10 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
   internal const string Execute = "/demandes?handler=Execute";
 
   internal const string Execution = "/demandes?handler=Execution";
+
+  internal const string Extend = "/demandes?handler=Extend";
+
+  internal const string Extension = "/demandes?handler=Extension";
 
   /// <summary>
   /// <b>Les dix informations d'une demande, dans l'ordre où la ligne les rend</b>, chacune sous le
@@ -324,6 +330,59 @@ internal sealed class RequestSurface(CustomWebApplicationFactory<Program> factor
   /// </summary>
   internal async Task<HttpResponseMessage> ExecutionOfAsync(string id) =>
     await _client.GetAsync($"{Execution}&id={Uri.EscapeDataString(id)}");
+
+  /// <summary>
+  /// Demande la prolongation de la demande <paramref name="id"/>, jeton anti-rejeu compris — le motif
+  /// et la justification posés par-dessus une saisie valide.
+  /// </summary>
+  internal Task<HttpResponseMessage> ExtendAsync(Guid id, IReadOnlyDictionary<string, string>? fields = null) =>
+    ExtendAsync(id.ToString(), fields);
+
+  /// <summary>Demande la prolongation sous cet identifiant brut, jeton anti-rejeu compris.</summary>
+  internal async Task<HttpResponseMessage> ExtendAsync(string id, IReadOnlyDictionary<string, string>? fields = null)
+  {
+    var extension = AValidExtension();
+
+    foreach (var (key, value) in fields ?? new Dictionary<string, string>())
+    {
+      extension[key] = value;
+    }
+
+    return await _client.PostAsync(Extend, new FormUrlEncodedContent(
+    [
+      new("__RequestVerificationToken", await AntiforgeryTokenAsync()),
+      new("id", id),
+      .. extension,
+    ]));
+  }
+
+  /// <summary>Une saisie de prolongation complète et valide.</summary>
+  internal static Dictionary<string, string> AValidExtension() => new()
+  {
+    [DataSubjectRequestField.ExtensionGround] = nameof(ExtensionGround.Complexity),
+    [DataSubjectRequestField.ExtensionJustification] =
+      "Les données de la personne sont réparties sur quatre systèmes.",
+  };
+
+  /// <summary>Demande la prolongation de la demande <paramref name="id"/> <b>sans</b> jeton anti-rejeu.</summary>
+  internal async Task<HttpResponseMessage> ExtendWithoutTokenAsync(Guid id)
+  {
+    return await _client.PostAsync(Extend, new FormUrlEncodedContent(
+    [
+      new("id", id.ToString()),
+      .. AValidExtension(),
+    ]));
+  }
+
+  /// <summary>Demande le récapitulatif de la prolongation de la demande <paramref name="id"/>.</summary>
+  internal Task<HttpResponseMessage> ExtensionOfAsync(Guid id) => ExtensionOfAsync(id.ToString());
+
+  /// <summary>
+  /// Demande le récapitulatif de la prolongation sous cet identifiant brut. ⚠️ <b>Aucun jeton
+  /// anti-rejeu</b> : c'est un GET, il ne change rien.
+  /// </summary>
+  internal async Task<HttpResponseMessage> ExtensionOfAsync(string id) =>
+    await _client.GetAsync($"{Extension}&id={Uri.EscapeDataString(id)}");
 
   /// <summary>Demande l'exécution de la demande <paramref name="id"/> <b>sans</b> jeton anti-rejeu.</summary>
   internal async Task<HttpResponseMessage> ExecuteWithoutTokenAsync(Guid id)
