@@ -1024,6 +1024,22 @@ fieldset:has(input[type="radio"]) label {
   margin-top: var(--space-xxs);
 }
 
+/*
+  L'AVERTISSEMENT DE REMPLACEMENT — ce qu'un enregistrement détruirait sur l'autre face. Il emprunte
+  la mise en garde et n'en change que le filet et l'encre : il ne refuse rien — il n'y a pas d'erreur
+  à corriger —, mais il ne se lit pas non plus comme la prose grise de l'écran.
+
+  ⚠️ IL VIT DANS LA MINI-FORM, juste avant son bouton, et ses marges se resserrent donc : les marges
+  pleines d'une carte de prose l'auraient détaché du geste dont il prévient.
+*/
+.right form .caveat.replacement {
+  border-left-color: var(--signal-warning);
+  color: var(--signal-warning-ink);
+  font-style: normal;
+  margin: var(--space-md) 0;
+  padding: var(--space-md);
+}
+
 /* Le bloc des refus est une carte, et son filet reste rouge : c'est ce qui le fait lire d'abord. */
 .refusals {
   border-color: var(--signal-error);

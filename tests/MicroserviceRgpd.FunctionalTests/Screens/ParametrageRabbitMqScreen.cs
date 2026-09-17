@@ -55,6 +55,17 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   private const string Erasure = "droit à l'effacement";
 
   /// <summary>
+  /// <b>L'avertissement de remplacement</b>, recopié à dessein : il <b>nomme le réglage qui sera
+  /// remplacé</b> — l'adresse —, et sans ce mot l'intégrateur ne saurait pas ce qu'il perd.
+  /// </summary>
+  private const string ReplacementWarning =
+    "Ce droit porte déjà une adresse d'exercice, sur la face « Configuration HTTP ». " +
+    "Enregistrer un routage ici remplacera cette adresse : un droit ne porte qu'un seul canal.";
+
+  /// <summary>Le bouton d'enregistrement d'une mini-form, ce que l'avertissement doit précéder.</summary>
+  private const string SaveButton = ">Enregistrer</button>";
+
+  /// <summary>
   /// <b>Les six droits, leur libellé français et leur article</b>, recopiés à dessein : un test qui
   /// lirait le SmartEnum qu'il vérifie ne vérifierait plus rien. C'est l'ordre du règlement — 15,
   /// 16, 17, 18, 20, 21 — et l'énumération est <b>non contiguë</b>. Chaque droit porte aussi son
@@ -557,8 +568,8 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
 
   /// <summary>
   /// ⚠️ <b>Un droit réglé sur l'autre canal n'est pas « non configuré »</b> sur cette page : le mot
-  /// garde son sens — ni adresse, ni routage —, et cette page ne revendique pas le routage d'un
-  /// droit qui n'en a pas. L'affichage du réglage d'en face vient au ticket de l'avertissement.
+  /// garde son sens — ni adresse, ni routage —, et « non configuré » ne se dit donc que d'un droit
+  /// qui ne porte ni l'un ni l'autre.
   /// </summary>
   [Fact]
   public async Task DoesNotCallARightConfiguredOverHttpUnconfigured()
@@ -567,6 +578,57 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
 
     SectionsIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)))["droit d'accès"]
       .ShouldNotContain("non configuré");
+  }
+
+  /// <summary>
+  /// <b>Un droit réglé sur l'autre canal montre son adresse ici</b>, et l'avertissement qui
+  /// prévient qu'enregistrer un routage la remplacera. ⚠️ <b>L'avertissement précède le
+  /// bouton</b> : lu après, il aurait prévenu d'un geste déjà fait.
+  /// </summary>
+  [Fact]
+  public async Task ShowsTheAddressOfARightConfiguredOverHttpAndWarnsBeforeTheSaveButton()
+  {
+    const string Endpoint = "https://brocanto.example.fr/rgpd/acces";
+
+    await AddressAsync(DataSubjectRight.Access, Endpoint);
+
+    var access = Flattened(await SectionAsync("droit d'accès"));
+
+    access.ShouldContain(Endpoint);
+    access.ShouldContain(ReplacementWarning);
+    access.IndexOf(ReplacementWarning, StringComparison.Ordinal)
+      .ShouldBeLessThan(access.IndexOf(SaveButton, StringComparison.Ordinal));
+  }
+
+  /// <summary>
+  /// <b>Après un remplacement, aucune des deux faces ne revendique plus l'ancien canal</b> :
+  /// enregistrer un routage sur un droit qui portait une adresse efface cette adresse — cette face
+  /// montre le routage et n'avertit plus, la face HTTP ne montre plus l'adresse.
+  /// </summary>
+  [Fact]
+  public async Task ReplacesTheAddressOfARightByARoutingAndNeitherFaceClaimsTheOldAddress()
+  {
+    const string Endpoint = "https://brocanto.example.fr/rgpd/effacement";
+    const string Exchange = "rgpd.exercices";
+    const string Key = "droit.effacement";
+
+    await AddressAsync(DataSubjectRight.Erasure, Endpoint);
+
+    (await SaveAsync("Erasure", Exchange, Key)).StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    var erasure = Flattened(await SectionAsync(Erasure));
+
+    erasure.ShouldContain(Exchange);
+    erasure.ShouldContain(Key);
+    erasure.ShouldNotContain(Endpoint);
+    erasure.ShouldNotContain(ReplacementWarning);
+    erasure.ShouldNotContain("non configuré");
+
+    var onTheOtherFace = SectionIn(WebUtility.HtmlDecode(await ReadAsync(Http)), Erasure);
+
+    onTheOtherFace.ShouldNotContain(Endpoint);
+    onTheOtherFace.ShouldContain(Exchange);
+    onTheOtherFace.ShouldContain(Key);
   }
 
   private async Task<string> ReadAsync(string screen)
@@ -591,6 +653,28 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   {
     return TheSixRights.ToDictionary(right => right.Label, right => SectionIn(screen, right.Label));
   }
+
+  /// <summary>
+  /// ⚠️ <b>L'avertissement ne paraît que pour un droit à remplacer</b> : un droit « non configuré »
+  /// n'a rien à perdre, et un droit déjà routé ne remplace que son propre réglage. Avertir partout
+  /// aurait fait lire l'avertissement comme un ornement de la page.
+  /// </summary>
+  [Fact]
+  public async Task WarnsOfNoReplacementWhenThereIsNothingToReplace()
+  {
+    (await SectionAsync("droit d'accès")).ShouldNotContain(ReplacementWarning);
+
+    (await SaveAsync("Access", "rgpd.exercices", "droit.acces"))
+      .StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    Flattened(await SectionAsync("droit d'accès")).ShouldNotContain(ReplacementWarning);
+  }
+
+  /// <summary>
+  /// La section, ses blancs de gabarit réduits à une espace : une phrase que le gabarit coupe en
+  /// deux lignes reste <b>une</b> phrase, et c'est elle qu'on lit — pas sa mise en page.
+  /// </summary>
+  private static string Flattened(string section) => Regex.Replace(section, @"\s+", " ");
 
   private static string SectionIn(string screen, string label) =>
     screen.Split("<div class=\"right\">")

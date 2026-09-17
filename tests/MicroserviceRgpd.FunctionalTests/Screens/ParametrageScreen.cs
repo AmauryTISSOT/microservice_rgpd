@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Configuration;
+using MicroserviceRgpd.Core.SharedKernel;
 using MicroserviceRgpd.FunctionalTests.Layout;
 using MicroserviceRgpd.Infrastructure.Data;
+using MicroserviceRgpd.UseCases.Configuration.SetRightRabbitMqRouting;
 using Microsoft.EntityFrameworkCore;
 
 namespace MicroserviceRgpd.FunctionalTests.Screens;
@@ -38,6 +40,20 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
 
   /// <summary>L'adresse du formulaire d'un droit : la page, et le gestionnaire d'enregistrement.</summary>
   private const string Save = "/parametrage?handler=Set";
+
+  /// <summary>L'autre face du Paramétrage, celle qui porte les routages.</summary>
+  private const string RabbitMq = "/parametrage/rabbitmq";
+
+  /// <summary>
+  /// <b>L'avertissement de remplacement</b>, recopié à dessein : il <b>nomme le réglage qui sera
+  /// remplacé</b> — le routage —, et sans ce mot l'intégrateur ne saurait pas ce qu'il perd.
+  /// </summary>
+  private const string ReplacementWarning =
+    "Ce droit porte déjà un routage d'exercice, sur la face « Configuration RabbitMQ ». " +
+    "Enregistrer une adresse ici remplacera ce routage : un droit ne porte qu'un seul canal.";
+
+  /// <summary>Le bouton d'enregistrement d'une mini-form, ce que l'avertissement doit précéder.</summary>
+  private const string SaveButton = ">Enregistrer</button>";
 
   /// <summary>L'adresse du bouton Effacer d'un droit : la page, et le gestionnaire d'effacement.</summary>
   private const string Clear = "/parametrage?handler=Clear";
@@ -522,6 +538,100 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     (await SectionAsync("droit d'accès")).ShouldContain(Endpoint);
   }
 
+  /// <summary>
+  /// <b>Un droit réglé sur l'autre canal montre son routage ici</b> — l'exchange et la routing key,
+  /// tels que la face RabbitMQ les porte —, et l'avertissement qui prévient qu'enregistrer une
+  /// adresse le remplacera. ⚠️ <b>L'avertissement précède le bouton</b> : lu après, il aurait
+  /// prévenu d'un geste déjà fait.
+  /// </summary>
+  [Fact]
+  public async Task ShowsTheRoutingOfARightConfiguredOverRabbitMqAndWarnsBeforeTheSaveButton()
+  {
+    const string Exchange = "rgpd.exercices";
+    const string Key = "droit.acces";
+
+    await RoutingAsync(DataSubjectRight.Access, Exchange, Key);
+
+    var access = Flattened(await SectionAsync("droit d'accès"));
+
+    access.ShouldContain(Exchange);
+    access.ShouldContain(Key);
+    access.ShouldContain(ReplacementWarning);
+    access.IndexOf(ReplacementWarning, StringComparison.Ordinal)
+      .ShouldBeLessThan(access.IndexOf(SaveButton, StringComparison.Ordinal));
+  }
+
+  /// <summary>
+  /// ⚠️ <b>« Non configuré » ne se dit que d'un droit sans adresse NI routage</b> : un droit réglé
+  /// sur RabbitMQ est configuré, et l'appeler « non configuré » ici ferait de cette face la seule
+  /// du service qui mente sur son état.
+  /// </summary>
+  [Fact]
+  public async Task DoesNotCallARightConfiguredOverRabbitMqUnconfigured()
+  {
+    await RoutingAsync(DataSubjectRight.Access, "rgpd.exercices", "droit.acces");
+
+    (await SectionAsync("droit d'accès")).ShouldNotContain("non configuré");
+  }
+
+  /// <summary>
+  /// <b>Après un remplacement, aucune des deux faces ne revendique plus l'ancien canal</b> :
+  /// enregistrer une adresse sur un droit qui portait un routage efface ce routage — la face HTTP
+  /// montre l'adresse et n'avertit plus, la face RabbitMQ ne montre plus l'exchange ni la routing
+  /// key.
+  /// </summary>
+  [Fact]
+  public async Task ReplacesTheRoutingOfARightByAnAddressAndNeitherFaceClaimsTheOldRouting()
+  {
+    const string Exchange = "rgpd.exercices";
+    const string Key = "droit.effacement";
+    const string Endpoint = "https://brocanto.example.fr/rgpd/effacement";
+
+    await RoutingAsync(DataSubjectRight.Erasure, Exchange, Key);
+
+    (await SaveAsync("Erasure", Endpoint)).StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    var erasure = Flattened(await SectionAsync("droit à l'effacement"));
+
+    erasure.ShouldContain(Endpoint);
+    erasure.ShouldNotContain(Exchange);
+    erasure.ShouldNotContain(Key);
+    erasure.ShouldNotContain(ReplacementWarning);
+    erasure.ShouldNotContain("non configuré");
+
+    var onTheOtherFace = SectionIn(
+      WebUtility.HtmlDecode(await ReadRabbitMqAsync()), "droit à l'effacement");
+
+    onTheOtherFace.ShouldNotContain(Exchange);
+    onTheOtherFace.ShouldNotContain(Key);
+    onTheOtherFace.ShouldContain(Endpoint);
+  }
+
+  /// <summary>
+  /// Pose le routage RabbitMQ d'un droit <b>par le use case</b> : c'est le réglage de l'autre face,
+  /// et cette face n'a pas à l'écrire.
+  /// </summary>
+  private async Task RoutingAsync(DataSubjectRight right, string exchange, string key)
+  {
+    using var scope = factory.Services.CreateScope();
+
+    var written = await scope.ServiceProvider.GetRequiredService<Mediator.IMediator>().Send(
+      new SetRightRabbitMqRoutingCommand(
+        right, new RabbitMqRouting(ExchangeName.From(exchange), RoutingKey.From(key))));
+
+    written.IsSuccess.ShouldBeTrue();
+  }
+
+  /// <summary>La face RabbitMQ, lue telle quelle : ce que l'autre face revendique encore.</summary>
+  private async Task<string> ReadRabbitMqAsync()
+  {
+    var response = await _client.GetAsync(RabbitMq);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+    return await response.Content.ReadAsStringAsync();
+  }
+
   private async Task<string> ReadAsync()
   {
     var response = await _client.GetAsync(Parametrage);
@@ -548,6 +658,28 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
 
     return TheSixRights.ToDictionary(right => right.Label, right => SectionIn(screen, right.Label));
   }
+
+  /// <summary>
+  /// ⚠️ <b>L'avertissement ne paraît que pour un droit à remplacer</b> : un droit « non configuré »
+  /// n'a rien à perdre, et un droit déjà adressé ne remplace que son propre réglage. Avertir
+  /// partout aurait fait lire l'avertissement comme un ornement de la page.
+  /// </summary>
+  [Fact]
+  public async Task WarnsOfNoReplacementWhenThereIsNothingToReplace()
+  {
+    (await SectionAsync("droit d'accès")).ShouldNotContain(ReplacementWarning);
+
+    (await SaveAsync("Access", "https://brocanto.example.fr/rgpd/acces"))
+      .StatusCode.ShouldBe(HttpStatusCode.Found);
+
+    Flattened(await SectionAsync("droit d'accès")).ShouldNotContain(ReplacementWarning);
+  }
+
+  /// <summary>
+  /// La section, ses blancs de gabarit réduits à une espace : une phrase que le gabarit coupe en
+  /// deux lignes reste <b>une</b> phrase, et c'est elle qu'on lit — pas sa mise en page.
+  /// </summary>
+  private static string Flattened(string section) => Regex.Replace(section, @"\s+", " ");
 
   private static string SectionIn(string screen, string label) =>
     screen.Split("<div class=\"right\">").Single(section => section.Contains($"<h2>{label}</h2>", StringComparison.Ordinal));
