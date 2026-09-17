@@ -402,23 +402,31 @@ function refusalOf(field, refusals) {
 }
 
 function forgetRefusals() {
-  for (const field of validatedFields) {
-    showRefusal(field, undefined);
-  }
+  showRefusalsOn(validatedFields, {});
 
   inError = new Set();
   refusedByTheServer = new Map();
 }
 
-// Chaque refus sous son champ, le focus au premier : que les refus viennent du navigateur ou du
-// serveur, l'Operator les lit au même endroit, de la même façon.
-function showRefusals(refusals) {
-  for (const field of validatedFields) {
+// CHAQUE REFUS SOUS SON CHAMP, ÉCRIT ICI POUR LES DEUX MODALES : celle de la saisie et celle de la
+// prolongation placent les leurs de la même façon, dans la place que la page a rendue sous chacun.
+// Rend le PREMIER champ refusé, dans l'ordre du formulaire — c'est lui qui prend le focus —, ou
+// `undefined` quand rien n'est refusé. Un objet de refus vide efface donc tout.
+function showRefusalsOn(fields, refusals) {
+  for (const field of fields) {
     showRefusal(field, refusals[field.name]);
   }
 
+  return fields.find((field) => refusals[field.name]);
+}
+
+// Chaque refus sous son champ, le focus au premier : que les refus viennent du navigateur ou du
+// serveur, l'Operator les lit au même endroit, de la même façon.
+function showRefusals(refusals) {
+  const first = showRefusalsOn(validatedFields, refusals);
+
   inError = new Set(validatedFields.filter((field) => refusals[field.name]));
-  validatedFields.find((field) => inError.has(field))?.focus();
+  first?.focus();
 }
 
 // LE BOUTON PRIMAIRE RESTE CLIQUABLE HORS ENVOI, dans les deux modes : chaque clic juge toute la
@@ -1510,20 +1518,18 @@ const extensionFields = [
 ];
 
 // ⚠️ LA MODALE NE REJOUE AUCUNE RÈGLE AVANT D'ENVOYER : le serveur fait foi, et c'est lui seul qui
-// refuse. Le module place ses refus sous leurs champs — la place que la page a rendue sous chacun —,
-// exactement comme la modale de saisie place les siens.
+// refuse. Ses refus se placent par l'écrivain partagé avec la modale de saisie, au même endroit et de
+// la même façon.
+//
+// ⚠️ UN REFUS TIENT JUSQU'À L'ENVOI SUIVANT, et ne cède pas à la frappe — là où celui de la modale de
+// saisie cède dès que son champ change (voir `refusedByTheServer`). C'est que rien ne revalide ici :
+// le module ne sait pas dire qu'un champ corrigé l'est vraiment, et le serveur le redira.
 function showExtensionRefusals(refusals) {
-  for (const field of extensionFields) {
-    showRefusal(field, refusals[field.name]);
-  }
-
-  extensionFields.find((field) => refusals[field.name])?.focus();
+  showRefusalsOn(extensionFields, refusals)?.focus();
 }
 
 function forgetExtensionRefusals() {
-  for (const field of extensionFields) {
-    showRefusal(field, undefined);
-  }
+  showRefusalsOn(extensionFields, {});
 }
 
 // La flèche d'horloge qui a ouvert la modale, et la ligne qu'elle prolonge.
@@ -1657,8 +1663,9 @@ async function extend() {
   }
 
   // 400 PORTANT DES REFUS DE LA SAISIE : chacun va sous son champ, LA MODALE RESTE OUVERTE ET LA
-  // SAISIE RESTE LÀ — l'Operator corrige ce qui est fautif, sans le retaper. Un 400 sans refus, lui,
-  // est un jeton anti-rejeu refusé : il prend le bandeau, comme les autres échecs.
+  // SAISIE RESTE LÀ — l'Operator corrige ce qui est fautif, sans le retaper. Un 400 sans refus n'est
+  // pas une saisie fautive — un jeton anti-rejeu refusé, un identifiant que l'écran n'a pas rendu — et
+  // il n'a aucun champ où se poser : il prend le bandeau, comme les autres échecs.
   const refusals = response?.status === 400 ? await refusalsFromTheServer(response) : {};
 
   if (extensionFields.some((field) => refusals[field.name])) {
