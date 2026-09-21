@@ -1,0 +1,49 @@
+@model ParametrageScene
+@using MicroserviceRgpd.Core.Configuration
+@using MicroserviceRgpd.Web.Pages.Configuration
+@*
+  L'EN-TÊTE DU DROIT OUVERT — son article, son nom, et son réglage actuel, le même sur les deux faces.
+
+  ⚠️ LE RÉGLAGE ACTUEL SE LIT AVANT LA MINI-FORM, quel que soit son canal. C'est lui qu'un
+  enregistrement remplacerait (ADR-0027) : un écran qui tairait ce qu'un geste détruit ferait
+  détruire à l'aveugle. Un droit réglé sur l'autre face n'est donc pas une absence ici — il montre
+  son adresse ou son routage, et il ne prend pas l'encre pâle de `.none`.
+
+  ⚠️ « NON CONFIGURÉ » NE SE DIT QUE D'UN DROIT SANS ADRESSE NI ROUTAGE, et c'est ce qui garde au mot
+  son sens sur les deux faces.
+*@
+<header>
+  <p class="eyebrow">Article @Model.Selected.Article du RGPD</p>
+  <h2 id="right-title">@ParametrageFaces.Titled(Model.Selected)</h2>
+</header>
+
+<div class="current-setting">
+  <h3>Réglage actuel</h3>
+  @switch (Model.Channel)
+  {
+    case ExerciseChannel.HttpEndpoint http:
+      <dl>
+        <dt>Canal</dt>
+        <dd>Adresse HTTP</dd>
+
+        <dt>Adresse d'exercice</dt>
+        <dd><code>@http.Address.Value</code></dd>
+      </dl>
+      break;
+    case ExerciseChannel.RabbitMq rabbitMq:
+      <dl>
+        <dt>Canal</dt>
+        <dd>Routage RabbitMQ</dd>
+
+        <dt>Exchange</dt>
+        <dd><code>@rabbitMq.Routing.Exchange.Value</code></dd>
+
+        <dt>Routing key</dt>
+        <dd><code>@rabbitMq.Routing.RoutingKey.Value</code></dd>
+      </dl>
+      break;
+    default:
+      <p class="none">non configuré — aucun canal pour l'instant.</p>
+      break;
+  }
+</div>

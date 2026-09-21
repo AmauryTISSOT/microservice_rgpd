@@ -49,11 +49,13 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
   /// remplacé</b> — le routage —, et sans ce mot l'intégrateur ne saurait pas ce qu'il perd.
   /// </summary>
   private const string ReplacementWarning =
-    "Ce droit porte déjà un routage d'exercice, sur la face « Configuration RabbitMQ ». " +
-    "Enregistrer une adresse ici remplacera ce routage : un droit ne porte qu'un seul canal.";
+    "Enregistrer une adresse remplacera le routage RabbitMQ actuel : un droit ne porte qu'un seul canal.";
 
   /// <summary>Le bouton d'enregistrement d'une mini-form, ce que l'avertissement doit précéder.</summary>
   private const string SaveButton = ">Enregistrer</button>";
+
+  /// <summary>Le bouton Effacer d'un droit, tel que le détail le pose à côté d'Enregistrer.</summary>
+  private const string ClearButton = ">Effacer le canal</button>";
 
   /// <summary>L'adresse du bouton Effacer d'un droit : la page, et le gestionnaire d'effacement.</summary>
   private const string Clear = "/parametrage?handler=Clear";
@@ -96,7 +98,8 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
 
   /// <summary>
   /// Le critère du ticket : les six droits paraissent, chacun avec son libellé français et son
-  /// article RGPD.
+  /// article RGPD. La <b>liste</b> les porte tous, dans l'ordre du règlement ; le <b>détail</b> de
+  /// chacun dit son article.
   /// </summary>
   [Fact]
   public async Task ListsTheSixRightsEachWithItsFrenchLabelAndArticle()
@@ -104,34 +107,85 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     // Les libellés portent une apostrophe — « droit d'accès », « droit à l'effacement » —, que le
     // moteur de rendu encode en `&#x27;`. On relit ce que l'humain lit, entités décodées, comme le
     // font les assertions de phrase du layout.
-    var screen = WebUtility.HtmlDecode(await ReadAsync());
+    var list = ListIn(WebUtility.HtmlDecode(await ReadAsync()));
+
+    list.Select(item => item.Label).ShouldBe(TheSixRights.Select(right => Titled(right.Label)));
 
     foreach (var (_, label, article) in TheSixRights)
     {
-      screen.ShouldContain(label);
-      screen.ShouldContain($"Article {article}");
+      (await SectionAsync(label)).ShouldContain($"Article {article} du RGPD");
     }
   }
 
   /// <summary>
   /// <b>Sur un service vierge, les six droits s'affichent « non configuré ».</b> Rien n'est semé au
-  /// démarrage : tant qu'aucune adresse n'a été enregistrée, les six sections portent l'état « non
-  /// configuré », et un droit sans URL est dit explicitement tel.
+  /// démarrage : tant qu'aucune adresse n'a été enregistrée, les six lignes de la liste portent
+  /// l'état « non configuré », et un droit sans URL est dit explicitement tel.
   /// </summary>
   [Fact]
   public async Task ShowsEveryRightAsUnconfiguredOnAVirginService()
   {
-    var screen = await ReadAsync();
+    var list = ListIn(WebUtility.HtmlDecode(await ReadAsync()));
 
-    // Le préambule ouvre la liste : une section par droit, six droits.
-    var sections = screen.Split("<div class=\"right\">");
+    list.Count.ShouldBe(TheSixRights.Length);
 
-    sections.Length.ShouldBe(TheSixRights.Length + 1);
-
-    foreach (var section in sections.Skip(1))
+    foreach (var item in list)
     {
-      section.ShouldContain("non configuré");
+      item.Contents.ShouldContain("non configuré");
     }
+  }
+
+  /// <summary>
+  /// <b>Sans droit demandé, le détail ouvre le premier des six</b> — le droit d'accès —, et un nom
+  /// que l'écran ignore l'ouvre aussi : l'adresse n'est qu'une lecture, et une faute de frappe n'a
+  /// pas à se solder par une erreur.
+  /// </summary>
+  [Theory]
+  [InlineData(Parametrage)]
+  [InlineData(Parametrage + "?droit=Profiling")]
+  [InlineData(Parametrage + "?droit=OutOfScope")]
+  public async Task OpensTheFirstRightWhenTheAddressNamesNoneOfTheSix(string address)
+  {
+    var response = await _client.GetAsync(address);
+
+    response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    SectionIn(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "droit d'accès");
+  }
+
+  /// <summary>
+  /// <b>La liste marque le droit ouvert, et lui seul</b> — <c>aria-current</c> à qui écoute la page,
+  /// comme le panneau latéral marque l'écran courant.
+  /// </summary>
+  [Fact]
+  public async Task MarksTheOpenRightAndOnlyItInTheList()
+  {
+    var list = ListIn(WebUtility.HtmlDecode(await ReadAsync("Erasure")));
+
+    list.Where(item => item.IsCurrent).Select(item => item.Label).ShouldBe(["Droit à l'effacement"]);
+  }
+
+  /// <summary>
+  /// <b>Chaque ligne de la liste mène à la face du canal de son droit</b> : un droit routé se relit
+  /// sur la face RabbitMQ, un droit adressé sur la face HTTP, et un droit « non configuré » reste sur
+  /// la face courante. Ce sont des liens, que le serveur rend — sans une ligne de JavaScript.
+  /// </summary>
+  [Fact]
+  public async Task LeadsEachRightOfTheListToTheFaceOfItsChannel()
+  {
+    await SaveAsync("Access", "https://brocanto.example.fr/rgpd/acces");
+    await RoutingAsync(DataSubjectRight.Erasure, "rgpd.exercices", "droit.effacement");
+
+    var list = ListIn(WebUtility.HtmlDecode(await ReadAsync())).ToDictionary(item => item.Label, item => item.Address);
+
+    list["Droit d'accès"].ShouldBe("/parametrage?droit=Access");
+    list["Droit à l'effacement"].ShouldBe("/parametrage/rabbitmq?droit=Erasure");
+    list["Droit de rectification"].ShouldBe("/parametrage?droit=Rectification");
+
+    var fromTheOtherFace = ListIn(WebUtility.HtmlDecode(await ReadRabbitMqAsync()))
+      .ToDictionary(item => item.Label, item => item.Address);
+
+    fromTheOtherFace["Droit d'accès"].ShouldBe("/parametrage?droit=Access");
+    fromTheOtherFace["Droit de rectification"].ShouldBe("/parametrage/rabbitmq?droit=Rectification");
   }
 
   /// <summary>
@@ -303,8 +357,9 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
   }
 
   /// <summary>
-  /// Le refus se dit <b>dans la section du droit qu'on saisissait</b>, et la saisie refusée y reste
-  /// pour être corrigée : l'intégrateur n'a pas à la retaper, ni à chercher de quel droit il s'agit.
+  /// Le refus se dit <b>dans le détail du droit qu'on saisissait</b> — c'est lui que l'écran rouvre —,
+  /// et la saisie refusée y reste pour être corrigée : l'intégrateur n'a pas à la retaper, ni à
+  /// chercher de quel droit il s'agit.
   /// </summary>
   [Fact]
   public async Task SaysTheRefusalInTheSectionOfTheRightBeingEditedAndKeepsWhatWasTyped()
@@ -317,7 +372,8 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     objection.ShouldContain("n'est pas une URL http ou https absolue");
     objection.ShouldContain("value=\"/rgpd/opposition\"");
 
-    SectionIn(screen, "droit d'accès").ShouldNotContain("n'est pas une URL");
+    // Le refus se dit une fois, là, et nulle part ailleurs sur l'écran.
+    Regex.Matches(screen, "n'est pas une URL").Count.ShouldBe(1);
   }
 
   /// <summary>
@@ -363,7 +419,8 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
 
   /// <summary>
   /// <b>L'enregistrement suit le Post-Redirect-Get</b> : l'écriture répond par une redirection vers
-  /// l'écran, et recharger la page relit l'état au lieu de renvoyer la saisie.
+  /// l'écran, <b>le droit écrit ouvert</b>, et recharger la page relit l'état au lieu de renvoyer la
+  /// saisie.
   /// </summary>
   [Fact]
   public async Task RedirectsBackToTheScreenAfterSaving()
@@ -371,7 +428,7 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     var response = await SaveAsync("Erasure", "https://brocanto.example.fr/rgpd/effacement");
 
     response.StatusCode.ShouldBe(HttpStatusCode.Found);
-    response.Headers.Location!.OriginalString.ShouldBe(Parametrage);
+    response.Headers.Location!.OriginalString.ShouldBe($"{Parametrage}?droit=Erasure");
   }
 
   /// <summary>
@@ -426,7 +483,7 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     var response = await ClearAsync("Erasure");
 
     response.StatusCode.ShouldBe(HttpStatusCode.Found);
-    response.Headers.Location!.OriginalString.ShouldBe(Parametrage);
+    response.Headers.Location!.OriginalString.ShouldBe($"{Parametrage}?droit=Erasure");
 
     var erasure = await SectionAsync("droit à l'effacement");
 
@@ -471,11 +528,11 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
 
     var sections = await SectionsAsync();
 
-    sections["droit d'opposition"].ShouldContain(">Effacer</button>");
+    sections["droit d'opposition"].ShouldContain(ClearButton);
 
     foreach (var (_, label, _) in TheSixRights.Where(right => right.Name != "Objection"))
     {
-      sections[label].ShouldNotContain(">Effacer</button>");
+      sections[label].ShouldNotContain(ClearButton);
     }
   }
 
@@ -490,7 +547,7 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     var response = await ClearAsync("Access");
 
     response.StatusCode.ShouldBe(HttpStatusCode.Found);
-    response.Headers.Location!.OriginalString.ShouldBe(Parametrage);
+    response.Headers.Location!.OriginalString.ShouldBe($"{Parametrage}?droit=Access");
 
     foreach (var (_, label, _) in TheSixRights)
     {
@@ -600,7 +657,7 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
     erasure.ShouldNotContain("non configuré");
 
     var onTheOtherFace = SectionIn(
-      WebUtility.HtmlDecode(await ReadRabbitMqAsync()), "droit à l'effacement");
+      WebUtility.HtmlDecode(await ReadRabbitMqAsync("Erasure")), "droit à l'effacement");
 
     onTheOtherFace.ShouldNotContain(Exchange);
     onTheOtherFace.ShouldNotContain(Key);
@@ -623,40 +680,44 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
   }
 
   /// <summary>La face RabbitMQ, lue telle quelle : ce que l'autre face revendique encore.</summary>
-  private async Task<string> ReadRabbitMqAsync()
+  private async Task<string> ReadRabbitMqAsync(string? right = null)
   {
-    var response = await _client.GetAsync(RabbitMq);
+    var response = await _client.GetAsync(right is null ? RabbitMq : $"{RabbitMq}?droit={right}");
 
     response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
     return await response.Content.ReadAsStringAsync();
   }
 
-  private async Task<string> ReadAsync()
+  /// <summary>La face HTTP, le droit donné ouvert — le premier des six sans droit donné.</summary>
+  private async Task<string> ReadAsync(string? right = null)
   {
-    var response = await _client.GetAsync(Parametrage);
+    var response = await _client.GetAsync(right is null ? Parametrage : $"{Parametrage}?droit={right}");
 
     response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
     return await response.Content.ReadAsStringAsync();
   }
 
-  /// <summary>La section d'un droit, retrouvée par son libellé — entités décodées.</summary>
+  /// <summary>Le détail d'un droit, ouvert par son adresse et retrouvé par son libellé — entités décodées.</summary>
   private async Task<string> SectionAsync(string label) =>
-    SectionIn(WebUtility.HtmlDecode(await ReadAsync()), label);
+    SectionIn(WebUtility.HtmlDecode(await ReadAsync(NameOf(label))), label);
 
   /// <summary>
-  /// Les six sections, chacune sous son libellé. Le jeton anti-rejeu en est retiré : il change à
+  /// Les six détails, chacun sous son libellé. Le jeton anti-rejeu en est retiré : il change à
   /// chaque rendu, et deux lectures d'un même état doivent se comparer à l'identique.
   /// </summary>
   private async Task<IReadOnlyDictionary<string, string>> SectionsAsync()
   {
-    var screen = Regex.Replace(
-      WebUtility.HtmlDecode(await ReadAsync()),
-      @"<input name=""__RequestVerificationToken""[^>]*>",
-      string.Empty);
+    var sections = new Dictionary<string, string>();
 
-    return TheSixRights.ToDictionary(right => right.Label, right => SectionIn(screen, right.Label));
+    foreach (var (_, label, _) in TheSixRights)
+    {
+      sections[label] = Regex.Replace(
+        await SectionAsync(label), @"<input name=""__RequestVerificationToken""[^>]*>", string.Empty);
+    }
+
+    return sections;
   }
 
   /// <summary>
@@ -681,8 +742,48 @@ public class ParametrageScreen(CustomWebApplicationFactory<Program> factory) : I
   /// </summary>
   private static string Flattened(string section) => Regex.Replace(section, @"\s+", " ");
 
-  private static string SectionIn(string screen, string label) =>
-    screen.Split("<div class=\"right\">").Single(section => section.Contains($"<h2>{label}</h2>", StringComparison.Ordinal));
+  /// <summary>
+  /// <b>Le détail du droit ouvert</b> — la seule section de droit que l'écran porte —, et l'assurance
+  /// que c'est bien celui du libellé donné : un détail qui ouvrirait un autre droit ferait lire ses
+  /// réglages sous le mauvais nom.
+  /// </summary>
+  private static string SectionIn(string screen, string label)
+  {
+    var section = Regex.Match(screen, @"<section\b[^>]*\bclass=""right""[^>]*>(.*?)</section>", RegexOptions.Singleline);
+
+    section.Success.ShouldBeTrue("L'écran ne porte aucun détail de droit.");
+    section.Groups[1].Value.ShouldContain($">{Titled(label)}</h2>");
+
+    return section.Groups[1].Value;
+  }
+
+  /// <summary>Le nom canonique d'un droit, celui que l'adresse et sa mini-form portent.</summary>
+  private static string NameOf(string label) => TheSixRights.Single(right => right.Label == label).Name;
+
+  /// <summary>Le libellé tel qu'il ouvre une ligne de la liste ou le titre du détail.</summary>
+  private static string Titled(string label) => string.Concat(label[..1].ToUpperInvariant(), label[1..]);
+
+  /// <summary>
+  /// <b>La liste des droits</b>, dans l'ordre où l'écran la pose : le libellé de chaque ligne, son
+  /// adresse, ce qu'elle dit, et le marquage du droit ouvert.
+  /// </summary>
+  private static IReadOnlyList<(string Label, string Address, string Contents, bool IsCurrent)> ListIn(string screen)
+  {
+    var list = Regex.Match(screen, @"<nav\b[^>]*\bclass=""rights""[^>]*>(.*?)</nav>", RegexOptions.Singleline);
+
+    list.Success.ShouldBeTrue("L'écran ne porte aucune liste des droits.");
+
+    return
+    [
+      .. Regex.Matches(list.Groups[1].Value, @"<a\b([^>]*)>(.*?)</a>", RegexOptions.Singleline).Select(link =>
+      (
+        Label: Regex.Match(link.Groups[2].Value, @"class=""right-name"">(.*?)</span>").Groups[1].Value,
+        Address: Regex.Match(link.Groups[1].Value, @"\bhref=""([^""]*)""").Groups[1].Value,
+        Contents: link.Groups[2].Value,
+        IsCurrent: link.Groups[1].Value.Contains(@"aria-current=""true""", StringComparison.Ordinal)
+      )),
+    ];
+  }
 
   /// <summary>
   /// Remplit la mini-form d'un droit et la renvoie, jeton anti-rejeu compris — exactement ce que

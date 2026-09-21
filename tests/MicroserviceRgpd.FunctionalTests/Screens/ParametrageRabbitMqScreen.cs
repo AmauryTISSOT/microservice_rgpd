@@ -50,8 +50,8 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   /// <summary>Le nom que les <b>deux</b> faces portent en tête, recopié à dessein.</summary>
   private const string ScreenName = "Paramétrage du microservice RGPD";
 
-  private const string HttpTab = "Configuration HTTP";
-  private const string RabbitMqTab = "Configuration RabbitMQ";
+  private const string HttpTab = "Adresse HTTP";
+  private const string RabbitMqTab = "Routage RabbitMQ";
 
   private const string Erasure = "droit à l'effacement";
 
@@ -60,8 +60,10 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   /// remplacé</b> — l'adresse —, et sans ce mot l'intégrateur ne saurait pas ce qu'il perd.
   /// </summary>
   private const string ReplacementWarning =
-    "Ce droit porte déjà une adresse d'exercice, sur la face « Configuration HTTP ». " +
-    "Enregistrer un routage ici remplacera cette adresse : un droit ne porte qu'un seul canal.";
+    "Enregistrer un routage remplacera l'adresse HTTP actuelle : un droit ne porte qu'un seul canal.";
+
+  /// <summary>Le bouton Effacer d'un droit, tel que le détail le pose à côté d'Enregistrer.</summary>
+  private const string ClearButton = ">Effacer le canal</button>";
 
   /// <summary>Le bouton d'enregistrement d'une mini-form, ce que l'avertissement doit précéder.</summary>
   private const string SaveButton = ">Enregistrer</button>";
@@ -101,7 +103,8 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
 
   /// <summary>
   /// <b>Les deux faces portent les mêmes deux onglets</b>, dans le même ordre, et chacune marque le
-  /// sien — et lui seul — <c>aria-current="page"</c>.
+  /// sien — et lui seul — <c>aria-current="page"</c>. Chaque onglet <b>garde le droit ouvert</b> :
+  /// changer de face ne ramène pas au premier droit.
   /// </summary>
   [Theory]
   [InlineData(Http, HttpTab)]
@@ -111,7 +114,11 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     var tabs = TabsIn(WebUtility.HtmlDecode(await ReadAsync(screen)));
 
     tabs.Select(tab => (tab.Address, tab.Label))
-      .ShouldBe([(Http, HttpTab), (RabbitMq, RabbitMqTab)]);
+      .ShouldBe([($"{Http}?droit=Access", HttpTab), ($"{RabbitMq}?droit=Access", RabbitMqTab)]);
+
+    TabsIn(WebUtility.HtmlDecode(await ReadAsync($"{screen}?droit=Objection")))
+      .Select(tab => tab.Address)
+      .ShouldBe([$"{Http}?droit=Objection", $"{RabbitMq}?droit=Objection"]);
 
     tabs.Where(tab => tab.IsCurrent).Select(tab => tab.Label).ShouldBe([expected]);
   }
@@ -142,21 +149,19 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
 
   /// <summary>
   /// La page liste <b>les six droits dans l'ordre des articles</b>, chacun avec son libellé français
-  /// et son article — lus sur le noyau partagé, jamais recopiés par le contexte.
+  /// — lus sur le noyau partagé, jamais recopiés par le contexte —, et le détail de chacun dit son
+  /// article.
   /// </summary>
   [Fact]
   public async Task ListsTheSixRightsInArticleOrderEachWithItsLabelAndArticle()
   {
-    var screen = WebUtility.HtmlDecode(await ReadAsync(RabbitMq));
+    var list = ListIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)));
 
-    var sections = screen.Split("<div class=\"right\">").Skip(1).ToList();
+    list.ShouldBe(TheSixRights.Select(right => Titled(right.Label)));
 
-    sections.Count.ShouldBe(TheSixRights.Length);
-
-    foreach (var (section, right) in sections.Zip(TheSixRights))
+    foreach (var (_, label, article) in TheSixRights)
     {
-      section.ShouldContain($"<h2>{right.Label}</h2>");
-      section.ShouldContain($"Article {right.Article}");
+      (await SectionAsync(label)).ShouldContain($"Article {article} du RGPD");
     }
   }
 
@@ -167,7 +172,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   [Fact]
   public async Task ShowsEveryRightAsUnconfiguredOnAVirginService()
   {
-    foreach (var section in SectionsIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq))).Values)
+    foreach (var section in (await SectionsAsync()).Values)
     {
       section.ShouldContain("non configuré");
     }
@@ -199,7 +204,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
 
   /// <summary>
   /// <b>L'enregistrement suit le Post-Redirect-Get</b> : l'écriture répond par une redirection vers
-  /// la face RabbitMQ, et recharger la page relit l'état au lieu de renvoyer la saisie.
+  /// la face RabbitMQ, le droit écrit ouvert, et recharger la page relit l'état au lieu de renvoyer la saisie.
   /// </summary>
   [Fact]
   public async Task RedirectsBackToTheScreenAfterSaving()
@@ -207,7 +212,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     var response = await SaveAsync("Erasure", "rgpd.exercices", "droit.effacement");
 
     response.StatusCode.ShouldBe(HttpStatusCode.Found);
-    response.Headers.Location!.OriginalString.ShouldBe(RabbitMq);
+    response.Headers.Location!.OriginalString.ShouldBe($"{RabbitMq}?droit=Erasure");
   }
 
   /// <summary>
@@ -323,8 +328,8 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     FieldIn(objection, faulty).ShouldContain(refusal);
     FieldIn(objection, sound).ShouldNotContain(refusal);
 
-    // Les cinq autres droits n'ont rien à dire d'un refus qui n'est pas le leur.
-    SectionIn(screen, "droit d'accès").ShouldNotContain(refusal);
+    // Le refus se dit une fois, sous son champ, et nulle part ailleurs sur l'écran.
+    Regex.Matches(screen, Regex.Escape(refusal)).Count.ShouldBe(1);
 
     // La saisie refusée reste affichée — celle des deux champs, pas seulement celle du fautif.
     FieldIn(objection, "Exchange").ShouldContain($"value=\"{exchange}\"");
@@ -377,11 +382,9 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   [Fact]
   public async Task TiesBothFieldsToTheirRightByAFieldsetAndItsLegend()
   {
-    var screen = WebUtility.HtmlDecode(await ReadAsync(RabbitMq));
-
     foreach (var (_, label, _) in TheSixRights)
     {
-      var section = SectionIn(screen, label);
+      var section = await SectionAsync(label);
 
       section.ShouldContain("<fieldset>");
       section.ShouldContain($"</legend>");
@@ -415,7 +418,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     var response = await ClearAsync("Erasure");
 
     response.StatusCode.ShouldBe(HttpStatusCode.Found);
-    response.Headers.Location!.OriginalString.ShouldBe(RabbitMq);
+    response.Headers.Location!.OriginalString.ShouldBe($"{RabbitMq}?droit=Erasure");
 
     var erasure = await SectionAsync(Erasure);
 
@@ -434,11 +437,11 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
 
     var sections = await SectionsAsync();
 
-    sections["droit d'opposition"].ShouldContain(">Effacer</button>");
+    sections["droit d'opposition"].ShouldContain(ClearButton);
 
     foreach (var (_, label, _) in TheSixRights.Where(right => right.Label != "droit d'opposition"))
     {
-      sections[label].ShouldNotContain(">Effacer</button>");
+      sections[label].ShouldNotContain(ClearButton);
     }
   }
 
@@ -452,7 +455,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   {
     await AddressAsync(DataSubjectRight.Access, "https://brocanto.example.fr/rgpd/acces");
 
-    (await SectionAsync("droit d'accès")).ShouldNotContain(">Effacer</button>");
+    (await SectionAsync("droit d'accès")).ShouldNotContain(ClearButton);
   }
 
   /// <summary>
@@ -554,7 +557,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
 
     await SaveAsync("Erasure", Exchange, Key);
 
-    var sections = SectionsIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)));
+    var sections = await SectionsAsync();
 
     sections[Erasure].ShouldContain(Exchange);
     sections[Erasure].ShouldContain(Key);
@@ -577,8 +580,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   {
     await AddressAsync(DataSubjectRight.Access, "https://brocanto.example.fr/rgpd/acces");
 
-    SectionsIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)))["droit d'accès"]
-      .ShouldNotContain("non configuré");
+    (await SectionAsync("droit d'accès")).ShouldNotContain("non configuré");
   }
 
   /// <summary>
@@ -625,7 +627,7 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     erasure.ShouldNotContain(ReplacementWarning);
     erasure.ShouldNotContain("non configuré");
 
-    var onTheOtherFace = SectionIn(WebUtility.HtmlDecode(await ReadAsync(Http)), Erasure);
+    var onTheOtherFace = SectionIn(WebUtility.HtmlDecode(await ReadAsync($"{Http}?droit=Erasure")), Erasure);
 
     onTheOtherFace.ShouldNotContain(Endpoint);
     onTheOtherFace.ShouldContain(Exchange);
@@ -716,18 +718,21 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
     return await response.Content.ReadAsStringAsync();
   }
 
-  /// <summary>La section d'un droit, retrouvée par son libellé — entités décodées.</summary>
+  /// <summary>Le détail d'un droit sur la face RabbitMQ, ouvert par son adresse — entités décodées.</summary>
   private async Task<string> SectionAsync(string label) =>
-    SectionIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)), label);
+    SectionIn(WebUtility.HtmlDecode(await ReadAsync($"{RabbitMq}?droit={NameOf(label)}")), label);
 
-  /// <summary>Les six sections de la face RabbitMQ, chacune sous son libellé.</summary>
-  private async Task<IReadOnlyDictionary<string, string>> SectionsAsync() =>
-    SectionsIn(WebUtility.HtmlDecode(await ReadAsync(RabbitMq)));
-
-  /// <summary>Les sections des six droits, chacune sous son libellé.</summary>
-  private static IReadOnlyDictionary<string, string> SectionsIn(string screen)
+  /// <summary>Les six détails de la face RabbitMQ, chacun sous son libellé.</summary>
+  private async Task<IReadOnlyDictionary<string, string>> SectionsAsync()
   {
-    return TheSixRights.ToDictionary(right => right.Label, right => SectionIn(screen, right.Label));
+    var sections = new Dictionary<string, string>();
+
+    foreach (var (_, label, _) in TheSixRights)
+    {
+      sections[label] = await SectionAsync(label);
+    }
+
+    return sections;
   }
 
   /// <summary>
@@ -752,9 +757,38 @@ public class ParametrageRabbitMqScreen(CustomWebApplicationFactory<Program> fact
   /// </summary>
   private static string Flattened(string section) => Regex.Replace(section, @"\s+", " ");
 
-  private static string SectionIn(string screen, string label) =>
-    screen.Split("<div class=\"right\">")
-      .Single(section => section.Contains($"<h2>{label}</h2>", StringComparison.Ordinal));
+  /// <summary>
+  /// <b>Le détail du droit ouvert</b> — la seule section de droit que l'écran porte —, et l'assurance
+  /// que c'est bien celui du libellé donné.
+  /// </summary>
+  private static string SectionIn(string screen, string label)
+  {
+    var section = Regex.Match(screen, @"<section\b[^>]*\bclass=""right""[^>]*>(.*?)</section>", RegexOptions.Singleline);
+
+    section.Success.ShouldBeTrue("L'écran ne porte aucun détail de droit.");
+    section.Groups[1].Value.ShouldContain($">{Titled(label)}</h2>");
+
+    return section.Groups[1].Value;
+  }
+
+  /// <summary>Le nom canonique d'un droit, celui que l'adresse et sa mini-form portent.</summary>
+  private static string NameOf(string label) => TheSixRights.Single(right => right.Label == label).Name;
+
+  /// <summary>Le libellé tel qu'il ouvre une ligne de la liste ou le titre du détail.</summary>
+  private static string Titled(string label) => string.Concat(label[..1].ToUpperInvariant(), label[1..]);
+
+  /// <summary>Les libellés de la liste des droits, dans l'ordre où l'écran la pose.</summary>
+  private static IReadOnlyList<string> ListIn(string screen)
+  {
+    var list = Regex.Match(screen, @"<nav\b[^>]*\bclass=""rights""[^>]*>(.*?)</nav>", RegexOptions.Singleline);
+
+    list.Success.ShouldBeTrue("L'écran ne porte aucune liste des droits.");
+
+    return
+    [
+      .. Regex.Matches(list.Groups[1].Value, @"class=""right-name"">(.*?)</span>").Select(name => name.Groups[1].Value),
+    ];
+  }
 
   /// <summary>
   /// Le bloc d'un champ dans la section d'un droit — son libellé, son champ, son aide et le refus

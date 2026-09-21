@@ -45,7 +45,7 @@ public sealed class ExecutionBlock : SmartEnum<ExecutionBlock>
   /// déclaré devant un broker éteint n'est pas bloqué ; c'est la publication qui échouera.
   /// </para>
   /// <para>
-  /// ⚠️ <b>Ce motif et le bandeau de « Configuration RabbitMQ » se décident sur la même règle</b> :
+  /// ⚠️ <b>Ce motif et le bandeau de « Routage RabbitMQ » se décident sur la même règle</b> :
   /// l'<c>Operator</c> et l'intégrateur lisent la même vérité du même déploiement.
   /// </para>
   /// </remarks>

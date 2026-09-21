@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace MicroserviceRgpd.Web.Pages.Configuration;
 
 /// <summary>
-/// La <b>seconde face du Paramétrage</b> — « Configuration RabbitMQ » : on y relit, droit par droit,
+/// La <b>seconde face du Paramétrage</b> — « Routage RabbitMQ » : on y relit, droit par droit,
 /// le routage par lequel le service exercera chacun des six droits RGPD — ou leur état « non
 /// configuré » —, et on y <b>déclare</b> ce routage : un exchange, une routing key.
 /// </summary>
@@ -68,6 +68,9 @@ public class ParametrageRabbitMqModel(IMediator mediator, IBrokerConnectionState
   /// </summary>
   public bool WarnsThatNothingWillBePublished =>
     LacksABrokerConnection && Settings.Rights.Any(right => right.Channel is ExerciseChannel.RabbitMq);
+
+  /// <inheritdoc />
+  public override string Face => ParametrageFaces.RabbitMq;
 
   public async Task<IActionResult> OnPostSetAsync(CancellationToken cancellationToken)
   {

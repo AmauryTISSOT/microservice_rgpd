@@ -125,9 +125,12 @@ service qu'on vient d'installer —, jamais un manque à combler, et c'est un **
 _Avoid_ : manquant, incomplet, à compléter, vide, désactivé
 
 **Les deux faces du Paramétrage** :
-L'écran se tient sur **deux pages** reliées par des **onglets rendus par le serveur** : « Configuration
-HTTP » (`/parametrage`) et « Configuration RabbitMQ » (`/parametrage/rabbitmq`). Elles portent le
-**même titre** et se lisent comme un seul écran à deux faces. Chaque face ne **configure** que son
+L'écran se tient sur **deux pages** reliées par des **onglets rendus par le serveur** : « Adresse
+HTTP » (`/parametrage`) et « Routage RabbitMQ » (`/parametrage/rabbitmq`). Elles portent le
+**même titre** et se lisent comme un seul écran à deux faces. Chacune se lit **en liste et
+détail** : les six droits d'un côté, chacun avec son réglage en une ligne, et le **droit ouvert** de
+l'autre, avec son réglage actuel et sa mini-form. Le droit ouvert est porté par l'adresse
+(`?droit=Erasure`), et les onglets le gardent d'une face à l'autre. Chaque face ne **configure** que son
 espèce de canal, mais les deux **racontent la même histoire** : un droit réglé sur l'autre canal y
 montre ce réglage, accompagné, **avant le bouton d'enregistrement**, de l'avertissement qui
 **nomme** ce qu'un enregistrement ici remplacerait. « Non configuré » ne se dit que d'un droit

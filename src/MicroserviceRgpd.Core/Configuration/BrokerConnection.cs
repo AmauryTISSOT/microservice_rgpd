@@ -7,7 +7,7 @@ namespace MicroserviceRgpd.Core.Configuration;
 /// <remarks>
 /// <para>
 /// <b>Une chose nommée plutôt qu'un booléen nu.</b> La question « ce déploiement sait-il publier ? »
-/// se pose à plusieurs endroits — le bandeau de « Configuration RabbitMQ », et demain l'exécution
+/// se pose à plusieurs endroits — le bandeau de « Routage RabbitMQ », et demain l'exécution
 /// d'une demande routée —, et elle doit s'y lire sous le même nom, avec la même réponse. Un
 /// <c>bool</c> se serait relu « vrai de quoi ? » à chaque appel.
 /// </para>

@@ -3,12 +3,13 @@ using MicroserviceRgpd.UseCases.Configuration.ClearRightChannel;
 using MicroserviceRgpd.UseCases.Configuration.ReadSettings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Routing;
 
 namespace MicroserviceRgpd.Web.Pages.Configuration;
 
 /// <summary>
 /// Ce que les <b>deux faces du Paramétrage</b> font de la même façon : relire les six droits, poser
-/// le refus d'un envoi dans la section du droit envoyé, et <b>effacer</b> le canal d'un droit.
+/// le refus d'un envoi dans le détail du droit envoyé, et <b>effacer</b> le canal d'un droit.
 /// Chaque face n'écrit ensuite que <b>l'espèce de canal qu'elle configure</b>.
 /// </summary>
 /// <remarks>
@@ -43,11 +44,34 @@ public abstract class ParametrageFaceModel<TForm>(IMediator mediator) : PageMode
   public Core.Configuration.Settings Settings { get; private set; } = Core.Configuration.Settings.Unconfigured();
 
   /// <summary>
-  /// Le droit dont la mini-form vient d'être refusée — c'est dans sa section que le refus se dit, et
+  /// Le droit dont la mini-form vient d'être refusée — c'est son détail que l'écran rouvre, où le refus se dit, et
   /// que la saisie refusée reste à corriger. <c>null</c> hors d'un refus, ou si le droit envoyé
   /// n'est pas l'un des six : le refus se dit alors en tête d'écran.
   /// </summary>
   public DataSubjectRight? Refused { get; private set; }
+
+  /// <summary>
+  /// Le droit que l'adresse demande d'ouvrir, par son nom canonique — <c>?droit=Erasure</c>. Lu tel
+  /// quel : un nom que l'écran ignore n'est pas une faute, il ouvre simplement le premier droit.
+  /// </summary>
+  [BindProperty(SupportsGet = true, Name = ParametrageFaces.Choice)]
+  public string? Choice { get; set; }
+
+  /// <summary>
+  /// <b>Le droit dont le détail est ouvert.</b> Celui dont l'envoi vient d'être refusé d'abord — c'est
+  /// là que le refus se lit et que la saisie reste à corriger —, puis celui que l'adresse demande, et
+  /// à défaut le premier des six.
+  /// </summary>
+  public DataSubjectRight Selected =>
+    Refused
+    ?? Core.Configuration.Settings.ConfigurableRights.FirstOrDefault(right => right.Name == Choice)
+    ?? Core.Configuration.Settings.ConfigurableRights[0];
+
+  /// <summary>L'adresse de cette face — celle où ses onglets, sa liste et ses redirections ramènent.</summary>
+  public abstract string Face { get; }
+
+  /// <summary>Ce que la liste, l'en-tête du droit et les onglets rendent, sur cette face.</summary>
+  public ParametrageScene Scene => new(Settings, Selected, Face);
 
   /// <summary>Le médiateur, dont la face se sert pour écrire le canal qu'elle configure.</summary>
   protected IMediator Mediator => mediator;
@@ -73,7 +97,7 @@ public abstract class ParametrageFaceModel<TForm>(IMediator mediator) : PageMode
 
   /// <summary>
   /// L'issue d'une écriture — enregistrement ou effacement : une redirection si elle a réussi, sinon
-  /// ses refus rendus dans la section du droit envoyé.
+  /// ses refus rendus dans le détail du droit envoyé.
   /// </summary>
   protected async Task<IActionResult> WrittenAsync(Result written, CancellationToken cancellationToken)
   {
@@ -82,8 +106,9 @@ public abstract class ParametrageFaceModel<TForm>(IMediator mediator) : PageMode
     if (written.IsSuccess)
     {
       // Une redirection après l'écriture : recharger la page ne renvoie rien, et l'écran relit
-      // l'état tel qu'il a été enregistré plutôt que tel qu'il a été saisi.
-      return RedirectToPage();
+      // l'état tel qu'il a été enregistré plutôt que tel qu'il a été saisi. Elle rouvre le droit
+      // qu'on vient d'écrire : c'est lui qu'on veut relire, pas le premier de la liste.
+      return RedirectToPage(new RouteValueDictionary { [ParametrageFaces.Choice] = Form.Designated?.Name });
     }
 
     foreach (var refusal in written.ValidationErrors)
@@ -95,7 +120,7 @@ public abstract class ParametrageFaceModel<TForm>(IMediator mediator) : PageMode
   }
 
   /// <summary>
-  /// Rend l'écran sur le refus d'un envoi, dit dans la section du droit envoyé. Le refus se rend sur
+  /// Rend l'écran sur le refus d'un envoi, dit dans le détail du droit envoyé. Le refus se rend sur
   /// la page même, sans redirection : une redirection l'aurait perdu en chemin, et l'intégrateur
   /// n'aurait jamais su pourquoi son envoi n'avait pas été retenu.
   /// </summary>

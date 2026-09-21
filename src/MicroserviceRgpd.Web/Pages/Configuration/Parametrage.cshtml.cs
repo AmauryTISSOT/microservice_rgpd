@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace MicroserviceRgpd.Web.Pages.Configuration;
 
 /// <summary>
-/// La <b>première face du Paramétrage</b> — « Configuration HTTP » : on y relit les six droits RGPD
+/// La <b>première face du Paramétrage</b> — « Adresse HTTP » : on y relit les six droits RGPD
 /// et l'adresse à laquelle le service exercera chacun — ou leur état « non configuré » —, et on y
 /// pose, droit par droit, cette adresse.
 /// </summary>
@@ -24,6 +24,9 @@ namespace MicroserviceRgpd.Web.Pages.Configuration;
 /// </remarks>
 public class ParametrageModel(IMediator mediator) : ParametrageFaceModel<RightEndpointForm>(mediator)
 {
+  /// <inheritdoc />
+  public override string Face => ParametrageFaces.Http;
+
   public async Task<IActionResult> OnPostSetAsync(CancellationToken cancellationToken)
   {
     var fields = Form.Read(ModelState, FormPrefix);

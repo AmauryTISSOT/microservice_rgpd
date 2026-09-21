@@ -8,6 +8,10 @@ namespace MicroserviceRgpd.Web.Pages.Shared;
 /// Le nom <b>que la carte de l'accueil porte</b>, et que l'écran reprend en titre.
 /// </param>
 /// <param name="Address">L'adresse de l'écran d'entrée, et la racine de tout ce qui pend sous lui.</param>
+/// <param name="Moment">
+/// <b>Le moment du parcours</b> sous lequel l'accueil range la porte : avant toute demande, ou quand
+/// une demande arrive. La barre l'ignore.
+/// </param>
 /// <param name="DoorwaySentence">
 /// Ce que la <b>porte de l'accueil</b> dit, et que la barre ne dit pas : celle-ci n'a la
 /// place que d'un nom. Les quatre textes vivent ici plutôt que dans le gabarit de l'accueil parce
@@ -25,6 +29,7 @@ internal sealed record EntryPoint(
   string NavigationLabel,
   string DoorwayName,
   string Address,
+  Moment Moment,
   string DoorwaySentence)
 {
   /// <summary>
@@ -38,6 +43,17 @@ internal sealed record EntryPoint(
     return path.StartsWithSegments(Address, StringComparison.OrdinalIgnoreCase);
   }
 }
+
+/// <summary>
+/// <b>Un moment du parcours</b>, sous lequel l'accueil groupe ses portes : un titre, et une phrase
+/// qui dit ce qu'on y fait.
+/// </summary>
+/// <remarks>
+/// ⚠️ <b>Le moment est porté par chaque point d'entrée, et non par une seconde liste</b> : l'accueil
+/// groupe <see cref="Navigation.EntryPoints"/> dans son ordre, et une liste de groupes tenue à côté se
+/// serait décalée d'un cran un jour.
+/// </remarks>
+internal sealed record Moment(string Title, string Sentence);
 
 /// <summary>
 /// <b>La barre de navigation de la surface de l'<c>Operator</c></b> : le nom du service, puis les
@@ -128,6 +144,14 @@ internal static class Navigation
   /// position apprend et qu'aucun nom ne dit tient au premier rang seul : on y règle les adresses
   /// dont l'exercice des droits dépendra. Voir <c>ADR-0010</c> et <c>ADR-0016</c>.
   /// </summary>
+  /// <summary>Le temps d'avant : on règle les canaux, on présume les données.</summary>
+  internal static Moment BeforeAnyRequest { get; } =
+    new("Avant toute demande", "On règle les canaux, on présume les données.");
+
+  /// <summary>Le temps de la demande : on qualifie le texte, on suit la demande.</summary>
+  internal static Moment WhenARequestArrives { get; } =
+    new("Quand une demande arrive", "On qualifie le texte, on suit la demande.");
+
   internal static IReadOnlyList<EntryPoint> EntryPoints { get; } =
   [
     // ⚠️ LE SEUL ÉCRAN À DEUX NOMS, et c'est la conséquence directe du wordmark. « Paramétrage du
@@ -139,40 +163,38 @@ internal static class Navigation
       "Paramétrage",
       "Paramétrage du microservice RGPD",
       "/parametrage",
-      "Vous y associez à chacun des six droits RGPD le canal par lequel le service l'exercera : une " +
-      "adresse HTTP, ou un routage RabbitMQ. Un droit sans l'un ni l'autre reste « non configuré », " +
-      "et rien ne vous oblige à les renseigner tous."),
+      BeforeAnyRequest,
+      "Pour chacun des six droits RGPD, choisissez un canal : une adresse HTTP ou RabbitMQ. Rien " +
+      "n'est obligatoire. Un droit sans canal reste « non configuré »."),
     new(
       "Détection des données personnelles",
       "Détection des données personnelles",
       "/detection",
-      // ⚠️ « JAMAIS UNE VALEUR » A CESSÉ D'ÊTRE VRAI, et la phrase a suivi. La voie connectée
-      // prélève quelques valeurs par colonne pour affiner la détection : les laisser promises
-      // absentes ici aurait fait de la carte d'accueil le seul endroit du service qui mente sur ce
-      // que le scan lit. Ce qui reste vrai, et que la phrase dit, est qu'aucune valeur lue ne
-      // survit au scan.
-      "Vous y faites scanner une base par le service, ou vous collez un schéma vous-même. Il " +
-      "signale les colonnes susceptibles de porter des données personnelles ; aucune valeur lue " +
-      "n'est conservée, et vous tranchez ligne par ligne."),
+      BeforeAnyRequest,
+      // ⚠️ LA PHRASE NE PROMET RIEN SUR LES VALEURS : la voie connectée en prélève quelques-unes
+      // par colonne pour affiner la détection. « Jamais une valeur » serait faux ; ce qui reste vrai
+      // — aucune valeur lue ne survit au scan — se dit sur l'écran, pas sur la carte.
+      "Scannez une base ou collez un schéma. Le service repère les colonnes qui peuvent contenir " +
+      "des données personnelles, et vous validez chaque ligne."),
 
     // ⚠️ LE TROISIÈME RANG PORTE LE SENS, et c'est le seul qui rende l'ordre lisible comme une
     // phrase — on configure, on détecte, on qualifie, on traite. Premier, l'écran précéderait la
     // configuration dont tout dépend ; dernier, il suivrait le traitement qu'il précède dans les
     // faits. Voir ADR-0010.
-    // ⚠️ LA PHRASE DIT QU'AUCUNE DEMANDE N'EN DÉCOULE, et elle le dit parce que la carte est le seul
-    // endroit où on le lit avant d'y arriver : l'écran qualifie et rend le verdict, il n'ouvre rien
-    // et ne rattache rien. Le verbe est PROPOSER, jamais « décider » — le service dit, l'humain
-    // tranche —, exactement comme la détection des données personnelles SIGNALE sans conclure.
+    // ⚠️ LA PHRASE DIT QUE RIEN N'EST ENREGISTRÉ, et elle le dit parce que la carte est le seul
+    // endroit où on le lit avant d'y arriver : l'écran qualifie et rend le verdict, il n'ouvre
+    // aucune demande et ne rattache rien. Le service fait une PROPOSITION, jamais une décision — le
+    // service dit, l'humain tranche.
     new(
       "Qualification",
       "Qualification",
       "/qualification",
-      "Vous y collez le texte libre d'une demande, et le service propose les droits RGPD qu'elle " +
-      "exerce. Aucune demande n'en découle : la proposition se lit ici, elle ne s'y dépose pas."),
+      WhenARequestArrives,
+      "Vous ne savez pas quel droit une personne exerce ? Collez son message, le service vous fait " +
+      "une proposition. Rien n'est enregistré."),
 
     // ⚠️ PAS UNE PHRASE, ET C'EST DÉLIBÉRÉ : la carte nomme, sans verbe, ce à quoi l'écran sert, là
-    // où les trois autres disent le geste qu'on y pose. Le parallélisme « Vous y + verbe » ne se
-    // « rétablit » pas. ⚠️ L'écran ne liste encore aucune demande : la carte annonce la
+    // où les trois autres disent le geste qu'on y pose. Il ne se change pas en consigne. ⚠️ L'écran ne liste encore aucune demande : la carte annonce la
     // consultation qu'il portera, et qu'un ticket suivant construit.
     // ⚠️ SON « RGPD » RESTE, et ce n'est pas une redondance avec le wordmark : ici le mot qualifie
     // LES DEMANDES — celles que le règlement régit —, là il nomme LE SERVICE. Le retirer effacerait
@@ -181,6 +203,7 @@ internal static class Navigation
       "Tableau des demandes RGPD",
       "Tableau des demandes RGPD",
       "/demandes",
+      WhenARequestArrives,
       "Consultation des demandes RGPD en cours"),
   ];
 }

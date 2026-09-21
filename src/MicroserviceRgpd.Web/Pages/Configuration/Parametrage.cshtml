@@ -4,98 +4,67 @@
 @{
   ViewData["Title"] = ParametrageFaces.ScreenName;
 
-  // Les refus d'un envoi, dits dans la section du droit refusé — ou en tête d'écran quand le droit
+  // La liste et le détail côte à côte : la largeur étroite des écrans de prose les aurait écrasés.
+  ViewData["Wide"] = true;
+
+  // Les refus d'un envoi, dits dans le détail du droit refusé — ou en tête d'écran quand le droit
   // envoyé n'est pas l'un des six. Le bloc lui-même est celui des deux faces.
   IReadOnlyList<string> Refusals() =>
     [.. ViewData.ModelState.Values.SelectMany(entry => entry.Errors).Select(refusal => refusal.ErrorMessage)];
+
+  var right = Model.Selected;
+  var refused = Model.Refused is not null;
+  var address = Model.Scene.Channel is ExerciseChannel.HttpEndpoint http ? http.Address.Value : null;
+
+  // LE RÉGLAGE DE L'AUTRE FACE, LU ICI. Cette page ne configure que l'adresse, mais un droit réglé
+  // sur RabbitMQ verrait son routage remplacé par l'enregistrement d'une adresse (ADR-0027) : c'est
+  // lui qui décide de l'avertissement.
+  var routed = Model.Scene.Channel is ExerciseChannel.RabbitMq;
 }
 
 <h1>@ParametrageFaces.ScreenName</h1>
 
-<partial name="_ParametrageTabs" model="@ParametrageFaces.Http" />
-
 @*
-  La phrase dit ce que cette face est : la configuration, droit par droit, de l'adresse à laquelle le
-  service exercera chacun des six droits RGPD. Un droit sans adresse NI ROUTAGE est « non configuré »,
-  et c'est l'état d'un service qu'on vient d'installer — le mot garde le même sens sur les deux faces.
+  La phrase dit ce que l'écran demande : choisir un droit, puis dire où le service l'exerce. Un droit
+  sans canal est « non configuré », et c'est l'état d'un service qu'on vient d'installer — le mot
+  garde le même sens sur les deux faces.
 *@
-<p class="caveat">
-  Chacun des six droits ouverts par le RGPD porte l'adresse à laquelle le service l'exercera. Un
-  droit sans adresse ni routage est <strong>« non configuré »</strong> : c'est un état normal, et
-  rien ne vous oblige à les renseigner tous.
+<p class="lead">
+  Choisissez un droit dans la liste, puis indiquez où le service doit l'exercer. Un droit sans canal
+  reste <strong>« non configuré »</strong> : c'est normal.
 </p>
 
-@if (!ViewData.ModelState.IsValid && Model.Refused is null)
+@if (!ViewData.ModelState.IsValid && !refused)
 {
-  @* Un droit que l'écran ne configure pas n'a pas de section où dire son refus : il se dit ici. *@
+  @* Un droit que l'écran ne configure pas n'a pas de détail où dire son refus : il se dit ici. *@
   <partial name="_ParametrageRefusals" model="Refusals()" />
 }
 
-@foreach (var right in Model.Settings.Rights)
-{
-  var refused = right.Right == Model.Refused;
-  var field = $"url-{right.Right.Name}";
-  var address = right.Channel is ExerciseChannel.HttpEndpoint http ? http.Address.Value : null;
+<div class="parametrage">
+  <partial name="_ParametrageRights" model="Model.Scene" />
 
-  @*
-    LE RÉGLAGE DE L'AUTRE FACE, LU ICI. Cette page ne configure que l'adresse, mais elle DIT le
-    routage d'un droit réglé sur RabbitMQ : enregistrer une adresse le remplacerait (ADR-0027), et un
-    écran qui tairait ce qu'un geste détruit ferait détruire à l'aveugle.
-  *@
-  var routing = right.Channel is ExerciseChannel.RabbitMq rabbitMq ? rabbitMq.Routing : null;
+  <section class="right" aria-labelledby="right-title">
+    <partial name="_ParametrageRightHead" model="Model.Scene" />
 
-  <div class="right">
-    <h2>@right.Right.FrenchLabel</h2>
-    <dl>
-      <dt>Article</dt>
-      <dd>Article @right.Right.Article du RGPD</dd>
-
-      @if (address is not null)
-      {
-        <dt>Adresse d'exercice</dt>
-        <dd>@address</dd>
-      }
-      else if (routing is not null)
-      {
-        @*
-          ⚠️ UN DROIT RÉGLÉ SUR RABBITMQ N'EST PAS UNE ABSENCE, et il ne prend donc pas l'encre pâle
-          de `.none` : il est configuré, sur l'autre face. On lit ici le routage lui-même — c'est LUI
-          que l'enregistrement d'une adresse remplacerait, et on le relit avant de le perdre.
-        *@
-        <dt>Exchange</dt>
-        <dd>@routing.Exchange.Value</dd>
-
-        <dt>Routing key</dt>
-        <dd>@routing.RoutingKey.Value</dd>
-      }
-      else
-      {
-        @*
-          ⚠️ « NON CONFIGURÉ » NE SE DIT QUE D'UN DROIT SANS ADRESSE NI ROUTAGE, et c'est ce qui garde
-          au mot son sens sur les deux faces : un droit réglé sur RabbitMQ est configuré, et l'appeler
-          « non configuré » ici ferait de cette face la seule du service qui mente sur son état.
-        *@
-        <dt>Adresse d'exercice</dt>
-        <dd><span class="none">non configuré</span></dd>
-      }
-    </dl>
-
-    @if (refused)
-    {
-      <partial name="_ParametrageRefusals" model="Refusals()" />
-    }
+    <partial name="_ParametrageTabs" model="Model.Scene" />
 
     @*
-      Une mini-form par droit, qui n'envoie que lui. Le champ porte l'adresse déjà enregistrée —
-      on la corrige sans repartir de zéro —, ou la saisie qui vient d'être refusée, pour qu'elle se
+      Une mini-form, qui n'envoie que le droit ouvert. Le champ porte l'adresse déjà enregistrée — on
+      la corrige sans repartir de zéro —, ou la saisie qui vient d'être refusée, pour qu'elle se
       corrige sans être retapée. Le champ est un texte, pas une `url` : c'est le service qui juge
       l'adresse, et son refus qui se lit — pas celui du navigateur, dans d'autres mots.
     *@
     <form method="post" asp-page-handler="Set">
-      <input type="hidden" name="Form.Right" value="@right.Right.Name" />
-      <p>
-        <label for="@field">Adresse d'exercice du @right.Right.FrenchLabel</label>
-        <input type="text" inputmode="url" id="@field" name="Form.Url"
+      <input type="hidden" name="Form.Right" value="@right.Name" />
+
+      @if (refused)
+      {
+        <partial name="_ParametrageRefusals" model="Refusals()" />
+      }
+
+      <p class="field">
+        <label for="url">Adresse d'exercice</label>
+        <input type="text" inputmode="url" id="url" name="Form.Url" placeholder="https://…"
                value="@(refused ? Model.Form.Url : address)" maxlength="@EndpointUrl.MaxLength" />
       </p>
 
@@ -105,30 +74,37 @@
         quoi. Il ne paraît que pour un droit réglé sur l'autre face : un droit « non configuré » n'a
         rien à perdre, et un droit déjà adressé ne remplace que le sien.
       *@
-      @if (routing is not null)
+      @if (routed)
       {
-        <p class="caveat replacement">
-          Ce droit porte déjà un routage d'exercice, sur la face « Configuration RabbitMQ ».
-          Enregistrer une adresse ici remplacera ce routage : un droit ne porte qu'un seul canal.
+        <p class="replacement">
+          <partial name="_WarningIcon" />
+          <span>Enregistrer une adresse remplacera le routage RabbitMQ actuel : un droit ne porte qu'un seul canal.</span>
         </p>
       }
 
-      <button type="submit" class="primary">Enregistrer</button>
+      <div class="actions">
+        <button type="submit" class="primary">Enregistrer</button>
+
+        @*
+          Effacer n'est offert qu'à un droit que cette page CONFIGURE : un droit « non configuré » n'a
+          rien à oublier, et un droit réglé sur RabbitMQ — dont cette page montre le routage sans
+          l'écrire — n'a pas à voir son réglage détruit par le bouton d'une face qui ne le configure
+          pas. Le bouton se pose à côté d'Enregistrer mais envoie SA PROPRE form, qui ne porte que le
+          droit — pas l'adresse du champ, qu'on aurait pu retoucher sans vouloir l'enregistrer. Il
+          n'est pas « destructif » : un droit sans adresse est un état normal, et l'adresse se ressaisit.
+        *@
+        @if (address is not null)
+        {
+          <button type="submit" form="clear">Effacer le canal</button>
+        }
+      </div>
     </form>
 
-    @*
-      Effacer n'est offert qu'à un droit que cette page CONFIGURE : un droit « non configuré » n'a
-      rien à oublier, et un droit réglé sur RabbitMQ — dont cette page montre le routage sans
-      l'écrire — n'a pas à voir son réglage détruit par le bouton d'une face qui ne le configure pas. Sa propre form, qui n'envoie que le droit — pas l'adresse du champ voisin,
-      qu'on aurait pu retoucher sans vouloir l'enregistrer. Le bouton n'est pas « destructif » : un
-      droit sans adresse est un état normal, et l'adresse se ressaisit.
-    *@
     @if (address is not null)
     {
-      <form method="post" asp-page-handler="Clear">
-        <input type="hidden" name="Form.Right" value="@right.Right.Name" />
-        <button type="submit">Effacer</button>
+      <form id="clear" method="post" asp-page-handler="Clear">
+        <input type="hidden" name="Form.Right" value="@right.Name" />
       </form>
     }
-  </div>
-}
+  </section>
+</div>

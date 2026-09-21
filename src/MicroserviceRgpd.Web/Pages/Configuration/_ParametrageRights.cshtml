@@ -1,0 +1,52 @@
+@model ParametrageScene
+@using MicroserviceRgpd.Core.Configuration
+@using MicroserviceRgpd.Web.Pages.Configuration
+@*
+  LA LISTE DES SIX DROITS — un lien par droit, et son réglage en une ligne. C'est elle qui dit l'état
+  du Paramétrage d'un coup d'œil : le détail n'ouvre qu'un droit à la fois, la liste les montre tous.
+
+  ⚠️ ELLE ÉNUMÈRE, ELLE NE COMPTE PAS. Aucun « 3 sur 6 », aucune pastille de total : un dénominateur
+  présenterait la configuration comme complète, et « non configuré » est un état normal.
+
+  ⚠️ LE LIEN MÈNE À LA FACE DU CANAL DU DROIT — on relit un routage là où il se règle. Un droit « non
+  configuré » n'a pas de canal, et la liste reste sur la face courante.
+*@
+<nav class="rights" aria-label="Les six droits">
+  <ul>
+    @foreach (var right in Model.Settings.Rights)
+    {
+      var current = right.Right == Model.Selected;
+      var face = ParametrageFaces.FaceOf(right.Channel, Model.Face);
+
+      <li>
+        @*
+          LE DROIT OUVERT SE MARQUE DEUX FOIS, comme l'écran courant du panneau latéral :
+          `aria-current` à qui écoute la page, le fond et l'accent à qui la regarde.
+        *@
+        <a href="@ParametrageFaces.Address(face, right.Right)"
+           class="@(current ? "current" : null)"
+           aria-current="@(current ? "true" : null)">
+          <span class="right-name">@ParametrageFaces.Titled(right.Right)</span>
+          <span class="right-summary">
+            @switch (right.Channel)
+            {
+              case ExerciseChannel.HttpEndpoint http:
+                <strong>HTTP</strong> <span class="right-value">@http.Address.Value</span>
+                break;
+              case ExerciseChannel.RabbitMq rabbitMq:
+                <strong>RabbitMQ</strong> <span class="right-value">@rabbitMq.Routing.Exchange.Value → @rabbitMq.Routing.RoutingKey.Value</span>
+                break;
+              default:
+                <span class="right-value">non configuré</span>
+                break;
+            }
+          </span>
+          <svg class="right-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="m9 6 6 6-6 6" />
+          </svg>
+        </a>
+      </li>
+    }
+  </ul>
+</nav>

@@ -1,9 +1,10 @@
-@model string
+@model ParametrageScene
 @using MicroserviceRgpd.Web.Pages.Configuration
 @*
-  LES ONGLETS DU PARAMÉTRAGE — deux liens, et rien d'autre. Le modèle du partial est l'adresse de la
-  face rendue : c'est elle qui décide lequel des deux se marque, et elle est passée par la page
-  plutôt que lue sur la requête, pour qu'une page rendue hors d'une requête se marque quand même.
+  LES ONGLETS DU PARAMÉTRAGE — deux liens, et rien d'autre. Ils vivent dans le détail du droit
+  ouvert : ils disent PAR QUEL CANAL on le règle, et chacun mène à sa face en gardant le droit ouvert.
+  La face rendue est passée par la page plutôt que lue sur la requête, pour qu'une page rendue hors
+  d'une requête se marque quand même.
 
   ⚠️ CE `nav` EST CELUI DE L'ÉCRAN, PAS DU LAYOUT. Les deux régions de navigation du layout — le
   panneau latéral et le header — vivent hors du `main` ; celle-ci vit dedans, et le harnais de layout
@@ -13,14 +14,14 @@
   <ul>
     @foreach (var tab in ParametrageFaces.Tabs)
     {
-      var current = string.Equals(tab.Address, Model, StringComparison.Ordinal);
+      var current = string.Equals(tab.Address, Model.Face, StringComparison.Ordinal);
 
       <li>
         @*
           LA FACE COURANTE SE MARQUE DEUX FOIS, comme l'écran courant du panneau latéral : `aria-current`
           à qui écoute la page, l'accent structurel à qui la regarde.
         *@
-        <a href="@tab.Address"
+        <a href="@ParametrageFaces.Address(tab.Address, Model.Selected)"
            class="@(current ? "current" : null)"
            aria-current="@(current ? "page" : null)">@tab.Label</a>
       </li>
