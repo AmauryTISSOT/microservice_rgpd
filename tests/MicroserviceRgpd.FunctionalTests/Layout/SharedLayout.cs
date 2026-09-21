@@ -63,6 +63,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   [Theory]
   [InlineData(LayoutSurface.BoardModule)]
   [InlineData(LayoutSurface.DepositModule)]
+  [InlineData(LayoutSurface.QualifyModule)]
   public async Task ServesEachModuleItself(string address)
   {
     var served = await _layout.FetchAsync(address);
@@ -75,8 +76,8 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>Deux écrans chargent chacun leur module — le tableau des demandes et le dépôt d'un
-  /// relevé —, et aucun autre écran ne charge le moindre script</b> : ni fichier, ni code en ligne.
+  /// ⚠️ <b>Trois écrans chargent chacun leur module — le tableau des demandes, le dépôt d'un
+  /// relevé et la qualification —, et aucun autre écran ne charge le moindre script</b> : ni fichier, ni code en ligne.
   /// La doctrine « zéro JavaScript » est levée pour toute l'application, mais un script ne se pose
   /// que là où un écran en a besoin : les autres restent tels qu'ils étaient.
   /// </summary>
@@ -92,6 +93,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
     {
       [LayoutSurface.Board] = LayoutSurface.BoardModule,
       [LayoutSurface.ScreeningDeposit] = LayoutSurface.DepositModule,
+      [LayoutSurface.Qualification] = LayoutSurface.QualifyModule,
     };
 
     foreach (var screen in await _layout.ScreensAsync())
@@ -121,6 +123,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   [Theory]
   [InlineData(LayoutSurface.BoardModule)]
   [InlineData(LayoutSurface.DepositModule)]
+  [InlineData(LayoutSurface.QualifyModule)]
   public async Task LoadsNothingFromAThirdPartyFromAModuleItself(string address)
   {
     var module = await _layout.ReadAsync(address);

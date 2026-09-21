@@ -105,6 +105,13 @@ public class QualifyModel(IMediator mediator, ILogger<QualifyModel> logger) : Pa
   public static string Ceiling =>
     RightsRequestText.MaxLength.ToString(CultureInfo.InvariantCulture);
 
+  /// <summary>
+  /// Le même plafond, écrit pour être lu : « 10 000 » plutôt que « 10000 ». <see cref="Ceiling"/>
+  /// reste la valeur que le compteur lit, sans séparateur à défaire.
+  /// </summary>
+  public static string ReadableCeiling =>
+    RightsRequestText.MaxLength.ToString("N0", CultureInfo.GetCultureInfo("fr-FR"));
+
   public void OnGet()
   {
     // Rien à charger : l'écran ne relit aucune qualification, il en fait naître une.

@@ -2205,6 +2205,83 @@ a.route-action:focus-visible {
 
 /*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA QUALIFICATION, UNE SEULE CARTE DE SAISIE. Le libellé et le plafond la coiffent, la règle et le
+  bouton la ferment : la zone de texte n'a plus de cadre à elle, c'est la carte qui la tient.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+form.composer {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-soft);
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  overflow: hidden;
+}
+
+form.composer:focus-within {
+  border-color: var(--accent);
+}
+
+.composer-head,
+.composer-foot {
+  align-items: center;
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.composer-head {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+}
+
+.composer-head label {
+  margin: 0;
+}
+
+.composer-count {
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.composer-count.over {
+  color: var(--signal-error);
+  font-weight: var(--weight-semibold);
+}
+
+form.composer textarea {
+  border: 0;
+  border-radius: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  min-height: 20rem;
+  padding: var(--space-md);
+  resize: vertical;
+}
+
+form.composer textarea:focus {
+  outline: none;
+}
+
+.composer-foot {
+  background: var(--canvas);
+  border-top: var(--hairline-width) solid var(--hairline);
+  flex-wrap: wrap;
+}
+
+.composer-foot button {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-xs);
+  min-height: 44px;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
   LE PARAMÉTRAGE, EN LISTE ET DÉTAIL. Les six droits d'un côté, chacun avec son réglage en une
   ligne ; le droit ouvert de l'autre, seul, avec son réglage actuel, ses deux faces et sa mini-form.
   La liste dit l'état de tous d'un coup d'œil, le détail n'en règle qu'un à la fois.

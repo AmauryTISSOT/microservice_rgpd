@@ -5,6 +5,14 @@
   ViewData["Title"] = "Qualification";
 }
 
+@section Scripts {
+  @*
+    LE SEUL SCRIPT DE L'ÉCRAN COMPTE LES CARACTÈRES, ET RIEN D'AUTRE. Sans lui, le plafond reste
+    annoncé tel quel.
+  *@
+  <script type="module" src="/js/qualify.js"></script>
+}
+
 @*
   LE NOM EST « QUALIFICATION », ET C'EST LE SEUL. L'ADR-0010 le pose : un seul nom par écran, répété
   à l'identique du panneau à la carte de l'accueil quand la porte viendra. Un titre qui aurait dit
@@ -194,28 +202,70 @@
 @*
   CE QUE LE SERVICE FAIT, ET CE QU'IL NE FAIT PAS. Il propose — il ne décide jamais : un verdict
   qui se présenterait comme une décision ferait porter à la machine un choix qui reste celui d'un
-  humain.
+  humain. Les trois garanties se lisent en une ligne, avant le geste, plutôt qu'enfouies dans un
+  paragraphe en italique.
 *@
-<p class="caveat">
+<p class="lead">
   Collez le texte d'une demande, tel qu'il vous est parvenu. Le service dit les droits que ce texte
-  lui paraît exercer : c'est une <strong>aide à la décision</strong>, que vous validez ou corrigez.
-  Aucun dossier n'en découle, et rien n'est ouvert ici.
+  lui paraît exercer — vous validez ou corrigez.
 </p>
 
-<form method="post">
-  <p>
-    <label for="texte">Le texte de la demande</label>
-    <span class="hint">
-      Au plus @QualifyModel.Ceiling caractères. Aucun texte n'est refusé pour son contenu : un texte
-      bruité ou hors sujet reçoit un verdict, jamais un refus de saisie.
-    </span>
-    @*
-      LA ZONE EST NUE : aucun exemple pré-rempli, aucun corpus proposé. Un texte posé d'office
-      serait le seul que l'Operator qualifierait jamais, et l'écran mesurerait le service sur une
-      demande que personne n'a reçue.
-    *@
-    <textarea id="texte" name="Text" rows="12" spellcheck="false">@Model.Text</textarea>
-  </p>
+<ul class="guarantees">
+  <li>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6" />
+    </svg>
+    <span>Une <strong>aide à la décision</strong>, jamais une décision</span>
+  </li>
+  <li>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M9 13h6" />
+    </svg>
+    <span><strong>Aucun dossier</strong> n'en découle, rien n'est ouvert ici</span>
+  </li>
+  <li>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 6h16M4 12h16M4 18h10" />
+    </svg>
+    <span>Aucun texte <strong>refusé pour son contenu</strong></span>
+  </li>
+</ul>
 
-  <button type="submit" class="primary">Qualifier</button>
+@*
+  UNE SEULE CARTE, LE GESTE DEDANS. Le libellé et le plafond coiffent la zone, la règle et le
+  bouton la ferment : la saisie se lit comme un tout, et le bouton reste au bout du texte qu'il
+  envoie.
+
+  LE PLAFOND EST ÉCRIT PAR LE SERVEUR. Le compteur n'est qu'un raffinement : sans script, l'écran
+  annonce le plafond tel quel, et rien d'autre ne change.
+*@
+<form method="post" class="composer">
+  <div class="composer-head">
+    <label for="texte">Le texte de la demande</label>
+    <span class="composer-count" data-ceiling="@QualifyModel.Ceiling">Au plus @QualifyModel.ReadableCeiling caractères</span>
+  </div>
+
+  @*
+    LA ZONE EST NUE : aucun exemple pré-rempli, aucun corpus proposé. Un texte posé d'office
+    serait le seul que l'Operator qualifierait jamais, et l'écran mesurerait le service sur une
+    demande que personne n'a reçue.
+  *@
+  <textarea id="texte" name="Text" rows="14" spellcheck="false" aria-describedby="texte-hint">@Model.Text</textarea>
+
+  <div class="composer-foot">
+    <span class="hint" id="texte-hint">
+      Un texte bruité ou hors sujet reçoit un verdict, jamais un refus de saisie.
+    </span>
+    <button type="submit" class="primary">
+      Qualifier
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </button>
+  </div>
 </form>

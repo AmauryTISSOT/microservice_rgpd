@@ -55,6 +55,9 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// </summary>
   internal const string DepositModule = "/js/deposit.js";
 
+  /// <summary>Le module de la qualification : le compteur de caractères, et rien d'autre.</summary>
+  internal const string QualifyModule = "/js/qualify.js";
+
   /// <summary>
   /// <b>Les quatre points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
   /// l'ordre où l'on rencontre les écrans</b> : la configuration, la détection, la qualification,
@@ -196,7 +199,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// la quatrième entrée du panneau et sa carte à l'accueil, au troisième rang. Il se marque donc
   /// comme les trois autres, et il porte le cadre partagé comme tous les écrans.
   /// </summary>
-  private const string Qualification = "/qualification";
+  internal const string Qualification = "/qualification";
 
   /// <summary>Le tableau des demandes RGPD, et la racine de son point d'entrée.</summary>
   internal const string Board = "/demandes";
