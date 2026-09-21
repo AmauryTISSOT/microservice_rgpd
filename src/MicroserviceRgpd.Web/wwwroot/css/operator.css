@@ -2737,6 +2737,252 @@ button.execution[aria-busy="true"] .spinner {
   letter-spacing: var(--type-body-sm-tracking);
 }
 
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA SAISIE D'UNE DEMANDE — la modale de création et de modification. La tête et le pied restent en
+  place, séparés du corps par un filet ; seul le corps défile. Le pied prend le fond du canevas : les
+  actions s'y lisent comme posées à part du formulaire.
+
+  ⚠️ `display: flex` SOUS `[open]` SEULEMENT : une modale fermée doit garder le `display: none` du
+  navigateur, qu'une déclaration sans condition écraserait.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+dialog.modal.entry {
+  max-height: calc(100dvh - 2 * var(--space-lg));
+  overflow: hidden;
+  padding: 0;
+  width: 40rem;
+}
+
+dialog.modal.entry[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.modal.entry .modal-head {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  padding: var(--space-md) var(--space-md) var(--space-md) var(--space-xl);
+}
+
+dialog.modal.entry .modal-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  min-height: 0;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  overflow-y: auto;
+  padding: var(--space-lg) var(--space-xl);
+}
+
+dialog.modal.entry .modal-failure {
+  margin: 0;
+}
+
+dialog.modal.entry .modal-actions {
+  background: var(--canvas);
+  border-top: var(--hairline-width) solid var(--hairline);
+  margin-top: 0;
+  padding: var(--space-md) var(--space-xl);
+}
+
+/* Un temps de la saisie : son titre en surtitre, ses champs dessous. Un filet sépare deux temps. */
+.entry-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.entry-group + .entry-group {
+  border-top: var(--hairline-width) solid var(--hairline);
+  padding-top: var(--space-lg);
+}
+
+.entry-group h3 {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: 0.6px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.entry-group p {
+  margin: 0;
+}
+
+/* Deux champs côte à côte — l'origine et la date, le nom et le prénom —, empilés sur un écran étroit. */
+.entry-pair {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 36rem) {
+  .entry-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.modal-body input[type="text"],
+.modal-body input[type="date"],
+.modal-body select {
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+}
+
+.modal-body textarea {
+  padding: var(--space-sm);
+  resize: vertical;
+}
+
+/*
+  LE CHOIX À SEGMENTS — deux boutons radio peints en interrupteur. Le radio lui-même reste dans le
+  document, transparent mais focalisable, et couvre tout son segment : c'est lui que le clic, le
+  clavier et les technologies d'assistance manipulent, et son libellé qui se peint dessous.
+  ⚠️ Pas `display: none`, qui le retirerait du parcours.
+*/
+fieldset.segmented {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+fieldset.segmented legend {
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-xxs);
+  padding: 0;
+}
+
+.segments {
+  background: var(--canvas);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-xxs);
+  padding: 3px;
+  position: relative;
+}
+
+.segment {
+  display: flex;
+  flex: 1 1 0;
+  position: relative;
+}
+
+.segments input[type="radio"] {
+  cursor: pointer;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+
+fieldset.segmented .segments label {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: flex;
+  flex: 1 1 auto;
+  font-weight: var(--weight-medium);
+  gap: var(--space-xs);
+  justify-content: center;
+  margin: 0;
+  min-height: 36px;
+}
+
+.segments input:checked + label {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+
+.segments input:focus-visible + label {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* L'ATTESTATION DANS SON CADRE : la case, son libellé, et ce qu'elle engage en dessous. */
+.modal-body p.attestation {
+  align-items: flex-start;
+  background: var(--canvas);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+}
+
+p.attestation input[type="checkbox"] {
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  height: 18px;
+  margin: 3px 0 0;
+  width: 18px;
+}
+
+p.attestation label {
+  margin-bottom: 0;
+}
+
+/* Le droit et sa proposition par IA sur une même ligne : le bouton remplit le select qu'il touche. */
+.right-pick {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.right-pick select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/*
+  LA PROPOSITION PAR IA SE TEINTE DE L'ACCENT, SANS EN PRENDRE L'APLAT : c'est une action — l'accent
+  est la couleur des actions —, mais pas celle que la modale attend, qui reste « Créer ». Filet à
+  l'accent, fond à peine teinté. ⚠️ L'encre est l'accent pressé : l'accent lui-même, sur ce fond
+  teinté, tombe sous 4,5:1.
+*/
+.right-pick button.proposal {
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--surface));
+  color: var(--accent-pressed);
+  flex-shrink: 0;
+  font: var(--type-body-sm);
+  font-weight: var(--weight-medium);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+}
+
+.right-pick button.proposal:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.right-pick button.proposal:disabled {
+  color: var(--ink-muted);
+}
+
+button.proposal[aria-busy="true"] .spark {
+  display: none;
+}
+
+@media (max-width: 36rem) {
+  .right-pick {
+    flex-direction: column;
+  }
+}
+
+.modal-body .hint {
+  margin-top: var(--space-xxs);
+}
+
 /* La confirmation : un titre, une phrase, deux boutons — elle n'a pas besoin de la largeur d'un formulaire. */
 dialog.modal.confirmation {
   width: 28rem;

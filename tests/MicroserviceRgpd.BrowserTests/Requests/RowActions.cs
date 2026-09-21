@@ -60,7 +60,7 @@ public class RowActions(BrowserHarness harness)
     await page.GetByRole(AriaRole.Button, new() { Name = "Créer une demande", Exact = true }).ClickAsync();
 
     var dialog = page.GetByRole(AriaRole.Dialog, new() { Name = "Créer une nouvelle demande", Exact = true });
-    await dialog.GetByLabel("Email", new() { Exact = true }).FillAsync(email);
+    await dialog.GetByLabel("Email", new() { Exact = true }).And(dialog.Page.Locator(":not([type=radio])")).FillAsync(email);
     await dialog.GetByLabel("Message", new() { Exact = true }).FillAsync($"Je souhaite accéder à mes données. {Guid.NewGuid()}");
     await dialog.GetByLabel("Droits RGPD", new() { Exact = true }).SelectOptionAsync("Access");
     await dialog.GetByRole(AriaRole.Button, new() { Name = "Créer", Exact = true }).ClickAsync();

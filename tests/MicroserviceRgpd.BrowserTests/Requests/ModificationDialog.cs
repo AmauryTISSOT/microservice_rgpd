@@ -159,7 +159,7 @@ public class ModificationDialog(BrowserHarness harness)
     await Expect(Dialog(page).GetByRole(AriaRole.Button, new() { Name = SubmitLabel, Exact = true })).ToBeVisibleAsync();
 
     await ExpectTheRecordedValuesAsync(page, request);
-    await Expect(Field(page, "Origine")).ToBeFocusedAsync();
+    await Expect(OriginSegment(page, "Courrier")).ToBeFocusedAsync();
   }
 
   /// <summary>
@@ -463,7 +463,7 @@ public class ModificationDialog(BrowserHarness harness)
 
     await Expect(Creation(page)).ToBeVisibleAsync();
     await Expect(Creation(page).GetByRole(AriaRole.Button, new() { Name = "Créer", Exact = true })).ToBeVisibleAsync();
-    await Expect(CreationField(page, "Origine")).ToHaveValueAsync("Email");
+    await Expect(Creation(page).GetByRole(AriaRole.Radio, new() { Name = "Email", Exact = true })).ToBeCheckedAsync();
     await Expect(CreationField(page, "Date de réception")).ToHaveValueAsync("2026-01-10");
 
     foreach (var blank in new[] { "Nom", "Prénom", "Email", "Message" })
@@ -477,7 +477,7 @@ public class ModificationDialog(BrowserHarness harness)
 
   private static async Task ExpectTheRecordedValuesAsync(IPage page, ARequest request)
   {
-    await Expect(Field(page, "Origine")).ToHaveValueAsync("Letter");
+    await Expect(OriginSegment(page, "Courrier")).ToBeCheckedAsync();
     await Expect(Field(page, "Date de réception")).ToHaveValueAsync(RecordedReceivedOn);
     await Expect(Field(page, "Nom")).ToHaveValueAsync(RecordedLastName);
     await Expect(Field(page, "Prénom")).ToHaveValueAsync(RecordedFirstName);
@@ -535,14 +535,23 @@ public class ModificationDialog(BrowserHarness harness)
     return Confirmation(page).GetByRole(AriaRole.Button, new() { Name = name, Exact = true });
   }
 
+  /// <summary>
+  /// Un segment de l'origine — « Email » ou « Courrier » —, par son nom : l'origine est un groupe de
+  /// boutons radio, qui se coche et se lit segment par segment.
+  /// </summary>
+  private static ILocator OriginSegment(IPage page, string segment)
+  {
+    return Dialog(page).GetByRole(AriaRole.Radio, new() { Name = segment, Exact = true });
+  }
+
   private static ILocator Field(IPage page, string label)
   {
-    return Dialog(page).GetByLabel(label, new() { Exact = true });
+    return Dialog(page).GetByLabel(label, new() { Exact = true }).And(page.Locator(":not([type=radio])"));
   }
 
   private static ILocator CreationField(IPage page, string label)
   {
-    return Creation(page).GetByLabel(label, new() { Exact = true });
+    return Creation(page).GetByLabel(label, new() { Exact = true }).And(page.Locator(":not([type=radio])"));
   }
 
   private static ILocator Toast(IPage page)

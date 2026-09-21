@@ -33,7 +33,8 @@ public class CreationFormScreen(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>Les champs apparaissent dans l'ordre de lecture d'une demande reçue</b> — d'où elle vient,
   /// quand, de qui, ce qu'elle dit, quel droit —, entre la croix de l'en-tête et les deux actions
-  /// du pied.
+  /// du pied. L'origine s'y lit par ses deux segments, « Email » puis « Courrier » ; la qualification
+  /// par IA suit le select des droits, qu'elle remplit.
   /// </summary>
   [Fact]
   public async Task RendersTheFieldsInTheReadingOrderOfAReceivedRequest()
@@ -43,15 +44,16 @@ public class CreationFormScreen(CustomWebApplicationFactory<Program> factory)
     ControlsIn(dialog).Select(control => control.Name).ShouldBe(
       [
         "Fermer",
-        "Origine",
+        "Email",
+        "Courrier",
         "Date de réception",
         "Nom",
         "Prénom",
         "Email",
         "Identité vérifiée",
         "Message",
-        AiQualification,
         "Droits RGPD",
+        AiQualification,
         "Annuler",
         "Créer",
       ],
@@ -60,15 +62,27 @@ public class CreationFormScreen(CustomWebApplicationFactory<Program> factory)
 
   /// <summary>
   /// <b>L'origine est « Email » par défaut</b>, et « Courrier » en est la seule autre : l'<c>Operator</c>
-  /// ne clique que pour un courrier.
+  /// ne clique que pour un courrier. Ce sont les deux boutons radio d'un groupe « Origine ».
   /// </summary>
   [Fact]
   public async Task OffersEmailByDefaultAndLetterAsTheOnlyOtherOrigin()
   {
-    var origin = ControlNamed(await DialogAsync(), "Origine");
+    var dialog = await DialogAsync();
 
-    origin.Tag.ShouldBe("select");
-    OptionsIn(origin.Contents).ShouldBe([("Email", "Email", true), ("Letter", "Courrier", false)]);
+    var group = Regex.Match(dialog, @"<fieldset\b[^>]*>\s*<legend>(.*?)</legend>(.*?)</fieldset>", RegexOptions.Singleline);
+    group.Success.ShouldBeTrue("L'origine n'est pas un groupe de choix.");
+    LayoutSurface.TextIn(group.Groups[1].Value).ShouldBe("Origine");
+
+    ControlsIn(group.Groups[2].Value)
+      .Select(radio => (
+        AttributeOf(radio, "type"),
+        AttributeOf(radio, "name"),
+        AttributeOf(radio, "value"),
+        radio.Name,
+        Regex.IsMatch(radio.Attributes, @"\bchecked\b")))
+      .ShouldBe(
+        [("radio", "origin", "Email", "Email", true), ("radio", "origin", "Letter", "Courrier", false)],
+        "L'origine n'offre pas Email, cochée, puis Courrier.");
   }
 
   /// <summary>
@@ -266,9 +280,12 @@ public class CreationFormScreen(CustomWebApplicationFactory<Program> factory)
     ];
   }
 
+  /// <remarks>
+  /// Les segments de l'origine sont écartés : « Email » y nomme un choix, et non le champ de l'email.
+  /// </remarks>
   private static Control ControlNamed(string dialog, string name)
   {
-    return ControlsIn(dialog).Where(control => control.Name == name)
+    return ControlsIn(dialog).Where(control => control.Name == name && AttributeOf(control, "type") != "radio")
       .ShouldHaveSingleItem($"La modale ne porte pas un et un seul champ « {name} ».");
   }
 

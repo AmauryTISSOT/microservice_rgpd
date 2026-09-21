@@ -37,7 +37,7 @@ public class CreationForm(BrowserHarness harness)
     await OpenAsync(page);
 
     await ExpectTheDefaultsAsync(page, today: "2026-03-29");
-    await Expect(Field(page, "Origine")).ToBeFocusedAsync();
+    await Expect(OriginSegment(page, "Email")).ToBeFocusedAsync();
   }
 
   /// <summary>
@@ -75,7 +75,7 @@ public class CreationForm(BrowserHarness harness)
     var page = await OnTheBoardAsync(context);
     await OpenAsync(page);
 
-    await Field(page, "Origine").SelectOptionAsync(new SelectOptionValue { Label = "Courrier" });
+    await OriginSegment(page, "Courrier").CheckAsync();
     await Field(page, "Date de réception").FillAsync("2025-12-24");
     await Field(page, "Nom").FillAsync("Dupont");
     await Field(page, "Prénom").FillAsync("Marie");
@@ -89,12 +89,12 @@ public class CreationForm(BrowserHarness harness)
     await OpenAsync(page);
 
     await ExpectTheDefaultsAsync(page, today: "2026-01-10");
-    await Expect(Field(page, "Origine")).ToBeFocusedAsync();
+    await Expect(OriginSegment(page, "Email")).ToBeFocusedAsync();
   }
 
   private static async Task ExpectTheDefaultsAsync(IPage page, string today)
   {
-    await Expect(Field(page, "Origine")).ToHaveValueAsync("Email");
+    await Expect(OriginSegment(page, "Email")).ToBeCheckedAsync();
     await Expect(Field(page, "Date de réception")).ToHaveValueAsync(today);
     await Expect(Field(page, "Date de réception")).ToHaveAttributeAsync("max", today);
 
@@ -132,8 +132,17 @@ public class CreationForm(BrowserHarness harness)
     return page.GetByRole(AriaRole.Alertdialog, new() { Name = ConfirmationTitle, Exact = true, IncludeHidden = true });
   }
 
+  /// <summary>
+  /// Un segment de l'origine — « Email » ou « Courrier » —, par son nom : l'origine est un groupe de
+  /// boutons radio, qui se coche et se lit segment par segment.
+  /// </summary>
+  private static ILocator OriginSegment(IPage page, string segment)
+  {
+    return Dialog(page).GetByRole(AriaRole.Radio, new() { Name = segment, Exact = true });
+  }
+
   private static ILocator Field(IPage page, string label)
   {
-    return Dialog(page).GetByLabel(label, new() { Exact = true });
+    return Dialog(page).GetByLabel(label, new() { Exact = true }).And(page.Locator(":not([type=radio])"));
   }
 }

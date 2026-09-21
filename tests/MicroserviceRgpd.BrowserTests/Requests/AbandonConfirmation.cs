@@ -78,7 +78,7 @@ public class AbandonConfirmation(BrowserHarness harness)
     switch (label)
     {
       case "Origine":
-        await field.SelectOptionAsync(new SelectOptionValue { Label = "Courrier" });
+        await OriginSegment(page, "Courrier").CheckAsync();
         break;
       case "Droits RGPD":
         await field.SelectOptionAsync("Access");
@@ -258,7 +258,7 @@ public class AbandonConfirmation(BrowserHarness harness)
 
     await OpenAsync(page);
 
-    await Expect(Field(page, "Origine")).ToHaveValueAsync("Email");
+    await Expect(OriginSegment(page, "Email")).ToBeCheckedAsync();
     await Expect(Field(page, "Date de réception")).ToHaveValueAsync("2026-01-10");
 
     foreach (var blank in new[] { "Nom", "Prénom", "Email", "Message" })
@@ -277,7 +277,7 @@ public class AbandonConfirmation(BrowserHarness harness)
 
   private static async Task FillTheFormAsync(IPage page)
   {
-    await Field(page, "Origine").SelectOptionAsync(new SelectOptionValue { Label = "Courrier" });
+    await OriginSegment(page, "Courrier").CheckAsync();
     await Field(page, "Date de réception").FillAsync("2025-12-24");
     await Field(page, "Nom").FillAsync("Dupont");
     await Field(page, "Prénom").FillAsync("Marie");
@@ -289,7 +289,7 @@ public class AbandonConfirmation(BrowserHarness harness)
 
   private static async Task ExpectTheEntryIntactAsync(IPage page)
   {
-    await Expect(Field(page, "Origine")).ToHaveValueAsync("Letter");
+    await Expect(OriginSegment(page, "Courrier")).ToBeCheckedAsync();
     await Expect(Field(page, "Date de réception")).ToHaveValueAsync("2025-12-24");
     await Expect(Field(page, "Nom")).ToHaveValueAsync("Dupont");
     await Expect(Field(page, "Prénom")).ToHaveValueAsync("Marie");
@@ -344,8 +344,17 @@ public class AbandonConfirmation(BrowserHarness harness)
     return Confirmation(page).GetByRole(AriaRole.Button, new() { Name = name, Exact = true });
   }
 
+  /// <summary>
+  /// Un segment de l'origine — « Email » ou « Courrier » —, par son nom : l'origine est un groupe de
+  /// boutons radio, qui se coche et se lit segment par segment.
+  /// </summary>
+  private static ILocator OriginSegment(IPage page, string segment)
+  {
+    return Dialog(page).GetByRole(AriaRole.Radio, new() { Name = segment, Exact = true });
+  }
+
   private static ILocator Field(IPage page, string label)
   {
-    return Dialog(page).GetByLabel(label, new() { Exact = true });
+    return Dialog(page).GetByLabel(label, new() { Exact = true }).And(page.Locator(":not([type=radio])"));
   }
 }

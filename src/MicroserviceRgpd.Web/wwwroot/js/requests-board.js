@@ -797,8 +797,12 @@ function revalidateTheFieldsInError() {
   }
 }
 
-// Le premier champ du formulaire : celui qui prend le focus à l'ouverture.
-const firstField = form.elements.namedItem("origin");
+// LE PREMIER CHAMP DU FORMULAIRE, celui qui prend le focus à l'ouverture : l'origine, un groupe de
+// boutons radio. ⚠️ C'est le segment COCHÉ qui le prend — celui que les flèches du clavier quittent —,
+// et il ne se connaît qu'à l'ouverture, une fois les valeurs de la demande versées.
+function firstField() {
+  return form.querySelector('input[name="origin"]:checked');
+}
 
 // LE BOUTON QUI A OUVERT LA MODALE — le crayon d'une ligne, ou « Créer une demande » : c'est à lui
 // que le focus revient à la fermeture, quelle qu'en soit la façon.
@@ -828,7 +832,7 @@ function open(mode, { values, id, from, row }) {
 
   // `showModal` donnerait le focus à la croix, premier élément focalisable de la modale : il va au
   // premier champ, pour que la saisie — ou la correction — commence aussitôt.
-  firstField.focus();
+  firstField().focus();
 }
 
 // LES VALEURS ENREGISTRÉES ENTRENT DANS LES CHAMPS, chacune sous la clé du champ qu'elle remplit :
