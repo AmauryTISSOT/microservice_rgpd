@@ -388,6 +388,6 @@ public class CreationValidation(BrowserHarness harness)
 
   private static ILocator Field(IPage page, string label)
   {
-    return Dialog(page).GetByLabel(label, new() { Exact = true });
+    return Dialog(page).GetByLabel(label, new() { Exact = true }).And(page.Locator(":not([type=radio])"));
   }
 }

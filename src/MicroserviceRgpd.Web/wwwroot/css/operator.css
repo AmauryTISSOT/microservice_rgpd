@@ -1084,14 +1084,485 @@ fieldset:has(input[type="radio"]) label {
   padding-left: var(--space-sm);
 }
 
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE DÉPÔT D'UN RELEVÉ : les trois garanties en une ligne, puis les deux gestes CÔTE À CÔTE — la
+  requête à gauche, le collage à droite. Chacun est une carte et porte son numéro : l'ordre se lit
+  sans qu'aucun des deux ne se cache derrière l'autre. Sur un écran étroit, ils s'empilent.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.trail {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font: var(--type-caption);
+  gap: var(--space-xs);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.trail a {
+  color: var(--ink-muted);
+}
+
+.guarantees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  list-style: none;
+  margin: 0 0 var(--space-lg);
+  padding: 0;
+}
+
+.guarantees li {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink-secondary);
+  display: flex;
+  font: var(--type-caption);
+  gap: var(--space-xs);
+  letter-spacing: var(--type-caption-tracking);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.guarantees svg {
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.guarantees strong,
+.deposit .note strong {
+  color: var(--ink);
+}
+
+.deposit {
+  align-items: stretch;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 60rem) {
+  .deposit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.deposit-step {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+  padding: var(--space-xl);
+}
+
+.deposit-step h2 {
+  align-items: center;
+  display: flex;
+  font: var(--type-heading-3);
+  gap: var(--space-sm);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0;
+}
+
+.step-number {
+  align-items: center;
+  background: var(--ink);
+  border-radius: var(--radius-full);
+  color: var(--surface);
+  display: inline-flex;
+  flex-shrink: 0;
+  font: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.deposit-step .hint {
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  color: var(--ink-secondary);
+  margin: 0;
+}
+
+.deposit-step code,
+.deposit-step pre,
+.deposit-step textarea {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.deposit-step .hint code {
+  background: var(--canvas);
+  border-radius: var(--radius-xs);
+  font-size: 13px;
+  padding: 1px 5px;
+}
+
+/*
+  LE CHOIX DU SGBD EST UN SÉLECTEUR SEGMENTÉ, mais ce sont des liens : la face courante se marque au
+  rendu par `aria-current`, et c'est l'attribut — non une classe — qui porte le style, pour que ce
+  que voit l'œil soit ce que lit un lecteur d'écran.
+*/
+nav.dialects {
+  align-self: flex-start;
+  background: var(--canvas);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+  padding: var(--space-xxs);
+}
+
+nav.dialects a {
+  align-items: center;
+  border: var(--hairline-width) solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  display: flex;
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+  min-height: 36px;
+  padding: 0 var(--space-sm);
+  text-decoration: none;
+}
+
+nav.dialects a:hover {
+  color: var(--ink);
+}
+
+nav.dialects a[aria-current] {
+  background: var(--surface);
+  border-color: var(--hairline);
+  color: var(--ink);
+}
+
 .listing-query {
   border: var(--hairline-width) solid var(--hairline);
   border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.listing-query-head {
+  align-items: center;
+  background: var(--canvas);
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: space-between;
+  min-height: 44px;
+  padding: var(--space-xxs) var(--space-xxs) var(--space-xxs) var(--space-sm);
+}
+
+.listing-query-file {
+  color: var(--ink-muted);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+/* ⚠️ Aucun `display` sans `[hidden]` exclu : le bouton naît caché, et c'est le module qui le montre. */
+button.copy-query:not([hidden]) {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+  padding: var(--space-xxs) var(--space-sm);
+}
+
+.listing-query pre {
+  background: #fbfbfa;
+  color: var(--ink-secondary);
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 0;
+  max-height: 24rem;
+  overflow: auto;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.deposit-step p.paste {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+.deposit-step p.paste label {
+  margin: 0;
+}
+
+.deposit-step textarea {
+  border-color: #c9c6c2;
+  border-radius: var(--radius-md);
+  flex-grow: 1;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 16rem;
+  padding: var(--space-sm);
+  resize: vertical;
+}
+
+.ceilings {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: var(--space-xs);
+}
+
+.ceiling {
+  background: var(--canvas);
+  border-radius: var(--radius-xs);
+  color: var(--ink-secondary);
+  font-weight: var(--weight-medium);
+  padding: 3px var(--space-xs);
+}
+
+.deposit .note {
+  align-items: flex-start;
+  background: var(--canvas);
+  border-radius: var(--radius-md);
+  color: var(--ink-secondary);
+  display: flex;
+  font: var(--type-caption);
+  gap: var(--space-sm);
+  letter-spacing: var(--type-caption-tracking);
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.deposit .note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.deposit-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.deposit-actions .hint {
+  flex: 1 1 16rem;
+  font-size: 13px;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA CONNEXION D'UNE BASE : le formulaire à gauche, CE QU'IL ENGAGE à droite. Le formulaire emprunte
+  la carte numérotée du dépôt — les deux voies se lisent de la même façon.
+
+  ⚠️ L'ENCADRÉ PRÉCÈDE LE FORMULAIRE DANS LE DOCUMENT, et c'est la grille qui l'envoie à droite : sur
+  un écran étroit, les conséquences s'empilent au-dessus du champ, jamais sous le bouton.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.connection {
+  align-items: start;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: minmax(0, 1fr) 25rem;
+  margin-bottom: var(--space-lg);
+}
+
+.connection > form {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.connection-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  grid-column: 2;
+  grid-row: 1;
+}
+
+@media (max-width: 60rem) {
+  .connection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .connection > form,
+  .connection-aside {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.connection fieldset.dialects {
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0 0 var(--space-lg);
+  border-bottom: var(--hairline-width) solid var(--hairline);
+}
+
+.connection fieldset.dialects legend,
+.connection p.connection-string > label {
+  align-items: center;
+  display: flex;
+  font: var(--type-heading-3);
+  gap: var(--space-sm);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0;
+  padding: 0 0 var(--space-sm);
+}
+
+/*
+  LES SGBD SONT DES TUILES, et la case reste visible dedans : c'est un choix exclusif, et la tuile
+  entière est le libellé — la cible fait 44 px de haut. La tuile retenue se marque par `:has`, c'est-à-
+  dire par l'état réel de la case, jamais par une classe posée au rendu.
+*/
+.dialect-choices {
+  display: grid;
+  gap: var(--space-xs);
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.connection fieldset.dialects .dialect-choices label {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-xs);
+  margin: 0;
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+}
+
+.dialect-choices input[type="radio"] {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.dialect-choices label:has(input:checked) {
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  border-color: var(--accent);
+  font-weight: var(--weight-semibold);
+}
+
+.dialect-choices label:has(input:focus-visible) {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: 2px;
+}
+
+.connection .hint {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.connection .hint strong {
+  color: var(--ink-secondary);
+}
+
+.connection p.connection-string {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+.connection input[type="password"] {
+  background: var(--surface);
+  border: var(--hairline-width) solid #c9c6c2;
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  color: var(--ink);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  width: 100%;
+}
+
+.consequences,
+.alternative {
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+}
+
+.consequences {
+  background: var(--surface);
+  gap: var(--space-md);
+}
+
+.consequences h2,
+.alternative h2 {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+  margin: 0;
+}
+
+.consequences ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.consequences li {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.consequences li > svg {
+  background: var(--canvas);
+  border-radius: var(--radius-sm);
+  box-sizing: content-box;
+  color: var(--ink);
+  flex-shrink: 0;
+  padding: 7px;
+}
+
+.consequences h3 {
+  font: var(--type-body-sm);
+  font-weight: var(--weight-semibold);
+  margin: 0 0 var(--space-xxs);
+}
+
+.consequences p,
+.alternative p {
+  color: var(--ink-secondary);
   font: var(--type-caption);
   letter-spacing: var(--type-caption-tracking);
-  max-height: 22rem;
-  overflow: auto;
-  padding: var(--space-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.consequences strong {
+  color: var(--ink);
+}
+
+.alternative {
+  gap: var(--space-xs);
+}
+
+.alternative a {
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
 }
 
 /*
@@ -1400,13 +1871,6 @@ td.ruling button {
   padding: var(--space-xxs) var(--space-xs);
 }
 
-.dialects a {
-  margin-right: var(--space-md);
-}
-
-.dialects a.chosen {
-  font-weight: var(--weight-bold);
-}
 
 /*
   L'AVANCEMENT DU SCAN EST UNE LARGEUR, ET RIEN D'AUTRE. Pas d'animation, pas de `<progress>` dont
@@ -1621,6 +2085,199 @@ a.doorway p {
 
 a.doorway:hover .doorway-open {
   color: var(--accent-pressed);
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES DEUX VOIES DU PREMIER RAPPORT, COMPARÉES RANGÉE PAR RANGÉE. Chaque carte pose les mêmes trois
+  questions dans le même ordre ; la grille parente porte leurs rangées, et chaque carte les reprend
+  en `subgrid` — titre, phrase, trois réponses et bouton tombent à la même hauteur des deux côtés,
+  quelle que soit la longueur de ce qui les précède.
+
+  ⚠️ LES BOUTONS SONT À LA MÊME HAUTEUR, ET C'EST LE PROPOS : un bouton plus bas se lit comme la voie
+  seconde, et la connectée n'est pas la voie « normale » dont le dépôt serait le repli.
+
+  Sous ~46rem, une seule colonne : les cartes s'empilent, chacune avec ses rangées.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.routes {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+}
+
+.route {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  display: grid;
+  grid-row: span 6;
+  grid-template-rows: subgrid;
+  padding: var(--space-xl);
+  row-gap: 18px;
+}
+
+.route-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-md);
+}
+
+.route-head h2 {
+  font: var(--type-heading-3);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0;
+}
+
+.route-icon {
+  align-items: center;
+  background: var(--canvas);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  display: flex;
+  flex-shrink: 0;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.route > p {
+  color: var(--ink-secondary);
+  font: 400 15px/1.55 var(--font-sans);
+  margin: 0;
+}
+
+.route dl {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  margin: 0;
+  row-gap: 0;
+}
+
+.route dl > div {
+  border-top: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  padding: 14px 0;
+}
+
+.route dt {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.route dd {
+  color: var(--ink);
+  font: 400 15px/1.45 var(--font-sans);
+  margin: 0;
+}
+
+/* LE BOUTON DE LA VOIE — l'action principale, peinte comme `button.primary`, mais c'est un lien. */
+a.route-action {
+  align-items: center;
+  align-self: end;
+  background: var(--accent);
+  border-radius: var(--radius-md);
+  color: var(--on-accent);
+  display: inline-flex;
+  font: var(--type-button);
+  gap: var(--space-xs);
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 var(--space-lg);
+  text-decoration: none;
+}
+
+a.route-action:hover,
+a.route-action:active {
+  background: var(--accent-pressed);
+  color: var(--on-accent);
+}
+
+a.route-action:focus-visible {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: var(--space-xxs);
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA QUALIFICATION, UNE SEULE CARTE DE SAISIE. Le libellé et le plafond la coiffent, la règle et le
+  bouton la ferment : la zone de texte n'a plus de cadre à elle, c'est la carte qui la tient.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+form.composer {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-soft);
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  overflow: hidden;
+}
+
+form.composer:focus-within {
+  border-color: var(--accent);
+}
+
+.composer-head,
+.composer-foot {
+  align-items: center;
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.composer-head {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+}
+
+.composer-head label {
+  margin: 0;
+}
+
+.composer-count {
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.composer-count.over {
+  color: var(--signal-error);
+  font-weight: var(--weight-semibold);
+}
+
+form.composer textarea {
+  border: 0;
+  border-radius: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  min-height: 20rem;
+  padding: var(--space-md);
+  resize: vertical;
+}
+
+form.composer textarea:focus {
+  outline: none;
+}
+
+.composer-foot {
+  background: var(--canvas);
+  border-top: var(--hairline-width) solid var(--hairline);
+  flex-wrap: wrap;
+}
+
+.composer-foot button {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-xs);
+  min-height: 44px;
 }
 
 /*
@@ -2080,6 +2737,252 @@ button.execution[aria-busy="true"] .spinner {
   letter-spacing: var(--type-body-sm-tracking);
 }
 
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA SAISIE D'UNE DEMANDE — la modale de création et de modification. La tête et le pied restent en
+  place, séparés du corps par un filet ; seul le corps défile. Le pied prend le fond du canevas : les
+  actions s'y lisent comme posées à part du formulaire.
+
+  ⚠️ `display: flex` SOUS `[open]` SEULEMENT : une modale fermée doit garder le `display: none` du
+  navigateur, qu'une déclaration sans condition écraserait.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+dialog.modal.entry {
+  max-height: calc(100dvh - 2 * var(--space-lg));
+  overflow: hidden;
+  padding: 0;
+  width: 40rem;
+}
+
+dialog.modal.entry[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog.modal.entry .modal-head {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  padding: var(--space-md) var(--space-md) var(--space-md) var(--space-xl);
+}
+
+dialog.modal.entry .modal-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  min-height: 0;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  overflow-y: auto;
+  padding: var(--space-lg) var(--space-xl);
+}
+
+dialog.modal.entry .modal-failure {
+  margin: 0;
+}
+
+dialog.modal.entry .modal-actions {
+  background: var(--canvas);
+  border-top: var(--hairline-width) solid var(--hairline);
+  margin-top: 0;
+  padding: var(--space-md) var(--space-xl);
+}
+
+/* Un temps de la saisie : son titre en surtitre, ses champs dessous. Un filet sépare deux temps. */
+.entry-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.entry-group + .entry-group {
+  border-top: var(--hairline-width) solid var(--hairline);
+  padding-top: var(--space-lg);
+}
+
+.entry-group h3 {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: 0.6px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.entry-group p {
+  margin: 0;
+}
+
+/* Deux champs côte à côte — l'origine et la date, le nom et le prénom —, empilés sur un écran étroit. */
+.entry-pair {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 36rem) {
+  .entry-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.modal-body input[type="text"],
+.modal-body input[type="date"],
+.modal-body select {
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+}
+
+.modal-body textarea {
+  padding: var(--space-sm);
+  resize: vertical;
+}
+
+/*
+  LE CHOIX À SEGMENTS — deux boutons radio peints en interrupteur. Le radio lui-même reste dans le
+  document, transparent mais focalisable, et couvre tout son segment : c'est lui que le clic, le
+  clavier et les technologies d'assistance manipulent, et son libellé qui se peint dessous.
+  ⚠️ Pas `display: none`, qui le retirerait du parcours.
+*/
+fieldset.segmented {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+fieldset.segmented legend {
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-xxs);
+  padding: 0;
+}
+
+.segments {
+  background: var(--canvas);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-xxs);
+  padding: 3px;
+  position: relative;
+}
+
+.segment {
+  display: flex;
+  flex: 1 1 0;
+  position: relative;
+}
+
+.segments input[type="radio"] {
+  cursor: pointer;
+  height: 100%;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+
+fieldset.segmented .segments label {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: flex;
+  flex: 1 1 auto;
+  font-weight: var(--weight-medium);
+  gap: var(--space-xs);
+  justify-content: center;
+  margin: 0;
+  min-height: 36px;
+}
+
+.segments input:checked + label {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+
+.segments input:focus-visible + label {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* L'ATTESTATION DANS SON CADRE : la case, son libellé, et ce qu'elle engage en dessous. */
+.modal-body p.attestation {
+  align-items: flex-start;
+  background: var(--canvas);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+}
+
+p.attestation input[type="checkbox"] {
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  height: 18px;
+  margin: 3px 0 0;
+  width: 18px;
+}
+
+p.attestation label {
+  margin-bottom: 0;
+}
+
+/* Le droit et sa proposition par IA sur une même ligne : le bouton remplit le select qu'il touche. */
+.right-pick {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.right-pick select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/*
+  LA PROPOSITION PAR IA SE TEINTE DE L'ACCENT, SANS EN PRENDRE L'APLAT : c'est une action — l'accent
+  est la couleur des actions —, mais pas celle que la modale attend, qui reste « Créer ». Filet à
+  l'accent, fond à peine teinté. ⚠️ L'encre est l'accent pressé : l'accent lui-même, sur ce fond
+  teinté, tombe sous 4,5:1.
+*/
+.right-pick button.proposal {
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--surface));
+  color: var(--accent-pressed);
+  flex-shrink: 0;
+  font: var(--type-body-sm);
+  font-weight: var(--weight-medium);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+}
+
+.right-pick button.proposal:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.right-pick button.proposal:disabled {
+  color: var(--ink-muted);
+}
+
+button.proposal[aria-busy="true"] .spark {
+  display: none;
+}
+
+@media (max-width: 36rem) {
+  .right-pick {
+    flex-direction: column;
+  }
+}
+
+.modal-body .hint {
+  margin-top: var(--space-xxs);
+}
+
 /* La confirmation : un titre, une phrase, deux boutons — elle n'a pas besoin de la largeur d'un formulaire. */
 dialog.modal.confirmation {
   width: 28rem;
@@ -2177,9 +3080,38 @@ dialog.modal.sheet[open] {
   }
 }
 
-.sheet-body {
+/*
+  LA TÊTE PORTE LE DROIT INVOQUÉ AU-DESSUS DU NOM DE LA PERSONNE : en surtitre, à l'encre et à la
+  légende des en-têtes de colonne — ce que la demande réclame, avant qui la réclame.
+*/
+.sheet-heading {
   display: grid;
-  gap: var(--space-lg);
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+.sheet-heading h2 {
+  overflow-wrap: anywhere;
+}
+
+.sheet-right {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/*
+  ⚠️ LES BLOCS PRENNENT TOUTE LA HAUTEUR LAISSÉE PAR LA TÊTE ET LE PIED (`flex-grow`) : le pied, et
+  « Fermer » avec lui, reste collé au bas de la fiche, qu'une demande soit courte ou longue. Les
+  blocs, eux, s'empilent en haut (`align-content: start`) : la grille ne les étire pas pour remplir.
+*/
+.sheet-body {
+  align-content: start;
+  display: grid;
+  flex-grow: 1;
+  gap: var(--space-xl);
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
@@ -2196,6 +3128,20 @@ dialog.modal.sheet[open] {
 }
 
 /*
+  LES INTITULÉS SE LISENT EN RETRAIT, LES VALEURS EN AVANT : dans la fiche, c'est la valeur que l'œil
+  cherche, et l'intitulé ne fait que la situer.
+*/
+.sheet-body .facts dt {
+  color: var(--ink-muted);
+  font-weight: var(--weight-regular);
+}
+
+.sheet-body .facts {
+  gap: var(--space-xs) var(--space-md);
+  grid-template-columns: 9rem 1fr;
+}
+
+/*
   LE TITRE D'UN BLOC EST L'INTITULÉ D'UN GROUPE DE VALEURS : il emprunte donc l'encre et la légende
   des en-têtes de colonne du tableau, qui nomment exactement de la même façon — et non une taille de
   titre, qui l'emporterait sur celui de la fiche.
@@ -2204,40 +3150,193 @@ dialog.modal.sheet[open] {
   color: var(--ink-muted);
   font: var(--type-eyebrow);
   letter-spacing: var(--type-eyebrow-tracking);
+  margin: 0 0 var(--space-sm);
+  text-transform: uppercase;
+}
+
+/*
+  LE DÉLAI D'ABORD, DANS UN ENCADRÉ SUR LE FOND DE LA PAGE : le décompte en grand, le statut à sa
+  droite, puis la barre du délai écoulé bordée de ses deux dates. C'est ce que l'`Operator` doit
+  savoir avant de lire la demande : combien de temps il lui reste.
+
+  ⚠️ LA BARRE LIT SA LONGUEUR SUR `--elapsed`, que le script recopie de la ligne : la feuille de
+  style ne connaît aucune date.
+*/
+.sheet-deadline {
+  background: var(--canvas);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+}
+
+.sheet-countdown {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  justify-content: space-between;
+}
+
+.sheet-countdown p {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.sheet-countdown strong {
+  color: var(--ink);
+  font: var(--type-heading-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--type-heading-2-tracking);
+  margin-right: var(--space-xxs);
+}
+
+.deadline-track {
+  background: var(--hairline);
+  border-radius: var(--radius-full);
+  height: 6px;
+  overflow: hidden;
+}
+
+.deadline-track span {
+  background: var(--accent);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  width: var(--elapsed, 0%);
+}
+
+/*
+  LE SIGNALEMENT DE LA DATE LIMITE COLORE AUSSI LE DÉCOMPTE ET LA BARRE — la même orange, le même
+  rouge : c'est le même délai, dit en jours plutôt qu'en date.
+*/
+.sheet-deadline[data-deadline-signal="DueSoon"] strong {
+  color: var(--signal-warning-ink);
+}
+
+.sheet-deadline[data-deadline-signal="DueSoon"] .deadline-track span {
+  background: var(--signal-warning);
+}
+
+.sheet-deadline[data-deadline-signal="Overdue"] strong {
+  color: var(--signal-error);
+}
+
+.sheet-deadline[data-deadline-signal="Overdue"] .deadline-track span {
+  background: var(--signal-error);
+}
+
+.deadline-bounds {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+  margin: 0;
+}
+
+.deadline-bounds div:last-child {
+  text-align: right;
+}
+
+.deadline-bounds dt {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.deadline-bounds dd {
+  font-variant-numeric: tabular-nums;
   margin: 0;
 }
 
 /*
-  LE MESSAGE EST UN BLOC À PART, SOUS SON LIBELLÉ, et non un fait de la grille : dans deux colonnes
+  LE MESSAGE EST UN BLOC À PART, SOUS SON TITRE, et non un fait de la grille : dans deux colonnes
   dont la première tient l'intitulé, 10 000 caractères dicteraient la hauteur de tout le bloc. Il
-  s'affiche TEL QU'ENREGISTRÉ, ses retours à la ligne conservés, et se coupe là où il le faut — un
-  mot sans espace ne le pousse pas hors de la fiche.
+  s'affiche TEL QU'ENREGISTRÉ, sur le fond d'une citation, ses retours à la ligne conservés, et se
+  coupe là où il le faut — un mot sans espace ne le pousse pas hors de la fiche.
 
   LA JUSTIFICATION DE LA PROLONGATION EMPRUNTE LE MÊME BLOC, et pour la même raison : c'est l'autre
   texte long de la fiche, et il se lit comme le message.
 */
-.sheet-message {
-  margin-top: var(--space-md);
-}
-
-.sheet-message h4 {
+.sheet-message h5 {
   font: var(--type-body-sm);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--type-body-sm-tracking);
-  margin: 0 0 var(--space-xxs);
+  margin: var(--space-sm) 0 var(--space-xxs);
 }
 
 /*
   ⚠️ LE MESSAGE DÉFILE DANS SA PROPRE ZONE, BORNÉE À 40 VH : le budget à répartir est celui de la
   fenêtre, et le message n'en prend pas plus des deux cinquièmes. Sans cette borne, 10 000 caractères
-  repousseraient le statut et l'enregistrement à des écrans de défilement du message.
+  repousseraient la personne et l'historique à des écrans de défilement du message.
 */
 .sheet-message p {
+  background: var(--canvas);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
   margin: 0;
   max-height: 40vh;
   overflow-wrap: anywhere;
   overflow-y: auto;
+  padding: var(--space-sm) var(--space-md);
   white-space: pre-wrap;
+}
+
+/*
+  L'HISTORIQUE EST UNE FRISE : un point par étape, reliées par un filet, la plus récente pleine en
+  haut. ⚠️ `:not([hidden])` : un `display` posé sur l'étape de la prolongation l'emporterait sur le
+  `hidden` qui la masque.
+*/
+.sheet-history {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sheet-history li:not([hidden]) {
+  display: grid;
+  gap: var(--space-xxs);
+  padding: 0 0 var(--space-md) var(--space-lg);
+  position: relative;
+}
+
+.sheet-history li::before {
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-full);
+  box-sizing: border-box;
+  content: "";
+  height: 10px;
+  left: 0;
+  position: absolute;
+  top: 0.4em;
+  width: 10px;
+}
+
+.sheet-history li:not(:last-child)::after {
+  background: var(--hairline);
+  bottom: 0;
+  content: "";
+  left: 4px;
+  position: absolute;
+  top: calc(0.4em + 14px);
+  width: 2px;
+}
+
+.sheet-history li:not([hidden]):first-child::before,
+.sheet-history li[hidden] + li::before {
+  background: var(--accent);
+}
+
+.sheet-history h4 {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--type-body-md-tracking);
+  margin: 0;
+}
+
+.sheet-history .facts {
+  margin: 0;
 }
 
 /*
@@ -2259,9 +3358,17 @@ dialog.modal.sheet[open] {
 
 /* La sortie nommée, à droite : là où l'œil finit sa lecture, comme les actions d'une modale. */
 .sheet-foot {
+  background: var(--canvas);
+  border-top: var(--hairline-width) solid var(--hairline);
   display: flex;
   justify-content: flex-end;
 }
+
+dialog.modal.sheet > .modal-head {
+  align-items: flex-start;
+  border-bottom: var(--hairline-width) solid var(--hairline);
+}
+
 
 /* Les actions en pied, à droite, l'action principale en dernier : là où l'œil finit sa lecture. */
 .modal-actions {

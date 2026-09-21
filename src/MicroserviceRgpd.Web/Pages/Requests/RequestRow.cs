@@ -121,7 +121,47 @@ public sealed record RequestRow(
   /// ⚠️ <b>Le message n'a pas de repli</b> : il est obligatoire (ADR-0019), et aucune demande sans
   /// message ne s'enregistre. Un « — » n'y aurait aucun cas.
   /// </remarks>
-  public sealed record Sheet(string Person, string Origin, string Message, SheetExtension? Extension);
+  public sealed record Sheet(
+    string Person,
+    string Origin,
+    string Message,
+    SheetExtension? Extension,
+    SheetCountdown? Countdown);
+
+  /// <summary>
+  /// Ce que la ligne porte <b>pour le décompte en tête de la fiche</b>, absent tant que la demande
+  /// n'est pas en cours : les jours qui restent pour répondre, en <b>un chiffre</b> — « 21 jours »,
+  /// « Aujourd'hui » — et <b>ce qu'il compte</b> — « pour répondre », « de retard » —, puis la part
+  /// du délai déjà écoulée, en pourcents entiers bornés à 0 et 100, que la barre dessine.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Compté contre « aujourd'hui » à Paris</b>, comme le signalement de la date limite
+  /// (ADR-0021) : les deux se lisent côte à côte et ne se contredisent pas. Le script n'en recalcule
+  /// rien, et n'écrit aucun de ces mots.
+  ///
+  /// ⚠️ <b>Une demande close n'a plus de délai qui court</b> : ni décompte ni barre, et c'est
+  /// l'ABSENCE des attributs qui le dit à la fiche, comme pour la prolongation.
+  /// </remarks>
+  public sealed record SheetCountdown(string Lead, string Tail, int Elapsed)
+  {
+    /// <summary>Les trois <c>data-sheet-countdown-*</c> de la ligne, d'un bloc.</summary>
+    public IHtmlContent Attributes()
+    {
+      var attributes = new HtmlContentBuilder();
+
+      foreach (var (name, value) in new[]
+      {
+        ("data-sheet-countdown-lead", Lead),
+        ("data-sheet-countdown-tail", Tail),
+        ("data-sheet-countdown-elapsed", Elapsed.ToString(CultureInfo.InvariantCulture)),
+      })
+      {
+        attributes.AppendHtml($" {name}=\"").Append(value).AppendHtml("\"");
+      }
+
+      return attributes;
+    }
+  }
 
   /// <summary>
   /// Ce que la ligne porte <b>pour le bloc « Prolongation » de la fiche</b>, absent tant que la
@@ -263,7 +303,12 @@ public sealed record RequestRow(
       new SortKeys(
         request.ReceivedOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
         request.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'", CultureInfo.InvariantCulture)),
-      new Sheet(PersonOf(request), request.Origin.FrenchLabel, request.Message.Value, ExtensionOf(request)));
+      new Sheet(
+        PersonOf(request),
+        request.Origin.FrenchLabel,
+        request.Message.Value,
+        ExtensionOf(request),
+        CountdownOf(request, todayInParis)));
   }
 
   /// <summary>Un jour en <c>jj/mm/aaaa</c>.</summary>
@@ -277,6 +322,27 @@ public sealed record RequestRow(
   /// La date de la prolongation se lit <b>à Paris</b>, au même format que la date de création : les
   /// deux disent un instant, et l'<c>Operator</c> les lit dans la même fiche.
   /// </remarks>
+  private static SheetCountdown? CountdownOf(RecordedDataSubjectRequest request, DateOnly todayInParis)
+  {
+    if (request.Status != RequestStatus.InProgress)
+    {
+      return null;
+    }
+
+    var left = request.ResponseDeadline.DayNumber - todayInParis.DayNumber;
+    var span = Math.Max(1, request.ResponseDeadline.DayNumber - request.ReceivedOn.DayNumber);
+    var elapsed = Math.Clamp((todayInParis.DayNumber - request.ReceivedOn.DayNumber) * 100 / span, 0, 100);
+
+    return left switch
+    {
+      0 => new SheetCountdown("Aujourd'hui", "dernier jour pour répondre", elapsed),
+      > 0 => new SheetCountdown(Days(left), "pour répondre", elapsed),
+      _ => new SheetCountdown(Days(-left), "de retard", elapsed),
+    };
+  }
+
+  private static string Days(int count) => count == 1 ? "1 jour" : $"{count} jours";
+
   private static SheetExtension? ExtensionOf(RecordedDataSubjectRequest request) =>
     request.Extension is not { } extension
       ? null

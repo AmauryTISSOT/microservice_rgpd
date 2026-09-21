@@ -590,7 +590,7 @@ public class RequestModification(BrowserHarness harness)
 
   private static ILocator Field(IPage page, string label)
   {
-    return Dialog(page).GetByLabel(label, new() { Exact = true });
+    return Dialog(page).GetByLabel(label, new() { Exact = true }).And(page.Locator(":not([type=radio])"));
   }
 
   private static ILocator RowOf(IPage page, string email)

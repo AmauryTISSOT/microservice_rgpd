@@ -179,7 +179,7 @@
   que le tag helper pose en dernier champ, caché. Le script l'envoie tel quel, par `fetch` ; aucun
   bouton ne le soumet nativement.
 *@
-<dialog class="modal" id="request-dialog" aria-labelledby="request-dialog-title" data-mode="create"
+<dialog class="modal entry" id="request-dialog" aria-labelledby="request-dialog-title" data-mode="create"
         data-create-title="@createTitle" data-create-submit="@createSubmit" data-create-action="@createAction"
         data-modify-title="@modifyTitle" data-modify-submit="@modifySubmit" data-modify-action="@modifyAction"
         data-values="@valuesAction">
@@ -193,140 +193,206 @@
     </button>
   </div>
 
+  @*
+    LE FORMULAIRE SE LIT EN TROIS TEMPS, CHACUN SOUS SON TITRE : la réception (d'où, quand),
+    l'identification (qui, et si son identité est vérifiée), la demande (ce qu'elle dit, quel droit).
+    Les titres rangent, ils ne nomment aucun champ : chaque champ garde son propre libellé.
+
+    Le corps défile entre la tête et le pied, qui restent en place : la croix et « Créer » ne sortent
+    jamais de l'écran, même quand un refus allonge le formulaire.
+  *@
   <form id="request-form" class="modal-form" method="post" asp-page-handler="Create" novalidate>
-    <p>
-      <label for="request-origin">Origine</label>
-      <select id="request-origin" name="@DataSubjectRequestField.Origin">
-        @foreach (var origin in BoardModel.Origins)
-        {
-          <option value="@origin.Name" selected="@(origin == Origin.Email)">@origin.FrenchLabel</option>
-        }
-      </select>
-    </p>
+    <div class="modal-body">
+      <section class="entry-group" aria-labelledby="request-group-reception">
+        <h3 id="request-group-reception">Réception</h3>
 
-    <p>
-      <label for="request-received-on">Date de réception</label>
-      <input type="date" lang="fr" id="request-received-on" name="@DataSubjectRequestField.ReceivedOn"
-             value="@today" max="@today"
-             aria-describedby="request-received-on-refusal" />
-      <span class="refusal" id="request-received-on-refusal"></span>
-    </p>
+        <div class="entry-pair">
+          @*
+            L'ORIGINE EST UN CHOIX À DEUX SEGMENTS, pas une liste : les deux valeurs se lisent d'un
+            coup d'œil, et un clic suffit pour un courrier. Ce sont de vrais boutons radio — les
+            flèches du clavier passent de l'un à l'autre, et le formulaire envoie le même `origin`.
+          *@
+          <fieldset class="segmented">
+            <legend>Origine</legend>
+            <div class="segments">
+              @foreach (var origin in BoardModel.Origins)
+              {
+                var id = $"request-origin-{origin.Name.ToLowerInvariant()}";
+                <span class="segment">
+                  <input type="radio" id="@id" name="@DataSubjectRequestField.Origin" value="@origin.Name"
+                         checked="@(origin == Origin.Email)" />
+                  <label for="@id">
+                    @if (origin == Origin.Email)
+                    {
+                      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+                           fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="5" width="18" height="14" rx="2" />
+                        <path d="M3 7l9 6 9-6" />
+                      </svg>
+                    }
+                    else
+                    {
+                      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+                           fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16v16H4z" />
+                        <path d="M8 9h8M8 13h8M8 17h5" />
+                      </svg>
+                    }
+                    @origin.FrenchLabel
+                  </label>
+                </span>
+              }
+            </div>
+          </fieldset>
 
-    <p>
-      <label for="request-last-name">Nom</label>
-      <input type="text" id="request-last-name" name="@DataSubjectRequestField.LastName" autocomplete="off"
-             aria-describedby="request-last-name-refusal" />
-      <span class="refusal" id="request-last-name-refusal"></span>
-    </p>
+          <p>
+            <label for="request-received-on">Date de réception</label>
+            <input type="date" lang="fr" id="request-received-on" name="@DataSubjectRequestField.ReceivedOn"
+                   value="@today" max="@today"
+                   aria-describedby="request-received-on-refusal" />
+            <span class="refusal" id="request-received-on-refusal"></span>
+          </p>
+        </div>
+      </section>
 
-    <p>
-      <label for="request-first-name">Prénom</label>
-      <input type="text" id="request-first-name" name="@DataSubjectRequestField.FirstName" autocomplete="off"
-             aria-describedby="request-first-name-refusal" />
-      <span class="refusal" id="request-first-name-refusal"></span>
-    </p>
+      <section class="entry-group" aria-labelledby="request-group-person">
+        <h3 id="request-group-person">Identification</h3>
 
-    <p>
-      <label for="request-email">Email</label>
-      <input type="text" inputmode="email" id="request-email" name="@DataSubjectRequestField.Email" autocomplete="off"
-             aria-describedby="request-email-refusal" />
-      <span class="refusal" id="request-email-refusal"></span>
-    </p>
+        <div class="entry-pair">
+          <p>
+            <label for="request-last-name">Nom</label>
+            <input type="text" id="request-last-name" name="@DataSubjectRequestField.LastName" autocomplete="off"
+                   aria-describedby="request-last-name-refusal" />
+            <span class="refusal" id="request-last-name-refusal"></span>
+          </p>
 
-    <p class="check">
-      <input type="checkbox" id="request-identity-verified" name="@DataSubjectRequestField.IdentityVerified" value="true" />
-      <label for="request-identity-verified">Identité vérifiée</label>
-    </p>
+          <p>
+            <label for="request-first-name">Prénom</label>
+            <input type="text" id="request-first-name" name="@DataSubjectRequestField.FirstName" autocomplete="off"
+                   aria-describedby="request-first-name-refusal" />
+            <span class="refusal" id="request-first-name-refusal"></span>
+          </p>
+        </div>
 
-    <p>
-      <label for="request-message">Message</label>
-      <textarea id="request-message" name="@DataSubjectRequestField.Message" rows="6"
-                aria-describedby="request-message-refusal"></textarea>
-      <span class="refusal" id="request-message-refusal"></span>
-    </p>
+        <p>
+          <label for="request-email">Email</label>
+          <input type="text" inputmode="email" id="request-email" name="@DataSubjectRequestField.Email" autocomplete="off"
+                 aria-describedby="request-email-refusal" />
+          <span class="refusal" id="request-email-refusal"></span>
+        </p>
 
-    @*
-      LA QUALIFICATION DU DROIT PAR IA PROPOSE LE DROIT, ELLE NE LE CHOISIT PAS (ADR-0024). Le bouton
-      envoie le Message — et lui seul — au handler `Propose` de l'écran de qualification, dont il
-      porte l'adresse ; le droit proposé entre dans le select, et seul l'enregistrement le choisit.
+        @*
+          L'ATTESTATION DANS SON CADRE : une case que l'on coche en connaissance de cause, avec ce
+          qu'elle engage dessous — facultative ici, exigée pour exécuter la demande.
+        *@
+        <p class="attestation">
+          <input type="checkbox" id="request-identity-verified" name="@DataSubjectRequestField.IdentityVerified" value="true"
+                 aria-describedby="request-identity-verified-hint" />
+          <span>
+            <label for="request-identity-verified">Identité vérifiée</label>
+            <span class="hint" id="request-identity-verified-hint">Facultative à la réception, exigée pour exécuter la demande.</span>
+          </span>
+        </p>
+      </section>
 
-      ⚠️ SES MOTS SONT ICI, DANS LE VOCABULAIRE DE REQUESTS : le refus d'un Message vide en `data-*`,
-      la mention « À relire » et les phrases d'une proposition sans droit unique dans la note, celles
-      de ses échecs sur le bandeau. Le module choisit, il ne rédige pas (ADR-0018).
+      <section class="entry-group" aria-labelledby="request-group-request">
+        <h3 id="request-group-request">La demande</h3>
 
-      L'ICÔNE DE CHARGEMENT EST DANS LE BOUTON, CACHÉE TANT QU'IL N'EST PAS `aria-busy` : le libellé
-      reste lisible pendant l'attente, et c'est `aria-busy` qui la dit aux technologies d'assistance —
-      l'image, elle, ne dit rien. Elle ne tourne que si le système ne demande pas que rien ne bouge.
-    *@
-    <p>
-      <button type="button" class="proposal" data-propose="@proposeAction"
-              data-message-missing="Le message est vide : il n'y a rien à qualifier.">
-        <svg class="spinner" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-opacity="0.25" fill="none" />
-          <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
-        </svg>
-        Qualification du droit par IA
-      </button>
-    </p>
+        <p>
+          <label for="request-message">Message</label>
+          <textarea id="request-message" name="@DataSubjectRequestField.Message" rows="5"
+                    aria-describedby="request-message-refusal"></textarea>
+          <span class="refusal" id="request-message-refusal"></span>
+        </p>
 
-    @*
-      L'INVITE D'ABORD, puis les six droits dans l'ordre des articles : l'Operator choisit le droit
-      consciemment. ⚠️ « Hors périmètre » n'est jamais proposé — c'est un verdict de qualification,
-      pas un droit qu'une personne invoque.
-    *@
-    <p>
-      <label for="request-right">Droits RGPD</label>
-      <select id="request-right" name="@DataSubjectRequestField.Right"
-              aria-describedby="request-right-refusal">
-        <option value="">Sélectionner un droit</option>
-        @foreach (var right in BoardModel.InvocableRights)
-        {
-          <option value="@right.Name">@right.FrenchLabel</option>
-        }
-      </select>
-      <span class="refusal" id="request-right-refusal"></span>
-    </p>
+        @*
+          L'INVITE D'ABORD, puis les six droits dans l'ordre des articles : l'Operator choisit le droit
+          consciemment. ⚠️ « Hors périmètre » n'est jamais proposé — c'est un verdict de qualification,
+          pas un droit qu'une personne invoque.
 
-    @*
-      LA NOTE DE LA PROPOSITION, CACHÉE TANT QU'AUCUNE QUALIFICATION N'A RÉPONDU. Elle porte la
-      justification du moteur, que le module y verse telle quelle, et « À relire », qu'il ne fait que
-      montrer quand la proposition n'est pas corroborée ou que le service n'était pas entier.
-      `role="note"` la dit accessoire au select ; `aria-live` la fait lire à son arrivée, sans voler
-      le focus. ⚠️ Pas `role="status"` : c'est celui du toast, seul statut de l'écran.
+          LA QUALIFICATION DU DROIT PAR IA PROPOSE LE DROIT, ELLE NE LE CHOISIT PAS (ADR-0024). Son
+          bouton se tient à côté du select qu'il remplit : il envoie le Message — et lui seul — au
+          handler `Propose` de l'écran de qualification, dont il porte l'adresse ; le droit proposé
+          entre dans le select, et seul l'enregistrement le choisit.
 
-      QUAND AUCUN DROIT UNIQUE N'EST PROPOSÉ, LA NOTE LE DIT, et le select reste tel qu'il est : plusieurs
-      droits, dont la phrase porte la place de leurs libellés — `{rights}`, que le module remplit des
-      libellés rendus par la qualification, liés à la française par le navigateur —, ou un Message
-      hors périmètre.
-    *@
-    <p class="proposal-note" id="request-proposal-note" role="note" aria-live="polite" hidden
-       data-several-rights="La qualification propose plusieurs droits : {rights}. Choisissez celui que la personne invoque."
-       data-out-of-scope="La qualification ne propose aucun droit : le message est hors périmètre.">
-      <strong data-to-review hidden>À relire</strong>
-      <span data-verdict></span>
-      <span data-justification></span>
-    </p>
+          ⚠️ SES MOTS SONT ICI, DANS LE VOCABULAIRE DE REQUESTS : le refus d'un Message vide en `data-*`,
+          la mention « À relire » et les phrases d'une proposition sans droit unique dans la note, celles
+          de ses échecs sur le bandeau. Le module choisit, il ne rédige pas (ADR-0018).
 
-    @*
-      LE BANDEAU D'ÉCHEC, CACHÉ TANT QU'UN ENVOI N'A PAS ÉCHOUÉ AUTREMENT QUE PAR UN REFUS — jeton
-      anti-rejeu périmé, erreur du serveur, coupure réseau. Un refus de la saisie, lui, va sous ses
-      champs. La modale reste ouverte et la saisie intacte : l'Operator réessaie sans rien ressaisir.
+          L'ICÔNE DE CHARGEMENT REMPLACE L'ÉTINCELLE TANT QUE LE BOUTON EST `aria-busy` : le libellé
+          reste lisible pendant l'attente, et c'est `aria-busy` qui la dit aux technologies d'assistance —
+          l'image, elle, ne dit rien. Elle ne tourne que si le système ne demande pas que rien ne bouge.
+        *@
+        <p>
+          <label for="request-right">Droits RGPD</label>
+          <span class="right-pick">
+            <select id="request-right" name="@DataSubjectRequestField.Right"
+                    aria-describedby="request-right-refusal">
+              <option value="">Sélectionner un droit</option>
+              @foreach (var right in BoardModel.InvocableRights)
+              {
+                <option value="@right.Name">@right.FrenchLabel</option>
+              }
+            </select>
+            <button type="button" class="proposal" data-propose="@proposeAction"
+                    data-message-missing="Le message est vide : il n'y a rien à qualifier.">
+              <svg class="spark" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+                   fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+                <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
+              </svg>
+              <svg class="spinner" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-opacity="0.25" fill="none" />
+                <path d="M8 2a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+              </svg>
+              Qualification du droit par IA
+            </button>
+          </span>
+          <span class="refusal" id="request-right-refusal"></span>
+          <span class="hint">L'IA propose un droit d'après le message ; c'est vous qui le choisissez.</span>
+        </p>
 
-      ⚠️ DEUX ÉCHECS, DEUX PHRASES, et le bandeau est vide tant qu'aucune n'est choisie : le module y
-      écrit celle que la réponse appelle. Un échec technique invite à réessayer ; une demande close
-      pendant la correction, non — aucun second essai ne la rattrapera, et promettre le contraire
-      ferait cliquer l'Operator jusqu'à ce qu'il devine. C'est ce que la story 30 lui doit : apprendre
-      que la demande a été close, plutôt que croire sa correction passée.
+        @*
+          LA NOTE DE LA PROPOSITION, CACHÉE TANT QU'AUCUNE QUALIFICATION N'A RÉPONDU. Elle porte la
+          justification du moteur, que le module y verse telle quelle, et « À relire », qu'il ne fait que
+          montrer quand la proposition n'est pas corroborée ou que le service n'était pas entier.
+          `role="note"` la dit accessoire au select ; `aria-live` la fait lire à son arrivée, sans voler
+          le focus. ⚠️ Pas `role="status"` : c'est celui du toast, seul statut de l'écran.
 
-      ⚠️ LA QUALIFICATION DU DROIT PAR IA Y DIT AUSSI SES ÉCHECS, avec deux phrases à elle : aucun
-      moteur n'a répondu (503), ou toute autre panne — du serveur comme du réseau. Rien n'est relancé
-      pour l'Operator ; les deux phrases lui laissent le choix de relancer ou de choisir seul.
-    *@
-    <p class="modal-failure" role="alert" id="request-failure" hidden
-       data-technical="La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer."
-       data-closed="Cette demande a été close pendant votre correction : elle n'est plus modifiable, et votre correction n'a pas été enregistrée."
-       data-qualification-unavailable="La qualification n'a pas pu proposer de droit : aucun moteur n'a répondu. Vous pouvez la relancer, ou choisir le droit vous-même."
-       data-qualification-failed="La qualification a échoué. Vous pouvez la relancer, ou choisir le droit vous-même."></p>
+          QUAND AUCUN DROIT UNIQUE N'EST PROPOSÉ, LA NOTE LE DIT, et le select reste tel qu'il est : plusieurs
+          droits, dont la phrase porte la place de leurs libellés — `{rights}`, que le module remplit des
+          libellés rendus par la qualification, liés à la française par le navigateur —, ou un Message
+          hors périmètre.
+        *@
+        <p class="proposal-note" id="request-proposal-note" role="note" aria-live="polite" hidden
+           data-several-rights="La qualification propose plusieurs droits : {rights}. Choisissez celui que la personne invoque."
+           data-out-of-scope="La qualification ne propose aucun droit : le message est hors périmètre.">
+          <strong data-to-review hidden>À relire</strong>
+          <span data-verdict></span>
+          <span data-justification></span>
+        </p>
+      </section>
+
+      @*
+        LE BANDEAU D'ÉCHEC, CACHÉ TANT QU'UN ENVOI N'A PAS ÉCHOUÉ AUTREMENT QUE PAR UN REFUS — jeton
+        anti-rejeu périmé, erreur du serveur, coupure réseau. Un refus de la saisie, lui, va sous ses
+        champs. La modale reste ouverte et la saisie intacte : l'Operator réessaie sans rien ressaisir.
+
+        ⚠️ DEUX ÉCHECS, DEUX PHRASES, et le bandeau est vide tant qu'aucune n'est choisie : le module y
+        écrit celle que la réponse appelle. Un échec technique invite à réessayer ; une demande close
+        pendant la correction, non — aucun second essai ne la rattrapera, et promettre le contraire
+        ferait cliquer l'Operator jusqu'à ce qu'il devine. C'est ce que la story 30 lui doit : apprendre
+        que la demande a été close, plutôt que croire sa correction passée.
+
+        ⚠️ LA QUALIFICATION DU DROIT PAR IA Y DIT AUSSI SES ÉCHECS, avec deux phrases à elle : aucun
+        moteur n'a répondu (503), ou toute autre panne — du serveur comme du réseau. Rien n'est relancé
+        pour l'Operator ; les deux phrases lui laissent le choix de relancer ou de choisir seul.
+      *@
+      <p class="modal-failure" role="alert" id="request-failure" hidden
+         data-technical="La demande n'a pas pu être enregistrée. Votre saisie est conservée : vous pouvez réessayer."
+         data-closed="Cette demande a été close pendant votre correction : elle n'est plus modifiable, et votre correction n'a pas été enregistrée."
+         data-qualification-unavailable="La qualification n'a pas pu proposer de droit : aucun moteur n'a répondu. Vous pouvez la relancer, ou choisir le droit vous-même."
+         data-qualification-failed="La qualification a échoué. Vous pouvez la relancer, ou choisir le droit vous-même."></p>
+    </div>
 
     @*
       L'IDENTIFIANT DE LA DEMANDE MODIFIÉE, CACHÉ ET VIDE : la création n'en a pas, et ce n'est pas
@@ -434,39 +500,37 @@
   ⚠️ AUCUN GESTE NE S'Y TROUVE — ni suppression, ni modification, ni changement de statut : les
   gestes restent sur la ligne, à un seul endroit. Les deux seuls boutons ferment.
 
-  ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les six blocs titrés et les mots de chaque
+  ELLE SE LIT DANS L'ORDRE OÙ L'`Operator` EN A BESOIN : le droit et la personne en tête, puis LE
+  DÉLAI D'ABORD — ce qui reste pour répondre, le statut, la part du délai écoulée entre la réception
+  et la date limite —, puis le message, la personne détaillée, et l'historique de la demande, le plus
+  récent en haut.
+
+  ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les quatre blocs titrés et les mots de chaque
   valeur. ⚠️ SEULES LES VALEURS SONT VIDES AU CHARGEMENT : le titre — qui nomme la personne — et les
   cibles `data-field` attendent que l'œil d'une ligne y verse ce que sa ligne porte. Chaque cible se
-  nomme comme la cellule dont elle reçoit les nœuds ; le module ne compose aucun libellé, et n'écrit
-  que trois valeurs qu'aucune colonne ne montre — le titre, l'origine et le message.
+  nomme comme la cellule dont elle reçoit les nœuds ; le module ne compose aucun libellé.
 
   ⚠️ AUCUNE CIBLE NE DISPARAÎT QUAND SA VALEUR MANQUE : la cellule porte alors « — », que la fiche
   reçoit comme le reste. « Pas de prénom » doit se distinguer de « la fiche ne montre pas le
   prénom », et la fiche garde la même forme d'une demande à l'autre.
 
-  ⚠️ LE BLOC « PROLONGATION » EST LA SEULE EXCEPTION, ET IL DISPARAÎT ENTIER : une demande non
-  prolongée n'en montre ni le titre, ni les champs, ni un tiret. Les autres cibles disent une valeur
-  absente d'une demande qui a le champ ; celle-ci dirait un acte qui n'a pas eu lieu.
+  ⚠️ DEUX EXCEPTIONS, QUI DISPARAISSENT ENTIÈRES (`data-block`) : l'étape « Prolongation » de
+  l'historique, sur une demande non prolongée — elle dirait un acte qui n'a pas eu lieu —, et le
+  décompte avec sa barre, sur une demande close — il n'y a plus de délai qui court.
 
-  ⚠️ L'IDENTIFIANT TECHNIQUE DE LA DEMANDE N'A AUCUNE CIBLE ICI, et n'en aura pas : aucune cellule ne
-  le porte, et il ne dit rien à l'`Operator`.
+  LE DROIT INVOQUÉ SURMONTE LE TITRE, sous son libellé caché pour qui ne le voit pas : c'est ce que
+  la demande réclame, et la première chose à savoir d'elle.
 
-  LES QUATRE FAITS D'UN BLOC EMPRUNTENT LA GRILLE DES FAITS NOMMÉS, `facts`, et n'inventent rien :
-  un intitulé, une valeur, chacun sur sa ligne. C'est aussi elle qui associe la valeur à son libellé
-  pour le lecteur d'écran.
+  LES DEUX DATES DU DÉLAI BORDENT LA BARRE, la réception à gauche, la date limite à droite : la barre
+  se lit de l'une à l'autre. Elles restent une liste de définitions, qui associe chaque valeur à son
+  libellé pour le lecteur d'écran ; la barre, elle, est muette — le décompte la dit déjà en mots.
 
   LES MOTS SONT CEUX DE L'ÉCRAN, et pas d'autres : « Origine » comme le formulaire de création,
   « Droit invoqué » comme le glossaire, « Date de création » et « Créé par » comme les colonnes du
   tableau. Un même champ ne porte pas deux noms selon l'endroit où il se lit.
 
-  LA PERSONNE VIENT EN PREMIER : le titre nomme la personne, le premier bloc la détaille.
-
-  LE MESSAGE SORT DE LA LISTE DE DÉFINITIONS : c'est un bloc à part, sous son libellé. Dans la
-  grille de la liste, 10 000 caractères dicteraient la hauteur de tout le bloc.
-
-  LE BLOC DU STATUT N'A QU'UNE VALEUR — le badge cloné depuis la cellule de la ligne, sous le même
-  nom canonique et le même mot : son titre lui sert de libellé, et un « Statut » de plus ne dirait
-  rien que le titre ne dise déjà.
+  LE MESSAGE N'EST PAS DANS UNE LISTE DE DÉFINITIONS : c'est un bloc à part, sous son titre. Dans la
+  grille d'une liste, 10 000 caractères dicteraient la hauteur de tout le bloc.
 
   ⚠️ AUCUN ALLER-RETOUR RÉSEAU À L'OUVERTURE : tout ce que la fiche montre, la page l'a déjà sur la
   ligne. Pas d'état de chargement, pas d'état d'échec, rien à verrouiller.
@@ -476,7 +540,10 @@
 *@
 <dialog class="modal sheet" id="request-sheet" aria-labelledby="request-sheet-title">
   <div class="modal-head">
-    <h2 id="request-sheet-title"></h2>
+    <div class="sheet-heading">
+      <p class="sheet-right"><span class="visually-hidden">Droit invoqué : </span><span data-field="right"></span></p>
+      <h2 id="request-sheet-title"></h2>
+    </div>
     <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
@@ -486,6 +553,35 @@
   </div>
 
   <div class="sheet-body">
+    <section class="sheet-deadline">
+      <h3 class="visually-hidden">Le délai</h3>
+      <div class="sheet-countdown">
+        <p data-block="countdown">
+          <strong data-field="countdownLead"></strong>
+          <span data-field="countdownTail"></span>
+        </p>
+        <div data-field="status"></div>
+      </div>
+      <div class="deadline-track" data-block="countdown" aria-hidden="true"><span></span></div>
+      <dl class="deadline-bounds">
+        <div>
+          <dt>Date de réception</dt>
+          <dd data-field="receivedOn"></dd>
+        </div>
+        <div>
+          <dt>Date limite de réponse</dt>
+          <dd data-field="responseDeadline"></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Message</h3>
+      <div class="sheet-message">
+        <p data-field="message"></p>
+      </div>
+    </section>
+
     <section>
       <h3>La personne</h3>
       <dl class="facts">
@@ -500,77 +596,53 @@
       </dl>
     </section>
 
-    <section>
-      <h3>La demande</h3>
-      <dl class="facts">
-        <dt>Droit invoqué</dt>
-        <dd data-field="right"></dd>
-        <dt>Origine</dt>
-        <dd data-field="origin"></dd>
-        <dt>Date de réception</dt>
-        <dd data-field="receivedOn"></dd>
-      </dl>
-
-      <div class="sheet-message">
-        <h4>Message</h4>
-        <p data-field="message"></p>
-      </div>
-    </section>
-
-    <section>
-      <h3>Le délai</h3>
-      <dl class="facts">
-        <dt>Date limite de réponse</dt>
-        <dd data-field="responseDeadline"></dd>
-      </dl>
-    </section>
-
     @*
-      LE BLOC DE LA PROLONGATION, MASQUÉ TANT QUE LA DEMANDE N'EST PAS PROLONGÉE — le seul bloc de la
-      fiche qui apparaisse et disparaisse. ⚠️ PAS QUATRE TIRETS SUR CHAQUE FICHE : ils apprendraient à
-      ne plus lire la section. C'est l'exception assumée à « aucune cible ne disparaît » : les autres
-      cibles disent une valeur absente d'une demande qui a le champ ; celles-ci diraient un acte qui
-      n'a pas eu lieu.
+      L'HISTORIQUE, LE PLUS RÉCENT EN HAUT : la prolongation s'il y en a une, l'enregistrement, la
+      réception. Une liste ordonnée — l'ordre est le sens —, chaque étape sous son titre, ses valeurs
+      en liste de définitions.
 
-      ⚠️ `hidden` SUR LA SECTION ENTIÈRE, TITRE COMPRIS : masquée, elle sort aussi de ce qu'un lecteur
-      d'écran parcourt, et la forme de la fiche reste celle d'avant.
+      ⚠️ `hidden` SUR L'ÉTAPE ENTIÈRE, TITRE COMPRIS : masquée, elle sort aussi de ce qu'un lecteur
+      d'écran parcourt, et l'historique garde la forme d'une demande jamais prolongée.
 
-      LA JUSTIFICATION SORT DE LA LISTE DE DÉFINITIONS, comme le message de la demande : dans la
-      grille des faits, 2 000 caractères dicteraient la hauteur de tout le bloc.
-
-      LES MOTS SONT CEUX DE LA MODALE DE PROLONGATION pour les deux qu'elle nomme déjà : un même champ
-      ne porte pas deux noms selon l'endroit où il se lit.
+      LA JUSTIFICATION SORT DE LA LISTE DE DÉFINITIONS, comme le message : dans la grille des faits,
+      2 000 caractères dicteraient la hauteur de toute l'étape. LES MOTS SONT CEUX DE LA MODALE DE
+      PROLONGATION pour les deux qu'elle nomme déjà.
     *@
-    <section data-block="extension" hidden>
-      <h3>Prolongation</h3>
-      <dl class="facts">
-        <dt>Date limite initiale</dt>
-        <dd data-field="initialDeadline"></dd>
-        <dt>Date de la prolongation</dt>
-        <dd data-field="extendedAt"></dd>
-        <dt>@ExtensionConfirmation.GroundLabel</dt>
-        <dd data-field="extensionGround"></dd>
-      </dl>
-
-      <div class="sheet-message">
-        <h4>@ExtensionConfirmation.JustificationLabel</h4>
-        <p data-field="extensionJustification"></p>
-      </div>
-    </section>
-
     <section>
-      <h3>Le statut</h3>
-      <p data-field="status"></p>
-    </section>
-
-    <section>
-      <h3>L'enregistrement</h3>
-      <dl class="facts">
-        <dt>Date de création</dt>
-        <dd data-field="createdAt"></dd>
-        <dt>Créé par</dt>
-        <dd data-field="createdBy"></dd>
-      </dl>
+      <h3>Historique</h3>
+      <ol class="sheet-history">
+        <li data-block="extension" hidden>
+          <h4>Prolongation</h4>
+          <dl class="facts">
+            <dt>Date de la prolongation</dt>
+            <dd data-field="extendedAt"></dd>
+            <dt>Date limite initiale</dt>
+            <dd data-field="initialDeadline"></dd>
+            <dt>@ExtensionConfirmation.GroundLabel</dt>
+            <dd data-field="extensionGround"></dd>
+          </dl>
+          <div class="sheet-message">
+            <h5>@ExtensionConfirmation.JustificationLabel</h5>
+            <p data-field="extensionJustification"></p>
+          </div>
+        </li>
+        <li>
+          <h4>Enregistrement</h4>
+          <dl class="facts">
+            <dt>Date de création</dt>
+            <dd data-field="createdAt"></dd>
+            <dt>Créé par</dt>
+            <dd data-field="createdBy"></dd>
+          </dl>
+        </li>
+        <li>
+          <h4>Réception</h4>
+          <dl class="facts">
+            <dt>Origine</dt>
+            <dd data-field="origin"></dd>
+          </dl>
+        </li>
+      </ol>
     </section>
   </div>
 

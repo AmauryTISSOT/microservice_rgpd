@@ -58,11 +58,11 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
 
   private const string ExtensionTitle = "Prolonger le délai de réponse";
 
-  /// <summary>Le premier bloc de la fiche, à quoi elle se reconnaît, recopié à dessein.</summary>
+  /// <summary>Le bloc de la personne, à quoi la fiche se reconnaît, recopié à dessein.</summary>
   private const string FirstSheetBlock = "La personne";
 
   /// <summary>
-  /// <b>Tout ce que la fiche donne à lire au chargement</b> : ses six blocs titrés, les libellés de
+  /// <b>Tout ce que la fiche donne à lire au chargement</b> : ses quatre blocs titrés, les libellés de
   /// chaque valeur dans l'ordre, et sa sortie nommée. Recopié à dessein — sauf les deux mots que la
   /// modale de prolongation nomme déjà, lus sur ses constantes : un même champ ne porte pas deux noms
   /// selon l'endroit où il se lit.
@@ -73,12 +73,13 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   /// serveur écrit, et rien de plus : un mot de trop le ferait échouer.
   /// </remarks>
   private const string SheetLabels =
-    "La personne Nom Prénom Email Identité vérifiée "
-    + "La demande Droit invoqué Origine Date de réception Message "
-    + "Le délai Date limite de réponse "
-    + $"Prolongation Date limite initiale Date de la prolongation {ExtensionConfirmation.GroundLabel} {ExtensionConfirmation.JustificationLabel} "
-    + "Le statut "
-    + "L'enregistrement Date de création Créé par "
+    "Droit invoqué : "
+    + "Le délai Date de réception Date limite de réponse "
+    + "Message "
+    + "La personne Nom Prénom Email Identité vérifiée "
+    + $"Historique Prolongation Date de la prolongation Date limite initiale {ExtensionConfirmation.GroundLabel} {ExtensionConfirmation.JustificationLabel} "
+    + "Enregistrement Date de création Créé par "
+    + "Réception Origine "
     + "Fermer";
 
   private readonly LayoutSurface _layout = new(factory);
@@ -183,13 +184,13 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// <b>La fiche porte tous ses libellés, rendus par le serveur</b> : ses six blocs titrés dans
-  /// l'ordre — La personne, La demande, Le délai, Prolongation, Le statut, L'enregistrement —, les
-  /// mots de chaque valeur, et sa sortie nommée. <b>Et rien d'autre</b> : le titre et les valeurs sont
+  /// <b>La fiche porte tous ses libellés, rendus par le serveur</b> : l'intitulé caché du droit
+  /// invoqué, ses quatre blocs titrés dans l'ordre — Le délai, Message, La personne, Historique —, les
+  /// trois étapes de l'historique, les mots de chaque valeur, et sa sortie nommée. <b>Et rien d'autre</b> : le titre et les valeurs sont
   /// vides tant que l'œil d'une ligne n'y a rien versé.
   ///
-  /// ⚠️ <b>Le bloc « Prolongation » est rendu lui aussi, et masqué</b> : le serveur écrit ses mots
-  /// comme ceux des autres blocs, et c'est l'œil d'une ligne prolongée qui le montre.
+  /// ⚠️ <b>L'étape « Prolongation » est rendue elle aussi, et masquée</b> : le serveur écrit ses mots
+  /// comme ceux des autres étapes, et c'est l'œil d'une ligne prolongée qui la montre.
   /// </summary>
   /// <remarks>
   /// ⚠️ <b>Les mots sont ceux de l'écran</b> : « Origine » comme le formulaire de création, « Droit
@@ -197,18 +198,24 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   /// tableau. Un même champ ne porte pas deux noms selon l'endroit où il se lit.
   /// </remarks>
   [Fact]
-  public async Task RendersTheSheetWithItsFiveTitledBlocksAndAllTheirLabels()
+  public async Task RendersTheSheetWithItsFourTitledBlocksAndAllTheirLabels()
   {
     var sheet = SheetIn(LayoutSurface.MainOf(await _layout.ReadAsync(Board)));
 
     LayoutSurface.TextIn(sheet).ShouldBe(
-      SheetLabels, "La fiche ne donne pas à lire ses cinq blocs titrés et tous leurs libellés, dans l'ordre — et eux seuls.");
+      SheetLabels, "La fiche ne donne pas à lire ses quatre blocs titrés et tous leurs libellés, dans l'ordre — et eux seuls.");
 
     Regex.Matches(sheet, @"<h3\b[^>]*>(.*?)</h3>", RegexOptions.Singleline)
       .Select(block => LayoutSurface.TextIn(block.Groups[1].Value))
       .ShouldBe(
-        ["La personne", "La demande", "Le délai", "Prolongation", "Le statut", "L'enregistrement"],
-        "La fiche ne porte pas ses six blocs titrés, dans l'ordre.");
+        ["Le délai", "Message", "La personne", "Historique"],
+        "La fiche ne porte pas ses quatre blocs titrés, dans l'ordre.");
+
+    Regex.Matches(sheet, @"<h4\b[^>]*>(.*?)</h4>", RegexOptions.Singleline)
+      .Select(step => LayoutSurface.TextIn(step.Groups[1].Value))
+      .ShouldBe(
+        ["Prolongation", "Enregistrement", "Réception"],
+        "L'historique de la fiche ne porte pas ses trois étapes, la plus récente en haut.");
   }
 
   /// <summary>
@@ -437,7 +444,7 @@ public class RequestsBoardScreen(CustomWebApplicationFactory<Program> factory)
   /// <summary>
   /// <b>La fiche, entière</b> — balise ouvrante comprise. Elle ne se cherche pas par son nom
   /// accessible : c'est le nom de la personne, vide tant qu'aucune ligne ne l'a choisie. On la
-  /// reconnaît au premier de ses cinq blocs.
+  /// reconnaît à son bloc « La personne ».
   /// </summary>
   private static string SheetIn(string main)
   {

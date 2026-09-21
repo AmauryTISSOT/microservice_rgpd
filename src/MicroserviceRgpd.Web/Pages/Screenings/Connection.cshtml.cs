@@ -11,8 +11,9 @@ namespace MicroserviceRgpd.Web.Pages.Screenings;
 /// <remarks>
 /// <para>
 /// ⚠️ <b>Les trois phrases se lisent avant qu'on ait tapé quoi que ce soit.</b> Les droits, le sort
-/// de la chaîne, et le rapport courant qui part à l'archive : elles sont au-dessus du champ, parce
-/// qu'une conséquence annoncée sous le bouton est une conséquence annoncée après coup.
+/// de la chaîne, et le rapport courant qui part à l'archive : elles sont à côté du champ et le
+/// précèdent dans le document — au-dessus de lui sur un écran étroit —, parce qu'une conséquence
+/// annoncée sous le bouton est une conséquence annoncée après coup.
 /// </para>
 /// <para>
 /// ⚠️ <b>La phrase des droits est la même quel que soit le SGBD.</b> Un texte qui varierait par

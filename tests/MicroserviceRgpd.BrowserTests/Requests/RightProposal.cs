@@ -567,7 +567,7 @@ public class RightProposal
 
   private static ILocator Field(ILocator dialog, string label)
   {
-    return dialog.GetByLabel(label, new() { Exact = true });
+    return dialog.GetByLabel(label, new() { Exact = true }).And(dialog.Page.Locator(":not([type=radio])"));
   }
 
   private static ILocator QualifyButton(ILocator dialog)
@@ -581,12 +581,13 @@ public class RightProposal
   }
 
   /// <summary>
-  /// L'icône de chargement : l'image que le bouton porte. Elle n'a ni rôle ni nom — elle est cachée
-  /// aux technologies d'assistance, qui lisent <c>aria-busy</c> —, et se lit donc par sa balise.
+  /// L'icône de chargement : l'une des deux images que le bouton porte, à côté de l'étincelle. Elle
+  /// n'a ni rôle ni nom — elle est cachée aux technologies d'assistance, qui lisent <c>aria-busy</c> —,
+  /// et se lit donc par sa balise et sa classe.
   /// </summary>
   private static ILocator Spinner(ILocator button)
   {
-    return button.Locator("svg");
+    return button.Locator("svg.spinner");
   }
 
   /// <summary>La note de la proposition, sous le select : la note de la modale.</summary>

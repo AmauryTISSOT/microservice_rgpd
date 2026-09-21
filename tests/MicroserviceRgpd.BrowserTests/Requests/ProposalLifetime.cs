@@ -462,7 +462,7 @@ public class ProposalLifetime
 
   private static ILocator Field(ILocator dialog, string label)
   {
-    return dialog.GetByLabel(label, new() { Exact = true });
+    return dialog.GetByLabel(label, new() { Exact = true }).And(dialog.Page.Locator(":not([type=radio])"));
   }
 
   private static ILocator Button(ILocator surface, string name)

@@ -19,29 +19,94 @@
 {
   <h1>Détection des données personnelles</h1>
 
-  <p class="caveat">
+  <p class="lead">
     Aucun rapport de détection n'a encore été lancé sur ce déploiement. Deux voies y mènent, et
     elles produisent le <strong>même rapport</strong> : le service signale des colonnes susceptibles
     de porter des données personnelles, et vous tranchez ligne par ligne.
   </p>
 
-  <div class="doorways">
-    <a class="doorway" asp-page="Connection">
-      <h2>Connecter une base et lancer un scan</h2>
+  @*
+    LES DEUX VOIES SE COMPARENT RANGÉE PAR RANGÉE : les trois mêmes questions, posées aux deux, dans
+    le même ordre et à la même hauteur — ce qu'il lit, ce qu'il vous faut, ce qui ne reste pas. On
+    choisit en lisant en travers, pas en relisant deux paragraphes. Les boutons partagent eux aussi
+    leur rangée : aucune des deux voies n'arrive « plus bas » que l'autre.
+  *@
+  <div class="routes">
+    <section class="route" aria-labelledby="route-connection">
+      <div class="route-head">
+        <span class="route-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="6" rx="8" ry="3" />
+            <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+          </svg>
+        </span>
+        <h2 id="route-connection">Connecter une base et lancer un scan</h2>
+      </div>
       <p>
-        Le service joint lui-même la base avec un compte en lecture que vous lui donnez, relève le
-        schéma et prélève quelques valeurs pour affiner la détection. La chaîne de connexion n'est
-        ni conservée, ni journalisée, ni rejouée.
+        Le service joint lui-même la base avec un compte en lecture que vous lui donnez, et relève
+        le schéma.
       </p>
-    </a>
-    <a class="doorway" asp-page="Deposit">
-      <h2>Déposer un relevé collé</h2>
+      <dl>
+        <div>
+          <dt>Ce que le service lit</dt>
+          <dd>Le schéma, et quelques valeurs prélevées par colonne pour affiner la détection</dd>
+        </div>
+        <div>
+          <dt>Ce qu'il vous faut</dt>
+          <dd>Un compte en lecture sur toute la base, joignable par le service</dd>
+        </div>
+        <div>
+          <dt>Ce qui ne reste pas</dt>
+          <dd>La chaîne de connexion : ni conservée, ni journalisée, ni rejouée</dd>
+        </div>
+      </dl>
+      <a class="route-action" asp-page="Connection">
+        Connecter une base
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </a>
+    </section>
+
+    <section class="route" aria-labelledby="route-deposit">
+      <div class="route-head">
+        <span class="route-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="4" width="12" height="17" rx="2" />
+            <path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" />
+          </svg>
+        </span>
+        <h2 id="route-deposit">Déposer un relevé collé</h2>
+      </div>
       <p>
-        Vous exécutez la requête chez vous et vous collez ce qu'elle rend ; le service ne se
-        connecte à rien et ne lit <strong>aucune valeur</strong>. C'est la voie à prendre quand il
-        n'a pas le droit de joindre la base.
+        Vous exécutez la requête chez vous et vous collez ce qu'elle rend. C'est la voie à prendre
+        quand le service n'a pas le droit de joindre la base.
       </p>
-    </a>
+      <dl>
+        <div>
+          <dt>Ce que le service lit</dt>
+          <dd>Le schéma seul : des noms, des types, des contraintes, des commentaires — <strong>aucune valeur</strong></dd>
+        </div>
+        <div>
+          <dt>Ce qu'il vous faut</dt>
+          <dd>Exécuter une requête chez vous et coller sa sortie</dd>
+        </div>
+        <div>
+          <dt>Ce qui ne reste pas</dt>
+          <dd>Rien à retenir : le service ne se connecte à rien</dd>
+        </div>
+      </dl>
+      <a class="route-action" asp-page="Deposit">
+        Déposer un relevé
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </a>
+    </section>
   </div>
 }
 

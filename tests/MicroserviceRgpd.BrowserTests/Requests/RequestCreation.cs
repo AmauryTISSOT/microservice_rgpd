@@ -385,7 +385,7 @@ public class RequestCreation(BrowserHarness harness)
     var page = await OpenedAsync(context);
     var today = await Field(page, "Date de réception").InputValueAsync();
 
-    await Field(page, "Origine").SelectOptionAsync("Letter");
+    await OriginSegment(page, "Courrier").CheckAsync();
     await Field(page, "Date de réception").FillAsync("2026-01-15");
     await Field(page, "Nom").FillAsync("Martin");
     await Field(page, "Prénom").FillAsync("Jeanne");
@@ -397,7 +397,7 @@ public class RequestCreation(BrowserHarness harness)
 
     await OpenAsync(page);
 
-    await Expect(Field(page, "Origine")).ToHaveValueAsync("Email");
+    await Expect(OriginSegment(page, "Email")).ToBeCheckedAsync();
     await Expect(Field(page, "Date de réception")).ToHaveValueAsync(today);
     await Expect(Field(page, "Nom")).ToHaveValueAsync(string.Empty);
     await Expect(Field(page, "Prénom")).ToHaveValueAsync(string.Empty);
@@ -501,9 +501,18 @@ public class RequestCreation(BrowserHarness harness)
     return page.GetByRole(AriaRole.Dialog, new() { Name = DialogTitle, Exact = true, IncludeHidden = true });
   }
 
+  /// <summary>
+  /// Un segment de l'origine — « Email » ou « Courrier » —, par son nom : l'origine est un groupe de
+  /// boutons radio, qui se coche et se lit segment par segment.
+  /// </summary>
+  private static ILocator OriginSegment(IPage page, string segment)
+  {
+    return Dialog(page).GetByRole(AriaRole.Radio, new() { Name = segment, Exact = true });
+  }
+
   private static ILocator Field(IPage page, string label)
   {
-    return Dialog(page).GetByLabel(label, new() { Exact = true });
+    return Dialog(page).GetByLabel(label, new() { Exact = true }).And(page.Locator(":not([type=radio])"));
   }
 
   private static ILocator RowOf(IPage page, string email)
