@@ -2089,6 +2089,122 @@ a.doorway:hover .doorway-open {
 
 /*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LES DEUX VOIES DU PREMIER RAPPORT, COMPARÉES RANGÉE PAR RANGÉE. Chaque carte pose les mêmes trois
+  questions dans le même ordre ; la grille parente porte leurs rangées, et chaque carte les reprend
+  en `subgrid` — titre, phrase, trois réponses et bouton tombent à la même hauteur des deux côtés,
+  quelle que soit la longueur de ce qui les précède.
+
+  ⚠️ LES BOUTONS SONT À LA MÊME HAUTEUR, ET C'EST LE PROPOS : un bouton plus bas se lit comme la voie
+  seconde, et la connectée n'est pas la voie « normale » dont le dépôt serait le repli.
+
+  Sous ~46rem, une seule colonne : les cartes s'empilent, chacune avec ses rangées.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.routes {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+}
+
+.route {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  display: grid;
+  grid-row: span 6;
+  grid-template-rows: subgrid;
+  padding: var(--space-xl);
+  row-gap: 18px;
+}
+
+.route-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-md);
+}
+
+.route-head h2 {
+  font: var(--type-heading-3);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0;
+}
+
+.route-icon {
+  align-items: center;
+  background: var(--canvas);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  display: flex;
+  flex-shrink: 0;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.route > p {
+  color: var(--ink-secondary);
+  font: 400 15px/1.55 var(--font-sans);
+  margin: 0;
+}
+
+.route dl {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  margin: 0;
+  row-gap: 0;
+}
+
+.route dl > div {
+  border-top: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  padding: 14px 0;
+}
+
+.route dt {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.route dd {
+  color: var(--ink);
+  font: 400 15px/1.45 var(--font-sans);
+  margin: 0;
+}
+
+/* LE BOUTON DE LA VOIE — l'action principale, peinte comme `button.primary`, mais c'est un lien. */
+a.route-action {
+  align-items: center;
+  align-self: end;
+  background: var(--accent);
+  border-radius: var(--radius-md);
+  color: var(--on-accent);
+  display: inline-flex;
+  font: var(--type-button);
+  gap: var(--space-xs);
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 var(--space-lg);
+  text-decoration: none;
+}
+
+a.route-action:hover,
+a.route-action:active {
+  background: var(--accent-pressed);
+  color: var(--on-accent);
+}
+
+a.route-action:focus-visible {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: var(--space-xxs);
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
   LE PARAMÉTRAGE, EN LISTE ET DÉTAIL. Les six droits d'un côté, chacun avec son réglage en une
   ligne ; le droit ouvert de l'autre, seul, avec son réglage actuel, ses deux faces et sa mini-form.
   La liste dit l'état de tous d'un coup d'œil, le détail n'en règle qu'un à la fois.
