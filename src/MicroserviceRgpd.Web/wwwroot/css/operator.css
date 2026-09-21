@@ -1359,6 +1359,213 @@ button.copy-query:not([hidden]) {
 }
 
 /*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA CONNEXION D'UNE BASE : le formulaire à gauche, CE QU'IL ENGAGE à droite. Le formulaire emprunte
+  la carte numérotée du dépôt — les deux voies se lisent de la même façon.
+
+  ⚠️ L'ENCADRÉ PRÉCÈDE LE FORMULAIRE DANS LE DOCUMENT, et c'est la grille qui l'envoie à droite : sur
+  un écran étroit, les conséquences s'empilent au-dessus du champ, jamais sous le bouton.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.connection {
+  align-items: start;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: minmax(0, 1fr) 25rem;
+  margin-bottom: var(--space-lg);
+}
+
+.connection > form {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.connection-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  grid-column: 2;
+  grid-row: 1;
+}
+
+@media (max-width: 60rem) {
+  .connection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .connection > form,
+  .connection-aside {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.connection fieldset.dialects {
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0 0 var(--space-lg);
+  border-bottom: var(--hairline-width) solid var(--hairline);
+}
+
+.connection fieldset.dialects legend,
+.connection p.connection-string > label {
+  align-items: center;
+  display: flex;
+  font: var(--type-heading-3);
+  gap: var(--space-sm);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0;
+  padding: 0 0 var(--space-sm);
+}
+
+/*
+  LES SGBD SONT DES TUILES, et la case reste visible dedans : c'est un choix exclusif, et la tuile
+  entière est le libellé — la cible fait 44 px de haut. La tuile retenue se marque par `:has`, c'est-à-
+  dire par l'état réel de la case, jamais par une classe posée au rendu.
+*/
+.dialect-choices {
+  display: grid;
+  gap: var(--space-xs);
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.connection fieldset.dialects .dialect-choices label {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-xs);
+  margin: 0;
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+}
+
+.dialect-choices input[type="radio"] {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.dialect-choices label:has(input:checked) {
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  border-color: var(--accent);
+  font-weight: var(--weight-semibold);
+}
+
+.dialect-choices label:has(input:focus-visible) {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: 2px;
+}
+
+.connection .hint {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.connection .hint strong {
+  color: var(--ink-secondary);
+}
+
+.connection p.connection-string {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+.connection input[type="password"] {
+  background: var(--surface);
+  border: var(--hairline-width) solid #c9c6c2;
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+  color: var(--ink);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  width: 100%;
+}
+
+.consequences,
+.alternative {
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg);
+}
+
+.consequences {
+  background: var(--surface);
+  gap: var(--space-md);
+}
+
+.consequences h2,
+.alternative h2 {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+  margin: 0;
+}
+
+.consequences ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.consequences li {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.consequences li > svg {
+  background: var(--canvas);
+  border-radius: var(--radius-sm);
+  box-sizing: content-box;
+  color: var(--ink);
+  flex-shrink: 0;
+  padding: 7px;
+}
+
+.consequences h3 {
+  font: var(--type-body-sm);
+  font-weight: var(--weight-semibold);
+  margin: 0 0 var(--space-xxs);
+}
+
+.consequences p,
+.alternative p {
+  color: var(--ink-secondary);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.consequences strong {
+  color: var(--ink);
+}
+
+.alternative {
+  gap: var(--space-xs);
+}
+
+.alternative a {
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+}
+
+/*
   L'EXCEPTION DE LARGEUR, et c'est le MOTIF qui la réclame. L'arbitrage l'a tranché : un motif
   replié derrière une infobulle est un motif qui n'existe plus, et c'est lui qui rend l'arbitrage
   possible. Il lui faut sa colonne — ~26 rem —, ce que la largeur du dépôt ne donne pas.

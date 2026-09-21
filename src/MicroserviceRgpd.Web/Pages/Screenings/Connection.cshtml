@@ -3,27 +3,22 @@
 @using MicroserviceRgpd.Core.Screenings
 @{
   ViewData["Title"] = "Connecter une base et lancer le scan";
+  // LE FORMULAIRE ET CE QU'IL ENGAGE SE LISENT CÔTE À CÔTE — le geste à gauche, ses conséquences à
+  // droite —, et la largeur étroite des autres écrans ne tient pas les deux colonnes.
+  ViewData["Wide"] = true;
 }
+
+<nav class="trail" aria-label="Fil d'Ariane">
+  <a asp-page="Report">Détection des données personnelles</a>
+  <span aria-hidden="true">/</span>
+  <span>Connecter une base</span>
+</nav>
 
 <h1>Connecter une base et lancer le scan</h1>
 
-@*
-  LES TROIS PHRASES SE LISENT AVANT LE CHAMP. Ce sont les trois conséquences que l'Operator ne peut
-  pas deviner : ce que son compte doit avoir, ce que le service fait de sa chaîne, et ce qu'il perd
-  de vue en lançant. Sous le bouton, elles auraient été lues après coup.
-*@
-<p class="caveat">@ConnectionModel.RightsSentence</p>
-
-<p class="caveat">
-  La chaîne de connexion n'est <strong>ni conservée, ni journalisée, ni rejouée</strong> : elle est
-  remise au pilote pour la durée du scan, et le service n'en garde rien — il n'existe aucun écran, ni
-  aucune table, où la retrouver. Un scan suivant redemandera la chaîne.
-</p>
-
-<p class="caveat">
-  Lancer un scan <strong>renvoie le rapport de détection courant à l'archive</strong>, et le nouveau
-  prend sa place. Les arbitrages déjà rendus restent lisibles dans l'archive ; ils ne sont
-  <strong>pas repris</strong> sur le nouveau rapport.
+<p class="lead">
+  Le service va lire le schéma lui-même, avec le compte que vous lui confiez, et en tire un
+  <strong>rapport de détection</strong> à arbitrer ligne par ligne.
 </p>
 
 @if (Model.AlreadyRunning is { } running)
@@ -75,67 +70,131 @@
   </div>
 }
 
-<form method="post">
-  <h2>1. Le SGBD</h2>
-
-  <fieldset class="dialects">
-    <legend>Le SGBD de la base à scanner</legend>
-    @foreach (var dialect in ConnectionModel.Dialects)
-    {
-      <p>
-        <input type="radio" id="dialect-@dialect.PivotName" name="Dialect"
-               value="@dialect.PivotName"
-               checked="@(dialect.PivotName == Model.Dialect)" />
-        <label for="dialect-@dialect.PivotName">@dialect.FrenchLabel</label>
-      </p>
-    }
-  </fieldset>
-
-  @*
-    AUCUN CHAMP DE TÉLÉVERSEMENT. Sous SQLite, la tentation serait d'accepter le fichier ; ce serait
-    faire entrer une base entière — des valeurs réelles, en masse — dans un service dont la propriété
-    première est de n'en conserver aucune. Le fichier reste chez le client, et c'est le SERVICE qui
-    doit pouvoir l'atteindre.
-  *@
-  <p class="caveat">
-    Sous <strong>SQLite</strong>, le chemin donné doit désigner un fichier
-    <strong>joignable par le service lui-même</strong>, sur la machine où il tourne ou sur un
-    montage qu'il voit. Aucun fichier ne se téléverse ici : le service ne reçoit pas votre base, il
-    va la lire là où elle est.
-  </p>
-
-  <h2>2. La chaîne de connexion</h2>
-
-  <p>
-    <label for="connection-string">La chaîne de connexion</label>
-    <span class="hint">
-      Un compte en lecture sur toute la base, comme dit plus haut. Elle n'est pas réaffichée après
-      l'envoi, et le champ repart vide.
-    </span>
+<div class="connection">
+  <aside class="connection-aside">
     @*
-      Le champ repart TOUJOURS vide : rien n'y est réécrit, pas même après un refus. Un secret
-      d'accès recopié dans la réponse se retrouve dans le cache du navigateur, dans un cliché
-      d'écran, et dans le signalement de bogue qui l'accompagne.
+      LES TROIS CONSÉQUENCES SE LISENT AVANT LE CHAMP. Ce sont celles que l'Operator ne peut pas
+      deviner : ce que son compte doit avoir, ce que le service fait de sa chaîne, et ce qu'il perd
+      de vue en lançant. Sous le bouton, elles auraient été lues après coup.
+
+      ⚠️ ELLES PRÉCÈDENT LE FORMULAIRE DANS LE DOCUMENT, et c'est la grille qui les range à droite :
+      un lecteur d'écran les lit d'abord, et sur un écran étroit, elles s'empilent AU-DESSUS du champ.
     *@
-    <input type="password" id="connection-string" name="ConnectionString"
-           autocomplete="off" spellcheck="false" value="" />
-  </p>
+    <section class="consequences" aria-labelledby="before-launching">
+      <h2 id="before-launching">À lire avant de lancer</h2>
+      <ul>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="8" cy="15" r="4" />
+            <path d="M11 12l9-9M17 6l3 3M15 8l2 2" />
+          </svg>
+          <div>
+            <h3>Un droit de lecture sur toute la base</h3>
+            <p>@ConnectionModel.RightsSentence</p>
+          </div>
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          <div>
+            <h3>La chaîne ne reste pas</h3>
+            <p>
+              Elle n'est <strong>ni conservée, ni journalisée, ni rejouée</strong> : elle est remise au
+              pilote pour la durée du scan, et le service n'en garde rien — il n'existe aucun écran, ni
+              aucune table, où la retrouver. Un scan suivant redemandera la chaîne.
+            </p>
+          </div>
+        </li>
+        <li>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="4" rx="1" />
+            <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4" />
+          </svg>
+          <div>
+            <h3>Le rapport courant part à l'archive</h3>
+            <p>
+              Lancer un scan <strong>renvoie le rapport de détection courant à l'archive</strong>, et le
+              nouveau prend sa place. Les arbitrages déjà rendus restent lisibles dans l'archive ; ils ne
+              sont <strong>pas repris</strong> sur le nouveau rapport.
+            </p>
+          </div>
+        </li>
+      </ul>
+    </section>
 
-  @*
-    LE SCAN NE VOUS ATTEND PAS. Il court hors de cette requête : l'onglet fermé ne l'annule pas, et
-    l'écran d'attente donne le compte réel de la phase où il en est.
-  *@
-  <p class="hint">
-    Le scan part <strong>maintenant</strong> et vous mène à son écran d'attente. Fermer l'onglet ne
-    l'annule pas ; le service n'en mène <strong>qu'un à la fois</strong>.
-  </p>
+    <section class="alternative" aria-labelledby="no-right-to-reach">
+      <h2 id="no-right-to-reach">Le service n'a pas le droit de joindre la base ?</h2>
+      <p>
+        Exécutez une requête chez vous et collez son relevé : aucune connexion, jamais une valeur.
+      </p>
+      <a asp-page="Deposit">Déposer plutôt un relevé collé</a>
+    </section>
+  </aside>
 
-  <button type="submit" class="primary">Lancer le scan</button>
-</form>
+  <form method="post" class="deposit-step">
+    <fieldset class="dialects">
+      <legend><span class="step-number" aria-hidden="true">1</span>Le SGBD de la base à scanner</legend>
+      <div class="dialect-choices">
+        @foreach (var dialect in ConnectionModel.Dialects)
+        {
+          <label for="dialect-@dialect.PivotName">
+            <input type="radio" id="dialect-@dialect.PivotName" name="Dialect"
+                   value="@dialect.PivotName"
+                   checked="@(dialect.PivotName == Model.Dialect)" />
+            @dialect.FrenchLabel
+          </label>
+        }
+      </div>
 
-<p>
-  <a asp-page="Deposit">Déposer plutôt un relevé collé</a> — c'est la voie à prendre quand le service
-  n'a pas le droit de joindre la base.
-</p>
+      @*
+        AUCUN CHAMP DE TÉLÉVERSEMENT. Sous SQLite, la tentation serait d'accepter le fichier ; ce serait
+        faire entrer une base entière — des valeurs réelles, en masse — dans un service dont la propriété
+        première est de n'en conserver aucune. Le fichier reste chez le client, et c'est le SERVICE qui
+        doit pouvoir l'atteindre.
+      *@
+      <p class="hint">
+        Sous <strong>SQLite</strong>, le chemin donné doit désigner un fichier
+        <strong>joignable par le service lui-même</strong>, sur la machine où il tourne ou sur un
+        montage qu'il voit. Aucun fichier ne se téléverse ici : le service ne reçoit pas votre base, il
+        va la lire là où elle est.
+      </p>
+    </fieldset>
+
+    <p class="connection-string">
+      <label for="connection-string">
+        <span class="step-number" aria-hidden="true">2</span>La chaîne de connexion
+      </label>
+      @*
+        Le champ repart TOUJOURS vide : rien n'y est réécrit, pas même après un refus. Un secret
+        d'accès recopié dans la réponse se retrouve dans le cache du navigateur, dans un cliché
+        d'écran, et dans le signalement de bogue qui l'accompagne.
+      *@
+      <input type="password" id="connection-string" name="ConnectionString"
+             autocomplete="off" spellcheck="false" value="" />
+      <span class="hint">
+        Un compte en lecture sur toute la base, comme dit à côté. Elle n'est pas réaffichée après
+        l'envoi, et le champ repart vide.
+      </span>
+    </p>
+
+    @*
+      LE SCAN NE VOUS ATTEND PAS. Il court hors de cette requête : l'onglet fermé ne l'annule pas, et
+      l'écran d'attente donne le compte réel de la phase où il en est.
+    *@
+    <div class="deposit-actions">
+      <button type="submit" class="primary">Lancer le scan</button>
+      <span class="hint">
+        Le scan part <strong>maintenant</strong> et vous mène à son écran d'attente. Fermer l'onglet ne
+        l'annule pas ; le service n'en mène <strong>qu'un à la fois</strong>.
+      </span>
+    </div>
+  </form>
+
+</div>
 
 <p><a asp-page="Report">Revenir au rapport de détection courant</a></p>
