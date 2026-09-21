@@ -45,10 +45,15 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal const string Font = "/fonts/inter-latin-variable.woff2";
 
   /// <summary>
-  /// Le module du tableau des demandes RGPD, servi par le service — <b>le seul script de la
-  /// surface</b>, que seul cet écran charge.
+  /// Le module du tableau des demandes RGPD, servi par le service, que seul cet écran charge.
   /// </summary>
   internal const string BoardModule = "/js/requests-board.js";
+
+  /// <summary>
+  /// Le module du dépôt d'un relevé, qui ne fait que copier la requête affichée — et que seul cet
+  /// écran charge.
+  /// </summary>
+  internal const string DepositModule = "/js/deposit.js";
 
   /// <summary>
   /// <b>Les quatre points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
@@ -204,7 +209,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// marqué dans le panneau quand on la lit — on n'a pas quitté le Paramétrage.
   /// </summary>
   private const string ParametrageRabbitMq = "/parametrage/rabbitmq";
-  private const string ScreeningDeposit = "/detection/depot";
+  internal const string ScreeningDeposit = "/detection/depot";
   private const string Connection = "/detection/connexion";
   private const string Report = "/detection";
   private const string ScreeningTable = "/detection/table";

@@ -1084,14 +1084,278 @@ fieldset:has(input[type="radio"]) label {
   padding-left: var(--space-sm);
 }
 
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE DÉPÔT D'UN RELEVÉ : les trois garanties en une ligne, puis les deux gestes CÔTE À CÔTE — la
+  requête à gauche, le collage à droite. Chacun est une carte et porte son numéro : l'ordre se lit
+  sans qu'aucun des deux ne se cache derrière l'autre. Sur un écran étroit, ils s'empilent.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.trail {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font: var(--type-caption);
+  gap: var(--space-xs);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.trail a {
+  color: var(--ink-muted);
+}
+
+.guarantees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  list-style: none;
+  margin: 0 0 var(--space-lg);
+  padding: 0;
+}
+
+.guarantees li {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink-secondary);
+  display: flex;
+  font: var(--type-caption);
+  gap: var(--space-xs);
+  letter-spacing: var(--type-caption-tracking);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.guarantees svg {
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.guarantees strong,
+.deposit .note strong {
+  color: var(--ink);
+}
+
+.deposit {
+  align-items: stretch;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 60rem) {
+  .deposit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.deposit-step {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+  padding: var(--space-xl);
+}
+
+.deposit-step h2 {
+  align-items: center;
+  display: flex;
+  font: var(--type-heading-3);
+  gap: var(--space-sm);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: 0;
+}
+
+.step-number {
+  align-items: center;
+  background: var(--ink);
+  border-radius: var(--radius-full);
+  color: var(--surface);
+  display: inline-flex;
+  flex-shrink: 0;
+  font: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.deposit-step .hint {
+  font: var(--type-body-sm);
+  letter-spacing: var(--type-body-sm-tracking);
+  color: var(--ink-secondary);
+  margin: 0;
+}
+
+.deposit-step code,
+.deposit-step pre,
+.deposit-step textarea {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.deposit-step .hint code {
+  background: var(--canvas);
+  border-radius: var(--radius-xs);
+  font-size: 13px;
+  padding: 1px 5px;
+}
+
+/*
+  LE CHOIX DU SGBD EST UN SÉLECTEUR SEGMENTÉ, mais ce sont des liens : la face courante se marque au
+  rendu par `aria-current`, et c'est l'attribut — non une classe — qui porte le style, pour que ce
+  que voit l'œil soit ce que lit un lecteur d'écran.
+*/
+nav.dialects {
+  align-self: flex-start;
+  background: var(--canvas);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+  padding: var(--space-xxs);
+}
+
+nav.dialects a {
+  align-items: center;
+  border: var(--hairline-width) solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  display: flex;
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+  min-height: 36px;
+  padding: 0 var(--space-sm);
+  text-decoration: none;
+}
+
+nav.dialects a:hover {
+  color: var(--ink);
+}
+
+nav.dialects a[aria-current] {
+  background: var(--surface);
+  border-color: var(--hairline);
+  color: var(--ink);
+}
+
 .listing-query {
   border: var(--hairline-width) solid var(--hairline);
   border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.listing-query-head {
+  align-items: center;
+  background: var(--canvas);
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: space-between;
+  min-height: 44px;
+  padding: var(--space-xxs) var(--space-xxs) var(--space-xxs) var(--space-sm);
+}
+
+.listing-query-file {
+  color: var(--ink-muted);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+/* ⚠️ Aucun `display` sans `[hidden]` exclu : le bouton naît caché, et c'est le module qui le montre. */
+button.copy-query:not([hidden]) {
+  align-items: center;
+  display: flex;
+  gap: 6px;
   font: var(--type-caption);
-  letter-spacing: var(--type-caption-tracking);
-  max-height: 22rem;
+  font-weight: var(--weight-medium);
+  padding: var(--space-xxs) var(--space-sm);
+}
+
+.listing-query pre {
+  background: #fbfbfa;
+  color: var(--ink-secondary);
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 0;
+  max-height: 24rem;
   overflow: auto;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.deposit-step p.paste {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+.deposit-step p.paste label {
+  margin: 0;
+}
+
+.deposit-step textarea {
+  border-color: #c9c6c2;
+  border-radius: var(--radius-md);
+  flex-grow: 1;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 16rem;
   padding: var(--space-sm);
+  resize: vertical;
+}
+
+.ceilings {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: var(--space-xs);
+}
+
+.ceiling {
+  background: var(--canvas);
+  border-radius: var(--radius-xs);
+  color: var(--ink-secondary);
+  font-weight: var(--weight-medium);
+  padding: 3px var(--space-xs);
+}
+
+.deposit .note {
+  align-items: flex-start;
+  background: var(--canvas);
+  border-radius: var(--radius-md);
+  color: var(--ink-secondary);
+  display: flex;
+  font: var(--type-caption);
+  gap: var(--space-sm);
+  letter-spacing: var(--type-caption-tracking);
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.deposit .note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.deposit-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.deposit-actions .hint {
+  flex: 1 1 16rem;
+  font-size: 13px;
 }
 
 /*
@@ -1400,13 +1664,6 @@ td.ruling button {
   padding: var(--space-xxs) var(--space-xs);
 }
 
-.dialects a {
-  margin-right: var(--space-md);
-}
-
-.dialects a.chosen {
-  font-weight: var(--weight-bold);
-}
 
 /*
   L'AVANCEMENT DU SCAN EST UNE LARGEUR, ET RIEN D'AUTRE. Pas d'animation, pas de `<progress>` dont
