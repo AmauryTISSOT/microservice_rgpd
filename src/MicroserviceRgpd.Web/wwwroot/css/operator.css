@@ -1505,6 +1505,25 @@ td.ruling button {
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
 
+/*
+  L'ACCUEIL TIENT LA HAUTEUR DE LA FENÊTRE : le `main` s'étire jusqu'en bas de la colonne, et les
+  cartes avec lui — leur « Ouvrir » se pose au pied de l'écran. Sa marge est plus large que celle
+  des autres écrans : c'est un seuil, pas un écran d'instruction. Sous cette hauteur, la page défile
+  comme les autres.
+*/
+main:has(> .doorstep) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 48px 56px;
+}
+
+.doorstep {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
 /* LE SEUIL : le nom du service en grand, et la phrase qui dit ce qu'il est. */
 .doorstep-hero {
   display: flex;
@@ -1529,6 +1548,7 @@ td.ruling button {
 /* LES DEUX MOMENTS, côte à côte tant que chacun loge ses deux portes. */
 .moments {
   display: grid;
+  flex: 1 1 auto;
   gap: var(--space-xxl);
   grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr));
 }

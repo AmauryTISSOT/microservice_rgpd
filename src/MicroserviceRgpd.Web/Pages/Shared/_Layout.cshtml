@@ -10,7 +10,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>@ViewData["Title"] — @Navigation.ServiceName</title>
-  <link rel="stylesheet" href="/css/operator.css" />
+  @*
+    ⚠️ LA FEUILLE PORTE SA VERSION DANS SON ADRESSE (`?v=` + empreinte du fichier) : sans elle, un
+    navigateur qui a déjà vu l'écran garde l'ancienne feuille en cache et rend le nouveau balisage
+    avec d'anciennes règles.
+  *@
+  <link rel="stylesheet" href="/css/operator.css" asp-append-version="true" />
   @*
     Cette section existe pour l'écran d'attente du scan, qui se rafraîchit par
     `<meta http-equiv="refresh">` — le rafraîchissement sans une ligne de JavaScript. Un script ne

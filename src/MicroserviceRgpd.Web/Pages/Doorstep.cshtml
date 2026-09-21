@@ -21,83 +21,85 @@
   dérogation est étroite et nommée : les références d'articles du RGPD de la phrase ci-dessous, qui
   ne sont ni un compteur ni une mesure du service.
 *@
-<header class="doorstep-hero">
-  <h1>@Navigation.ServiceName</h1>
+<div class="doorstep">
+  <header class="doorstep-hero">
+    <h1>@Navigation.ServiceName</h1>
 
-  <p>@Navigation.Presentation</p>
-</header>
+    <p>@Navigation.Presentation</p>
+  </header>
 
-@*
-  LES PORTES SONT RANGÉES PAR MOMENT DU PARCOURS : avant toute demande, puis quand une demande
-  arrive. Le regroupement se lit sur la liste du panneau, dans son ordre — il ne la réordonne pas.
-*@
-<div class="moments">
-  @foreach (var moment in Navigation.EntryPoints.GroupBy(entryPoint => entryPoint.Moment))
-  {
-    <section class="moment">
-      <header>
-        <h2>@moment.Key.Title</h2>
-        <p>@moment.Key.Sentence</p>
-      </header>
+  @*
+    LES PORTES SONT RANGÉES PAR MOMENT DU PARCOURS : avant toute demande, puis quand une demande
+    arrive. Le regroupement se lit sur la liste du panneau, dans son ordre — il ne la réordonne pas.
+  *@
+  <div class="moments">
+    @foreach (var moment in Navigation.EntryPoints.GroupBy(entryPoint => entryPoint.Moment))
+    {
+      <section class="moment">
+        <header>
+          <h2>@moment.Key.Title</h2>
+          <p>@moment.Key.Sentence</p>
+        </header>
 
-      <div class="doorways">
-        @foreach (var entryPoint in moment)
-        {
-          @*
-            LA CARTE ENTIÈRE EST UN LIEN : c'est une porte, on pousse la porte entière. Pas un `div`
-            cliquable, pas de `role`, pas de `tabindex` — un lien est déjà un lien —, et AUCUNE
-            CIBLE SECONDAIRE à l'intérieur : un second lien dans la carte ferait deux choses à
-            pousser là où l'écran n'en montre qu'une. Le « Ouvrir » n'en est pas une : c'est un
-            texte de la carte, masqué à la lecture vocale, que le lien entier porte.
+        <div class="doorways">
+          @foreach (var entryPoint in moment)
+          {
+            @*
+              LA CARTE ENTIÈRE EST UN LIEN : c'est une porte, on pousse la porte entière. Pas un `div`
+              cliquable, pas de `role`, pas de `tabindex` — un lien est déjà un lien —, et AUCUNE
+              CIBLE SECONDAIRE à l'intérieur : un second lien dans la carte ferait deux choses à
+              pousser là où l'écran n'en montre qu'une. Le « Ouvrir » n'en est pas une : c'est un
+              texte de la carte, masqué à la lecture vocale, que le lien entier porte.
 
-            L'ORDRE EST CELUI DU PANNEAU, et il vient de la même liste : on configure, on détecte, on
-            qualifie, on traite. Deux listes se seraient décalées d'un cran un jour, et l'accueil
-            aurait dit d'une porte ce qui se trouve derrière une autre.
+              L'ORDRE EST CELUI DU PANNEAU, et il vient de la même liste : on configure, on détecte, on
+              qualifie, on traite. Deux listes se seraient décalées d'un cran un jour, et l'accueil
+              aurait dit d'une porte ce qui se trouve derrière une autre.
 
-            ⚠️ LA CARTE PORTE `DoorwayName`, PAS `NavigationLabel` — c'est le nom PLEIN, plus long que
-            celui que la barre affiche pour le même écran. Rien ne précède une carte, là où le
-            wordmark précède le libellé de la barre. Voir ADR-0008.
-          *@
-          <a class="doorway" href="@entryPoint.Address">
-            <span class="doorway-icon" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                @switch (entryPoint.Address)
-                {
-                  case "/parametrage":
-                    <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
-                    <circle cx="15" cy="7" r="2" />
-                    <circle cx="9" cy="17" r="2" />
-                    break;
-                  case "/detection":
-                    <ellipse cx="10" cy="5.5" rx="6.5" ry="2.5" />
-                    <path d="M3.5 5.5v11c0 1.4 2.9 2.5 6.5 2.5M16.5 5.5v4" />
-                    <circle cx="17" cy="15.5" r="3" />
-                    <path d="M19.2 17.7L21 19.5" />
-                    break;
-                  case "/qualification":
-                    <path d="M6 3h8l4 4v14H6z" />
-                    <path d="M14 3v4h4M9 12h6M9 16h4" />
-                    break;
-                  case "/demandes":
-                    <rect x="3" y="4.5" width="18" height="15" rx="2" />
-                    <path d="M3 9.5h18M3 14.5h18M9 9.5v10" />
-                    break;
-                }
-              </svg>
-            </span>
-            <h3>@entryPoint.DoorwayName</h3>
-            <p>@entryPoint.DoorwaySentence</p>
-            <span class="doorway-open" aria-hidden="true">
-              Ouvrir
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </span>
-          </a>
-        }
-      </div>
-    </section>
-  }
+              ⚠️ LA CARTE PORTE `DoorwayName`, PAS `NavigationLabel` — c'est le nom PLEIN, plus long que
+              celui que la barre affiche pour le même écran. Rien ne précède une carte, là où le
+              wordmark précède le libellé de la barre. Voir ADR-0008.
+            *@
+            <a class="doorway" href="@entryPoint.Address">
+              <span class="doorway-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                  @switch (entryPoint.Address)
+                  {
+                    case "/parametrage":
+                      <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+                      <circle cx="15" cy="7" r="2" />
+                      <circle cx="9" cy="17" r="2" />
+                      break;
+                    case "/detection":
+                      <ellipse cx="10" cy="5.5" rx="6.5" ry="2.5" />
+                      <path d="M3.5 5.5v11c0 1.4 2.9 2.5 6.5 2.5M16.5 5.5v4" />
+                      <circle cx="17" cy="15.5" r="3" />
+                      <path d="M19.2 17.7L21 19.5" />
+                      break;
+                    case "/qualification":
+                      <path d="M6 3h8l4 4v14H6z" />
+                      <path d="M14 3v4h4M9 12h6M9 16h4" />
+                      break;
+                    case "/demandes":
+                      <rect x="3" y="4.5" width="18" height="15" rx="2" />
+                      <path d="M3 9.5h18M3 14.5h18M9 9.5v10" />
+                      break;
+                  }
+                </svg>
+              </span>
+              <h3>@entryPoint.DoorwayName</h3>
+              <p>@entryPoint.DoorwaySentence</p>
+              <span class="doorway-open" aria-hidden="true">
+                Ouvrir
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+  </div>
 </div>
