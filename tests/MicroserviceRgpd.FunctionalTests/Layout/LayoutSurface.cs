@@ -119,7 +119,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// <remarks>
   /// <para>
   /// ⚠️ <b>Recopiées à dessein</b>, elles aussi. Les phrases sont gelées, et <b>sans un
-  /// chiffre</b> : les trois premières à la deuxième personne, parallèles sur « Vous y + verbe ».
+  /// chiffre</b> : les trois premières s'adressent à l'Operator, en français simple.
   /// </para>
   /// <para>
   /// ⚠️ <b>La dernière n'est pas une phrase, délibérément</b> : « Consultation des demandes RGPD en
@@ -127,30 +127,28 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   /// « rétabli ».
   /// </para>
   /// <para>
-  /// ⚠️ <b>La phrase de la qualification dit qu'aucune demande n'en découle</b>, et c'est ce qui la
+  /// ⚠️ <b>La phrase de la qualification dit que rien n'est enregistré</b>, et c'est ce qui la
   /// distingue des trois autres : elle est la seule à écarter un geste plutôt qu'à en annoncer un.
-  /// Le verbe y est <b>proposer</b>, jamais « décider ». Ce membre de phrase est gelé comme le
-  /// reste — sans lui, on arriverait sur l'écran en croyant y déposer une demande.
+  /// Le service y fait une <b>proposition</b>, jamais une décision. Ce membre de phrase est gelé
+  /// comme le reste — sans lui, on arriverait sur l'écran en croyant y déposer une demande.
   /// </para>
   /// </remarks>
   internal static readonly IReadOnlyList<(string Name, string Sentence, string Address)> Doorways =
   [
     (
       "Paramétrage du microservice RGPD",
-      "Vous y associez à chacun des six droits RGPD le canal par lequel le service l'exercera : une " +
-      "adresse HTTP, ou un routage RabbitMQ. Un droit sans l'un ni l'autre reste « non configuré », " +
-      "et rien ne vous oblige à les renseigner tous.",
+      "Pour chacun des six droits RGPD, choisissez un canal : une adresse HTTP ou RabbitMQ. Rien " +
+      "n'est obligatoire. Un droit sans canal reste « non configuré ».",
       "/parametrage"),
     (
       "Détection des données personnelles",
-      "Vous y faites scanner une base par le service, ou vous collez un schéma vous-même. Il " +
-      "signale les colonnes susceptibles de porter des données personnelles ; aucune valeur lue " +
-      "n'est conservée, et vous tranchez ligne par ligne.",
+      "Scannez une base ou collez un schéma. Le service repère les colonnes qui peuvent contenir " +
+      "des données personnelles, et vous validez chaque ligne.",
       "/detection"),
     (
       "Qualification",
-      "Vous y collez le texte libre d'une demande, et le service propose les droits RGPD qu'elle " +
-      "exerce. Aucune demande n'en découle : la proposition se lit ici, elle ne s'y dépose pas.",
+      "Vous ne savez pas quel droit une personne exerce ? Collez son message, le service vous fait " +
+      "une proposition. Rien n'est enregistré.",
       "/qualification"),
     (
       "Tableau des demandes RGPD",
