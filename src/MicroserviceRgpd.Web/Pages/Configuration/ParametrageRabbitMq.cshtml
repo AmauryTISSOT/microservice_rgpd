@@ -5,8 +5,11 @@
 @{
   ViewData["Title"] = ParametrageFaces.ScreenName;
 
+  // La liste et le détail côte à côte, comme sur la face HTTP.
+  ViewData["Wide"] = true;
+
   // Les noms de liaison des deux champs : ce qui se range SOUS un champ, et donc ce qui ne se redit
-  // pas dans le bloc de refus d'une section.
+  // pas dans le bloc de refus du détail.
   var exchangeName = $"{ParametrageRabbitMqModel.FormPrefix}.Exchange";
   var routingKeyName = $"{ParametrageRabbitMqModel.FormPrefix}.RoutingKey";
 
@@ -20,9 +23,9 @@
          .SelectMany(entry => entry.Value!.Errors)
          .Select(refusal => refusal.ErrorMessage)];
 
-  // UN CHAMP DE LA MINI-FORM D'UN DROIT — son libellé, sa saisie, son aide, et le refus qui se range
-  // SOUS LUI. Les deux champs se suivent dans un même fieldset : un refus laissé en tête de section
-  // n'aurait pas dit LEQUEL des deux corriger.
+  // UN CHAMP DE LA MINI-FORM — son libellé, sa saisie, son aide, et le refus qui se range SOUS LUI.
+  // Les deux champs se suivent dans un même fieldset : un refus laissé en tête du détail n'aurait
+  // pas dit LEQUEL des deux corriger.
   //
   // ⚠️ PAS D'ATTRIBUT `maxlength`. Il compte des unités UTF-16, la contrainte des octets UTF-8 : un
   // navigateur qui tronquerait à 255 unités laisserait passer une valeur que le broker refuserait,
@@ -31,7 +34,7 @@
   {
     var describedBy = refusal is null ? $"{id}-hint" : $"{id}-hint {id}-refusal";
 
-    <p>
+    <p class="field">
       <label for="@id">@label</label>
       <input type="text" id="@id" name="@name" value="@value" autocomplete="off"
              aria-describedby="@describedBy" aria-invalid="@(refusal is null ? null : "true")" />
@@ -55,6 +58,15 @@
 
     return entry?.Errors.Count > 0 ? entry.Errors[0].ErrorMessage : null;
   }
+
+  var right = Model.Selected;
+  var refused = Model.Refused is not null;
+  var routing = Model.Scene.Channel is ExerciseChannel.RabbitMq rabbitMq ? rabbitMq.Routing : null;
+
+  // LE RÉGLAGE DE L'AUTRE FACE, LU ICI. Cette page ne configure que le routage, mais un droit réglé
+  // en HTTP verrait son adresse remplacée par l'enregistrement d'un routage (ADR-0027) : c'est elle
+  // qui décide de l'avertissement.
+  var addressed = Model.Scene.Channel is ExerciseChannel.HttpEndpoint;
 }
 
 @*
@@ -63,182 +75,128 @@
 *@
 <h1>@ParametrageFaces.ScreenName</h1>
 
-<partial name="_ParametrageTabs" model="@ParametrageFaces.RabbitMq" />
-
-@*
-  LE BANDEAU DE CONNEXION — ce déploiement n'a aucune connexion RabbitMQ, et rien ne partira donc
-  sur le bus quoi qu'on déclare ici. Il est EN TÊTE DE LA FACE, avant la prose et avant les six
-  droits : lu après les routages, il serait arrivé trop tard pour empêcher de les croire opérants.
-
-  ⚠️ IL NE PARAÎT QUE S'IL CONCERNE L'INTÉGRATEUR — pas tant qu'aucun routage n'est posé. Un
-  avertissement permanent sur un écran qu'on vient d'ouvrir devient un meuble, et on cesse de le
-  lire le jour où il dit quelque chose.
-
-  ⚠️ IL NOMME LA CLÉ, et c'est ce qui le rend actionnable : dire « aucune connexion configurée »
-  sans dire OÙ la configurer aurait renvoyé l'intégrateur à la documentation. Elle se lit sur la
-  constante de la connexion déclarée au déploiement, jamais recopiée ici.
-
-  ⚠️ IL NE PARAÎT JAMAIS SUR LA FACE HTTP : un avertissement RabbitMQ n'a rien à dire d'un écran qui
-  ne parle pas de RabbitMQ. C'est pour cela qu'il vit dans CE gabarit et non dans le layout.
-*@
-@if (Model.WarnsThatNothingWillBePublished)
-{
-  <div class="advisory">
-    <p>
-      <strong>Aucune connexion RabbitMQ n'est configurée sur ce déploiement.</strong> Les routages
-      ci-dessous sont bien enregistrés, mais le service n'a pas de broker où publier : tant qu'il
-      n'en a pas, l'exercice d'un droit réglé sur RabbitMQ ne partira pas.
-    </p>
-    <p>
-      La connexion se pose dans la configuration du déploiement, sous la clé
-      <code>@RabbitMqOptions.HostNameKey</code> — jamais depuis cet écran, qui ne détient aucun
-      secret.
-    </p>
-  </div>
-}
-
-@*
-  La phrase dit ce que cette face est : le routage, droit par droit, par lequel le service publiera
-  l'exercice de chacun des six droits. Un droit sans adresse ni routage est « non configuré ».
-
-  ⚠️ ELLE DIT AUSSI QUE DÉCLARER N'EST PAS APPELER : enregistrer ici n'ouvre aucune connexion et ne
-  déclare aucun exchange, et l'intégrateur qui configure avant que son broker existe doit le savoir
-  plutôt que d'attendre un verdict qui ne viendra pas.
-*@
-<p class="caveat">
-  Cette face porte le <strong>routage RabbitMQ</strong> — un exchange et une routing key — par lequel
-  le service exercera un droit. Un droit sans adresse ni routage est
-  <strong>« non configuré »</strong> : c'est un état normal, et rien ne vous oblige à les renseigner
-  tous. Enregistrer ici <strong>déclare</strong> un routage : le service ne se connecte pas au
-  broker et ne crée aucun exchange.
+<p class="lead">
+  Choisissez un droit dans la liste, puis indiquez où le service doit l'exercer. Un droit sans canal
+  reste <strong>« non configuré »</strong> : c'est normal.
 </p>
 
-@if (!ViewData.ModelState.IsValid && Model.Refused is null)
+@if (!ViewData.ModelState.IsValid && !refused)
 {
-  @* Un droit que l'écran ne configure pas n'a pas de section où dire son refus : il se dit ici. *@
+  @* Un droit que l'écran ne configure pas n'a pas de détail où dire son refus : il se dit ici. *@
   <partial name="_ParametrageRefusals" model="Refusals(_ => true)" />
 }
 
-@foreach (var right in Model.Settings.Rights)
-{
-  var refused = right.Right == Model.Refused;
-  var exchangeField = $"exchange-{right.Right.Name}";
-  var routingKeyField = $"routing-key-{right.Right.Name}";
+<div class="parametrage">
+  <partial name="_ParametrageRights" model="Model.Scene" />
 
-  var routing = right.Channel is ExerciseChannel.RabbitMq rabbitMq ? rabbitMq.Routing : null;
+  <section class="right" aria-labelledby="right-title">
+    <partial name="_ParametrageRightHead" model="Model.Scene" />
 
-  @*
-    LE RÉGLAGE DE L'AUTRE FACE, LU ICI. Cette page ne configure que le routage, mais elle DIT
-    l'adresse d'un droit réglé en HTTP : enregistrer un routage la remplacerait (ADR-0027), et un
-    écran qui tairait ce qu'un geste détruit ferait détruire à l'aveugle.
-  *@
-  var address = right.Channel is ExerciseChannel.HttpEndpoint http ? http.Address.Value : null;
-
-  <div class="right">
-    <h2>@right.Right.FrenchLabel</h2>
-    <dl>
-      <dt>Article</dt>
-      <dd>Article @right.Right.Article du RGPD</dd>
-
-      @if (routing is not null)
-      {
-        <dt>Exchange</dt>
-        <dd>@routing.Exchange.Value</dd>
-
-        <dt>Routing key</dt>
-        <dd>@routing.RoutingKey.Value</dd>
-      }
-      else if (address is not null)
-      {
-        @*
-          ⚠️ UN DROIT RÉGLÉ EN HTTP N'EST PAS UNE ABSENCE, et il ne prend donc pas l'encre pâle de
-          `.none` : il est configuré, sur l'autre face. On lit ici l'adresse elle-même, et non une
-          périphrase — c'est ELLE que l'enregistrement d'un routage remplacerait, et on la relit avant
-          de la perdre.
-        *@
-        <dt>Adresse d'exercice</dt>
-        <dd>@address</dd>
-      }
-      else
-      {
-        @*
-          ⚠️ « NON CONFIGURÉ » NE SE DIT QUE D'UN DROIT SANS ADRESSE NI ROUTAGE, et c'est ce qui garde
-          au mot son sens sur les deux faces : un droit réglé en HTTP est configuré, et l'appeler
-          « non configuré » ici ferait de cette face la seule du service qui mente sur son état.
-        *@
-        <dt>Routage d'exercice</dt>
-        <dd><span class="none">non configuré</span></dd>
-      }
-    </dl>
-
-    @if (refused)
-    {
-      @* Les refus de la section qu'aucun des deux champs ne porte — le reste est sous son champ. *@
-      <partial name="_ParametrageRefusals"
-               model="Refusals(key => key != exchangeName && key != routingKeyName)" />
-    }
+    <partial name="_ParametrageTabs" model="Model.Scene" />
 
     @*
-      Une mini-form par droit, qui n'envoie que lui — ni « tout enregistrer », ni « tout effacer ».
+      Une mini-form, qui n'envoie que le droit ouvert — ni « tout enregistrer », ni « tout effacer ».
       LES DEUX CHAMPS SONT RATTACHÉS À LEUR DROIT PAR LE `fieldset` ET SA `legend`, et non par une
       périphrase recopiée dans chaque libellé : « Exchange » et « Routing key » se lisent alors pour
-      ce qu'ils sont, et le lecteur d'écran annonce le droit en entrant dans le groupe.
+      ce qu'ils sont, et le lecteur d'écran annonce le droit en entrant dans le groupe. La légende ne
+      se voit pas : le titre du détail le dit déjà à qui regarde.
     *@
     <form method="post" asp-page-handler="Set">
-      <input type="hidden" name="Form.Right" value="@right.Right.Name" />
+      <input type="hidden" name="Form.Right" value="@right.Name" />
+
+      @if (refused)
+      {
+        @* Les refus du détail qu'aucun des deux champs ne porte — le reste est sous son champ. *@
+        <partial name="_ParametrageRefusals"
+                 model="Refusals(key => key != exchangeName && key != routingKeyName)" />
+      }
+
       <fieldset>
-        <legend>Routage d'exercice du @right.Right.FrenchLabel</legend>
+        <legend class="visually-hidden">Routage d'exercice du @right.FrenchLabel</legend>
         @{
           // Le champ porte le routage déjà enregistré — on le corrige sans repartir de zéro —, ou la
           // saisie qui vient d'être refusée, pour qu'elle se corrige sans être retapée.
           Field(
-            exchangeField,
+            "exchange",
             exchangeName,
             "Exchange",
-            "Le nom de l'exchange sur lequel le service publiera. Il doit déjà exister sur votre broker : le service ne le crée pas.",
+            "Il doit déjà exister sur votre broker : le service ne le crée pas.",
             refused ? Model.Form.Exchange ?? string.Empty : routing?.Exchange.Value,
             RefusalOf(refused, exchangeName));
 
           Field(
-            routingKeyField,
+            "routing-key",
             routingKeyName,
             "Routing key",
-            "La clé avec laquelle le service publiera sur cet exchange. C'est elle que vos bindings devront reconnaître.",
+            "Vos bindings devront la reconnaître.",
             refused ? Model.Form.RoutingKey ?? string.Empty : routing?.RoutingKey.Value,
             RefusalOf(refused, routingKeyName));
         }
       </fieldset>
 
       @*
-        ⚠️ L'AVERTISSEMENT PRÉCÈDE LE BOUTON, et il NOMME le réglage qui sera remplacé. Lu après, il
-        aurait prévenu d'un geste déjà fait ; sans le nom du réglage, il aurait averti sans dire de
-        quoi. Il ne paraît que pour un droit réglé sur l'autre face : un droit « non configuré » n'a
-        rien à perdre, et un droit déjà routé ne remplace que le sien.
+        LE BANDEAU DE CONNEXION — ce déploiement n'a aucune connexion RabbitMQ, et rien ne partira donc
+        sur le bus quoi qu'on déclare ici. Il se lit sous les champs qu'il concerne, avant le bouton :
+        lu après, il serait arrivé trop tard pour empêcher de croire le routage opérant.
+
+        ⚠️ IL NE PARAÎT QUE S'IL CONCERNE L'INTÉGRATEUR — pas tant qu'aucun routage n'est posé. Un
+        avertissement permanent sur un écran qu'on vient d'ouvrir devient un meuble, et on cesse de le
+        lire le jour où il dit quelque chose.
+
+        ⚠️ IL NOMME LA CLÉ, et c'est ce qui le rend actionnable. Elle se lit sur la constante de la
+        connexion déclarée au déploiement, jamais recopiée ici — et elle se pose dans la configuration
+        du déploiement, jamais depuis cet écran, qui ne détient aucun secret.
+
+        ⚠️ IL NE PARAÎT JAMAIS SUR LA FACE HTTP : un avertissement RabbitMQ n'a rien à dire d'un écran
+        qui ne parle pas de RabbitMQ. C'est pour cela qu'il vit dans CE gabarit et non dans le layout.
       *@
-      @if (address is not null)
+      @if (Model.WarnsThatNothingWillBePublished)
       {
-        <p class="caveat replacement">
-          Ce droit porte déjà une adresse d'exercice, sur la face « Configuration HTTP ».
-          Enregistrer un routage ici remplacera cette adresse : un droit ne porte qu'un seul canal.
+        <div class="advisory" role="note">
+          <partial name="_WarningIcon" />
+          <p>
+            <strong>Aucune connexion RabbitMQ sur ce déploiement</strong> : les routages sont
+            enregistrés, mais rien ne partira tant que <code>@RabbitMqOptions.HostNameKey</code> n'est
+            pas renseigné dans la configuration du déploiement.
+          </p>
+        </div>
+      }
+
+      @*
+        ⚠️ L'AVERTISSEMENT PRÉCÈDE LE BOUTON, et il NOMME le réglage qui sera remplacé. Il ne paraît
+        que pour un droit réglé sur l'autre face : un droit « non configuré » n'a rien à perdre, et un
+        droit déjà routé ne remplace que le sien.
+      *@
+      @if (addressed)
+      {
+        <p class="replacement">
+          <partial name="_WarningIcon" />
+          <span>Enregistrer un routage remplacera l'adresse HTTP actuelle : un droit ne porte qu'un seul canal.</span>
         </p>
       }
 
-      <button type="submit" class="primary">Enregistrer</button>
+      <div class="actions">
+        <button type="submit" class="primary">Enregistrer</button>
+
+        @*
+          Effacer n'est offert qu'à un droit que cette page CONFIGURE : un droit « non configuré » n'a
+          rien à oublier, et un droit réglé en HTTP — dont cette page montre l'adresse sans l'écrire —
+          n'a pas à voir son réglage détruit par le bouton d'une face qui ne le configure pas. Le
+          bouton envoie SA PROPRE form, qui ne porte que le droit — pas les champs voisins, qu'on
+          aurait pu retoucher sans vouloir les enregistrer.
+        *@
+        @if (routing is not null)
+        {
+          <button type="submit" form="clear">Effacer le canal</button>
+        }
+      </div>
     </form>
 
-    @*
-      Effacer n'est offert qu'à un droit que cette page CONFIGURE : un droit « non configuré » n'a
-      rien à oublier, et un droit réglé en HTTP — dont cette page montre l'adresse sans l'écrire —
-      n'a pas à voir son réglage détruit par le bouton d'une face qui ne le configure pas. Sa propre form, qui n'envoie que le droit — pas les champs voisins, qu'on
-      aurait pu retoucher sans vouloir les enregistrer. Le bouton n'est pas « destructif » : un droit
-      sans routage est un état normal, et le routage se ressaisit.
-    *@
     @if (routing is not null)
     {
-      <form method="post" asp-page-handler="Clear">
-        <input type="hidden" name="Form.Right" value="@right.Right.Name" />
-        <button type="submit">Effacer</button>
+      <form id="clear" method="post" asp-page-handler="Clear">
+        <input type="hidden" name="Form.Right" value="@right.Name" />
       </form>
     }
-  </div>
-}
+  </section>
+</div>

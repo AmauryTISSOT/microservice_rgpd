@@ -526,7 +526,6 @@ table.queue:not(.columns, .table-frame > table) {
 }
 
 .premises h3,
-.right h2,
 .system h2,
 .system h3 {
   font: var(--type-heading-3);
@@ -544,7 +543,6 @@ table.queue:not(.columns, .table-frame > table) {
 */
 .facts,
 .premises dl,
-.right dl,
 .system dl {
   display: grid;
   gap: var(--space-xxs) var(--space-md);
@@ -554,14 +552,12 @@ table.queue:not(.columns, .table-frame > table) {
 
 .facts dt,
 .premises dt,
-.right dt,
 .system dt {
   font-weight: var(--weight-semibold);
 }
 
 .facts dd,
 .premises dd,
-.right dd,
 .system dd {
   margin: 0;
   white-space: pre-wrap;
@@ -1063,32 +1059,6 @@ fieldset:has(input[type="radio"]) label {
 .refusal {
   color: var(--signal-error);
   font-weight: var(--weight-semibold);
-}
-
-/*
-  LE REFUS D'UN CHAMP SE LIT SOUS LUI, sur sa propre ligne — comme dans la modale des demandes. Dans
-  une mini-form du Paramétrage, deux champs se suivent : un refus laissé en ligne se serait lu comme
-  la suite du champ voisin, et on aurait corrigé le mauvais.
-*/
-.right form .refusal {
-  display: block;
-  margin-top: var(--space-xxs);
-}
-
-/*
-  L'AVERTISSEMENT DE REMPLACEMENT — ce qu'un enregistrement détruirait sur l'autre face. Il emprunte
-  la mise en garde et n'en change que le filet et l'encre : il ne refuse rien — il n'y a pas d'erreur
-  à corriger —, mais il ne se lit pas non plus comme la prose grise de l'écran.
-
-  ⚠️ IL VIT DANS LA MINI-FORM, juste avant son bouton, et ses marges se resserrent donc : les marges
-  pleines d'une carte de prose l'auraient détaché du geste dont il prévient.
-*/
-.right form .caveat.replacement {
-  border-left-color: var(--signal-warning);
-  color: var(--signal-warning-ink);
-  font-style: normal;
-  margin: var(--space-md) 0;
-  padding: var(--space-md);
 }
 
 /* Le bloc des refus est une carte, et son filet reste rouge : c'est ce qui le fait lire d'abord. */
@@ -1651,6 +1621,295 @@ a.doorway p {
 
 a.doorway:hover .doorway-open {
   color: var(--accent-pressed);
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE PARAMÉTRAGE, EN LISTE ET DÉTAIL. Les six droits d'un côté, chacun avec son réglage en une
+  ligne ; le droit ouvert de l'autre, seul, avec son réglage actuel, ses deux faces et sa mini-form.
+  La liste dit l'état de tous d'un coup d'œil, le détail n'en règle qu'un à la fois.
+
+  ⚠️ PAS UNE LIGNE DE JAVASCRIPT. Chaque ligne de la liste est un lien vers une adresse que le
+  serveur rend entièrement ; le droit ouvert se marque au rendu, jamais au clic.
+
+  Sous 60rem, les deux se superposent : la liste d'abord, le détail ensuite — une liste écrasée à
+  côté d'un formulaire n'aurait plus rien laissé lire.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.lead {
+  color: var(--ink-secondary);
+  font-size: 17px;
+  line-height: 1.55;
+  margin: var(--space-sm) 0 var(--space-xl);
+  max-width: 47.5rem;
+}
+
+.parametrage {
+  align-items: start;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: minmax(0, 23.75rem) minmax(0, 1fr);
+}
+
+@media (max-width: 60rem) {
+  .parametrage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+nav.rights {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xs);
+}
+
+nav.rights ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Le nom et le réglage s'empilent à gauche ; le chevron reste à droite, sur les deux lignes. */
+nav.rights a {
+  align-items: center;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  display: grid;
+  gap: 3px var(--space-sm);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: var(--space-sm) 14px;
+  text-decoration: none;
+}
+
+nav.rights a:hover {
+  background: var(--canvas);
+}
+
+.right-name {
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+}
+
+/* Le réglage tient sur une ligne : une adresse trop longue s'élide, le détail la dit en entier. */
+.right-summary {
+  color: var(--ink-muted);
+  display: flex;
+  font-size: 13px;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.right-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.right-chevron {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+/*
+  LE DROIT OUVERT SE MARQUE AVEC L'ACCENT, et le fond teinté vient AVEC l'encre, jamais à sa place :
+  la couleur seule l'aurait dit à qui distingue les bleus, et rien à qui ne les distingue pas.
+*/
+nav.rights a.current,
+nav.rights a.current .right-summary {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--accent-pressed);
+}
+
+section.right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin: 0;
+  padding: var(--space-xxl);
+}
+
+section.right header h2 {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: 0.6px;
+  margin: 0 0 var(--space-xxs);
+  text-transform: uppercase;
+}
+
+/* Le réglage actuel se pose sur le canevas : il se lit, il ne se saisit pas. */
+.current-setting {
+  background: var(--canvas);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) 20px;
+}
+
+.current-setting h3 {
+  color: var(--ink-secondary);
+  font: var(--type-eyebrow);
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.current-setting dl {
+  display: grid;
+  gap: 6px var(--space-md);
+  grid-template-columns: 10rem minmax(0, 1fr);
+  margin: 0;
+}
+
+.current-setting dt {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+}
+
+.current-setting dd {
+  font-weight: var(--weight-semibold);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.current-setting code,
+.advisory code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  font-weight: var(--weight-regular);
+}
+
+.current-setting p {
+  margin: 0;
+}
+
+section.right nav.tabs ul {
+  gap: var(--space-xl);
+  margin: 0;
+}
+
+section.right form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+section.right form p.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  max-width: 35rem;
+}
+
+section.right label {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+section.right input[type="text"] {
+  border-color: var(--ink-faint);
+  border-radius: var(--radius-md);
+  height: 40px;
+  padding: 0 var(--space-sm);
+}
+
+/*
+  Les deux champs du routage côte à côte : ils forment UN réglage, et le fieldset qui les rattache à
+  leur droit n'a ni cadre ni marge — le détail entier est déjà ce cadre.
+*/
+section.right fieldset {
+  border: 0;
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  margin: 0;
+  max-width: 45rem;
+  padding: 0;
+}
+
+section.right fieldset p.field {
+  max-width: none;
+}
+
+/*
+  LE REFUS D'UN CHAMP SE LIT SOUS LUI, sur sa propre ligne — comme dans la modale des demandes. Deux
+  champs se suivent : un refus laissé en ligne se serait lu comme la suite du champ voisin, et on
+  aurait corrigé le mauvais.
+*/
+section.right .refusal {
+  display: block;
+}
+
+section.right .refusals {
+  margin: 0;
+}
+
+/*
+  L'AVERTISSEMENT DE REMPLACEMENT — ce qu'un enregistrement détruirait sur l'autre face. Il ne refuse
+  rien — il n'y a pas d'erreur à corriger —, mais il porte l'orange qui se lit en texte, et son
+  pictogramme : il VIT DANS LA MINI-FORM, juste avant son bouton.
+*/
+.replacement {
+  color: var(--signal-warning-ink);
+  display: flex;
+  font-size: 14px;
+  gap: 6px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.warning-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/*
+  LE BANDEAU DE CONNEXION, dans le détail : la carte d'avertissement resserrée, filet orange tout
+  autour et fond à peine teinté. La phrase dit tout ; le filet et le pictogramme ne font que l'annoncer.
+*/
+section.right .advisory {
+  background: color-mix(in srgb, var(--signal-warning) 8%, var(--surface));
+  border: var(--hairline-width) solid var(--signal-warning);
+  border-radius: var(--radius-md);
+  color: var(--signal-warning-ink);
+  display: flex;
+  font-size: 13px;
+  gap: 10px;
+  line-height: 1.45;
+  margin: 0;
+  max-width: 45rem;
+  padding: var(--space-sm) 14px;
+}
+
+section.right .actions {
+  border-top: var(--hairline-width) solid var(--hairline);
+  display: flex;
+  gap: var(--space-xs);
+  padding-top: 20px;
+}
+
+/*
+  LE TEXTE POUR LES SEULS LECTEURS D'ÉCRAN — la légende d'un groupe que le titre voisin nomme déjà à
+  qui regarde. Le motif est le classique : ni `display: none` ni `hidden`, qui le tairaient aussi.
+*/
+.visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 /*
