@@ -64,6 +64,24 @@ public class SheetOnScreen(BrowserHarness harness)
   }
 
   /// <summary>
+  /// <b>« Fermer » reste au bas de la fiche, même quand la demande est courte</b> : les blocs prennent
+  /// la hauteur laissée par la tête et le pied, et le pied ne remonte pas sous le dernier bloc.
+  /// </summary>
+  [Fact]
+  public async Task KeepsTheFootAtTheBottomOfTheSheetForAShortRequest()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await BoardAsync(context, 1280, 1400);
+    await OpenTheSheetOfAShortMessageAsync(page);
+
+    var sheet = await BoxOfAsync(Sheet(page));
+    var close = await BoxOfAsync(CloseButtonOf(page));
+
+    (sheet.Y + sheet.Height - (close.Y + close.Height)).ShouldBeLessThan(
+      64, "« Fermer » n'est pas au bas de la fiche : le pied est remonté sous le dernier bloc.");
+  }
+
+  /// <summary>
   /// <b>Le message défile dans sa propre zone</b>, de hauteur bornée à 40 vh : le budget à répartir
   /// est celui de la fenêtre, et un message de 10 000 caractères n'en prend pas davantage.
   /// </summary>
@@ -318,7 +336,7 @@ public class SheetOnScreen(BrowserHarness harness)
   }
 
   /// <summary>
-  /// La fiche : le seul <c>dialog</c> qui porte les cinq blocs d'une demande. ⚠️ Elle ne se cherche
+  /// La fiche : le seul <c>dialog</c> qui porte le bloc « La personne ». ⚠️ Elle ne se cherche
   /// pas par son nom accessible — c'est le nom de la personne, vide tant que rien ne l'y écrit.
   /// </summary>
   private static ILocator Sheet(IPage page)

@@ -452,6 +452,62 @@ public class RequestConsultation(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
+  /// <b>La ligne d'une demande En cours porte le décompte de la fiche</b>, compté contre
+  /// « aujourd'hui » à Paris : les jours qui restent en un chiffre, ce qu'il compte, et la part du
+  /// délai écoulée depuis la réception, en pourcents entiers bornés à 100.
+  /// </summary>
+  /// <remarks>
+  /// L'horloge du service est avancée jusqu'au prochain 10 h UTC, comme pour le signalement : le
+  /// décompte et le signalement se lisent côte à côte, et comptent le même jour.
+  /// </remarks>
+  [Theory]
+  [InlineData(9, 21, "21 jours", "pour répondre", "30")]
+  [InlineData(29, 1, "1 jour", "pour répondre", "96")]
+  [InlineData(30, 0, "Aujourd'hui", "dernier jour pour répondre", "100")]
+  [InlineData(32, -2, "2 jours", "de retard", "100")]
+  public async Task CarriesTheCountdownOfARequestInProgressForTheSheet(
+    int receivedDaysAgo, int daysLeft, string lead, string tail, string elapsed)
+  {
+    await AtTheNextAsync(TimeSpan.FromHours(10), async () =>
+    {
+      var today = ParisCalendar.Today(factory.Clock);
+      var email = $"{Guid.NewGuid():N}@example.org";
+      var (id, _) = await _surface.RecordAsync(new Dictionary<string, string>
+      {
+        ["email"] = email,
+        ["receivedOn"] = today.AddDays(-receivedDaysAgo).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+      });
+
+      await _surface.SetResponseDeadlineAsync(id, today.AddDays(daysLeft));
+
+      var row = Regex.Match(RowMarkupWith(await BoardAsync(), email), @"<tr\b([^>]*)>").Groups[1].Value;
+
+      AttributeOf(row, "data-sheet-countdown-lead").ShouldBe(lead);
+      AttributeOf(row, "data-sheet-countdown-tail").ShouldBe(tail);
+      AttributeOf(row, "data-sheet-countdown-elapsed").ShouldBe(elapsed);
+    });
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Une demande close ne porte aucun décompte</b> : elle n'a plus de délai qui court, et c'est
+  /// l'absence des trois attributs qui le dit à la fiche.
+  /// </summary>
+  [Theory]
+  [InlineData("Completed")]
+  [InlineData("Cancelled")]
+  public async Task CarriesNoCountdownForARequestThatIsNoLongerInProgress(string status)
+  {
+    var email = $"{Guid.NewGuid():N}@example.org";
+    var (id, _) = await _surface.RecordAsync(new Dictionary<string, string> { ["email"] = email });
+
+    await _surface.SetStatusAsync(id, status);
+
+    var row = Regex.Match(RowMarkupWith(await BoardAsync(), email), @"<tr\b([^>]*)>").Groups[1].Value;
+
+    row.ShouldNotContain("data-sheet-countdown", Case.Sensitive, $"Une demande au statut {status} porte un décompte.");
+  }
+
+  /// <summary>
   /// ⚠️ <b>Seule la cellule de la date limite porte le signalement</b> : ni la ligne, ni aucune autre
   /// cellule ne s'en colore.
   /// </summary>

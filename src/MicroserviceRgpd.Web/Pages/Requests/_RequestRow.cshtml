@@ -102,6 +102,7 @@
 *@
 @{
   var extensionAttributes = Model.ForSheet.Extension?.Attributes();
+  var countdownAttributes = Model.ForSheet.Countdown?.Attributes();
 
   (string Label, string Tooltip, string Icon, string Action, bool Dimmed)[] actions =
   [
@@ -121,7 +122,8 @@
     data-sheet-person="@Model.ForSheet.Person"
     data-sheet-origin="@Model.ForSheet.Origin"
     data-sheet-message="@Model.ForSheet.Message"
-    @extensionAttributes>
+    @extensionAttributes
+    @countdownAttributes>
   <td data-field="email">@Model.Email</td>
   <td data-field="lastName">@Model.LastName</td>
   <td data-field="firstName">@Model.FirstName</td>

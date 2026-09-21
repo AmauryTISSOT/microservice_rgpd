@@ -500,39 +500,37 @@
   ⚠️ AUCUN GESTE NE S'Y TROUVE — ni suppression, ni modification, ni changement de statut : les
   gestes restent sur la ligne, à un seul endroit. Les deux seuls boutons ferment.
 
-  ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les six blocs titrés et les mots de chaque
+  ELLE SE LIT DANS L'ORDRE OÙ L'`Operator` EN A BESOIN : le droit et la personne en tête, puis LE
+  DÉLAI D'ABORD — ce qui reste pour répondre, le statut, la part du délai écoulée entre la réception
+  et la date limite —, puis le message, la personne détaillée, et l'historique de la demande, le plus
+  récent en haut.
+
+  ELLE PORTE TOUS SES LIBELLÉS, RENDUS ICI : le titre, les quatre blocs titrés et les mots de chaque
   valeur. ⚠️ SEULES LES VALEURS SONT VIDES AU CHARGEMENT : le titre — qui nomme la personne — et les
   cibles `data-field` attendent que l'œil d'une ligne y verse ce que sa ligne porte. Chaque cible se
-  nomme comme la cellule dont elle reçoit les nœuds ; le module ne compose aucun libellé, et n'écrit
-  que trois valeurs qu'aucune colonne ne montre — le titre, l'origine et le message.
+  nomme comme la cellule dont elle reçoit les nœuds ; le module ne compose aucun libellé.
 
   ⚠️ AUCUNE CIBLE NE DISPARAÎT QUAND SA VALEUR MANQUE : la cellule porte alors « — », que la fiche
   reçoit comme le reste. « Pas de prénom » doit se distinguer de « la fiche ne montre pas le
   prénom », et la fiche garde la même forme d'une demande à l'autre.
 
-  ⚠️ LE BLOC « PROLONGATION » EST LA SEULE EXCEPTION, ET IL DISPARAÎT ENTIER : une demande non
-  prolongée n'en montre ni le titre, ni les champs, ni un tiret. Les autres cibles disent une valeur
-  absente d'une demande qui a le champ ; celle-ci dirait un acte qui n'a pas eu lieu.
+  ⚠️ DEUX EXCEPTIONS, QUI DISPARAISSENT ENTIÈRES (`data-block`) : l'étape « Prolongation » de
+  l'historique, sur une demande non prolongée — elle dirait un acte qui n'a pas eu lieu —, et le
+  décompte avec sa barre, sur une demande close — il n'y a plus de délai qui court.
 
-  ⚠️ L'IDENTIFIANT TECHNIQUE DE LA DEMANDE N'A AUCUNE CIBLE ICI, et n'en aura pas : aucune cellule ne
-  le porte, et il ne dit rien à l'`Operator`.
+  LE DROIT INVOQUÉ SURMONTE LE TITRE, sous son libellé caché pour qui ne le voit pas : c'est ce que
+  la demande réclame, et la première chose à savoir d'elle.
 
-  LES QUATRE FAITS D'UN BLOC EMPRUNTENT LA GRILLE DES FAITS NOMMÉS, `facts`, et n'inventent rien :
-  un intitulé, une valeur, chacun sur sa ligne. C'est aussi elle qui associe la valeur à son libellé
-  pour le lecteur d'écran.
+  LES DEUX DATES DU DÉLAI BORDENT LA BARRE, la réception à gauche, la date limite à droite : la barre
+  se lit de l'une à l'autre. Elles restent une liste de définitions, qui associe chaque valeur à son
+  libellé pour le lecteur d'écran ; la barre, elle, est muette — le décompte la dit déjà en mots.
 
   LES MOTS SONT CEUX DE L'ÉCRAN, et pas d'autres : « Origine » comme le formulaire de création,
   « Droit invoqué » comme le glossaire, « Date de création » et « Créé par » comme les colonnes du
   tableau. Un même champ ne porte pas deux noms selon l'endroit où il se lit.
 
-  LA PERSONNE VIENT EN PREMIER : le titre nomme la personne, le premier bloc la détaille.
-
-  LE MESSAGE SORT DE LA LISTE DE DÉFINITIONS : c'est un bloc à part, sous son libellé. Dans la
-  grille de la liste, 10 000 caractères dicteraient la hauteur de tout le bloc.
-
-  LE BLOC DU STATUT N'A QU'UNE VALEUR — le badge cloné depuis la cellule de la ligne, sous le même
-  nom canonique et le même mot : son titre lui sert de libellé, et un « Statut » de plus ne dirait
-  rien que le titre ne dise déjà.
+  LE MESSAGE N'EST PAS DANS UNE LISTE DE DÉFINITIONS : c'est un bloc à part, sous son titre. Dans la
+  grille d'une liste, 10 000 caractères dicteraient la hauteur de tout le bloc.
 
   ⚠️ AUCUN ALLER-RETOUR RÉSEAU À L'OUVERTURE : tout ce que la fiche montre, la page l'a déjà sur la
   ligne. Pas d'état de chargement, pas d'état d'échec, rien à verrouiller.
@@ -542,7 +540,10 @@
 *@
 <dialog class="modal sheet" id="request-sheet" aria-labelledby="request-sheet-title">
   <div class="modal-head">
-    <h2 id="request-sheet-title"></h2>
+    <div class="sheet-heading">
+      <p class="sheet-right"><span class="visually-hidden">Droit invoqué : </span><span data-field="right"></span></p>
+      <h2 id="request-sheet-title"></h2>
+    </div>
     <button type="button" class="modal-close" aria-label="Fermer" data-dismiss>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6"
@@ -552,6 +553,35 @@
   </div>
 
   <div class="sheet-body">
+    <section class="sheet-deadline">
+      <h3 class="visually-hidden">Le délai</h3>
+      <div class="sheet-countdown">
+        <p data-block="countdown">
+          <strong data-field="countdownLead"></strong>
+          <span data-field="countdownTail"></span>
+        </p>
+        <div data-field="status"></div>
+      </div>
+      <div class="deadline-track" data-block="countdown" aria-hidden="true"><span></span></div>
+      <dl class="deadline-bounds">
+        <div>
+          <dt>Date de réception</dt>
+          <dd data-field="receivedOn"></dd>
+        </div>
+        <div>
+          <dt>Date limite de réponse</dt>
+          <dd data-field="responseDeadline"></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Message</h3>
+      <div class="sheet-message">
+        <p data-field="message"></p>
+      </div>
+    </section>
+
     <section>
       <h3>La personne</h3>
       <dl class="facts">
@@ -566,77 +596,53 @@
       </dl>
     </section>
 
-    <section>
-      <h3>La demande</h3>
-      <dl class="facts">
-        <dt>Droit invoqué</dt>
-        <dd data-field="right"></dd>
-        <dt>Origine</dt>
-        <dd data-field="origin"></dd>
-        <dt>Date de réception</dt>
-        <dd data-field="receivedOn"></dd>
-      </dl>
-
-      <div class="sheet-message">
-        <h4>Message</h4>
-        <p data-field="message"></p>
-      </div>
-    </section>
-
-    <section>
-      <h3>Le délai</h3>
-      <dl class="facts">
-        <dt>Date limite de réponse</dt>
-        <dd data-field="responseDeadline"></dd>
-      </dl>
-    </section>
-
     @*
-      LE BLOC DE LA PROLONGATION, MASQUÉ TANT QUE LA DEMANDE N'EST PAS PROLONGÉE — le seul bloc de la
-      fiche qui apparaisse et disparaisse. ⚠️ PAS QUATRE TIRETS SUR CHAQUE FICHE : ils apprendraient à
-      ne plus lire la section. C'est l'exception assumée à « aucune cible ne disparaît » : les autres
-      cibles disent une valeur absente d'une demande qui a le champ ; celles-ci diraient un acte qui
-      n'a pas eu lieu.
+      L'HISTORIQUE, LE PLUS RÉCENT EN HAUT : la prolongation s'il y en a une, l'enregistrement, la
+      réception. Une liste ordonnée — l'ordre est le sens —, chaque étape sous son titre, ses valeurs
+      en liste de définitions.
 
-      ⚠️ `hidden` SUR LA SECTION ENTIÈRE, TITRE COMPRIS : masquée, elle sort aussi de ce qu'un lecteur
-      d'écran parcourt, et la forme de la fiche reste celle d'avant.
+      ⚠️ `hidden` SUR L'ÉTAPE ENTIÈRE, TITRE COMPRIS : masquée, elle sort aussi de ce qu'un lecteur
+      d'écran parcourt, et l'historique garde la forme d'une demande jamais prolongée.
 
-      LA JUSTIFICATION SORT DE LA LISTE DE DÉFINITIONS, comme le message de la demande : dans la
-      grille des faits, 2 000 caractères dicteraient la hauteur de tout le bloc.
-
-      LES MOTS SONT CEUX DE LA MODALE DE PROLONGATION pour les deux qu'elle nomme déjà : un même champ
-      ne porte pas deux noms selon l'endroit où il se lit.
+      LA JUSTIFICATION SORT DE LA LISTE DE DÉFINITIONS, comme le message : dans la grille des faits,
+      2 000 caractères dicteraient la hauteur de toute l'étape. LES MOTS SONT CEUX DE LA MODALE DE
+      PROLONGATION pour les deux qu'elle nomme déjà.
     *@
-    <section data-block="extension" hidden>
-      <h3>Prolongation</h3>
-      <dl class="facts">
-        <dt>Date limite initiale</dt>
-        <dd data-field="initialDeadline"></dd>
-        <dt>Date de la prolongation</dt>
-        <dd data-field="extendedAt"></dd>
-        <dt>@ExtensionConfirmation.GroundLabel</dt>
-        <dd data-field="extensionGround"></dd>
-      </dl>
-
-      <div class="sheet-message">
-        <h4>@ExtensionConfirmation.JustificationLabel</h4>
-        <p data-field="extensionJustification"></p>
-      </div>
-    </section>
-
     <section>
-      <h3>Le statut</h3>
-      <p data-field="status"></p>
-    </section>
-
-    <section>
-      <h3>L'enregistrement</h3>
-      <dl class="facts">
-        <dt>Date de création</dt>
-        <dd data-field="createdAt"></dd>
-        <dt>Créé par</dt>
-        <dd data-field="createdBy"></dd>
-      </dl>
+      <h3>Historique</h3>
+      <ol class="sheet-history">
+        <li data-block="extension" hidden>
+          <h4>Prolongation</h4>
+          <dl class="facts">
+            <dt>Date de la prolongation</dt>
+            <dd data-field="extendedAt"></dd>
+            <dt>Date limite initiale</dt>
+            <dd data-field="initialDeadline"></dd>
+            <dt>@ExtensionConfirmation.GroundLabel</dt>
+            <dd data-field="extensionGround"></dd>
+          </dl>
+          <div class="sheet-message">
+            <h5>@ExtensionConfirmation.JustificationLabel</h5>
+            <p data-field="extensionJustification"></p>
+          </div>
+        </li>
+        <li>
+          <h4>Enregistrement</h4>
+          <dl class="facts">
+            <dt>Date de création</dt>
+            <dd data-field="createdAt"></dd>
+            <dt>Créé par</dt>
+            <dd data-field="createdBy"></dd>
+          </dl>
+        </li>
+        <li>
+          <h4>Réception</h4>
+          <dl class="facts">
+            <dt>Origine</dt>
+            <dd data-field="origin"></dd>
+          </dl>
+        </li>
+      </ol>
     </section>
   </div>
 

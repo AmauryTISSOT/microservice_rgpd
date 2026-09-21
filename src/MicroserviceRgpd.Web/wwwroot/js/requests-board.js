@@ -1293,10 +1293,38 @@ function fillSheet(row) {
   sheet.querySelector('[data-field="message"]').textContent = row.dataset.sheetMessage;
 
   fillTheExtensionBlock(row);
+  fillTheCountdown(row);
 }
 
-// LE BLOC « PROLONGATION » DE LA FICHE, MONTRÉ SUR LA SEULE DEMANDE QUI A ÉTÉ PROLONGÉE. C'est le
-// seul bloc de la fiche qui apparaisse et disparaisse : ailleurs, une valeur absente se lit « — »,
+// LE DÉCOMPTE EN TÊTE DE LA FICHE ET SA BARRE, MONTRÉS SUR LA SEULE DEMANDE EN COURS : une demande
+// close n'a plus de délai qui court. Comme pour la prolongation, c'est l'ABSENCE des
+// `data-sheet-countdown-*` qui le dit, et le décompte se masque entier, barre comprise.
+//
+// ⚠️ LES MOTS ET LA PART ÉCOULÉE ARRIVENT CALCULÉS PAR LE SERVEUR, contre « aujourd'hui » à Paris :
+// le script ne compte aucun jour. Il recopie aussi LE SIGNALEMENT DE LA CELLULE DE LA DATE LIMITE,
+// que la feuille de style colore sur le décompte comme sur la date.
+function fillTheCountdown(row) {
+  const counting = row.dataset.sheetCountdownLead !== undefined;
+
+  for (const block of sheet.querySelectorAll('[data-block="countdown"]')) {
+    block.hidden = !counting;
+  }
+
+  if (!counting) {
+    return;
+  }
+
+  const deadline = sheet.querySelector(".sheet-deadline");
+
+  sheet.querySelector('[data-field="countdownLead"]').textContent = row.dataset.sheetCountdownLead;
+  sheet.querySelector('[data-field="countdownTail"]').textContent = row.dataset.sheetCountdownTail;
+  deadline.style.setProperty("--elapsed", `${row.dataset.sheetCountdownElapsed}%`);
+  deadline.dataset.deadlineSignal =
+    row.querySelector('td[data-field="responseDeadline"]').dataset.deadlineSignal ?? "";
+}
+
+// L'ÉTAPE « PROLONGATION » DE L'HISTORIQUE, MONTRÉE SUR LA SEULE DEMANDE PROLONGÉE. C'est l'une
+// des deux parties de la fiche qui apparaissent et disparaissent : ailleurs, une valeur absente se lit « — »,
 // ici l'acte n'a pas eu lieu, et quatre tirets sur chaque fiche apprendraient à ne plus lire la
 // section.
 //

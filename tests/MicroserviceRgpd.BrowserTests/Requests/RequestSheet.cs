@@ -16,7 +16,7 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// vient : la navigation au clavier reprend là où elle s'était arrêtée.
 /// </para>
 /// <para>
-/// <b>Et elle porte ce que la ligne dit de la demande</b> : les douze informations, dans leurs cinq
+/// <b>Et elle porte ce que la ligne dit de la demande</b> : les douze informations, dans ses
 /// blocs — le message et l'origine compris, qu'aucune colonne ne montre. Les libellés que le serveur
 /// rend, et eux seuls, se gardent dans <c>RequestsBoardScreen</c> ; ici, ce que l'œil d'une ligne y
 /// verse.
@@ -24,11 +24,11 @@ namespace MicroserviceRgpd.BrowserTests.Requests;
 /// <para>
 /// ⚠️ <b>Chaque valeur se lit avec son libellé</b> : les scénarios apparient les intitulés et les
 /// valeurs de la fiche, dans l'ordre — c'est l'appariement même qu'un lecteur d'écran annonce. Le
-/// message et le statut sortent de la liste de définitions et se lisent chacun sous son titre.
+/// droit, le décompte, le statut et le message sortent des listes de définitions.
 /// </para>
 /// <para>
 /// La fiche ne se cherche pas par son nom accessible — c'est le nom de la personne, qui change d'une
-/// demande à l'autre —, mais par le premier de ses cinq blocs. Chaque demande se retrouve par son
+/// demande à l'autre —, mais par son bloc « La personne ». Chaque demande se retrouve par son
 /// email unique, la base étant partagée par toute la collection.
 /// </para>
 /// </remarks>
@@ -57,7 +57,8 @@ public class RequestSheet(BrowserHarness harness)
   public static TheoryData<string> ClosingModes { get; } = ["Fermer", "la croix", "Échap", "le fond"];
 
   /// <summary>
-  /// <b>L'œil ouvre la fiche</b>, fermée jusque-là, avec ses cinq blocs titrés.
+  /// <b>L'œil ouvre la fiche</b>, fermée jusque-là, avec ses blocs titrés — le délai, lui, se
+  /// nomme pour le seul lecteur d'écran : l'encadré du décompte le dit déjà à qui le voit.
   /// </summary>
   [Fact]
   public async Task OpensTheSheetOnTheEyeOfTheRow()
@@ -72,7 +73,7 @@ public class RequestSheet(BrowserHarness harness)
 
     await Expect(Sheet(page)).ToBeVisibleAsync();
 
-    foreach (var block in new[] { FirstBlock, "La demande", "Le délai", "Le statut", "L'enregistrement" })
+    foreach (var block in new[] { "Message", FirstBlock, "Historique" })
     {
       await Expect(Sheet(page).GetByRole(AriaRole.Heading, new() { Name = block, Exact = true })).ToBeVisibleAsync();
     }
@@ -178,8 +179,9 @@ public class RequestSheet(BrowserHarness harness)
   }
 
   /// <summary>
-  /// <b>La fiche porte les douze informations d'une demande, dans leurs cinq blocs et dans
-  /// l'ordre</b> — chacune sous son libellé, aucune valeur écrite par le script.
+  /// <b>La fiche porte les douze informations d'une demande, dans l'ordre de ses blocs</b> — le
+  /// délai, le message, la personne, l'historique —, chacune sous son libellé, et le droit invoqué
+  /// au-dessus du titre, sous son libellé caché. Aucune valeur écrite par le script.
   /// </summary>
   /// <remarks>
   /// La demande est enregistrée avec <b>aucune</b> valeur par défaut de la modale : une origine, un
@@ -190,7 +192,7 @@ public class RequestSheet(BrowserHarness harness)
   /// bien la date limite qui est sous les yeux de l'<c>Operator</c> pendant qu'il lit le message.
   /// </remarks>
   [Fact]
-  public async Task CarriesTheTwelveInformationsInTheirFiveBlocks()
+  public async Task CarriesTheTwelveInformationsInTheOrderOfItsBlocks()
   {
     await using var context = await harness.NewContextAsync();
     var page = await context.NewPageAsync();
@@ -210,17 +212,18 @@ public class RequestSheet(BrowserHarness harness)
     var createdAt = await row.Locator("td[data-field='createdAt']").TextContentAsync();
     (await FactsOfAsync(page)).ShouldBe(
     [
+      "Date de réception : 15/01/2026",
+      "Date limite de réponse : 15/02/2026 En retard",
       "Nom : Dupont",
       "Prénom : Jean",
       $"Email : {email}",
       "Identité vérifiée : Oui",
-      "Droit invoqué : Droit à l'effacement",
-      "Origine : Courrier",
-      "Date de réception : 15/01/2026",
-      "Date limite de réponse : 15/02/2026 En retard",
       $"Date de création : {createdAt}",
       "Créé par : Opérateur",
+      "Origine : Courrier",
     ]);
+
+    await Expect(Sheet(page).Locator(".sheet-right")).ToHaveTextAsync("Droit invoqué : Droit à l'effacement");
 
     await Expect(MessageOf(page)).ToHaveTextAsync(message);
     await Expect(StatusOf(page)).ToHaveTextAsync("En cours");
@@ -257,7 +260,7 @@ public class RequestSheet(BrowserHarness harness)
     await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
 
     await Expect(TitleOf(page)).ToHaveTextAsync(email);
-    (await FactsOfAsync(page)).Take(3).ShouldBe(["Nom : —", "Prénom : —", $"Email : {email}"]);
+    (await FactsOfAsync(page)).Skip(2).Take(3).ShouldBe(["Nom : —", "Prénom : —", $"Email : {email}"]);
   }
 
   /// <summary>
@@ -372,6 +375,39 @@ public class RequestSheet(BrowserHarness harness)
     (await FactsOfAsync(page))
       .ShouldContain($"Date limite de réponse : {deadline.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} {mention}");
     await Expect(Sheet(page).GetByText(mention, new() { Exact = true })).ToHaveCSSAsync("color", colour);
+    await Expect(CountdownLeadOf(page)).ToHaveCSSAsync("color", colour);
+  }
+
+  /// <summary>
+  /// <b>Le décompte d'une demande En cours se lit en tête de la fiche</b> — les jours qui restent,
+  /// et ce qu'ils comptent —, et <b>la barre dessine la part du délai écoulée</b> depuis la
+  /// réception : ici, dix jours sur trente, le tiers.
+  /// </summary>
+  /// <remarks>
+  /// La réception et la date limite sont posées autour d'aujourd'hui à Paris, à vingt jours de
+  /// l'échéance : loin des bornes du signalement, qui colorerait le décompte.
+  /// </remarks>
+  [Fact]
+  public async Task ShowsTheCountdownAndTheElapsedShareOfTheDeadline()
+  {
+    await using var context = await harness.NewContextAsync();
+    var page = await context.NewPageAsync();
+    var email = UniqueEmail();
+    var today = ParisCalendar.Today(TimeProvider.System);
+    var message = await harness.RecordRequestAsync(
+      email: email,
+      receivedOn: today.AddDays(-10).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+
+    await harness.SetResponseDeadlineAsync(message, today.AddDays(20));
+
+    await OpenTheSheetAsync(await OpenedRowOfAsync(page, email));
+
+    await Expect(CountdownLeadOf(page)).ToHaveTextAsync("20 jours");
+    await Expect(Sheet(page).Locator("[data-field='countdownTail']")).ToHaveTextAsync("pour répondre");
+
+    var share = await Sheet(page).Locator(".deadline-track span").EvaluateAsync<double>(
+      "bar => bar.getBoundingClientRect().width / bar.parentElement.getBoundingClientRect().width");
+    share.ShouldBe(1d / 3, 0.02, "La barre ne dessine pas le tiers du délai écoulé.");
   }
 
   /// <summary>
@@ -396,6 +432,11 @@ public class RequestSheet(BrowserHarness harness)
 
     (await FactsOfAsync(page))
       .ShouldContain($"Date limite de réponse : {deadline.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)}");
+
+    // ⚠️ NI DÉCOMPTE NI BARRE : plus aucun délai ne court.
+    await Expect(CountdownLeadOf(page)).ToBeHiddenAsync();
+    await Expect(Sheet(page).Locator(".deadline-track")).ToBeHiddenAsync();
+    await Expect(StatusOf(page)).ToBeVisibleAsync();
   }
 
   /// <summary>
@@ -586,6 +627,11 @@ public class RequestSheet(BrowserHarness harness)
   }
 
   /// <summary>Le message, sous son libellé, hors de la liste de définitions.</summary>
+  private static ILocator CountdownLeadOf(IPage page)
+  {
+    return Sheet(page).Locator("[data-field='countdownLead']");
+  }
+
   private static ILocator MessageOf(IPage page)
   {
     return Sheet(page).Locator("[data-field='message']");
@@ -680,7 +726,7 @@ public class RequestSheet(BrowserHarness harness)
   }
 
   /// <summary>
-  /// La fiche : le seul <c>dialog</c> qui porte les cinq blocs d'une demande. ⚠️ Elle ne se cherche
+  /// La fiche : le seul <c>dialog</c> qui porte le bloc « La personne ». ⚠️ Elle ne se cherche
   /// pas par son nom accessible — c'est le nom de la personne, vide tant que rien ne l'y écrit.
   /// </summary>
   private static ILocator Sheet(IPage page)

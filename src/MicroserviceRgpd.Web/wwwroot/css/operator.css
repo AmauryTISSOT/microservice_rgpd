@@ -3080,9 +3080,38 @@ dialog.modal.sheet[open] {
   }
 }
 
-.sheet-body {
+/*
+  LA TÊTE PORTE LE DROIT INVOQUÉ AU-DESSUS DU NOM DE LA PERSONNE : en surtitre, à l'encre et à la
+  légende des en-têtes de colonne — ce que la demande réclame, avant qui la réclame.
+*/
+.sheet-heading {
   display: grid;
-  gap: var(--space-lg);
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+.sheet-heading h2 {
+  overflow-wrap: anywhere;
+}
+
+.sheet-right {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/*
+  ⚠️ LES BLOCS PRENNENT TOUTE LA HAUTEUR LAISSÉE PAR LA TÊTE ET LE PIED (`flex-grow`) : le pied, et
+  « Fermer » avec lui, reste collé au bas de la fiche, qu'une demande soit courte ou longue. Les
+  blocs, eux, s'empilent en haut (`align-content: start`) : la grille ne les étire pas pour remplir.
+*/
+.sheet-body {
+  align-content: start;
+  display: grid;
+  flex-grow: 1;
+  gap: var(--space-xl);
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
@@ -3099,6 +3128,20 @@ dialog.modal.sheet[open] {
 }
 
 /*
+  LES INTITULÉS SE LISENT EN RETRAIT, LES VALEURS EN AVANT : dans la fiche, c'est la valeur que l'œil
+  cherche, et l'intitulé ne fait que la situer.
+*/
+.sheet-body .facts dt {
+  color: var(--ink-muted);
+  font-weight: var(--weight-regular);
+}
+
+.sheet-body .facts {
+  gap: var(--space-xs) var(--space-md);
+  grid-template-columns: 9rem 1fr;
+}
+
+/*
   LE TITRE D'UN BLOC EST L'INTITULÉ D'UN GROUPE DE VALEURS : il emprunte donc l'encre et la légende
   des en-têtes de colonne du tableau, qui nomment exactement de la même façon — et non une taille de
   titre, qui l'emporterait sur celui de la fiche.
@@ -3107,40 +3150,193 @@ dialog.modal.sheet[open] {
   color: var(--ink-muted);
   font: var(--type-eyebrow);
   letter-spacing: var(--type-eyebrow-tracking);
+  margin: 0 0 var(--space-sm);
+  text-transform: uppercase;
+}
+
+/*
+  LE DÉLAI D'ABORD, DANS UN ENCADRÉ SUR LE FOND DE LA PAGE : le décompte en grand, le statut à sa
+  droite, puis la barre du délai écoulé bordée de ses deux dates. C'est ce que l'`Operator` doit
+  savoir avant de lire la demande : combien de temps il lui reste.
+
+  ⚠️ LA BARRE LIT SA LONGUEUR SUR `--elapsed`, que le script recopie de la ligne : la feuille de
+  style ne connaît aucune date.
+*/
+.sheet-deadline {
+  background: var(--canvas);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+}
+
+.sheet-countdown {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  justify-content: space-between;
+}
+
+.sheet-countdown p {
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.sheet-countdown strong {
+  color: var(--ink);
+  font: var(--type-heading-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--type-heading-2-tracking);
+  margin-right: var(--space-xxs);
+}
+
+.deadline-track {
+  background: var(--hairline);
+  border-radius: var(--radius-full);
+  height: 6px;
+  overflow: hidden;
+}
+
+.deadline-track span {
+  background: var(--accent);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  width: var(--elapsed, 0%);
+}
+
+/*
+  LE SIGNALEMENT DE LA DATE LIMITE COLORE AUSSI LE DÉCOMPTE ET LA BARRE — la même orange, le même
+  rouge : c'est le même délai, dit en jours plutôt qu'en date.
+*/
+.sheet-deadline[data-deadline-signal="DueSoon"] strong {
+  color: var(--signal-warning-ink);
+}
+
+.sheet-deadline[data-deadline-signal="DueSoon"] .deadline-track span {
+  background: var(--signal-warning);
+}
+
+.sheet-deadline[data-deadline-signal="Overdue"] strong {
+  color: var(--signal-error);
+}
+
+.sheet-deadline[data-deadline-signal="Overdue"] .deadline-track span {
+  background: var(--signal-error);
+}
+
+.deadline-bounds {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+  margin: 0;
+}
+
+.deadline-bounds div:last-child {
+  text-align: right;
+}
+
+.deadline-bounds dt {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.deadline-bounds dd {
+  font-variant-numeric: tabular-nums;
   margin: 0;
 }
 
 /*
-  LE MESSAGE EST UN BLOC À PART, SOUS SON LIBELLÉ, et non un fait de la grille : dans deux colonnes
+  LE MESSAGE EST UN BLOC À PART, SOUS SON TITRE, et non un fait de la grille : dans deux colonnes
   dont la première tient l'intitulé, 10 000 caractères dicteraient la hauteur de tout le bloc. Il
-  s'affiche TEL QU'ENREGISTRÉ, ses retours à la ligne conservés, et se coupe là où il le faut — un
-  mot sans espace ne le pousse pas hors de la fiche.
+  s'affiche TEL QU'ENREGISTRÉ, sur le fond d'une citation, ses retours à la ligne conservés, et se
+  coupe là où il le faut — un mot sans espace ne le pousse pas hors de la fiche.
 
   LA JUSTIFICATION DE LA PROLONGATION EMPRUNTE LE MÊME BLOC, et pour la même raison : c'est l'autre
   texte long de la fiche, et il se lit comme le message.
 */
-.sheet-message {
-  margin-top: var(--space-md);
-}
-
-.sheet-message h4 {
+.sheet-message h5 {
   font: var(--type-body-sm);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--type-body-sm-tracking);
-  margin: 0 0 var(--space-xxs);
+  margin: var(--space-sm) 0 var(--space-xxs);
 }
 
 /*
   ⚠️ LE MESSAGE DÉFILE DANS SA PROPRE ZONE, BORNÉE À 40 VH : le budget à répartir est celui de la
   fenêtre, et le message n'en prend pas plus des deux cinquièmes. Sans cette borne, 10 000 caractères
-  repousseraient le statut et l'enregistrement à des écrans de défilement du message.
+  repousseraient la personne et l'historique à des écrans de défilement du message.
 */
 .sheet-message p {
+  background: var(--canvas);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
   margin: 0;
   max-height: 40vh;
   overflow-wrap: anywhere;
   overflow-y: auto;
+  padding: var(--space-sm) var(--space-md);
   white-space: pre-wrap;
+}
+
+/*
+  L'HISTORIQUE EST UNE FRISE : un point par étape, reliées par un filet, la plus récente pleine en
+  haut. ⚠️ `:not([hidden])` : un `display` posé sur l'étape de la prolongation l'emporterait sur le
+  `hidden` qui la masque.
+*/
+.sheet-history {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sheet-history li:not([hidden]) {
+  display: grid;
+  gap: var(--space-xxs);
+  padding: 0 0 var(--space-md) var(--space-lg);
+  position: relative;
+}
+
+.sheet-history li::before {
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-full);
+  box-sizing: border-box;
+  content: "";
+  height: 10px;
+  left: 0;
+  position: absolute;
+  top: 0.4em;
+  width: 10px;
+}
+
+.sheet-history li:not(:last-child)::after {
+  background: var(--hairline);
+  bottom: 0;
+  content: "";
+  left: 4px;
+  position: absolute;
+  top: calc(0.4em + 14px);
+  width: 2px;
+}
+
+.sheet-history li:not([hidden]):first-child::before,
+.sheet-history li[hidden] + li::before {
+  background: var(--accent);
+}
+
+.sheet-history h4 {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--type-body-md-tracking);
+  margin: 0;
+}
+
+.sheet-history .facts {
+  margin: 0;
 }
 
 /*
@@ -3162,9 +3358,17 @@ dialog.modal.sheet[open] {
 
 /* La sortie nommée, à droite : là où l'œil finit sa lecture, comme les actions d'une modale. */
 .sheet-foot {
+  background: var(--canvas);
+  border-top: var(--hairline-width) solid var(--hairline);
   display: flex;
   justify-content: flex-end;
 }
+
+dialog.modal.sheet > .modal-head {
+  align-items: flex-start;
+  border-bottom: var(--hairline-width) solid var(--hairline);
+}
+
 
 /* Les actions en pied, à droite, l'action principale en dernier : là où l'œil finit sa lecture. */
 .modal-actions {
