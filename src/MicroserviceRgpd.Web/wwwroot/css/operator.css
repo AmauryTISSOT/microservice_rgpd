@@ -1490,45 +1490,96 @@ td.ruling button {
 
 /*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
-  LES TROIS PORTES DE L'ACCUEIL. La carte reprend LA PEAU de la carte du service — même fond, même
+  LES QUATRE PORTES DE L'ACCUEIL. La carte reprend LA PEAU de la carte du service — même fond, même
   filet, même rayon, même marge — mais elle en CHANGE LA NATURE : la carte entière est un lien.
   C'est une porte, on pousse la porte entière.
+
+  Elles sont rangées par MOMENT DU PARCOURS — avant toute demande, quand une demande arrive —, deux
+  colonnes côte à côte qui se posent l'une sous l'autre quand la place manque.
 
   ⚠️ C'EST LE PREMIER ÉTAT INTERACTIF STYLÉ DU SERVICE, et c'est une EXTENSION DU DESIGN LANGUAGE
   consignée dans l'ADR-0006 — pas un effet de bord. Ce que l'extension autorise, et rien de plus :
   le survol passe le filet à l'accent, et le focus visible pose un contour d'accent avec décalage.
   PAS D'OMBRE, PAS D'ÉLÉVATION, PAS DE TRANSLATION, PAS DE TRANSITION : un écran d'instruction ne
   doit pas bouger sous la souris.
-
-  Aucun token nouveau, aucune valeur nouvelle sur `:root` — tout sort de l'existant.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-.doorways {
-  display: grid;
-  gap: var(--space-lg);
 
-  /*
-    ⚠️ LA BORNE DIFFÈRE DE CELLE DE `.clause`, ET C'EST LA RAISON D'ÊTRE DE CETTE LIGNE : à 20rem,
-    trois portes ne tiennent que DEUX colonnes dans la largeur utile du `main`, et la troisième
-    tombe seule sur une ligne. Ce n'est pas un token — c'est un nombre écrit dans une règle, comme
-    les autres largeurs d'exception de cette feuille.
-
-    Aucune requête média : trois colonnes, puis deux, puis une, selon la place.
-  */
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-
-  /*
-    La marge de la carte du service est portée ICI plutôt que sur chaque porte : posée sur les
-    éléments d'une grille, elle se serait ajoutée à l'écart entre les colonnes — d'où le `margin: 0`
-    que les portes reprennent à la peau de la carte.
-  */
-  margin: var(--space-lg) 0;
+/* LE SEUIL : le nom du service en grand, et la phrase qui dit ce qu'il est. */
+.doorstep-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: 40px;
+  max-width: 47.5rem;
 }
 
-/* Ce que la porte CHANGE à la peau de la carte, et rien de plus : elle est un lien de bloc. */
+.doorstep-hero h1 {
+  font: var(--type-display-2);
+  letter-spacing: var(--type-display-2-tracking);
+  margin: 0;
+}
+
+.doorstep-hero p {
+  color: var(--ink-secondary);
+  font: 400 18px/1.55 var(--font-sans);
+  margin: 0;
+}
+
+/* LES DEUX MOMENTS, côte à côte tant que chacun loge ses deux portes. */
+.moments {
+  display: grid;
+  gap: var(--space-xxl);
+  grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr));
+}
+
+.moment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+/* Le titre du moment se lit comme un intertitre : petites capitales, filet noir dessous. */
+.moment > header {
+  border-bottom: 2px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  padding-bottom: var(--space-sm);
+}
+
+.moment > header h2 {
+  font: 600 13px/1.33 var(--font-sans);
+  letter-spacing: 0.8px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.moment > header p {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  margin: 0;
+}
+
+.doorways {
+  display: grid;
+  flex-grow: 1;
+  gap: var(--space-md);
+
+  /*
+    Deux portes par moment, puis une seule quand la colonne se resserre. Aucune requête média :
+    c'est la place qui décide.
+  */
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+}
+
+/* Ce que la porte CHANGE à la peau de la carte : elle est un lien de bloc, en colonne. */
 a.doorway {
   color: inherit;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   margin: 0;
   text-decoration: none;
 }
@@ -1548,28 +1599,46 @@ a.doorway:focus-visible {
   outline-offset: var(--space-xxs);
 }
 
-/*
-  Le nom prend le rôle de titre 3 avec son crénage, et ses marges tombent à zéro : le titre de
-  niveau 2 de cette feuille porte une grande marge haute, faite pour séparer deux sections d'un
-  écran long, qui décollerait ici le nom du haut de sa carte.
-*/
-a.doorway h2 {
-  font: var(--type-heading-3);
-  letter-spacing: var(--type-heading-3-tracking);
-  margin: 0 0 var(--space-xxs);
+/* L'icône de la porte, sur une tuile teintée de l'accent. */
+.doorway-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  border-radius: 10px;
+  color: var(--accent-pressed);
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+a.doorway h3 {
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+  margin: 0;
 }
 
 /*
-  La phrase prend le rôle de corps petit sur l'encre estompée. C'est `--ink-muted` et non
-  `--ink-faint` : celle-ci est la plus pâle des quatre encres et ne tient pas le seuil de contraste
-  d'un texte qui se lit — la teinte estompée d'un paragraphe entier, dans cette feuille, est celle
-  que `.hint` emploie déjà.
+  La phrase prend le rôle de corps petit sur l'encre secondaire, et elle pousse le « Ouvrir » au
+  pied de la carte : les deux cartes d'un moment alignent leur invite quelle que soit leur phrase.
 */
 a.doorway p {
-  color: var(--ink-muted);
-  font: var(--type-body-sm);
-  letter-spacing: var(--type-body-sm-tracking);
+  color: var(--ink-secondary);
+  flex-grow: 1;
+  font: 400 15px/1.5 var(--font-sans);
   margin: 0;
+}
+
+.doorway-open {
+  align-items: center;
+  color: var(--accent);
+  display: flex;
+  font: var(--type-button);
+  font-size: 15px;
+  gap: 6px;
+}
+
+a.doorway:hover .doorway-open {
+  color: var(--accent-pressed);
 }
 
 /*

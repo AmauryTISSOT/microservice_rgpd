@@ -131,9 +131,9 @@ public class Doorstep(CustomWebApplicationFactory<Program> factory)
 
     foreach (var doorway in doorways)
     {
-      // Le nom est un titre de niveau 2 et la phrase un paragraphe : la carte porte une hiérarchie,
-      // et pas deux lignes de texte que rien ne distingue.
-      Regex.IsMatch(doorway.Contents, @"<h2\b", RegexOptions.Singleline).ShouldBeTrue(
+      // Le nom est un titre de niveau 3 — sous celui du moment — et la phrase un paragraphe : la
+      // carte porte une hiérarchie, et pas deux lignes de texte que rien ne distingue.
+      Regex.IsMatch(doorway.Contents, @"<h3\b", RegexOptions.Singleline).ShouldBeTrue(
         $"La porte {doorway.Address} ne porte pas son nom en titre.");
 
       Regex.IsMatch(doorway.Contents, @"<p\b", RegexOptions.Singleline).ShouldBeTrue(

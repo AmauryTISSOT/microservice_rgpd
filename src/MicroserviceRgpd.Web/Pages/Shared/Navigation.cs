@@ -8,6 +8,10 @@ namespace MicroserviceRgpd.Web.Pages.Shared;
 /// Le nom <b>que la carte de l'accueil porte</b>, et que l'écran reprend en titre.
 /// </param>
 /// <param name="Address">L'adresse de l'écran d'entrée, et la racine de tout ce qui pend sous lui.</param>
+/// <param name="Moment">
+/// <b>Le moment du parcours</b> sous lequel l'accueil range la porte : avant toute demande, ou quand
+/// une demande arrive. La barre l'ignore.
+/// </param>
 /// <param name="DoorwaySentence">
 /// Ce que la <b>porte de l'accueil</b> dit, et que la barre ne dit pas : celle-ci n'a la
 /// place que d'un nom. Les quatre textes vivent ici plutôt que dans le gabarit de l'accueil parce
@@ -25,6 +29,7 @@ internal sealed record EntryPoint(
   string NavigationLabel,
   string DoorwayName,
   string Address,
+  Moment Moment,
   string DoorwaySentence)
 {
   /// <summary>
@@ -38,6 +43,17 @@ internal sealed record EntryPoint(
     return path.StartsWithSegments(Address, StringComparison.OrdinalIgnoreCase);
   }
 }
+
+/// <summary>
+/// <b>Un moment du parcours</b>, sous lequel l'accueil groupe ses portes : un titre, et une phrase
+/// qui dit ce qu'on y fait.
+/// </summary>
+/// <remarks>
+/// ⚠️ <b>Le moment est porté par chaque point d'entrée, et non par une seconde liste</b> : l'accueil
+/// groupe <see cref="Navigation.EntryPoints"/> dans son ordre, et une liste de groupes tenue à côté se
+/// serait décalée d'un cran un jour.
+/// </remarks>
+internal sealed record Moment(string Title, string Sentence);
 
 /// <summary>
 /// <b>La barre de navigation de la surface de l'<c>Operator</c></b> : le nom du service, puis les
@@ -128,6 +144,14 @@ internal static class Navigation
   /// position apprend et qu'aucun nom ne dit tient au premier rang seul : on y règle les adresses
   /// dont l'exercice des droits dépendra. Voir <c>ADR-0010</c> et <c>ADR-0016</c>.
   /// </summary>
+  /// <summary>Le temps d'avant : on règle les canaux, on présume les données.</summary>
+  internal static Moment BeforeAnyRequest { get; } =
+    new("Avant toute demande", "On règle les canaux, on présume les données.");
+
+  /// <summary>Le temps de la demande : on qualifie le texte, on suit la demande.</summary>
+  internal static Moment WhenARequestArrives { get; } =
+    new("Quand une demande arrive", "On qualifie le texte, on suit la demande.");
+
   internal static IReadOnlyList<EntryPoint> EntryPoints { get; } =
   [
     // ⚠️ LE SEUL ÉCRAN À DEUX NOMS, et c'est la conséquence directe du wordmark. « Paramétrage du
@@ -139,6 +163,7 @@ internal static class Navigation
       "Paramétrage",
       "Paramétrage du microservice RGPD",
       "/parametrage",
+      BeforeAnyRequest,
       "Vous y associez à chacun des six droits RGPD le canal par lequel le service l'exercera : une " +
       "adresse HTTP, ou un routage RabbitMQ. Un droit sans l'un ni l'autre reste « non configuré », " +
       "et rien ne vous oblige à les renseigner tous."),
@@ -146,6 +171,7 @@ internal static class Navigation
       "Détection des données personnelles",
       "Détection des données personnelles",
       "/detection",
+      BeforeAnyRequest,
       // ⚠️ « JAMAIS UNE VALEUR » A CESSÉ D'ÊTRE VRAI, et la phrase a suivi. La voie connectée
       // prélève quelques valeurs par colonne pour affiner la détection : les laisser promises
       // absentes ici aurait fait de la carte d'accueil le seul endroit du service qui mente sur ce
@@ -167,6 +193,7 @@ internal static class Navigation
       "Qualification",
       "Qualification",
       "/qualification",
+      WhenARequestArrives,
       "Vous y collez le texte libre d'une demande, et le service propose les droits RGPD qu'elle " +
       "exerce. Aucune demande n'en découle : la proposition se lit ici, elle ne s'y dépose pas."),
 
@@ -181,6 +208,7 @@ internal static class Navigation
       "Tableau des demandes RGPD",
       "Tableau des demandes RGPD",
       "/demandes",
+      WhenARequestArrives,
       "Consultation des demandes RGPD en cours"),
   ];
 }
