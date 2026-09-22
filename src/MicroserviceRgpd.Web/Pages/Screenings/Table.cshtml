@@ -16,12 +16,26 @@
   *@
   ViewData["Wide"] = true;
 
+  var summary = Model.Summary!;
+  var next = summary.NextToArbitrate(read.Identity);
+
   // Un compte et son nom, accordés : une surface qui se lit au compte ne peut pas écrire
   // « 1 colonnes ».
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
 }
 
-<h1>@read.Identity</h1>
+@section Scripts {
+  @*
+    LE SEUL SCRIPT DE L'ÉCRAN POSTE LES ARBITRAGES SANS RECHARGER LA PAGE, et rien d'autre. Sans lui,
+    chaque bouton poste son formulaire et la redirection ramène sur la colonne tranchée, comme avant :
+    l'écran reste entier.
+  *@
+  <script type="module" src="/js/arbitration.js"></script>
+}
+
+<partial name="_DetectionTrail" model="new MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail(MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Arbitration, summary, read.Identity)" />
+
+<div data-arbitration-live="alerts">
 
 @*
   LE VERROU, EN TÊTE ET RECALCULÉ À CE RENDU, et il porte sur le RAPPORT ENTIER. C'est ici qu'il
@@ -68,39 +82,36 @@ else
     }
   </div>
 }
+</div>
 
-<dl class="banner">
-  <dt>Base</dt>
-  <dd>@read.Database</dd>
-  <dt>SGBD</dt>
-  <dd>@read.Dialect</dd>
-  <dt>Commentaire de la table</dt>
-  @* Le commentaire éclaire toutes les colonnes à la fois : c'est lui qui fait de la table l'unité
-     de travail. Son absence est le régime majoritaire, et elle se dit plutôt qu'elle ne se tait. *@
-  @if (read.Comment is null)
-  {
-    <dd class="none">Aucun — votre SGBD n'en rend pas, ou cette table n'en porte pas.</dd>
-  }
-  else
-  {
-    <dd>@read.Comment</dd>
-  }
-</dl>
+<partial name="_ArbitrationProgress" model="summary" />
 
 @*
-  TOUTES LES COLONNES, SANS FILTRE, ET DANS L'ORDRE DU RELEVÉ. Les Unflagged SONT l'écran : elles
-  font 92,5 % du contenu réel d'un relevé, et un écran qui ne rendrait que les signalées serait un
-  écran où l'omission a cessé d'être relisible. Il n'y a donc aucun bouton pour les masquer.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA LISTE ET LE DÉTAIL. La table ouverte à droite, toutes les autres à gauche avec ce qui leur
+  reste : une table relue jusqu'au bout est l'instant précis où l'on croit avoir fini, et c'est la
+  liste qui dit le contraire.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
-<p class="hint">
-  Les <strong>@Counted(read.ColumnCountInThisTable, "colonne")</strong> de cette table sont ici —
-  celles où la détection n'a rien vu comprises, et il n'y a aucun moyen de les masquer. Ce sont
-  elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part ailleurs. Elles se
-  lisent en deux temps — les signalées d'abord, une par une ; les autres ensuite —, et
-  <strong>dans chacun, l'ordre est celui où votre base les rend</strong> : rien n'est trié.
-  @Counted(read.AwaitingCountInThisTable, "colonne")
-  y @(read.AwaitingCountInThisTable == 1 ? "attend" : "attendent") encore, signalées et non
-  signalées confondues.
+<div class="workbench">
+<partial name="_TablesList" model="new MicroserviceRgpd.Web.Pages.Screenings.TablesList(summary, read.Identity)" />
+
+<div class="workbench-detail" data-arbitration-live="detail">
+
+<h1>@read.Identity</h1>
+
+@*
+  SOUS LE TITRE, UNE SEULE LIGNE : le commentaire de la table et son compte de colonnes. La base et
+  le SGBD se lisent déjà dans le fil et sur le rapport. Le commentaire éclaire toutes les colonnes à
+  la fois : c'est lui qui fait de la table l'unité de travail, et son absence se dit plutôt qu'elle
+  ne se tait.
+
+  ⚠️ TOUTES LES COLONNES SONT À L'ÉCRAN, SANS FILTRE, ET DANS L'ORDRE DU RELEVÉ : les signalées
+  d'abord, les autres ensuite. Il n'y a aucun bouton pour masquer celles où rien n'a été vu — ce que
+  le service n'a pas vu ne se rattrape nulle part ailleurs.
+*@
+<p class="table-meta">
+  @(read.Comment ?? "sans commentaire") · @Counted(read.ColumnCountInThisTable, "colonne")
 </p>
 
 @*
@@ -120,7 +131,7 @@ else
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
 <section class="flagged">
-  <h2>Les colonnes signalées de cette table, une par une</h2>
+  <h2>Données personnelles détectées (@read.FlaggedCountInThisTable)</h2>
 
   @if (read.FlaggedCountInThisTable == 0)
   {
@@ -131,13 +142,6 @@ else
   }
   else
   {
-    <p class="hint">
-      @(read.FlaggedCountInThisTable == 1 ? "La" : "Les")
-      <strong>@Counted(read.FlaggedCountInThisTable, "colonne")</strong>
-      signalée@(read.FlaggedCountInThisTable == 1 ? "" : "s") de cette table se lisent une par une,
-      motif sous les yeux. Aucun geste de lot ne les atteint. Une fiche se replie d'elle-même une
-      fois sa colonne tranchée : ce qui reste déplié est ce qu'il vous reste à lire.
-    </p>
 
     @*
       ═════════════════════════════════════════════════════════════════════════════════════════════
@@ -192,7 +196,14 @@ else
         PRÉSENT — donc une fiche dépliée là où le domaine dit qu'elle est close. La chaîne posée ici
         est littérale : il n'y a rien à injecter.
       *@
-      <details class="column-card" id="@ColumnAnchor.For(column.Identity.Column)"@Html.Raw(column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting ? " open" : "")>
+      var awaiting = column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting;
+
+      @*
+        ⚠️ LE LISERÉ DIT L'ÉTAT, ET L'ÉTAT SEUL : orangé tant que la colonne attend, vert une fois
+        tranchée. Il double le mot, il ne le remplace pas — « En attente » reste écrit pour qui ne
+        voit pas la couleur.
+      *@
+      <details class="column-card @(awaiting ? "awaiting" : "settled-card")" id="@ColumnAnchor.For(column.Identity.Column)"@Html.Raw(awaiting ? " open" : "")>
         @*
           LE RÉSUMÉ EST CE QUI SURVIT AU REPLI : le nom de la colonne, ce que la détection y a
           reconnu, et l'issue rendue. Un résumé qui ne dirait que le nom obligerait à rouvrir trente
@@ -203,41 +214,49 @@ else
           <span class="category">@column.Category.FrenchLabel</span>
           @* ⚠️ LE MÊME PRÉDICAT QUE L'OUVERTURE, et il doit le rester : une fiche repliée qui dirait
              « En attente » serait un écran qui se contredit lui-même. *@
-          @if (column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting)
+          @if (awaiting)
           {
-            <span class="none">En attente</span>
+            <span class="visually-hidden">En attente</span>
           }
           else
           {
-            <span class="settled">
-              @column.Arbitration!.State.FrenchLabel
-              <span class="hint">
-                le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
-              </span>
+            <span class="settled">@column.Arbitration!.State.FrenchLabel</span>
+            @*
+              ⚠️ SEUL CE BOUTON OUVRE LA FICHE À LA SOURIS. Le résumé entier ne réagit plus au clic :
+              cliquer l'issue ou le nom rouvrait la fiche comme si l'on voulait se raviser. « Annuler »
+              déplie la fiche sur ses deux boutons, « Fermer » la replie, et rien n'est posté d'ici.
+              Au clavier, le résumé reste le bouton qu'il est.
+            *@
+            <span class="column-card-toggle" aria-hidden="true">
+              <span class="column-card-revise">Annuler</span>
+              <span class="column-card-close">Fermer</span>
             </span>
           }
         </summary>
 
-        <dl class="banner">
-          <dt>Type</dt>
-          <dd>@(column.Listed.DataType ?? "—")</dd>
-          <dt>Commentaire de la colonne</dt>
+        @* ⚠️ LA DATE DE L'ARBITRAGE QUITTE LE RÉSUMÉ, PAS L'ÉCRAN : elle se lit en rouvrant la fiche.
+           C'est le service qui la pose, et c'est la seule trace de quand la colonne a été tranchée. *@
+        @if (!awaiting)
+        {
+          <p class="column-settled-on">
+            @column.Arbitration!.State.FrenchLabel le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
+          </p>
+        }
+
+        @* Le type et le commentaire de la colonne, en une ligne. L'absence de commentaire est le
+           régime majoritaire, et elle se dit plutôt qu'elle ne se tait. *@
+        <p class="column-facts">
+          <code>@(column.Listed.DataType ?? "—")</code>
+          ·
           @if (column.Listed.ColumnComment is null)
           {
-            <dd class="none">Aucun — votre SGBD n'en rend pas, ou cette colonne n'en porte pas.</dd>
+            <text>sans commentaire</text>
           }
           else
           {
-            <dd>@column.Listed.ColumnComment</dd>
+            <text>« @column.Listed.ColumnComment »</text>
           }
-          @* La catégorie et le NOM DE LA RÈGLE qui a déclenché — jamais un score, jamais une
-             échelle : l'arbitrage se fait sur pièces. *@
-          <dt>Règle</dt>
-          <dd>
-            @column.Strength!.FrenchLabel
-            <span class="hint">@column.Strength.Rule</span>
-          </dd>
-        </dl>
+        </p>
 
         @*
           LE MOTIF, EN CLAIR, EN ENTIER ET EN PLEINE LARGEUR. Replié derrière une infobulle, il
@@ -298,9 +317,18 @@ else
           }
         </div>
 
+        @* La règle qui a déclenché, sous le motif : son NOM et ce qu'elle rapproche — jamais un
+           score, jamais une échelle, l'arbitrage se fait sur pièces. *@
+        <p class="column-rule">
+          @column.Strength!.FrenchLabel — @column.Strength.Rule
+        </p>
+
         @*
           LES DEUX ISSUES SONT DEUX BOUTONS, et aucune n'est pré-sélectionnée — voir le second temps
           de l'écran, où la même forme est posée pour les mêmes raisons.
+
+          ⚠️ ILS SE LISENT EN HAUT À DROITE DE LA FICHE, mais restent à la fin de son contenu : hors
+          du résumé, qui est lui-même un bouton, et après les pièces dans l'ordre de lecture.
         *@
         <form method="post">
           <input type="hidden" name="Column" value="@column.Identity.Column" />
@@ -328,7 +356,13 @@ else
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
 <section class="unflagged">
-  <h2>Les colonnes de cette table où rien n'a été vu</h2>
+  <div class="unflagged-head">
+    <h2>Aucune donnée personnelle détectée (@read.UnflaggedCountInThisTable)</h2>
+    @if (read.WithinReachOfABatchGestureInThisTable > 0)
+    {
+      <span class="unflagged-awaiting"><strong>@read.WithinReachOfABatchGestureInThisTable</strong> en attente</span>
+    }
+  </div>
 
 @*
   ⚠️ LE SECOND TEMPS EST TOUT ENTIER SOUS CETTE CONDITION, geste de lot compris. Une table dont
@@ -357,12 +391,10 @@ else
   décidé par le domaine. Une liste de colonnes ici aurait ouvert le seul chemin par lequel un
   formulaire forgé écarte en masse des colonnes signalées.
 
-  ⚠️ Et le compte est écrit avant le clic : un bouton qui ne dit pas sur combien de colonnes il va
-  signer est un bouton qu'on presse sans savoir ce qu'on signe.
+  ⚠️ Et le compte est écrit avant le clic, jusque sur les boutons : un bouton qui ne dit pas sur
+  combien de colonnes il va signer est un bouton qu'on presse sans savoir ce qu'on signe.
 *@
 <section class="batch">
-  <h3>Trancher d'un geste toutes celles qui attendent encore</h3>
-
   @if (read.WithinReachOfABatchGestureInThisTable == 0)
   {
     <p class="hint">
@@ -379,21 +411,24 @@ else
   }
   else
   {
-    <p class="hint">
-      Ce geste portera sur @(read.WithinReachOfABatchGestureInThisTable == 1 ? "la" : "les")
-      <strong>@Counted(read.WithinReachOfABatchGestureInThisTable, "colonne")</strong> de
-      <strong>@read.Identity</strong> où la détection n'a rien vu et que personne n'a encore
-      tranchées. Il pose un arbitrage par colonne, chacun signé de votre nom et daté par le service —
-      ce n'est pas un état de lot, et chacun se reprend ensuite ligne à ligne.
-      @if (read.FlaggedStillAwaitingInThisTable > 0)
-      {
-        <text>
-          @(read.FlaggedStillAwaitingInThisTable == 1 ? "La" : "Les") @Counted(read.FlaggedStillAwaitingInThisTable, "colonne") signalée@(read.FlaggedStillAwaitingInThisTable == 1 ? "" : "s") de cette
-          table <strong>@(read.FlaggedStillAwaitingInThisTable == 1 ? "restera intacte" : "resteront intactes")</strong> : une suspicion ne s'écarte
-          jamais sans avoir été lue une par une.
-        </text>
-      }
-    </p>
+    var reach = read.WithinReachOfABatchGestureInThisTable;
+
+    <div class="batch-text">
+      <p class="batch-title">
+        Trancher d'un geste @(reach == 1 ? "la" : "les") @Counted(reach, "colonne") en attente
+      </p>
+      <p class="hint">
+        Un arbitrage signé et daté par colonne, qui se reprend ensuite ligne à ligne.
+        @if (read.FlaggedStillAwaitingInThisTable > 0)
+        {
+          <text>
+            @(read.FlaggedStillAwaitingInThisTable == 1 ? "La" : "Les") @Counted(read.FlaggedStillAwaitingInThisTable, "colonne") signalée@(read.FlaggedStillAwaitingInThisTable == 1 ? "" : "s")
+            <strong>@(read.FlaggedStillAwaitingInThisTable == 1 ? "restera intacte" : "resteront intactes")</strong> : une suspicion ne s'écarte
+            jamais sans avoir été lue une par une.
+          </text>
+        }
+      </p>
+    </div>
 
     @*
       ⚠️ LE SCHÉMA ET LA TABLE SONT RÉÉCRITS ICI, et ce n'est pas une redite. Les formes par colonne
@@ -428,36 +463,30 @@ else
         serait la pire chose que la surface puisse suggérer.
       *@
       <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Retained.Name">
-        Toutes les retenir
+        @(reach == 1 ? "La retenir" : $"Retenir les {reach}")
       </button>
       <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.SetAside.Name">
-        Toutes les écarter
+        @(reach == 1 ? "L'écarter" : $"Écarter les {reach}")
       </button>
     </form>
   }
 </section>
 
-<table class="queue columns">
-  @*
-    ⚠️ CETTE LÉGENDE COMPTE CE QUE CE TABLEAU-CI PORTE, et rien d'autre. Elle disait naguère la
-    table entière, du temps où le tableau la portait entière ; laissée telle quelle sous un tableau
-    qui n'en rend qu'une part, elle aurait mis sous les mêmes mots deux dénominateurs différents —
-    la façon la plus simple de faire lire une table relue comme une table finie. Les comptes de la
-    table entière sont en tête d'écran, ceux du rapport de détection plus bas.
-  *@
-  <caption>
+@*
+  UNE LIGNE PAR COLONNE, SANS EN-TÊTE NI LÉGENDE : le titre de la section dit déjà ce qu'elles ont
+  en commun, et son compte ce qui attend.
+
+  ⚠️ « RIEN N'A ÉTÉ VU » ET « EN ATTENTE » SONT TOUJOURS DANS CHAQUE LIGNE, mais pour les lecteurs
+  d'écran seulement. Répétés cinq mille fois à l'œil, ils noyaient les noms ; retirés du document,
+  une ligne lue seule — par un lecteur d'écran, ou copiée ailleurs — ne dirait plus que la
+  détection n'y a rien vu, ni qu'un humain doit encore la trancher.
+*@
+<table class="unflagged-list">
+  <caption class="visually-hidden">
     @Counted(read.UnflaggedCountInThisTable, "colonne") de cette table où
     rien n'a été vu, dont @read.WithinReachOfABatchGestureInThisTable
     @(read.WithinReachOfABatchGestureInThisTable == 1 ? "attend" : "attendent") encore
   </caption>
-  <thead>
-    <tr>
-      <th scope="col">Colonne</th>
-      <th scope="col">Type</th>
-      <th scope="col">Détection</th>
-      <th scope="col" class="ruling">Arbitrage</th>
-    </tr>
-  </thead>
   <tbody>
     @*
       ⚠️ AUCUNE DE CES LIGNES NE PORTE DE MOTIF, et le tableau n'a pas même de colonne pour en
@@ -468,69 +497,73 @@ else
     {
       @* ⚠️ L'ANCRE EST SUR LA LIGNE : c'est ici que la redirection d'un arbitrage atterrit, sur la
          colonne qu'on vient de trancher et jamais sur la suivante. *@
-      <tr id="@ColumnAnchor.For(column.Identity.Column)">
-        <th scope="row">
-          @column.Identity.Column
+      <tr id="@ColumnAnchor.For(column.Identity.Column)" class="@(column.AwaitsAnArbitration ? "" : "settled-row")">
+        <th scope="row">@column.Identity.Column</th>
+        <td class="unflagged-facts">
+          <code>@(column.Listed.DataType ?? "—")</code>
           @if (column.Listed.ColumnComment is not null)
           {
-            <span class="hint">@column.Listed.ColumnComment</span>
+            <text> · « @column.Listed.ColumnComment »</text>
           }
-        </th>
-        <td>@(column.Listed.DataType ?? "—")</td>
-        @* ⚠️ Rien n'a été vu — un constat sur la DÉTECTION, jamais sur la donnée, que le service
-           n'a jamais lue. *@
-        <td class="none">Rien n'a été vu</td>
-        <td class="ruling">
-          @if (column.AwaitsAnArbitration)
-          {
-            <span class="none">En attente</span>
-          }
-          else
-          {
-            @column.Arbitration!.State.FrenchLabel
-            <span class="hint">
-              le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
-            </span>
-          }
-
+          @* ⚠️ Rien n'a été vu — un constat sur la DÉTECTION, jamais sur la donnée, que le service
+             n'a jamais lue. *@
+          <span class="visually-hidden">Rien n'a été vu</span>
+        </td>
+        <td class="unflagged-ruling">
           @*
             LES DEUX ISSUES SONT DEUX BOUTONS, et aucune n'est pré-sélectionnée : une liste où
             « retenue » serait cochée d'avance ferait retenir d'un clic distrait, et le compte des
             retenues est ce sur quoi la déclaration se construit ensuite.
 
-            ⚠️ LE FORMULAIRE RESTE APRÈS L'ARBITRAGE : se raviser doit être sans cérémonie, sur une
-            surface qu'on reprend pendant trois jours. Le nouvel état écrase l'ancien, et le coût —
-            la date de l'arbitrage remplacé est effacée — est déclaré chez Arbitration.
-
             ⚠️ AUCUN CHAMP DE DATE, ici ni ailleurs : l'instant vient du service. Et aucun champ de
             nom : ce contexte n'enregistre pas qui a tranché, voir l'ADR-0014.
           *@
-          <form method="post">
-            <input type="hidden" name="Column" value="@column.Identity.Column" />
+          @if (column.AwaitsAnArbitration)
+          {
+            <span class="visually-hidden">En attente</span>
+          }
+          else
+          {
+            <span class="settled">@column.Arbitration!.State.FrenchLabel</span>
+            <span class="visually-hidden">
+              le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
+            </span>
+          }
 
-            @*
-              ⚠️ LE RAPPORT DE DÉTECTION LU VOYAGE AVEC LE CLIC, et il ne dit pas où écrire — le
-              geste écrit toujours le courant. Il dit sur quoi la lecture portait, et permet de
-              REFUSER : un collègue qui dépose un relevé pendant qu'on relit une table ferait sinon
-              atterrir cette signature-ci sur un rapport de détection que personne n'a lu, motifs
-              compris.
-            *@
-            <input type="hidden" name="Screening" value="@read.Screening.Value" />
+          @*
+            ⚠️ LE FORMULAIRE RESTE APRÈS L'ARBITRAGE, replié derrière « Annuler » : se raviser doit
+            être sans cérémonie, sur une surface qu'on reprend pendant trois jours. Le nouvel état
+            écrase l'ancien, et le coût — la date de l'arbitrage remplacé est effacée — est déclaré
+            chez Arbitration. Tant que la colonne attend, le repli est ouvert et son bouton caché :
+            il n'y a rien à annuler.
+          *@
+          <details class="row-revise @(column.AwaitsAnArbitration ? "awaiting" : "")" @Html.Raw(column.AwaitsAnArbitration ? " open" : "")>
+            <summary>
+              <span class="row-revise-open">Annuler</span>
+              <span class="row-revise-close">Fermer</span>
+            </summary>
+            <form method="post">
+              <input type="hidden" name="Column" value="@column.Identity.Column" />
 
-            @*
-              ⚠️ CETTE FORME NE PORTE PLUS AUCUN CHAMP DE SAISIE — voir le geste de lot plus haut :
-              le bouton caché qui gardait la touche Entrée est parti avec le champ de nom, faute de
-              commande textuelle pour déclencher une soumission implicite.
+              @*
+                ⚠️ LE RAPPORT DE DÉTECTION LU VOYAGE AVEC LE CLIC, et il ne dit pas où écrire — le
+                geste écrit toujours le courant. Il dit sur quoi la lecture portait, et permet de
+                REFUSER : un collègue qui dépose un relevé pendant qu'on relit une table ferait sinon
+                atterrir cette signature-ci sur un rapport de détection que personne n'a lu.
 
-              ⚠️ DEUX PAIRS, ET AUCUNE ACTION PRINCIPALE — même raison qu'au geste de lot.
-            *@
-            <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Retained.Name">
-              Retenir
-            </button>
-            <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.SetAside.Name">
-              Écarter
-            </button>
-          </form>
+                ⚠️ AUCUN CHAMP DE SAISIE — voir le geste de lot plus haut —, et DEUX PAIRS, AUCUNE
+                ACTION PRINCIPALE, pour la même raison.
+              *@
+              <input type="hidden" name="Screening" value="@read.Screening.Value" />
+
+              <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Retained.Name">
+                Retenir
+              </button>
+              <button type="submit" name="Ruling" value="@MicroserviceRgpd.Core.Screenings.ScreenedColumnState.SetAside.Name">
+                Écarter
+              </button>
+            </form>
+          </details>
         </td>
       </tr>
     }
@@ -539,13 +572,65 @@ else
 }
 </section>
 
+@*
+  LA SUITE, AU PIED DE LA TABLE. Une fois la table lue, l'Operator n'a pas à retourner à la liste
+  pour savoir où aller : le service nomme la table suivante où une colonne attend, dans l'ordre du
+  rapport — et, quand plus rien n'attend nulle part, l'export.
+
+  ⚠️ LA SUITE NE TRANCHE RIEN. Passer à la table suivante laisse en attente ce qui l'était ici, et
+  le compte de la liste le dit toujours : ce n'est pas un « valider et continuer ».
+*@
+<nav class="next-table" aria-label="La suite de l'arbitrage">
+  @if (next is not null)
+  {
+    <a class="route-action"
+       asp-page="Table"
+       asp-route-schema="@next.Identity.Schema"
+       asp-route-table="@next.Identity.Table">
+      Table suivante : @next.Identity.ToString()
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </a>
+    @if (read.AwaitingCountInThisTable > 0)
+    {
+      <p class="hint">
+        @Counted(read.AwaitingCountInThisTable, "colonne") de cette table
+        @(read.AwaitingCountInThisTable == 1 ? "restera" : "resteront") en attente :
+        passer à la suivante ne tranche rien.
+      </p>
+    }
+  }
+  else if (summary.Progress.IsComplete)
+  {
+    <a class="route-action" asp-page="Export">
+      Passer à l'export
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </a>
+  }
+  else
+  {
+    <p class="hint">
+      Aucune autre table n'attend plus rien. Il reste
+      @Counted(read.AwaitingCountInThisTable, "colonne") à trancher ici avant l'export.
+    </p>
+  }
+</nav>
+
+</div>
+</div>
+
 <h2>Les comptes du rapport de détection entier</h2>
 
 @*
   ILS PORTENT SUR LE RAPPORT DE DÉTECTION ENTIER, jamais sur la table ouverte : des comptes bornés
   à ce qu'on a sous les yeux auraient dit « rien n'attend » à qui a trente-neuf tables intactes.
 *@
-<dl class="banner tally">
+<dl class="banner tally" data-arbitration-live="tally">
   <dt>Signalées</dt>
   <dd>@read.Tally.Flagged</dd>
   <dt>Retenues</dt>

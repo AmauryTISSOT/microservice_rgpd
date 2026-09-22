@@ -79,6 +79,18 @@ public sealed record ScreeningSummary(
       ScreeningTally.Of(counts),
       UnfinishedScreening.Of(counts));
   }
+
+  /// <summary>L'avancement de l'arbitrage sur le rapport entier, en comptes.</summary>
+  public ArbitrationProgress Progress => ArbitrationProgress.Of(Tally, Lock);
+
+  /// <summary>
+  /// La table à ouvrir ensuite : la première, <b>après</b> <paramref name="after"/> dans l'ordre du
+  /// rapport, où une colonne attend encore — voir <see cref="ArbitrationOrder"/>.
+  /// </summary>
+  public SummarisedTable? NextToArbitrate(TableIdentity? after = null)
+  {
+    return ArbitrationOrder.NextAfter(Tables, after);
+  }
 }
 
 /// <summary>
@@ -89,18 +101,35 @@ public sealed record ScreeningSummary(
 /// <param name="ColumnCount">Combien de colonnes elle porte, <b>toutes</b>.</param>
 /// <param name="FlaggedCount">Combien la détection en a signalées.</param>
 /// <param name="AwaitingCount">Combien attendent encore qu'un humain les tranche.</param>
+/// <param name="FlaggedAwaitingCount">
+/// Combien, parmi celles qui attendent, la détection avait signalées. ⚠️ <b>La liste des tables le
+/// dit à part</b>, parce que ces colonnes-là ne se tranchent qu'une par une : une table qui n'attend
+/// plus que des colonnes où rien n'a été vu se finit d'un geste de lot, une table où attend une
+/// suspicion ne se finit jamais ainsi.
+/// </param>
 public sealed record SummarisedTable(
   TableIdentity Identity,
   int ColumnCount,
   int FlaggedCount,
-  int AwaitingCount)
+  int AwaitingCount,
+  int FlaggedAwaitingCount)
 {
+  /// <summary>Combien de ses colonnes un humain a déjà tranchées, retenues et écartées ensemble.</summary>
+  public int SettledCount => ColumnCount - AwaitingCount;
+
+  /// <summary>Combien de ses colonnes où rien n'a été vu attendent encore d'être relues.</summary>
+  public int UnflaggedAwaitingCount => AwaitingCount - FlaggedAwaitingCount;
+
+  /// <summary>Plus rien n'y attend : chacune de ses colonnes a été tranchée.</summary>
+  public bool IsSettled => AwaitingCount == 0;
+
   internal static SummarisedTable Of(TableIdentity table, IReadOnlyList<ScreenedColumn> columns)
   {
     return new SummarisedTable(
       table,
       columns.Count,
       columns.Count(column => column.IsFlagged),
-      columns.Count(column => column.AwaitsAnArbitration));
+      columns.Count(column => column.AwaitsAnArbitration),
+      columns.Count(column => column.IsFlagged && column.AwaitsAnArbitration));
   }
 }

@@ -1,6 +1,7 @@
 using MicroserviceRgpd.Core.Screenings;
 using MicroserviceRgpd.UseCases.Screenings.ArbitrateColumn;
 using MicroserviceRgpd.UseCases.Screenings.ArbitrateTableInBatch;
+using MicroserviceRgpd.UseCases.Screenings.ReadCurrentScreening;
 using MicroserviceRgpd.UseCases.Screenings.ReadScreeningTable;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -86,6 +87,13 @@ public class TableModel(IMediator mediator) : PageModel
 
   /// <summary>La table lue, et la clause qui l'accompagne obligatoirement.</summary>
   public ScreeningAnswer<ScreenedTable>? Answer { get; private set; }
+
+  /// <summary>
+  /// Le sommaire du rapport entier : la liste des tables à gauche, l'avancement en tête, et la table
+  /// suivante au pied. ⚠️ <b>La table ouverte ne se lit jamais seule</b> — une table relue jusqu'au
+  /// bout est l'instant précis où l'on croit avoir fini, et c'est la liste qui dit le contraire.
+  /// </summary>
+  public ScreeningSummary? Summary { get; private set; }
 
   /// <summary>
   /// Ce que le geste de lot a fait, dit à celui qui vient de le poser. ⚠️ <b>La lecture consomme la
@@ -352,6 +360,18 @@ public class TableModel(IMediator mediator) : PageModel
     // Aucun rapport de détection courant, ou un courant qui ne porte pas cette table : le rapport
     // de détection la nommerait s'il l'avait. Une table vide portant la clause aurait fait passer
     // une adresse mal recopiée pour une table réellement dépourvue de colonnes.
-    return Answer is null ? RedirectToPage("Report") : Page();
+    if (Answer is null)
+    {
+      return RedirectToPage("Report");
+    }
+
+    // ⚠️ Le sommaire doit être celui du rapport dont la table vient. Un dépôt glissé entre les deux
+    // lectures aurait mis à gauche les tables d'un autre rapport que celui qu'on arbitre à droite :
+    // on renvoie alors au rapport, qui dit ce que le déploiement a réellement.
+    Summary = (await mediator.Send(new ReadCurrentScreeningQuery(), cancellationToken))?.Content;
+
+    return Summary is null || Summary.Id != Answer.Content.Screening
+      ? RedirectToPage("Report")
+      : Page();
   }
 }

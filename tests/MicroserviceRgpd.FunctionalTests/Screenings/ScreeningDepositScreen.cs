@@ -124,20 +124,24 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// <b>Le verrou est en tête, et il se recalcule à chaque rendu.</b> Sans lui, un <c>Operator</c>
-  /// qui a arbitré ses tables signalées voit une surface qui se tait et <b>croit le travail fini</b>,
-  /// alors que l'<c>Omission relue</c> n'a précisément rien rattrapé.
+  /// <b>Le verrou est en tête, en comptes, et il se recalcule à chaque rendu.</b> Sans lui, un
+  /// <c>Operator</c> qui a arbitré ses tables signalées voit une surface qui se tait et <b>croit le
+  /// travail fini</b>, alors que l'<c>Omission relue</c> n'a précisément rien rattrapé.
   /// </summary>
+  /// <remarks>
+  /// ⚠️ Sur le rapport, il ne se dit plus en phrase : l'avancement porte le reste à relire, chiffré.
+  /// La phrase demeure sur l'écran d'une table — voir <c>ScreeningTableScreen</c>.
+  /// </remarks>
   [Fact]
   public async Task KeepsTheLockOnUntilEveryColumnWhereNothingWasSeenHasBeenReRead()
   {
-    var report = await _surface.DepositAndReadTheReportAsync(ScreeningSurface.Paste(
-      ScreeningSurface.Column("id_adh", position: 1),
-      ScreeningSurface.Column("email", position: 2),
-      ScreeningSurface.Column("montant", table: "cotisations", position: 1)));
+    var report = System.Net.WebUtility.HtmlDecode(await _surface.DepositAndReadTheReportAsync(
+      ScreeningSurface.Paste(
+        ScreeningSurface.Column("id_adh", position: 1),
+        ScreeningSurface.Column("email", position: 2),
+        ScreeningSurface.Column("montant", table: "cotisations", position: 1))));
 
-    report.ShouldContain("Ce rapport de détection est inachevé");
-    report.ShouldContain("pas encore été relues");
+    report.ShouldMatch(@"<strong>\d+ colonnes? où rien n'a été détecté</strong>\s*(est|sont) à relire");
   }
 
   /// <summary>

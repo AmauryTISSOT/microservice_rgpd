@@ -241,6 +241,7 @@ public class IncompletenessClauseOnEveryScreen(CustomWebApplicationFactory<Progr
     {
       [ScreeningSurface.Report] = await ReadDecodedAsync(ScreeningSurface.Report),
       [ScreeningSurface.Table] = await ReadDecodedAsync(ScreeningSurface.TableOf()),
+      [ScreeningSurface.Export] = await ReadDecodedAsync(ScreeningSurface.Export),
       [ScreeningSurface.History] = await ReadDecodedAsync(ScreeningSurface.History),
     };
 

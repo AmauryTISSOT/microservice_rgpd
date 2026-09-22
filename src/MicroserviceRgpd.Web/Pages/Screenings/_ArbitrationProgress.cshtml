@@ -1,0 +1,64 @@
+@model MicroserviceRgpd.UseCases.Screenings.ReadCurrentScreening.ScreeningSummary
+@{
+  var progress = Model.Progress;
+
+  string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+
+  // La largeur de la barre, et elle seule, vient d'une proportion : ce que l'on LIT est le compte.
+  var width = (progress.SettledPerMille / 10.0).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+@*
+  L'AVANCEMENT DU RAPPORT ENTIER, en tête de l'arbitrage et recalculé à chaque rendu.
+
+  ⚠️ C'EST UN COMPTE, JAMAIS UN ÉTAT RASSURANT : « 7 / 37 colonnes tranchées » se lit, « en cours » ne
+  se lit pas. La barre n'en est que le dessin — un rectangle, pas un `<progress>` — et elle est
+  cachée aux lecteurs d'écran, qui ont déjà le compte.
+
+  ⚠️ LES DEUX RESTES NE SE FONDENT PAS. Les signalées se tranchent une par une ; celles où rien n'a
+  été vu se relisent, et peuvent se trancher d'un geste de lot. Un reste unique aurait laissé croire
+  qu'un geste de lot vient à bout de tout.
+*@
+<section class="arbitration-progress" aria-label="L'avancement de l'arbitrage" data-arbitration-live="progress">
+  <div class="arbitration-progress-head">
+    <p class="arbitration-progress-count">
+      <span class="count">@progress.Settled</span> / @Counted(progress.Columns, "colonne")
+      tranchée@(progress.Settled == 1 ? "" : "s")
+    </p>
+
+    @if (progress.IsComplete)
+    {
+      <a class="route-action" asp-page="Export">
+        Passer à l'export
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </a>
+    }
+  </div>
+
+  <div class="progress" aria-hidden="true">
+    <div class="progress-done" style="width: @(width)%"></div>
+  </div>
+
+  @if (progress.IsComplete)
+  {
+    <p class="hint">
+      Chaque colonne de ce rapport a reçu une réponse. L'export la porte ligne à ligne.
+    </p>
+  }
+  else
+  {
+    <ul class="arbitration-rest">
+      <li class="@(progress.FlaggedAwaiting > 0 ? "flagged" : "cleared")">
+        <strong>@Counted(progress.FlaggedAwaiting, "colonne") signalée@(progress.FlaggedAwaiting == 1 ? "" : "s")</strong>
+        à trancher
+      </li>
+      <li class="@(progress.UnflaggedAwaiting > 0 ? "unflagged" : "cleared")">
+        <strong>@Counted(progress.UnflaggedAwaiting, "colonne") où rien n'a été détecté</strong>
+        @(progress.UnflaggedAwaiting == 1 ? "est" : "sont") à relire
+      </li>
+    </ul>
+  }
+</section>

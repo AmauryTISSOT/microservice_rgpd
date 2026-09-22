@@ -1091,20 +1091,6 @@ fieldset:has(input[type="radio"]) label {
   sans qu'aucun des deux ne se cache derrière l'autre. Sur un écran étroit, ils s'empilent.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-.trail {
-  align-items: center;
-  color: var(--ink-muted);
-  display: flex;
-  flex-wrap: wrap;
-  font: var(--type-caption);
-  gap: var(--space-xs);
-  letter-spacing: var(--type-caption-tracking);
-}
-
-.trail a {
-  color: var(--ink-muted);
-}
-
 .guarantees {
   display: flex;
   flex-wrap: wrap;
@@ -1714,36 +1700,154 @@ table.columns th.reason {
 .column-card {
   background: var(--surface);
   border: var(--hairline-width) solid var(--hairline);
+  border-left: var(--rule-width) solid var(--hairline);
   border-radius: var(--radius-lg);
   margin: 0 0 var(--space-md);
   padding: var(--space-md) var(--space-lg);
+  position: relative;
+}
+
+/*
+  ⚠️ LE LISERÉ DIT L'ÉTAT : orangé tant que la colonne attend, vert une fois tranchée. Le mot
+  « En attente » reste dans le résumé, masqué à l'œil seulement : la couleur double le mot, elle ne
+  le remplace pas.
+*/
+.column-card.awaiting {
+  border-left-color: var(--signal-warning);
+}
+
+.column-card.settled-card {
+  border-left-color: var(--signal-success);
+  padding-block: var(--space-sm);
 }
 
 /*
   ⚠️ LE RÉSUMÉ EST CE QUI SURVIT AU REPLI : le nom, la catégorie, l'issue. Il se lit comme un geste
   — curseur et graisse d'un intitulé —, faute de quoi rien ne dirait qu'il s'ouvre.
+
+  ⚠️ IL LAISSE LA PLACE DES BOUTONS À SA DROITE : ceux-ci se posent en haut à droite de la fiche
+  ouverte, sans quitter la fin de son contenu dans l'ordre de lecture.
+*/
+/*
+  ⚠️ LE RÉSUMÉ NE RÉAGIT PAS AU CLIC, SON BOUTON SEUL LE FAIT. Cliquer l'issue ou le nom d'une
+  colonne tranchée rouvrait la fiche comme si l'on voulait se raviser : seul « Annuler » (ou
+  « Fermer ») reçoit la souris, et son clic remonte jusqu'au résumé qui déplie la fiche. Au
+  clavier, le résumé reste le bouton natif qu'il est.
 */
 .column-card > summary {
-  align-items: baseline;
-  cursor: pointer;
+  align-items: center;
+  cursor: default;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-md);
+  gap: var(--space-xs) var(--space-sm);
+  list-style: none;
+  min-height: 44px;
+  pointer-events: none;
+}
+
+.column-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.column-card[open] > summary {
+  padding-right: 15rem;
 }
 
 .column-card .column-name {
+  font: var(--type-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--type-title-tracking);
+}
+
+.column-card .category {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-radius: var(--radius-full);
+  color: var(--accent-pressed);
+  font: var(--type-caption);
   font-weight: var(--weight-semibold);
+  padding: 2px var(--space-sm);
 }
 
-.column-card .category,
 .column-card .settled {
-  color: var(--ink-secondary);
-  font: var(--type-body-sm);
-  letter-spacing: var(--type-body-sm-tracking);
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  border-radius: var(--radius-full);
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+  font: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  margin-left: auto;
+  padding: 2px var(--space-sm);
 }
 
-.column-card .banner {
-  margin-bottom: var(--space-md);
+/* La date de l'arbitrage, dans la fiche rouverte : elle a quitté le résumé, pas l'écran. */
+.column-card .column-settled-on {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  margin: var(--space-xs) 0 0;
+}
+
+/*
+  « ANNULER » ET « FERMER » ONT L'APPARENCE DE RETENIR ET ÉCARTER, survol compris : c'est un bouton
+  comme eux, et il doit se lire comme tel.
+*/
+.column-card-toggle {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: var(--type-button);
+  letter-spacing: var(--type-button-tracking);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  pointer-events: auto;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  user-select: none;
+}
+
+.column-card-toggle:hover {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-color: var(--accent);
+  color: var(--accent-pressed);
+}
+
+.column-card-toggle:active {
+  transform: translateY(1px);
+}
+
+.column-card > summary:focus-visible .column-card-toggle {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.column-card-close,
+.column-card[open] .column-card-revise {
+  display: none;
+}
+
+.column-card[open] .column-card-close {
+  display: inline;
+}
+
+/* Le type et le commentaire de la colonne, sur une ligne discrète sous le nom. */
+.column-card .column-facts {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+  margin: var(--space-xs) 0 var(--space-sm);
+}
+
+.column-card .column-facts code {
+  color: var(--ink-secondary);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+/* La règle qui a déclenché, sous le motif : son nom et ce qu'elle rapproche, en retrait. */
+.column-card .column-rule {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+  margin: var(--space-sm) 0 0;
 }
 
 /*
@@ -1769,8 +1873,12 @@ table.columns th.reason {
   grid-template-columns: minmax(26rem, 2fr);
 }
 
+/* LE MOTIF, MIS EN AVANT : c'est lui qui rend l'arbitrage possible, et il se lit d'abord. */
 .column-card .reason {
+  background: var(--canvas);
+  border-radius: var(--radius-md);
   margin: 0;
+  padding: var(--space-sm) var(--space-md);
 }
 
 /*
@@ -1836,12 +1944,38 @@ table.columns th.reason {
   max-width: 60rem;
 }
 
+/*
+  LES DEUX BOUTONS, EN HAUT À DROITE DE LA FICHE OUVERTE. Ils restent à la fin de son contenu dans
+  l'ordre de lecture ; seule leur place à l'œil change.
+*/
 .column-card form {
-  margin: var(--space-md) 0 0;
+  display: flex;
+  gap: var(--space-xs);
+  margin: 0;
+  position: absolute;
+  right: var(--space-lg);
+  top: var(--space-md);
 }
 
 .column-card button {
-  padding: var(--space-xxs) var(--space-sm);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+}
+
+@media (max-width: 60rem) {
+  .column-card[open] > summary {
+    padding-right: 0;
+  }
+
+  .column-card form {
+    margin: var(--space-md) 0 0;
+    position: static;
+  }
+
+  .column-card .reason-line {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /*
@@ -2601,6 +2735,45 @@ button.primary {
 button.primary:active {
   background: var(--accent-pressed);
   border-color: var(--accent-pressed);
+}
+
+/*
+  LE SURVOL DIT QU'UN BOUTON SE CLIQUE : le curseur de la main, et un fond qui se teinte sous la
+  souris. Sans lui, un bouton secondaire — fond blanc, filet clair — se lisait comme un simple
+  cadre.
+*/
+button:where(:not(:disabled)) {
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+button:where(:not(:disabled)):hover {
+  background: var(--canvas);
+  border-color: var(--ink-faint);
+}
+
+button.primary:where(:not(:disabled)):hover {
+  background: var(--accent-pressed);
+  border-color: var(--accent-pressed);
+}
+
+button.destructive:where(:not(:disabled)):hover {
+  background: color-mix(in srgb, var(--signal-error) var(--signal-tint), var(--surface));
+  border-color: var(--signal-error);
+}
+
+/*
+  ⚠️ RETENIR ET ÉCARTER RESTENT DEUX PAIRS AU SURVOL : le même accent pour l'un et l'autre. Peindre
+  l'un en vert et l'autre en rouge aurait dit lequel des deux l'écran attend.
+*/
+button[name="Ruling"]:where(:not(:disabled)):hover {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-color: var(--accent);
+  color: var(--accent-pressed);
+}
+
+button:where(:not(:disabled)):active {
+  transform: translateY(1px);
 }
 
 /* L'ACTION INDISPONIBLE — visible, mais éteinte : elle se lit sans se proposer au clic. */
@@ -3413,4 +3586,778 @@ dialog.modal.sheet > .modal-head {
 
 .toast:empty {
   display: none;
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  L'ARBITRAGE DE LA DÉTECTION, EN LISTE ET DÉTAIL. Le fil d'Ariane et ses trois temps en tête, puis une
+  ligne de repères, l'avancement du rapport entier, et deux colonnes : les tables à gauche, collées
+  au défilement, la table ouverte à droite. Sous ~60rem, la liste passe au-dessus du détail.
+
+  ⚠️ LA BARRE D'AVANCEMENT EST UNE LARGEUR, comme celle du scan : un rectangle, jamais un
+  `<progress>`. Ce qui est LU reste le compte, écrit à côté.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+/*
+  LE FIL D'ARIANE DE LA DÉTECTION, en chevrons : où l'on est ET à quel temps du parcours, en une
+  barre collée en haut au défilement. Le vert dit ce qui est fait, le bleu plein ce qu'on lit, le
+  bleu pâle l'étape en cours quand on lit une de ses tables.
+
+  ⚠️ LA FORME EST SUR LE CONTENU DU MAILLON, JAMAIS SUR LE MAILLON : un `clip-path` sur le `<li>`
+  couperait le menu des tables qui en déborde.
+*/
+.detection-trail {
+  --trail-height: 44px;
+  --trail-notch: 14px;
+  background: var(--canvas);
+  margin: calc(-1 * var(--space-xs)) 0 var(--space-lg);
+  padding: var(--space-xs) 0;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.detection-trail ol {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  row-gap: var(--space-xs);
+}
+
+.detection-trail li {
+  display: flex;
+  position: relative;
+}
+
+.detection-trail li + li {
+  margin-left: calc(-1 * var(--trail-notch) + 6px);
+}
+
+.detection-trail li > a,
+.detection-trail li > span,
+.detection-trail .trail-menu > summary {
+  align-items: center;
+  background: var(--surface);
+  box-sizing: border-box;
+  clip-path: polygon(0 0, calc(100% - var(--trail-notch)) 0, 100% 50%,
+    calc(100% - var(--trail-notch)) 100%, 0 100%, var(--trail-notch) 50%);
+  color: var(--ink-secondary);
+  display: flex;
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+  gap: var(--space-xs);
+  height: var(--trail-height);
+  letter-spacing: var(--type-caption-tracking);
+  padding: 0 calc(var(--trail-notch) + var(--space-md)) 0 calc(var(--trail-notch) + var(--space-sm));
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.detection-trail li.trail-root > a,
+.detection-trail li.trail-root > span {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  clip-path: polygon(0 0, calc(100% - var(--trail-notch)) 0, 100% 50%,
+    calc(100% - var(--trail-notch)) 100%, 0 100%);
+  padding-left: var(--space-md);
+}
+
+.detection-trail a:hover {
+  color: var(--accent-pressed);
+}
+
+.detection-trail li.trail-done > a,
+.detection-trail li.trail-done > span {
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+}
+
+.detection-trail li.trail-step > a,
+.detection-trail li.trail-pending > a {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: color-mix(in srgb, var(--accent) 60%, var(--ink));
+  font-weight: var(--weight-semibold);
+}
+
+.detection-trail li.trail-current > span,
+.detection-trail li.trail-current .trail-menu > summary {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: var(--weight-semibold);
+}
+
+.trail-mark {
+  align-items: center;
+  border: 1.5px solid currentColor;
+  border-radius: var(--radius-full);
+  box-sizing: border-box;
+  display: inline-flex;
+  font: var(--type-eyebrow);
+  height: 20px;
+  justify-content: center;
+  width: 20px;
+}
+
+.trail-count {
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  color: var(--ink-secondary);
+  font: var(--type-eyebrow);
+  padding: 2px var(--space-xs);
+}
+
+/* L'étape d'après se range à droite : c'est une suite, pas un maillon de plus. */
+.detection-trail li.trail-next {
+  margin-left: auto;
+  padding-left: var(--space-md);
+}
+
+.detection-trail li.trail-next > a {
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  clip-path: none;
+  padding: 0 var(--space-md);
+}
+
+.trail-menu > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.trail-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.trail-menu[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.trail-menu-panel {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  left: var(--space-xs);
+  max-height: 60vh;
+  min-width: 18rem;
+  overflow-y: auto;
+  padding: var(--space-xs);
+  position: absolute;
+  top: calc(var(--trail-height) + var(--space-xs));
+  z-index: 4;
+}
+
+.trail-menu-caption {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  margin: var(--space-xs) var(--space-xs) var(--space-xxs);
+  text-transform: uppercase;
+}
+
+.trail-menu-panel ul {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trail-menu-panel a {
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  display: flex;
+  font: var(--type-caption);
+  gap: var(--space-md);
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-sm);
+  text-decoration: none;
+}
+
+.trail-menu-panel a:hover {
+  background: var(--canvas);
+}
+
+.trail-menu-panel a.open {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: color-mix(in srgb, var(--accent) 60%, var(--ink));
+  font-weight: var(--weight-semibold);
+}
+
+.trail-menu-count {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-menu-panel li.settled .trail-menu-count {
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+}
+
+/* La liste des tables se colle SOUS le fil, et non derrière lui. */
+.detection-trail ~ .workbench .tables-list {
+  max-height: calc(100vh - 44px - 3 * var(--space-lg));
+  top: calc(44px + 2 * var(--space-xs) + var(--space-md));
+}
+
+/*
+  Sur un écran étroit, les chevrons passent mal à la ligne : ils deviennent des pastilles, et le fil
+  cesse de se coller — il prendrait la moitié de la hauteur.
+*/
+@media (max-width: 60rem) {
+  .detection-trail {
+    position: static;
+  }
+
+  .detection-trail ol {
+    gap: var(--space-xs);
+  }
+
+  .detection-trail li + li {
+    margin-left: 0;
+  }
+
+  .detection-trail li > a,
+  .detection-trail li > span,
+  .detection-trail .trail-menu > summary {
+    border-radius: var(--radius-md);
+    clip-path: none;
+    padding: 0 var(--space-sm);
+  }
+
+  .detection-trail li.trail-next {
+    margin-left: 0;
+    padding-left: 0;
+  }
+}
+
+/*
+  Les repères du relevé, en une ligne : ils se lisent d'un coup d'œil. Le moteur se déplie sous la
+  ligne, depuis « détails » — un `<details>` en ligne, dont le contenu passe dessous.
+*/
+.detection-meta {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+  margin: var(--space-lg) 0 var(--space-lg);
+}
+
+.detection-meta strong {
+  color: var(--ink-secondary);
+  font-weight: var(--weight-semibold);
+}
+
+.detection-meta details {
+  display: inline;
+}
+
+.detection-meta summary {
+  cursor: pointer;
+  display: inline;
+  list-style: none;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.detection-meta summary::-webkit-details-marker {
+  display: none;
+}
+
+.detection-meta details p {
+  margin: var(--space-xxs) 0 0;
+}
+
+/* L'avancement du rapport entier : un compte, sa barre, et les deux restes. */
+.arbitration-progress {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.arbitration-progress-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: space-between;
+}
+
+.arbitration-progress-count {
+  font: var(--type-title);
+  margin: 0;
+}
+
+.arbitration-progress .progress {
+  margin: var(--space-sm) 0;
+}
+
+.arbitration-progress .hint {
+  margin: 0;
+}
+
+.arbitration-rest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.arbitration-rest li {
+  border-radius: var(--radius-full);
+  font: var(--type-caption);
+  padding: 2px var(--space-sm);
+}
+
+.arbitration-rest li.flagged {
+  background: color-mix(in srgb, var(--signal-warning) var(--signal-tint), var(--surface));
+  color: var(--signal-warning-ink);
+}
+
+.arbitration-rest li.unflagged {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--accent-pressed);
+}
+
+.arbitration-rest li.cleared {
+  background: var(--canvas);
+  color: var(--ink-muted);
+}
+
+/* La liste et le détail. */
+.workbench {
+  align-items: start;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: 18rem minmax(0, 1fr);
+}
+
+.workbench-detail > h1:first-child {
+  margin-top: 0;
+}
+
+/* Sous le titre de la table, une seule ligne : son commentaire et son compte de colonnes. */
+.table-meta {
+  color: var(--ink-muted);
+  font: var(--type-body-md);
+  margin: 0 0 var(--space-lg);
+}
+
+.workbench-detail section.flagged > h2,
+.workbench-detail .unflagged-head > h2 {
+  font: var(--type-heading-3);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: var(--space-lg) 0 var(--space-md);
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE SECOND TEMPS : UNE BARRE DE LOT, PUIS UNE LIGNE PAR COLONNE.
+
+  ⚠️ CE N'EST TOUJOURS PAS UNE CARTE PAR COLONNE : cinq mille lignes tiennent dans un seul bloc, une
+  ligne basse chacune, et ce qu'elles ont en commun — rien n'y a été vu, elles attendent — est dit
+  une fois, au titre, plutôt que cinq mille fois à l'œil.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.unflagged-head {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+}
+
+.unflagged-awaiting {
+  color: var(--ink-muted);
+  font: var(--type-body-md);
+}
+
+.unflagged-awaiting strong {
+  color: color-mix(in srgb, var(--signal-warning) 55%, var(--ink));
+}
+
+.workbench-detail section.batch {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.workbench-detail section.batch > .hint {
+  margin: 0;
+}
+
+.batch-text {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.batch-text p {
+  margin: 0;
+}
+
+.batch-text .batch-title {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+}
+
+.batch-text .hint {
+  margin-top: var(--space-xxs);
+}
+
+.workbench-detail section.batch form {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+/* Les boutons du lot se distinguent de ceux d'une ligne : ils engagent toute la table. */
+.workbench-detail section.batch button {
+  background: var(--canvas);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  white-space: nowrap;
+}
+
+table.unflagged-list {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-collapse: separate;
+  border-radius: var(--radius-lg);
+  border-spacing: 0;
+  width: 100%;
+}
+
+table.unflagged-list th,
+table.unflagged-list td {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  padding: var(--space-xs) var(--space-md);
+  text-align: left;
+  vertical-align: middle;
+}
+
+table.unflagged-list tr:last-child > * {
+  border-bottom: 0;
+}
+
+table.unflagged-list th {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+  padding-left: var(--space-lg);
+  width: 12rem;
+  overflow-wrap: anywhere;
+}
+
+table.unflagged-list .unflagged-facts {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+}
+
+table.unflagged-list .unflagged-facts code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+table.unflagged-list td.unflagged-ruling {
+  text-align: right;
+  white-space: nowrap;
+}
+
+table.unflagged-list td.unflagged-ruling form,
+table.unflagged-list td.unflagged-ruling .settled,
+table.unflagged-list td.unflagged-ruling .row-revise {
+  display: inline-flex;
+  gap: var(--space-xs);
+  vertical-align: middle;
+}
+
+table.unflagged-list td.unflagged-ruling button {
+  min-height: 44px;
+  padding: 0 var(--space-md);
+}
+
+table.unflagged-list .settled {
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  border-radius: var(--radius-full);
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+  font: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  margin-right: var(--space-xs);
+  padding: 2px var(--space-sm);
+}
+
+/*
+  « ANNULER » DÉPLIE LES DEUX BOUTONS À CÔTÉ DE LUI, « FERMER » LES REPLIE : le repli du navigateur,
+  sans une ligne de JavaScript, et l'apparence exacte de Retenir et Écarter.
+*/
+.row-revise {
+  align-items: center;
+  flex-direction: row-reverse;
+}
+
+.row-revise > summary {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: var(--type-button);
+  letter-spacing: var(--type-button-tracking);
+  list-style: none;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  user-select: none;
+}
+
+.row-revise > summary::-webkit-details-marker {
+  display: none;
+}
+
+.row-revise.awaiting > summary {
+  display: none;
+}
+
+.row-revise > summary:hover {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-color: var(--accent);
+  color: var(--accent-pressed);
+}
+
+.row-revise > summary:active {
+  transform: translateY(1px);
+}
+
+.row-revise-close,
+.row-revise[open] .row-revise-open {
+  display: none;
+}
+
+.row-revise[open] .row-revise-close {
+  display: inline;
+}
+
+@media (max-width: 60rem) {
+  table.unflagged-list th {
+    width: auto;
+  }
+
+  table.unflagged-list td.unflagged-ruling {
+    white-space: normal;
+  }
+}
+
+.tables-list {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  max-height: calc(100vh - 2 * var(--space-lg));
+  overflow-y: auto;
+  padding: var(--space-sm);
+  position: sticky;
+  top: var(--space-lg);
+}
+
+.tables-list-caption {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  margin: var(--space-xxs) var(--space-xs) var(--space-sm);
+  text-transform: uppercase;
+}
+
+.tables-list ol {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+  Une table, un bloc : son nom en gras et son compte, une barre franche, et ce que la détection y a
+  signalé. La table ouverte est un bloc teinté ; une table finie a sa barre en vert et sa coche.
+*/
+.tables-list a {
+  align-items: baseline;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  display: grid;
+  gap: var(--space-xs) var(--space-sm);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: var(--space-sm) var(--space-sm);
+  text-decoration: none;
+}
+
+.tables-list a:hover {
+  background: var(--canvas);
+}
+
+.tables-list a[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.tables-list-name {
+  font: var(--type-body-sm);
+  font-weight: var(--weight-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tables-list-count {
+  color: var(--ink);
+  font: var(--type-body-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-medium);
+}
+
+.tables-list li.settled .tables-list-count {
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+  display: inline-flex;
+}
+
+.tables-list .progress {
+  display: block;
+  grid-column: 1 / -1;
+  height: var(--space-xs);
+  margin: 0;
+}
+
+.tables-list a[aria-current="page"] .progress {
+  background: color-mix(in srgb, var(--accent) 12%, var(--hairline));
+}
+
+.tables-list .progress-done {
+  border-radius: var(--radius-full);
+  display: block;
+}
+
+.tables-list li.settled .progress-done {
+  background: var(--signal-success);
+}
+
+.tables-list-rest {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  grid-column: 1 / -1;
+}
+
+.tables-list > .hint {
+  margin: var(--space-sm) var(--space-xs) var(--space-xxs);
+}
+
+/* Par où reprendre, sur le rapport. */
+.resume {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: start;
+  padding: var(--space-lg);
+}
+
+.resume h2,
+.resume p {
+  margin: 0;
+}
+
+/* La suite, au pied de la table ouverte. */
+.next-table {
+  border-top: var(--hairline-width) solid var(--hairline);
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: end;
+  margin: var(--space-xxl) 0 0;
+  padding: var(--space-lg) 0 0;
+}
+
+.next-table .hint {
+  text-align: right;
+}
+
+form[aria-busy="true"] button {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* L'export : les comptes de ce qui part, puis les deux formats en cartes-liens. */
+.export-tally {
+  display: grid;
+  gap: var(--space-sm);
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  margin: var(--space-lg) 0;
+}
+
+.export-tally div {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.export-tally div.awaiting {
+  border-color: var(--signal-warning);
+}
+
+.export-tally dt {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+}
+
+.export-tally dd {
+  font: 600 28px/1.2 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  margin: var(--space-xxs) 0 0;
+}
+
+.export-formats {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  margin: var(--space-lg) 0;
+}
+
+a.export-format {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  display: grid;
+  gap: var(--space-xxs);
+  padding: var(--space-lg);
+  text-decoration: none;
+}
+
+a.export-format:hover {
+  border-color: var(--accent);
+}
+
+.export-format-name {
+  color: var(--accent);
+  font: var(--type-button);
+}
+
+.restart {
+  margin: var(--space-xxl) 0 0;
+}
+
+@media (max-width: 60rem) {
+  .workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tables-list {
+    max-height: 20rem;
+    position: static;
+  }
 }

@@ -16,11 +16,7 @@
   <script type="module" src="/js/deposit.js"></script>
 }
 
-<nav class="trail" aria-label="Fil d'Ariane">
-  <a asp-page="Report">Détection des données personnelles</a>
-  <span aria-hidden="true">/</span>
-  <span>Déposer un relevé</span>
-</nav>
+<partial name="_DetectionTrail" model='new MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail(MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Listing, Listing: "Déposer un relevé")' />
 
 <h1>Déposer un relevé et lancer la détection</h1>
 

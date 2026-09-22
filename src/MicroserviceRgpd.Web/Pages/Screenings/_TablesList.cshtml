@@ -1,0 +1,63 @@
+@model MicroserviceRgpd.Web.Pages.Screenings.TablesList
+@{
+  var summary = Model.Summary;
+
+  string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+}
+
+@*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA LISTE DES TABLES, À GAUCHE DE L'ARBITRAGE. La table est l'unité de travail : d'ici, on en ouvre
+  une, et on y lit TOUTES ses colonnes.
+
+  ⚠️ CHAQUE TABLE DIT OÙ ELLE EN EST, EN COMPTE : « 7/13 » tranchées, une barre, et combien de ses
+  colonnes la détection a signalées. Les deux restes — les signalées à trancher, celles où rien n'a
+  été détecté à relire — se lisent sur l'avancement du rapport entier, au-dessus. Une table finie
+  porte une coche et une barre verte, sans cesser d'être là : elle se rouvre pour se raviser.
+
+  ⚠️ L'ORDRE EST CELUI DU SERVICE, retrié : deux relevés du même schéma se lisent toujours dans le
+  même ordre, quelle que soit la collation de la base d'origine.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*@
+<nav class="tables-list" aria-label="Les tables du rapport de détection" data-arbitration-live="tables">
+  <p class="tables-list-caption">
+    @Counted(summary.Tables.Count, "table"), @Counted(summary.Progress.Columns, "colonne")
+  </p>
+
+  <ol>
+    @foreach (var table in summary.Tables)
+    {
+      var open = table.Identity == Model.Open;
+      var width = table.ColumnCount == 0
+        ? "0"
+        : (table.SettledCount * 100.0 / table.ColumnCount).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
+      <li class="@(table.IsSettled ? "settled" : null)">
+        <a asp-page="Table"
+           asp-route-schema="@table.Identity.Schema"
+           asp-route-table="@table.Identity.Table"
+           aria-current="@(open ? "page" : null)">
+          <span class="tables-list-name">@table.Identity.ToString()</span>
+          <span class="tables-list-count">
+            @if (table.IsSettled)
+            {
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12l5 5L20 7" />
+              </svg>
+              <span class="visually-hidden">Tranchée en entier</span>
+            }
+            else
+            {
+              @table.SettledCount<text>/</text>@table.ColumnCount
+            }
+          </span>
+          <span class="progress" aria-hidden="true"><span class="progress-done" style="width: @(width)%"></span></span>
+          <span class="tables-list-rest">
+            @(table.FlaggedCount == 0 ? "rien de signalé" : Counted(table.FlaggedCount, "signalée"))
+          </span>
+        </a>
+      </li>
+    }
+  </ol>
+</nav>

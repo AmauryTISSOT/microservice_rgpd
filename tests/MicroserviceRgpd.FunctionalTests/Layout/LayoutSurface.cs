@@ -59,6 +59,12 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   internal const string QualifyModule = "/js/qualify.js";
 
   /// <summary>
+  /// Le module de l'écran d'une table : il poste les arbitrages sans recharger la page, et rien
+  /// d'autre — sans lui, les formulaires postent et redirigent comme avant.
+  /// </summary>
+  internal const string ArbitrationModule = "/js/arbitration.js";
+
+  /// <summary>
   /// <b>Les quatre points d'entrée</b> que la barre de navigation offre, et les seuls, <b>dans
   /// l'ordre où l'on rencontre les écrans</b> : la configuration, la détection, la qualification,
   /// puis le tableau des demandes. Il n'y a pas de cinquième lien vers l'historique des rapports de
@@ -216,6 +222,10 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
   private const string Connection = "/detection/connexion";
   private const string Report = "/detection";
   private const string ScreeningTable = "/detection/table";
+  private const string Export = "/detection/export";
+
+  /// <summary>L'écran d'une table, à l'adresse exacte sous laquelle la liste des écrans le lit.</summary>
+  internal static string ScreeningTableScreen => TableOf(ScreeningTable);
   private const string History = "/detection/historique";
   private const string Archive = "/detection/archive";
   private const string ArchivedTable = "/detection/archive/table";
@@ -648,6 +658,7 @@ internal sealed class LayoutSurface(CustomWebApplicationFactory<Program> factory
       Connection,
       Report,
       TableOf(ScreeningTable),
+      Export,
       History,
       $"{Archive}?screening={Uri.EscapeDataString(archived)}",
       TableOf(ArchivedTable, $"screening={Uri.EscapeDataString(archived)}&"),

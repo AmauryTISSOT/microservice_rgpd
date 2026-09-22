@@ -64,6 +64,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   [InlineData(LayoutSurface.BoardModule)]
   [InlineData(LayoutSurface.DepositModule)]
   [InlineData(LayoutSurface.QualifyModule)]
+  [InlineData(LayoutSurface.ArbitrationModule)]
   public async Task ServesEachModuleItself(string address)
   {
     var served = await _layout.FetchAsync(address);
@@ -76,8 +77,8 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>Trois écrans chargent chacun leur module — le tableau des demandes, le dépôt d'un
-  /// relevé et la qualification —, et aucun autre écran ne charge le moindre script</b> : ni fichier, ni code en ligne.
+  /// ⚠️ <b>Quatre écrans chargent chacun leur module — le tableau des demandes, le dépôt d'un
+  /// relevé, l'écran d'une table de la détection et la qualification —, et aucun autre écran ne charge le moindre script</b> : ni fichier, ni code en ligne.
   /// La doctrine « zéro JavaScript » est levée pour toute l'application, mais un script ne se pose
   /// que là où un écran en a besoin : les autres restent tels qu'ils étaient.
   /// </summary>
@@ -94,6 +95,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
       [LayoutSurface.Board] = LayoutSurface.BoardModule,
       [LayoutSurface.ScreeningDeposit] = LayoutSurface.DepositModule,
       [LayoutSurface.Qualification] = LayoutSurface.QualifyModule,
+      [LayoutSurface.ScreeningTableScreen] = LayoutSurface.ArbitrationModule,
     };
 
     foreach (var screen in await _layout.ScreensAsync())
@@ -124,6 +126,7 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   [InlineData(LayoutSurface.BoardModule)]
   [InlineData(LayoutSurface.DepositModule)]
   [InlineData(LayoutSurface.QualifyModule)]
+  [InlineData(LayoutSurface.ArbitrationModule)]
   public async Task LoadsNothingFromAThirdPartyFromAModuleItself(string address)
   {
     var module = await _layout.ReadAsync(address);
@@ -427,10 +430,10 @@ public class SharedLayout(CustomWebApplicationFactory<Program> factory)
   {
     var screens = await _layout.ScreeningScreensAsync();
 
-    // Sept, écrit en clair, et non le compte de la liste des adresses retirées : les deux comptes
+    // Huit, écrit en clair, et non le compte de la liste des adresses retirées : les deux comptes
     // valent ce qu'ils valent par histoire et non par règle, et les dériver l'un de l'autre ferait
     // qu'en retirer une adresse affaiblirait les deux tests d'un coup.
-    screens.Count.ShouldBe(7, "Le contexte de détection compte sept écrans.");
+    screens.Count.ShouldBe(8, "Le contexte de détection compte huit écrans.");
 
     foreach (var screen in screens)
     {
