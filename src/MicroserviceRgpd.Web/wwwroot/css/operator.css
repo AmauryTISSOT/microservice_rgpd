@@ -3645,29 +3645,39 @@ dialog.modal.sheet > .modal-head {
   }
 }
 
-/* Les repères du relevé, en une ligne : ils se lisent d'un coup d'œil. */
+/*
+  Les repères du relevé, en une ligne : ils se lisent d'un coup d'œil. Le moteur se déplie sous la
+  ligne, depuis « détails » — un `<details>` en ligne, dont le contenu passe dessous.
+*/
 .detection-meta {
   color: var(--ink-muted);
-  display: flex;
-  flex-wrap: wrap;
-  font: var(--type-caption);
-  gap: var(--space-xxs) var(--space-lg);
-  margin: calc(-1 * var(--space-xs)) 0 var(--space-lg);
+  font: var(--type-body-sm);
+  margin: var(--space-lg) 0 var(--space-lg);
 }
 
-.detection-meta div {
-  display: flex;
-  gap: var(--space-xxs);
-}
-
-.detection-meta dt::after {
-  content: " :";
-}
-
-.detection-meta dd {
+.detection-meta strong {
   color: var(--ink-secondary);
-  font-weight: var(--weight-medium);
-  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+
+.detection-meta details {
+  display: inline;
+}
+
+.detection-meta summary {
+  cursor: pointer;
+  display: inline;
+  list-style: none;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.detection-meta summary::-webkit-details-marker {
+  display: none;
+}
+
+.detection-meta details p {
+  margin: var(--space-xxs) 0 0;
 }
 
 /* L'avancement du rapport entier : un compte, sa barre, et les deux restes. */

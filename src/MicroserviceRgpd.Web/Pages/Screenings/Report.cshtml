@@ -142,27 +142,23 @@
 <h1>Le rapport de détection courant</h1>
 
 @*
-  CE QUI A ÉTÉ LU, EN UNE LIGNE. La base, le SGBD, la date et le moteur sont des repères : ils se
-  lisent d'un coup d'œil et ne méritent pas le haut de l'écran que l'arbitrage réclame.
+  CE QUI A ÉTÉ LU, EN UNE LIGNE. La base, le SGBD et la date sont des repères : ils se lisent d'un
+  coup d'œil et ne méritent pas le haut de l'écran que l'arbitrage réclame. Le moteur ne sert qu'à
+  qui relit ou compare deux rapports : il se déplie, avec ce que vaut le nom de base.
 *@
-<dl class="detection-meta">
-  <div>
-    <dt>Base</dt>
-    <dd title="Le nom que le relevé rapportait, recopié tel quel — un repère pour vous, jamais une identité sur laquelle bâtir une comparaison.">@summary.Database</dd>
-  </div>
-  <div>
-    <dt>SGBD</dt>
-    <dd>@summary.Dialect</dd>
-  </div>
-  <div>
-    <dt>Lancé le</dt>
-    <dd>@summary.LaunchedOn.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))</dd>
-  </div>
-  <div>
-    <dt>Moteur</dt>
-    <dd>@summary.Engine.Name, version @summary.Engine.Version</dd>
-  </div>
-</dl>
+<div class="detection-meta">
+  <strong>@summary.Database</strong>
+  <span aria-hidden="true">·</span> @summary.Dialect
+  <span aria-hidden="true">·</span> lancé le @summary.LaunchedOn.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
+  <span aria-hidden="true">·</span>
+  <details>
+    <summary>détails</summary>
+    <p>
+      — moteur @summary.Engine.Name, version @summary.Engine.Version. Le nom de base est celui que
+      rapportait le relevé, recopié tel quel.
+    </p>
+  </details>
+</div>
 
 @*
   CE QU'UN GESTE REFUSÉ AILLEURS A LAISSÉ À DIRE. Un arbitrage qui n'a pas eu lieu ramène ici :
@@ -177,18 +173,11 @@
 }
 
 @*
-  LE VERROU, EN TÊTE ET RECALCULÉ À CE RENDU. Sans lui, on déclare lues quarante tables, on croit
-  le travail fini, et l'Omission relue n'a rien rattrapé : les colonnes signalées sont la minorité
-  du rapport de détection, et les relire toutes ne relit rien de ce qui a été omis.
+  ⚠️ LE VERROU NE SE DIT PLUS EN PHRASE SUR LE RAPPORT : l'avancement, juste dessous, le porte en
+  comptes — les signalées à trancher, celles où rien n'a été détecté à relire. La phrase restait
+  redite à trois lignes de ses propres chiffres. Elle demeure sur l'écran d'une table, où l'on
+  croit avoir fini au moment précis où l'on a relu la sienne.
 *@
-@if (summary.Lock.IsUnfinished)
-{
-  <p class="unfinished">@summary.Lock.Statement</p>
-}
-else
-{
-  <p class="hint">@summary.Lock.Statement</p>
-}
 
 @*
   AUCUN APERÇU N'A ABOUTI, DIT À L'ÉCHELLE DU RAPPORT — en plus de la raison que porte chaque

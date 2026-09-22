@@ -45,7 +45,7 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
     var trail = TrailOf(report);
     trail.ShouldMatch(@"(?s)<span aria-current=""page"">.*?Arbitrage\s*<span class=""trail-count"">0 / 3</span>");
     report.ShouldMatch(@"<span class=""count"">0</span>\s*/\s*3 colonnes");
-    report.ShouldContain("où rien n'a été vu</strong>");
+    report.ShouldContain("où rien n'a été détecté</strong>");
   }
 
   /// <summary>

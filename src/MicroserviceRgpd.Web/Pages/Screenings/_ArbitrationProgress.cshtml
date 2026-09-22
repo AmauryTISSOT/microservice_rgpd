@@ -53,11 +53,11 @@
     <ul class="arbitration-rest">
       <li class="@(progress.FlaggedAwaiting > 0 ? "flagged" : "cleared")">
         <strong>@Counted(progress.FlaggedAwaiting, "colonne") signalée@(progress.FlaggedAwaiting == 1 ? "" : "s")</strong>
-        à trancher une par une
+        à trancher
       </li>
       <li class="@(progress.UnflaggedAwaiting > 0 ? "unflagged" : "cleared")">
-        <strong>@Counted(progress.UnflaggedAwaiting, "colonne") où rien n'a été vu</strong>
-        à relire
+        <strong>@Counted(progress.UnflaggedAwaiting, "colonne") où rien n'a été détecté</strong>
+        @(progress.UnflaggedAwaiting == 1 ? "est" : "sont") à relire
       </li>
     </ul>
   }
