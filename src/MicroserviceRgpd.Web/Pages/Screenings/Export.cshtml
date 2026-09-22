@@ -12,7 +12,7 @@
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
 }
 
-<partial name="_DetectionSteps" model="MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Export" />
+<partial name="_DetectionTrail" model="new MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail(MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Export, summary)" />
 
 <h1>Exporter la cartographie des données personnelles</h1>
 

@@ -137,7 +137,7 @@
   var scanned = clause.Origin == MicroserviceRgpd.Core.Screenings.ListingOrigin.Scanned;
 }
 
-<partial name="_DetectionSteps" model="MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Arbitration" />
+<partial name="_DetectionTrail" model="new MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail(MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Arbitration, summary)" />
 
 <h1>Le rapport de détection courant</h1>
 

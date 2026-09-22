@@ -42,7 +42,8 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
   {
     var report = WebUtility.HtmlDecode(await TwoTablesAsync());
 
-    report.ShouldMatch(@"<span aria-current=""step"">Arbitrer les colonnes</span>");
+    var trail = TrailOf(report);
+    trail.ShouldMatch(@"(?s)<span aria-current=""page"">.*?Arbitrage\s*<span class=""trail-count"">0 / 3</span>");
     report.ShouldMatch(@"<span class=""count"">0</span>\s*/\s*3 colonnes");
     report.ShouldContain("où rien n'a été vu</strong>");
   }
@@ -136,6 +137,71 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
 
     report.ShouldContain("L'arbitrage est terminé");
     report.ShouldMatch(@"<span class=""count"">1</span>\s*/\s*1 colonne\b");
+  }
+
+  /// <summary>
+  /// <b>Sur l'écran d'une table, le fil nomme la table ouverte</b> — c'est elle, la page — et son
+  /// maillon ouvre chaque table du rapport, avec ce qui y est tranché.
+  /// </summary>
+  [Fact]
+  public async Task NamesTheOpenTableAtTheEndOfTheTrailAndOpensEveryOther()
+  {
+    await TwoTablesAsync();
+
+    var trail = TrailOf(WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.TableOf())));
+
+    trail.ShouldMatch(@"<summary aria-current=""page"">\s*public\.adherents");
+    trail.ShouldContain("Changer de table");
+    trail.ShouldContain("table=cotisations");
+    trail.ShouldMatch(@"public\.cotisations</span>\s*<span class=""trail-menu-count"">0 / 1</span>");
+
+    // L'arbitrage n'est plus la page : il ramène au rapport.
+    trail.ShouldMatch(@"<a href=""/detection"">\s*<span class=""trail-mark""[^>]*>2</span>\s*Arbitrage");
+    Regex.Matches(trail, @"aria-current=""page""").Count.ShouldBe(1);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>Le relevé n'est un lien sur aucun écran du fil</b> : refaire un relevé range le rapport
+  /// dans l'historique, et ce coût se lit au pied du rapport, pas sur un maillon. L'export, lui,
+  /// reste atteignable avant la fin.
+  /// </summary>
+  [Fact]
+  public async Task NeverLinksTheListingAndAlwaysReachesTheExport()
+  {
+    await TwoTablesAsync();
+
+    foreach (var address in new[] { ScreeningSurface.Report, ScreeningSurface.TableOf(), ScreeningSurface.Export })
+    {
+      var trail = TrailOf(WebUtility.HtmlDecode(await _surface.ReadAsync(address)));
+
+      trail.ShouldMatch(@"(?s)<li class=""trail-done"">\s*<span>.*?Relevé galette_prod", customMessage: address);
+      trail.ShouldNotMatch(@"(?s)<a[^>]*>(?:(?!</a>).)*Relevé galette_prod", customMessage: address);
+      trail.ShouldContain("Exporter", customMessage: address);
+    }
+
+    var export = TrailOf(WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Export)));
+
+    export.ShouldMatch(@"<span aria-current=""page"">\s*<span class=""trail-mark""[^>]*>3</span>\s*Exporter");
+  }
+
+  /// <summary>
+  /// <b>Le dépôt porte le même fil</b>, réduit à ce qui existe : il n'y a pas encore de rapport.
+  /// </summary>
+  [Fact]
+  public async Task PutsTheDepositOnTheSameTrail()
+  {
+    var trail = TrailOf(WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Deposit)));
+
+    trail.ShouldMatch(@"<a href=""/detection"">Détection</a>");
+    trail.ShouldMatch(@"<span aria-current=""page"">\s*<span class=""trail-mark""[^>]*>1</span>\s*Déposer un relevé");
+    trail.ShouldNotContain("Arbitrage");
+  }
+
+  private static string TrailOf(string page)
+  {
+    var trail = Regex.Match(page, @"<nav class=""detection-trail"".*?</nav>", RegexOptions.Singleline);
+    trail.Success.ShouldBeTrue("L'écran ne porte pas le fil d'Ariane de la détection.");
+    return trail.Value;
   }
 
   /// <summary>

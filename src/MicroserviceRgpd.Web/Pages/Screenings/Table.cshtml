@@ -33,7 +33,7 @@
   <script type="module" src="/js/arbitration.js"></script>
 }
 
-<partial name="_DetectionSteps" model="MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Arbitration" />
+<partial name="_DetectionTrail" model="new MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail(MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Arbitration, summary, read.Identity)" />
 
 <div data-arbitration-live="alerts">
 

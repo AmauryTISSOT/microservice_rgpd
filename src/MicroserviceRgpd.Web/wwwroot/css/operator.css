@@ -1091,20 +1091,6 @@ fieldset:has(input[type="radio"]) label {
   sans qu'aucun des deux ne se cache derrière l'autre. Sur un écran étroit, ils s'empilent.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-.trail {
-  align-items: center;
-  color: var(--ink-muted);
-  display: flex;
-  flex-wrap: wrap;
-  font: var(--type-caption);
-  gap: var(--space-xs);
-  letter-spacing: var(--type-caption-tracking);
-}
-
-.trail a {
-  color: var(--ink-muted);
-}
-
 .guarantees {
   display: flex;
   flex-wrap: wrap;
@@ -3417,7 +3403,7 @@ dialog.modal.sheet > .modal-head {
 
 /*
   ═══════════════════════════════════════════════════════════════════════════════════════════════
-  L'ARBITRAGE DE LA DÉTECTION, EN LISTE ET DÉTAIL. Le parcours en trois temps en tête, puis une
+  L'ARBITRAGE DE LA DÉTECTION, EN LISTE ET DÉTAIL. Le fil d'Ariane et ses trois temps en tête, puis une
   ligne de repères, l'avancement du rapport entier, et deux colonnes : les tables à gauche, collées
   au défilement, la table ouverte à droite. Sous ~60rem, la liste passe au-dessus du détail.
 
@@ -3425,50 +3411,238 @@ dialog.modal.sheet > .modal-head {
   `<progress>`. Ce qui est LU reste le compte, écrit à côté.
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 */
-.detection-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-lg);
-  list-style: none;
-  margin: 0 0 var(--space-lg);
-  padding: 0;
+/*
+  LE FIL D'ARIANE DE LA DÉTECTION, en chevrons : où l'on est ET à quel temps du parcours, en une
+  barre collée en haut au défilement. Le vert dit ce qui est fait, le bleu plein ce qu'on lit, le
+  bleu pâle l'étape en cours quand on lit une de ses tables.
+
+  ⚠️ LA FORME EST SUR LE CONTENU DU MAILLON, JAMAIS SUR LE MAILLON : un `clip-path` sur le `<li>`
+  couperait le menu des tables qui en déborde.
+*/
+.detection-trail {
+  --trail-height: 44px;
+  --trail-notch: 14px;
+  background: var(--canvas);
+  margin: calc(-1 * var(--space-xs)) 0 var(--space-lg);
+  padding: var(--space-xs) 0;
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 
-.detection-steps li {
+.detection-trail ol {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  row-gap: var(--space-xs);
+}
+
+.detection-trail li {
+  display: flex;
+  position: relative;
+}
+
+.detection-trail li + li {
+  margin-left: calc(-1 * var(--trail-notch) + 6px);
+}
+
+.detection-trail li > a,
+.detection-trail li > span,
+.detection-trail .trail-menu > summary {
   align-items: center;
-  color: var(--ink-muted);
+  background: var(--surface);
+  box-sizing: border-box;
+  clip-path: polygon(0 0, calc(100% - var(--trail-notch)) 0, 100% 50%,
+    calc(100% - var(--trail-notch)) 100%, 0 100%, var(--trail-notch) 50%);
+  color: var(--ink-secondary);
   display: flex;
   font: var(--type-caption);
   font-weight: var(--weight-medium);
   gap: var(--space-xs);
+  height: var(--trail-height);
+  letter-spacing: var(--type-caption-tracking);
+  padding: 0 calc(var(--trail-notch) + var(--space-md)) 0 calc(var(--trail-notch) + var(--space-sm));
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.detection-steps li.current {
-  color: var(--ink);
+.detection-trail li.trail-root > a,
+.detection-trail li.trail-root > span {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  clip-path: polygon(0 0, calc(100% - var(--trail-notch)) 0, 100% 50%,
+    calc(100% - var(--trail-notch)) 100%, 0 100%);
+  padding-left: var(--space-md);
+}
+
+.detection-trail a:hover {
+  color: var(--accent-pressed);
+}
+
+.detection-trail li.trail-done > a,
+.detection-trail li.trail-done > span {
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+}
+
+.detection-trail li.trail-step > a,
+.detection-trail li.trail-pending > a {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: color-mix(in srgb, var(--accent) 60%, var(--ink));
   font-weight: var(--weight-semibold);
 }
 
-.detection-step-mark {
+.detection-trail li.trail-current > span,
+.detection-trail li.trail-current .trail-menu > summary {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: var(--weight-semibold);
+}
+
+.trail-mark {
   align-items: center;
-  border: var(--hairline-width) solid var(--hairline);
+  border: 1.5px solid currentColor;
   border-radius: var(--radius-full);
+  box-sizing: border-box;
   display: inline-flex;
   font: var(--type-eyebrow);
-  height: 22px;
+  height: 20px;
   justify-content: center;
-  width: 22px;
+  width: 20px;
 }
 
-.detection-steps li.done .detection-step-mark {
-  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
-  border-color: var(--signal-success);
-  color: var(--signal-success);
+.trail-count {
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  color: var(--ink-secondary);
+  font: var(--type-eyebrow);
+  padding: 2px var(--space-xs);
 }
 
-.detection-steps li.current .detection-step-mark {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+/* L'étape d'après se range à droite : c'est une suite, pas un maillon de plus. */
+.detection-trail li.trail-next {
+  margin-left: auto;
+  padding-left: var(--space-md);
+}
+
+.detection-trail li.trail-next > a {
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  clip-path: none;
+  padding: 0 var(--space-md);
+}
+
+.trail-menu > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.trail-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.trail-menu[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.trail-menu-panel {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  left: var(--space-xs);
+  max-height: 60vh;
+  min-width: 18rem;
+  overflow-y: auto;
+  padding: var(--space-xs);
+  position: absolute;
+  top: calc(var(--trail-height) + var(--space-xs));
+  z-index: 4;
+}
+
+.trail-menu-caption {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  margin: var(--space-xs) var(--space-xs) var(--space-xxs);
+  text-transform: uppercase;
+}
+
+.trail-menu-panel ul {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trail-menu-panel a {
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  display: flex;
+  font: var(--type-caption);
+  gap: var(--space-md);
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-sm);
+  text-decoration: none;
+}
+
+.trail-menu-panel a:hover {
+  background: var(--canvas);
+}
+
+.trail-menu-panel a.open {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: color-mix(in srgb, var(--accent) 60%, var(--ink));
+  font-weight: var(--weight-semibold);
+}
+
+.trail-menu-count {
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trail-menu-panel li.settled .trail-menu-count {
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+}
+
+/* La liste des tables se colle SOUS le fil, et non derrière lui. */
+.detection-trail ~ .workbench .tables-list {
+  max-height: calc(100vh - 44px - 3 * var(--space-lg));
+  top: calc(44px + 2 * var(--space-xs) + var(--space-md));
+}
+
+/*
+  Sur un écran étroit, les chevrons passent mal à la ligne : ils deviennent des pastilles, et le fil
+  cesse de se coller — il prendrait la moitié de la hauteur.
+*/
+@media (max-width: 60rem) {
+  .detection-trail {
+    position: static;
+  }
+
+  .detection-trail ol {
+    gap: var(--space-xs);
+  }
+
+  .detection-trail li + li {
+    margin-left: 0;
+  }
+
+  .detection-trail li > a,
+  .detection-trail li > span,
+  .detection-trail .trail-menu > summary {
+    border-radius: var(--radius-md);
+    clip-path: none;
+    padding: 0 var(--space-sm);
+  }
+
+  .detection-trail li.trail-next {
+    margin-left: 0;
+    padding-left: 0;
+  }
 }
 
 /* Les repères du relevé, en une ligne : ils se lisent d'un coup d'œil. */

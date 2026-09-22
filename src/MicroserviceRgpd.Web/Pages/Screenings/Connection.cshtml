@@ -8,11 +8,7 @@
   ViewData["Wide"] = true;
 }
 
-<nav class="trail" aria-label="Fil d'Ariane">
-  <a asp-page="Report">Détection des données personnelles</a>
-  <span aria-hidden="true">/</span>
-  <span>Connecter une base</span>
-</nav>
+<partial name="_DetectionTrail" model='new MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail(MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Listing, Listing: "Connecter une base")' />
 
 <h1>Connecter une base et lancer le scan</h1>
 

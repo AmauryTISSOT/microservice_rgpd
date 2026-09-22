@@ -1,0 +1,141 @@
+@model MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail
+@using MicroserviceRgpd.Web.Pages.Screenings
+@{
+  var summary = Model.Summary;
+  var progress = summary?.Progress;
+  var onReport = Model.Step == DetectionStep.Arbitration && Model.Open is null;
+}
+
+@*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE FIL D'ARIANE DE LA DÉTECTION, UN SEUL. Il dit à la fois OÙ l'on est — la détection, le relevé,
+  la table ouverte — et À QUEL TEMPS du parcours : relever, arbitrer, exporter. Deux systèmes pour
+  un seul parcours (un fil sur le dépôt, des pastilles d'étape sur le rapport) se lisaient comme deux
+  services.
+
+  ⚠️ LE RELEVÉ N'EST JAMAIS UN LIEN. Refaire un relevé produit un rapport neuf et range celui-ci
+  dans l'historique sans reprendre un seul arbitrage : ce coût est dit à côté des liens qui l'offrent,
+  au pied du rapport, et un maillon du fil ne doit pas pouvoir y mener sans l'avoir lu.
+
+  ⚠️ L'EXPORT RESTE ATTEIGNABLE AVANT LA FIN. Le fichier porte aussi les lignes en attente, et c'est
+  l'écran de l'export qui dit combien — pas un maillon verrouillé qui l'aurait tu.
+
+  ⚠️ LE DERNIER MAILLON DE LA TABLE CHANGE DE TABLE, SANS SCRIPT : un `<details>` natif. Le module de
+  l'écran ne fait que le refermer d'un clic à côté ou d'Échap.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*@
+<nav class="detection-trail" aria-label="Fil d'Ariane" data-arbitration-live="trail">
+  <ol>
+    <li class="trail-root">
+      @if (onReport)
+      {
+        <span>Détection</span>
+      }
+      else
+      {
+        <a asp-page="Report">Détection</a>
+      }
+    </li>
+
+    @if (summary is null)
+    {
+      <li class="trail-current">
+        <span aria-current="page">
+          <span class="trail-mark" aria-hidden="true">1</span>
+          @Model.Listing
+        </span>
+      </li>
+    }
+    else
+    {
+      <li class="trail-done">
+        <span>
+          <span class="trail-mark" aria-hidden="true">✓</span>
+          <span class="visually-hidden">Étape faite :</span>
+          Relevé @summary.Database
+        </span>
+      </li>
+
+      var arbitrationDone = Model.Step == DetectionStep.Export && progress!.IsComplete;
+      var arbitrationClass = onReport ? "trail-current" : Model.Open is not null ? "trail-step" : arbitrationDone ? "trail-done" : "trail-pending";
+
+      <li class="@arbitrationClass">
+        @if (onReport)
+        {
+          <span aria-current="page">
+            <span class="trail-mark" aria-hidden="true">2</span>
+            Arbitrage
+            <span class="trail-count">@progress!.Settled / @progress.Columns</span>
+          </span>
+        }
+        else
+        {
+          <a asp-page="Report">
+            <span class="trail-mark" aria-hidden="true">@(arbitrationDone ? "✓" : "2")</span>
+            @if (arbitrationDone)
+            {
+              <span class="visually-hidden">Étape faite :</span>
+            }
+            Arbitrage
+            <span class="trail-count">@progress!.Settled / @progress.Columns</span>
+          </a>
+        }
+      </li>
+
+      @if (Model.Open is { } open)
+      {
+        <li class="trail-current">
+          <details class="trail-menu">
+            <summary aria-current="page">
+              @open.ToString()
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </summary>
+            <div class="trail-menu-panel">
+              <p class="trail-menu-caption">Changer de table</p>
+              <ul>
+                @foreach (var table in summary.Tables)
+                {
+                  <li class="@(table.IsSettled ? "settled" : null)">
+                    <a asp-page="Table"
+                       asp-route-schema="@table.Identity.Schema"
+                       asp-route-table="@table.Identity.Table"
+                       class="@(table.Identity == open ? "open" : null)">
+                      <span>@table.Identity.ToString()</span>
+                      <span class="trail-menu-count">@table.SettledCount / @table.ColumnCount</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            </div>
+          </details>
+        </li>
+      }
+
+      @if (Model.Step == DetectionStep.Export)
+      {
+        <li class="trail-current">
+          <span aria-current="page">
+            <span class="trail-mark" aria-hidden="true">3</span>
+            Exporter
+          </span>
+        </li>
+      }
+      else
+      {
+        <li class="trail-next">
+          <a asp-page="Export">
+            <span class="trail-mark" aria-hidden="true">3</span>
+            Exporter
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </a>
+        </li>
+      }
+    }
+  </ol>
+</nav>

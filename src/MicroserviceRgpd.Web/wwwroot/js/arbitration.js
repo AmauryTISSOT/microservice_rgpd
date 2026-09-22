@@ -135,3 +135,24 @@ if (detail && window.fetch && window.DOMParser) {
     return form;
   }
 }
+
+// LE MENU DES TABLES DU FIL D'ARIANE se referme d'un clic à côté ou d'Échap, comme un menu. Sans ce
+// module, c'est un `<details>` : il s'ouvre et se referme sur son maillon, et rien d'autre.
+document.addEventListener("click", (event) => {
+  for (const menu of document.querySelectorAll(".trail-menu[open]")) {
+    if (!menu.contains(event.target)) {
+      menu.open = false;
+    }
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") {
+    return;
+  }
+
+  for (const menu of document.querySelectorAll(".trail-menu[open]")) {
+    menu.open = false;
+    menu.querySelector("summary")?.focus();
+  }
+});
