@@ -3947,10 +3947,212 @@ dialog.modal.sheet > .modal-head {
 }
 
 .workbench-detail section.flagged > h2,
-.workbench-detail section.unflagged > h2 {
+.workbench-detail .unflagged-head > h2 {
   font: var(--type-heading-3);
   letter-spacing: var(--type-heading-3-tracking);
   margin: var(--space-lg) 0 var(--space-md);
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LE SECOND TEMPS : UNE BARRE DE LOT, PUIS UNE LIGNE PAR COLONNE.
+
+  ⚠️ CE N'EST TOUJOURS PAS UNE CARTE PAR COLONNE : cinq mille lignes tiennent dans un seul bloc, une
+  ligne basse chacune, et ce qu'elles ont en commun — rien n'y a été vu, elles attendent — est dit
+  une fois, au titre, plutôt que cinq mille fois à l'œil.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.unflagged-head {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-md);
+  justify-content: space-between;
+}
+
+.unflagged-awaiting {
+  color: var(--ink-muted);
+  font: var(--type-body-md);
+}
+
+.unflagged-awaiting strong {
+  color: color-mix(in srgb, var(--signal-warning) 55%, var(--ink));
+}
+
+.workbench-detail section.batch {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.workbench-detail section.batch > .hint {
+  margin: 0;
+}
+
+.batch-text {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.batch-text p {
+  margin: 0;
+}
+
+.batch-text .batch-title {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+}
+
+.batch-text .hint {
+  margin-top: var(--space-xxs);
+}
+
+.workbench-detail section.batch form {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+/* Les boutons du lot se distinguent de ceux d'une ligne : ils engagent toute la table. */
+.workbench-detail section.batch button {
+  background: var(--canvas);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  white-space: nowrap;
+}
+
+table.unflagged-list {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-collapse: separate;
+  border-radius: var(--radius-lg);
+  border-spacing: 0;
+  width: 100%;
+}
+
+table.unflagged-list th,
+table.unflagged-list td {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  padding: var(--space-xs) var(--space-md);
+  text-align: left;
+  vertical-align: middle;
+}
+
+table.unflagged-list tr:last-child > * {
+  border-bottom: 0;
+}
+
+table.unflagged-list th {
+  font: var(--type-body-md);
+  font-weight: var(--weight-semibold);
+  padding-left: var(--space-lg);
+  width: 12rem;
+  overflow-wrap: anywhere;
+}
+
+table.unflagged-list .unflagged-facts {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+}
+
+table.unflagged-list .unflagged-facts code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+table.unflagged-list td.unflagged-ruling {
+  text-align: right;
+  white-space: nowrap;
+}
+
+table.unflagged-list td.unflagged-ruling form,
+table.unflagged-list td.unflagged-ruling .settled,
+table.unflagged-list td.unflagged-ruling .row-revise {
+  display: inline-flex;
+  gap: var(--space-xs);
+  vertical-align: middle;
+}
+
+table.unflagged-list td.unflagged-ruling button {
+  min-height: 44px;
+  padding: 0 var(--space-md);
+}
+
+table.unflagged-list .settled {
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  border-radius: var(--radius-full);
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+  font: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  margin-right: var(--space-xs);
+  padding: 2px var(--space-sm);
+}
+
+/*
+  « ANNULER » DÉPLIE LES DEUX BOUTONS À CÔTÉ DE LUI, « FERMER » LES REPLIE : le repli du navigateur,
+  sans une ligne de JavaScript, et l'apparence exacte de Retenir et Écarter.
+*/
+.row-revise {
+  align-items: center;
+  flex-direction: row-reverse;
+}
+
+.row-revise > summary {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: var(--type-button);
+  letter-spacing: var(--type-button-tracking);
+  list-style: none;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  user-select: none;
+}
+
+.row-revise > summary::-webkit-details-marker {
+  display: none;
+}
+
+.row-revise.awaiting > summary {
+  display: none;
+}
+
+.row-revise > summary:hover {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-color: var(--accent);
+  color: var(--accent-pressed);
+}
+
+.row-revise > summary:active {
+  transform: translateY(1px);
+}
+
+.row-revise-close,
+.row-revise[open] .row-revise-open {
+  display: none;
+}
+
+.row-revise[open] .row-revise-close {
+  display: inline;
+}
+
+@media (max-width: 60rem) {
+  table.unflagged-list th {
+    width: auto;
+  }
+
+  table.unflagged-list td.unflagged-ruling {
+    white-space: normal;
+  }
 }
 
 .tables-list {

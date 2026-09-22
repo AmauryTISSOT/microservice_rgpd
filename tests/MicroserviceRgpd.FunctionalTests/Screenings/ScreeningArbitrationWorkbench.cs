@@ -115,6 +115,37 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
   }
 
   /// <summary>
+  /// <b>Le geste de lot écrit son compte sur ses boutons</b>, et une ligne tranchée replie ses deux
+  /// boutons derrière « Annuler » — celle qui attend les garde sous la main.
+  /// </summary>
+  [Fact]
+  public async Task CountsTheBatchOnItsButtonsAndFoldsASettledLineBehindCancel()
+  {
+    await _surface.DepositAndReadTheReportAsync(ScreeningSurface.Paste(
+      ScreeningSurface.Column("montant", position: 1),
+      ScreeningSurface.Column("quantite", position: 2)));
+
+    var before = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.TableOf()));
+
+    before.ShouldContain("Retenir les 2");
+    before.ShouldContain("Écarter les 2");
+
+    await _surface.ArbitrateAsync("montant", ScreenedColumnState.Retained.Name);
+
+    var after = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.TableOf()));
+
+    after.ShouldContain("La retenir");
+    after.ShouldMatch(@"<span class=""unflagged-awaiting""><strong>1</strong> en attente</span>");
+
+    var settled = ScreeningSurface.BlockOf(after, "montant").ShouldNotBeNull();
+    settled.ShouldMatch(@"<details class=""row-revise ""\s*>");
+    settled.ShouldContain("Annuler");
+
+    ScreeningSurface.BlockOf(after, "quantite").ShouldNotBeNull()
+      .ShouldMatch(@"<details class=""row-revise awaiting""\s+open>");
+  }
+
+  /// <summary>
   /// <b>Au pied de la table, le service nomme la suivante</b> — et dit que passer à la suivante ne
   /// tranche rien de ce qui attend ici.
   /// </summary>
