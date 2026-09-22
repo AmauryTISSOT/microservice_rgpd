@@ -1,7 +1,4 @@
 @model MicroserviceRgpd.Web.Pages.Screenings.DeleteScreeningForm
-@{
-  var field = $"confirm-{Model.Rank}";
-}
 
 @*
   LE GESTE IRRÉVERSIBLE, ET LE SEUL DE CETTE SURFACE.
@@ -10,21 +7,31 @@
   corbeille, ni rétention, ni trace : après lui, le travail humain que le rapport de détection
   portait n'est nulle part.
 
+  ⚠️ IL A SA ZONE, SOUS LE DÉTAIL, ET ELLE EST FILETÉE DE ROUGE. Le détail se lit d'abord — la base,
+  le moteur, les colonnes —, et la suppression vient après, séparée de l'action qui ouvre le rapport :
+  les deux gestes ne se touchent jamais.
+
   ⚠️ LE NOM DE BASE SE RETAPE, et ce n'est pas une politesse. Un bouton nu au bas d'un écran qu'on
   parcourt est le mode de panne le plus probable, et le seul qui n'ait pas de remède. Retaper oblige
   à REGARDER quel rapport de détection on supprime — ce qu'une case à cocher n'aurait pas obtenu. La confrontation
   est faite par le SERVICE, contre le nom qu'il détient : un champ caché reposté aurait été une
   cérémonie sans juge.
 *@
-<form method="post" asp-page="History" asp-page-handler="Delete" class="delete">
-  <input type="hidden" name="Screening" value="@Model.Screening.Id.Value" />
-
-  <label for="@field">
+<section class="danger-zone" aria-labelledby="delete-title">
+  <h3 id="delete-title">
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+      <path d="M9 2.5 16 15H2L9 2.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+      <path d="M9 7.5V11M9 13v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+    </svg>
     Supprimer ce rapport de détection
-    <span class="hint">
-      Retapez <strong>@Model.Screening.Database</strong> pour confirmer. La suppression emporte le
-      rapport de détection, ses @Model.Screening.ColumnCount colonnes et <strong>tous leurs
-      arbitrages</strong> — rien ne les rétablit.
+  </h3>
+
+  <form method="post" asp-page="History" asp-page-handler="Delete" class="delete">
+    <input type="hidden" name="Screening" value="@Model.Screening.Id.Value" />
+
+    <p>
+      La suppression emporte le rapport de détection, ses @Model.Screening.ColumnCount colonnes et
+      <strong>tous leurs arbitrages</strong> — rien ne les rétablit.
       @if (Model.IsCurrent)
       {
         <text>
@@ -32,15 +39,22 @@
           plus récent de ceux qui restent, et c'est celui-là qui s'arbitrera ensuite.
         </text>
       }
-    </span>
-  </label>
+    </p>
 
-  <input type="text"
-         id="@field"
-         name="ConfirmedDatabase"
-         autocomplete="off"
-         maxlength="@MicroserviceRgpd.Core.Screenings.Screening.MaxDatabaseNameLength" />
+    <div class="delete-confirm">
+      <p class="field">
+        <label for="confirm-database">
+          Retapez <strong class="database">@Model.Screening.Database</strong> pour confirmer
+        </label>
+        <input type="text"
+               id="confirm-database"
+               name="ConfirmedDatabase"
+               autocomplete="off"
+               maxlength="@MicroserviceRgpd.Core.Screenings.Screening.MaxDatabaseNameLength" />
+      </p>
 
-  @* LE GESTE IRRÉVERSIBLE, et le seul de cette surface : il porte l'apparence qui le dit. *@
-  <button type="submit" class="destructive">Supprimer définitivement</button>
-</form>
+      @* LE GESTE IRRÉVERSIBLE, et le seul de cette surface : il porte l'apparence qui le dit. *@
+      <button type="submit" class="destructive">Supprimer définitivement</button>
+    </div>
+  </form>
+</section>
