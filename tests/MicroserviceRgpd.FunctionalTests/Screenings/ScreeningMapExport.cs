@@ -59,9 +59,33 @@ public class ScreeningMapExport(CustomWebApplicationFactory<Program> factory)
       await _surface.DepositAndReadTheReportAsync(
         ScreeningSurface.Paste(ScreeningSurface.Column("adr_l1"))));
 
-    report.ShouldContain("Exporter la cartographie des données personnelles");
-    report.ShouldContain(ScreeningSurface.MapAsCsv);
-    report.ShouldContain(ScreeningSurface.MapAsJson);
+    // Le rapport mène à l'export, troisième temps du parcours…
+    report.ShouldContain($"href=\"{ScreeningSurface.Export}\"");
+
+    // … et c'est l'écran de l'export qui porte les deux liens.
+    var export = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Export));
+
+    export.ShouldContain("Exporter la cartographie des données personnelles");
+    export.ShouldContain(ScreeningSurface.MapAsCsv);
+    export.ShouldContain(ScreeningSurface.MapAsJson);
+  }
+
+  /// <summary>
+  /// ⚠️ <b>L'export reste atteignable avant la fin de l'arbitrage, et il dit ce qui partira « en
+  /// attente »</b> — avant le clic, pas dans le fichier. Une étape verrouillée aurait tu que le
+  /// fichier porte aussi les lignes en attente ; un export muet l'aurait laissé partir sans que
+  /// personne l'ait lu.
+  /// </summary>
+  [Fact]
+  public async Task SaysBeforeTheClickHowManyLinesWillLeaveStillAwaiting()
+  {
+    await ADepositedReportAsync();
+
+    var export = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Export));
+
+    export.ShouldContain("1 colonne attend encore une réponse");
+    export.ShouldContain("partira « en attente » dans le fichier");
+    export.ShouldContain("ne porte pas</strong> la clause d'incomplétude");
   }
 
   // ─── Les deux routes ────────────────────────────────────────────────────────────────────────

@@ -1,0 +1,70 @@
+@model MicroserviceRgpd.Web.Pages.Screenings.TablesList
+@{
+  var summary = Model.Summary;
+
+  string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+}
+
+@*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA LISTE DES TABLES, À GAUCHE DE L'ARBITRAGE. La table est l'unité de travail : d'ici, on en ouvre
+  une, et on y lit TOUTES ses colonnes.
+
+  ⚠️ CHAQUE TABLE DIT CE QUI LUI RESTE, EN COMPTES ET EN DEUX RESTES. « 2 signalées » dit qu'il y a
+  des suspicions à lire une par une ; « 4 à relire » dit qu'il reste des colonnes où rien n'a été vu.
+  Une table finie le dit aussi, sans cesser d'être là : elle se rouvre pour se raviser.
+
+  ⚠️ L'ORDRE EST CELUI DU SERVICE, retrié : deux relevés du même schéma se lisent toujours dans le
+  même ordre, quelle que soit la collation de la base d'origine.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*@
+<nav class="tables-list" aria-label="Les tables du rapport de détection" data-arbitration-live="tables">
+  <p class="tables-list-caption">
+    @Counted(summary.Tables.Count, "table"), @Counted(summary.Progress.Columns, "colonne")
+  </p>
+
+  <ol>
+    @foreach (var table in summary.Tables)
+    {
+      var open = table.Identity == Model.Open;
+      var width = table.ColumnCount == 0
+        ? "0"
+        : (table.SettledCount * 100.0 / table.ColumnCount).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
+      <li class="@(table.IsSettled ? "settled" : null)">
+        <a asp-page="Table"
+           asp-route-schema="@table.Identity.Schema"
+           asp-route-table="@table.Identity.Table"
+           aria-current="@(open ? "page" : null)">
+          <span class="tables-list-name">@table.Identity.ToString()</span>
+          <span class="tables-list-count">
+            @table.SettledCount / @table.ColumnCount
+          </span>
+          <span class="progress" aria-hidden="true"><span class="progress-done" style="width: @(width)%"></span></span>
+          <span class="tables-list-rest">
+            @if (table.IsSettled)
+            {
+              <text>Tranchée en entier</text>
+            }
+            else
+            {
+              @if (table.FlaggedAwaitingCount > 0)
+              {
+                <span class="flagged">@Counted(table.FlaggedAwaitingCount, "signalée")</span>
+              }
+              @if (table.UnflaggedAwaitingCount > 0)
+              {
+                <span class="unflagged">@table.UnflaggedAwaitingCount à relire</span>
+              }
+            }
+          </span>
+        </a>
+      </li>
+    }
+  </ol>
+
+  <p class="hint">
+    Retriées par le service, et non dans l'ordre où votre base les a rendues : deux relevés du même
+    schéma se lisent ainsi toujours dans le même ordre.
+  </p>
+</nav>

@@ -45,6 +45,12 @@ internal sealed class ScreeningSurface(CustomWebApplicationFactory<Program> fact
   /// </summary>
   internal const string Table = "/detection/table";
 
+  /// <summary>
+  /// Le troisième temps du parcours : l'écran d'où partent les deux fichiers de la
+  /// <c>Cartographie</c>, et ce qu'il faut savoir avant de les ouvrir.
+  /// </summary>
+  internal const string Export = "/detection/export";
+
   /// <summary>L'historique : ce que le déploiement a lancé, et le seul écran qui supprime.</summary>
   internal const string History = "/detection/historique";
 

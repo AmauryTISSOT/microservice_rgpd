@@ -110,6 +110,7 @@
   </div>
 }
 
+
 @{
   if (Model.Answer is null)
   {
@@ -119,6 +120,11 @@
   var answer = Model.Answer;
   var summary = answer.Content;
   var clause = answer.Clause;
+  var progress = summary.Progress;
+  var next = summary.NextToArbitrate();
+
+  // L'EXCEPTION DE LARGEUR : la liste des tables prend sa colonne, et le détail la sienne.
+  ViewData["Wide"] = true;
 
   // Un compte et son nom, accordés : une surface dont tout le propos est que l'Operator lise le
   // nombre plutôt qu'un mot d'état ne peut pas lui écrire « 1 tables ».
@@ -131,7 +137,32 @@
   var scanned = clause.Origin == MicroserviceRgpd.Core.Screenings.ListingOrigin.Scanned;
 }
 
+<partial name="_DetectionSteps" model="MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Arbitration" />
+
 <h1>Le rapport de détection courant</h1>
+
+@*
+  CE QUI A ÉTÉ LU, EN UNE LIGNE. La base, le SGBD, la date et le moteur sont des repères : ils se
+  lisent d'un coup d'œil et ne méritent pas le haut de l'écran que l'arbitrage réclame.
+*@
+<dl class="detection-meta">
+  <div>
+    <dt>Base</dt>
+    <dd title="Le nom que le relevé rapportait, recopié tel quel — un repère pour vous, jamais une identité sur laquelle bâtir une comparaison.">@summary.Database</dd>
+  </div>
+  <div>
+    <dt>SGBD</dt>
+    <dd>@summary.Dialect</dd>
+  </div>
+  <div>
+    <dt>Lancé le</dt>
+    <dd>@summary.LaunchedOn.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))</dd>
+  </div>
+  <div>
+    <dt>Moteur</dt>
+    <dd>@summary.Engine.Name, version @summary.Engine.Version</dd>
+  </div>
+</dl>
 
 @*
   CE QU'UN GESTE REFUSÉ AILLEURS A LAISSÉ À DIRE. Un arbitrage qui n'a pas eu lieu ramène ici :
@@ -170,198 +201,171 @@ else
   <p class="unfinished">@MicroserviceRgpd.Core.Screenings.ReadPerimeter.NoPreviewSucceededStatement</p>
 }
 
-<dl class="banner">
-  <dt>Base</dt>
-  <dd>
-    @summary.Database
-    <span class="hint">
-      Le nom que le relevé rapportait, recopié tel quel — un repère pour vous, jamais une identité
-      sur laquelle bâtir une comparaison.
-    </span>
-  </dd>
-  <dt>SGBD</dt>
-  <dd>@summary.Dialect</dd>
-  <dt>Lancé le</dt>
-  <dd>@summary.LaunchedOn.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))</dd>
-  <dt>Moteur</dt>
-  <dd>@summary.Engine.Name, version @summary.Engine.Version</dd>
-</dl>
-
-<h2>Les comptes</h2>
+<partial name="_ArbitrationProgress" model="summary" />
 
 @*
-  L'AVANCEMENT EST UN COMPTE, jamais un état de haut niveau rassurant. « Douze colonnes en
-  attente » se lit ; « en cours » ne se lit pas.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA LISTE ET LE DÉTAIL. À gauche, toutes les tables et ce qui reste dans chacune ; à droite, par où
+  reprendre. Ouvrir une table garde la liste sous les yeux : on ne quitte jamais la vue d'ensemble
+  pour arbitrer.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
-<dl class="banner tally">
-  <dt>Signalées</dt>
-  <dd>
-    @summary.Tally.Flagged
-    @*
-      ⚠️ LA QUEUE EST REMPLACÉE, PAS COUPÉE — traitement inverse de celui de FilterStatement, et
-      c'est délibéré : ici la queue EST la preuve. Ce qui interdit de conclure « les 4 933 autres
-      colonnes sont inoffensives », c'est précisément le peu que le service a lu.
+<div class="workbench">
+  <partial name="_TablesList" model="new MicroserviceRgpd.Web.Pages.Screenings.TablesList(summary, null)" />
 
-      ⚠️ CE RAPPEL EST ÉCRIT EN DUR ICI : aucun test sur l'objet ne le verra jamais, et c'est très
-      exactement pourquoi le témoin de la clause a un second niveau, sur l'écran.
+  <div class="workbench-detail">
+    @*
+      PAR OÙ REPRENDRE, NOMMÉ PAR LE SERVICE. La première table, dans l'ordre du rapport, où une
+      colonne attend : l'Operator qui revient au troisième jour n'a pas à chercher où il s'était
+      arrêté.
     *@
-    <span class="hint">
-      @if (scanned && clause.Perimeter.NoPreviewSucceeded)
+    <section class="resume" aria-labelledby="resume-title">
+      @if (next is not null)
       {
-        @*
-          ⚠️ SUR UN SCAN OÙ RIEN N'A ÉTÉ PRÉLEVÉ, la queue chiffrée serait fausse : elle
-          affirmerait cinq valeurs par colonne trois lignes sous la clause qui dit qu'aucune n'a pu
-          l'être. La phrase du chemin collé, elle, reste interdite ici — elle promettrait que le
-          service n'a JAMAIS vu de valeur, quand il en a demandé et s'est fait refuser.
-        *@
-        <text>
-          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
-          inoffensif : aucune valeur n'a pu être prélevée sur ce relevé.
-        </text>
-      }
-      else if (scanned)
-      {
-        <text>
-          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
-          inoffensif : le service n'a lu que @previewSize valeurs par colonne,
-          et @previewSize valeurs ne disent pas ce qu'une colonne contient.
-        </text>
+        <h2 id="resume-title">@(progress.Settled == 0 ? "Par où commencer" : "Par où reprendre")</h2>
+        <p>
+          <strong>@next.Identity.ToString()</strong> attend :
+          @if (next.FlaggedAwaitingCount > 0)
+          {
+            <text>@Counted(next.FlaggedAwaitingCount, "colonne") signalée@(next.FlaggedAwaitingCount == 1 ? "" : "s") à trancher une par une</text>
+            @if (next.UnflaggedAwaitingCount > 0)
+            {
+              <text>, puis </text>
+            }
+          }
+          @if (next.UnflaggedAwaitingCount > 0)
+          {
+            <text>@Counted(next.UnflaggedAwaitingCount, "colonne") où rien n'a été vu à relire</text>
+          }.
+        </p>
+        <p class="hint">
+          Dans chaque table, les colonnes signalées se lisent d'abord, motif sous les yeux ; celles où
+          la détection n'a rien vu viennent ensuite, toutes, sans moyen de les masquer. Un bouton
+          « Table suivante » vous mène ensuite à la table qui attend.
+        </p>
+        <a class="route-action"
+           asp-page="Table"
+           asp-route-schema="@next.Identity.Schema"
+           asp-route-table="@next.Identity.Table">
+          Ouvrir @next.Identity.ToString()
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </a>
       }
       else
       {
-        <text>
-          Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
-          inoffensif : le service n'a jamais vu une seule valeur.
-        </text>
+        <h2 id="resume-title">L'arbitrage est terminé</h2>
+        <p>
+          Chaque colonne de ce rapport a reçu une réponse. Chaque table se rouvre depuis la liste pour
+          vous raviser ; l'export porte ce que vous avez dit, ligne à ligne.
+        </p>
       }
-    </span>
-  </dd>
-  <dt>Retenues</dt>
-  <dd>@summary.Tally.Retained</dd>
-  <dt>Écartées</dt>
-  <dd>@summary.Tally.SetAside</dd>
-  <dt>En attente</dt>
-  <dd>@summary.Tally.Awaiting</dd>
-  <dt>Retenues sur « rien signalé »</dt>
-  <dd>
-    @summary.Tally.RetainedOnUnflagged
-    <span class="hint">
-      Ce que <strong>vous</strong> avez rattrapé là où le service n'avait rien vu. Elle vaut zéro
-      tant que personne n'a relu.
-    </span>
-  </dd>
-</dl>
+    </section>
 
-<h2>Les tables</h2>
+    <h2>Les comptes</h2>
 
-@*
-  RETRIÉES PAR LE SERVICE : le pivot arrive dans la collation du SGBD source, qui ne range pas
-  « _ » comme l'ordre des octets. Sans ce retri, deux Operator collant le même schéma depuis deux
-  réplicas configurés différemment liraient deux écrans ordonnés différemment.
-*@
-<p class="hint">
-  Retriées par le service, et non dans l'ordre où votre base les a rendues : deux relevés du même
-  schéma se lisent ainsi toujours dans le même ordre.
-</p>
+    @*
+      L'AVANCEMENT EST UN COMPTE, jamais un état de haut niveau rassurant. « Douze colonnes en
+      attente » se lit ; « en cours » ne se lit pas.
+    *@
+    <dl class="banner tally">
+      <dt>Signalées</dt>
+      <dd>
+        @summary.Tally.Flagged
+        @*
+          ⚠️ LA QUEUE EST REMPLACÉE, PAS COUPÉE — traitement inverse de celui de FilterStatement, et
+          c'est délibéré : ici la queue EST la preuve. Ce qui interdit de conclure « les 4 933 autres
+          colonnes sont inoffensives », c'est précisément le peu que le service a lu.
 
-<table class="queue">
-  <caption>@Counted(summary.Tables.Count, "table"), @Counted(clause.Perimeter.ColumnsRead, "colonne")</caption>
-  <thead>
-    <tr>
-      <th scope="col">Table</th>
-      <th scope="col">Colonnes</th>
-      <th scope="col">Signalées</th>
-      <th scope="col">En attente</th>
-    </tr>
-  </thead>
-  <tbody>
-    @foreach (var table in summary.Tables)
-    {
-      <tr>
-        @* La table est l'unité de travail : d'ici, on l'ouvre — et on y lit TOUTES ses colonnes. *@
-        <th scope="row">
-          <a asp-page="Table"
-             asp-route-schema="@table.Identity.Schema"
-             asp-route-table="@table.Identity.Table">@table.Identity.ToString()</a>
-        </th>
-        <td>@table.ColumnCount</td>
-        <td>@table.FlaggedCount</td>
-        <td>@table.AwaitingCount</td>
-      </tr>
-    }
-  </tbody>
-</table>
-
-@*
-  DEUX LIENS, ET NON UN MENU. Sans script un menu n'existe pas, et rien ici n'en justifierait un :
-  un lien collé dans un courriel annonce ce qu'il rend, s'ouvre d'un clic et se met en favori.
-  Le « bouton » est ce titre et ce qui le suit — la surface entière du geste, pas un contrôle qui
-  n'agirait qu'avec du script.
-*@
-<h2>Exporter la cartographie des données personnelles</h2>
-
-<p class="hint">
-  Le fichier porte <strong>toutes</strong> les lignes de ce rapport — retenues, écartées, en attente,
-  et celles où la détection n'a rien signalé — avec ce que vous en avez dit et la date à laquelle
-  vous l'avez dit. Il ne porte <strong>aucune valeur lue</strong> de votre base.
-</p>
-
-@*
-  CE QUE LE FICHIER NE PORTE PAS, DIT ICI ET NON DANS LE FICHIER. La Clause d'incomplétude reste
-  sur tous les écrans et ne voyage pas dans l'export : l'Operator a tranché chaque ligne et choisit
-  d'expédier le fichier ; ce qu'il en dit au destinataire lui appartient. Cette phrase-ci est le
-  seul rattrapage retenu, et elle est sur l'écran, pas dans le document.
-*@
-<p class="caveat">
-  ⚠️ Ce fichier <strong>ne porte pas</strong> la clause d'incomplétude ci-dessous. Il ne dit donc de
-  lui-même ni ce qu'il n'a pas regardé, ni comment il a été produit : à vous de le dire à qui vous
-  l'adressez.
-</p>
-
-<p>
-  <a asp-page="PersonalDataMapCsv">La cartographie en CSV, pour un tableur</a>
-  <span class="hint">Séparé par des points-virgules, s'ouvre en tableau d'un double-clic.</span>
-</p>
-
-<p>
-  <a asp-page="PersonalDataMapJson">La cartographie en JSON, pour un outil</a>
-  <span class="hint">
-    Porte en tête la base, le SGBD, le moteur qui a détecté et les dates — ce que le CSV ne dit pas.
-  </span>
-</p>
+          ⚠️ CE RAPPEL EST ÉCRIT EN DUR ICI : aucun test sur l'objet ne le verra jamais, et c'est très
+          exactement pourquoi le témoin de la clause a un second niveau, sur l'écran.
+        *@
+        <span class="hint">
+          @if (scanned && clause.Perimeter.NoPreviewSucceeded)
+          {
+            @*
+              ⚠️ SUR UN SCAN OÙ RIEN N'A ÉTÉ PRÉLEVÉ, la queue chiffrée serait fausse : elle
+              affirmerait cinq valeurs par colonne trois lignes sous la clause qui dit qu'aucune n'a
+              pu l'être. La phrase du chemin collé, elle, reste interdite ici — elle promettrait que
+              le service n'a JAMAIS vu de valeur, quand il en a demandé et s'est fait refuser.
+            *@
+            <text>
+              Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+              inoffensif : aucune valeur n'a pu être prélevée sur ce relevé.
+            </text>
+          }
+          else if (scanned)
+          {
+            <text>
+              Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+              inoffensif : le service n'a lu que @previewSize valeurs par colonne,
+              et @previewSize valeurs ne disent pas ce qu'une colonne contient.
+            </text>
+          }
+          else
+          {
+            <text>
+              Le complément est ce que la détection <strong>n'a pas vu</strong>, jamais ce qui serait
+              inoffensif : le service n'a jamais vu une seule valeur.
+            </text>
+          }
+        </span>
+      </dd>
+      <dt>Retenues</dt>
+      <dd>@summary.Tally.Retained</dd>
+      <dt>Écartées</dt>
+      <dd>@summary.Tally.SetAside</dd>
+      <dt>En attente</dt>
+      <dd>@summary.Tally.Awaiting</dd>
+      <dt>Retenues sur « rien signalé »</dt>
+      <dd>
+        @summary.Tally.RetainedOnUnflagged
+        <span class="hint">
+          Ce que <strong>vous</strong> avez rattrapé là où le service n'avait rien vu. Elle vaut zéro
+          tant que personne n'a relu.
+        </span>
+      </dd>
+    </dl>
+  </div>
+</div>
 
 <partial name="_IncompletenessClause" model="clause" />
 
 @*
-  CE QU'UN NOUVEAU DÉPÔT COÛTE, ÉCRIT À CÔTÉ DU LIEN QUI L'OFFRE. Le re-dépôt ne fusionne rien :
+  CE QU'UN NOUVEAU RELEVÉ COÛTE, ÉCRIT À CÔTÉ DES LIENS QUI L'OFFRENT. Le re-dépôt ne fusionne rien :
   les arbitrages de ce rapport de détection-ci ne seront pas repris, et le rapport de détection qui
   les porte deviendra un archivé qu'on relit sans pouvoir le reprendre. C'est un coût déclaré, pas
   une surprise.
-*@
-@*
+
   LES DEUX VOIES SONT OFFERTES CÔTE À CÔTE, et elles coûtent la même chose : dans les deux cas le
   rapport courant part à l'archive et aucun arbitrage n'est repris. La connectée n'est pas la voie
   « normale » dont l'autre serait le repli.
 *@
-<p>
-  <a asp-page="Connection">Connecter une base et lancer un scan</a>
-  <span class="hint">
-    Le service joint lui-même la base et prélève quelques valeurs pour affiner la détection. Comme
-    le dépôt, un scan produit un rapport neuf et range celui-ci dans l'historique.
-  </span>
-</p>
+<section class="restart" aria-labelledby="restart-title">
+  <h2 id="restart-title">Recommencer sur un relevé neuf</h2>
 
-<p>
-  <a asp-page="Deposit">Déposer un nouveau relevé</a>
-  <span class="hint">
-    Un nouveau dépôt produit un rapport de détection neuf et range celui-ci dans l'historique. Il
-    <strong>ne reprend aucun</strong> des arbitrages posés ici : ce qui a été tranché sur ce rapport
-    de détection reste sur lui, et se relit sans plus pouvoir se reprendre.
-  </span>
-</p>
+  <p>
+    <a asp-page="Connection">Connecter une base et lancer un scan</a>
+    <span class="hint">
+      Le service joint lui-même la base et prélève quelques valeurs pour affiner la détection. Comme
+      le dépôt, un scan produit un rapport neuf et range celui-ci dans l'historique.
+    </span>
+  </p>
 
-@*
-  L'HISTORIQUE ET LA SUPPRESSION SONT AILLEURS, et c'est délibéré : le geste qui efface un rapport
-  de détection, ses colonnes et tous leurs arbitrages n'a pas sa place sur l'écran où l'on travaille.
-*@
-<p><a asp-page="History">L'historique des rapports de détection, et la suppression</a></p>
+  <p>
+    <a asp-page="Deposit">Déposer un nouveau relevé</a>
+    <span class="hint">
+      Un nouveau dépôt produit un rapport de détection neuf et range celui-ci dans l'historique. Il
+      <strong>ne reprend aucun</strong> des arbitrages posés ici : ce qui a été tranché sur ce rapport
+      de détection reste sur lui, et se relit sans plus pouvoir se reprendre.
+    </span>
+  </p>
+
+  @*
+    L'HISTORIQUE ET LA SUPPRESSION SONT AILLEURS, et c'est délibéré : le geste qui efface un rapport
+    de détection, ses colonnes et tous leurs arbitrages n'a pas sa place sur l'écran où l'on travaille.
+  *@
+  <p><a asp-page="History">L'historique des rapports de détection, et la suppression</a></p>
+</section>

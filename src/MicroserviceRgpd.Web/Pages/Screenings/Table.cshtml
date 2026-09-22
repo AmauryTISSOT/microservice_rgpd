@@ -16,12 +16,26 @@
   *@
   ViewData["Wide"] = true;
 
+  var summary = Model.Summary!;
+  var next = summary.NextToArbitrate(read.Identity);
+
   // Un compte et son nom, accordés : une surface qui se lit au compte ne peut pas écrire
   // « 1 colonnes ».
   string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
 }
 
-<h1>@read.Identity</h1>
+@section Scripts {
+  @*
+    LE SEUL SCRIPT DE L'ÉCRAN POSTE LES ARBITRAGES SANS RECHARGER LA PAGE, et rien d'autre. Sans lui,
+    chaque bouton poste son formulaire et la redirection ramène sur la colonne tranchée, comme avant :
+    l'écran reste entier.
+  *@
+  <script type="module" src="/js/arbitration.js"></script>
+}
+
+<partial name="_DetectionSteps" model="MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Arbitration" />
+
+<div data-arbitration-live="alerts">
 
 @*
   LE VERROU, EN TÊTE ET RECALCULÉ À CE RENDU, et il porte sur le RAPPORT ENTIER. C'est ici qu'il
@@ -68,6 +82,23 @@ else
     }
   </div>
 }
+</div>
+
+<partial name="_ArbitrationProgress" model="summary" />
+
+@*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  LA LISTE ET LE DÉTAIL. La table ouverte à droite, toutes les autres à gauche avec ce qui leur
+  reste : une table relue jusqu'au bout est l'instant précis où l'on croit avoir fini, et c'est la
+  liste qui dit le contraire.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*@
+<div class="workbench">
+<partial name="_TablesList" model="new MicroserviceRgpd.Web.Pages.Screenings.TablesList(summary, read.Identity)" />
+
+<div class="workbench-detail" data-arbitration-live="detail">
+
+<h1>@read.Identity</h1>
 
 <dl class="banner">
   <dt>Base</dt>
@@ -539,13 +570,65 @@ else
 }
 </section>
 
+@*
+  LA SUITE, AU PIED DE LA TABLE. Une fois la table lue, l'Operator n'a pas à retourner à la liste
+  pour savoir où aller : le service nomme la table suivante où une colonne attend, dans l'ordre du
+  rapport — et, quand plus rien n'attend nulle part, l'export.
+
+  ⚠️ LA SUITE NE TRANCHE RIEN. Passer à la table suivante laisse en attente ce qui l'était ici, et
+  le compte de la liste le dit toujours : ce n'est pas un « valider et continuer ».
+*@
+<nav class="next-table" aria-label="La suite de l'arbitrage">
+  @if (next is not null)
+  {
+    <a class="route-action"
+       asp-page="Table"
+       asp-route-schema="@next.Identity.Schema"
+       asp-route-table="@next.Identity.Table">
+      Table suivante : @next.Identity.ToString()
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </a>
+    @if (read.AwaitingCountInThisTable > 0)
+    {
+      <p class="hint">
+        @Counted(read.AwaitingCountInThisTable, "colonne") de cette table
+        @(read.AwaitingCountInThisTable == 1 ? "restera" : "resteront") en attente :
+        passer à la suivante ne tranche rien.
+      </p>
+    }
+  }
+  else if (summary.Progress.IsComplete)
+  {
+    <a class="route-action" asp-page="Export">
+      Passer à l'export
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" />
+      </svg>
+    </a>
+  }
+  else
+  {
+    <p class="hint">
+      Aucune autre table n'attend plus rien. Il reste
+      @Counted(read.AwaitingCountInThisTable, "colonne") à trancher ici avant l'export.
+    </p>
+  }
+</nav>
+
+</div>
+</div>
+
 <h2>Les comptes du rapport de détection entier</h2>
 
 @*
   ILS PORTENT SUR LE RAPPORT DE DÉTECTION ENTIER, jamais sur la table ouverte : des comptes bornés
   à ce qu'on a sous les yeux auraient dit « rien n'attend » à qui a trente-neuf tables intactes.
 *@
-<dl class="banner tally">
+<dl class="banner tally" data-arbitration-live="tally">
   <dt>Signalées</dt>
   <dd>@read.Tally.Flagged</dd>
   <dt>Retenues</dt>

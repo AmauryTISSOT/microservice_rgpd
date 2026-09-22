@@ -3414,3 +3414,364 @@ dialog.modal.sheet > .modal-head {
 .toast:empty {
   display: none;
 }
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  L'ARBITRAGE DE LA DÉTECTION, EN LISTE ET DÉTAIL. Le parcours en trois temps en tête, puis une
+  ligne de repères, l'avancement du rapport entier, et deux colonnes : les tables à gauche, collées
+  au défilement, la table ouverte à droite. Sous ~60rem, la liste passe au-dessus du détail.
+
+  ⚠️ LA BARRE D'AVANCEMENT EST UNE LARGEUR, comme celle du scan : un rectangle, jamais un
+  `<progress>`. Ce qui est LU reste le compte, écrit à côté.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.detection-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-lg);
+  list-style: none;
+  margin: 0 0 var(--space-lg);
+  padding: 0;
+}
+
+.detection-steps li {
+  align-items: center;
+  color: var(--ink-muted);
+  display: flex;
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+  gap: var(--space-xs);
+}
+
+.detection-steps li.current {
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+}
+
+.detection-step-mark {
+  align-items: center;
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  font: var(--type-eyebrow);
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.detection-steps li.done .detection-step-mark {
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  border-color: var(--signal-success);
+  color: var(--signal-success);
+}
+
+.detection-steps li.current .detection-step-mark {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Les repères du relevé, en une ligne : ils se lisent d'un coup d'œil. */
+.detection-meta {
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font: var(--type-caption);
+  gap: var(--space-xxs) var(--space-lg);
+  margin: calc(-1 * var(--space-xs)) 0 var(--space-lg);
+}
+
+.detection-meta div {
+  display: flex;
+  gap: var(--space-xxs);
+}
+
+.detection-meta dt::after {
+  content: " :";
+}
+
+.detection-meta dd {
+  color: var(--ink-secondary);
+  font-weight: var(--weight-medium);
+  margin: 0;
+}
+
+/* L'avancement du rapport entier : un compte, sa barre, et les deux restes. */
+.arbitration-progress {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.arbitration-progress-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: space-between;
+}
+
+.arbitration-progress-count {
+  font: var(--type-title);
+  margin: 0;
+}
+
+.arbitration-progress .progress {
+  margin: var(--space-sm) 0;
+}
+
+.arbitration-progress .hint {
+  margin: 0;
+}
+
+.arbitration-rest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.arbitration-rest li {
+  border-radius: var(--radius-full);
+  font: var(--type-caption);
+  padding: 2px var(--space-sm);
+}
+
+.arbitration-rest li.flagged {
+  background: color-mix(in srgb, var(--signal-warning) var(--signal-tint), var(--surface));
+  color: var(--signal-warning-ink);
+}
+
+.arbitration-rest li.unflagged {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--accent-pressed);
+}
+
+.arbitration-rest li.cleared {
+  background: var(--canvas);
+  color: var(--ink-muted);
+}
+
+/* La liste et le détail. */
+.workbench {
+  align-items: start;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: 18rem minmax(0, 1fr);
+}
+
+.workbench-detail > h1:first-child {
+  margin-top: 0;
+}
+
+.tables-list {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  max-height: calc(100vh - 2 * var(--space-lg));
+  overflow-y: auto;
+  padding: var(--space-sm);
+  position: sticky;
+  top: var(--space-lg);
+}
+
+.tables-list-caption {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: var(--type-eyebrow-tracking);
+  margin: var(--space-xxs) var(--space-xs) var(--space-sm);
+  text-transform: uppercase;
+}
+
+.tables-list ol {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tables-list a {
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  display: grid;
+  gap: 2px var(--space-xs);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: var(--space-xs) var(--space-sm);
+  text-decoration: none;
+}
+
+.tables-list a:hover {
+  background: var(--canvas);
+}
+
+.tables-list a[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: inset var(--rule-width) 0 0 var(--accent);
+}
+
+.tables-list-name {
+  font: var(--type-body-sm);
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tables-list-count {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.tables-list .progress {
+  display: block;
+  grid-column: 1 / -1;
+  height: 4px;
+  margin: 2px 0;
+}
+
+.tables-list .progress-done {
+  display: block;
+}
+
+.tables-list li.settled .progress-done {
+  background: var(--signal-success);
+}
+
+.tables-list-rest {
+  color: var(--ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font: var(--type-caption);
+  gap: var(--space-xs);
+  grid-column: 1 / -1;
+}
+
+.tables-list-rest .flagged {
+  color: var(--signal-warning-ink);
+  font-weight: var(--weight-medium);
+}
+
+.tables-list > .hint {
+  margin: var(--space-sm) var(--space-xs) var(--space-xxs);
+}
+
+/* Par où reprendre, sur le rapport. */
+.resume {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: start;
+  padding: var(--space-lg);
+}
+
+.resume h2,
+.resume p {
+  margin: 0;
+}
+
+/* La suite, au pied de la table ouverte. */
+.next-table {
+  border-top: var(--hairline-width) solid var(--hairline);
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: end;
+  margin: var(--space-xxl) 0 0;
+  padding: var(--space-lg) 0 0;
+}
+
+.next-table .hint {
+  text-align: right;
+}
+
+form[aria-busy="true"] button {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* L'export : les comptes de ce qui part, puis les deux formats en cartes-liens. */
+.export-tally {
+  display: grid;
+  gap: var(--space-sm);
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  margin: var(--space-lg) 0;
+}
+
+.export-tally div {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.export-tally div.awaiting {
+  border-color: var(--signal-warning);
+}
+
+.export-tally dt {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+}
+
+.export-tally dd {
+  font: 600 28px/1.2 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  margin: var(--space-xxs) 0 0;
+}
+
+.export-formats {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  margin: var(--space-lg) 0;
+}
+
+a.export-format {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  display: grid;
+  gap: var(--space-xxs);
+  padding: var(--space-lg);
+  text-decoration: none;
+}
+
+a.export-format:hover {
+  border-color: var(--accent);
+}
+
+.export-format-name {
+  color: var(--accent);
+  font: var(--type-button);
+}
+
+.restart {
+  margin: var(--space-xxl) 0 0;
+}
+
+@media (max-width: 60rem) {
+  .workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tables-list {
+    max-height: 20rem;
+    position: static;
+  }
+
+  .next-table {
+    justify-items: stretch;
+  }
+
+  .next-table .hint {
+    text-align: left;
+  }
+}
