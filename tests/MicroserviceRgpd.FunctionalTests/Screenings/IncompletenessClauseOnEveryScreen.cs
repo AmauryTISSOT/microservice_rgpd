@@ -51,8 +51,14 @@ public class IncompletenessClauseOnEveryScreen(CustomWebApplicationFactory<Progr
     "Le service ne peut pas savoir si ce compte lui a présenté toute la base",
     "valeurs au plus de chaque colonne",
     "dans l'ordre où elle les a rendues",
-    "valeurs ne disent pas ce qu'une colonne contient",
+    FlaggedHintTail,
   ];
+
+  /// <summary>
+  /// La queue du rappel sous le compteur <c>Signalées</c> de l'archive : phrase du chemin scanné,
+  /// mais que le rapport du jour ne rend pas.
+  /// </summary>
+  private const string FlaggedHintTail = "valeurs ne disent pas ce qu'une colonne contient";
 
   private readonly ScreeningSurface _surface = new(factory);
 
@@ -110,35 +116,29 @@ public class IncompletenessClauseOnEveryScreen(CustomWebApplicationFactory<Progr
 
     var report = screens[ScreeningSurface.Report];
 
-    foreach (var phrase in ScannedOnly)
+    // La queue du rappel sous « Signalées » ne se lit plus que sur l'archive : le rapport du jour
+    // ne porte plus ce rappel.
+    foreach (var phrase in ScannedOnly.Except([FlaggedHintTail]))
     {
       report.ShouldContain(phrase, Case.Sensitive);
     }
   }
 
   /// <summary>
-  /// ⚠️ <b>Le rappel sous le compteur <c>Signalées</c> est le point que le niveau 1 ne voit pas</b>,
-  /// et il est dû sur l'archive autant que sur le rapport du jour : un écran d'archive plus
-  /// rassurant que celui du jour même est ce que ce dépôt interdit partout.
+  /// ⚠️ <b>Le rappel sous le compteur <c>Signalées</c> de l'archive est le point que le niveau 1 ne
+  /// voit pas.</b>
   /// </summary>
   [Fact]
-  public async Task ReplacesTheTailOfTheFlaggedHintOnBothReportAndArchive()
+  public async Task ReplacesTheTailOfTheFlaggedHintOnTheArchive()
   {
-    var screens = await EveryScreenOfAsync(scanned: true);
+    var rendered = (await EveryScreenOfAsync(scanned: true))[ScreeningSurface.Archive];
 
-    foreach (var address in new[] { ScreeningSurface.Report, ScreeningSurface.Archive })
-    {
-      var rendered = screens[address];
+    rendered.ShouldContain(
+      $"le service n'a lu que {ColumnPreview.MaxValuesInWords} valeurs par colonne",
+      Case.Sensitive,
+      "Le rappel sous « Signalées » a perdu sa queue sur l'archive : ici la queue EST la preuve.");
 
-      rendered.ShouldContain(
-        $"le service n'a lu que {ColumnPreview.MaxValuesInWords} valeurs par colonne",
-        Case.Sensitive,
-        $"Le rappel sous « Signalées » a perdu sa queue sur {address} : ici la queue EST la preuve.");
-
-      rendered.ShouldContain(
-        $"{ColumnPreview.MaxValuesInWords} valeurs ne disent pas ce qu'une colonne contient",
-        Case.Sensitive);
-    }
+    rendered.ShouldContain($"{ColumnPreview.MaxValuesInWords} {FlaggedHintTail}", Case.Sensitive);
   }
 
   /// <summary>
