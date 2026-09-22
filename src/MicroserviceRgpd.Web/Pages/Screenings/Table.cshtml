@@ -624,25 +624,6 @@ else
 </div>
 </div>
 
-<h2>Les comptes du rapport de détection entier</h2>
-
-@*
-  ILS PORTENT SUR LE RAPPORT DE DÉTECTION ENTIER, jamais sur la table ouverte : des comptes bornés
-  à ce qu'on a sous les yeux auraient dit « rien n'attend » à qui a trente-neuf tables intactes.
-*@
-<dl class="banner tally" data-arbitration-live="tally">
-  <dt>Signalées</dt>
-  <dd>@read.Tally.Flagged</dd>
-  <dt>Retenues</dt>
-  <dd>@read.Tally.Retained</dd>
-  <dt>Écartées</dt>
-  <dd>@read.Tally.SetAside</dd>
-  <dt>En attente</dt>
-  <dd>@read.Tally.Awaiting</dd>
-  <dt>Retenues sur « rien signalé »</dt>
-  <dd>@read.Tally.RetainedOnUnflagged</dd>
-</dl>
-
 <partial name="_IncompletenessClause" model="clause" />
 
 <p><a asp-page="Report">Revenir au rapport de détection courant</a></p>
