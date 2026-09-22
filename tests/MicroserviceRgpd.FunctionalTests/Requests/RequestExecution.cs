@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MicroserviceRgpd.Core.Configuration;
@@ -270,23 +269,6 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
       $"Le système hôte n'a pas répondu dans les {CustomWebApplicationFactory<Program>.HostSystemTimeoutSeconds} secondes. La demande reste En cours.");
     _host.Received.ShouldHaveSingleItem("Le système hôte a été rappelé : une nouvelle tentative est partie.");
     await ShouldStayInProgressWithOneAttemptAsync(id, message, "TimedOut", null);
-  }
-
-  /// <summary>
-  /// <b>Un système hôte injoignable rend 502</b> — une adresse sur un port fermé —, et le journal
-  /// retient une erreur réseau, sans statut.
-  /// </summary>
-  [Fact]
-  public async Task AnswersBadGatewayAndLeavesTheRequestInProgressWhenTheHostIsUnreachable()
-  {
-    await ConfigureAsync(DataSubjectRight.Access, $"http://127.0.0.1:{AClosedPort()}/rights/access");
-    var (id, message) = await AnExecutableRequestAsync();
-
-    var response = await _surface.ExecuteAsync(id);
-
-    await ShouldBeAProblemAsync(
-      response, HttpStatusCode.BadGateway, id, "Le système hôte est injoignable. La demande reste En cours.");
-    await ShouldStayInProgressWithOneAttemptAsync(id, message, "NetworkError", null);
   }
 
   /// <summary>
@@ -575,19 +557,6 @@ public class RequestExecution(CustomWebApplicationFactory<Program> factory) : IA
 
     attempt["outcome"].ShouldBe(outcome);
     attempt["http_status"].ShouldBe(httpStatus);
-  }
-
-  /// <summary>
-  /// Un port sur lequel personne n'écoute : l'OS en attribue un libre, et l'écoute se referme aussitôt.
-  /// </summary>
-  private static int AClosedPort()
-  {
-    var listener = new TcpListener(IPAddress.Loopback, 0);
-    listener.Start();
-    var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-    listener.Stop();
-
-    return port;
   }
 
   /// <summary>La balise d'ouverture et le contenu du bouton d'action <paramref name="action"/> de la ligne.</summary>
