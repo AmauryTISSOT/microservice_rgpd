@@ -4360,12 +4360,4 @@ a.export-format:hover {
     max-height: 20rem;
     position: static;
   }
-
-  .next-table {
-    justify-items: stretch;
-  }
-
-  .next-table .hint {
-    text-align: left;
-  }
 }

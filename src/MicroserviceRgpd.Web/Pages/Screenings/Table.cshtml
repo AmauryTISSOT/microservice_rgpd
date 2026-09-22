@@ -131,7 +131,7 @@ else
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
 <section class="flagged">
-  <h2>Signalées (@read.FlaggedCountInThisTable)</h2>
+  <h2>Données personnelles détectées (@read.FlaggedCountInThisTable)</h2>
 
   @if (read.FlaggedCountInThisTable == 0)
   {
@@ -357,7 +357,7 @@ else
 *@
 <section class="unflagged">
   <div class="unflagged-head">
-    <h2>Rien détecté (@read.UnflaggedCountInThisTable)</h2>
+    <h2>Aucune donnée personnelle détectée (@read.UnflaggedCountInThisTable)</h2>
     @if (read.WithinReachOfABatchGestureInThisTable > 0)
     {
       <span class="unflagged-awaiting"><strong>@read.WithinReachOfABatchGestureInThisTable</strong> en attente</span>

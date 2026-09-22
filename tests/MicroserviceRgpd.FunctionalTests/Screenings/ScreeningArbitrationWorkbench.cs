@@ -110,8 +110,8 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
     var table = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.TableOf()));
 
     table.ShouldMatch(@"<p class=""table-meta"">\s*sans commentaire · 2 colonnes\s*</p>");
-    table.ShouldContain("<h2>Signalées (1)</h2>");
-    table.ShouldContain("<h2>Rien détecté (1)</h2>");
+    table.ShouldContain("<h2>Données personnelles détectées (1)</h2>");
+    table.ShouldContain("<h2>Aucune donnée personnelle détectée (1)</h2>");
   }
 
   /// <summary>
