@@ -4295,61 +4295,219 @@ form[aria-busy="true"] button {
   opacity: 0.6;
 }
 
-/* L'export : les comptes de ce qui part, puis les deux formats en cartes-liens. */
-.export-tally {
+/*
+  L'export : le téléchargement d'abord, le bilan en marge. Les deux formats tiennent la colonne
+  principale ; les comptes de ce qui part se lisent à droite, et passent dessous sur un écran étroit.
+*/
+.export-layout {
+  align-items: start;
   display: grid;
-  gap: var(--space-sm);
-  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
-  margin: var(--space-lg) 0;
+  gap: var(--space-xxl);
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  margin: 0 0 var(--space-xxl);
 }
 
-.export-tally div {
-  background: var(--surface);
-  border: var(--hairline-width) solid var(--hairline);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
+.export-main {
+  display: grid;
+  gap: var(--space-lg);
 }
 
-.export-tally div.awaiting {
-  border-color: var(--signal-warning);
+.export-main > * {
+  margin: 0;
 }
 
-.export-tally dt {
-  color: var(--ink-muted);
-  font: var(--type-caption);
-}
-
-.export-tally dd {
-  font: 600 28px/1.2 var(--font-sans);
-  font-variant-numeric: tabular-nums;
-  margin: var(--space-xxs) 0 0;
+.export-lede {
+  color: var(--ink-secondary);
+  font: var(--type-body-md);
 }
 
 .export-formats {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-xl);
   display: grid;
-  gap: var(--space-md);
-  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
-  margin: var(--space-lg) 0;
+  overflow: hidden;
 }
 
 a.export-format {
-  background: var(--surface);
-  border: var(--hairline-width) solid var(--hairline);
-  border-radius: var(--radius-lg);
+  align-items: center;
   color: var(--ink);
-  display: grid;
-  gap: var(--space-xxs);
+  display: flex;
+  gap: var(--space-lg);
   padding: var(--space-lg);
   text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+a.export-format + a.export-format {
+  border-top: var(--hairline-width) solid var(--hairline);
 }
 
 a.export-format:hover {
-  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+a.export-format:focus-visible {
+  outline: var(--rule-width) solid var(--accent);
+  outline-offset: calc(-1 * var(--rule-width));
+}
+
+.export-format-icon {
+  align-items: center;
+  background: var(--canvas);
+  border-radius: 14px;
+  color: var(--ink-secondary);
+  display: flex;
+  flex-shrink: 0;
+  height: 56px;
+  justify-content: center;
+  width: 56px;
+}
+
+a.export-format:first-child .export-format-icon {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+}
+
+.export-format-text {
+  display: grid;
+  flex-grow: 1;
+  gap: var(--space-xxs);
 }
 
 .export-format-name {
-  color: var(--accent);
+  color: var(--ink);
+  font: var(--type-title);
+  font-size: 18px;
+}
+
+/* L'affordance du lien : le premier format en bouton plein, le second en bouton secondaire. */
+.export-download {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  color: var(--ink);
+  display: inline-flex;
+  flex-shrink: 0;
   font: var(--type-button);
+  gap: var(--space-xs);
+  min-height: 44px;
+  padding: 0 var(--space-lg);
+}
+
+a.export-format:first-child .export-download {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+a.export-format:first-child:hover .export-download {
+  background: var(--accent-pressed);
+  border-color: var(--accent-pressed);
+}
+
+.export-contents {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-xl);
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+
+.export-contents h2 {
+  font: var(--type-title);
+  font-size: 16px;
+  margin: 0;
+}
+
+.export-contents dl {
+  margin: 0;
+}
+
+.export-contents dl div {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+}
+
+.export-contents dl div + div {
+  border-top: var(--hairline-width) solid var(--hairline);
+}
+
+/* La pastille vient d'ici, pour que chaque intitulé reste un texte nu. */
+.export-contents dt {
+  color: var(--ink-secondary);
+  font: var(--type-caption);
+  padding-left: 18px;
+  position: relative;
+}
+
+.export-contents dt::before {
+  background: var(--dot, var(--ink-faint));
+  border-radius: var(--radius-full);
+  content: "";
+  height: 8px;
+  left: 0;
+  position: absolute;
+  top: 6px;
+  width: 8px;
+}
+
+.export-contents .retained {
+  --dot: var(--accent);
+}
+
+.export-contents .set-aside {
+  --dot: var(--ink-faint);
+}
+
+.export-contents .retained-on-unflagged {
+  --dot: var(--signal-pending);
+}
+
+.export-contents .awaiting {
+  --dot: var(--signal-warning);
+}
+
+.export-contents dd {
+  font: 600 18px/1.4 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.export-status {
+  border-radius: var(--radius-md);
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+  margin: 0;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.export-status.done {
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  color: color-mix(in srgb, var(--signal-success) 60%, var(--ink));
+}
+
+.export-status.pending {
+  background: color-mix(in srgb, var(--signal-warning) var(--signal-tint), var(--surface));
+  color: var(--signal-warning-ink);
+}
+
+@media (max-width: 60rem) {
+  .export-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 40rem) {
+  a.export-format {
+    flex-wrap: wrap;
+  }
 }
 
 .restart {

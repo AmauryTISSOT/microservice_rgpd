@@ -126,8 +126,8 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     // Et les comptes suivent : une écartée, aucune retenue.
     var export = await ReadTheExportAsync();
 
-    Counted(export, "Écartées").ShouldBe(1);
-    Counted(export, "Retenues").ShouldBe(0);
+    Counted(export, "Colonnes écartées").ShouldBe(1);
+    Counted(export, "Colonnes retenues avec des données personnelles").ShouldBe(0);
   }
 
   /// <summary>
@@ -192,7 +192,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
   }
 
   /// <summary>
-  /// ⚠️ <b>« Retenues sur "rien signalé" » est la mesure de l'<c>Omission relue</c></b> : une colonne
+  /// ⚠️ <b>« Colonnes retenues sans données personnelles » est la mesure de l'<c>Omission relue</c></b> : une colonne
   /// que le service n'avait pas vue, et qu'un humain a retenue de sa propre main. Sans ce compte, la
   /// relecture des non signalées serait décorative.
   /// </summary>
@@ -212,10 +212,10 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     var table = await ReadTheTableAsync();
     var export = await ReadTheExportAsync();
 
-    Counted(export, "Retenues").ShouldBe(2);
+    Counted(export, "Colonnes retenues avec des données personnelles").ShouldBe(2);
 
     // ⚠️ Une seule des deux vient d'une omission relue, et c'est celle-là que le compte isole.
-    Counted(export, "Retenues sur « rien signalé »").ShouldBe(1);
+    Counted(export, "Colonnes retenues sans données personnelles").ShouldBe(1);
 
     // Et la ligne dit toujours que le service, lui, n'avait rien vu : un Retained prouve qu'un
     // HUMAIN l'a déclaré retenu, jamais que la colonne porte des données personnelles.
