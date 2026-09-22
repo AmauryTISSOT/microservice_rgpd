@@ -73,33 +73,20 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
   }
 
   /// <summary>
-  /// <b>Les comptes se lisent au rapport</b>, et l'avancement n'est jamais un état de haut niveau
-  /// rassurant : « en attente » est un nombre de colonnes, pas un mot.
+  /// <b>L'avancement se lit au rapport</b>, et il n'est jamais un état de haut niveau rassurant :
+  /// « 0 / 3 colonnes tranchées » est un nombre de colonnes, pas un mot.
   /// </summary>
-  /// <remarks>
-  /// ⚠️ Le compte « retenues sur rien signalé » vaut <b>zéro</b> ici, et c'est ce qu'on lui demande
-  /// de dire : c'est la mesure directe de ce que l'<c>Omission relue</c> a rattrapé, et personne n'a
-  /// encore relu quoi que ce soit.
-  /// </remarks>
   [Fact]
-  public async Task RendersTheCountsOfTheReportRatherThanAReassuringHighLevelStatus()
+  public async Task RendersTheProgressOfTheReportRatherThanAReassuringHighLevelStatus()
   {
     var report = await _surface.DepositAndReadTheReportAsync(ScreeningSurface.Paste(
       ScreeningSurface.Column("id_adh", position: 1),
       ScreeningSurface.Column("email", position: 2),
       ScreeningSurface.Column("montant", table: "cotisations", position: 1)));
 
-    report.ShouldContain("Signalées");
-    report.ShouldContain("Retenues");
-    report.ShouldContain("Écartées");
-    report.ShouldContain("En attente");
-    report.ShouldContain("Retenues sur « rien signalé »");
-
-    // Aucun arbitrage n'a eu lieu : les trois colonnes attendent, et rien n'a été rattrapé.
-    Counted(report, "En attente").ShouldBe(3);
-    Counted(report, "Retenues").ShouldBe(0);
-    Counted(report, "Écartées").ShouldBe(0);
-    Counted(report, "Retenues sur « rien signalé »").ShouldBe(0);
+    // Aucun arbitrage n'a eu lieu : les trois colonnes attendent.
+    report.ShouldMatch(@"<span class=""count"">0</span> / 3 colonnes");
+    (Counted(report, FlaggedAwaiting) + Counted(report, UnflaggedAwaiting)).ShouldBe(3);
   }
 
   /// <summary>
@@ -117,10 +104,10 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
       ScreeningSurface.Column("montant", table: "cotisations", position: 1)));
 
     // Une seule ligne signalée sur quatre, et les quatre sont au rapport.
-    Counted(report, "En attente").ShouldBe(4);
-    Counted(report, "Signalées").ShouldBeGreaterThan(0);
-    Counted(report, "Signalées").ShouldBeLessThan(4);
-    report.ShouldContain("4 colonnes");
+    report.ShouldMatch(@"<span class=""count"">0</span> / 4 colonnes");
+    Counted(report, FlaggedAwaiting).ShouldBeGreaterThan(0);
+    Counted(report, FlaggedAwaiting).ShouldBeLessThan(4);
+    (Counted(report, FlaggedAwaiting) + Counted(report, UnflaggedAwaiting)).ShouldBe(4);
   }
 
   /// <summary>
@@ -146,7 +133,7 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// <b>La clause d'incomplétude est une propriété de la réponse</b>, jamais une mention en pied de
-  /// page : ses quatre parties se rendent, et rien ne se replie derrière un « en savoir plus ».
+  /// page : ses trois parties se rendent, et rien ne se replie derrière un « en savoir plus ».
   /// </summary>
   /// <remarks>
   /// ⚠️ Elle dit aussi ce que <b>ce</b> relevé-ci lui apprend — combien de colonnes, combien de
@@ -159,15 +146,10 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
       ScreeningSurface.Column("id_adh", position: 1),
       ScreeningSurface.Column("email", position: 2, tableComment: "les adhérents")));
 
-    // Les quatre parties.
+    // Les trois parties.
     report.ShouldContain("Le périmètre lu");
     report.ShouldContain("Hors périmètre");
     report.ShouldContain("Hors de portée");
-    report.ShouldContain("Ce rapport de détection et vos systèmes déclarés");
-
-    // Ce que le service a lu comme indice, et ce qu'il n'a lu que pour écarter.
-    report.ShouldContain("les noms de colonnes");
-    report.ShouldContain("le type de la colonne");
 
     // Ce que ce relevé-ci lui apprend, et qui n'est pas une généralité.
     report.ShouldContain("2 colonnes");
@@ -352,15 +334,20 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
     }
   }
 
-  /// <summary>Ce qu'un compte du rapport vaut, lu là où l'écran le rend.</summary>
-  private static int Counted(string report, string label)
+  /// <summary>Le premier nombre que <paramref name="pattern"/> capture, lu là où l'écran le rend.</summary>
+  private static int Counted(string report, string pattern)
   {
-    var counted = System.Text.RegularExpressions.Regex.Match(
-      report,
-      $@"<dt>{System.Text.RegularExpressions.Regex.Escape(label)}</dt>\s*<dd>\s*(\d+)");
+    // Décodé : Razor encode l'apostrophe, et le motif s'écrit comme la phrase se lit.
+    var counted = System.Text.RegularExpressions.Regex.Match(System.Net.WebUtility.HtmlDecode(report), pattern);
 
-    counted.Success.ShouldBeTrue($"Le rapport ne rend aucun compte sous « {label} ».");
+    counted.Success.ShouldBeTrue($"Le rapport ne rend aucun compte qui réponde à « {pattern} ».");
 
     return int.Parse(counted.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
   }
+
+  /// <summary>Les colonnes signalées qui attendent encore d'être tranchées.</summary>
+  private const string FlaggedAwaiting = @"<strong>(\d+) colonnes? signalées?</strong>";
+
+  /// <summary>Les colonnes où rien n'a été détecté qui attendent encore d'être relues.</summary>
+  private const string UnflaggedAwaiting = @"<strong>(\d+) colonnes? où rien n'a été détecté</strong>";
 }

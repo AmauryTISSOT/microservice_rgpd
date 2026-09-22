@@ -260,7 +260,6 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     table.ShouldContain("Le périmètre lu");
     table.ShouldContain("Hors périmètre");
     table.ShouldContain("Hors de portée");
-    table.ShouldContain("Ce rapport de détection et vos systèmes déclarés");
 
     // Les comptes sont ceux du relevé entier — trois colonnes dans deux tables — et non ceux des
     // deux colonnes de la table ouverte.
@@ -282,10 +281,9 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
 
     table.ShouldContain("Ce rapport de détection est inachevé");
 
-    // Deux colonnes attendent dans le rapport, dont une seule dans la table ouverte.
-    Counted(table, "En attente").ShouldBe(2);
-    Counted(table, "Retenues").ShouldBe(0);
-    Counted(table, "Retenues sur « rien signalé »").ShouldBe(0);
+    // Deux colonnes attendent dans le rapport, dont une seule dans la table ouverte : l'avancement
+    // compte les deux.
+    table.ShouldMatch(@"<span class=""count"">0</span>\s*/\s*2 colonnes");
   }
 
   /// <summary>
@@ -536,15 +534,5 @@ public class ScreeningTableScreen(CustomWebApplicationFactory<Program> factory)
     reason.Success.ShouldBeTrue("La fiche ne porte aucun motif.");
 
     return reason.Groups[1].Value.Trim();
-  }
-
-  /// <summary>Ce qu'un compte du rapport vaut, lu là où l'écran le rend.</summary>
-  private static int Counted(string table, string label)
-  {
-    var counted = Regex.Match(table, $@"<dt>{Regex.Escape(label)}</dt>\s*<dd>\s*(\d+)");
-
-    counted.Success.ShouldBeTrue($"L'écran ne rend aucun compte sous « {label} ».");
-
-    return int.Parse(counted.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
   }
 }

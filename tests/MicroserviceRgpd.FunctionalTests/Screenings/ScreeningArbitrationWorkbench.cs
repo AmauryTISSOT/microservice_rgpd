@@ -59,6 +59,11 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
 
     report.ShouldContain("Par où commencer");
     report.ShouldMatch(@"Ouvrir public\.adherents");
+
+    // Ce qui y attend, les signalées d'abord : l'e-mail est signalé, le montant ne l'est pas.
+    report.ShouldMatch(
+      @"<strong>public\.adherents</strong>\s*:\s*1 colonne a été signalée comme contenant des données "
+      + @"personnelles\s*;\s*1 colonne sans signalement\.");
   }
 
   /// <summary>

@@ -208,7 +208,7 @@ public class ScanWaitingScreen(CustomWebApplicationFactory<Program> factory)
     // ⚠️ La clause du chemin SCANNÉ, et non celle du collé : « le service n'a jamais vu une seule
     // valeur » serait faux ici, et c'est très exactement le mensonge qu'ADR-0013 existe pour
     // empêcher.
-    report.ShouldContain($"n'a lu que {ColumnPreview.MaxValuesInWords} valeurs par colonne");
+    report.ShouldContain("celui que le compte de connexion a présenté au service");
     report.ShouldNotContain("n'a jamais vu une seule valeur");
 
     // L'identité du moteur porte ses FORMES ACTIVES : les règles de forme ont tourné, parce que le

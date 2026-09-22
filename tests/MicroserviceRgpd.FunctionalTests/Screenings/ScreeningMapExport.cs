@@ -85,7 +85,6 @@ public class ScreeningMapExport(CustomWebApplicationFactory<Program> factory)
 
     export.ShouldContain("1 colonne attend encore une réponse");
     export.ShouldContain("partira « en attente » dans le fichier");
-    export.ShouldContain("ne porte pas</strong> la clause d'incomplétude");
   }
 
   // ─── Les deux routes ────────────────────────────────────────────────────────────────────────

@@ -14,88 +14,100 @@
 
 <partial name="_DetectionTrail" model="new MicroserviceRgpd.Web.Pages.Screenings.DetectionTrail(MicroserviceRgpd.Web.Pages.Screenings.DetectionStep.Export, summary)" />
 
-<h1>Exporter la cartographie des données personnelles</h1>
-
 @*
-  CE QUI PART ENCORE EN ATTENTE, DIT AVANT LE CLIC. L'export n'est pas verrouillé tant que
-  l'arbitrage n'est pas fini — le fichier porte aussi les lignes en attente —, mais il ne doit pas
-  pouvoir partir sans que l'Operator ait lu combien.
+  LE TÉLÉCHARGEMENT D'ABORD, LE BILAN EN MARGE. L'écran existe pour faire partir le fichier : les
+  deux formats tiennent la colonne principale, et les comptes de ce qui part se lisent à côté, sans
+  passer devant le geste.
 *@
-@if (progress.IsComplete)
-{
-  <p class="hint">
-    Chaque colonne de ce rapport a reçu une réponse : le fichier la porte, ligne à ligne.
-  </p>
-}
-else
-{
-  <p class="unfinished">
-    @Counted(progress.Awaiting, "colonne") @(progress.Awaiting == 1 ? "attend" : "attendent") encore une réponse
-    — dont @Counted(progress.FlaggedAwaiting, "signalée") — et
-    @(progress.Awaiting == 1 ? "partira" : "partiront") « en attente » dans le fichier.
-    <a asp-page="Report">Reprendre l'arbitrage</a>
-  </p>
-}
+<div class="export-layout">
+  <div class="export-main">
+    <h1>Exporter la cartographie des données personnelles</h1>
 
-@*
-  LES COMPTES DE CE QUI PART, en cartes : ce que le fichier dira, d'un coup d'œil. Les libellés sont
-  ceux du rapport, pour qu'un même nombre porte le même nom sur les deux écrans.
-*@
-<dl class="export-tally">
-  <div>
-    <dt>Retenues</dt>
-    <dd>@summary.Tally.Retained</dd>
-  </div>
-  <div>
-    <dt>Écartées</dt>
-    <dd>@summary.Tally.SetAside</dd>
-  </div>
-  <div>
-    <dt>Retenues sur « rien signalé »</dt>
-    <dd>@summary.Tally.RetainedOnUnflagged</dd>
-  </div>
-  <div class="@(progress.Awaiting > 0 ? "awaiting" : null)">
-    <dt>En attente</dt>
-    <dd>@summary.Tally.Awaiting</dd>
-  </div>
-</dl>
+    @*
+      CE QUI PART ENCORE EN ATTENTE, DIT AVANT LE CLIC. L'export n'est pas verrouillé tant que
+      l'arbitrage n'est pas fini — le fichier porte aussi les lignes en attente —, mais il ne doit pas
+      pouvoir partir sans que l'Operator ait lu combien.
+    *@
+    @if (!progress.IsComplete)
+    {
+      <p class="unfinished">
+        @Counted(progress.Awaiting, "colonne") @(progress.Awaiting == 1 ? "attend" : "attendent") encore une réponse
+        — dont @Counted(progress.FlaggedAwaiting, "signalée") — et
+        @(progress.Awaiting == 1 ? "partira" : "partiront") « en attente » dans le fichier.
+        <a asp-page="Report">Reprendre l'arbitrage</a>
+      </p>
+    }
 
-<p class="hint">
-  Le fichier porte <strong>toutes</strong> les lignes de ce rapport — retenues, écartées, en attente,
-  et celles où la détection n'a rien signalé — avec ce que vous en avez dit et la date à laquelle
-  vous l'avez dit. Il ne porte <strong>aucune valeur lue</strong> de votre base.
-</p>
+    <p class="export-lede">
+      Le fichier généré contient l'ensemble des colonnes analysées dans ce rapport — retenues, écartées,
+      en attente, et celles où la détection n'a rien signalé.
+    </p>
 
-@*
-  CE QUE LE FICHIER NE PORTE PAS, DIT ICI ET NON DANS LE FICHIER. La Clause d'incomplétude reste
-  sur tous les écrans et ne voyage pas dans l'export : l'Operator a tranché chaque ligne et choisit
-  d'expédier le fichier ; ce qu'il en dit au destinataire lui appartient. Cette phrase-ci est le
-  seul rattrapage retenu, et elle est sur l'écran, pas dans le document.
-*@
-<p class="caveat">
-  ⚠️ Ce fichier <strong>ne porte pas</strong> la clause d'incomplétude ci-dessous. Il ne dit donc de
-  lui-même ni ce qu'il n'a pas regardé, ni comment il a été produit : à vous de le dire à qui vous
-  l'adressez.
-</p>
+    @*
+      DEUX LIENS, ET NON UN MENU. Un lien collé dans un courriel annonce ce qu'il rend, s'ouvre d'un
+      clic et se met en favori. Chaque ligne est le lien entier, pas un contrôle qui n'agirait qu'avec
+      du script : « Télécharger » n'en est que l'affordance.
+    *@
+    <div class="export-formats">
+      <a class="export-format" asp-page="PersonalDataMapCsv">
+        <span class="export-format-icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 10h16M4 15h16M10 4v16" /></svg>
+        </span>
+        <span class="export-format-text">
+          <span class="export-format-name">La cartographie en CSV, pour un tableur</span>
+          <span class="hint">Séparé par des points-virgules, s'ouvre en tableau d'un double-clic.</span>
+        </span>
+        <span class="export-download" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10M6 9l4 4 4-4M4 16h12" /></svg>
+          Télécharger
+        </span>
+      </a>
+      <a class="export-format" asp-page="PersonalDataMapJson">
+        <span class="export-format-icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4c-2 0-2 1.5-2 3v2c0 1.5-1 3-2 3 1 0 2 1.5 2 3v2c0 1.5 0 3 2 3M16 4c2 0 2 1.5 2 3v2c0 1.5 1 3 2 3-1 0-2 1.5-2 3v2c0 1.5 0 3-2 3" /></svg>
+        </span>
+        <span class="export-format-text">
+          <span class="export-format-name">La cartographie en JSON, pour un outil</span>
+          <span class="hint">
+            Porte en tête la base, le SGBD, le moteur qui a détecté et les dates — ce que le CSV ne dit pas.
+          </span>
+        </span>
+        <span class="export-download" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10M6 9l4 4 4-4M4 16h12" /></svg>
+          Télécharger
+        </span>
+      </a>
+    </div>
+  </div>
 
-@*
-  DEUX LIENS, ET NON UN MENU. Un lien collé dans un courriel annonce ce qu'il rend, s'ouvre d'un
-  clic et se met en favori. Chaque carte est le lien entier, pas un contrôle qui n'agirait qu'avec
-  du script.
-*@
-<div class="export-formats">
-  <a class="export-format" asp-page="PersonalDataMapCsv">
-    <span class="export-format-name">La cartographie en CSV, pour un tableur</span>
-    <span class="hint">Séparé par des points-virgules, s'ouvre en tableau d'un double-clic.</span>
-  </a>
-  <a class="export-format" asp-page="PersonalDataMapJson">
-    <span class="export-format-name">La cartographie en JSON, pour un outil</span>
-    <span class="hint">
-      Porte en tête la base, le SGBD, le moteur qui a détecté et les dates — ce que le CSV ne dit pas.
-    </span>
-  </a>
+  @*
+    LES COMPTES DE CE QUI PART, en marge : ce que le fichier dira, d'un coup d'œil. La pastille de
+    couleur est posée par la feuille de style, pour que chaque intitulé reste un texte nu.
+  *@
+  <aside class="export-contents" aria-labelledby="export-contents-title">
+    <h2 id="export-contents-title">Contenu du fichier</h2>
+    <dl>
+      <div class="retained">
+        <dt>Colonnes retenues avec des données personnelles</dt>
+        <dd>@summary.Tally.Retained</dd>
+      </div>
+      <div class="set-aside">
+        <dt>Colonnes écartées</dt>
+        <dd>@summary.Tally.SetAside</dd>
+      </div>
+      <div class="retained-on-unflagged">
+        <dt>Colonnes retenues sans données personnelles</dt>
+        <dd>@summary.Tally.RetainedOnUnflagged</dd>
+      </div>
+      <div class="awaiting">
+        <dt>En attente</dt>
+        <dd>@summary.Tally.Awaiting</dd>
+      </div>
+    </dl>
+    <p class="export-status @(progress.IsComplete ? "done" : "pending")">
+      @(progress.IsComplete ? "Arbitrage terminé" : "Arbitrage en cours") · @progress.Settled / @progress.Columns
+    </p>
+  </aside>
 </div>
 
 <partial name="_IncompletenessClause" model="clause" />
-
-<p><a asp-page="Report">Revenir à l'arbitrage</a></p>

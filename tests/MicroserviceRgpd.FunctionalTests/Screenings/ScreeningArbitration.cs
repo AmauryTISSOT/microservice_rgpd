@@ -124,8 +124,10 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     row.ShouldNotContain("retenue");
 
     // Et les comptes suivent : une écartée, aucune retenue.
-    Counted(table, "Écartées").ShouldBe(1);
-    Counted(table, "Retenues").ShouldBe(0);
+    var export = await ReadTheExportAsync();
+
+    Counted(export, "Colonnes écartées").ShouldBe(1);
+    Counted(export, "Colonnes retenues avec des données personnelles").ShouldBe(0);
   }
 
   /// <summary>
@@ -178,7 +180,7 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     var halfway = await ReadTheTableAsync();
 
     halfway.ShouldContain("Ce rapport de détection est inachevé");
-    Counted(halfway, "En attente").ShouldBe(1);
+    Counted(await ReadTheExportAsync(), "En attente").ShouldBe(1);
 
     await _surface.ArbitrateAsync("montant", ScreenedColumnState.SetAside.Name);
 
@@ -186,11 +188,11 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
 
     finished.ShouldNotContain("Ce rapport de détection est inachevé");
     finished.ShouldContain("Toutes les colonnes de ce rapport de détection ont été relues");
-    Counted(finished, "En attente").ShouldBe(0);
+    Counted(await ReadTheExportAsync(), "En attente").ShouldBe(0);
   }
 
   /// <summary>
-  /// ⚠️ <b>« Retenues sur "rien signalé" » est la mesure de l'<c>Omission relue</c></b> : une colonne
+  /// ⚠️ <b>« Colonnes retenues sans données personnelles » est la mesure de l'<c>Omission relue</c></b> : une colonne
   /// que le service n'avait pas vue, et qu'un humain a retenue de sa propre main. Sans ce compte, la
   /// relecture des non signalées serait décorative.
   /// </summary>
@@ -208,11 +210,12 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
     await _surface.ArbitrateAsync("email", ScreenedColumnState.Retained.Name);
 
     var table = await ReadTheTableAsync();
+    var export = await ReadTheExportAsync();
 
-    Counted(table, "Retenues").ShouldBe(2);
+    Counted(export, "Colonnes retenues avec des données personnelles").ShouldBe(2);
 
     // ⚠️ Une seule des deux vient d'une omission relue, et c'est celle-là que le compte isole.
-    Counted(table, "Retenues sur « rien signalé »").ShouldBe(1);
+    Counted(export, "Colonnes retenues sans données personnelles").ShouldBe(1);
 
     // Et la ligne dit toujours que le service, lui, n'avait rien vu : un Retained prouve qu'un
     // HUMAIN l'a déclaré retenu, jamais que la colonne porte des données personnelles.
@@ -473,6 +476,15 @@ public class ScreeningArbitration(CustomWebApplicationFactory<Program> factory)
   {
     return WebUtility.HtmlDecode(
       await _surface.ReadAsync(ScreeningSurface.TableOf(table: table)));
+  }
+
+  /// <summary>
+  /// L'écran d'export : les comptes du rapport entier ne se lisent plus que là, l'écran d'une table
+  /// n'en portant que l'avancement.
+  /// </summary>
+  private async Task<string> ReadTheExportAsync()
+  {
+    return WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.Export));
   }
 
   /// <summary>La date du jour, telle que l'écran la rend.</summary>
