@@ -4285,6 +4285,11 @@ table.unflagged-list .settled {
   text-align: right;
 }
 
+/* `a.route-action` se cale à gauche partout ailleurs : ici, la suite se lit au bout de la page. */
+.next-table a.route-action {
+  justify-self: end;
+}
+
 form[aria-busy="true"] button {
   cursor: progress;
   opacity: 0.6;
