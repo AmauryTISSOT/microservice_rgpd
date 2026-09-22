@@ -133,7 +133,7 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
 
   /// <summary>
   /// <b>La clause d'incomplétude est une propriété de la réponse</b>, jamais une mention en pied de
-  /// page : ses quatre parties se rendent, et rien ne se replie derrière un « en savoir plus ».
+  /// page : ses trois parties se rendent, et rien ne se replie derrière un « en savoir plus ».
   /// </summary>
   /// <remarks>
   /// ⚠️ Elle dit aussi ce que <b>ce</b> relevé-ci lui apprend — combien de colonnes, combien de
@@ -146,15 +146,10 @@ public class ScreeningDepositScreen(CustomWebApplicationFactory<Program> factory
       ScreeningSurface.Column("id_adh", position: 1),
       ScreeningSurface.Column("email", position: 2, tableComment: "les adhérents")));
 
-    // Les quatre parties.
+    // Les trois parties.
     report.ShouldContain("Le périmètre lu");
     report.ShouldContain("Hors périmètre");
     report.ShouldContain("Hors de portée");
-    report.ShouldContain("Ce rapport de détection et vos systèmes déclarés");
-
-    // Ce que le service a lu comme indice, et ce qu'il n'a lu que pour écarter.
-    report.ShouldContain("les noms de colonnes");
-    report.ShouldContain("le type de la colonne");
 
     // Ce que ce relevé-ci lui apprend, et qui n'est pas une généralité.
     report.ShouldContain("2 colonnes");

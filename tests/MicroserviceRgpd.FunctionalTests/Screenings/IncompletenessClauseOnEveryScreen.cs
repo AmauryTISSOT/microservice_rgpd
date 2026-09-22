@@ -38,7 +38,6 @@ public class IncompletenessClauseOnEveryScreen(CustomWebApplicationFactory<Progr
   private static readonly string[] PastedOnly =
   [
     "celui que vous avez collé",
-    "n'a jamais vu une seule valeur",
   ];
 
   /// <summary>
@@ -49,7 +48,6 @@ public class IncompletenessClauseOnEveryScreen(CustomWebApplicationFactory<Progr
   [
     "celui que le compte de connexion a présenté au service",
     "Le service ne peut pas savoir si ce compte lui a présenté toute la base",
-    "valeurs au plus de chaque colonne",
     "dans l'ordre où elle les a rendues",
     FlaggedHintTail,
   ];

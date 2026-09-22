@@ -474,7 +474,7 @@ a.doorway,
 .advisory,
 .caveat,
 .claim,
-.clause,
+.clause-card,
 .premises,
 .refusals,
 .right,
@@ -2034,26 +2034,38 @@ td.ruling button {
   height: 100%;
 }
 
-/* La clause est entière ET dense : deux colonnes, sans qu'un mot en soit retiré ni replié. */
+/*
+  La clause est entière ET brève : trois cartes côte à côte, une par limite, qui passent l'une sous
+  l'autre quand la place manque. Un filet la sépare de ce qui précède.
+*/
 .clause {
-  display: grid;
-  gap: 0 var(--space-xxl);
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  border-top: var(--hairline-width) solid var(--hairline);
+  margin: var(--space-xxl) 0 0;
+  padding-top: var(--space-lg);
 }
 
-.clause h3 {
+.clause > h2 {
+  margin: 0 0 var(--space-md);
+}
+
+.clause-cards {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.clause-cards .clause-card {
+  margin: 0;
+}
+
+.clause-card h3 {
   font: var(--type-title);
   letter-spacing: var(--type-title-tracking);
-  margin: var(--space-md) 0 var(--space-xxs);
+  margin: 0 0 var(--space-xs);
 }
 
-.clause ul {
-  margin: var(--space-xxs) 0;
-  padding-left: var(--space-lg);
-}
-
-.clause p {
-  margin: var(--space-xxs) 0;
+.clause-card p {
+  margin: var(--space-xs) 0 0;
 }
 
 /*
