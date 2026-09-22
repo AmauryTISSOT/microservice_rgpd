@@ -221,9 +221,16 @@ else
           else
           {
             <span class="settled">@column.Arbitration!.State.FrenchLabel</span>
-            @* Le résumé s'ouvre d'un clic, et c'est tout ce que « Annuler » fait : il déplie la
-               fiche sur ses deux boutons. Rien n'est posté d'ici. *@
-            <span class="column-card-revise" aria-hidden="true">Annuler</span>
+            @*
+              ⚠️ SEUL CE BOUTON OUVRE LA FICHE À LA SOURIS. Le résumé entier ne réagit plus au clic :
+              cliquer l'issue ou le nom rouvrait la fiche comme si l'on voulait se raviser. « Annuler »
+              déplie la fiche sur ses deux boutons, « Fermer » la replie, et rien n'est posté d'ici.
+              Au clavier, le résumé reste le bouton qu'il est.
+            *@
+            <span class="column-card-toggle" aria-hidden="true">
+              <span class="column-card-revise">Annuler</span>
+              <span class="column-card-close">Fermer</span>
+            </span>
           }
         </summary>
 

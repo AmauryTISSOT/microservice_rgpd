@@ -1728,14 +1728,21 @@ table.columns th.reason {
   ⚠️ IL LAISSE LA PLACE DES BOUTONS À SA DROITE : ceux-ci se posent en haut à droite de la fiche
   ouverte, sans quitter la fin de son contenu dans l'ordre de lecture.
 */
+/*
+  ⚠️ LE RÉSUMÉ NE RÉAGIT PAS AU CLIC, SON BOUTON SEUL LE FAIT. Cliquer l'issue ou le nom d'une
+  colonne tranchée rouvrait la fiche comme si l'on voulait se raviser : seul « Annuler » (ou
+  « Fermer ») reçoit la souris, et son clic remonte jusqu'au résumé qui déplie la fiche. Au
+  clavier, le résumé reste le bouton natif qu'il est.
+*/
 .column-card > summary {
   align-items: center;
-  cursor: pointer;
+  cursor: default;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs) var(--space-sm);
   list-style: none;
   min-height: 44px;
+  pointer-events: none;
 }
 
 .column-card > summary::-webkit-details-marker {
@@ -1778,22 +1785,49 @@ table.columns th.reason {
   margin: var(--space-xs) 0 0;
 }
 
-.column-card-revise {
+/*
+  « ANNULER » ET « FERMER » ONT L'APPARENCE DE RETENIR ET ÉCARTER, survol compris : c'est un bouton
+  comme eux, et il doit se lire comme tel.
+*/
+.column-card-toggle {
+  align-items: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
   border-radius: var(--radius-md);
-  color: var(--accent);
-  font: var(--type-caption);
-  font-weight: var(--weight-medium);
-  padding: var(--space-xxs) var(--space-xs);
-  transition: background-color 120ms ease, color 120ms ease;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: var(--type-button);
+  letter-spacing: var(--type-button-tracking);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  pointer-events: auto;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  user-select: none;
 }
 
-.column-card > summary:hover .column-card-revise {
+.column-card-toggle:hover {
   background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-color: var(--accent);
   color: var(--accent-pressed);
 }
 
+.column-card-toggle:active {
+  transform: translateY(1px);
+}
+
+.column-card > summary:focus-visible .column-card-toggle {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.column-card-close,
 .column-card[open] .column-card-revise {
   display: none;
+}
+
+.column-card[open] .column-card-close {
+  display: inline;
 }
 
 /* Le type et le commentaire de la colonne, sur une ligne discrète sous le nom. */
