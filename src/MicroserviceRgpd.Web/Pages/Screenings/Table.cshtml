@@ -220,17 +220,21 @@ else
           }
           else
           {
-            <span class="settled">
-              @column.Arbitration!.State.FrenchLabel
-              <span class="hint">
-                le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
-              </span>
-            </span>
-            @* Le résumé s'ouvre d'un clic, et c'est tout ce que « Se raviser » fait : il déplie la
+            <span class="settled">@column.Arbitration!.State.FrenchLabel</span>
+            @* Le résumé s'ouvre d'un clic, et c'est tout ce que « Annuler » fait : il déplie la
                fiche sur ses deux boutons. Rien n'est posté d'ici. *@
-            <span class="column-card-revise" aria-hidden="true">Se raviser</span>
+            <span class="column-card-revise" aria-hidden="true">Annuler</span>
           }
         </summary>
+
+        @* ⚠️ LA DATE DE L'ARBITRAGE QUITTE LE RÉSUMÉ, PAS L'ÉCRAN : elle se lit en rouvrant la fiche.
+           C'est le service qui la pose, et c'est la seule trace de quand la colonne a été tranchée. *@
+        @if (!awaiting)
+        {
+          <p class="column-settled-on">
+            @column.Arbitration!.State.FrenchLabel le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
+          </p>
+        }
 
         @* Le type et le commentaire de la colonne, en une ligne. L'absence de commentaire est le
            régime majoritaire, et elle se dit plutôt qu'elle ne se tait. *@

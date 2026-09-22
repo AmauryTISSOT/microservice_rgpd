@@ -1771,15 +1771,25 @@ table.columns th.reason {
   padding: 2px var(--space-sm);
 }
 
-.column-card .settled .hint {
-  color: inherit;
-  font-weight: var(--weight-regular);
+/* La date de l'arbitrage, dans la fiche rouverte : elle a quitté le résumé, pas l'écran. */
+.column-card .column-settled-on {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  margin: var(--space-xs) 0 0;
 }
 
 .column-card-revise {
+  border-radius: var(--radius-md);
   color: var(--accent);
   font: var(--type-caption);
   font-weight: var(--weight-medium);
+  padding: var(--space-xxs) var(--space-xs);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.column-card > summary:hover .column-card-revise {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  color: var(--accent-pressed);
 }
 
 .column-card[open] .column-card-revise {
@@ -2691,6 +2701,45 @@ button.primary {
 button.primary:active {
   background: var(--accent-pressed);
   border-color: var(--accent-pressed);
+}
+
+/*
+  LE SURVOL DIT QU'UN BOUTON SE CLIQUE : le curseur de la main, et un fond qui se teinte sous la
+  souris. Sans lui, un bouton secondaire — fond blanc, filet clair — se lisait comme un simple
+  cadre.
+*/
+button:where(:not(:disabled)) {
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+button:where(:not(:disabled)):hover {
+  background: var(--canvas);
+  border-color: var(--ink-faint);
+}
+
+button.primary:where(:not(:disabled)):hover {
+  background: var(--accent-pressed);
+  border-color: var(--accent-pressed);
+}
+
+button.destructive:where(:not(:disabled)):hover {
+  background: color-mix(in srgb, var(--signal-error) var(--signal-tint), var(--surface));
+  border-color: var(--signal-error);
+}
+
+/*
+  ⚠️ RETENIR ET ÉCARTER RESTENT DEUX PAIRS AU SURVOL : le même accent pour l'un et l'autre. Peindre
+  l'un en vert et l'autre en rouge aurait dit lequel des deux l'écran attend.
+*/
+button[name="Ruling"]:where(:not(:disabled)):hover {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-color: var(--accent);
+  color: var(--accent-pressed);
+}
+
+button:where(:not(:disabled)):active {
+  transform: translateY(1px);
 }
 
 /* L'ACTION INDISPONIBLE — visible, mais éteinte : elle se lit sans se proposer au clic. */
