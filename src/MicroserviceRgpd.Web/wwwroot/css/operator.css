@@ -1700,36 +1700,110 @@ table.columns th.reason {
 .column-card {
   background: var(--surface);
   border: var(--hairline-width) solid var(--hairline);
+  border-left: var(--rule-width) solid var(--hairline);
   border-radius: var(--radius-lg);
   margin: 0 0 var(--space-md);
   padding: var(--space-md) var(--space-lg);
+  position: relative;
+}
+
+/*
+  ⚠️ LE LISERÉ DIT L'ÉTAT : orangé tant que la colonne attend, vert une fois tranchée. Le mot
+  « En attente » reste dans le résumé, masqué à l'œil seulement : la couleur double le mot, elle ne
+  le remplace pas.
+*/
+.column-card.awaiting {
+  border-left-color: var(--signal-warning);
+}
+
+.column-card.settled-card {
+  border-left-color: var(--signal-success);
+  padding-block: var(--space-sm);
 }
 
 /*
   ⚠️ LE RÉSUMÉ EST CE QUI SURVIT AU REPLI : le nom, la catégorie, l'issue. Il se lit comme un geste
   — curseur et graisse d'un intitulé —, faute de quoi rien ne dirait qu'il s'ouvre.
+
+  ⚠️ IL LAISSE LA PLACE DES BOUTONS À SA DROITE : ceux-ci se posent en haut à droite de la fiche
+  ouverte, sans quitter la fin de son contenu dans l'ordre de lecture.
 */
 .column-card > summary {
-  align-items: baseline;
+  align-items: center;
   cursor: pointer;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-md);
+  gap: var(--space-xs) var(--space-sm);
+  list-style: none;
+  min-height: 44px;
+}
+
+.column-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.column-card[open] > summary {
+  padding-right: 15rem;
 }
 
 .column-card .column-name {
+  font: var(--type-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--type-title-tracking);
+}
+
+.column-card .category {
+  background: color-mix(in srgb, var(--accent) var(--signal-tint), var(--surface));
+  border-radius: var(--radius-full);
+  color: var(--accent-pressed);
+  font: var(--type-caption);
   font-weight: var(--weight-semibold);
+  padding: 2px var(--space-sm);
 }
 
-.column-card .category,
 .column-card .settled {
-  color: var(--ink-secondary);
-  font: var(--type-body-sm);
-  letter-spacing: var(--type-body-sm-tracking);
+  background: color-mix(in srgb, var(--signal-success) var(--signal-tint), var(--surface));
+  border-radius: var(--radius-full);
+  color: color-mix(in srgb, var(--signal-success) 45%, var(--ink));
+  font: var(--type-caption);
+  font-weight: var(--weight-semibold);
+  margin-left: auto;
+  padding: 2px var(--space-sm);
 }
 
-.column-card .banner {
-  margin-bottom: var(--space-md);
+.column-card .settled .hint {
+  color: inherit;
+  font-weight: var(--weight-regular);
+}
+
+.column-card-revise {
+  color: var(--accent);
+  font: var(--type-caption);
+  font-weight: var(--weight-medium);
+}
+
+.column-card[open] .column-card-revise {
+  display: none;
+}
+
+/* Le type et le commentaire de la colonne, sur une ligne discrète sous le nom. */
+.column-card .column-facts {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+  margin: var(--space-xs) 0 var(--space-sm);
+}
+
+.column-card .column-facts code {
+  color: var(--ink-secondary);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+/* La règle qui a déclenché, sous le motif : son nom et ce qu'elle rapproche, en retrait. */
+.column-card .column-rule {
+  color: var(--ink-muted);
+  font: var(--type-body-sm);
+  margin: var(--space-sm) 0 0;
 }
 
 /*
@@ -1755,8 +1829,12 @@ table.columns th.reason {
   grid-template-columns: minmax(26rem, 2fr);
 }
 
+/* LE MOTIF, MIS EN AVANT : c'est lui qui rend l'arbitrage possible, et il se lit d'abord. */
 .column-card .reason {
+  background: var(--canvas);
+  border-radius: var(--radius-md);
   margin: 0;
+  padding: var(--space-sm) var(--space-md);
 }
 
 /*
@@ -1822,12 +1900,38 @@ table.columns th.reason {
   max-width: 60rem;
 }
 
+/*
+  LES DEUX BOUTONS, EN HAUT À DROITE DE LA FICHE OUVERTE. Ils restent à la fin de son contenu dans
+  l'ordre de lecture ; seule leur place à l'œil change.
+*/
 .column-card form {
-  margin: var(--space-md) 0 0;
+  display: flex;
+  gap: var(--space-xs);
+  margin: 0;
+  position: absolute;
+  right: var(--space-lg);
+  top: var(--space-md);
 }
 
 .column-card button {
-  padding: var(--space-xxs) var(--space-sm);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+}
+
+@media (max-width: 60rem) {
+  .column-card[open] > summary {
+    padding-right: 0;
+  }
+
+  .column-card form {
+    margin: var(--space-md) 0 0;
+    position: static;
+  }
+
+  .column-card .reason-line {
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /*
@@ -3750,6 +3854,20 @@ dialog.modal.sheet > .modal-head {
 
 .workbench-detail > h1:first-child {
   margin-top: 0;
+}
+
+/* Sous le titre de la table, une seule ligne : son commentaire et son compte de colonnes. */
+.table-meta {
+  color: var(--ink-muted);
+  font: var(--type-body-md);
+  margin: 0 0 var(--space-lg);
+}
+
+.workbench-detail section.flagged > h2,
+.workbench-detail section.unflagged > h2 {
+  font: var(--type-heading-3);
+  letter-spacing: var(--type-heading-3-tracking);
+  margin: var(--space-lg) 0 var(--space-md);
 }
 
 .tables-list {

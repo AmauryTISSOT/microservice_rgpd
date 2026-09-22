@@ -100,38 +100,18 @@ else
 
 <h1>@read.Identity</h1>
 
-<dl class="banner">
-  <dt>Base</dt>
-  <dd>@read.Database</dd>
-  <dt>SGBD</dt>
-  <dd>@read.Dialect</dd>
-  <dt>Commentaire de la table</dt>
-  @* Le commentaire éclaire toutes les colonnes à la fois : c'est lui qui fait de la table l'unité
-     de travail. Son absence est le régime majoritaire, et elle se dit plutôt qu'elle ne se tait. *@
-  @if (read.Comment is null)
-  {
-    <dd class="none">Aucun — votre SGBD n'en rend pas, ou cette table n'en porte pas.</dd>
-  }
-  else
-  {
-    <dd>@read.Comment</dd>
-  }
-</dl>
-
 @*
-  TOUTES LES COLONNES, SANS FILTRE, ET DANS L'ORDRE DU RELEVÉ. Les Unflagged SONT l'écran : elles
-  font 92,5 % du contenu réel d'un relevé, et un écran qui ne rendrait que les signalées serait un
-  écran où l'omission a cessé d'être relisible. Il n'y a donc aucun bouton pour les masquer.
+  SOUS LE TITRE, UNE SEULE LIGNE : le commentaire de la table et son compte de colonnes. La base et
+  le SGBD se lisent déjà dans le fil et sur le rapport. Le commentaire éclaire toutes les colonnes à
+  la fois : c'est lui qui fait de la table l'unité de travail, et son absence se dit plutôt qu'elle
+  ne se tait.
+
+  ⚠️ TOUTES LES COLONNES SONT À L'ÉCRAN, SANS FILTRE, ET DANS L'ORDRE DU RELEVÉ : les signalées
+  d'abord, les autres ensuite. Il n'y a aucun bouton pour masquer celles où rien n'a été vu — ce que
+  le service n'a pas vu ne se rattrape nulle part ailleurs.
 *@
-<p class="hint">
-  Les <strong>@Counted(read.ColumnCountInThisTable, "colonne")</strong> de cette table sont ici —
-  celles où la détection n'a rien vu comprises, et il n'y a aucun moyen de les masquer. Ce sont
-  elles que vous relisez : ce que le service n'a pas vu ne se rattrape nulle part ailleurs. Elles se
-  lisent en deux temps — les signalées d'abord, une par une ; les autres ensuite —, et
-  <strong>dans chacun, l'ordre est celui où votre base les rend</strong> : rien n'est trié.
-  @Counted(read.AwaitingCountInThisTable, "colonne")
-  y @(read.AwaitingCountInThisTable == 1 ? "attend" : "attendent") encore, signalées et non
-  signalées confondues.
+<p class="table-meta">
+  @(read.Comment ?? "sans commentaire") · @Counted(read.ColumnCountInThisTable, "colonne")
 </p>
 
 @*
@@ -151,7 +131,7 @@ else
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
 <section class="flagged">
-  <h2>Les colonnes signalées de cette table, une par une</h2>
+  <h2>Signalées (@read.FlaggedCountInThisTable)</h2>
 
   @if (read.FlaggedCountInThisTable == 0)
   {
@@ -162,13 +142,6 @@ else
   }
   else
   {
-    <p class="hint">
-      @(read.FlaggedCountInThisTable == 1 ? "La" : "Les")
-      <strong>@Counted(read.FlaggedCountInThisTable, "colonne")</strong>
-      signalée@(read.FlaggedCountInThisTable == 1 ? "" : "s") de cette table se lisent une par une,
-      motif sous les yeux. Aucun geste de lot ne les atteint. Une fiche se replie d'elle-même une
-      fois sa colonne tranchée : ce qui reste déplié est ce qu'il vous reste à lire.
-    </p>
 
     @*
       ═════════════════════════════════════════════════════════════════════════════════════════════
@@ -223,7 +196,14 @@ else
         PRÉSENT — donc une fiche dépliée là où le domaine dit qu'elle est close. La chaîne posée ici
         est littérale : il n'y a rien à injecter.
       *@
-      <details class="column-card" id="@ColumnAnchor.For(column.Identity.Column)"@Html.Raw(column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting ? " open" : "")>
+      var awaiting = column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting;
+
+      @*
+        ⚠️ LE LISERÉ DIT L'ÉTAT, ET L'ÉTAT SEUL : orangé tant que la colonne attend, vert une fois
+        tranchée. Il double le mot, il ne le remplace pas — « En attente » reste écrit pour qui ne
+        voit pas la couleur.
+      *@
+      <details class="column-card @(awaiting ? "awaiting" : "settled-card")" id="@ColumnAnchor.For(column.Identity.Column)"@Html.Raw(awaiting ? " open" : "")>
         @*
           LE RÉSUMÉ EST CE QUI SURVIT AU REPLI : le nom de la colonne, ce que la détection y a
           reconnu, et l'issue rendue. Un résumé qui ne dirait que le nom obligerait à rouvrir trente
@@ -234,9 +214,9 @@ else
           <span class="category">@column.Category.FrenchLabel</span>
           @* ⚠️ LE MÊME PRÉDICAT QUE L'OUVERTURE, et il doit le rester : une fiche repliée qui dirait
              « En attente » serait un écran qui se contredit lui-même. *@
-          @if (column.State == MicroserviceRgpd.Core.Screenings.ScreenedColumnState.Awaiting)
+          @if (awaiting)
           {
-            <span class="none">En attente</span>
+            <span class="visually-hidden">En attente</span>
           }
           else
           {
@@ -246,29 +226,26 @@ else
                 le @column.Arbitration.RenderedOn.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))
               </span>
             </span>
+            @* Le résumé s'ouvre d'un clic, et c'est tout ce que « Se raviser » fait : il déplie la
+               fiche sur ses deux boutons. Rien n'est posté d'ici. *@
+            <span class="column-card-revise" aria-hidden="true">Se raviser</span>
           }
         </summary>
 
-        <dl class="banner">
-          <dt>Type</dt>
-          <dd>@(column.Listed.DataType ?? "—")</dd>
-          <dt>Commentaire de la colonne</dt>
+        @* Le type et le commentaire de la colonne, en une ligne. L'absence de commentaire est le
+           régime majoritaire, et elle se dit plutôt qu'elle ne se tait. *@
+        <p class="column-facts">
+          <code>@(column.Listed.DataType ?? "—")</code>
+          ·
           @if (column.Listed.ColumnComment is null)
           {
-            <dd class="none">Aucun — votre SGBD n'en rend pas, ou cette colonne n'en porte pas.</dd>
+            <text>sans commentaire</text>
           }
           else
           {
-            <dd>@column.Listed.ColumnComment</dd>
+            <text>« @column.Listed.ColumnComment »</text>
           }
-          @* La catégorie et le NOM DE LA RÈGLE qui a déclenché — jamais un score, jamais une
-             échelle : l'arbitrage se fait sur pièces. *@
-          <dt>Règle</dt>
-          <dd>
-            @column.Strength!.FrenchLabel
-            <span class="hint">@column.Strength.Rule</span>
-          </dd>
-        </dl>
+        </p>
 
         @*
           LE MOTIF, EN CLAIR, EN ENTIER ET EN PLEINE LARGEUR. Replié derrière une infobulle, il
@@ -329,9 +306,18 @@ else
           }
         </div>
 
+        @* La règle qui a déclenché, sous le motif : son NOM et ce qu'elle rapproche — jamais un
+           score, jamais une échelle, l'arbitrage se fait sur pièces. *@
+        <p class="column-rule">
+          @column.Strength!.FrenchLabel — @column.Strength.Rule
+        </p>
+
         @*
           LES DEUX ISSUES SONT DEUX BOUTONS, et aucune n'est pré-sélectionnée — voir le second temps
           de l'écran, où la même forme est posée pour les mêmes raisons.
+
+          ⚠️ ILS SE LISENT EN HAUT À DROITE DE LA FICHE, mais restent à la fin de son contenu : hors
+          du résumé, qui est lui-même un bouton, et après les pièces dans l'ordre de lecture.
         *@
         <form method="post">
           <input type="hidden" name="Column" value="@column.Identity.Column" />
@@ -359,7 +345,7 @@ else
   ═══════════════════════════════════════════════════════════════════════════════════════════════
 *@
 <section class="unflagged">
-  <h2>Les colonnes de cette table où rien n'a été vu</h2>
+  <h2>Rien détecté (@read.UnflaggedCountInThisTable)</h2>
 
 @*
   ⚠️ LE SECOND TEMPS EST TOUT ENTIER SOUS CETTE CONDITION, geste de lot compris. Une table dont

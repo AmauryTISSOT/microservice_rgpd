@@ -99,6 +99,22 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
   }
 
   /// <summary>
+  /// <b>Sous le titre, une seule ligne : le commentaire de la table et son compte</b> — et chaque
+  /// temps s'annonce par son compte, les signalées puis celles où rien n'a été détecté.
+  /// </summary>
+  [Fact]
+  public async Task HeadsTheOpenTableWithItsCommentAndCountsEachTime()
+  {
+    await TwoTablesAsync();
+
+    var table = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.TableOf()));
+
+    table.ShouldMatch(@"<p class=""table-meta"">\s*sans commentaire · 2 colonnes\s*</p>");
+    table.ShouldContain("<h2>Signalées (1)</h2>");
+    table.ShouldContain("<h2>Rien détecté (1)</h2>");
+  }
+
+  /// <summary>
   /// <b>Au pied de la table, le service nomme la suivante</b> — et dit que passer à la suivante ne
   /// tranche rien de ce qui attend ici.
   /// </summary>
