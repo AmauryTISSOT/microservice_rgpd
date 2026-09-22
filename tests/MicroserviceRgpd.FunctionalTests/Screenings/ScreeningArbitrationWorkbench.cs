@@ -83,6 +83,22 @@ public class ScreeningArbitrationWorkbench(CustomWebApplicationFactory<Program> 
   }
 
   /// <summary>
+  /// <b>Chaque table de la liste dit son compte et ce que la détection y a signalé</b> — « rien de
+  /// signalé » quand c'est le cas, jamais un silence.
+  /// </summary>
+  [Fact]
+  public async Task CountsWhatTheDetectionFlaggedInEachTableOfTheList()
+  {
+    await TwoTablesAsync();
+
+    var table = WebUtility.HtmlDecode(await _surface.ReadAsync(ScreeningSurface.TableOf()));
+    var list = Regex.Match(table, @"<nav class=""tables-list"".*?</nav>", RegexOptions.Singleline).Value;
+
+    list.ShouldMatch(@"(?s)public\.adherents</span>\s*<span class=""tables-list-count"">\s*0/2\s*</span>.*?1 signalée\s*</span>");
+    list.ShouldMatch(@"(?s)public\.cotisations</span>\s*<span class=""tables-list-count"">\s*0/1\s*</span>.*?rien de signalé\s*</span>");
+  }
+
+  /// <summary>
   /// <b>Au pied de la table, le service nomme la suivante</b> — et dit que passer à la suivante ne
   /// tranche rien de ce qui attend ici.
   /// </summary>
