@@ -3,24 +3,31 @@
 @using MicroserviceRgpd.UseCases.Screenings.ReadScreeningHistory
 @{
   ViewData["Title"] = "L'historique des rapports de détection";
-  var history = Model.History!;
 
-  // Un compte et son nom, accordés : une surface qui se lit au compte ne peut pas écrire
-  // « 1 colonnes ».
-  string Counted(int count, string noun) => count == 1 ? $"{count} {noun}" : $"{count} {noun}s";
+  // La liste et le détail côte à côte : la largeur étroite des écrans de prose les aurait écrasés.
+  ViewData["Wide"] = true;
+
+  var history = Model.History!;
 
   string On(DateTimeOffset instant) =>
     instant.ToString("dd/MM/yyyy à HH:mm", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"));
-
-  @*
-    ⚠️ Le RANG de la ligne, et non le nom de la base, coud les identifiants HTML : un nom de base est
-    recopié verbatim du SGBD et peut porter une espace ou un point, ce qui casse en silence
-    l'association d'un label à son champ.
-  *@
-  var rank = 0;
 }
 
-<h1>L'historique des rapports de détection</h1>
+<nav class="crumbs" aria-label="Fil d'Ariane">
+  <a asp-page="Report">Détection</a>
+  <span aria-hidden="true">›</span>
+  <span aria-current="page">Historique</span>
+</nav>
+
+<div class="screen-head">
+  <h1>L'historique des rapports de détection</h1>
+  <a class="history-deposit" asp-page="Deposit">
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none" />
+    </svg>
+    Déposer un nouveau relevé
+  </a>
+</div>
 
 @*
   CE QU'UNE SUPPRESSION VIENT D'EMPORTER. Après le geste, le rapport de détection ne peut plus se
@@ -29,119 +36,193 @@
 *@
 @if (!string.IsNullOrWhiteSpace(Model.Notice))
 {
-  <p class="notice">@Model.Notice</p>
+  <p class="notice" role="status">@Model.Notice</p>
 }
-
-@if (!ViewData.ModelState.IsValid)
-{
-  <div class="refusals">
-    @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
-    {
-      <p class="refusal">@refusal.ErrorMessage</p>
-    }
-  </div>
-}
-
-@*
-  « ARCHIVÉ » EST UN CALCUL, refait à cet affichage. Aucun état n'est écrit nulle part : le rapport
-  de détection le plus récemment lancé est le courant, et les autres sont archivés par le seul fait
-  qu'il existe.
-*@
-<p class="hint">
-  Le rapport de détection le plus récemment lancé est le <strong>courant</strong> : c'est le seul
-  qui s'arbitre.
-  Les autres sont <strong>archivés</strong> par le seul fait qu'il existe — aucun état n'est écrit
-  pour cela, et supprimer le courant rend son rang au précédent.
-</p>
 
 @if (history.HasNeverScreened)
 {
   <p>Aucun rapport de détection n'a été lancé sur ce déploiement : il n'y a rien à archiver.</p>
-  <p><a asp-page="Deposit">Déposer un relevé</a></p>
 
   return;
 }
 
-<h2>Le rapport de détection courant</h2>
-
-<dl class="banner">
-  <dt>Base</dt>
-  <dd>
-    @history.Current!.Database
-    <span class="hint">
-      Le nom que le relevé rapportait, recopié tel quel — un repère pour vous, jamais une identité :
-      deux rapports de détection portant le même nom peuvent venir de deux bases différentes, et le
-      service n'en sait rien.
-    </span>
-  </dd>
-  <dt>SGBD</dt>
-  <dd>@history.Current.Dialect</dd>
-  <dt>Lancé le</dt>
-  <dd>@On(history.Current.LaunchedOn)</dd>
-  <dt>Moteur</dt>
-  <dd>@history.Current.Engine.Name, version @history.Current.Engine.Version</dd>
-  <dt>Colonnes</dt>
-  <dd>@history.Current.ColumnCount</dd>
-</dl>
-
-<p><a asp-page="Report">Lire et arbitrer le rapport de détection courant</a></p>
-
-@await Html.PartialAsync("_DeleteScreening", new DeleteScreeningForm(history.Current, ++rank, IsCurrent: true))
-
-<h2>Les rapports de détection archivés</h2>
-
-@if (history.Archived.Count == 0)
-{
-  <p class="hint">
-    Aucun rapport de détection archivé : celui-ci est le premier de ce déploiement. Un nouveau dépôt
-    le rangera ici — et <strong>ne reprendra aucun de ses arbitrages</strong>.
-  </p>
+@{
+  var current = history.Current!;
+  var opened = Model.Opened!;
+  var isCurrent = Model.OpenedIsCurrent;
 }
-else
-{
+
+<div class="history">
   @*
-    ⚠️ CE QUE COÛTE UN RE-DÉPÔT, ÉCRIT ICI ET NON EN PIED DE PAGE. C'est l'écran où l'on voit
-    plusieurs rapports de détection du même schéma : c'est donc l'écran où l'on peut croire qu'ils
-    se cumulent. Ils ne se cumulent pas — un rapport de détection neuf ne reprend aucun arbitrage du
-    précédent, et le travail qui n'a pas été refait est perdu.
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
+    LA LISTE DES RAPPORTS, À GAUCHE. Le courant en tête et SEUL DANS SON GROUPE, les archivés sous
+    lui, du plus récent au plus ancien : les mettre dans un même groupe aurait rangé côte à côte le
+    rapport qu'on travaille et ceux qu'on ne peut plus toucher.
+
+    ⚠️ « ARCHIVÉ » EST UN CALCUL, refait à cet affichage. Aucun état n'est écrit nulle part : le
+    rapport de détection le plus récemment lancé est le courant, et les autres sont archivés par le
+    seul fait qu'il existe.
+
+    ⚠️ CHAQUE ENTRÉE EST UN LIEN QUI OUVRE LE DÉTAIL, JAMAIS UN GESTE. On ne supprime pas depuis la
+    liste : il faut d'abord ouvrir le rapport, donc le lire.
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
   *@
-  <p class="hint">
-    Un rapport de détection archivé se lit <strong>en entier</strong> — toutes ses colonnes, et ce
-    que vous en aviez dit — mais il ne s'arbitre plus. Ses arbitrages n'ont pas été repris par le courant : un
-    nouveau dépôt ne fusionne rien.
-  </p>
+  <nav class="history-list" aria-label="Les rapports de détection">
+    <p class="history-list-caption">Courant</p>
+    <ul>
+      <li>
+        <a asp-page="History"
+           asp-route-screening="@current.Id.Value"
+           aria-current="@(isCurrent ? "page" : null)">
+          <span class="history-dot current" aria-hidden="true"></span>
+          <span class="history-list-name">@current.Database</span>
+          <span class="history-list-count">@current.ColumnCount col.</span>
+          <span class="history-list-rest">@On(current.LaunchedOn) · @current.Dialect</span>
+        </a>
+      </li>
+    </ul>
 
-  <table class="queue">
-    <caption>@Counted(history.Archived.Count, "rapport de détection") archivé@(history.Archived.Count == 1 ? "" : "s"), du plus récent au plus ancien</caption>
-    <thead>
-      <tr>
-        <th scope="col">Lancé le</th>
-        <th scope="col">Base</th>
-        <th scope="col">SGBD</th>
-        <th scope="col">Colonnes</th>
-        <th scope="col">Moteur</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach (var archived in history.Archived)
+    <p class="history-list-caption">Archivés · @history.Archived.Count</p>
+
+    @if (history.Archived.Count == 0)
+    {
+      <p class="hint">
+        Aucun rapport de détection archivé : le courant est le premier de ce déploiement. Un nouveau
+        dépôt le rangera ici — et <strong>ne reprendra aucun de ses arbitrages</strong>.
+      </p>
+    }
+    else
+    {
+      <ol>
+        @foreach (var archived in history.Archived)
+        {
+          var open = !isCurrent && archived.Id == opened.Id;
+
+          <li class="history-archived">
+            <a asp-page="History"
+               asp-route-screening="@archived.Id.Value"
+               aria-current="@(open ? "page" : null)">
+              <span class="history-dot" aria-hidden="true"></span>
+              <span class="history-list-name">@archived.Database</span>
+              <span class="history-list-count">@archived.ColumnCount col.</span>
+              <span class="history-list-rest">@On(archived.LaunchedOn) · @archived.Dialect</span>
+            </a>
+          </li>
+        }
+      </ol>
+
+      @*
+        ⚠️ CE QUE COÛTE UN RE-DÉPÔT, ÉCRIT ICI ET NON EN PIED DE PAGE. C'est l'écran où l'on voit
+        plusieurs rapports de détection du même schéma : c'est donc l'écran où l'on peut croire qu'ils
+        se cumulent. Ils ne se cumulent pas — un rapport de détection neuf ne reprend aucun arbitrage du
+        précédent, et le travail qui n'a pas été refait est perdu.
+      *@
+      <p class="hint">
+        Un archivé se lit en entier mais ne s'arbitre plus. Ses arbitrages n'ont pas été repris par le
+        courant : <strong>un nouveau dépôt ne fusionne rien</strong>.
+      </p>
+    }
+  </nav>
+
+  @*
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
+    LE DÉTAIL DU RAPPORT OUVERT, À DROITE : ce qu'il est, de quoi l'ouvrir, et — séparée, en bas — la
+    zone qui le supprime.
+
+    ⚠️ LE STATUT SE DIT EN TOUTES LETTRES, pas en couleur seule : « courant » et « archivé » ne
+    promettent pas le même geste à l'ouverture, et c'est la phrase qui le dit.
+    ═══════════════════════════════════════════════════════════════════════════════════════════════
+  *@
+  <section class="history-detail" aria-labelledby="screening-title">
+    <header>
+      @if (isCurrent)
       {
-        <tr>
-          <th scope="row">
-            <a asp-page="Archive" asp-route-screening="@archived.Id.Value">@On(archived.LaunchedOn)</a>
-          </th>
-          <td>@archived.Database</td>
-          <td>@archived.Dialect</td>
-          <td>@archived.ColumnCount</td>
-          <td>@archived.Engine.Name, version @archived.Engine.Version</td>
-        </tr>
-        <tr>
-          <td colspan="5">
-            @await Html.PartialAsync("_DeleteScreening", new DeleteScreeningForm(archived, ++rank, IsCurrent: false))
-          </td>
-        </tr>
+        <p class="history-status current">Courant — le seul qui s'arbitre</p>
       }
-    </tbody>
-  </table>
-}
+      else
+      {
+        <p class="history-status">Archivé — lecture seule</p>
+      }
+      <h2 id="screening-title" class="database">@opened.Database</h2>
+      @if (isCurrent)
+      {
+        <p class="lede">
+          Le plus récemment lancé : c'est lui qu'on arbitre. Supprimer le courant rend son rang au
+          précédent.
+        </p>
+      }
+      else
+      {
+        <p class="lede">
+          Il se lit en entier, avec ce que vous en aviez dit, mais ne s'arbitre plus. Ses arbitrages
+          n'ont pas été repris par le courant.
+        </p>
+      }
+    </header>
 
-<p><a asp-page="Deposit">Déposer un nouveau relevé</a></p>
+    <dl class="history-facts">
+      <div>
+        <dt>Lancé le</dt>
+        <dd>@On(opened.LaunchedOn)</dd>
+      </div>
+      <div>
+        <dt>SGBD</dt>
+        <dd>@opened.Dialect</dd>
+      </div>
+      <div>
+        <dt>Colonnes</dt>
+        <dd>@opened.ColumnCount</dd>
+      </div>
+      <div>
+        <dt>Moteur</dt>
+        <dd>
+          <code>@opened.Engine.Name</code>
+          <code class="version">version @opened.Engine.Version</code>
+        </dd>
+      </div>
+    </dl>
+
+    <p class="hint">
+      Le nom de base est celui que le relevé rapportait, recopié tel quel — un repère pour vous,
+      jamais une identité : deux rapports de détection portant le même nom peuvent venir de deux bases
+      différentes, et le service n'en sait rien.
+    </p>
+
+    <div class="history-open">
+      @if (isCurrent)
+      {
+        <a class="route-action" asp-page="Report">
+          Lire et arbitrer
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+          </svg>
+        </a>
+      }
+      else
+      {
+        <a class="route-action" asp-page="Archive" asp-route-screening="@opened.Id.Value">
+          Lire le rapport archivé
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+          </svg>
+        </a>
+      }
+    </div>
+
+    @*
+      LE REFUS SE LIT DANS LE DÉTAIL, juste au-dessus de la confirmation qu'il juge : c'est là que le
+      nom vient d'être retapé, et c'est là qu'il se retape.
+    *@
+    @if (!ViewData.ModelState.IsValid)
+    {
+      <div class="refusals">
+        @foreach (var refusal in ViewData.ModelState.Values.SelectMany(entry => entry.Errors))
+        {
+          <p class="refusal">@refusal.ErrorMessage</p>
+        }
+      </div>
+    }
+
+    @await Html.PartialAsync("_DeleteScreening", new DeleteScreeningForm(opened, isCurrent))
+  </section>
+</div>

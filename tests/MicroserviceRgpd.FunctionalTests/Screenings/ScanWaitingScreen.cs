@@ -341,6 +341,6 @@ public class ScanWaitingScreen(CustomWebApplicationFactory<Program> factory)
   /// </summary>
   private static int LinesOf(string history)
   {
-    return System.Text.RegularExpressions.Regex.Matches(history, "colspan=\"5\"").Count;
+    return System.Text.RegularExpressions.Regex.Matches(history, "class=\"history-archived\"").Count;
   }
 }

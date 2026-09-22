@@ -61,8 +61,37 @@ public class HistoryModel(IMediator mediator) : PageModel
   /// <summary>Ce qu'une suppression vient d'emporter. ⚠️ <b>La lecture consomme la phrase.</b></summary>
   public string? Notice => TempData[NoticeKey] as string;
 
-  public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
+  /// <summary>
+  /// Le rapport de détection ouvert dans le détail : celui que l'adresse nomme, ou le
+  /// <b>courant</b> si elle n'en nomme aucun que l'historique connaisse encore.
+  /// </summary>
+  /// <remarks>
+  /// ⚠️ <b>Un rapport inconnu retombe sur le courant, sans refus.</b> C'est l'adresse d'un rapport
+  /// supprimé ailleurs, ou d'un onglet resté ouvert : l'historique tel qu'il est vaut mieux qu'un
+  /// écran d'erreur, et le détail ne montre jamais un rapport qui n'existe plus.
+  /// </remarks>
+  public ScreeningHeading? Opened =>
+    History?.Archived.FirstOrDefault(archived => archived.Id.Value == _opened) ?? History?.Current;
+
+  /// <summary>Le rapport ouvert est-il le courant ? C'est le seul qui s'arbitre.</summary>
+  public bool OpenedIsCurrent => Opened is not null && Opened == History?.Current;
+
+  /// <summary>
+  /// Le rapport que l'adresse demande d'ouvrir. Il vit sur le GET, et sur le POST refusé : le refus
+  /// se relit à côté du rapport qu'on voulait supprimer.
+  /// </summary>
+  private Guid? _opened;
+
+  /// <param name="screening">
+  /// Le rapport à ouvrir dans le détail. ⚠️ <b>Il est lu en texte, jamais lié en <c>Guid</c></b> :
+  /// une adresse retouchée à la main aurait sinon posé un refus de liaison en tête d'écran, alors que
+  /// l'historique n'a rien refusé.
+  /// </param>
+  /// <param name="cancellationToken">L'abandon de la requête.</param>
+  public async Task<IActionResult> OnGetAsync(string? screening, CancellationToken cancellationToken)
   {
+    _opened = Guid.TryParse(screening, out var named) ? named : null;
+
     return await ReadTheHistoryAsync(cancellationToken);
   }
 
@@ -114,6 +143,9 @@ public class HistoryModel(IMediator mediator) : PageModel
       {
         ModelState.AddModelError(refusal.Identifier, refusal.ErrorMessage);
       }
+
+      // Le refus se lit dans le détail du rapport visé, là où la confirmation a été retapée.
+      _opened = named;
 
       // ⚠️ L'historique se relit AVANT d'être rendu : le refus s'affiche au-dessus de l'état réel du
       // déploiement, et non au-dessus de celui qu'il avait au chargement précédent.

@@ -4536,3 +4536,339 @@ a.export-format:first-child:hover .export-download {
     position: static;
   }
 }
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+  L'HISTORIQUE DES RAPPORTS DE DÉTECTION, EN LISTE ET DÉTAIL. La liste à gauche nomme tous les
+  rapports, le courant seul en tête ; le détail à droite ouvre un rapport à la fois, et porte en bas,
+  séparée, la zone qui le supprime.
+
+  ⚠️ LA GRILLE EST CELLE DU PARAMÉTRAGE, et n'invente rien : même colonne de liste, même écart, même
+  repli sur un écran étroit.
+  ═══════════════════════════════════════════════════════════════════════════════════════════════
+*/
+.crumbs {
+  color: var(--ink-muted);
+  display: flex;
+  font: var(--type-caption);
+  gap: 6px;
+}
+
+.crumbs a {
+  color: var(--ink-muted);
+}
+
+/* Le dépôt se propose en bouton secondaire : il ne prolonge pas l'historique, il y ajoute une ligne. */
+a.history-deposit {
+  align-items: center;
+  align-self: center;
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-md);
+  color: var(--ink-secondary);
+  display: inline-flex;
+  font: var(--type-button);
+  gap: var(--space-xs);
+  min-height: 44px;
+  padding: 0 18px;
+  text-decoration: none;
+}
+
+a.history-deposit:hover {
+  background: var(--canvas);
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+
+.history {
+  align-items: start;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: minmax(0, 23.75rem) minmax(0, 1fr);
+  margin-top: var(--space-lg);
+}
+
+@media (max-width: 60rem) {
+  .history {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+nav.history-list {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm) var(--space-xs);
+}
+
+.history-list-caption {
+  color: var(--ink-muted);
+  font: var(--type-eyebrow);
+  letter-spacing: 0.4px;
+  margin: var(--space-xxs) 14px;
+  text-transform: uppercase;
+}
+
+nav.history-list ul,
+nav.history-list ol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Le courant et les archivés sont deux groupes : un filet les sépare, un intitulé les nomme. */
+nav.history-list ul {
+  border-bottom: var(--hairline-width) solid var(--hairline);
+  margin-bottom: var(--space-sm);
+  padding-bottom: var(--space-sm);
+}
+
+/* Un rapport, un bloc : sa base et son compte de colonnes, puis quand et sur quel SGBD. */
+nav.history-list a {
+  align-items: center;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  display: grid;
+  gap: var(--space-xxs) var(--space-xs);
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  padding: var(--space-sm) 14px;
+  text-decoration: none;
+}
+
+nav.history-list a:hover {
+  background: var(--canvas);
+}
+
+/*
+  LE RAPPORT OUVERT SE MARQUE DEUX FOIS, comme le droit ouvert du Paramétrage : `aria-current` à qui
+  écoute la page, le fond teinté et son filet à qui la regarde.
+*/
+nav.history-list a[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, var(--surface));
+}
+
+/* Le point plein dit « courant », le point creux « archivé » — et l'intitulé du groupe le dit en mots. */
+.history-dot {
+  border: 1.5px solid var(--ink-faint);
+  border-radius: var(--radius-full);
+  box-sizing: border-box;
+  height: 8px;
+  width: 8px;
+}
+
+.history-dot.current {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.history-list-name {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 15px;
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-list-count,
+.history-list-rest {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-list-rest {
+  grid-column: 2 / -1;
+}
+
+nav.history-list > .hint {
+  margin: var(--space-sm) 14px var(--space-xxs);
+}
+
+section.history-detail {
+  background: var(--surface);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-xxl);
+}
+
+section.history-detail header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/*
+  LE STATUT DU RAPPORT OUVERT, EN PASTILLE. L'accent plein pour le courant — c'est lui qu'on
+  arbitre ; le gris pour l'archivé. La phrase dit le statut, la couleur ne fait que le souligner.
+*/
+.history-status {
+  align-self: flex-start;
+  background: color-mix(in srgb, var(--ink-faint) 22%, var(--surface));
+  border-radius: var(--radius-full);
+  color: var(--ink-secondary);
+  font: var(--type-eyebrow);
+  letter-spacing: 0.3px;
+  margin: 0;
+  padding: var(--space-xxs) 10px;
+}
+
+.history-status.current {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+section.history-detail h2 {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 28px;
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.3px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+section.history-detail .lede {
+  color: var(--ink-secondary);
+  font: var(--type-body-sm);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 40rem;
+}
+
+/* Quatre faits en grille de deux, séparés par des filets : ils se lisent, ils ne se saisissent pas. */
+dl.history-facts {
+  background: var(--hairline);
+  border: var(--hairline-width) solid var(--hairline);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+}
+
+dl.history-facts > div {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  padding: 14px 18px;
+}
+
+dl.history-facts dt {
+  color: var(--ink-muted);
+  font: var(--type-caption);
+  font-size: 13px;
+}
+
+dl.history-facts dd {
+  display: flex;
+  flex-direction: column;
+  font: var(--type-body-sm);
+  gap: 2px;
+  margin: 0;
+}
+
+dl.history-facts code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+dl.history-facts code.version {
+  color: var(--ink-muted);
+  font-size: 12.5px;
+}
+
+section.history-detail > .hint {
+  margin: calc(-1 * var(--space-sm)) 0 0;
+}
+
+section.history-detail .refusals {
+  margin: 0;
+}
+
+/*
+  LA ZONE QUI SUPPRIME, FILETÉE DE ROUGE ET POSÉE EN DERNIER. Le rouge est celui du refus et du geste
+  irréversible, et il ne peint que le filet, le titre et le bouton : le fond reste blanc sous la
+  phrase, qui doit se lire avant tout.
+*/
+.danger-zone {
+  border: var(--hairline-width) solid color-mix(in srgb, var(--signal-error) 30%, var(--surface));
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-xs);
+  overflow: hidden;
+}
+
+.danger-zone h3 {
+  align-items: center;
+  background: color-mix(in srgb, var(--signal-error) 6%, var(--surface));
+  border-bottom: var(--hairline-width) solid color-mix(in srgb, var(--signal-error) 30%, var(--surface));
+  color: var(--signal-error);
+  display: flex;
+  font: var(--type-body-sm);
+  font-weight: var(--weight-semibold);
+  gap: 10px;
+  margin: 0;
+  padding: 14px 20px;
+}
+
+.danger-zone form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: 18px 20px 20px;
+}
+
+.danger-zone form > p {
+  color: var(--ink-secondary);
+  font: var(--type-caption);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.delete-confirm {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.delete-confirm .field {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  max-width: 22.5rem;
+}
+
+.delete-confirm label {
+  font: var(--type-caption);
+  font-size: 13px;
+}
+
+.delete-confirm .database,
+.delete-confirm input[type="text"] {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.delete-confirm input[type="text"] {
+  border-radius: var(--radius-md);
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  width: 100%;
+}
+
+.delete-confirm button.destructive {
+  min-height: 44px;
+}
