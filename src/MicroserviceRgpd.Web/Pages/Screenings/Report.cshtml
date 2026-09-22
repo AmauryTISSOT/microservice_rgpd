@@ -207,18 +207,18 @@
       {
         <h2 id="resume-title">@(progress.Settled == 0 ? "Par où commencer" : "Par où reprendre")</h2>
         <p>
-          <strong>@next.Identity.ToString()</strong> attend :
+          <strong>@next.Identity.ToString()</strong> :
           @if (next.FlaggedAwaitingCount > 0)
           {
-            <text>@Counted(next.FlaggedAwaitingCount, "colonne") signalée@(next.FlaggedAwaitingCount == 1 ? "" : "s") à trancher une par une</text>
+            <text>@Counted(next.FlaggedAwaitingCount, "colonne") @(next.FlaggedAwaitingCount == 1 ? "a été signalée" : "ont été signalées") comme contenant des données personnelles</text>
             @if (next.UnflaggedAwaitingCount > 0)
             {
-              <text>, puis </text>
+              <text> ; </text>
             }
           }
           @if (next.UnflaggedAwaitingCount > 0)
           {
-            <text>@Counted(next.UnflaggedAwaitingCount, "colonne") où rien n'a été vu à relire</text>
+            <text>@Counted(next.UnflaggedAwaitingCount, "colonne") sans signalement</text>
           }.
         </p>
         <a class="route-action"
@@ -241,29 +241,6 @@
         </p>
       }
     </section>
-
-    <h2>Les comptes</h2>
-
-    @*
-      L'AVANCEMENT EST UN COMPTE, jamais un état de haut niveau rassurant. « Douze colonnes en
-      attente » se lit ; « en cours » ne se lit pas.
-    *@
-    <dl class="banner tally">
-      <dt>Signalées</dt>
-      <dd>
-        @summary.Tally.Flagged
-      </dd>
-      <dt>Retenues</dt>
-      <dd>@summary.Tally.Retained</dd>
-      <dt>Écartées</dt>
-      <dd>@summary.Tally.SetAside</dd>
-      <dt>En attente</dt>
-      <dd>@summary.Tally.Awaiting</dd>
-      <dt>Retenues sur « rien signalé »</dt>
-      <dd>
-        @summary.Tally.RetainedOnUnflagged
-      </dd>
-    </dl>
   </div>
 </div>
 
