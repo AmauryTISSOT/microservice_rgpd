@@ -141,7 +141,7 @@ corrigent, ceux de #125 qui étaient tirés des fichiers.
 | Paheko HEAD | SQLite | 54 | 309 | — | — | 49 |
 | **Total banc** | | **1 384** | **15 048** | | | |
 | *Galette (PostgreSQL)* | *PostgreSQL* | *31* | *194* | *0* | *0* | *24* |
-| *`temoin/db/`* — test de fumée, **jamais** banc | *MariaDB* | *11* | *72* | *0* | *0* | *6* |
+| *`brocanto/db/`* (schéma `temoin`) — test de fumée, **jamais** banc | *MariaDB* | *11* | *72* | *0* | *0* | *6* |
 
 Les huit pivots passent les **neuf contrôles d'intégrité** de
 [#128](https://github.com/AmauryTISSOT/microservice_rgpd/issues/128) : aucun trou

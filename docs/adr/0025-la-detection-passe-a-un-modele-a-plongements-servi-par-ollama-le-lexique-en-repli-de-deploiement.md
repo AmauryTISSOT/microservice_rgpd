@@ -185,7 +185,7 @@ cette taille.
 
 Mesuré le 2026-09-14 par [#467](https://github.com/AmauryTISSOT/microservice_rgpd/issues/467). Le
 banc, son mode opératoire et les résultats bruts sont dans
-[`exploration/mesure-a2-dolibarr/`](../../exploration/mesure-a2-dolibarr/README.md).
+[`dolibarr/mesure-detection/`](../../dolibarr/mesure-detection/README.md).
 
 **Dispositif.**
 - **Pile** lancée par l'AppHost, drapeau de détection allumé. Ollama **0.34.0** tourne dans l'image
