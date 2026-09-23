@@ -168,7 +168,7 @@ survit dans une quarantaine d'occurrences du code et des tests de `Screening` �
 messages d'échec, un message d'exception —, où il se lit « une omission que personne ne voit » ;
 les réécrire n'est pas fait ici.
 
-**Le témoin Brocanto garde son adaptateur.** `temoin/adapter_rgpd.py` sert le contrat d'`Adapter`
+**Le témoin Brocanto garde son adaptateur.** `brocanto/adapter_rgpd.py` sert le contrat d'`Adapter`
 que le service n'appelle plus, et renvoie vers `docs/api/adapter.md`, supprimé. Le témoin reste,
 parce que ses schémas servent de corpus à `Screening` ; son adaptateur n'est plus appelé par
 personne.

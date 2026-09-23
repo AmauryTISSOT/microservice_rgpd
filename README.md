@@ -170,7 +170,7 @@ les dépendances verrouillées à la première exécution.
 
 `--directory`, et non `--project` : il déplace aussi le répertoire courant, ce dont dépend toute la
 collecte. Avec `--project`, pytest garde la racine du dépôt pour `rootdir`, ne lit donc jamais le
-`testpaths` de `src/sidecar/pyproject.toml`, balaie tout le dépôt et ramasse `temoin/tests/` — qui
+`testpaths` de `src/sidecar/pyproject.toml`, balaie tout le dépôt et ramasse `brocanto/tests/` — qui
 porte le même nom de paquet que `src/sidecar/tests/` et fait échouer la collecte.
 
 **Il n'y a ni CI ni hook git, et c'est délibéré.** Les tests à container coûtent une dizaine de

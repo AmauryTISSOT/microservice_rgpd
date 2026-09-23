@@ -93,7 +93,7 @@ extraire_sqlite() {  # <nom> <schema.sql>
 }
 
 for n in dolibarr glpi openemr galette sacoche; do extraire_mysql "$n" "$DDL/$n.sql"; done
-extraire_mysql temoin "$(dirname "$(dirname "$RACINE")")/temoin/db/schema.sql"
+extraire_mysql temoin "$(dirname "$(dirname "$RACINE")")/brocanto/db/schema.sql"
 
 extraire_sqlite paheko-0.8.0 "$SRC/paheko/archives/0.8.0_schema.sql"
 extraire_sqlite paheko-1.0.0 "$SRC/paheko/archives/1.0.0_schema.sql"

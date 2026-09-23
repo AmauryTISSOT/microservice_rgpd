@@ -57,7 +57,7 @@ La recette de l'adaptateur (voir plus bas) se joue sans base ni conteneur :
 
 ```sh
 pip install -r requirements-dev.txt   # `requirements.txt` n'a pas bougé : pytest est en plus, à côté
-pytest                                # depuis `temoin/`
+pytest                                # depuis `brocanto/`
 ```
 
 ## Le branchement — ce qui a été fait, et ce qui ne l'a pas été
