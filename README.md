@@ -1,185 +1,124 @@
 # microservice_rgpd
 
-Microservice backend de gestion des données personnelles (RGPD), en .NET 10 / Clean Architecture.
+Un microservice embarquable qui orchestre les demandes d'exercice des droits RGPD d'une application
+existante, avec une IA d'assistance pour deux tâches : **cartographier** les données personnelles
+d'une base inconnue et **qualifier** une demande rédigée en texte libre.
 
-Généré depuis [ardalis/CleanArchitecture](https://github.com/ardalis/CleanArchitecture) v11.1.1 (variante `clean-arch`).
+Ce dépôt est la preuve de concept du mémoire de Master 2 d'Amaury TISSOT (IPSSI, 2026). La version
+citée dans le mémoire est la release [`v1.0-memoire`](https://github.com/AmauryTISSOT/microservice_rgpd/releases/tag/v1.0-memoire).
+
+## Le problème
+
+« Supprimez mon compte. » Le RGPD impose d'y répondre dans un délai d'un mois. Pourtant, dans la
+plupart des applications en service, personne ne sait dire où se trouvent les données de la personne
+qui le demande. Les plateformes de conformité du marché sont lourdes, propriétaires et pensées pour
+équiper une organisation entière.
+
+Le mémoire défend une autre voie : une brique légère, branchée à l'application existante, qui reste
+générique et respecte elle-même les exigences qu'elle aide à tenir. **La machine propose, l'humain
+décide** : chaque verdict de l'IA est relu par un opérateur avant d'avoir un effet.
+
+## Ce que fait le microservice
+
+| Contexte | Rôle | Documentation |
+| --- | --- | --- |
+| **Screening** | Cartographie : détecte les colonnes qui portent vraisemblablement des données personnelles ; le moteur ne lit que les noms, jamais les valeurs. Un opérateur retient ou écarte chaque colonne. | [CONTEXT](docs/contexts/screening/CONTEXT.md) |
+| **Qualification** | Dit quels droits un texte libre exerce (accès, effacement, portabilité…), avec un LLM auto-hébergé et un lexique qui le contrôle. | [CONTEXT](docs/contexts/qualification/CONTEXT.md) · [API](docs/api/qualifications.md) |
+| **Requests** | Enregistre une demande, suit son délai légal, la prolonge si besoin, puis l'exécute auprès de l'application hôte. | [CONTEXT](docs/contexts/requests/CONTEXT.md) |
+| **Configuration** | Le paramétrage : pour chaque droit, le canal par lequel l'application hôte le reçoit (adresse HTTP ou routage RabbitMQ). | [CONTEXT](docs/contexts/configuration/CONTEXT.md) |
+
+La [carte des contextes](CONTEXT-MAP.md) décrit leurs frontières et leur vocabulaire.
 
 ## Architecture
 
-Clean Architecture aux frontières (règle de dépendance vers l'intérieur), organisation en vertical slices
-dans la couche `UseCases` : un dossier par feature.
+![Clean Architecture du microservice](docs/architecture/clean-architecture.svg)
+
+Le service suit une Clean Architecture : les dépendances pointent toujours vers le domaine. Il est
+écrit en .NET 10, sur PostgreSQL, et orchestré localement par .NET Aspire. La qualification tourne
+dans un sidecar Python, et les modèles sont servis par Ollama, sur la machine : aucune donnée ne sort
+vers un service d'IA tiers.
 
 ```
 src/
-  MicroserviceRgpd.Core/            # Entités, value objects (Vogen), domain events, specifications — aucune I/O
-  MicroserviceRgpd.UseCases/        # Handlers CQRS, organisés en vertical slices
-  MicroserviceRgpd.Infrastructure/  # EF Core, repository, dispatch d'événements, email
-  MicroserviceRgpd.Web/             # Endpoints FastEndpoints (REPR), composition racine
-  MicroserviceRgpd.AspireHost/      # Orchestration locale des dépendances
-  MicroserviceRgpd.ServiceDefaults/ # OpenTelemetry, health checks, résilience HTTP, service discovery
-  sidecar/                          # Sidecar Python : les moteurs de qualification et leur suite pytest
-  mock-host/                        # Mock local du système hôte : une route par droit du Paramétrage (voir son README)
-tests/
-  MicroserviceRgpd.UnitTests/         # Domaine, handlers et adaptateurs, isolés
-  MicroserviceRgpd.IntegrationTests/  # Persistance sur un vrai PostgreSQL (Testcontainers)
-  MicroserviceRgpd.FunctionalTests/   # Endpoints de bout en bout (WebApplicationFactory)
-  MicroserviceRgpd.BrowserTests/      # Parcours d'écrans dans Chromium (Playwright, vrai port)
-  MicroserviceRgpd.TestDoubles/       # Doublures partagées par les tests fonctionnels et navigateur
-  MicroserviceRgpd.AspireTests/       # Volontairement vide — voir le commentaire du .csproj
+  MicroserviceRgpd.Core/            # Domaine : entités, value objects, ports — aucune I/O
+  MicroserviceRgpd.UseCases/        # Handlers CQRS, un dossier par fonctionnalité
+  MicroserviceRgpd.Infrastructure/  # EF Core, moteurs de détection, scanner de bases, système hôte
+  MicroserviceRgpd.Web/             # Écrans Razor Pages et API FastEndpoints
+  MicroserviceRgpd.AspireHost/      # Orchestration locale de toute la pile
+  MicroserviceRgpd.ServiceDefaults/ # OpenTelemetry, health checks, résilience
+  sidecar/                          # Moteurs de qualification (Python, FastAPI)
+  mock-host/                        # Faux système hôte, pour les essais locaux
+tests/                              # Unitaires, intégration, fonctionnels, navigateur (Playwright)
 ```
 
-L'agrégat de démonstration du template a été supprimé. Le service expose `POST /qualifications`,
-qui rend une qualification RGPD **dans le même échange**.
+Les 29 décisions d'architecture sont consignées dans [`docs/adr/`](docs/adr/).
 
-Les `ServiceDefaults` Aspire exposent `/health` et `/alive`, mais **uniquement en Development** :
-`MapDefaultEndpoints` les monte derrière un `IsDevelopment()`, par prudence sur ce qu'un health
-check révèle. Hors Development, ces deux routes rendent 404 et **le service n'offre aucune preuve
-de vie** ; l'ouvrir en déploiement est une décision à prendre, pas un acquis.
-Il n'existe **aucun `GET`** sur la ressource de qualification : c'est un acte dont on repart avec
-le résultat, jamais une ressource qu'on relit.
+## Du mémoire au code
 
-**Le contrat public est documenté dans [`docs/api/qualifications.md`](docs/api/qualifications.md)** :
-requête, réponse, codes d'erreur, règle d'évolution et avertissements d'exploitation. Un intégrateur
-n'a besoin que de ce document.
+| Mémoire | Dans le dépôt |
+| --- | --- |
+| Partie 2, I — Du besoin à la spécification | [`docs/spec/`](docs/spec/qualification.md), [`CONTEXT-MAP.md`](CONTEXT-MAP.md), [`docs/contexts/`](docs/contexts/) |
+| Partie 2, II — Choix technologiques, Clean Architecture | [`src/`](src/), [`docs/adr/`](docs/adr/), [schéma](docs/architecture/clean-architecture.svg) |
+| Partie 2, II, C — Intégration à l'application hôte | [ADR-0026](docs/adr/0026-executer-une-demande-requests-lit-le-parametrage-et-appelle-le-systeme-hote.md), [ADR-0027](docs/adr/0027-un-droit-un-seul-canal-une-adresse-http-ou-un-routage-rabbitmq.md), [ADR-0028](docs/adr/0028-l-aboutissement-d-une-execution-cesse-d-etre-un-2xx-le-broker-accuse-reception.md), [`src/mock-host/`](src/mock-host/README.md) |
+| Partie 2, III — La cartographie des données personnelles | [`src/MicroserviceRgpd.Infrastructure/Screenings/`](src/MicroserviceRgpd.Infrastructure/Screenings/), [requêtes d'introspection](releves/), [modèle A2 embarqué](src/MicroserviceRgpd.Infrastructure/Screenings/Embeddings/Artefact/README.md), [ADR-0025](docs/adr/0025-la-detection-passe-a-un-modele-a-plongements-servi-par-ollama-le-lexique-en-repli-de-deploiement.md) |
+| Partie 2, III — Corpus de schémas annotés et banc d'essai | [`corpus/schemas/`](corpus/schemas/README.md), [`exploration/banc-screening/`](exploration/banc-screening/README.md), [sources et licences](corpus/SOURCES.md) |
+| Partie 2, IV — La qualification assistée par l'IA | [`src/sidecar/`](src/sidecar/README.md), [corpus de 120 demandes](corpus/README.md), [`docs/api/qualifications.md`](docs/api/qualifications.md) |
+| Partie 3, I et II — L'application témoin Brocanto | [`brocanto/`](brocanto/README.md) |
+| Partie 3, III, B — Évaluation des modèles IA | [`exploration/`](exploration/README.md), [`corpus/`](corpus/) |
+| Partie 3, IV — Second contexte : Dolibarr | [`dolibarr/`](dolibarr/README.md) |
 
-Deux moteurs qualifient le texte. Celui dont l'avis fait verdict est un LLM auto-hébergé ; le second
-est un lexique déterministe, qui ne vote pas mais **corrobore ou conteste** — c'est de leur
-comparaison que sort le `reviewSignal`. Si l'un des deux se tait, le service rend quand même un
-verdict avec `degraded: true` ; si les deux se taisent, il rend un `503` ou un `504`.
+Le corpus d'entraînement de 47 schémas et la comparaison des approches A0 à A4 ont été menés dans
+des dépôts de recherche distincts ; voir [`corpus/SOURCES.md`](corpus/SOURCES.md).
 
-La base est **PostgreSQL**, fournie en container par Aspire (`microservice_rgpd_bdd`). C'est le seul
-provider supporté : il n'existe pas de repli local, Docker est donc requis pour lancer le service
-comme pour exécuter les tests fonctionnels.
+## Lancer le projet
 
-## Stack
-
-| Rôle             | Choix                                        |
-| ---------------- | -------------------------------------------- |
-| Médiation / CQRS | Mediator (martinothamar, source-generated)   |
-| HTTP             | FastEndpoints 7.1 (REPR) + Scalar            |
-| Données          | EF Core 10 + Npgsql (PostgreSQL)             |
-| Result pattern   | Ardalis.Result                               |
-| Value objects    | Vogen (source generator)                     |
-| Specifications   | Ardalis.Specification                        |
-| Logs             | Serilog + sink OpenTelemetry                 |
-| Observabilité    | OpenTelemetry 1.17 via ServiceDefaults       |
-| Qualification    | Sidecar Python (FastAPI / uvicorn), lancé par Aspire |
-| Tests            | xUnit, NSubstitute, Shouldly, Testcontainers, Playwright ; `pytest` côté sidecar |
-
-## Démarrer
+Prérequis : le SDK .NET 10, Docker, et [`uv`](https://docs.astral.sh/uv/) pour le sidecar Python.
 
 ```sh
-dotnet build MicroserviceRgpd.slnx
-```
-
-Pour les tests, la porte à passer avant PR est plus bas — elle a **deux moitiés**, et lancer la
-seule solution .NET laisserait le sidecar Python hors du filet.
-
-```sh
-# API seule
-dotnet run --project src/MicroserviceRgpd.Web
-
-# Avec orchestration Aspire (dépendances en containers + dashboard)
 dotnet run --project src/MicroserviceRgpd.AspireHost
 ```
 
-Pour le confort du poste de développement, [`scripts/run-project.sh`](scripts/run-project.sh) enveloppe la
-seconde commande : il vérifie les prérequis (Docker, `uv`, certificat HTTPS de développement) avant
-de lancer quoi que ce soit, attend que l'accueil réponde, puis ouvre le navigateur dans une nouvelle
-fenêtre sur l'accueil et sur le dashboard Aspire.
+Cette commande démarre toute la pile : le service, sa base PostgreSQL et le sidecar de
+qualification. Le dashboard Aspire donne l'adresse des écrans. Par défaut, **aucun modèle n'est
+téléchargé et aucun GPU n'est requis** : la qualification tourne alors en mode dégradé, avec le seul
+lexique. Pour activer le LLM (`qwen3:8b`, GPU NVIDIA requis) ou le modèle de détection A2, voir
+[`DEVELOPPEMENT.md`](DEVELOPPEMENT.md).
+
+L'application témoin se lance à part :
 
 ```sh
-scripts/run-project.sh                     # démarre, attend, ouvre le navigateur
-scripts/run-project.sh --sans-navigateur   # démarre et imprime les adresses
+cd brocanto && docker compose up --build   # http://localhost:8080
 ```
 
-Le lien du dashboard est **lu dans la sortie d'Aspire**, jamais reconstruit : il porte un jeton de
-connexion, et une adresse devinée mènerait à un écran de refus. Le script n'ajoute aucun réglage et
-ne remplace rien — `dotnet run` reste la commande de référence, et Ctrl+C arrête la pile dans les
-deux cas.
+Les tests, les drapeaux de configuration et le détail de la pile sont dans
+[`DEVELOPPEMENT.md`](DEVELOPPEMENT.md).
 
-L'orchestration Aspire démarre aussi le **sidecar de qualification** (`src/sidecar`) : la pile
-entière part d'une seule commande. [`uv`](https://docs.astral.sh/uv/) doit être installé — Aspire lui
-délègue la création de l'environnement virtuel et l'installation des dépendances.
+## Méthode de développement
 
-**Le moteur LLM est éteint par défaut, et un clone frais démarre donc sans GPU et sans télécharger
-un octet de modèle** : ni container Ollama ni modèle n'entrent dans la pile. `POST /qualifications`
-répond, avec le seul témoin lexical pour avis — la qualification sort en `Mode dégradé`.
+Comme l'indique le mémoire, le code n'a pas été écrit à la main : il a été produit en programmation
+agentique, avec [Claude Code](https://claude.com/claude-code). L'agentique n'est pas l'objet de
+l'étude, c'est le moyen qui a permis de couvrir ce périmètre dans le temps imparti : deux langages,
+deux moteurs d'IA et deux applications hôtes.
 
-Pour l'allumer, passer `Llm:Enabled` à `"true"` dans
-[`src/MicroserviceRgpd.AspireHost/appsettings.json`](src/MicroserviceRgpd.AspireHost/appsettings.json).
-L'AppHost est l'**unique vérité** de ce drapeau : il le propage au service .NET comme au sidecar, qui
-ne peuvent donc pas diverger. Le container Ollama entre alors dans la pile, et le modèle est tiré au
-premier démarrage puis conservé dans un volume nommé ; comptez plusieurs gigaoctets.
+Le travail a suivi un cadre écrit, dont le dépôt garde la trace :
 
-**La détection par le modèle A2 est elle aussi éteinte par défaut** : c'est alors le lexique qui
-détecte. Pour l'allumer, passer `Screening:Embeddings:Enabled` à `"true"` dans le même
-[`appsettings.json`](src/MicroserviceRgpd.AspireHost/appsettings.json) de l'AppHost. Ce drapeau est
-**indépendant** de `Llm:Enabled` : allumé seul, il fait entrer le container Ollama dans la pile
-**sans exiger de GPU**, et n'y tire que l'encodeur `bge-m3` — le tag nommé par le manifest de
-l'artefact embarqué, qui ne se règle pas. Le service attend que l'encodeur soit tiré avant de
-démarrer. Les deux drapeaux allumés partagent un seul container, qui tire alors les deux modèles et
-réclame le GPU pour le moteur LLM.
+- **Tickets et pull requests.** Les évolutions partent d'une issue GitHub et arrivent par une pull
+  request : près de 300 tickets et 240 pull requests.
+- **Décisions consignées.** Chaque choix structurant fait l'objet d'un ADR ([`docs/adr/`](docs/adr/)),
+  qui donne le contexte, la décision et ses conséquences.
+- **Vocabulaire fixé.** Chaque contexte a son glossaire (`docs/contexts/*/CONTEXT.md`), qui fixe les termes
+  employés dans le code et à l'écran.
+- **Tests à chaque étape.** Tests unitaires, d'intégration sur un vrai PostgreSQL, fonctionnels, de
+  navigateur, et `pytest` pour les parties Python.
+- **Instructions de l'agent.** [`CLAUDE.md`](CLAUDE.md) et [`docs/agents/`](docs/agents/) décrivent
+  à l'agent les conventions du dépôt.
 
-**L'API seule tourne elle aussi sans LLM par défaut.** Lancé à la main contre un sidecar local, le
-service .NET ne lit plus l'AppHost : le drapeau qui compte est alors `Qualification:Llm:Enabled` dans
-[`src/MicroserviceRgpd.Web/appsettings.json`](src/MicroserviceRgpd.Web/appsettings.json), éteint lui
-aussi. Qui veut le LLM dans ce mode doit **l'écrire des deux côtés** — ici, et dans l'environnement du
-sidecar (`QUALIFICATION_LLM_ENABLED`) : hors Aspire, plus aucune source commune ne les tient
-d'accord.
+## Licences
 
-Allumé, le container Ollama réclame le GPU (`WithGPUSupport()` dans l'AppHost), ce qui suppose une
-carte **NVIDIA** et le [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-installé côté Docker. Pour vérifier avant de lancer la pile :
-
-```sh
-docker run --rm --gpus=all --entrypoint nvidia-smi ollama/ollama:0.13.0 -L
-```
-
-Sans ce prérequis, le container refuse de démarrer — c'est délibéré : le repli silencieux sur le
-processeur donnait une pile qui « marche » mais dont personne n'attend les réponses.
-
-Les tests d'intégration, fonctionnels et navigateur utilisent Testcontainers : **Docker doit être démarré**.
-Les tests navigateur installent Chromium eux-mêmes au premier lancement.
-Voir [`docs/testing/testcontainers.md`](docs/testing/testcontainers.md). **Aucun test ne
-démarre Ollama, ni ne s'approche d'un GPU.**
-
-Pour l'exécution des tests en parallèle et sa configuration, voir
-[`docs/testing/parallel-execution.md`](docs/testing/parallel-execution.md).
-
-### Migrations EF Core
-
-```sh
-dotnet ef migrations add <Nom> --project src/MicroserviceRgpd.Infrastructure --startup-project src/MicroserviceRgpd.Web
-dotnet ef database update      --project src/MicroserviceRgpd.Infrastructure --startup-project src/MicroserviceRgpd.Web
-```
-
-## Avant d'ouvrir une PR
-
-**La porte à passer au vert**, depuis la racine du dépôt — les deux moitiés du service, les tests
-.NET de la solution puis les tests `pytest` du sidecar de qualification :
-
-```sh
-dotnet test MicroserviceRgpd.slnx
-uv run --directory src/sidecar pytest
-```
-
-La suite du sidecar ne demande **ni réseau sortant, ni GPU, ni clé d'API** : elle n'exerce que le
-lexique déterministe et la frontière HTTP du sidecar. `uv` crée l'environnement virtuel et installe
-les dépendances verrouillées à la première exécution.
-
-`--directory`, et non `--project` : il déplace aussi le répertoire courant, ce dont dépend toute la
-collecte. Avec `--project`, pytest garde la racine du dépôt pour `rootdir`, ne lit donc jamais le
-`testpaths` de `src/sidecar/pyproject.toml`, balaie tout le dépôt et ramasse `brocanto/tests/` — qui
-porte le même nom de paquet que `src/sidecar/tests/` et fait échouer la collecte.
-
-**Il n'y a ni CI ni hook git, et c'est délibéré.** Les tests à container coûtent une dizaine de
-secondes de démarrage ; un `pre-commit` qui les lance serait désactivé dans la semaine, et un
-garde-fou désactivé est pire qu'absent — il donne l'illusion d'une protection.
-
-## Conventions
-
-- Erreurs de l'API : `application/problem+json` (RFC 9457) avec `traceId`, forme **unique** —
-  validation FastEndpoints, exceptions non gérées et codes rendus par la plateforme compris.
-- `Directory.Packages.props` : versions centralisées (Central Package Management).
-- `TreatWarningsAsErrors` est actif, audit NuGet inclus — un package vulnérable casse le build.
+- Code : [MIT](LICENSE). Le projet est issu du template
+  [ardalis/CleanArchitecture](https://github.com/ardalis/CleanArchitecture), sous licence MIT
+  également.
+- Corpus (`corpus/`) : [CC BY-SA 4.0](corpus/LICENSE). Les schémas relevés proviennent d'applications
+  libres, listées avec leur version et leur licence dans [`corpus/SOURCES.md`](corpus/SOURCES.md).
+- Toutes les données personnelles présentes dans le dépôt (Brocanto, corpus de demandes, jeux
+  d'essai) sont fictives.
